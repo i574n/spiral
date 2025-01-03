@@ -1,0 +1,69 @@
+name: gh-pages
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    timeout-minutes: 240
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: moonrepo/setup-rust@v1
+        with:
+          channel: 'nightly-2024-10-07'
+          components: 'clippy,rust-src,rustfmt'
+          targets: 'wasm32-unknown-unknown'
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.101'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 21
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pwsh scripts/init.ps1
+
+      - run: pwsh deps/polyglot/scripts/init.ps1
+      
+      - run: pwsh apps/spiral/build.ps1
+
+      - run: pwsh scripts/outdated.ps1
+
+      - run: pwsh scripts/publish.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gh-pages
+          path: dist
+          retention-days: 30
+
+  push:
+    needs: build
+    timeout-minutes: 180
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: gh-pages
+          path: gh-pages
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: gh-pages
