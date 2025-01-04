@@ -15,7 +15,15 @@ $projectName = "spiral"
 
 if (!$SkipPreBuild -and !$SkipFsx) {
     if (!$fast -and !$SkipNotebook) {
+        echo "../../deps ls"
         { ls } | Invoke-Block -Location ../../deps
+        echo "../.. ls"
+        { ls } | Invoke-Block -Location ../..
+        echo "../../workspace ls"
+        { ls } | Invoke-Block -Location ../../workspace
+        echo "../../workspace/target ls"
+        { ls } | Invoke-Block -Location ../../workspace/target
+        echo "../../workspace/target/release ls"
         { ls } | Invoke-Block -Location ../../workspace/target/release
 
         { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --execute-command "../../workspace/target/release/spiral$(_exe) dib --path $projectName.dib" } | Invoke-Block -Retries 3
