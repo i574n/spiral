@@ -13,7 +13,7 @@ license-file = "../LICENSE"
 repository = "https://github.com/i574n/spiral"
 
 [workspace.dependencies]
-fable_library_rust = { path = "../deps/polyglot/lib/rust/fable/fable_modules/fable-library-rust", default-features = false, features = [] }
+fable_library_rust = { path = "../../polyglot/lib/rust/fable/fable_modules/fable-library-rust", default-features = false, features = [] }
 inline_colorization = ">=0.1,<1"
 chrono = ">=0.4,<1"
 regex = "1.10"
