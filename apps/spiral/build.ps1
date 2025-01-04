@@ -15,6 +15,9 @@ $projectName = "spiral"
 
 if (!$SkipPreBuild -and !$SkipFsx) {
     if (!$fast -and !$SkipNotebook) {
+        { ls } | Invoke-Block -Location ../../deps
+        { ls } | Invoke-Block -Location ../../workspace/target/release
+
         { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --execute-command "../../workspace/target/release/spiral$(_exe) dib --path $projectName.dib" } | Invoke-Block -Retries 3
     }
 
@@ -26,6 +29,10 @@ if (!$SkipPreBuild -and !$SkipFsx) {
 if (!$SkipPreBuild) {
     $runtime = $fast -or $env:CI ? @("--runtime", ($IsWindows ? "win-x64" : "linux-x64")) : @()
     $builderArgs = @("$projectName.fsx", "--persist-only", $runtime, "--packages", "Fable.Core", "--modules", @(GetFsxModules), "lib/fsharp/Common.fs")
+
+    { ls } | Invoke-Block -Location ../../deps
+    { ls } | Invoke-Block -Location ../../deps/polyglot/apps/builder/dist
+
     { . ../../deps/polyglot/apps/builder/dist/Builder$(_exe) @builderArgs } | Invoke-Block
 
     $targetDir = GetTargetDir $projectName
