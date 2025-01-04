@@ -36,7 +36,12 @@ jobs:
       - run: pwsh scripts/init.ps1
 
       - run: pwsh deps/polyglot/scripts/init.ps1
-      
+
+      - run: pwsh deps/polyglot/apps/builder/build.ps1 -fast 1
+      - run: pwsh deps/polyglot/apps/parser/build.ps1 -fast 1
+      - run: pwsh deps/polyglot/apps/spiral/build.ps1 -fast 1
+      - run: pwsh deps/polyglot/apps/dir-tree-html/build.ps1 -fast 1
+
       - run: pwsh apps/spiral/build.ps1
 
       - run: pwsh scripts/outdated.ps1
