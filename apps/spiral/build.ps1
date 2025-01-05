@@ -38,22 +38,19 @@ if (!$SkipPreBuild) {
     $runtime = $fast -or $env:CI ? @("--runtime", ($IsWindows ? "win-x64" : "linux-x64")) : @()
     $builderArgs = @("$projectName.fsx", "--persist-only", $runtime, "--packages", "Fable.Core", "--modules", @(GetFsxModules), "lib/fsharp/Common.fs")
 
-    { ls } | Invoke-Block -Location ../../deps
-    { ls } | Invoke-Block -Location ../../deps/polyglot/apps/builder/dist
-
     { . ../../deps/polyglot/apps/builder/dist/Builder$(_exe) @builderArgs } | Invoke-Block
 
     $targetDir = GetTargetDir $projectName
 
     { BuildFable $targetDir $projectName "rs" } | Invoke-Block
 
-    $path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
+    $path = "$targetDir/target/rs/target/Builder/$projectName/$projectName.rs"
     if (!(Test-Path $path)) {
         $path = "$targetDir/target/rs/$projectName.rs"
     }
     (Get-Content $path) `
         -replace ".fsx`"]", ".rs`"]" `
-        -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
+        -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/lib" `
         -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
         | FixRust `
         | Set-Content "$projectName.rs"
