@@ -11692,7 +11692,7 @@ mod module_e8ae11c0 {
                 async {
                     /*;
                     let v7: bool = */
- //;
+                    //;
                     let v9: bool = true;
                     let __future_init = Box::pin(
                         /*;
@@ -11700,7 +11700,7 @@ mod module_e8ae11c0 {
                         async move {
                             /*;
                             let v13: bool = */
- //;
+                            //;
                             let v15: async_walkdir::DirEntry = v1_1.clone();
                             let v17: std::pin::Pin<
                                 Box<
@@ -12918,7 +12918,7 @@ mod module_e8ae11c0 {
                 async move {
                     /*;
                     let v7: bool = */
- //;
+                    //;
                     let v10: Option<(std::string::String, clap::ArgMatches)> =
                         clap::ArgMatches::subcommand(Box::leak(Box::new(v1_1))).map(|(a, b)| {
                             (
