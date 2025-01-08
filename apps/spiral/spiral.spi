@@ -1623,6 +1623,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 arg_matches
                 |> runtime.matches_get_one ((get_args () .dib |> snd).working_directory |> fst)
                 |> optionm'.unbox
+                |> optionm.map sm'.from_std_string
 
             process_dib { path retries working_directory }
 

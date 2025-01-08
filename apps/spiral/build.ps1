@@ -26,7 +26,8 @@ if (!$SkipPreBuild -and !$SkipFsx) {
         echo "../../workspace/target/release ls"
         { ls } | Invoke-Block -Location ../../workspace/target/release
 
-        { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --execute-command "../../workspace/target/release/spiral$(_exe) dib --path $projectName.dib" } | Invoke-Block -Retries 3
+        $workingDirectory = ResolveLink (GetFullPath "../../deps/polyglot")
+        { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --execute-command "../../workspace/target/release/spiral$(_exe) dib --path $ScriptDir/$projectName.dib --working-directory $workingDirectory" } | Invoke-Block -Retries 3
     }
 
     { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "$projectName.dib" spi } | Invoke-Block
@@ -44,13 +45,11 @@ if (!$SkipPreBuild) {
 
     { BuildFable $targetDir $projectName "rs" } | Invoke-Block
 
-    $path = "$targetDir/target/rs/target/Builder/$projectName/$projectName.rs"
-    if (!(Test-Path $path)) {
-        $path = "$targetDir/target/rs/$projectName.rs"
-    }
+    $path = "$targetDir/target/rs/polyglot/target/Builder/spiral/$projectName.rs"
+
     (Get-Content $path) `
         -replace ".fsx`"]", ".rs`"]" `
-        -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/lib" `
+        -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
         -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
         | FixRust `
         | Set-Content "$projectName.rs"
