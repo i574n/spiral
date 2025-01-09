@@ -24738,7 +24738,7 @@ and method20 (v0 : US0, v1 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_F
                 let v291 : string = _run_target_args'_v215 
                 let v296 : string = __SOURCE_DIRECTORY__
                 let v297 : string = "polyglot"
-                let v298 : string = ".devcontainer"
+                let v298 : string = "workspace"
                 let v299 : string = method28(v297, v298)
                 let v300 : US12 = method29(v299, v296)
                 let v348 : US5 =
@@ -26446,7 +26446,7 @@ pwsh_replace_html_result: {v1268}"
                                 let v1867 : string = method193(v1866)
                                 let v1868 : string = __SOURCE_DIRECTORY__
                                 let v1869 : string = "polyglot"
-                                let v1870 : string = ".devcontainer"
+                                let v1870 : string = "workspace"
                                 let v1871 : string = method28(v1869, v1870)
                                 let v1872 : US12 = method29(v1871, v1868)
                                 let v1920 : US5 =
@@ -28187,7 +28187,7 @@ pwsh_replace_html_result: {v1268}"
                                         let v3440 : string = method193(v3437)
                                         let v3441 : string = __SOURCE_DIRECTORY__
                                         let v3442 : string = "polyglot"
-                                        let v3443 : string = ".devcontainer"
+                                        let v3443 : string = "workspace"
                                         let v3444 : string = method28(v3442, v3443)
                                         let v3445 : US12 = method29(v3444, v3441)
                                         let v3493 : US5 =
@@ -28984,7 +28984,7 @@ pwsh_replace_html_result: {v1268}"
                                                 let v4290 : string = method193(v4287)
                                                 let v4291 : string = __SOURCE_DIRECTORY__
                                                 let v4292 : string = "polyglot"
-                                                let v4293 : string = ".devcontainer"
+                                                let v4293 : string = "workspace"
                                                 let v4294 : string = method28(v4292, v4293)
                                                 let v4295 : US12 = method29(v4294, v4291)
                                                 let v4343 : US5 =

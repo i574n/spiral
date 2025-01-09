@@ -13081,7 +13081,7 @@ mod module_e8ae11c0 {
                             let v261: std::string::String = v258.unwrap();
                             let v274: string = fable_library_rust::String_::fromString(v261);
                             let v300: Spiral::US12 = Spiral::method29(
-                                Spiral::method28(string("polyglot"), string(".devcontainer")),
+                                Spiral::method28(string("polyglot"), string("workspace")),
                                 string("C:\\home\\git\\polyglot\\target\\Builder\\spiral"),
                             );
                             let v348: Spiral::US5 = match &v300 {
@@ -13107,10 +13107,7 @@ mod module_e8ae11c0 {
                                 _ => {
                                     let v351: string = Spiral::method36();
                                     let v353: Spiral::US12 = Spiral::method29(
-                                        Spiral::method28(
-                                            string("polyglot"),
-                                            string(".devcontainer"),
-                                        ),
+                                        Spiral::method28(string("polyglot"), string("workspace")),
                                         v351,
                                     );
                                     match &v353 {
@@ -13889,7 +13886,7 @@ mod module_e8ae11c0 {
                                         let v1872: Spiral::US12 = Spiral::method29(
                                             Spiral::method28(
                                                 string("polyglot"),
-                                                string(".devcontainer"),
+                                                string("workspace"),
                                             ),
                                             string(
                                                 "C:\\home\\git\\polyglot\\target\\Builder\\spiral",
@@ -13920,7 +13917,7 @@ mod module_e8ae11c0 {
                                                 let v1925: Spiral::US12 = Spiral::method29(
                                                     Spiral::method28(
                                                         string("polyglot"),
-                                                        string(".devcontainer"),
+                                                        string("workspace"),
                                                     ),
                                                     v1923,
                                                 );
@@ -15134,7 +15131,7 @@ mod module_e8ae11c0 {
                                             ));
                                             let v3445: Spiral::US12 =
                                                     Spiral::method29(Spiral::method28(string("polyglot"),
-                                                                                      string(".devcontainer")),
+                                                                                      string("workspace")),
                                                                      string("C:\\home\\git\\polyglot\\target\\Builder\\spiral"));
                                             let v3493: Spiral::US5 = match &v3445 {
                                                 Spiral::US12::US12_0(v3445_0_0) => {
@@ -15163,7 +15160,7 @@ mod module_e8ae11c0 {
                                                     let v3498: Spiral::US12 = Spiral::method29(
                                                         Spiral::method28(
                                                             string("polyglot"),
-                                                            string(".devcontainer"),
+                                                            string("workspace"),
                                                         ),
                                                         v3496,
                                                     );
@@ -15785,7 +15782,7 @@ mod module_e8ae11c0 {
                                                 let v4295:
                                                                 Spiral::US12 =
                                                             Spiral::method29(Spiral::method28(string("polyglot"),
-                                                                                              string(".devcontainer")),
+                                                                                              string("workspace")),
                                                                              string("C:\\home\\git\\polyglot\\target\\Builder\\spiral"));
                                                 let v4343: Spiral::US5 = match &v4295 {
                                                     Spiral::US12::US12_0(v4295_0_0) => {
@@ -15817,7 +15814,7 @@ mod module_e8ae11c0 {
                                                         let v4348: Spiral::US12 = Spiral::method29(
                                                             Spiral::method28(
                                                                 string("polyglot"),
-                                                                string(".devcontainer"),
+                                                                string("workspace"),
                                                             ),
                                                             v4346,
                                                         );

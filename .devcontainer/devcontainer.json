@@ -27,7 +27,8 @@
         "i574n.dotnet-interactive-vscode-i574n"
       ],
       "settings": {
-        "notebook.lineNumbers": "on"
+        "notebook.lineNumbers": "on",
+        "spiral.port": 13805
       }
     }
   },
