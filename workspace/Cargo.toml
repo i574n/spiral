@@ -3,7 +3,8 @@ cargo-features = ["profile-rustflags"]
 [workspace]
 resolver = "2"
 members = [
-    "../apps/spiral"
+    "../apps/spiral",
+    "../apps/wasm"
 ]
 
 [workspace.package]

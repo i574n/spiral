@@ -46,6 +46,8 @@ jobs:
 
       - run: pwsh apps/spiral/build.ps1
 
+      - run: pwsh apps/wasm/build.ps1
+
       - run: pwsh scripts/outdated.ps1
 
       - run: pwsh scripts/publish.ps1
