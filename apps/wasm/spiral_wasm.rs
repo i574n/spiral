@@ -11,7 +11,7 @@
 #![allow(unused_assignments)]
 use fable_library_rust::NativeArray_::array_from;
 use fable_library_rust::String_::fromString;
-mod module_97085cc0 {
+mod module_e7420c1a {
     pub mod Spiral_wasm {
         use super::*;
         use fable_library_rust::DateTime_::DateTime;
@@ -3198,48 +3198,48 @@ mod module_97085cc0 {
         }
     }
 }
-pub use module_97085cc0::*;
+pub use module_e7420c1a::*;
 #[path = "../../deps/polyglot/lib/fsharp/Common.rs"]
-mod module_6140596b;
-pub use module_6140596b::*;
+mod module_9caac5f1;
+pub use module_9caac5f1::*;
 #[path = "../../deps/polyglot/lib/spiral/async_.rs"]
-mod module_daedefb8;
-pub use module_daedefb8::*;
+mod module_203e46e2;
+pub use module_203e46e2::*;
 #[path = "../../deps/polyglot/lib/spiral/common.rs"]
-mod module_70286a4c;
-pub use module_70286a4c::*;
+mod module_af0fb816;
+pub use module_af0fb816::*;
 #[path = "../../deps/polyglot/lib/spiral/crypto.rs"]
-mod module_4a98a962;
-pub use module_4a98a962::*;
+mod module_9d2a8bb8;
+pub use module_9d2a8bb8::*;
 #[path = "../../deps/polyglot/lib/spiral/date_time.rs"]
-mod module_94ca555f;
-pub use module_94ca555f::*;
+mod module_f406e045;
+pub use module_f406e045::*;
 #[path = "../../deps/polyglot/lib/spiral/file_system.rs"]
-mod module_b697ea1d;
-pub use module_b697ea1d::*;
+mod module_c5b9f907;
+pub use module_c5b9f907::*;
 #[path = "../../deps/polyglot/lib/spiral/lib.rs"]
-mod module_ed8da8a6;
-pub use module_ed8da8a6::*;
+mod module_98ac05bc;
+pub use module_98ac05bc::*;
 #[path = "../../deps/polyglot/lib/spiral/networking.rs"]
-mod module_9dd8007f;
-pub use module_9dd8007f::*;
+mod module_2d682a25;
+pub use module_2d682a25::*;
 #[path = "../../deps/polyglot/lib/spiral/platform.rs"]
-mod module_4c4781e;
-pub use module_4c4781e::*;
+mod module_5d993ac4;
+pub use module_5d993ac4::*;
 #[path = "../../deps/polyglot/lib/spiral/runtime.rs"]
-mod module_c40559dd;
-pub use module_c40559dd::*;
+mod module_bfaecac7;
+pub use module_bfaecac7::*;
 #[path = "../../deps/polyglot/lib/spiral/sm.rs"]
-mod module_fc92da1f;
-pub use module_fc92da1f::*;
+mod module_f307e645;
+pub use module_f307e645::*;
 #[path = "../../deps/polyglot/lib/spiral/threading.rs"]
-mod module_af40e92f;
-pub use module_af40e92f::*;
+mod module_f00d33b5;
+pub use module_f00d33b5::*;
 #[path = "../../deps/polyglot/lib/spiral/trace.rs"]
-mod module_981750e0;
-pub use module_981750e0::*;
+mod module_cd1a8afa;
+pub use module_cd1a8afa::*;
 pub mod Polyglot {
-    pub use crate::module_6140596b::Polyglot::*;
+    pub use crate::module_9caac5f1::Polyglot::*;
 }
 pub fn main() {
     let args = std::env::args().skip(1).map(fromString).collect();

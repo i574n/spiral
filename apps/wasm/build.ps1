@@ -36,6 +36,7 @@ if (!(Test-Path $path)) {
 (Get-Content $path) `
     -replace ".fsx`"]", ".rs`"]" `
     -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
+    -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/lib" `
     -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
     | FixRust `
     | Set-Content "$projectName.rs"
