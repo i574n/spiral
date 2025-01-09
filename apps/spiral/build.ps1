@@ -46,6 +46,9 @@ if (!$SkipPreBuild) {
     { BuildFable $targetDir $projectName "rs" } | Invoke-Block
 
     $path = "$targetDir/target/rs/polyglot/target/Builder/spiral/$projectName.rs"
+    if (!(Test-Path $path)) {
+        $path = "$targetDir/target/rs/target/Builder/spiral/$projectName.rs"
+    }
 
     (Get-Content $path) `
         -replace ".fsx`"]", ".rs`"]" `
