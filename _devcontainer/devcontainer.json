@@ -1,0 +1,36 @@
+{
+  "appPort": [],
+  "portsAttributes": {
+    "13805": {
+      "label": "spiral 1"
+    },
+    "13806": {
+      "label": "spiral 2"
+    }
+  },
+  "build": {
+    "context": "..",
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "docker-in-docker": "latest"
+  },
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "64gb"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "i574n.spiral-lang-vscode-i574n",
+        "i574n.dotnet-interactive-vscode-i574n"
+      ],
+      "settings": {
+        "notebook.lineNumbers": "on",
+        "spiral.port": 13805
+      }
+    }
+  },
+  "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"]
+}
