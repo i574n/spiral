@@ -510,18 +510,21 @@ and UH4 =
     | UH4_0
     | UH4_1 of string * bool * UH4
 and [<Struct>] US43 =
-    | US43_0 of f0_0 : std_fs_FileType
-    | US43_1 of f1_0 : std_string_String
+    | US43_0
+    | US43_1 of f1_0 : string
 and [<Struct>] US44 =
-    | US44_0
-    | US44_1
-    | US44_2
+    | US44_0 of f0_0 : std_fs_FileType
+    | US44_1 of f1_0 : std_string_String
 and [<Struct>] US45 =
-    | US45_0 of f0_0 : async_walkdir_DirEntry
-    | US45_1 of f1_0 : std_string_String
+    | US45_0
+    | US45_1
+    | US45_2
 and [<Struct>] US46 =
-    | US46_0 of f0_0 : string * f0_1 : string
-    | US46_1
+    | US46_0 of f0_0 : async_walkdir_DirEntry
+    | US46_1 of f1_0 : std_string_String
+and [<Struct>] US47 =
+    | US47_0 of f0_0 : string * f0_1 : string
+    | US47_1
 and UH5 =
     | UH5_0
     | UH5_1 of string * string * UH5
@@ -22891,6 +22894,61 @@ and closure97 (v0 : string, v1 : string, v2 : bool, v3 : string, v4 : bool, v5 :
         let v48 : string = method48()
         let v49 : string = method237(v29, v30, v31, v32, v33, v34, v47, v48, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10)
         method19(v49)
+and closure98 () () : US43 =
+    US43_0
+and method240 () : (unit -> US43) =
+    closure98()
+and closure99 () (v0 : string) : US43 =
+    US43_1(v0)
+and method241 () : (string -> US43) =
+    closure99()
+and method243 (v0 : string) : string =
+    let v1 : string = method14()
+    let v2 : Mut3 = {l0 = v1} : Mut3
+    let v3 : string = "{ "
+    let v4 : string = $"{v3}"
+    let v7 : unit = ()
+    let v8 : (unit -> unit) = closure7(v2, v4)
+    let v9 : unit = (fun () -> v8 (); v7) ()
+    let v12 : string = "error'"
+    let v13 : string = $"{v12}"
+    let v16 : unit = ()
+    let v17 : (unit -> unit) = closure7(v2, v13)
+    let v18 : unit = (fun () -> v17 (); v16) ()
+    let v21 : string = " = "
+    let v22 : string = $"{v21}"
+    let v25 : unit = ()
+    let v26 : (unit -> unit) = closure7(v2, v22)
+    let v27 : unit = (fun () -> v26 (); v25) ()
+    let v30 : string = $"{v0}"
+    let v33 : unit = ()
+    let v34 : (unit -> unit) = closure7(v2, v30)
+    let v35 : unit = (fun () -> v34 (); v33) ()
+    let v38 : string = " }"
+    let v39 : string = $"{v38}"
+    let v42 : unit = ()
+    let v43 : (unit -> unit) = closure7(v2, v39)
+    let v44 : unit = (fun () -> v43 (); v42) ()
+    let v47 : string = v2.l0
+    v47
+and method242 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
+    let v9 : string = method243(v8)
+    let v10 : int64 = v0.l0
+    let v11 : string = "file_system.file_delete"
+    let v12 : string = $"{v6} {v7} #{v10} %s{v11} / {v9}"
+    method18(v12)
+and closure100 (v0 : string) () : unit =
+    let v1 : US0 = US0_4
+    let v2 : bool = method7(v1)
+    if v2 then
+        let v3 : unit = ()
+        let v4 : (unit -> unit) = closure2()
+        let v5 : unit = (fun () -> v4 (); v3) ()
+        let struct (v19 : Mut0, v20 : Mut1, v21 : Mut2, v22 : Mut3, v23 : Mut4, v24 : int64 option) = TraceState.trace_state.Value
+        let v37 : string = method8(v19, v20, v21, v22, v23, v24)
+        let v38 : string = method45()
+        let v39 : string = method242(v19, v20, v21, v22, v23, v24, v37, v38, v0)
+        method19(v39)
 and method239 (v0 : UH4) : unit =
     match v0 with
     | UH4_1(v1, v2, v3) -> (* Cons *)
@@ -22899,8 +22957,56 @@ and method239 (v0 : UH4) : unit =
 #if FABLE_COMPILER || WASM || CONTRACT
         
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-        let v5 : string = "std::fs::remove_file(&*$0).unwrap()"
-        Fable.Core.RustInterop.emitRustExpr v1 v5 
+        let v5 : string = "std::fs::remove_file(&*$0)"
+        let v6 : Result<unit, std_io_Error> = Fable.Core.RustInterop.emitRustExpr v1 v5 
+        let v7 : (std_io_Error -> string) = method157()
+        let v8 : unit = ()
+        
+#if FABLE_COMPILER || WASM || CONTRACT
+        
+#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
+        let v9 : string = "$0.map_err(|x| $1(x))"
+        let v10 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr struct (v6, v7) v9 
+        let _run_target_args'_v8 = v10 
+        #endif
+#if FABLE_COMPILER_RUST && WASM
+        let v11 : string = "$0.map_err(|x| $1(x))"
+        let v12 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr struct (v6, v7) v11 
+        let _run_target_args'_v8 = v12 
+        #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+        let v13 : string = "$0.map_err(|x| $1(x))"
+        let v14 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr struct (v6, v7) v13 
+        let _run_target_args'_v8 = v14 
+        #endif
+#if FABLE_COMPILER_TYPESCRIPT
+        let v15 : Result<unit, string> = match v6 with Ok x -> Ok x | Error x -> Error (v7 x)
+        let _run_target_args'_v8 = v15 
+        #endif
+#if FABLE_COMPILER_PYTHON
+        let v16 : Result<unit, string> = match v6 with Ok x -> Ok x | Error x -> Error (v7 x)
+        let _run_target_args'_v8 = v16 
+        #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+        let v17 : Result<unit, string> = match v6 with Ok x -> Ok x | Error x -> Error (v7 x)
+        let _run_target_args'_v8 = v17 
+        #endif
+#else
+        let v18 : Result<unit, string> = match v6 with Ok x -> Ok x | Error x -> Error (v7 x)
+        let _run_target_args'_v8 = v18 
+        #endif
+        let v19 : Result<unit, string> = _run_target_args'_v8 
+        let v22 : (unit -> US43) = method240()
+        let v23 : (string -> US43) = method241()
+        let v24 : US43 = match v19 with Ok () -> v22 () | Error x -> v23 x
+        match v24 with
+        | US43_1(v25) -> (* Error *)
+            let v26 : unit = ()
+            let v27 : (unit -> unit) = closure100(v25)
+            let v28 : unit = (fun () -> v27 (); v26) ()
+            ()
+        | US43_0 -> (* Ok *)
+            ()
         #endif
 #if FABLE_COMPILER_RUST && WASM
         #endif
@@ -22913,24 +23019,24 @@ and method239 (v0 : UH4) : unit =
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
         #endif
 #else
-        let v6 : (string -> unit) = System.IO.File.Delete
-        v6 v1
+        let v68 : (string -> unit) = System.IO.File.Delete
+        v68 v1
         #endif
         // run_target_args' is_unit
         method239(v3)
     | UH4_0 -> (* Nil *)
         ()
-and method240 (v0 : string) : string =
+and method244 (v0 : string) : string =
     v0
-and closure99 () (v0 : std_fs_FileType) : US43 =
-    US43_0(v0)
-and method241 () : (std_fs_FileType -> US43) =
-    closure99()
-and closure100 () (v0 : std_string_String) : US43 =
-    US43_1(v0)
-and method242 () : (std_string_String -> US43) =
-    closure100()
-and method243 (v0 : string) : string =
+and closure102 () (v0 : std_fs_FileType) : US44 =
+    US44_0(v0)
+and method245 () : (std_fs_FileType -> US44) =
+    closure102()
+and closure103 () (v0 : std_string_String) : US44 =
+    US44_1(v0)
+and method246 () : (std_string_String -> US44) =
+    closure103()
+and method247 (v0 : string) : string =
     let v1 : unit = ()
     
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -23139,7 +23245,7 @@ and method243 (v0 : string) : string =
     #endif
     let v153 : string = _run_target_args'_v1 
     v153
-and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<LifetimeJoin<Dyn<std_future_Future<async_walkdir_Filtering>>, Send<Dyn<std_future_Future<async_walkdir_Filtering>>>>>> =
+and closure101 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<LifetimeJoin<Dyn<std_future_Future<async_walkdir_Filtering>>, Send<Dyn<std_future_Future<async_walkdir_Filtering>>>>>> =
     let v2 : string = "true; let __future_init = Box::pin(/*"
     let v3 : bool = Fable.Core.RustInterop.emitRustExpr () v2 
     let v4 : string = "*/ async { /*"
@@ -23195,17 +23301,17 @@ and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<Life
     let _run_target_args'_v21 = v31 
     #endif
     let v32 : Result<std_fs_FileType, std_string_String> = _run_target_args'_v21 
-    let v35 : (std_fs_FileType -> US43) = method241()
-    let v36 : (std_string_String -> US43) = method242()
-    let v37 : US43 = match v32 with Ok x -> v35 x | Error x -> v36 x
-    let v218 : US44 =
+    let v35 : (std_fs_FileType -> US44) = method245()
+    let v36 : (std_string_String -> US44) = method246()
+    let v37 : US44 = match v32 with Ok x -> v35 x | Error x -> v36 x
+    let v218 : US45 =
         match v37 with
-        | US43_0(v38) -> (* Ok *)
+        | US44_0(v38) -> (* Ok *)
             let v39 : string = "std::fs::FileType::is_dir(&$0)"
             let v40 : bool = Fable.Core.RustInterop.emitRustExpr v38 v39 
             let v41 : bool = v40 = false
             if v41 then
-                US44_0
+                US45_0
             else
                 let v43 : string = "async_walkdir::DirEntry::path(&$0)"
                 let v44 : std_path_PathBuf = Fable.Core.RustInterop.emitRustExpr v1 v43 
@@ -23283,11 +23389,11 @@ and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<Life
                 let v88 : std_string_String = _run_target_args'_v69 
                 let v93 : string = "fable_library_rust::String_::fromString($0)"
                 let v94 : string = Fable.Core.RustInterop.emitRustExpr v88 v93 
-                let v95 : string = method243(v94)
+                let v95 : string = method247(v94)
                 let v96 : bool = v95.StartsWith (v0, false, null)
                 let v99 : bool = v96 = false
                 if v99 then
-                    US44_1
+                    US45_1
                 else
                     let v101 : string option = method31(v94)
                     let v102 : (string -> US5) = method6()
@@ -23299,11 +23405,11 @@ and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<Life
                         let v120 : bool = v119.Contains v0 
                         let v123 : bool = v120 = false
                         if v123 then
-                            US44_2
+                            US45_2
                         else
-                            US44_1
+                            US45_1
                     | _ ->
-                        US44_1
+                        US45_1
         | _ ->
             let v131 : string = "async_walkdir::DirEntry::path(&$0)"
             let v132 : std_path_PathBuf = Fable.Core.RustInterop.emitRustExpr v1 v131 
@@ -23381,11 +23487,11 @@ and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<Life
             let v176 : std_string_String = _run_target_args'_v157 
             let v181 : string = "fable_library_rust::String_::fromString($0)"
             let v182 : string = Fable.Core.RustInterop.emitRustExpr v176 v181 
-            let v183 : string = method243(v182)
+            let v183 : string = method247(v182)
             let v184 : bool = v183.StartsWith (v0, false, null)
             let v187 : bool = v184 = false
             if v187 then
-                US44_1
+                US45_1
             else
                 let v189 : string option = method31(v182)
                 let v190 : (string -> US5) = method6()
@@ -23397,11 +23503,11 @@ and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<Life
                     let v208 : bool = v207.Contains v0 
                     let v211 : bool = v208 = false
                     if v211 then
-                        US44_2
+                        US45_2
                     else
-                        US44_1
+                        US45_1
                 | _ ->
-                    US44_1
+                    US45_1
     let v219 : string = ""
     let v220 : string = "}"
     let v221 : string = v219 + v220 
@@ -23445,20 +23551,20 @@ and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<Life
     let v235 : string = "__future_init"
     let v236 : _ = Fable.Core.RustInterop.emitRustExpr () v235 
     let v237 : string = "v236"
-    let v238 : std_pin_Pin<Box<LifetimeJoin<Dyn<std_future_Future<US44>>, Send<Dyn<std_future_Future<US44>>>>>> = Fable.Core.RustInterop.emitRustExpr () v237 
+    let v238 : std_pin_Pin<Box<LifetimeJoin<Dyn<std_future_Future<US45>>, Send<Dyn<std_future_Future<US45>>>>>> = Fable.Core.RustInterop.emitRustExpr () v237 
     let v239 : string = "v238.await"
-    let v240 : US44 = Fable.Core.RustInterop.emitRustExpr () v239 
+    let v240 : US45 = Fable.Core.RustInterop.emitRustExpr () v239 
     let v249 : async_walkdir_Filtering =
         match v240 with
-        | US44_2 -> (* Continue *)
+        | US45_2 -> (* Continue *)
             let v245 : string = "async_walkdir::Filtering::Continue"
             let v246 : async_walkdir_Filtering = Fable.Core.RustInterop.emitRustExpr () v245 
             v246
-        | US44_0 -> (* Ignore *)
+        | US45_0 -> (* Ignore *)
             let v241 : string = "async_walkdir::Filtering::Ignore"
             let v242 : async_walkdir_Filtering = Fable.Core.RustInterop.emitRustExpr () v241 
             v242
-        | US44_1 -> (* IgnoreDir *)
+        | US45_1 -> (* IgnoreDir *)
             let v243 : string = "async_walkdir::Filtering::IgnoreDir"
             let v244 : async_walkdir_Filtering = Fable.Core.RustInterop.emitRustExpr () v243 
             v244
@@ -23505,7 +23611,7 @@ and closure98 (v0 : string) (v1 : async_walkdir_DirEntry) : std_pin_Pin<Box<Life
     let v266 : string = "v265"
     let v267 : std_pin_Pin<Box<LifetimeJoin<Dyn<std_future_Future<async_walkdir_Filtering>>, Send<Dyn<std_future_Future<async_walkdir_Filtering>>>>>> = Fable.Core.RustInterop.emitRustExpr () v266 
     v267
-and closure102 () (v0 : async_walkdir_Error) : std_string_String =
+and closure105 () (v0 : async_walkdir_Error) : std_string_String =
     let v1 : unit = ()
     
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -23543,23 +23649,23 @@ and closure102 () (v0 : async_walkdir_Error) : std_string_String =
     #endif
     let v20 : std_string_String = _run_target_args'_v1 
     v20
-and method245 () : (async_walkdir_Error -> std_string_String) =
-    closure102()
-and closure103 () (v0 : async_walkdir_DirEntry) : US45 =
-    US45_0(v0)
-and method246 () : (async_walkdir_DirEntry -> US45) =
-    closure103()
-and closure104 () (v0 : std_string_String) : US45 =
-    US45_1(v0)
-and method247 () : (std_string_String -> US45) =
-    closure104()
-and method248 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : std_string_String) : string =
+and method249 () : (async_walkdir_Error -> std_string_String) =
+    closure105()
+and closure106 () (v0 : async_walkdir_DirEntry) : US46 =
+    US46_0(v0)
+and method250 () : (async_walkdir_DirEntry -> US46) =
+    closure106()
+and closure107 () (v0 : std_string_String) : US46 =
+    US46_1(v0)
+and method251 () : (std_string_String -> US46) =
+    closure107()
+and method252 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : std_string_String) : string =
     let v9 : string = method97(v8)
     let v10 : int64 = v0.l0
     let v11 : string = "spiral.process_typescript / stream_filter_map"
     let v12 : string = $"{v6} {v7} #{v10} %s{v11} / {v9}"
     method18(v12)
-and closure105 (v0 : std_string_String) () : unit =
+and closure108 (v0 : std_string_String) () : unit =
     let v1 : US0 = US0_4
     let v2 : bool = method7(v1)
     if v2 then
@@ -23569,10 +23675,10 @@ and closure105 (v0 : std_string_String) () : unit =
         let struct (v19 : Mut0, v20 : Mut1, v21 : Mut2, v22 : Mut3, v23 : Mut4, v24 : int64 option) = TraceState.trace_state.Value
         let v37 : string = method8(v19, v20, v21, v22, v23, v24)
         let v38 : string = method45()
-        let v39 : string = method248(v19, v20, v21, v22, v23, v24, v37, v38, v0)
+        let v39 : string = method252(v19, v20, v21, v22, v23, v24, v37, v38, v0)
         method19(v39)
-and closure101 (v0 : string) (v1 : Result<async_walkdir_DirEntry, async_walkdir_Error>) : struct (string * string) option =
-    let v2 : (async_walkdir_Error -> std_string_String) = method245()
+and closure104 (v0 : string) (v1 : Result<async_walkdir_DirEntry, async_walkdir_Error>) : struct (string * string) option =
+    let v2 : (async_walkdir_Error -> std_string_String) = method249()
     let v3 : unit = ()
     
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -23609,17 +23715,17 @@ and closure101 (v0 : string) (v1 : Result<async_walkdir_DirEntry, async_walkdir_
     let _run_target_args'_v3 = v13 
     #endif
     let v14 : Result<async_walkdir_DirEntry, std_string_String> = _run_target_args'_v3 
-    let v17 : (async_walkdir_DirEntry -> US45) = method246()
-    let v18 : (std_string_String -> US45) = method247()
-    let v19 : US45 = match v14 with Ok x -> v17 x | Error x -> v18 x
-    let v193 : US46 =
+    let v17 : (async_walkdir_DirEntry -> US46) = method250()
+    let v18 : (std_string_String -> US46) = method251()
+    let v19 : US46 = match v14 with Ok x -> v17 x | Error x -> v18 x
+    let v193 : US47 =
         match v19 with
-        | US45_1(v148) -> (* Error *)
+        | US46_1(v148) -> (* Error *)
             let v149 : unit = ()
-            let v150 : (unit -> unit) = closure105(v148)
+            let v150 : (unit -> unit) = closure108(v148)
             let v151 : unit = (fun () -> v150 (); v149) ()
-            US46_1
-        | US45_0(v20) -> (* Ok *)
+            US47_1
+        | US46_0(v20) -> (* Ok *)
             let v21 : string = "async_walkdir::DirEntry::path(&$0)"
             let v22 : std_path_PathBuf = Fable.Core.RustInterop.emitRustExpr v20 v21 
             let v23 : unit = ()
@@ -23768,25 +23874,25 @@ and closure101 (v0 : string) (v1 : Result<async_walkdir_DirEntry, async_walkdir_
                     US5_1
             match v142 with
             | US5_1 -> (* None *)
-                US46_1
+                US47_1
             | US5_0(v143) -> (* Some *)
-                US46_0(v72, v143)
+                US47_0(v72, v143)
     match v193 with
-    | US46_1 -> (* None *)
+    | US47_1 -> (* None *)
         let v199 : struct (string * string) option = None
         v199
-    | US46_0(v194, v195) -> (* Some *)
+    | US47_0(v194, v195) -> (* Some *)
         let v196 : struct (string * string) option = Some struct (v194, v195) 
         v196
-and method244 (v0 : string) : (Result<async_walkdir_DirEntry, async_walkdir_Error> -> struct (string * string) option) =
-    closure101(v0)
-and closure106 () struct (v0 : string, v1 : string) : struct (string * string) =
+and method248 (v0 : string) : (Result<async_walkdir_DirEntry, async_walkdir_Error> -> struct (string * string) option) =
+    closure104(v0)
+and closure109 () struct (v0 : string, v1 : string) : struct (string * string) =
     struct (v0, v1)
-and closure107 () struct (v0 : string, v1 : string) : US46 =
-    US46_0(v0, v1)
-and method249 () : (struct (string * string) -> US46) =
-    closure107()
-and method251 (v0 : US46) : string =
+and closure110 () struct (v0 : string, v1 : string) : US47 =
+    US47_0(v0, v1)
+and method253 () : (struct (string * string) -> US47) =
+    closure110()
+and method255 (v0 : US47) : string =
     let v1 : string = method14()
     let v2 : Mut3 = {l0 = v1} : Mut3
     let v3 : string = "{ "
@@ -23816,13 +23922,13 @@ and method251 (v0 : US46) : string =
     let v47 : unit = (fun () -> v46 (); v45) ()
     let v50 : string = v2.l0
     v50
-and method250 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : US46) : string =
-    let v9 : string = method251(v8)
+and method254 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : US47) : string =
+    let v9 : string = method255(v8)
     let v10 : int64 = v0.l0
     let v11 : string = "spiral.process_typescript"
     let v12 : string = $"{v6} {v7} #{v10} %s{v11} / {v9}"
     method18(v12)
-and closure108 (v0 : US46) () : unit =
+and closure111 (v0 : US47) () : unit =
     let v1 : US0 = US0_1
     let v2 : bool = method7(v1)
     if v2 then
@@ -23832,27 +23938,27 @@ and closure108 (v0 : US46) () : unit =
         let struct (v19 : Mut0, v20 : Mut1, v21 : Mut2, v22 : Mut3, v23 : Mut4, v24 : int64 option) = TraceState.trace_state.Value
         let v37 : string = method8(v19, v20, v21, v22, v23, v24)
         let v38 : string = method12()
-        let v39 : string = method250(v19, v20, v21, v22, v23, v24, v37, v38, v0)
+        let v39 : string = method254(v19, v20, v21, v22, v23, v24, v37, v38, v0)
         method19(v39)
-and method252 (v0 : string, v1 : string, v2 : US46) : unit =
+and method256 (v0 : string, v1 : string, v2 : US47) : unit =
     match v2 with
-    | US46_1 -> (* None *)
+    | US47_1 -> (* None *)
         let v10 : string = $"spiral.process_typescript / fable library not found / lib_path: {v1}"
         failwith<unit> v10
-    | US46_0(v3, v4) -> (* Some *)
+    | US47_0(v3, v4) -> (* Some *)
         let v5 : string = "ts"
         let v6 : string = $"fable-library-{v5}.{v4}"
         let v7 : string = method28(v1, v6)
         let v8 : string = $"fable_modules/fable-library-{v5}.{v4}"
         let v9 : string = method28(v0, v8)
         method205(v7, v9)
-and method253 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string) : string =
+and method257 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string) : string =
     let v10 : string = method215(v8, v9)
     let v11 : int64 = v0.l0
     let v12 : string = "spiral.process_typescript"
     let v13 : string = $"{v6} {v7} #{v11} %s{v12} / {v10}"
     method18(v13)
-and closure109 (v0 : string, v1 : int32) () : unit =
+and closure112 (v0 : string, v1 : int32) () : unit =
     let v2 : US0 = US0_4
     let v3 : bool = method7(v2)
     if v3 then
@@ -23862,9 +23968,9 @@ and closure109 (v0 : string, v1 : int32) () : unit =
         let struct (v20 : Mut0, v21 : Mut1, v22 : Mut2, v23 : Mut3, v24 : Mut4, v25 : int64 option) = TraceState.trace_state.Value
         let v38 : string = method8(v20, v21, v22, v23, v24, v25)
         let v39 : string = method45()
-        let v40 : string = method253(v20, v21, v22, v23, v24, v25, v38, v39, v1, v0)
+        let v40 : string = method257(v20, v21, v22, v23, v24, v25, v38, v39, v1, v0)
         method19(v40)
-and method255 (v0 : string) : string =
+and method259 (v0 : string) : string =
     let v1 : string = method14()
     let v2 : Mut3 = {l0 = v1} : Mut3
     let v3 : string = "{ "
@@ -23893,13 +23999,13 @@ and method255 (v0 : string) : string =
     let v44 : unit = (fun () -> v43 (); v42) ()
     let v47 : string = v2.l0
     v47
-and method254 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
-    let v9 : string = method255(v8)
+and method258 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
+    let v9 : string = method259(v8)
     let v10 : int64 = v0.l0
     let v11 : string = "spiral.process_typescript"
     let v12 : string = $"{v6} {v7} #{v10} %s{v11} / {v9}"
     method18(v12)
-and closure110 (v0 : string) () : unit =
+and closure113 (v0 : string) () : unit =
     let v1 : US0 = US0_1
     let v2 : bool = method7(v1)
     if v2 then
@@ -23909,24 +24015,24 @@ and closure110 (v0 : string) () : unit =
         let struct (v19 : Mut0, v20 : Mut1, v21 : Mut2, v22 : Mut3, v23 : Mut4, v24 : int64 option) = TraceState.trace_state.Value
         let v37 : string = method8(v19, v20, v21, v22, v23, v24)
         let v38 : string = method12()
-        let v39 : string = method254(v19, v20, v21, v22, v23, v24, v37, v38, v0)
+        let v39 : string = method258(v19, v20, v21, v22, v23, v24, v37, v38, v0)
         method19(v39)
-and method256 (v0 : UH5, v1 : UH5) : UH5 =
+and method260 (v0 : UH5, v1 : UH5) : UH5 =
     match v0 with
     | UH5_1(v2, v3, v4) -> (* Cons *)
-        let v5 : UH5 = method256(v4, v1)
+        let v5 : UH5 = method260(v4, v1)
         UH5_1(v2, v3, v5)
     | UH5_0 -> (* Nil *)
         v1
-and method257 (v0 : UH5, v1 : struct (string * string) list) : struct (string * string) list =
+and method261 (v0 : UH5, v1 : struct (string * string) list) : struct (string * string) list =
     match v0 with
     | UH5_1(v2, v3, v4) -> (* Cons *)
-        let v5 : struct (string * string) list = method257(v4, v1)
+        let v5 : struct (string * string) list = method261(v4, v1)
         let v6 : struct (string * string) list = struct (v2, v3) :: v5 
         v6
     | UH5_0 -> (* Nil *)
         v1
-and closure111 (v0 : string) () : string =
+and closure114 (v0 : string) () : string =
     let v1 : string = "\n"
     let v2 : (string []) = v0.Split v1 
     let v5 : string seq = v2 |> Seq.ofArray
@@ -23934,7 +24040,7 @@ and closure111 (v0 : string) () : string =
     let v9 : (string -> (string seq -> string)) = String.concat
     let v10 : (string seq -> string) = v9 v8
     v10 v5
-and method259 (v0 : exn, v1 : string, v2 : string, v3 : string) : string =
+and method263 (v0 : exn, v1 : string, v2 : string, v3 : string) : string =
     let v4 : string = method14()
     let v5 : Mut3 = {l0 = v4} : Mut3
     let v6 : string = "{ "
@@ -24057,13 +24163,13 @@ and method259 (v0 : exn, v1 : string, v2 : string, v3 : string) : string =
     let v177 : unit = (fun () -> v176 (); v175) ()
     let v180 : string = v5.l0
     v180
-and method258 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : exn, v9 : string, v10 : string, v11 : string) : string =
-    let v12 : string = method259(v8, v9, v10, v11)
+and method262 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : exn, v9 : string, v10 : string, v11 : string) : string =
+    let v12 : string = method263(v8, v9, v10, v11)
     let v13 : int64 = v0.l0
     let v14 : string = "spiral.process_typescript / Exception"
     let v15 : string = $"{v6} {v7} #{v13} %s{v14} / {v12}"
     method18(v15)
-and closure113 (v0 : string, v1 : string, v2 : string, v3 : exn) () : unit =
+and closure116 (v0 : string, v1 : string, v2 : string, v3 : exn) () : unit =
     let v4 : US0 = US0_4
     let v5 : bool = method7(v4)
     if v5 then
@@ -24073,105 +24179,20 @@ and closure113 (v0 : string, v1 : string, v2 : string, v3 : exn) () : unit =
         let struct (v22 : Mut0, v23 : Mut1, v24 : Mut2, v25 : Mut3, v26 : Mut4, v27 : int64 option) = TraceState.trace_state.Value
         let v40 : string = method8(v22, v23, v24, v25, v26, v27)
         let v41 : string = method45()
-        let v42 : string = method258(v22, v23, v24, v25, v26, v27, v40, v41, v3, v0, v2, v1)
+        let v42 : string = method262(v22, v23, v24, v25, v26, v27, v40, v41, v3, v0, v2, v1)
         method19(v42)
-and closure112 (v0 : string, v1 : string, v2 : string) (v3 : exn) : US5 =
+and closure115 (v0 : string, v1 : string, v2 : string) (v3 : exn) : US5 =
     let v4 : unit = ()
-    let v5 : (unit -> unit) = closure113(v0, v1, v2, v3)
-    let v6 : unit = (fun () -> v5 (); v4) ()
-    US5_1
-and method260 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string, v10 : string, v11 : string) : string =
-    let v12 : string = method145(v8, v9, v10, v11)
-    let v13 : int64 = v0.l0
-    let v14 : string = "spiral.process_typescript / error"
-    let v15 : string = $"{v6} {v7} #{v13} %s{v14} / {v12}"
-    method18(v15)
-and closure114 (v0 : string, v1 : string, v2 : int32, v3 : string) () : unit =
-    let v4 : US0 = US0_4
-    let v5 : bool = method7(v4)
-    if v5 then
-        let v6 : unit = ()
-        let v7 : (unit -> unit) = closure2()
-        let v8 : unit = (fun () -> v7 (); v6) ()
-        let struct (v22 : Mut0, v23 : Mut1, v24 : Mut2, v25 : Mut3, v26 : Mut4, v27 : int64 option) = TraceState.trace_state.Value
-        let v40 : string = method8(v22, v23, v24, v25, v26, v27)
-        let v41 : string = method45()
-        let v42 : string = method260(v22, v23, v24, v25, v26, v27, v40, v41, v2, v1, v0, v3)
-        method19(v42)
-and method261 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string) : string =
-    let v10 : string = method215(v8, v9)
-    let v11 : int64 = v0.l0
-    let v12 : string = "spiral.process_python"
-    let v13 : string = $"{v6} {v7} #{v11} %s{v12} / {v10}"
-    method18(v13)
-and closure115 (v0 : string, v1 : int32) () : unit =
-    let v2 : US0 = US0_4
-    let v3 : bool = method7(v2)
-    if v3 then
-        let v4 : unit = ()
-        let v5 : (unit -> unit) = closure2()
-        let v6 : unit = (fun () -> v5 (); v4) ()
-        let struct (v20 : Mut0, v21 : Mut1, v22 : Mut2, v23 : Mut3, v24 : Mut4, v25 : int64 option) = TraceState.trace_state.Value
-        let v38 : string = method8(v20, v21, v22, v23, v24, v25)
-        let v39 : string = method45()
-        let v40 : string = method261(v20, v21, v22, v23, v24, v25, v38, v39, v1, v0)
-        method19(v40)
-and method262 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
-    let v9 : string = method255(v8)
-    let v10 : int64 = v0.l0
-    let v11 : string = "spiral.process_python"
-    let v12 : string = $"{v6} {v7} #{v10} %s{v11} / {v9}"
-    method18(v12)
-and closure116 (v0 : string) () : unit =
-    let v1 : US0 = US0_1
-    let v2 : bool = method7(v1)
-    if v2 then
-        let v3 : unit = ()
-        let v4 : (unit -> unit) = closure2()
-        let v5 : unit = (fun () -> v4 (); v3) ()
-        let struct (v19 : Mut0, v20 : Mut1, v21 : Mut2, v22 : Mut3, v23 : Mut4, v24 : int64 option) = TraceState.trace_state.Value
-        let v37 : string = method8(v19, v20, v21, v22, v23, v24)
-        let v38 : string = method12()
-        let v39 : string = method262(v19, v20, v21, v22, v23, v24, v37, v38, v0)
-        method19(v39)
-and closure117 (v0 : string) () : string =
-    let v1 : string = "\n"
-    let v2 : (string []) = v0.Split v1 
-    let v5 : string seq = v2 |> Seq.ofArray
-    let v8 : string = method37()
-    let v9 : (string -> (string seq -> string)) = String.concat
-    let v10 : (string seq -> string) = v9 v8
-    v10 v5
-and method263 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : exn, v9 : string, v10 : string, v11 : string) : string =
-    let v12 : string = method259(v8, v9, v10, v11)
-    let v13 : int64 = v0.l0
-    let v14 : string = "spiral.process_python / Exception"
-    let v15 : string = $"{v6} {v7} #{v13} %s{v14} / {v12}"
-    method18(v15)
-and closure119 (v0 : string, v1 : string, v2 : string, v3 : exn) () : unit =
-    let v4 : US0 = US0_4
-    let v5 : bool = method7(v4)
-    if v5 then
-        let v6 : unit = ()
-        let v7 : (unit -> unit) = closure2()
-        let v8 : unit = (fun () -> v7 (); v6) ()
-        let struct (v22 : Mut0, v23 : Mut1, v24 : Mut2, v25 : Mut3, v26 : Mut4, v27 : int64 option) = TraceState.trace_state.Value
-        let v40 : string = method8(v22, v23, v24, v25, v26, v27)
-        let v41 : string = method45()
-        let v42 : string = method263(v22, v23, v24, v25, v26, v27, v40, v41, v3, v0, v2, v1)
-        method19(v42)
-and closure118 (v0 : string, v1 : string, v2 : string) (v3 : exn) : US5 =
-    let v4 : unit = ()
-    let v5 : (unit -> unit) = closure119(v0, v1, v2, v3)
+    let v5 : (unit -> unit) = closure116(v0, v1, v2, v3)
     let v6 : unit = (fun () -> v5 (); v4) ()
     US5_1
 and method264 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string, v10 : string, v11 : string) : string =
     let v12 : string = method145(v8, v9, v10, v11)
     let v13 : int64 = v0.l0
-    let v14 : string = "spiral.process_python / error"
+    let v14 : string = "spiral.process_typescript / error"
     let v15 : string = $"{v6} {v7} #{v13} %s{v14} / {v12}"
     method18(v15)
-and closure120 (v0 : string, v1 : string, v2 : int32, v3 : string) () : unit =
+and closure117 (v0 : string, v1 : string, v2 : int32, v3 : string) () : unit =
     let v4 : US0 = US0_4
     let v5 : bool = method7(v4)
     if v5 then
@@ -24183,7 +24204,92 @@ and closure120 (v0 : string, v1 : string, v2 : int32, v3 : string) () : unit =
         let v41 : string = method45()
         let v42 : string = method264(v22, v23, v24, v25, v26, v27, v40, v41, v2, v1, v0, v3)
         method19(v42)
-and method266 (v0 : std_string_String, v1 : clap_ArgMatches) : string =
+and method265 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string) : string =
+    let v10 : string = method215(v8, v9)
+    let v11 : int64 = v0.l0
+    let v12 : string = "spiral.process_python"
+    let v13 : string = $"{v6} {v7} #{v11} %s{v12} / {v10}"
+    method18(v13)
+and closure118 (v0 : string, v1 : int32) () : unit =
+    let v2 : US0 = US0_4
+    let v3 : bool = method7(v2)
+    if v3 then
+        let v4 : unit = ()
+        let v5 : (unit -> unit) = closure2()
+        let v6 : unit = (fun () -> v5 (); v4) ()
+        let struct (v20 : Mut0, v21 : Mut1, v22 : Mut2, v23 : Mut3, v24 : Mut4, v25 : int64 option) = TraceState.trace_state.Value
+        let v38 : string = method8(v20, v21, v22, v23, v24, v25)
+        let v39 : string = method45()
+        let v40 : string = method265(v20, v21, v22, v23, v24, v25, v38, v39, v1, v0)
+        method19(v40)
+and method266 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
+    let v9 : string = method259(v8)
+    let v10 : int64 = v0.l0
+    let v11 : string = "spiral.process_python"
+    let v12 : string = $"{v6} {v7} #{v10} %s{v11} / {v9}"
+    method18(v12)
+and closure119 (v0 : string) () : unit =
+    let v1 : US0 = US0_1
+    let v2 : bool = method7(v1)
+    if v2 then
+        let v3 : unit = ()
+        let v4 : (unit -> unit) = closure2()
+        let v5 : unit = (fun () -> v4 (); v3) ()
+        let struct (v19 : Mut0, v20 : Mut1, v21 : Mut2, v22 : Mut3, v23 : Mut4, v24 : int64 option) = TraceState.trace_state.Value
+        let v37 : string = method8(v19, v20, v21, v22, v23, v24)
+        let v38 : string = method12()
+        let v39 : string = method266(v19, v20, v21, v22, v23, v24, v37, v38, v0)
+        method19(v39)
+and closure120 (v0 : string) () : string =
+    let v1 : string = "\n"
+    let v2 : (string []) = v0.Split v1 
+    let v5 : string seq = v2 |> Seq.ofArray
+    let v8 : string = method37()
+    let v9 : (string -> (string seq -> string)) = String.concat
+    let v10 : (string seq -> string) = v9 v8
+    v10 v5
+and method267 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : exn, v9 : string, v10 : string, v11 : string) : string =
+    let v12 : string = method263(v8, v9, v10, v11)
+    let v13 : int64 = v0.l0
+    let v14 : string = "spiral.process_python / Exception"
+    let v15 : string = $"{v6} {v7} #{v13} %s{v14} / {v12}"
+    method18(v15)
+and closure122 (v0 : string, v1 : string, v2 : string, v3 : exn) () : unit =
+    let v4 : US0 = US0_4
+    let v5 : bool = method7(v4)
+    if v5 then
+        let v6 : unit = ()
+        let v7 : (unit -> unit) = closure2()
+        let v8 : unit = (fun () -> v7 (); v6) ()
+        let struct (v22 : Mut0, v23 : Mut1, v24 : Mut2, v25 : Mut3, v26 : Mut4, v27 : int64 option) = TraceState.trace_state.Value
+        let v40 : string = method8(v22, v23, v24, v25, v26, v27)
+        let v41 : string = method45()
+        let v42 : string = method267(v22, v23, v24, v25, v26, v27, v40, v41, v3, v0, v2, v1)
+        method19(v42)
+and closure121 (v0 : string, v1 : string, v2 : string) (v3 : exn) : US5 =
+    let v4 : unit = ()
+    let v5 : (unit -> unit) = closure122(v0, v1, v2, v3)
+    let v6 : unit = (fun () -> v5 (); v4) ()
+    US5_1
+and method268 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string, v10 : string, v11 : string) : string =
+    let v12 : string = method145(v8, v9, v10, v11)
+    let v13 : int64 = v0.l0
+    let v14 : string = "spiral.process_python / error"
+    let v15 : string = $"{v6} {v7} #{v13} %s{v14} / {v12}"
+    method18(v15)
+and closure123 (v0 : string, v1 : string, v2 : int32, v3 : string) () : unit =
+    let v4 : US0 = US0_4
+    let v5 : bool = method7(v4)
+    if v5 then
+        let v6 : unit = ()
+        let v7 : (unit -> unit) = closure2()
+        let v8 : unit = (fun () -> v7 (); v6) ()
+        let struct (v22 : Mut0, v23 : Mut1, v24 : Mut2, v25 : Mut3, v26 : Mut4, v27 : int64 option) = TraceState.trace_state.Value
+        let v40 : string = method8(v22, v23, v24, v25, v26, v27)
+        let v41 : string = method45()
+        let v42 : string = method268(v22, v23, v24, v25, v26, v27, v40, v41, v2, v1, v0, v3)
+        method19(v42)
+and method270 (v0 : std_string_String, v1 : clap_ArgMatches) : string =
     let v2 : string = method14()
     let v3 : Mut3 = {l0 = v2} : Mut3
     let v4 : string = "{ "
@@ -24314,13 +24420,13 @@ and method266 (v0 : std_string_String, v1 : clap_ArgMatches) : string =
     let v139 : unit = (fun () -> v138 (); v137) ()
     let v142 : string = v3.l0
     v142
-and method265 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : std_string_String, v9 : clap_ArgMatches) : string =
-    let v10 : string = method266(v8, v9)
+and method269 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : std_string_String, v9 : clap_ArgMatches) : string =
+    let v10 : string = method270(v8, v9)
     let v11 : int64 = v0.l0
     let v12 : string = "spiral.run / invalid subcommand"
     let v13 : string = $"{v6} {v7} #{v11} %s{v12} / {v10}"
     method18(v13)
-and closure121 (v0 : clap_ArgMatches, v1 : std_string_String) () : unit =
+and closure124 (v0 : clap_ArgMatches, v1 : std_string_String) () : unit =
     let v2 : US0 = US0_1
     let v3 : bool = method7(v2)
     if v3 then
@@ -24330,9 +24436,9 @@ and closure121 (v0 : clap_ArgMatches, v1 : std_string_String) () : unit =
         let struct (v20 : Mut0, v21 : Mut1, v22 : Mut2, v23 : Mut3, v24 : Mut4, v25 : int64 option) = TraceState.trace_state.Value
         let v38 : string = method8(v20, v21, v22, v23, v24, v25)
         let v39 : string = method12()
-        let v40 : string = method265(v20, v21, v22, v23, v24, v25, v38, v39, v1, v0)
+        let v40 : string = method269(v20, v21, v22, v23, v24, v25, v38, v39, v1, v0)
         method19(v40)
-and closure122 () (v0 : serde_json_Error) : string =
+and closure125 () (v0 : serde_json_Error) : string =
     let v1 : unit = ()
     
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -24372,8 +24478,8 @@ and closure122 () (v0 : serde_json_Error) : string =
     let v25 : string = "fable_library_rust::String_::fromString($0)"
     let v26 : string = Fable.Core.RustInterop.emitRustExpr v20 v25 
     v26
-and method267 () : (serde_json_Error -> string) =
-    closure122()
+and method271 () : (serde_json_Error -> string) =
+    closure125()
 and method20 (v0 : US0, v1 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_Future<Result<string, string>>>>> =
     let v2 : string = "true; let __future_init = Box::pin(/*"
     let v3 : bool = Fable.Core.RustInterop.emitRustExpr () v2 
@@ -27817,7 +27923,7 @@ pwsh_replace_html_result: {v1268}"
                                                     | _ ->
                                                         let v3039 : string = ""
                                                         v3039
-                                                let v3041 : string = $"'workspace/target/release/spiral_wasm -w {v3033} -t Debug {v3040}'"
+                                                let v3041 : string = $"'deps/spiral/workspace/target/release/spiral_wasm -w {v3033} -t Debug {v3040}'"
                                                 let v3042 : string = "AUTOMATION"
                                                 let v3043 : string = method3(v3042)
                                                 let v3044 : string = "scripts/invoke-block.ps1"
@@ -28262,13 +28368,13 @@ pwsh_replace_html_result: {v1268}"
                                         let v3593 : string = "lib/typescript/fable/fable_modules"
                                         let v3594 : string = method28(v3582, v3593)
                                         let v3595 : string = $"fable-library-{v3436}"
-                                        let v3596 : string = method240(v3595)
+                                        let v3596 : string = method244(v3595)
                                         let v3597 : string = "async_walkdir::WalkDir::new(&*$0)"
                                         let v3598 : async_walkdir_WalkDir = Fable.Core.RustInterop.emitRustExpr v3594 v3597 
                                         let v3599 : string = "async_walkdir::WalkDir::filter($0, move |x| $1(x))"
-                                        let v3600 : (async_walkdir_DirEntry -> std_pin_Pin<Box<LifetimeJoin<Dyn<std_future_Future<async_walkdir_Filtering>>, Send<Dyn<std_future_Future<async_walkdir_Filtering>>>>>>) = closure98(v3595)
+                                        let v3600 : (async_walkdir_DirEntry -> std_pin_Pin<Box<LifetimeJoin<Dyn<std_future_Future<async_walkdir_Filtering>>, Send<Dyn<std_future_Future<async_walkdir_Filtering>>>>>>) = closure101(v3595)
                                         let v3601 : async_walkdir_WalkDir = Fable.Core.RustInterop.emitRustExpr struct (v3598, v3600) v3599 
-                                        let v3602 : (Result<async_walkdir_DirEntry, async_walkdir_Error> -> struct (string * string) option) = method244(v3596)
+                                        let v3602 : (Result<async_walkdir_DirEntry, async_walkdir_Error> -> struct (string * string) option) = method248(v3596)
                                         let v3603 : string = "futures::stream::StreamExt::filter_map(v3601, |x| async { v3602(x) })"
                                         let v3604 : _ = Fable.Core.RustInterop.emitRustExpr () v3603 
                                         let v3605 : string = "Box::pin(futures::stream::StreamExt::collect(v3604))"
@@ -28278,29 +28384,29 @@ pwsh_replace_html_result: {v1268}"
                                         let v3609 : string = "rayon::iter::IntoParallelIterator::into_par_iter($0)"
                                         let v3610 : rayon_vec_IntoIter<struct (string * string)> = Fable.Core.RustInterop.emitRustExpr v3608 v3609 
                                         let v3611 : string = "rayon::iter::ParallelIterator::map($0, |x| $1(x))"
-                                        let v3612 : (struct (string * string) -> struct (string * string)) = closure106()
+                                        let v3612 : (struct (string * string) -> struct (string * string)) = closure109()
                                         let v3613 : rayon_iter_Map<rayon_vec_IntoIter<struct (string * string)>> = Fable.Core.RustInterop.emitRustExpr struct (v3610, v3612) v3611 
                                         let v3614 : string = "rayon::iter::ParallelIterator::collect($0)"
                                         let v3615 : Vec<struct (string * string)> = Fable.Core.RustInterop.emitRustExpr v3613 v3614 
                                         let v3616 : string = "fable_library_rust::NativeArray_::array_from($0.clone())"
                                         let v3617 : (struct (string * string) []) = Fable.Core.RustInterop.emitRustExpr v3615 v3616 
                                         let v3618 : struct (string * string) option = v3617 |> Array.tryItem 0 
-                                        let v3619 : (struct (string * string) -> US46) = method249()
-                                        let v3620 : US46 option = v3618 |> Option.map v3619 
-                                        let v3632 : US46 = US46_1
-                                        let v3633 : US46 = v3620 |> Option.defaultValue v3632 
+                                        let v3619 : (struct (string * string) -> US47) = method253()
+                                        let v3620 : US47 option = v3618 |> Option.map v3619 
+                                        let v3632 : US47 = US47_1
+                                        let v3633 : US47 = v3620 |> Option.defaultValue v3632 
                                         let v3637 : unit = ()
-                                        let v3638 : (unit -> unit) = closure108(v3633)
+                                        let v3638 : (unit -> unit) = closure111(v3633)
                                         let v3639 : unit = (fun () -> v3638 (); v3637) ()
-                                        method252(v3587, v3594, v3633)
+                                        method256(v3587, v3594, v3633)
                                         let v3679 : US35 = US35_1
                                         let struct (v3680 : int32, v3681 : string) = method206(v3679, v3587, v3436, v3592, v3568)
-                                        method252(v3587, v3594, v3633)
+                                        method256(v3587, v3594, v3633)
                                         let v3682 : bool = v3680 <> 0 
                                         let struct (v4097 : US5, v4098 : US5, v4099 : US5, v4100 : US5) =
                                             if v3682 then
                                                 let v3685 : unit = ()
-                                                let v3686 : (unit -> unit) = closure109(v3681, v3680)
+                                                let v3686 : (unit -> unit) = closure112(v3681, v3680)
                                                 let v3687 : unit = (fun () -> v3686 (); v3685) ()
                                                 let v3727 : US5 = US5_0(v3436)
                                                 let v3728 : US5 = US5_1
@@ -28369,7 +28475,7 @@ pwsh_replace_html_result: {v1268}"
                                                 let v3784 : string = $"{v3583}.{v3436}"
                                                 let v3785 : string = method28(v3587, v3784)
                                                 let v3786 : unit = ()
-                                                let v3787 : (unit -> unit) = closure110(v3785)
+                                                let v3787 : (unit -> unit) = closure113(v3785)
                                                 let v3788 : unit = (fun () -> v3787 (); v3786) ()
                                                 let v3828 : unit = ()
                                                 
@@ -28607,9 +28713,9 @@ pwsh_replace_html_result: {v1268}"
                                                 let v3968 : string = "Verbose"
                                                 let v3969 : UH5 = UH5_0
                                                 let v3970 : UH5 = UH5_1(v3967, v3968, v3969)
-                                                let v3971 : UH5 = method256(v3966, v3970)
+                                                let v3971 : UH5 = method260(v3966, v3970)
                                                 let v3972 : struct (string * string) list = []
-                                                let v3973 : struct (string * string) list = method257(v3971, v3972)
+                                                let v3973 : struct (string * string) list = method261(v3971, v3972)
                                                 let v3974 : (struct (string * string) list -> (struct (string * string) [])) = List.toArray
                                                 let v3975 : (struct (string * string) []) = v3974 v3973
                                                 let v3978 : System.Threading.CancellationToken option = None
@@ -28684,8 +28790,8 @@ pwsh_replace_html_result: {v1268}"
                                                 let struct (v4093 : US5, v4094 : US5, v4095 : US5, v4096 : US5) =
                                                     if v4025 then
                                                         let v4026 : (string -> US5) = closure61()
-                                                        let v4027 : (unit -> string) = closure111(v4005)
-                                                        let v4028 : (exn -> US5) = closure112(v3785, v4005, v4024)
+                                                        let v4027 : (unit -> string) = closure114(v4005)
+                                                        let v4028 : (exn -> US5) = closure115(v3785, v4005, v4024)
                                                         let v4029 : US5 = US5_1
                                                         let result = ref v4029
                                                         try
@@ -28710,7 +28816,7 @@ pwsh_replace_html_result: {v1268}"
                                                         struct (v4043, v4044, v4045, v4046)
                                                     else
                                                         let v4047 : unit = ()
-                                                        let v4048 : (unit -> unit) = closure114(v3785, v4005, v4004, v4024)
+                                                        let v4048 : (unit -> unit) = closure117(v3785, v4005, v4004, v4024)
                                                         let v4049 : unit = (fun () -> v4048 (); v4047) ()
                                                         let v4089 : US5 = US5_0(v3436)
                                                         let v4090 : US5 = US5_1
@@ -29069,7 +29175,7 @@ pwsh_replace_html_result: {v1268}"
                                                 let struct (v4818 : US5, v4819 : US5, v4820 : US5, v4821 : US5) =
                                                     if v4452 then
                                                         let v4455 : unit = ()
-                                                        let v4456 : (unit -> unit) = closure115(v4451, v4450)
+                                                        let v4456 : (unit -> unit) = closure118(v4451, v4450)
                                                         let v4457 : unit = (fun () -> v4456 (); v4455) ()
                                                         let v4497 : US5 = US5_0(v4286)
                                                         let v4498 : US5 = US5_1
@@ -29138,7 +29244,7 @@ pwsh_replace_html_result: {v1268}"
                                                         let v4554 : string = $"{v4433}.{v4286}"
                                                         let v4555 : string = method28(v4437, v4554)
                                                         let v4556 : unit = ()
-                                                        let v4557 : (unit -> unit) = closure116(v4555)
+                                                        let v4557 : (unit -> unit) = closure119(v4555)
                                                         let v4558 : unit = (fun () -> v4557 (); v4556) ()
                                                         let v4598 : unit = ()
                                                         
@@ -29380,8 +29486,8 @@ pwsh_replace_html_result: {v1268}"
                                                         let struct (v4814 : US5, v4815 : US5, v4816 : US5, v4817 : US5) =
                                                             if v4746 then
                                                                 let v4747 : (string -> US5) = closure61()
-                                                                let v4748 : (unit -> string) = closure117(v4726)
-                                                                let v4749 : (exn -> US5) = closure118(v4555, v4726, v4745)
+                                                                let v4748 : (unit -> string) = closure120(v4726)
+                                                                let v4749 : (exn -> US5) = closure121(v4555, v4726, v4745)
                                                                 let v4750 : US5 = US5_1
                                                                 let result = ref v4750
                                                                 try
@@ -29406,7 +29512,7 @@ pwsh_replace_html_result: {v1268}"
                                                                 struct (v4764, v4765, v4766, v4767)
                                                             else
                                                                 let v4768 : unit = ()
-                                                                let v4769 : (unit -> unit) = closure120(v4555, v4726, v4725, v4745)
+                                                                let v4769 : (unit -> unit) = closure123(v4555, v4726, v4725, v4745)
                                                                 let v4770 : unit = (fun () -> v4769 (); v4768) ()
                                                                 let v4810 : US5 = US5_0(v4286)
                                                                 let v4811 : US5 = US5_1
@@ -29417,7 +29523,7 @@ pwsh_replace_html_result: {v1268}"
                                                 struct (v4818, v4819, v4820, v4821)
                                             else
                                                 let v4822 : unit = ()
-                                                let v4823 : (unit -> unit) = closure121(v30, v29)
+                                                let v4823 : (unit -> unit) = closure124(v30, v29)
                                                 let v4824 : unit = (fun () -> v4823 (); v4822) ()
                                                 let v4864 : US5 = US5_1
                                                 let v4865 : US5 = US5_1
@@ -29633,7 +29739,7 @@ pwsh_replace_html_result: {v1268}"
     let v5027 : std_collections_BTreeMap<std_string_String, std_string_String> = Fable.Core.RustInterop.emitRustExpr () v5026 
     let v5028 : string = "serde_json::to_string(&v5027)"
     let v5029 : Result<std_string_String, serde_json_Error> = Fable.Core.RustInterop.emitRustExpr () v5028 
-    let v5030 : (serde_json_Error -> string) = method267()
+    let v5030 : (serde_json_Error -> string) = method271()
     let v5031 : unit = ()
     
 #if FABLE_COMPILER || WASM || CONTRACT
