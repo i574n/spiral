@@ -49,7 +49,10 @@ if (!$SkipPreBuild) {
 
     { BuildFable $targetDir $projectName "rs" } | Invoke-Block
 
-    $path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
+    $path = "$targetDir/target/rs/$projectName.rs"
+    if (!($path | Test-Path)) {
+        $path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
+    }
     if (!($path | Test-Path)) {
         $path = "$targetDir/target/rs/target/Builder/$projectName/$projectName.rs"
     }
@@ -60,7 +63,9 @@ if (!$SkipPreBuild) {
         -replace ".fsx`"]", ".rs`"]" `
         -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
         -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/lib" `
+        -replace "`"../../../../../lib", "`"../../deps/polyglot/lib" `
         -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
+        -replace "`"./lib", "`"../../deps/polyglot/lib" `
         | FixRust `
         | Set-Content "$projectName.rs"
 
