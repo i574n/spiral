@@ -29,15 +29,21 @@ $targetDir = GetTargetDir $projectName
 
 { BuildFable $targetDir $projectName "rs" } | Invoke-Block
 
-$path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
+$path = "$targetDir/target/rs/$projectName.rs"
+if (!(Test-Path $path)) {
+    $path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
+}
 if (!(Test-Path $path)) {
     $path = "$targetDir/target/rs/target/Builder/$projectName/$projectName.rs"
 }
+Write-Output "spiral/apps/wasm/build.ps1 / path: $path"
 (Get-Content $path) `
     -replace ".fsx`"]", ".rs`"]" `
     -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
     -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/lib" `
+    -replace "`"../../../../../lib", "`"../../deps/polyglot/lib" `
     -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
+    -replace "`"./lib", "`"../../deps/polyglot/lib" `
     | FixRust `
     | Set-Content "$projectName.rs"
 

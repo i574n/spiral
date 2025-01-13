@@ -5,11 +5,15 @@ param(
     $SkipPreBuild,
     $ScriptDir = $PSScriptRoot
 )
-Set-Location $ScriptDir
+$ScriptDir | Set-Location
 $ErrorActionPreference = "Stop"
 . ../../deps/polyglot/scripts/core.ps1
 . ../../deps/polyglot/lib/spiral/lib.ps1
 
+$ResolvedScriptDir = ResolveLink $ScriptDir
+$ResolvedScriptDir | Set-Location
+
+Write-Output "spiral/apps/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScriptDir: $ResolvedScriptDir"
 
 $projectName = "spiral"
 
@@ -27,7 +31,7 @@ if (!$SkipPreBuild -and !$SkipFsx) {
         { ls } | Invoke-Block -Location ../../workspace/target/release
 
         $workingDirectory = ResolveLink (GetFullPath "../../deps/polyglot")
-        { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --execute-command "../../workspace/target/release/spiral$(_exe) dib --path $ScriptDir/$projectName.dib --working-directory $workingDirectory" } | Invoke-Block -Retries 3
+        { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --execute-command "../../workspace/target/release/spiral$(_exe) dib --path $ResolvedScriptDir/$projectName.dib --working-directory $workingDirectory" } | Invoke-Block -Retries 3
     }
 
     { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "$projectName.dib" spi } | Invoke-Block
@@ -45,21 +49,28 @@ if (!$SkipPreBuild) {
 
     { BuildFable $targetDir $projectName "rs" } | Invoke-Block
 
-    $path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
-    if (!(Test-Path $path)) {
+    $path = "$targetDir/target/rs/$projectName.rs"
+    if (!($path | Test-Path)) {
+        $path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
+    }
+    if (!($path | Test-Path)) {
         $path = "$targetDir/target/rs/target/Builder/$projectName/$projectName.rs"
     }
+
+    Write-Output "spiral/apps/spiral/build.ps1 / path: $path"
 
     (Get-Content $path) `
         -replace ".fsx`"]", ".rs`"]" `
         -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
         -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/lib" `
+        -replace "`"../../../../../lib", "`"../../deps/polyglot/lib" `
         -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
+        -replace "`"./lib", "`"../../deps/polyglot/lib" `
         | FixRust `
         | Set-Content "$projectName.rs"
 
     if ($env:CI) {
-        Remove-Item $targetDir -Recurse -Force -ErrorAction Ignore
+        $targetDir | Remove-Item -Recurse -Force -ErrorAction Ignore
     }
 }
 
