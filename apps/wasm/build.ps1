@@ -6,7 +6,7 @@ param(
 Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 . ../../deps/polyglot/scripts/core.ps1
-. ../../deps/polyglot/lib/spiral/lib.ps1
+. ../../deps/polyglot/deps/spiral/lib/spiral/lib.ps1
 
 
 $projectName = "spiral_wasm"
@@ -40,8 +40,9 @@ Write-Output "spiral/apps/wasm/build.ps1 / path: $path"
 (Get-Content $path) `
     -replace ".fsx`"]", ".rs`"]" `
     -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
-    -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/lib" `
-    -replace "`"../../../../../lib", "`"../../deps/polyglot/lib" `
+    -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/deps/spiral/lib" `
+    -replace "`"../../../../../lib", "`"../../deps/polyglot/deps/spiral/lib" `
+    -replace "`"../../../../../deps/spiral", "`"../.." `
     -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
     -replace "`"./lib", "`"../../deps/polyglot/lib" `
     | FixRust `
