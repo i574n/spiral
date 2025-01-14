@@ -640,34 +640,6 @@ inl find_parent file_type name root_dir =
             | None => ($'$"""No parent for {if !is_file then "file" else "dir"} \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"""' : string) |> Error
     loop root_dir
 
-/// ### get_workspace_root
-inl get_workspace_root () =
-    (None, [ get_source_directory; get_current_directory ])
-    ||> listm.fold fun acc path =>
-        match acc with
-        | Some path => Some path
-        | None =>
-            path ()
-            |> find_parent Directory ("polyglot" </> "workspace")
-            |> function
-                | Ok path => Some path
-                | Error error =>
-                    trace Warning
-                        fun () => "file_system.get_workspace_root"
-                        fun () => { error }
-                    None
-    |> optionm.value
-    |> fun root => root </> "polyglot"
-
-/// ### get_workspace_root_external
-inl get_workspace_root_external () =
-    inl workspace_root = get_workspace_root ()
-    inl current_dir = get_current_directory () |> sm'.to_lower
-    inl workspace_root = workspace_root |> sm'.to_lower
-    if current_dir |> sm'.starts_with workspace_root
-    then Error workspace_root
-    else Ok workspace_root
-
 /// ### file_delete
 inl file_delete (path : string) : () =
     run_target function
@@ -771,6 +743,37 @@ let normalize_path (path : string) : string =
         else
             inl path = path |> sm'.replace_regex @"^\\\\\?\\" ""
             $'$"{!path.[0] |> string |> _.ToLower()}{!path.[1..]}"' |> sm'.replace "\\" "/"
+
+/// ### get_workspace_root
+inl get_workspace_root () =
+    inl dirs =
+        [ get_source_directory; get_current_directory ]
+        |> listm.map fun dir => fun () => dir () |> normalize_path
+    (None, dirs)
+    ||> listm.fold fun acc path =>
+        match acc with
+        | Some path => Some path
+        | None =>
+            path ()
+            |> find_parent Directory ("spiral" </> "workspace")
+            |> function
+                | Ok path => Some path
+                | Error error =>
+                    trace Warning
+                        fun () => "file_system.get_workspace_root"
+                        fun () => { error }
+                    None
+    |> optionm.value
+    |> fun root => root </> "polyglot"
+
+/// ### get_workspace_root_external
+inl get_workspace_root_external () =
+    inl workspace_root = get_workspace_root ()
+    inl current_dir = get_current_directory () |> sm'.to_lower
+    inl workspace_root = workspace_root |> sm'.to_lower
+    if current_dir |> sm'.starts_with workspace_root
+    then Error workspace_root
+    else Ok workspace_root
 
 /// ### get_full_path
 let get_full_path (path : string) : string =

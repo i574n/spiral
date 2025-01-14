@@ -17089,42 +17089,45 @@ and method130 () : string =
     v84
 and closure59 () () : string =
     let v0 : string = __SOURCE_DIRECTORY__
-    let v1 : string = "polyglot"
-    let v2 : string = "workspace"
-    let v3 : string = method86(v1, v2)
-    let v4 : US16 = method126(v3, v0)
-    let v52 : US5 =
-        match v4 with
-        | US16_1(v7) -> (* Error *)
-            let v8 : unit = ()
-            let v9 : (unit -> unit) = closure60(v7)
-            let v10 : unit = (fun () -> v9 (); v8) ()
+    let v1 : string = method106(v0)
+    let v2 : string = "spiral"
+    let v3 : string = "workspace"
+    let v4 : string = method86(v2, v3)
+    let v5 : US16 = method126(v4, v1)
+    let v53 : US5 =
+        match v5 with
+        | US16_1(v8) -> (* Error *)
+            let v9 : unit = ()
+            let v10 : (unit -> unit) = closure60(v8)
+            let v11 : unit = (fun () -> v10 (); v9) ()
             US5_1
-        | US16_0(v5) -> (* Ok *)
-            US5_0(v5)
-    let v107 : US5 =
-        match v52 with
+        | US16_0(v6) -> (* Ok *)
+            US5_0(v6)
+    let v109 : US5 =
+        match v53 with
         | US5_1 -> (* None *)
-            let v55 : string = method130()
-            let v56 : string = method86(v1, v2)
-            let v57 : US16 = method126(v56, v55)
-            match v57 with
-            | US16_1(v60) -> (* Error *)
-                let v61 : unit = ()
-                let v62 : (unit -> unit) = closure60(v60)
-                let v63 : unit = (fun () -> v62 (); v61) ()
+            let v56 : string = method130()
+            let v57 : string = method106(v56)
+            let v58 : string = method86(v2, v3)
+            let v59 : US16 = method126(v58, v57)
+            match v59 with
+            | US16_1(v62) -> (* Error *)
+                let v63 : unit = ()
+                let v64 : (unit -> unit) = closure60(v62)
+                let v65 : unit = (fun () -> v64 (); v63) ()
                 US5_1
-            | US16_0(v58) -> (* Ok *)
-                US5_0(v58)
-        | US5_0(v53) -> (* Some *)
-            US5_0(v53)
-    let v111 : string =
-        match v107 with
+            | US16_0(v60) -> (* Ok *)
+                US5_0(v60)
+        | US5_0(v54) -> (* Some *)
+            US5_0(v54)
+    let v113 : string =
+        match v109 with
         | US5_1 -> (* None *)
             failwith<string> "Option does not have a value."
-        | US5_0(v108) -> (* Some *)
-            v108
-    method86(v111, v1)
+        | US5_0(v110) -> (* Some *)
+            v110
+    let v114 : string = "polyglot"
+    method86(v113, v114)
 and closure62 (v0 : exn) () : exn =
     v0
 and method131 (v0 : string) : unit =
@@ -17189,49 +17192,52 @@ and method131 (v0 : string) : unit =
         let v22 : System.Guid = method78(v19, v13)
         let v23 : string = $"{v2}_{v22}.txt"
         let v24 : string = __SOURCE_DIRECTORY__
-        let v25 : string = "polyglot"
-        let v26 : string = "workspace"
-        let v27 : string = method86(v25, v26)
-        let v28 : US16 = method126(v27, v24)
-        let v76 : US5 =
-            match v28 with
-            | US16_1(v31) -> (* Error *)
-                let v32 : unit = ()
-                let v33 : (unit -> unit) = closure60(v31)
-                let v34 : unit = (fun () -> v33 (); v32) ()
+        let v25 : string = method106(v24)
+        let v26 : string = "spiral"
+        let v27 : string = "workspace"
+        let v28 : string = method86(v26, v27)
+        let v29 : US16 = method126(v28, v25)
+        let v77 : US5 =
+            match v29 with
+            | US16_1(v32) -> (* Error *)
+                let v33 : unit = ()
+                let v34 : (unit -> unit) = closure60(v32)
+                let v35 : unit = (fun () -> v34 (); v33) ()
                 US5_1
-            | US16_0(v29) -> (* Ok *)
-                US5_0(v29)
-        let v131 : US5 =
-            match v76 with
+            | US16_0(v30) -> (* Ok *)
+                US5_0(v30)
+        let v133 : US5 =
+            match v77 with
             | US5_1 -> (* None *)
-                let v79 : string = method130()
-                let v80 : string = method86(v25, v26)
-                let v81 : US16 = method126(v80, v79)
-                match v81 with
-                | US16_1(v84) -> (* Error *)
-                    let v85 : unit = ()
-                    let v86 : (unit -> unit) = closure60(v84)
-                    let v87 : unit = (fun () -> v86 (); v85) ()
+                let v80 : string = method130()
+                let v81 : string = method106(v80)
+                let v82 : string = method86(v26, v27)
+                let v83 : US16 = method126(v82, v81)
+                match v83 with
+                | US16_1(v86) -> (* Error *)
+                    let v87 : unit = ()
+                    let v88 : (unit -> unit) = closure60(v86)
+                    let v89 : unit = (fun () -> v88 (); v87) ()
                     US5_1
-                | US16_0(v82) -> (* Ok *)
-                    US5_0(v82)
-            | US5_0(v77) -> (* Some *)
-                US5_0(v77)
-        let v135 : string =
-            match v131 with
+                | US16_0(v84) -> (* Ok *)
+                    US5_0(v84)
+            | US5_0(v78) -> (* Some *)
+                US5_0(v78)
+        let v137 : string =
+            match v133 with
             | US5_1 -> (* None *)
                 failwith<string> "Option does not have a value."
-            | US5_0(v132) -> (* Some *)
-                v132
-        let v136 : string = method86(v135, v25)
-        let v137 : string = "target/trace"
-        let v138 : string = method86(v136, v137)
-        let v139 : System_IO_DirectoryInfo = method99(v138)
-        let v140 : string = method86(v138, v23)
-        let v141 : Async<unit> = method35(v140, v0)
+            | US5_0(v134) -> (* Some *)
+                v134
+        let v138 : string = "polyglot"
+        let v139 : string = method86(v137, v138)
+        let v140 : string = "target/trace"
+        let v141 : string = method86(v139, v140)
+        let v142 : System_IO_DirectoryInfo = method99(v141)
+        let v143 : string = method86(v141, v23)
+        let v144 : Async<unit> = method35(v143, v0)
         (* run_target_args'
-        let v142 : unit = ()
+        let v145 : unit = ()
         run_target_args' *)
         
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -17249,29 +17255,29 @@ and method131 (v0 : string) : unit =
         null |> unbox<unit>
         #endif
 #if FABLE_COMPILER_PYTHON
-        let v143 : (Async<unit> -> unit) = Async.RunSynchronously
-        v143 v141
+        let v146 : (Async<unit> -> unit) = Async.RunSynchronously
+        v146 v144
         #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-        let v144 : (Async<unit> -> unit) = Async.RunSynchronously
-        v144 v141
+        let v147 : (Async<unit> -> unit) = Async.RunSynchronously
+        v147 v144
         #endif
 #else
-        let v145 : (Async<unit> -> unit) = Async.RunSynchronously
-        v145 v141
+        let v148 : (Async<unit> -> unit) = Async.RunSynchronously
+        v148 v144
         #endif
         // run_target_args' is_unit
         (* indent
         ()
     indent *)
     with ex ->
-        let v290 : exn = ex
-        let v291 : (unit -> exn) = closure62(v290)
-        let v292 : string = $"file_system.trace_file / ex: %A{v291}"
-        let v293 : unit = ()
-        let v294 : (unit -> unit) = closure9(v292)
-        let v295 : unit = (fun () -> v294 (); v293) ()
-        method131(v292)
+        let v296 : exn = ex
+        let v297 : (unit -> exn) = closure62(v296)
+        let v298 : string = $"file_system.trace_file / ex: %A{v297}"
+        let v299 : unit = ()
+        let v300 : (unit -> unit) = closure9(v298)
+        let v301 : unit = (fun () -> v300 (); v299) ()
+        method131(v298)
         (* indent
         ()
     indent *)

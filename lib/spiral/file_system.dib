@@ -1073,7 +1073,7 @@ inl find_parent file_type name root_dir =
 
 //// test
 
-a ;[ Directory, ".paket"; File, "paket.dependencies" ]
+a ;[ Directory, "workspace"; File, "README.md" ]
 |> am.map fun file_type, file =>
     get_source_directory ()
     |> find_parent file_type file
@@ -1082,14 +1082,14 @@ a ;[ Directory, ".paket"; File, "paket.dependencies" ]
     |> directory_info_name
 |> am'.distinct
 |> fun (a x : _ int _) => x
-|> _assert_eq' ;[ "polyglot" ]
+|> _assert_eq' ;[ "spiral" ]
 
 #!spiral
 
 //// test
 ///! rust
 
-a ;[ Directory, ".paket"; File, "paket.dependencies" ]
+a ;[ Directory, "workspace"; File, "README.md" ]
 |> am.map fun file_type, file =>
     fun () =>
         join
@@ -1109,53 +1109,6 @@ a ;[ Directory, ".paket"; File, "paket.dependencies" ]
 |> fun result =>
     result |> am'.length |> _assert_eq 1i32
     index result 0i32 |> _assert_eq "polyglot"
-
-#!markdown
-
-### get_workspace_root
-
-#!spiral
-
-inl get_workspace_root () =
-    (None, [ get_source_directory; get_current_directory ])
-    ||> listm.fold fun acc path =>
-        match acc with
-        | Some path => Some path
-        | None =>
-            path ()
-            |> find_parent Directory ("polyglot" </> "workspace")
-            |> function
-                | Ok path => Some path
-                | Error error =>
-                    trace Warning
-                        fun () => "file_system.get_workspace_root"
-                        fun () => { error }
-                    None
-    |> optionm.value
-    |> fun root => root </> "polyglot"
-
-#!markdown
-
-### get_workspace_root_external
-
-#!spiral
-
-inl get_workspace_root_external () =
-    inl workspace_root = get_workspace_root ()
-    inl current_dir = get_current_directory () |> sm'.to_lower
-    inl workspace_root = workspace_root |> sm'.to_lower
-    if current_dir |> sm'.starts_with workspace_root
-    then Error workspace_root
-    else Ok workspace_root
-
-#!spiral
-
-//// test
-
-get_workspace_root_external ()
-|> resultm.unwrap_err
-|> get_file_name
-|> _assert_eq "polyglot"
 
 #!markdown
 
@@ -1278,6 +1231,56 @@ let normalize_path (path : string) : string =
 
 #!markdown
 
+### get_workspace_root
+
+#!spiral
+
+inl get_workspace_root () =
+    inl dirs =
+        [ get_source_directory; get_current_directory ]
+        |> listm.map fun dir => fun () => dir () |> normalize_path
+    (None, dirs)
+    ||> listm.fold fun acc path =>
+        match acc with
+        | Some path => Some path
+        | None =>
+            path ()
+            |> find_parent Directory ("spiral" </> "workspace")
+            |> function
+                | Ok path => Some path
+                | Error error =>
+                    trace Warning
+                        fun () => "file_system.get_workspace_root"
+                        fun () => { error }
+                    None
+    |> optionm.value
+    |> fun root => root </> "polyglot"
+
+#!markdown
+
+### get_workspace_root_external
+
+#!spiral
+
+inl get_workspace_root_external () =
+    inl workspace_root = get_workspace_root ()
+    inl current_dir = get_current_directory () |> sm'.to_lower
+    inl workspace_root = workspace_root |> sm'.to_lower
+    if current_dir |> sm'.starts_with workspace_root
+    then Error workspace_root
+    else Ok workspace_root
+
+#!spiral
+
+//// test
+
+get_workspace_root_external ()
+|> resultm.unwrap_err
+|> get_file_name
+|> _assert_eq "polyglot"
+
+#!markdown
+
 ### get_full_path
 
 #!spiral
@@ -1344,7 +1347,7 @@ let get_full_path (path : string) : string =
 |> path_buf_file_name
 |> optionm'.unwrap
 |> sm'.from_os_str_ref
-|> _assert_eq "spiral"
+|> _assert_eq "polyglot"
 
 #!spiral
 
