@@ -60,7 +60,10 @@ function CopyTarget {
         )
         $name = $Language -eq "py" -and @("threading", "platform") -contains $name ? "$($name)_" : $name
         $name = $Language -eq "py" ? $name.ToLower() : $name
-        $from = ResolveLink "$TargetDir/target/$Language/deps/spiral/lib/$lib/$name.$Language"
+        $from = "$TargetDir/target/$Language/deps/spiral/lib/$lib/$name.$Language"
+        if (!(Test-Path $from)) {
+            $from = ResolveLink "$TargetDir/target/$Language/deps/spiral/lib/$lib/$name.$Language"
+        }
         if (!(Test-Path $from)) {
             $from = "$TargetDir/target/$Language/lib/$lib/$name.$Language"
         }
