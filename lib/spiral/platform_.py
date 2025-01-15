@@ -1,7 +1,7 @@
-from collections.abc import Callable
-from typing import Any
 from fable_modules.fable_library.reflection import (TypeInfo, union_type)
 from fable_modules.fable_library.types import (Array, Union)
+from collections.abc import Callable
+from typing import Any
 
 def _expr125() -> TypeInfo:
     return union_type("Platform.US0", [], US0, lambda: [[], [], []])

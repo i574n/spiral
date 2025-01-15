@@ -1,5 +1,5 @@
-import { Async, singleton } from "../../deps/Fable/src/fable-library-ts/AsyncBuilder.js";
-import { defaultOf } from "../../deps/Fable/src/fable-library-ts/Util.js";
+import { Async, singleton } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/AsyncBuilder.js";
+import { defaultOf } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Util.js";
 
 export function method0(v0_1: any): Async<any> {
     return singleton.Delay<any>((): Async<any> => {

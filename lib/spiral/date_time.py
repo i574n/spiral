@@ -1,6 +1,4 @@
 from __future__ import annotations
-from collections.abc import Callable
-from typing import Any
 from fable_modules.fable_library.date import (to_string, parse_exact)
 from fable_modules.fable_library.guid import (parse, new_guid)
 from fable_modules.fable_library.long import parse as parse_1
@@ -9,6 +7,8 @@ from fable_modules.fable_library.string_ import (concat, replace)
 from fable_modules.fable_library.time_span import (hours, to_string as to_string_1)
 from fable_modules.fable_library.types import (Array, Union, uint8, int64)
 from fable_modules.fable_library.util import int64_to_string
+from collections.abc import Callable
+from typing import Any
 
 def _expr108() -> TypeInfo:
     return union_type("Date_time.US0", [], US0, lambda: [[("f0_0", class_type("Date_time.chrono_DateTime`1", [class_type("Date_time.chrono_Utc")]))], []])

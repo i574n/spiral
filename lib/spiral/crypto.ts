@@ -1,14 +1,14 @@
-import { compare, IComparable, IEquatable, createAtom } from "../../deps/Fable/src/fable-library-ts/Util.js";
-import { map, defaultArg, value as value_2, Option } from "../../deps/Fable/src/fable-library-ts/Option.js";
-import { op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/Fable/src/fable-library-ts/BigInt.js";
-import { Union, Record } from "../../deps/Fable/src/fable-library-ts/Types.js";
-import { parse, uint16, int32 } from "../../deps/Fable/src/fable-library-ts/Int32.js";
-import { bool_type, lambda_type, unit_type, string_type, int64_type, union_type, record_type, int32_type, TypeInfo } from "../../deps/Fable/src/fable-library-ts/Reflection.js";
+import { compare, IComparable, IEquatable, createAtom } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Util.js";
+import { map, defaultArg, value as value_2, Option } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Option.js";
+import { op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/BigInt.js";
+import { Union, Record } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Types.js";
+import { parse, uint16, int32 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Int32.js";
+import { bool_type, lambda_type, unit_type, string_type, int64_type, union_type, record_type, int32_type, TypeInfo } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Reflection.js";
 import * as crypto from "crypto";
-import { toString, create, now, getTicks } from "../../deps/Fable/src/fable-library-ts/Date.js";
-import { ofSeq, find } from "../../deps/Fable/src/fable-library-ts/Map.js";
-import { milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/Fable/src/fable-library-ts/TimeSpan.js";
-import { trimStart, trimEnd } from "../../deps/Fable/src/fable-library-ts/String.js";
+import { toString, create, now, getTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Date.js";
+import { ofSeq, find } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Map.js";
+import { milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/TimeSpan.js";
+import { trimStart, trimEnd } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/String.js";
 
 export interface ICryptoCreateHash {
     createHash(x: string): any

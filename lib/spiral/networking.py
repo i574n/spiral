@@ -1,9 +1,5 @@
 from __future__ import annotations
 from abc import abstractmethod
-from collections.abc import Callable
-from dataclasses import dataclass
-import os
-from typing import (Any, Protocol)
 from fable_modules.fable_library.async_ import (cancellation_token, await_task, start_child, catch_async, sleep)
 from fable_modules.fable_library.async_builder import (singleton, CancellationToken, Async)
 from fable_modules.fable_library.date import (ticks as ticks_1, now, create as create_1, to_string)
@@ -16,6 +12,10 @@ from fable_modules.fable_library.string_ import (trim_end, trim_start, to_text, 
 from fable_modules.fable_library.time_span import (create, hours, minutes, seconds, milliseconds)
 from fable_modules.fable_library.types import (int64, Array, Union, Record)
 from fable_modules.fable_library.util import (create_atom, to_enumerable, compare, IDisposable)
+from collections.abc import Callable
+from dataclasses import dataclass
+import os
+from typing import (Any, Protocol)
 
 TraceState_trace_state: tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None] | None = create_atom(None)
 

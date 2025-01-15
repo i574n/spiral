@@ -1,10 +1,10 @@
 from __future__ import annotations
-from collections.abc import Callable
-from typing import Any
 from fable_modules.fable_library.async_builder import CancellationToken
 from fable_modules.fable_library.reflection import (TypeInfo, class_type, union_type)
 from fable_modules.fable_library.types import (Array, Union)
 from fable_modules.fable_library.util import IDisposable
+from collections.abc import Callable
+from typing import Any
 
 def _expr102() -> TypeInfo:
     return class_type("Threading.Disposable", None, Disposable)

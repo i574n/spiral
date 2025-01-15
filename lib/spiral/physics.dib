@@ -8,7 +8,7 @@
 
 #!fsharp
 
-#!import ../../lib/fsharp/Plotting.dib
+#!import ../../../polyglot/lib/fsharp/Plotting.dib
 
 #!spiral
 

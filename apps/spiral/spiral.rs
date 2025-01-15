@@ -11,7 +11,7 @@
 #![allow(unused_assignments)]
 use fable_library_rust::NativeArray_::array_from;
 use fable_library_rust::String_::fromString;
-mod module_6ff740fe {
+mod module_1216f6c3 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Array_::skip;
@@ -13208,7 +13208,7 @@ mod module_6ff740fe {
                             let v274: string = fable_library_rust::String_::fromString(v261);
                             let v300: Spiral::US12 = Spiral::method29(
                                 Spiral::method28(string("polyglot"), string("workspace")),
-                                string("C:\\home\\git\\polyglot\\target\\Builder\\spiral"),
+                                string("c:\\home\\git\\polyglot\\target\\Builder\\spiral"),
                             );
                             let v348: Spiral::US5 = match &v300 {
                                 Spiral::US12::US12_0(v300_0_0) => {
@@ -14015,7 +14015,7 @@ mod module_6ff740fe {
                                                 string("workspace"),
                                             ),
                                             string(
-                                                "C:\\home\\git\\polyglot\\target\\Builder\\spiral",
+                                                "c:\\home\\git\\polyglot\\target\\Builder\\spiral",
                                             ),
                                         );
                                         let v1920: Spiral::US5 = match &v1872 {
@@ -15258,7 +15258,7 @@ mod module_6ff740fe {
                                             let v3445: Spiral::US12 =
                                                     Spiral::method29(Spiral::method28(string("polyglot"),
                                                                                       string("workspace")),
-                                                                     string("C:\\home\\git\\polyglot\\target\\Builder\\spiral"));
+                                                                     string("c:\\home\\git\\polyglot\\target\\Builder\\spiral"));
                                             let v3493: Spiral::US5 = match &v3445 {
                                                 Spiral::US12::US12_0(v3445_0_0) => {
                                                     Spiral::US5::US5_0(v3445_0_0.clone())
@@ -15909,7 +15909,7 @@ mod module_6ff740fe {
                                                                 Spiral::US12 =
                                                             Spiral::method29(Spiral::method28(string("polyglot"),
                                                                                               string("workspace")),
-                                                                             string("C:\\home\\git\\polyglot\\target\\Builder\\spiral"));
+                                                                             string("c:\\home\\git\\polyglot\\target\\Builder\\spiral"));
                                                 let v4343: Spiral::US5 = match &v4295 {
                                                     Spiral::US12::US12_0(v4295_0_0) => {
                                                         Spiral::US5::US5_0(v4295_0_0.clone())
@@ -16597,48 +16597,48 @@ mod module_6ff740fe {
         }
     }
 }
-pub use module_6ff740fe::*;
+pub use module_1216f6c3::*;
 #[path = "../../lib/spiral/async_.rs"]
-mod module_2335f2f5;
-pub use module_2335f2f5::*;
+mod module_763b9e6c;
+pub use module_763b9e6c::*;
 #[path = "../../lib/spiral/common.rs"]
-mod module_652e6d81;
-pub use module_652e6d81::*;
+mod module_18f1c018;
+pub use module_18f1c018::*;
 #[path = "../../lib/spiral/crypto.rs"]
-mod module_dd5f95ef;
-pub use module_dd5f95ef::*;
+mod module_c0301e36;
+pub use module_c0301e36::*;
 #[path = "../../lib/spiral/date_time.rs"]
-mod module_ca5e6cb2;
-pub use module_ca5e6cb2::*;
+mod module_e5abed0b;
+pub use module_e5abed0b::*;
 #[path = "../../lib/spiral/file_system.rs"]
-mod module_5ab1faf0;
-pub use module_5ab1faf0::*;
+mod module_336d1dc9;
+pub use module_336d1dc9::*;
 #[path = "../../lib/spiral/lib.rs"]
-mod module_b386774b;
-pub use module_b386774b::*;
+mod module_12dde172;
+pub use module_12dde172::*;
 #[path = "../../lib/spiral/networking.rs"]
-mod module_ce497f72;
-pub use module_ce497f72::*;
+mod module_7e35832b;
+pub use module_7e35832b::*;
 #[path = "../../lib/spiral/platform.rs"]
-mod module_9a61edd3;
-pub use module_9a61edd3::*;
+mod module_afd02cca;
+pub use module_afd02cca::*;
 #[path = "../../lib/spiral/runtime.rs"]
-mod module_502d7e30;
-pub use module_502d7e30::*;
+mod module_a3c64389;
+pub use module_a3c64389::*;
 #[path = "../../lib/spiral/sm.rs"]
-mod module_34f67952;
-pub use module_34f67952::*;
+mod module_8f227ecb;
+pub use module_8f227ecb::*;
 #[path = "../../lib/spiral/threading.rs"]
-mod module_11c0c5c2;
-pub use module_11c0c5c2::*;
+mod module_e08c16fb;
+pub use module_e08c16fb::*;
 #[path = "../../lib/spiral/trace.rs"]
-mod module_28ecba0d;
-pub use module_28ecba0d::*;
+mod module_702ddcb4;
+pub use module_702ddcb4::*;
 #[path = "../../deps/polyglot/lib/fsharp/Common.rs"]
-mod module_ad43931;
-pub use module_ad43931::*;
+mod module_eb7e4788;
+pub use module_eb7e4788::*;
 pub mod Polyglot {
-    pub use crate::module_ad43931::Polyglot::*;
+    pub use crate::module_eb7e4788::Polyglot::*;
 }
 pub fn main() {
     let args = std::env::args().skip(1).map(fromString).collect();

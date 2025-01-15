@@ -1,16 +1,16 @@
-import { IDisposable, defaultOf, compare, IComparable, IEquatable, createAtom } from "../../deps/Fable/src/fable-library-ts/Util.js";
-import { map, defaultArg, value as value_3, Option } from "../../deps/Fable/src/fable-library-ts/Option.js";
-import { op_Modulus, equals, op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/Fable/src/fable-library-ts/BigInt.js";
-import { Record, Union } from "../../deps/Fable/src/fable-library-ts/Types.js";
-import { int32_type, class_type, bool_type, lambda_type, unit_type, string_type, record_type, int64_type, union_type, TypeInfo } from "../../deps/Fable/src/fable-library-ts/Reflection.js";
-import { int32 } from "../../deps/Fable/src/fable-library-ts/Int32.js";
-import { toString, create, now, getTicks } from "../../deps/Fable/src/fable-library-ts/Date.js";
-import { ofSeq, find } from "../../deps/Fable/src/fable-library-ts/Map.js";
-import { milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/Fable/src/fable-library-ts/TimeSpan.js";
-import { interpolate, toText, trimStart, trimEnd } from "../../deps/Fable/src/fable-library-ts/String.js";
-import { Async, singleton } from "../../deps/Fable/src/fable-library-ts/AsyncBuilder.js";
-import { sleep, catchAsync, startChild, awaitTask, cancellationToken } from "../../deps/Fable/src/fable-library-ts/Async.js";
-import { FSharpChoice$2_$union } from "../../deps/Fable/src/fable-library-ts/Choice.js";
+import { IDisposable, defaultOf, compare, IComparable, IEquatable, createAtom } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Util.js";
+import { map, defaultArg, value as value_3, Option } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Option.js";
+import { op_Modulus, equals, op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/BigInt.js";
+import { Record, Union } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Types.js";
+import { int32_type, class_type, bool_type, lambda_type, unit_type, string_type, record_type, int64_type, union_type, TypeInfo } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Reflection.js";
+import { int32 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Int32.js";
+import { toString, create, now, getTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Date.js";
+import { ofSeq, find } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Map.js";
+import { milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/TimeSpan.js";
+import { interpolate, toText, trimStart, trimEnd } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/String.js";
+import { Async, singleton } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/AsyncBuilder.js";
+import { sleep, catchAsync, startChild, awaitTask, cancellationToken } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Async.js";
+import { FSharpChoice$2_$union } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Choice.js";
 
 export let TraceState_trace_state = createAtom<Option<[Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>]>>(undefined);
 

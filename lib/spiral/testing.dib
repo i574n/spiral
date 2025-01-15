@@ -252,6 +252,23 @@ inl rec _assert_fn fn list =
 
 #!markdown
 
+### _assert_in
+
+#!spiral
+
+inl _assert_in items x =
+    (None, items)
+    ||> listm.fold fun acc x' =>
+        match acc with
+        | Some x => Some x
+        | None =>
+            if x' = x
+            then Some ()
+            else None
+    |> optionm.value
+
+#!markdown
+
 ## fsharp
 
 #!markdown

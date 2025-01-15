@@ -2323,7 +2323,7 @@ pub mod File_system {
         (v2_1.clone(), File_system::method89(v2_1))
     }
     pub fn closure49(unitVar: (), unitVar_1: ()) -> string {
-        string("C:\\home\\git\\polyglot\\lib\\spiral")
+        string("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral")
     }
     pub fn closure51(unitVar: (), v0_1: std::path::PathBuf) -> File_system::US14 {
         File_system::US14::US14_0(v0_1)
@@ -3075,39 +3075,41 @@ pub mod File_system {
         unbox::<string>(&getZero())
     }
     pub fn closure59(unitVar: (), unitVar_1: ()) -> string {
-        let v4: File_system::US16 = File_system::method126(
-            File_system::method86(string("polyglot"), string("workspace")),
-            string("C:\\home\\git\\polyglot\\lib\\spiral"),
+        let v1_1: string =
+            File_system::method106(string("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral"));
+        let v5: File_system::US16 = File_system::method126(
+            File_system::method86(string("spiral"), string("workspace")),
+            v1_1,
         );
-        let v52: File_system::US5 = match &v4 {
-            File_system::US16::US16_0(v4_0_0) => File_system::US5::US5_0(v4_0_0.clone()),
-            File_system::US16::US16_1(v4_1_0) => {
-                let v10: () = {
-                    File_system::closure60(v4_1_0.clone(), ());
+        let v53: File_system::US5 = match &v5 {
+            File_system::US16::US16_0(v5_0_0) => File_system::US5::US5_0(v5_0_0.clone()),
+            File_system::US16::US16_1(v5_1_0) => {
+                let v11: () = {
+                    File_system::closure60(v5_1_0.clone(), ());
                     ()
                 };
                 File_system::US5::US5_1
             }
         };
-        let v107: File_system::US5 = match &v52 {
-            File_system::US5::US5_0(v52_0_0) => File_system::US5::US5_0(
-                match &v52 {
+        let v109: File_system::US5 = match &v53 {
+            File_system::US5::US5_0(v53_0_0) => File_system::US5::US5_0(
+                match &v53 {
                     File_system::US5::US5_0(x) => x.clone(),
                     _ => unreachable!(),
                 }
                 .clone(),
             ),
             _ => {
-                let v55: string = File_system::method130();
-                let v57: File_system::US16 = File_system::method126(
-                    File_system::method86(string("polyglot"), string("workspace")),
-                    v55,
+                let v57: string = File_system::method106(File_system::method130());
+                let v59: File_system::US16 = File_system::method126(
+                    File_system::method86(string("spiral"), string("workspace")),
+                    v57,
                 );
-                match &v57 {
-                    File_system::US16::US16_0(v57_0_0) => File_system::US5::US5_0(v57_0_0.clone()),
-                    File_system::US16::US16_1(v57_1_0) => {
-                        let v63: () = {
-                            File_system::closure60(v57_1_0.clone(), ());
+                match &v59 {
+                    File_system::US16::US16_0(v59_0_0) => File_system::US5::US5_0(v59_0_0.clone()),
+                    File_system::US16::US16_1(v59_1_0) => {
+                        let v65: () = {
+                            File_system::closure60(v59_1_0.clone(), ());
                             ()
                         };
                         File_system::US5::US5_1
@@ -3116,8 +3118,8 @@ pub mod File_system {
             }
         };
         File_system::method86(
-            match &v107 {
-                File_system::US5::US5_0(v107_0_0) => match &v107 {
+            match &v109 {
+                File_system::US5::US5_0(v109_0_0) => match &v109 {
                     File_system::US5::US5_0(x) => x.clone(),
                     _ => unreachable!(),
                 }

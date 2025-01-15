@@ -1,20 +1,20 @@
-import { uncurry2, defaultOf, compare, IComparable, IEquatable, IDisposable, createAtom } from "../../deps/Fable/src/fable-library-ts/Util.js";
-import { map, defaultArg, value as value_10, Option } from "../../deps/Fable/src/fable-library-ts/Option.js";
-import { compare as compare_1, op_Modulus, equals, op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/Fable/src/fable-library-ts/BigInt.js";
-import { bool_type, lambda_type, unit_type, string_type, record_type, int64_type, union_type, class_type, TypeInfo } from "../../deps/Fable/src/fable-library-ts/Reflection.js";
-import { toString as toString_2, Record, Union } from "../../deps/Fable/src/fable-library-ts/Types.js";
-import { toString, create, now, getTicks } from "../../deps/Fable/src/fable-library-ts/Date.js";
+import { uncurry2, defaultOf, compare, IComparable, IEquatable, IDisposable, createAtom } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Util.js";
+import { map, defaultArg, value as value_10, Option } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Option.js";
+import { compare as compare_1, op_Modulus, equals, op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/BigInt.js";
+import { bool_type, lambda_type, unit_type, string_type, record_type, int64_type, union_type, class_type, TypeInfo } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Reflection.js";
+import { toString as toString_2, Record, Union } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Types.js";
+import { toString, create, now, getTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Date.js";
 import * as fs from "fs";
-import { ofSeq, find } from "../../deps/Fable/src/fable-library-ts/Map.js";
-import { uint8, int32 } from "../../deps/Fable/src/fable-library-ts/Int32.js";
-import { toString as toString_1, milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/Fable/src/fable-library-ts/TimeSpan.js";
-import { replace, concat, interpolate, toText, trimStart, trimEnd } from "../../deps/Fable/src/fable-library-ts/String.js";
-import { Async, singleton } from "../../deps/Fable/src/fable-library-ts/AsyncBuilder.js";
-import { ignore, catchAsync, startChild, sleep } from "../../deps/Fable/src/fable-library-ts/Async.js";
-import { FSharpChoice$2_$union } from "../../deps/Fable/src/fable-library-ts/Choice.js";
-import { newGuid, parse } from "../../deps/Fable/src/fable-library-ts/Guid.js";
+import { ofSeq, find } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Map.js";
+import { uint8, int32 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Int32.js";
+import { toString as toString_1, milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/TimeSpan.js";
+import { replace, concat, interpolate, toText, trimStart, trimEnd } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/String.js";
+import { Async, singleton } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/AsyncBuilder.js";
+import { ignore, catchAsync, startChild, sleep } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Async.js";
+import { FSharpChoice$2_$union } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Choice.js";
+import { newGuid, parse } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Guid.js";
 import * as path from "path";
-import { FSharpResult$2_Ok, FSharpResult$2_$union, FSharpResult$2_Error } from "../../deps/Fable/src/fable-library-ts/Result.js";
+import { FSharpResult$2_Ok, FSharpResult$2_$union, FSharpResult$2_Error } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Result.js";
 
 export let TraceState_trace_state = createAtom<Option<[Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>]>>(undefined);
 
@@ -1992,7 +1992,7 @@ export function closure47(unitVar: void, v0_1: string): [string, IDisposable] {
 }
 
 export function closure49(unitVar: void, unitVar_1: void): string {
-    return "C:\\home\\git\\polyglot\\lib\\spiral";
+    return "c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral";
 }
 
 export function closure51(unitVar: void, v0_1: any): US14_$union {
@@ -2357,35 +2357,36 @@ export function method130(): string {
 }
 
 export function closure59(unitVar: void, unitVar_1: void): string {
-    const v4: US16_$union = method126(method86("polyglot", "workspace"), "C:\\home\\git\\polyglot\\lib\\spiral");
-    let v52: US5_$union;
-    if (v4.tag === /* US16_0 */ 0) {
-        v52 = US5_US5_0(v4.fields[0]);
+    const v1_1: string = method106("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral");
+    const v5: US16_$union = method126(method86("spiral", "workspace"), v1_1);
+    let v53: US5_$union;
+    if (v5.tag === /* US16_0 */ 0) {
+        v53 = US5_US5_0(v5.fields[0]);
     }
     else {
-        let v10: any;
-        closure60(v4.fields[0], undefined);
-        v10 = undefined;
-        v52 = US5_US5_1();
+        let v11: any;
+        closure60(v5.fields[0], undefined);
+        v11 = undefined;
+        v53 = US5_US5_1();
     }
-    let v107: US5_$union;
-    if (v52.tag === /* US5_0 */ 0) {
-        v107 = US5_US5_0(v52.fields[0]);
+    let v109: US5_$union;
+    if (v53.tag === /* US5_0 */ 0) {
+        v109 = US5_US5_0(v53.fields[0]);
     }
     else {
-        const v55: string = method130();
-        const v57: US16_$union = method126(method86("polyglot", "workspace"), v55);
-        if (v57.tag === /* US16_0 */ 0) {
-            v107 = US5_US5_0(v57.fields[0]);
+        const v57: string = method106(method130());
+        const v59: US16_$union = method126(method86("spiral", "workspace"), v57);
+        if (v59.tag === /* US16_0 */ 0) {
+            v109 = US5_US5_0(v59.fields[0]);
         }
         else {
-            let v63: any;
-            closure60(v57.fields[0], undefined);
-            v63 = undefined;
-            v107 = US5_US5_1();
+            let v65: any;
+            closure60(v59.fields[0], undefined);
+            v65 = undefined;
+            v109 = US5_US5_1();
         }
     }
-    return method86((v107.tag === /* US5_0 */ 0) ? v107.fields[0] : (() => {
+    return method86((v109.tag === /* US5_0 */ 0) ? v109.fields[0] : (() => {
         throw new Error("Option does not have a value.");
     })(), "polyglot");
 }

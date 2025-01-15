@@ -38,7 +38,8 @@ function FixTypeScript {
             -replace "defaultOf\(\) \| 0", "0" `
             -replace "/fable_modules/fable-library-ts\.[\-\d\w\.]+/", "/deps/Fable/src/fable-library-ts/" `
             -replace "from `"\./deps/", "from `"../../polyglot/deps/" `
-            -replace "from `"\.\./\.\./\.\./deps/", "from `"../../deps/"
+            -replace "from `"\.\./\.\./\.\./deps/", "from `"deps/polyglot/deps/" `
+            -replace "from `"../../../../deps/Fable", "from `"../../deps/polyglot/deps/Fable"
     }
 }
 
@@ -59,9 +60,12 @@ function CopyTarget {
         )
         $name = $Language -eq "py" -and @("threading", "platform") -contains $name ? "$($name)_" : $name
         $name = $Language -eq "py" ? $name.ToLower() : $name
-        $from = "$TargetDir/target/$Language/lib/$lib/$name.$Language"
+        $from = ResolveLink "$TargetDir/target/$Language/deps/spiral/lib/$lib/$name.$Language"
         if (!(Test-Path $from)) {
-            $from = "$TargetDir/target/$Language/polyglot/lib/$lib/$name.$Language"
+            $from = "$TargetDir/target/$Language/lib/$lib/$name.$Language"
+        }
+        if (!(Test-Path $from)) {
+            $from = ResolveLink "$TargetDir/target/$Language/polyglot/lib/$lib/$name.$Language"
         }
         if ($lib -eq "spiral") {
             $to = ResolveLink "$root/deps/spiral/lib/$lib/$name$_runtime.$Language"

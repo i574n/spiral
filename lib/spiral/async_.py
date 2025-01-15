@@ -1,6 +1,6 @@
+from fable_modules.fable_library.async_builder import (singleton, CancellationToken, Async)
 from collections.abc import Callable
 from typing import Any
-from fable_modules.fable_library.async_builder import (singleton, CancellationToken, Async)
 
 def method0(v0_1: CancellationToken) -> Async[CancellationToken]:
     def _arrow100(__unit: None=None, v0_1: Any=v0_1) -> Async[CancellationToken]:
