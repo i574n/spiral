@@ -1583,17 +1583,17 @@ def method82(__unit: None=None) -> str:
 
 
 def method78(v0_1: str, v1_1: Any) -> str:
-    v1075: str = method81()
-    v1080: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v1075 == "") else v1075)
-    v1261: Any
+    v1066: str = method81()
+    v1071: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v1066 == "") else v1066)
+    v1252: Any
     raise Exception(("date_time.get_utc_offset / target: " + str(US4(4, US3(0)))) + "")
-    v1274: uint8 = uint8(1) if (hours(v1261) > 0) else uint8(0)
-    v1275: str = method82()
-    v1299: str = ((("" + str(v1274)) + "") + to_string_1(v1261, "c", {})) + ""
-    v1301: str = str(v0_1)
-    v1306: int = (len(v1080) + len(v1299)) or 0
-    v1325: int = (len(v1301) - 1) or 0
-    return parse(concat(v1080, v1299, *v1301[v1306:v1325 + 1]))
+    v1265: uint8 = uint8(1) if (hours(v1252) > 0) else uint8(0)
+    v1266: str = method82()
+    v1287: str = ((("" + str(v1265)) + "") + to_string_1(v1252, "c", {})) + ""
+    v1289: str = str(v0_1)
+    v1294: int = (len(v1071) + len(v1287)) or 0
+    v1313: int = (len(v1289) - 1) or 0
+    return parse(concat(v1071, v1287, *v1289[v1294:v1313 + 1]))
 
 
 def method84(__unit: None=None) -> str:
@@ -2159,8 +2159,16 @@ def method125(v0_1: str) -> str:
     return v0_1
 
 
+def method126(__unit: None=None) -> str:
+    return ""
+
+
 def method124(v0_1: str, v1_1: str, v2_1: str) -> str:
-    return None
+    return method126()
+
+
+def method127(__unit: None=None) -> str:
+    return ""
 
 
 def method106(v0_1: str) -> str:
@@ -2184,11 +2192,16 @@ def method106(v0_1: str) -> str:
 
         else: 
             v71: str = method124("^\\\\\\\\\\?\\\\", "", v66)
-            def _arrow385(__unit: None=None, v0_1: Any=v0_1) -> str:
-                _arg: str = v71[0]
-                return _arg.lower()
+            if len(v71) < 2:
+                return method127()
 
-            return replace(concat(_arrow385(), *v71[1:len(v71)]), "\\", "/")
+            else: 
+                def _arrow385(__unit: None=None, v0_1: Any=v0_1) -> str:
+                    _arg: str = v71[0]
+                    return _arg.lower()
+
+                return replace(concat(_arrow385(), *v71[1:len(v71)]), "\\", "/")
+
 
 
 
@@ -2201,7 +2214,7 @@ def closure58(unit_var: None, v0_1: str) -> str:
     return concat("file:///", *trim_start(v0_1, *to_array(singleton_1("/"))))
 
 
-def method127(v0_1_mut: str, v1_1_mut: str, v2_1_mut: str) -> US16:
+def method129(v0_1_mut: str, v1_1_mut: str, v2_1_mut: str) -> US16:
     while True:
         (v0_1, v1_1, v2_1) = (v0_1_mut, v1_1_mut, v2_1_mut)
         if method10(method86(v2_1, v0_1)):
@@ -2223,7 +2236,7 @@ def method127(v0_1_mut: str, v1_1_mut: str, v2_1_mut: str) -> US16:
         break
 
 
-def method126(v0_1: str, v1_1: str) -> US16:
+def method128(v0_1: str, v1_1: str) -> US16:
     if method10(method86(v1_1, v0_1)):
         return US16(0, v1_1)
 
@@ -2231,7 +2244,7 @@ def method126(v0_1: str, v1_1: str) -> US16:
         v5: str | None = method113(v1_1)
         v19_1: US5 = default_arg(map(method5(), v5), US5(1))
         if v19_1.tag == 0:
-            return method127(v0_1, v1_1, v19_1.fields[0])
+            return method129(v0_1, v1_1, v19_1.fields[0])
 
         else: 
             return US16(1, ((((((("No parent for " + "dir") + " \'") + v0_1) + "\' at \'") + v1_1) + "\' (until \'") + v1_1) + "\')")
@@ -2239,7 +2252,7 @@ def method126(v0_1: str, v1_1: str) -> US16:
 
 
 
-def method129(v0_1: str) -> str:
+def method131(v0_1: str) -> str:
     v2_1: Mut3 = Mut3(method18())
     v9: None
     closure6(v2_1, "{ ", None)
@@ -2259,8 +2272,8 @@ def method129(v0_1: str) -> str:
     return v2_1.l0
 
 
-def method128(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: str) -> str:
-    v9: str = method129(v8)
+def method130(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: str) -> str:
+    v9: str = method131(v8)
     return method23(((((((((("" + v6) + " ") + v7) + " #") + str(v0_1.l0)) + " ") + "file_system.get_workspace_root") + " / ") + v9) + "")
 
 
@@ -2276,17 +2289,17 @@ def closure60(v0_1: str, unit_var: None) -> None:
         v21_1: Mut2 = pattern_input[2]
         v20_1: Mut1 = pattern_input[1]
         v19_1: Mut0 = pattern_input[0]
-        method24(method128(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1, method12(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1), method50(), v0_1))
+        method24(method130(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1, method12(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1), method50(), v0_1))
 
 
 
-def method130(__unit: None=None) -> str:
+def method132(__unit: None=None) -> str:
     return None
 
 
 def closure59(unit_var: None, unit_var_1: None) -> str:
     v1_1: str = method106("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral")
-    v5: US16 = method126(method86("spiral", "workspace"), v1_1)
+    v5: US16 = method128(method86("spiral", "workspace"), v1_1)
     v53: US5
     if v5.tag == 0:
         v53 = US5(0, v5.fields[0])
@@ -2302,8 +2315,8 @@ def closure59(unit_var: None, unit_var_1: None) -> str:
         v109 = US5(0, v53.fields[0])
 
     else: 
-        v57: str = method106(method130())
-        v59: US16 = method126(method86("spiral", "workspace"), v57)
+        v57: str = method106(method132())
+        v59: US16 = method128(method86("spiral", "workspace"), v57)
         if v59.tag == 0:
             v109 = US5(0, v59.fields[0])
 
@@ -2324,12 +2337,12 @@ def closure62(v0_1: Exception, unit_var: None) -> Exception:
     return v0_1
 
 
-def method131(v0_1: str) -> None:
+def method133(v0_1: str) -> None:
     pass
 
 
 def closure61(unit_var: None, v0_1: str) -> None:
-    method131(v0_1)
+    method133(v0_1)
 
 
 def closure63(unit_var: None, v0_1: bool) -> None:
@@ -2347,7 +2360,7 @@ def closure63(unit_var: None, v0_1: bool) -> None:
     pattern_input[1].l0 = v37
 
 
-def method132(v0_1: str, v1_1: str) -> None:
+def method134(v0_1: str, v1_1: str) -> None:
     if method10(v0_1) == False:
         v4: IDisposable = method89(v0_1)
 
@@ -2368,7 +2381,7 @@ def method132(v0_1: str, v1_1: str) -> None:
 
 
 def closure65(v0_1: str, v1_1: str) -> None:
-    method132(v0_1, v1_1)
+    method134(v0_1, v1_1)
 
 
 def closure64(unit_var: None, v0_1: str) -> Callable[[str], None]:

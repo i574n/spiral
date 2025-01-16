@@ -861,7 +861,7 @@ let directory_get_parent (path : string) : optionm'.option' string =
             global "type IPathDirname = abstract dirname: path: string -> string"
             inl fs : $'IPathDirname' = typescript.import_all "path"
             !\\(path, $'"!fs.dirname($0)"') |> Some |> optionm'.box
-        | _ => fun _ => null ()
+        | _ => fun _ => optionm'.none' ()
 
 #!markdown
 
@@ -1178,7 +1178,6 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                             | Error error => path' |> run loop n error
                         | _ => fun () => null ()
                 path |> loop 0u8
-        | TypeScript _ => fun () => null ()
         | Fsharp _ => fun () =>
             let rec loop n path' =
                 inl result =
@@ -1200,6 +1199,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                         |> stream.new_io_error
                     path' |> run loop n error
             path |> loop 0u8
+        | TypeScript _ => fun () => null () |> Error |> resultm.box
         | _ => fun () => $'Unchecked.defaultof<_>'
 
 #!markdown
@@ -1227,7 +1227,9 @@ let normalize_path (path : string) : string =
         then ""
         else
             inl path = path |> sm'.replace_regex @"^\\\\\?\\" ""
-            $'$"{!path.[0] |> string |> _.ToLower()}{!path.[1..]}"' |> sm'.replace "\\" "/"
+            if sm'.length path < 2i32
+            then join ""
+            else $'$"{!path.[0] |> string |> _.ToLower()}{!path.[1..]}"' |> sm'.replace "\\" "/"
 
 #!markdown
 

@@ -690,7 +690,7 @@ inl replace_regex' (pattern : string) (replacement : a i32 string) (s : string) 
             !\\((regex, #s, replacement), $'$"$0.replace_all($1, &*$2)"')
             |> cow_to_std_string
             |> from_std_string
-        | _ => fun _ => null ()
+        | _ => fun _ => join ""
 
 /// ### serialize
 inl serialize forall t. (x : t) : resultm.result' std_string json_error =
@@ -915,7 +915,7 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
             !\\((regex, s, replacement), $'$"$0.replace_all(&*$1, &*$2)"')
             |> cow_to_std_string
             |> from_std_string
-        | _ => fun _ => null ()
+        | _ => fun _ => join ""
 
 /// ## main
 inl main () =

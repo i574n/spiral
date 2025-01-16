@@ -174,18 +174,18 @@ export function method4(): string {
 }
 
 export function method0(v0_1: string, v1_1: Date): string {
-    const v792: string = method3();
-    const v797: string = toString(v1_1, (v792 === "") ? "M-d-y hh:mm:ss tt" : v792);
-    const v820: any = defaultOf();
-    let v978: number;
+    const v786: string = method3();
+    const v791: string = toString(v1_1, (v786 === "") ? "M-d-y hh:mm:ss tt" : v786);
+    const v814: any = defaultOf();
+    let v972: number;
     throw new Error(`date_time.get_utc_offset / target: ${US3_US3_3(US2_US2_0())}`);
-    const v991: uint8 = (hours(v978) > 0) ? 1 : 0;
-    const v992: string = method4();
-    const v1016 = `${v991}${toString_1(v978, "c", {})}`;
-    const v1018: string = v0_1;
-    const v1028: int32 = (v797.length + v1016.length) | 0;
-    const v1042: int32 = (v1018.length - 1) | 0;
-    return parse(concat(v797, v1016, ...v1018.slice(v1028, v1042 + 1)));
+    const v985: uint8 = (hours(v972) > 0) ? 1 : 0;
+    const v986: string = method4();
+    const v1007 = `${v985}${toString_1(v972, "c", {})}`;
+    const v1009: string = v0_1;
+    const v1019: int32 = (v791.length + v1007.length) | 0;
+    const v1033: int32 = (v1009.length - 1) | 0;
+    return parse(concat(v791, v1007, ...v1009.slice(v1019, v1033 + 1)));
 }
 
 export function closure1(v0_1: string, v1_1: Date): string {
