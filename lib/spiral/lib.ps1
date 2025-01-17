@@ -38,7 +38,17 @@ function FixTypeScript {
             -replace "defaultOf\(\) \| 0", "0" `
             -replace "/fable_modules/fable-library-ts\.[\-\d\w\.]+/", "/deps/Fable/src/fable-library-ts/" `
             -replace "from `"\./deps/", "from `"../../polyglot/deps/" `
-            -replace "from `"\.\./\.\./\.\./deps/", "from `"deps/polyglot/deps/" `
+            -replace "from `"\.\./\.\./\.\./deps/", "from `"deps/polyglot/deps/"
+    }
+}
+
+function FixTypeScriptExternal {
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        $text
+    )
+    process {
+        $text `
             -replace "from `"../../../../deps/Fable", "from `"../../deps/polyglot/deps/Fable"
     }
 }
@@ -126,7 +136,8 @@ function CopyTarget {
                 -replace "this\$.tag", "(this$ as any)['tag']" `
                 -replace "../../../../../../../../", "../../" `
                 -replace "from `"../../../../../../../lib", "from `"../../../../../polyglot/lib" `
-                | FixTypeScript
+                | FixTypeScript `
+                | FixTypeScriptExternal
         }
         if ($Language -eq "py") {
             $text = $text `
