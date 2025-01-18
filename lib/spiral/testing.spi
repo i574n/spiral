@@ -156,10 +156,14 @@ inl _assert_in items x =
         match acc with
         | Some x => Some x
         | None =>
-            if x' = x
-            then Some ()
-            else None
-    |> optionm.value
+            if x' <> x
+            then None
+            else
+                trace Debug (fun () => "_assert_in") fun () => { x x' }
+                Some ()
+    |> function
+        | Some _ => ()
+        | None => failwith $'$"_assert_in / x: %A{!x} / items: %A{!items}"'
 
 /// ## fsharp
 

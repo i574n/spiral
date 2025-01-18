@@ -3,9 +3,9 @@ import { map, defaultArg, value as value_1, Option } from "../../deps/polyglot/d
 import { op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/BigInt.js";
 import { Record, Union } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Types.js";
 import { bool_type, lambda_type, unit_type, string_type, record_type, int64_type, union_type, TypeInfo } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Reflection.js";
+import { int32 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Int32.js";
 import { toString, create, now, getTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Date.js";
 import { ofSeq, find } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Map.js";
-import { int32 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Int32.js";
 import { milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/TimeSpan.js";
 import { trimStart, trimEnd } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/String.js";
 
@@ -321,7 +321,7 @@ export function method1(): [US1_$union, US2_$union] {
     let v13: US1_$union, v20: US1_$union, v27: US1_$union, v34: US1_$union;
     const v1_1: string = method2("TRACE_LEVEL");
     const v6: US1_$union = ("Verbose" === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1();
-    return [(v6.tag === /* US1_0 */ 0) ? US1_US1_0(v6.fields[0]) : ((v13 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), (v13.tag === /* US1_0 */ 0) ? US1_US1_0(v13.fields[0]) : ((v20 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), (v20.tag === /* US1_0 */ 0) ? US1_US1_0(v20.fields[0]) : ((v27 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), (v27.tag === /* US1_0 */ 0) ? US1_US1_0(v27.fields[0]) : ((v34 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), (v34.tag === /* US1_0 */ 0) ? US1_US1_0(v34.fields[0]) : US1_US1_1())))))))), (method2("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
+    return [((v6.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v6.fields[0] as any) : ((v13 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v13.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v13.fields[0] as any) : ((v20 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v20.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v20.fields[0] as any) : ((v27 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v27.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v27.fields[0] as any) : ((v34 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v34.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v34.fields[0] as any) : US1_US1_1())))))))), (method2("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
 }
 
 export function closure2(unitVar: void, v0_1: string): void {
@@ -334,7 +334,7 @@ export function method0(v0_1: US0_$union): [Mut0, Mut1, Mut2, Mut3, Mut4, Option
     const v131: US1_$union = _run_target_args$0027_v1[0];
     return [new Mut0(1n), new Mut1((v: string): void => {
         closure2(undefined, v);
-    }), new Mut2(true), new Mut3(""), new Mut4((v131.tag === /* US1_0 */ 0) ? v131.fields[0] : v0_1), (v132.tag === /* US2_0 */ 0) ? v132.fields[0] : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
+    }), new Mut2(true), new Mut3(""), new Mut4(((v131.tag as int32) === /* US1_0 */ 0) ? (v131.fields[0] as any) : v0_1), ((v132.tag as int32) === /* US2_0 */ 0) ? (v132.fields[0] as any) : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
 }
 
 export function closure0(unitVar: void, unitVar_1: void): void {
@@ -381,8 +381,8 @@ export function method10(): string {
 export function method7(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>): string {
     const v321: US2_$union = defaultArg(map<int64, US2_$union>(method8(), v5), US2_US2_1());
     let v418: Date;
-    if (v321.tag === /* US2_0 */ 0) {
-        const v325: int64 = v321.fields[0];
+    if ((v321.tag as int32) === /* US2_0 */ 0) {
+        const v325 = v321.fields[0] as any;
         const v378: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v325)));
         v418 = create(1, 1, 1, hours(v378), minutes(v378), seconds(v378), milliseconds(v378));
     }
@@ -415,43 +415,43 @@ export function method14(): string {
 }
 
 export function method11(v0_1: US0_$union): string {
-    const v5: US5_$union = (v0_1.tag === /* US0_0 */ 0) ? US5_US5_0("Verbose") : US5_US5_1();
+    const v5: US5_$union = ((v0_1.tag as int32) === /* US0_0 */ 0) ? US5_US5_0("Verbose") : US5_US5_1();
     let v46: US5_$union;
-    if (v5.tag === /* US5_0 */ 0) {
-        v46 = US5_US5_0(v5.fields[0]);
+    if ((v5.tag as int32) === /* US5_0 */ 0) {
+        v46 = US5_US5_0(v5.fields[0] as any);
     }
     else {
-        const v12: US5_$union = (v0_1.tag === /* US0_1 */ 1) ? US5_US5_0("Debug") : US5_US5_1();
-        if (v12.tag === /* US5_0 */ 0) {
-            v46 = US5_US5_0(v12.fields[0]);
+        const v12: US5_$union = ((v0_1.tag as int32) === /* US0_1 */ 1) ? US5_US5_0("Debug") : US5_US5_1();
+        if ((v12.tag as int32) === /* US5_0 */ 0) {
+            v46 = US5_US5_0(v12.fields[0] as any);
         }
         else {
-            const v19: US5_$union = (v0_1.tag === /* US0_2 */ 2) ? US5_US5_0("Info") : US5_US5_1();
-            if (v19.tag === /* US5_0 */ 0) {
-                v46 = US5_US5_0(v19.fields[0]);
+            const v19: US5_$union = ((v0_1.tag as int32) === /* US0_2 */ 2) ? US5_US5_0("Info") : US5_US5_1();
+            if ((v19.tag as int32) === /* US5_0 */ 0) {
+                v46 = US5_US5_0(v19.fields[0] as any);
             }
             else {
-                const v26: US5_$union = (v0_1.tag === /* US0_3 */ 3) ? US5_US5_0("Warning") : US5_US5_1();
-                if (v26.tag === /* US5_0 */ 0) {
-                    v46 = US5_US5_0(v26.fields[0]);
+                const v26: US5_$union = ((v0_1.tag as int32) === /* US0_3 */ 3) ? US5_US5_0("Warning") : US5_US5_1();
+                if ((v26.tag as int32) === /* US5_0 */ 0) {
+                    v46 = US5_US5_0(v26.fields[0] as any);
                 }
                 else {
-                    const v33: US5_$union = (v0_1.tag === /* US0_4 */ 4) ? US5_US5_0("Critical") : US5_US5_1();
-                    v46 = ((v33.tag === /* US5_0 */ 0) ? US5_US5_0(v33.fields[0]) : US5_US5_1());
+                    const v33: US5_$union = ((v0_1.tag as int32) === /* US0_4 */ 4) ? US5_US5_0("Critical") : US5_US5_1();
+                    v46 = (((v33.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v33.fields[0] as any) : US5_US5_1());
                 }
             }
         }
     }
     let v50: string;
-    if (v46.tag === /* US5_0 */ 0) {
-        v50 = v46.fields[0];
+    if ((v46.tag as int32) === /* US5_0 */ 0) {
+        v50 = (v46.fields[0] as any);
     }
     else {
         throw new Error("Option does not have a value.");
     }
     const v52: string = v50.toLocaleLowerCase();
     const v56: string = method12(v52[0]);
-    return (((v0_1.tag === /* US0_1 */ 1) ? "\u001b[94m" : ((v0_1.tag === /* US0_2 */ 2) ? "\u001b[92m" : ((v0_1.tag === /* US0_0 */ 0) ? "\u001b[90m" : ((v0_1.tag === /* US0_3 */ 3) ? "\u001b[93m" : "\u001b[91m")))) + v56) + method14();
+    return ((((v0_1.tag as int32) === /* US0_1 */ 1) ? "\u001b[94m" : (((v0_1.tag as int32) === /* US0_2 */ 2) ? "\u001b[92m" : (((v0_1.tag as int32) === /* US0_0 */ 0) ? "\u001b[90m" : (((v0_1.tag as int32) === /* US0_3 */ 3) ? "\u001b[93m" : "\u001b[91m")))) + v56) + method14();
 }
 
 export function method16(v0_1: string): string {

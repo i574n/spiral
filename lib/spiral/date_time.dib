@@ -431,8 +431,9 @@ inl time_span_format (format : string) (time_span : time_span) : string =
         | TypeScript _
         | Python _ => fun () =>
             $'!time_span.ToString ("c", System.Globalization.CultureInfo.InvariantCulture)'
-        | Rust _ => fun () =>
-            !\\((time_span, format), $'"$0.to_string($1)"')
+        // | Rust _ => fun () =>
+        //     !\\((time_span, format), $'"$0.to_string($1)"')
+        //     |> sm'.from_std_string
         | _ => fun () =>
             backend_switch {
                 Fsharp = fun () => $'!time_span.ToString !format ' : string

@@ -240,11 +240,11 @@ export function method6(): ((arg0: string) => ((arg0: UH0_$union) => UH0_$union)
 }
 
 export function method7(v0_1: UH0_$union, v1_1: FSharpList<string>): FSharpList<string> {
-    if (v0_1.tag === /* UH0_0 */ 0) {
+    if ((v0_1.tag as int32) === /* UH0_0 */ 0) {
         return v1_1;
     }
     else {
-        return cons(v0_1.fields[0], method7(v0_1.fields[1], v1_1));
+        return cons(v0_1.fields[0] as any, method7(v0_1.fields[1] as any, v1_1));
     }
 }
 

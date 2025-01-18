@@ -405,6 +405,11 @@ let get_file_name (path : string) : string =
             |> optionm'.unbox
             |> optionm'.default_value ""
         | Rust (Contract) => fun _ => null ()
+        | TypeScript => fun path =>
+            open typescript_operators
+            global "type IPathBasename = abstract basename: path: string -> string"
+            inl path' : $'IPathBasename' = typescript.import_all "path"
+            !\\(path, $'"!path'.basename($0)"')
         | target => fun path => failwith $'$"file_system.get_file_name / target: {!target} / path: {!path}"'
 
 /// ### get_file_name_without_extension
@@ -698,7 +703,8 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                             | Error error => path' |> run loop n error
                         | _ => fun () => null ()
                 path |> loop 0u8
-        | Fsharp _ => fun () =>
+        | Fsharp _
+        | TypeScript _ => fun () =>
             let rec loop n path' =
                 inl result =
                     path'
@@ -719,7 +725,6 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                         |> stream.new_io_error
                     path' |> run loop n error
             path |> loop 0u8
-        | TypeScript _ => fun () => null () |> Error |> resultm.box
         | _ => fun () => $'Unchecked.defaultof<_>'
 
 /// ### normalize_path
@@ -727,30 +732,26 @@ let normalize_path (path : string) : string =
     if path = ""
     then ""
     else
-        inl path =
+        inl result =
             match path |> read_link |> resultm.ok' |> optionm'.unbox with
             | Some path_buf =>
-                inl result =
-                    path_buf
-                    |> path_buf_display
-                    |> convert
-                if result = ""
-                then path
-                else result
+                path_buf
+                |> path_buf_display
+                |> convert
             | None => path
-        if path = ""
-        then ""
-        else
-            inl path = path |> sm'.replace_regex @"^\\\\\?\\" ""
-            if sm'.length path < 2i32
-            then join ""
-            else $'$"{!path.[0] |> string |> _.ToLower()}{!path.[1..]}"' |> sm'.replace "\\" "/"
+        inl result =
+            if result = ""
+            then path
+            else result
+        inl result' = result |> sm'.replace_regex @"^\\\\\?\\" ""
+        if sm'.length result' < 2i32
+        then path
+        else $'$"{!result'.[0] |> string |> _.ToLower()}{!result'.[1..]}"' |> sm'.replace "\\" "/"
 
 /// ### get_workspace_root
 inl get_workspace_root () =
     inl dirs =
         [ get_source_directory; get_current_directory ]
-        |> listm.map fun dir => fun () => dir () |> normalize_path
     (None, dirs)
     ||> listm.fold fun acc path =>
         match acc with
@@ -759,7 +760,7 @@ inl get_workspace_root () =
             path ()
             |> find_parent Directory ("spiral" </> "workspace")
             |> function
-                | Ok path => Some path
+                | Ok path => path |> normalize_path |> Some
                 | Error error =>
                     trace Warning
                         fun () => "file_system.get_workspace_root"

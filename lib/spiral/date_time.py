@@ -106,17 +106,17 @@ def method4(__unit: None=None) -> str:
 
 
 def method0(v0_1: str, v1_1: Any) -> str:
-    v1066: str = method3()
-    v1071: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v1066 == "") else v1066)
-    v1252: Any
+    v1075: str = method3()
+    v1080: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v1075 == "") else v1075)
+    v1261: Any
     raise Exception(("date_time.get_utc_offset / target: " + str(US3(4, US2(0)))) + "")
-    v1265: uint8 = uint8(1) if (hours(v1252) > 0) else uint8(0)
-    v1266: str = method4()
-    v1287: str = ((("" + str(v1265)) + "") + to_string_1(v1252, "c", {})) + ""
-    v1289: str = str(v0_1)
-    v1294: int = (len(v1071) + len(v1287)) or 0
-    v1313: int = (len(v1289) - 1) or 0
-    return parse(concat(v1071, v1287, *v1289[v1294:v1313 + 1]))
+    v1274: uint8 = uint8(1) if (hours(v1261) > 0) else uint8(0)
+    v1275: str = method4()
+    v1299: str = ((("" + str(v1274)) + "") + to_string_1(v1261, "c", {})) + ""
+    v1301: str = str(v0_1)
+    v1306: int = (len(v1080) + len(v1299)) or 0
+    v1325: int = (len(v1301) - 1) or 0
+    return parse(concat(v1080, v1299, *v1301[v1306:v1325 + 1]))
 
 
 def closure1(v0_1: str, v1_1: Any) -> str:

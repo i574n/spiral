@@ -598,17 +598,17 @@ def method7(v0_1: US0) -> bool:
         return False
 
     else: 
-        class ObjectExpr221:
-            @property
-            def Compare(self) -> Callable[[US0, US0], int]:
-                return compare
-
         class ObjectExpr222:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr221())) >= find(v35, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr222()))
+        class ObjectExpr223:
+            @property
+            def Compare(self) -> Callable[[US0, US0], int]:
+                return compare
+
+        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr222())) >= find(v35, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr223()))
 
 
 
@@ -617,10 +617,10 @@ def closure6(unit_var: None, v0_1: int64) -> US2:
 
 
 def method9(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow223(v: int64) -> US2:
+    def _arrow224(v: int64) -> US2:
         return closure6(None, v)
 
-    return _arrow223
+    return _arrow224
 
 
 def method10(__unit: None=None) -> str:
@@ -795,17 +795,17 @@ def closure16(v0_1: str, v1_1: UH0) -> UH0:
 
 
 def closure15(unit_var: None, v0_1: str) -> Callable[[UH0], UH0]:
-    def _arrow224(v: UH0, unit_var: Any=unit_var, v0_1: Any=v0_1) -> UH0:
+    def _arrow225(v: UH0, unit_var: Any=unit_var, v0_1: Any=v0_1) -> UH0:
         return closure16(v0_1, v)
 
-    return _arrow224
+    return _arrow225
 
 
 def method28(__unit: None=None) -> Callable[[str, UH0], UH0]:
-    def _arrow225(v: str) -> Callable[[UH0], UH0]:
+    def _arrow226(v: str) -> Callable[[UH0], UH0]:
         return closure15(None, v)
 
-    return _arrow225
+    return _arrow226
 
 
 def method29(v0_1_mut: UH0, v1_1_mut: Any, v2_1_mut: int, v3_mut: int) -> tuple[Any, int, int]:
@@ -819,15 +819,15 @@ def method29(v0_1_mut: UH0, v1_1_mut: Any, v2_1_mut: int, v3_mut: int) -> tuple[
             v6: bool = "\n" == v4
             pattern_input: tuple[int, int] = ((v2_1 + 1, 1)) if v6 else ((v2_1, v3 + 1))
             v0_1_mut = v0_1.fields[1]
-            def _arrow226(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3) -> Any:
+            def _arrow227(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3) -> Any:
                 v12: Any = StringBuilder__Clear(v1_1)
                 return v1_1
 
-            def _arrow227(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3) -> Any:
+            def _arrow228(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3) -> Any:
                 v21: Any = StringBuilder__Append_Z721C83C5(v1_1, v4)
                 return v1_1
 
-            v1_1_mut = _arrow226() if v6 else _arrow227()
+            v1_1_mut = _arrow227() if v6 else _arrow228()
             v2_1_mut = pattern_input[0]
             v3_mut = pattern_input[1]
             continue
@@ -845,10 +845,10 @@ def closure17(v0_1: int, v1_1: int, v2_1: str) -> str:
 
 
 def method30(v0_1: int, v1_1: int) -> Callable[[str], str]:
-    def _arrow228(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+    def _arrow229(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
         return closure17(v0_1, v1_1, v)
 
-    return _arrow228
+    return _arrow229
 
 
 def closure14(unit_var: None, _arg: tuple[str, Any, int, int]) -> US7:
@@ -1908,10 +1908,10 @@ def method62(v0_1_mut: str, v1_1_mut: int64) -> bool:
 
 
 
-            def _arrow251(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+            def _arrow256(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0_1 == (v19_1.fields[0] if (v19_1.tag == 0) else _arrow251()):
+            if v0_1 == (v19_1.fields[0] if (v19_1.tag == 0) else _arrow256()):
                 return True
 
             else: 
@@ -1994,10 +1994,10 @@ def method65(v0_1_mut: str, v1_1_mut: int64) -> bool:
 
 
 
-            def _arrow252(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+            def _arrow264(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0_1 == (v15.fields[0] if (v15.tag == 0) else _arrow252()):
+            if v0_1 == (v15.fields[0] if (v15.tag == 0) else _arrow264()):
                 return True
 
             else: 
@@ -2381,10 +2381,10 @@ def method61(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                 v302: US8
                 if v275.tag == 0:
                     v282: FSharpList[str] = method68(v275.fields[0], empty())
-                    def _arrow269(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> IEnumerable_1[str]:
+                    def _arrow274(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> IEnumerable_1[str]:
                         return v282
 
-                    v302 = US8(0, join("", delay(_arrow269)), v275.fields[1], v275.fields[2], v275.fields[3], v275.fields[4])
+                    v302 = US8(0, join("", delay(_arrow274)), v275.fields[1], v275.fields[2], v275.fields[3], v275.fields[4])
 
                 else: 
                     v302 = US8(1, v275.fields[0])
@@ -2447,10 +2447,10 @@ def method61(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                 v486: US17 = method69(UH2(0), v475.fields[1], v475.fields[2], v475.fields[3], v475.fields[4]) if (v475.tag == 0) else US17(1, v475.fields[0])
                 if v486.tag == 0:
                     v493: FSharpList[str] = method68(v486.fields[0], empty())
-                    def _arrow270(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> IEnumerable_1[str]:
+                    def _arrow275(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> IEnumerable_1[str]:
                         return v493
 
-                    v517 = US8(0, join("", delay(_arrow270)), v486.fields[1], v486.fields[2], v486.fields[3], v486.fields[4])
+                    v517 = US8(0, join("", delay(_arrow275)), v486.fields[1], v486.fields[2], v486.fields[3], v486.fields[4])
 
                 else: 
                     v517 = US8(1, v486.fields[0])

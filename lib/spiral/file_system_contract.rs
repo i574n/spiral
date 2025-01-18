@@ -107,6 +107,15 @@ pub mod File_system {
             (**self).existsSync(path)
         }
     }
+    pub trait IPathBasename: core::fmt::Debug + core::fmt::Display {
+        fn basename(&self, path: string) -> string;
+    }
+    impl<V: IPathBasename + core::fmt::Debug + core::fmt::Display> IPathBasename for LrcPtr<V> {
+        #[inline]
+        fn basename(&self, path: string) -> string {
+            (**self).basename(path)
+        }
+    }
     pub trait IPathJoin: core::fmt::Debug + core::fmt::Display {
         fn join(&self, paths: Array<string>) -> string;
     }
@@ -2808,9 +2817,6 @@ pub mod File_system {
     pub fn method124(v0_1: string, v1_1: string, v2_1: string) -> string {
         File_system::method126()
     }
-    pub fn method127() -> string {
-        string("")
-    }
     pub fn method106(v0_1: string) -> string {
         if (v0_1.clone()) == string("") {
             string("")
@@ -2822,41 +2828,37 @@ pub mod File_system {
                 File_system::US15::US15_1,
                 map(File_system::method123(), v10),
             );
-            let v66: string = match &v31_1 {
-                File_system::US15::US15_0(v31_1_0_0) => {
-                    let v60: string = toString(
-                        match &v31_1 {
-                            File_system::US15::US15_0(x) => x.clone(),
-                            _ => unreachable!(),
-                        }
-                        .clone()
-                        .display(),
-                    );
-                    if (v60.clone()) == string("") {
-                        v0_1.clone()
-                    } else {
-                        v60
+            let v64: string = match &v31_1 {
+                File_system::US15::US15_0(v31_1_0_0) => toString(
+                    match &v31_1 {
+                        File_system::US15::US15_0(x) => x.clone(),
+                        _ => unreachable!(),
                     }
-                }
+                    .clone()
+                    .display(),
+                ),
                 _ => v0_1.clone(),
             };
-            if (v66.clone()) == string("") {
-                string("")
-            } else {
-                let v71: string =
-                    File_system::method124(string("^\\\\\\\\\\?\\\\"), string(""), v66);
-                if (length(v71.clone())) < 2_i32 {
-                    File_system::method127()
+            let v69: string = File_system::method124(
+                string("^\\\\\\\\\\?\\\\"),
+                string(""),
+                if (v64.clone()) == string("") {
+                    v0_1.clone()
                 } else {
-                    replace(
-                        concat(new_array(&[
-                            toLower(ofChar(getCharAt(v71.clone(), 0_i32))),
-                            getSlice(v71, Some(1_i32), None::<i32>),
-                        ])),
-                        string("\\"),
-                        string("/"),
-                    )
-                }
+                    v64
+                },
+            );
+            if (length(v69.clone())) < 2_i32 {
+                v0_1.clone()
+            } else {
+                replace(
+                    concat(new_array(&[
+                        toLower(ofChar(getCharAt(v69.clone(), 0_i32))),
+                        getSlice(v69, Some(1_i32), None::<i32>),
+                    ])),
+                    string("\\"),
+                    string("/"),
+                )
             }
         }
     }
@@ -2869,12 +2871,12 @@ pub mod File_system {
             trimStartChars(v0_1, toArray(singleton('/'))),
         ]))
     }
-    pub fn method129(v0_1: string, v1_1: string, v2_1: string) -> File_system::US16 {
+    pub fn method128(v0_1: string, v1_1: string, v2_1: string) -> File_system::US16 {
         let v0_1: MutCell<string> = MutCell::new(v0_1.clone());
         let v1_1: MutCell<string> = MutCell::new(v1_1.clone());
         let v2_1: MutCell<string> = MutCell::new(v2_1.clone());
-        '_method129: loop {
-            break '_method129 (if File_system::method10(File_system::method86(
+        '_method128: loop {
+            break '_method128 (if File_system::method10(File_system::method86(
                 v2_1.get().clone(),
                 v0_1.get().clone(),
             )) {
@@ -2895,7 +2897,7 @@ pub mod File_system {
                         v0_1.set(v0_1_temp);
                         v1_1.set(v1_1_temp);
                         v2_1.set(v2_1_temp);
-                        continue '_method129;
+                        continue '_method128;
                     }
                     _ => File_system::US16::US16_1(sprintf!(
                         "No parent for {} \'{}\' at \'{}\' (until \'{}\')",
@@ -2908,7 +2910,7 @@ pub mod File_system {
             });
         }
     }
-    pub fn method128(v0_1: string, v1_1: string) -> File_system::US16 {
+    pub fn method127(v0_1: string, v1_1: string) -> File_system::US16 {
         if File_system::method10(File_system::method86(v1_1.clone(), v0_1.clone())) {
             File_system::US16::US16_0(v1_1.clone())
         } else {
@@ -2916,7 +2918,7 @@ pub mod File_system {
             let v19_1: File_system::US5 =
                 defaultValue(File_system::US5::US5_1, map(File_system::method5(), v5));
             match &v19_1 {
-                File_system::US5::US5_0(v19_1_0_0) => File_system::method129(
+                File_system::US5::US5_0(v19_1_0_0) => File_system::method128(
                     v0_1.clone(),
                     v1_1.clone(),
                     match &v19_1 {
@@ -2935,7 +2937,7 @@ pub mod File_system {
             }
         }
     }
-    pub fn method131(v0_1: string) -> string {
+    pub fn method130(v0_1: string) -> string {
         let v2_1: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
@@ -2961,7 +2963,7 @@ pub mod File_system {
         };
         v2_1.l0.get().clone()
     }
-    pub fn method130(
+    pub fn method129(
         v0_1: LrcPtr<File_system::Mut0>,
         v1_1: LrcPtr<File_system::Mut1>,
         v2_1: LrcPtr<File_system::Mut2>,
@@ -2972,7 +2974,7 @@ pub mod File_system {
         v7: string,
         v8: string,
     ) -> string {
-        let v9: string = File_system::method131(v8);
+        let v9: string = File_system::method130(v8);
         File_system::method23(sprintf!(
             "{} {} #{} {} / {}",
             v6,
@@ -3005,7 +3007,7 @@ pub mod File_system {
             let v21_1: LrcPtr<File_system::Mut2> = patternInput.2.clone();
             let v20_1: LrcPtr<File_system::Mut1> = patternInput.1.clone();
             let v19_1: LrcPtr<File_system::Mut0> = patternInput.0.clone();
-            File_system::method24(File_system::method130(
+            File_system::method24(File_system::method129(
                 v19_1.clone(),
                 v20_1.clone(),
                 v21_1.clone(),
@@ -3018,21 +3020,21 @@ pub mod File_system {
             ))
         };
     }
-    pub fn method132() -> string {
+    pub fn method131() -> string {
         unbox::<string>(&getZero())
     }
     pub fn closure59(unitVar: (), unitVar_1: ()) -> string {
-        let v1_1: string =
-            File_system::method106(string("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral"));
-        let v5: File_system::US16 = File_system::method128(
+        let v4: File_system::US16 = File_system::method127(
             File_system::method86(string("spiral"), string("workspace")),
-            v1_1,
+            string("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral"),
         );
-        let v53: File_system::US5 = match &v5 {
-            File_system::US16::US16_0(v5_0_0) => File_system::US5::US5_0(v5_0_0.clone()),
-            File_system::US16::US16_1(v5_1_0) => {
+        let v53: File_system::US5 = match &v4 {
+            File_system::US16::US16_0(v4_0_0) => {
+                File_system::US5::US5_0(File_system::method106(v4_0_0.clone()))
+            }
+            File_system::US16::US16_1(v4_1_0) => {
                 let v11: () = {
-                    File_system::closure60(v5_1_0.clone(), ());
+                    File_system::closure60(v4_1_0.clone(), ());
                     ()
                 };
                 File_system::US5::US5_1
@@ -3047,16 +3049,18 @@ pub mod File_system {
                 .clone(),
             ),
             _ => {
-                let v57: string = File_system::method106(File_system::method132());
-                let v59: File_system::US16 = File_system::method128(
+                let v56: string = File_system::method131();
+                let v58: File_system::US16 = File_system::method127(
                     File_system::method86(string("spiral"), string("workspace")),
-                    v57,
+                    v56,
                 );
-                match &v59 {
-                    File_system::US16::US16_0(v59_0_0) => File_system::US5::US5_0(v59_0_0.clone()),
-                    File_system::US16::US16_1(v59_1_0) => {
+                match &v58 {
+                    File_system::US16::US16_0(v58_0_0) => {
+                        File_system::US5::US5_0(File_system::method106(v58_0_0.clone()))
+                    }
+                    File_system::US16::US16_1(v58_1_0) => {
                         let v65: () = {
-                            File_system::closure60(v59_1_0.clone(), ());
+                            File_system::closure60(v58_1_0.clone(), ());
                             ()
                         };
                         File_system::US5::US5_1
@@ -3079,11 +3083,11 @@ pub mod File_system {
     pub fn closure62(v0_1: LrcPtr<Exception>, unitVar: ()) -> LrcPtr<Exception> {
         v0_1
     }
-    pub fn method133(v0_1: string) {
+    pub fn method132(v0_1: string) {
         ();
     }
     pub fn closure61(unitVar: (), v0_1: string) {
-        File_system::method133(v0_1);
+        File_system::method132(v0_1);
     }
     pub fn closure63(unitVar: (), v0_1: bool) {
         let v3: () = {
@@ -3109,7 +3113,7 @@ pub mod File_system {
         (patternInput.1.clone()).l0.set(v37);
         ()
     }
-    pub fn method134(v0_1: string, v1_1: string) {
+    pub fn method133(v0_1: string, v1_1: string) {
         if (File_system::method10(v0_1.clone())) == false {
             let v4: LrcPtr<dyn IDisposable> = File_system::method89(v0_1);
             ()
@@ -3135,7 +3139,7 @@ pub mod File_system {
         }
     }
     pub fn closure65(v0_1: string, v1_1: string) {
-        File_system::method134(v0_1, v1_1);
+        File_system::method133(v0_1, v1_1);
     }
     pub fn closure64(unitVar: (), v0_1: string) -> Func1<string, ()> {
         Func1::new({
