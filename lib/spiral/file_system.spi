@@ -639,10 +639,14 @@ inl find_parent file_type name root_dir =
         if dir </> name |> (if is_file then file_exists else directory_exists)
         then dir |> Ok
         else
-            inl result = dir |> directory_get_parent
-            match result |> optionm'.unbox with
+            inl parent = dir |> directory_get_parent
+            match parent |> optionm'.unbox with
             | Some parent => parent |> loop
-            | None => ($'$"""No parent for {if !is_file then "file" else "dir"} \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"""' : string) |> Error
+            | None =>
+                $'$"""No parent for {if !is_file then "file" else "dir"} \'{!name}\'"""'
+                +. $'$" at \'{!root_dir}\' (until \'{!dir}\')"'
+                |> fun x => x : string
+                |> Error
     loop root_dir
 
 /// ### file_delete
@@ -752,22 +756,33 @@ let normalize_path (path : string) : string =
 inl get_workspace_root () =
     inl dirs =
         [ get_source_directory; get_current_directory ]
-    (None, dirs)
-    ||> listm.fold fun acc path =>
-        match acc with
-        | Some path => Some path
-        | None =>
-            path ()
-            |> find_parent Directory ("spiral" </> "workspace")
-            |> function
-                | Ok path => path |> normalize_path |> Some
-                | Error error =>
-                    trace Warning
-                        fun () => "file_system.get_workspace_root"
-                        fun () => { error }
-                    None
-    |> optionm.value
-    |> fun root => root </> "polyglot"
+    let run dir =
+        dir
+        |> find_parent Directory ("spiral" </> "workspace")
+        |> function
+            | Ok dir => dir |> normalize_path |> Some
+            | Error error =>
+                trace Warning
+                    fun () => "file_system.get_workspace_root"
+                    fun () => { dir error }
+                None
+    inl root =
+        (None, dirs)
+        ||> listm.fold fun acc dir =>
+            match acc with
+            | Some dir => Some dir
+            | None => dir () |> run
+        |> optionm.value
+    inl root =
+        match root |> get_file_name with
+        | "deps" =>
+            root
+            |> directory_get_parent
+            |> optionm'.get'
+            |> run
+            |> optionm.value
+        | _ => root
+    root </> "polyglot"
 
 /// ### get_workspace_root_external
 inl get_workspace_root_external () =
@@ -803,7 +818,8 @@ let get_full_path (path : string) : string =
                 |> seq.of_array'
                 |> sm'.concat (directory_separator_char () |> sm'.obj_to_string)
             else
-                inl path = !\\(path, $'"std::fs::canonicalize(&*$0)"') : resultm.result' path_buf stream.io_error
+                inl path : resultm.result' path_buf stream.io_error =
+                    !\\(path, $'"std::fs::canonicalize(&*$0)"')
                 path
                 |> resultm.unwrap'
                 |> path_buf_display

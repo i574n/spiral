@@ -172,13 +172,13 @@ inl default_value' forall t. (value : t) (x : option' t) : t =
 
 #!markdown
 
-### value'
+### get'
 
 #!spiral
 
-inl value' forall t. (x : option' t) : t =
+inl get' forall t. (x : option' t) : t =
     backend_switch {
-        Fsharp = fun () => $'!x |> Option.value' : t
+        Fsharp = fun () => $'!x |> Option.get' : t
         Python = fun () => $'!x ' : t
     }
 
