@@ -9961,21 +9961,21 @@ mod module_1216f6c3 {
             ) as i64);
             let v312: u8 = if (v299.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
             let v313: string = Spiral::method204();
-            let v332: string = v299.toString(v313);
-            let v337: string = sprintf!(
+            let v415: string = v299.toString(v313);
+            let v463: string = sprintf!(
                 "{}{}{}",
                 v312,
-                getSlice(v332.clone(), Some(0_i32), Some(1_i32)),
-                getSlice(v332, Some(3_i32), Some(4_i32))
+                getSlice(v415.clone(), Some(0_i32), Some(1_i32)),
+                getSlice(v415, Some(3_i32), Some(4_i32))
             );
-            let v339: string = toString(v0_1);
+            let v465: string = toString(v0_1);
             parse(concat(new_array(&[
                 v131.clone(),
-                v337.clone(),
+                v463.clone(),
                 getSlice(
-                    v339.clone(),
-                    Some((length(v131)) + (length(v337))),
-                    Some((length(v339)) - 1_i32),
+                    v465.clone(),
+                    Some((length(v131)) + (length(v463))),
+                    Some((length(v465)) - 1_i32),
                 ),
             ])))
         }
@@ -11899,7 +11899,7 @@ mod module_1216f6c3 {
                 async {
                     /*;
                     let v7: bool = */
- //;
+                    ();
                     let v9: bool = true;
                     let __future_init = Box::pin(
                         /*;
@@ -11907,7 +11907,7 @@ mod module_1216f6c3 {
                         async move {
                             /*;
                             let v13: bool = */
- //;
+                            ();
                             let v15: async_walkdir::DirEntry = v1_1.clone();
                             let v17: std::pin::Pin<
                                 Box<
@@ -13125,7 +13125,7 @@ mod module_1216f6c3 {
                 async move {
                     /*;
                     let v7: bool = */
- //;
+                    ();
                     let v10: Option<(std::string::String, clap::ArgMatches)> =
                         clap::ArgMatches::subcommand(Box::leak(Box::new(v1_1))).map(|(a, b)| {
                             (

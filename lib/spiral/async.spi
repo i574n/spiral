@@ -214,7 +214,7 @@ inl future_init forall t. (move : bool) (x : () -> t) : infer' t =
     if move
     then (!\($'"*/ async move { /*"') : bool) |> ignore
     else (!\($'"*/ async { /*"') : bool) |> ignore
-    (!\($'"*/ //"') : bool) |> ignore
+    (!\($'"*/ ()"') : bool) |> ignore
 
     inl x' = x ()
     // inl x' = join x'

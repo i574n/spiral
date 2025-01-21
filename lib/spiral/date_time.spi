@@ -179,6 +179,13 @@ inl total_seconds (time_span : time_span) : f64 =
         Python = fun () => $'!time_span.total_seconds()' : f64
     }
 
+/// ### days
+inl days (time_span : time_span) : f64 =
+    backend_switch {
+        Fsharp = fun () => time_span |> $'_.TotalDays' : f64
+        Python = fun () => $'!time_span.days' : f64
+    }
+
 /// ### ticks
 inl ticks (date_time : date_time) : timestamp =
     backend_switch {
@@ -190,21 +197,6 @@ inl ticks (date_time : date_time) : timestamp =
         Python = fun () =>
             date_time |> new_time_span (min_value ()) |> total_seconds |> ((*) 10000000) |> convert : timestamp
     }
-
-/// ### time_span_format
-inl time_span_format (format : string) (time_span : time_span) : string =
-    run_target function
-        | TypeScript _
-        | Python _ => fun () =>
-            $'!time_span.ToString ("c", System.Globalization.CultureInfo.InvariantCulture)'
-        // | Rust _ => fun () =>
-        //     !\\((time_span, format), $'"$0.to_string($1)"')
-        //     |> sm'.from_std_string
-        | _ => fun () =>
-            backend_switch {
-                Fsharp = fun () => $'!time_span.ToString !format ' : string
-                Python = fun () => $'!time_span ' : string
-            }
 
 /// ### hours
 inl hours (time_span : time_span) : i32 =
@@ -233,6 +225,39 @@ inl milliseconds (time_span : time_span) : i32 =
         Fsharp = fun () => time_span |> $'_.Milliseconds' : i32
         Python = fun () => $'!time_span.microseconds' : i32
     }
+
+/// ### time_span_format
+inl time_span_format (format : string) (time_span : time_span) : string =
+    run_target_args (fun () => format, time_span) function
+        | TypeScript _
+        | Python _ => fun format, time_span =>
+            $'!time_span.ToString ("c", System.Globalization.CultureInfo.InvariantCulture)'
+        | Rust _ => fun format, time_span =>
+            open rust.rust_operators
+            inl format = format
+            !\\((time_span, format), $'"$0.toString($1)"')
+        | _ => fun format, time_span =>
+            backend_switch {
+                Fsharp = fun () => $'!time_span.ToString !format ' : string
+                Python = fun () =>
+                    inl date = $'!time_span + !(min_value ())' : date_time
+                    inl time = $'!date.strftime("%H:%M:%S")' : string
+                    inl days = time_span |> days
+                    inl result =
+                        if days <= 0
+                        then time
+                        else $'f"{!days}.{!time}"' : string
+                    inl ms = time_span |> milliseconds
+                    if ms <= 0
+                    then result
+                    else
+                        inl ms =
+                            ms
+                            |> sm'.obj_to_string
+                            |> sm'.pad_left 3 '0'
+                            |> sm'.pad_right 7 '0'
+                        $'f"{!result}.{!ms}"' : string
+            }
 
 /// ### time_zone_info
 nominal time_zone_info = $'System.TimeZoneInfo'
