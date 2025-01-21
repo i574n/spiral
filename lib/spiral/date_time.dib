@@ -394,6 +394,18 @@ inl total_seconds (time_span : time_span) : f64 =
 
 #!markdown
 
+### days
+
+#!spiral
+
+inl days (time_span : time_span) : f64 =
+    backend_switch {
+        Fsharp = fun () => time_span |> $'_.TotalDays' : f64
+        Python = fun () => $'!time_span.days' : f64
+    }
+
+#!markdown
+
 ### ticks
 
 #!spiral
@@ -419,26 +431,6 @@ inl ticks (date_time : date_time) : timestamp =
 unix_epoch ()
 |> ticks
 |> _assert_eq' (621355968000000000i64 |> convert)
-
-#!markdown
-
-### time_span_format
-
-#!spiral
-
-inl time_span_format (format : string) (time_span : time_span) : string =
-    run_target function
-        | TypeScript _
-        | Python _ => fun () =>
-            $'!time_span.ToString ("c", System.Globalization.CultureInfo.InvariantCulture)'
-        // | Rust _ => fun () =>
-        //     !\\((time_span, format), $'"$0.to_string($1)"')
-        //     |> sm'.from_std_string
-        | _ => fun () =>
-            backend_switch {
-                Fsharp = fun () => $'!time_span.ToString !format ' : string
-                Python = fun () => $'!time_span ' : string
-            }
 
 #!markdown
 
@@ -543,6 +535,86 @@ inl milliseconds (time_span : time_span) : i32 =
 |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
 |> milliseconds
 |> _assert_eq 13
+
+#!markdown
+
+### time_span_format
+
+#!spiral
+
+inl time_span_format (format : string) (time_span : time_span) : string =
+    run_target_args (fun () => format, time_span) function
+        | TypeScript _
+        | Python _ => fun format, time_span =>
+            $'!time_span.ToString ("c", System.Globalization.CultureInfo.InvariantCulture)'
+        | Rust _ => fun format, time_span =>
+            open rust.rust_operators
+            inl format = format
+            !\\((time_span, format), $'"$0.toString($1)"')
+        | _ => fun format, time_span =>
+            backend_switch {
+                Fsharp = fun () => $'!time_span.ToString !format ' : string
+                Python = fun () =>
+                    inl date = $'!time_span + !(min_value ())' : date_time
+                    inl time = $'!date.strftime("%H:%M:%S")' : string
+                    inl days = time_span |> days
+                    inl result =
+                        if days <= 0
+                        then time
+                        else $'f"{!days}.{!time}"' : string
+                    inl ms = time_span |> milliseconds
+                    if ms <= 0
+                    then result
+                    else
+                        inl ms =
+                            ms
+                            |> sm'.obj_to_string
+                            |> sm'.pad_left 3 '0'
+                            |> sm'.pad_right 7 '0'
+                        $'f"{!result}.{!ms}"' : string
+            }
+
+#!spiral
+
+//// test
+///! fsharp
+///! cuda
+///! rust
+///! typescript
+///! python
+
+(join date_time_milliseconds 2002 2 2 20 22 24 26)
+|> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+|> time_span_format "c"
+|> _assert_eq "397.10:11:12.0130000"
+
+#!spiral
+
+//// test
+///! fsharp
+///! cuda
+///! rust
+///! typescript
+///! python
+
+(join date_time_milliseconds 2002 2 2 20 22 24 26)
+|> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 26)
+|> time_span_format "c"
+|> _assert_eq "10:11:12"
+
+#!spiral
+
+//// test
+///! fsharp
+///! cuda
+///! rust
+///! typescript
+///! python
+
+(join date_time_milliseconds 2002 2 2 20 22 24 999)
+|> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)
+|> time_span_format "c"
+|> _assert_eq "10:11:12.9990000"
 
 #!markdown
 
