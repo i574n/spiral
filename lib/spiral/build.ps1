@@ -11,8 +11,8 @@ $ErrorActionPreference = "Stop"
 
 if (!$fast) {
     {
-        $spiralPath = "deps/spiral/workspace/target/release/spiral$(_exe)"
-        . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) `
+        $spiralPath = "../../deps/spiral/workspace/target/release/spiral$(_exe)"
+        . ../../apps/spiral/dist/Supervisor$(_exe) `
             --exit-on-error `
             $(!$sequential ? @("--parallel") : @()) `
             --execute-command "$spiralPath dib --path $ScriptDir/physics.dib --retries 3" `
@@ -53,7 +53,7 @@ if (!$fast) {
             --execute-command "$spiralPath dib --path $ScriptDir/typescript.dib --retries 3" `
             --execute-command "$spiralPath dib --path $ScriptDir/file_system.dib --retries 3" `
             --execute-command "$spiralPath dib --path $ScriptDir/networking.dib --retries 3" `
-    } | Invoke-Block -Location (GetFullPath "../../deps/polyglot")
+    } | Invoke-Block -Location (GetFullPath "../../deps/polyglot/lib/fsharp")
 }
 
 { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) testing.dib spi async.dib spi runtime.dib spi trace.dib spi threading.dib spi networking.dib spi crypto.dib spi common.dib spi base.dib spi resultm.dib spi iter.dib spi env.dib spi parsing.dib spi console.dib spi date_time.dib spi file_system.dib spi guid.dib spi math.dib spi mapm.dib spi "optionm'.dib" spi "am'.dib" spi "sm'.dib" spi "sm'.dib" spir "listm'.dib" spi reflection.dib spi python.dib spi typescript.dib spi benchmark.dib spi stream.dib spi seq.dib spi util.dib spi platform.dib spi rust/rust.dib spi rust/testing.dib spi rust/near.dib spi rust/near_workspaces.dib spi physics.dib spi leptos/leptos.dib spi wasm.dib spi } | Invoke-Block
