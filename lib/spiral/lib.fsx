@@ -291,6 +291,20 @@ module SpiralFileSystem =
         normalize_path x
 #endif
 
+    let get_full_path x =
+#if !INTERACTIVE
+        File_system.get_full_path x
+#else
+        get_full_path x
+#endif
+
+    let standardize_path x =
+#if !INTERACTIVE
+        File_system.standardize_path x
+#else
+        standardize_path x
+#endif
+
     let new_file_uri x =
 #if !INTERACTIVE
         File_system.new_file_uri x

@@ -42,7 +42,7 @@ jobs:
       - run: pwsh deps/polyglot/apps/spiral/build.ps1 -fast 1
       - run: pwsh deps/polyglot/apps/dir-tree-html/build.ps1 -fast 1
 
-      - run: pwsh apps/spiral/build.ps1 -SkipFsx 1
+      - run: pwsh apps/spiral/build.ps1 -fast 1 -SkipFsx 1
 
       - run: pwsh scripts/build.ps1
 
