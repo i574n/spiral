@@ -17046,20 +17046,20 @@ and method131 () : char =
     let _run_target_args'_v0 = v2 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v3 : char = System.IO.Path.DirectorySeparatorChar
-    let _run_target_args'_v0 = v3 
-    #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-    let v4 : char = System.IO.Path.DirectorySeparatorChar
+    let v3 : string = "std::path::MAIN_SEPARATOR"
+    let v4 : char = Fable.Core.RustInterop.emitRustExpr () v3 
     let _run_target_args'_v0 = v4 
     #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+    let v5 : string = "std::path::MAIN_SEPARATOR"
+    let v6 : char = Fable.Core.RustInterop.emitRustExpr () v5 
+    let _run_target_args'_v0 = v6 
+    #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v5 : char = System.IO.Path.DirectorySeparatorChar
-    let _run_target_args'_v0 = v5 
+    let _run_target_args'_v0 = '/' 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v6 : char = System.IO.Path.DirectorySeparatorChar
-    let _run_target_args'_v0 = v6 
+    let _run_target_args'_v0 = '/' 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
     let v7 : char = System.IO.Path.DirectorySeparatorChar

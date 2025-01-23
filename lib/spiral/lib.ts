@@ -3,7 +3,7 @@ import { hash_to_port, hash_text } from "deps/polyglot/deps/spiral/lib/spiral/cr
 import { int32, uint16 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Int32.js";
 import { trim_end, trim_start, trim, to_lower, substring, starts_with, split_string, split, slice, replace_regex, replace, format_exception, ends_with, ellipsis_end, ellipsis, contains, concat } from "deps/polyglot/deps/spiral/lib/spiral/sm.fsx";
 import { int64 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/BigInt.js";
-import { TraceState_trace_state as TraceState_trace_state_1, Mut4 as Mut4_1, Mut3 as Mut3_1, Mut2 as Mut2_1, Mut1 as Mut1_1, Mut0 as Mut0_1, US0_US0_0 as US0_US0_0_1, US0_US0_4 as US0_US0_4_1, US0_US0_3 as US0_US0_3_1, US0_US0_2 as US0_US0_2_1, US0_US0_1 as US0_US0_1_1, create_temp_path, create_temp_dir$0027, create_temp_dir, new_file_uri, normalize_path, get_source_directory, get_workspace_root } from "deps/polyglot/deps/spiral/lib/spiral/file_system.fsx";
+import { TraceState_trace_state as TraceState_trace_state_1, Mut4 as Mut4_1, Mut3 as Mut3_1, Mut2 as Mut2_1, Mut1 as Mut1_1, Mut0 as Mut0_1, US0_US0_0 as US0_US0_0_1, US0_US0_4 as US0_US0_4_1, US0_US0_3 as US0_US0_3_1, US0_US0_2 as US0_US0_2_1, US0_US0_1 as US0_US0_1_1, create_temp_path, create_temp_dir$0027, create_temp_dir, new_file_uri, standardize_path, get_full_path, normalize_path, get_source_directory, get_workspace_root } from "deps/polyglot/deps/spiral/lib/spiral/file_system.fsx";
 import { IDisposable } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Util.js";
 import { iterate } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Seq.js";
 import { TraceState_trace_state, Mut4, Mut3, Mut2, Mut1, Mut0, US0_US0_0, US0_US0_4, US0_US0_3, US0_US0_2, US0_US0_1 } from "deps/polyglot/deps/spiral/lib/spiral/networking.fsx";
@@ -101,6 +101,14 @@ export function SpiralFileSystem_get_source_directory(): string {
 
 export function SpiralFileSystem_normalize_path(x: string): string {
     return normalize_path(x);
+}
+
+export function SpiralFileSystem_get_full_path(x: string): string {
+    return get_full_path(x);
+}
+
+export function SpiralFileSystem_standardize_path(x: string): string {
+    return standardize_path(x);
 }
 
 export function SpiralFileSystem_new_file_uri(x: string): string {

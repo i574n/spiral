@@ -7,7 +7,7 @@ from collections.abc import Callable
 from typing import Any
 from .....deps.spiral.lib.spiral.common import (US0 as US0_4, Mut0 as Mut0_3, Mut1 as Mut1_3, Mut2 as Mut2_3, Mut3 as Mut3_3, Mut4 as Mut4_3, TraceState_trace_state as TraceState_trace_state_3)
 from .....deps.spiral.lib.spiral.crypto import (hash_text, hash_to_port)
-from .....deps.spiral.lib.spiral.file_system import (get_workspace_root, get_source_directory, normalize_path, new_file_uri, create_temp_dir, create_temp_dir_0027, create_temp_path, US0 as US0_2, Mut0 as Mut0_1, Mut1 as Mut1_1, Mut2 as Mut2_1, Mut3 as Mut3_1, Mut4 as Mut4_1, TraceState_trace_state as TraceState_trace_state_1)
+from .....deps.spiral.lib.spiral.file_system import (get_workspace_root, get_source_directory, normalize_path, get_full_path, standardize_path, new_file_uri, create_temp_dir, create_temp_dir_0027, create_temp_path, US0 as US0_2, Mut0 as Mut0_1, Mut1 as Mut1_1, Mut2 as Mut2_1, Mut3 as Mut3_1, Mut4 as Mut4_1, TraceState_trace_state as TraceState_trace_state_1)
 from .....deps.spiral.lib.spiral.networking import (US0 as US0_1, Mut0, Mut1, Mut2, Mut3, Mut4, TraceState_trace_state)
 from .....deps.spiral.lib.spiral.runtime import (US0 as US0_3, Mut0 as Mut0_2, Mut1 as Mut1_2, Mut2 as Mut2_2, Mut3 as Mut3_2, Mut4 as Mut4_2, TraceState_trace_state as TraceState_trace_state_2)
 from .....deps.spiral.lib.spiral.sm import (concat, contains, ellipsis, ellipsis_end, ends_with, format_exception, replace, replace_regex, slice, split, split_string, starts_with, substring, to_lower, trim, trim_start, trim_end)
@@ -103,6 +103,14 @@ def SpiralFileSystem_get_source_directory(__unit: None=None) -> str:
 
 def SpiralFileSystem_normalize_path(x: str) -> str:
     return normalize_path(x)
+
+
+def SpiralFileSystem_get_full_path(x: str) -> str:
+    return get_full_path(x)
+
+
+def SpiralFileSystem_standardize_path(x: str) -> str:
+    return standardize_path(x)
 
 
 def SpiralFileSystem_new_file_uri(x: str) -> str:
