@@ -1368,7 +1368,7 @@ let get_full_path (path : string) : string =
 |> path_buf_file_name
 |> optionm'.unwrap
 |> sm'.from_os_str_ref
-|> _assert_in [ "polyglot"; "spiral" ]
+|> _assert_in [ "polyglot"; "spiral"; "fsharp" ]
 
 #!spiral
 
