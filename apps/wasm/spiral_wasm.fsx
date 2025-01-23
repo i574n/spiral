@@ -3839,7 +3839,7 @@ and method29 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
     let v3 : bool = Fable.Core.RustInterop.emitRustExpr () v2 
     let v4 : string = "*/ async move { /*"
     let v5 : bool = Fable.Core.RustInterop.emitRustExpr () v4 
-    let v6 : string = "*/ //"
+    let v6 : string = "*/ ()"
     let v7 : bool = Fable.Core.RustInterop.emitRustExpr () v6 
     let v8 : string = "near_workspaces::sandbox().await"
     let v9 : Result<near_workspaces_Worker<near_workspaces_network_Sandbox>, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr () v8 
@@ -4863,7 +4863,7 @@ and method28 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
     let v3 : bool = Fable.Core.RustInterop.emitRustExpr () v2 
     let v4 : string = "*/ async move { /*"
     let v5 : bool = Fable.Core.RustInterop.emitRustExpr () v4 
-    let v6 : string = "*/ //"
+    let v6 : string = "*/ ()"
     let v7 : bool = Fable.Core.RustInterop.emitRustExpr () v6 
     let v8 : std_pin_Pin<Box<Dyn<std_future_Future<Result<US7, anyhow_Error>>>>> = method29(v0, v1)
     let v9 : string = "v8.await"
@@ -4925,7 +4925,7 @@ and method28 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
                 let v187 : bool = Fable.Core.RustInterop.emitRustExpr () v186 
                 let v188 : string = "*/ async move { /*"
                 let v189 : bool = Fable.Core.RustInterop.emitRustExpr () v188 
-                let v190 : string = "*/ //"
+                let v190 : string = "*/ ()"
                 let v191 : bool = Fable.Core.RustInterop.emitRustExpr () v190 
                 let v192 : string = ""
                 let v193 : string = "}"
@@ -4996,7 +4996,7 @@ and method28 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
                 let v31 : bool = Fable.Core.RustInterop.emitRustExpr () v30 
                 let v32 : string = "*/ async move { /*"
                 let v33 : bool = Fable.Core.RustInterop.emitRustExpr () v32 
-                let v34 : string = "*/ //"
+                let v34 : string = "*/ ()"
                 let v35 : bool = Fable.Core.RustInterop.emitRustExpr () v34 
                 let v36 : string = ""
                 let v37 : string = "}"
@@ -5056,7 +5056,7 @@ and method28 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
                 let v105 : bool = Fable.Core.RustInterop.emitRustExpr () v104 
                 let v106 : string = "*/ async move { /*"
                 let v107 : bool = Fable.Core.RustInterop.emitRustExpr () v106 
-                let v108 : string = "*/ //"
+                let v108 : string = "*/ ()"
                 let v109 : bool = Fable.Core.RustInterop.emitRustExpr () v108 
                 let v110 : string = ""
                 let v111 : string = "}"
@@ -5257,7 +5257,7 @@ and method24 (v0 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_Future<Resu
     let v2 : bool = Fable.Core.RustInterop.emitRustExpr () v1 
     let v3 : string = "*/ async move { /*"
     let v4 : bool = Fable.Core.RustInterop.emitRustExpr () v3 
-    let v5 : string = "*/ //"
+    let v5 : string = "*/ ()"
     let v6 : bool = Fable.Core.RustInterop.emitRustExpr () v5 
     let v7 : string = method25()
     (* run_target_args'
