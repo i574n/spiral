@@ -301,7 +301,7 @@ inl get_source_directory () =
 get_source_directory ()
 |> directory_info
 |> directory_info_name
-|> _assert_eq "spiral"
+|> _assert_in [ "spiral"; "fsharp" ]
 
 #!markdown
 
@@ -1092,7 +1092,7 @@ a ;[ Directory, "workspace"; File, "README.md" ]
     |> directory_info_name
 |> am'.distinct
 |> fun (a x : _ int _) => x
-|> _assert_eq' ;[ "spiral" ]
+|> _assert_in [ ;[ "spiral" ]; ;[ "polyglot" ] ]
 
 #!spiral
 
@@ -1346,7 +1346,7 @@ let get_full_path (path : string) : string =
 |> get_full_path
 |> directory_info
 |> directory_info_name
-|> _assert_eq "spiral"
+|> _assert_in [ "spiral"; "fsharp" ]
 
 #!spiral
 
