@@ -8163,7 +8163,7 @@ __assert_approx_eq / actual: 1.0 / expected: 2.0
         <span class="k">match</span> <span class="n">acc</span> <span class="k">with</span>
         <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">Some</span> <span class="n">x</span>
         <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span>
-            <span class="k">if</span> <span class="n">x</span><span class="s1">' &lt;&gt; x</span>
+            <span class="k">if</span> <span class="n">x</span><span class="s1">' &lt;&gt;. x</span>
             <span class="n">then</span> <span class="kc">None</span>
             <span class="k">else</span>
                 <span class="n">trace</span> <span class="n">Debug</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"_assert_in"</span><span class="p">)</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="n">x</span> <span class="n">x</span><span class="s1">' }</span>

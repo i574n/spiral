@@ -57,6 +57,10 @@ export interface IPathDirname {
     dirname(path: string): string
 }
 
+export interface IFs {
+    realpathSync(path: string): string
+}
+
 export type US0_$union = 
     | US0<0>
     | US0<1>
@@ -696,16 +700,16 @@ export type US16_$union =
     | US16<1>
 
 export type US16_$cases = {
-    0: ["US16_0", [string]],
-    1: ["US16_1", [string]]
+    0: ["US16_0", []],
+    1: ["US16_1", []]
 }
 
-export function US16_US16_0(f0_0: string) {
-    return new US16<0>(0, [f0_0]);
+export function US16_US16_0() {
+    return new US16<0>(0, []);
 }
 
-export function US16_US16_1(f1_0: string) {
-    return new US16<1>(1, [f1_0]);
+export function US16_US16_1() {
+    return new US16<1>(1, []);
 }
 
 export class US16<Tag extends keyof US16_$cases> extends Union<Tag, US16_$cases[Tag][0]> {
@@ -718,7 +722,37 @@ export class US16<Tag extends keyof US16_$cases> extends Union<Tag, US16_$cases[
 }
 
 export function US16_$reflection(): TypeInfo {
-    return union_type("File_system.US16", [], US16, () => [[["f0_0", string_type]], [["f1_0", string_type]]]);
+    return union_type("File_system.US16", [], US16, () => [[], []]);
+}
+
+export type US17_$union = 
+    | US17<0>
+    | US17<1>
+
+export type US17_$cases = {
+    0: ["US17_0", [string]],
+    1: ["US17_1", [string]]
+}
+
+export function US17_US17_0(f0_0: string) {
+    return new US17<0>(0, [f0_0]);
+}
+
+export function US17_US17_1(f1_0: string) {
+    return new US17<1>(1, [f1_0]);
+}
+
+export class US17<Tag extends keyof US17_$cases> extends Union<Tag, US17_$cases[Tag][0]> {
+    constructor(readonly tag: Tag, readonly fields: US17_$cases[Tag][1]) {
+        super();
+    }
+    cases() {
+        return ["US17_0", "US17_1"];
+    }
+}
+
+export function US17_$reflection(): TypeInfo {
+    return union_type("File_system.US17", [], US17, () => [[["f0_0", string_type]], [["f1_0", string_type]]]);
 }
 
 export function method3(v0_1: string): string {
@@ -2046,7 +2080,14 @@ export function method110(): ((arg0: string) => US14_$union) {
 
 export function method113(v0_1: string): Option<string> {
     const v137: IPathDirname = path;
-    return v137.dirname(v0_1);
+    const v139: string = v137.dirname(v0_1);
+    const v143: US5_$union = (v139 === v0_1) ? US5_US5_1() : US5_US5_0(v139);
+    if ((v143.tag as int32) === /* US5_0 */ 0) {
+        return v143.fields[0] as any;
+    }
+    else {
+        return undefined;
+    }
 }
 
 export function method114(v0_1: string): string {
@@ -2298,7 +2339,8 @@ export function closure50(unitVar: void, v0_1: string): string {
 }
 
 export function method128(): string {
-    return defaultOf();
+    const v74: IFs = fs;
+    return fs.realpathSync('.');
 }
 
 export function method129(v0_1: int32, v1_1: Mut5): boolean {
@@ -2337,47 +2379,62 @@ export function closure60(unitVar: void, v0_1: string): string {
     return concat("file:///", ...trimStart(v0_1, ...["/"]));
 }
 
-export function method136(v0_1_mut: string, v1_1_mut: string, v2_1_mut: string): US16_$union {
-    method136:
+export function closure62(unitVar: void, v0_1: string): boolean {
+    return method33(v0_1);
+}
+
+export function closure63(unitVar: void, v0_1: string): boolean {
+    return method10(v0_1);
+}
+
+export function method137(v0_1_mut: string, v1_1_mut: string, v2_1_mut: boolean, v3_mut: ((arg0: string) => boolean), v4_mut: string): US17_$union {
+    method137:
     while (true) {
-        const v0_1: string = v0_1_mut, v1_1: string = v1_1_mut, v2_1: string = v2_1_mut;
-        if (method10(method86(v2_1, v0_1))) {
-            return US16_US16_0(v2_1);
+        const v0_1: string = v0_1_mut, v1_1: string = v1_1_mut, v2_1: boolean = v2_1_mut, v3: ((arg0: string) => boolean) = v3_mut, v4: string = v4_mut;
+        if (v3(method86(v4, v0_1))) {
+            return US17_US17_0(v4);
         }
         else {
-            const v6: Option<string> = method113(v2_1);
-            const v20_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v6), US5_US5_1());
-            if ((v20_1.tag as int32) === /* US5_0 */ 0) {
+            const v8: Option<string> = method113(v4);
+            const v22_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v8), US5_US5_1());
+            if ((v22_1.tag as int32) === /* US5_0 */ 0) {
                 v0_1_mut = v0_1;
                 v1_1_mut = v1_1;
-                v2_1_mut = (v20_1.fields[0] as any);
-                continue method136;
+                v2_1_mut = v2_1;
+                v3_mut = v3;
+                v4_mut = (v22_1.fields[0] as any);
+                continue method137;
             }
             else {
-                return US16_US16_1((`No parent for ${"dir"} '${v0_1}'`) + (` at '${v1_1}' (until '${v2_1}')`));
+                return US17_US17_1(concat("file_system.find_parent / No parent for ", ...(v2_1 ? "file" : "dir")) + (` '${v0_1}' at '${v1_1}' (until '${v4}')`));
             }
         }
         break;
     }
 }
 
-export function method135(v0_1: string, v1_1: string): US16_$union {
-    if (method10(method86(v1_1, v0_1))) {
-        return US16_US16_0(v1_1);
+export function method136(v0_1: string, v1_1: string, v2_1: boolean, v3: ((arg0: string) => boolean)): US17_$union {
+    if (v3(method86(v1_1, v0_1))) {
+        return US17_US17_0(v1_1);
     }
     else {
-        const v5: Option<string> = method113(v1_1);
-        const v19_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v5), US5_US5_1());
-        if ((v19_1.tag as int32) === /* US5_0 */ 0) {
-            return method136(v0_1, v1_1, v19_1.fields[0] as any);
+        const v7: Option<string> = method113(v1_1);
+        const v21_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v7), US5_US5_1());
+        if ((v21_1.tag as int32) === /* US5_0 */ 0) {
+            return method137(v0_1, v1_1, v2_1, v3, v21_1.fields[0] as any);
         }
         else {
-            return US16_US16_1((`No parent for ${"dir"} '${v0_1}'`) + (` at '${v1_1}' (until '${v1_1}')`));
+            return US17_US17_1(concat("file_system.find_parent / No parent for ", ...(v2_1 ? "file" : "dir")) + (` '${v0_1}' at '${v1_1}' (until '${v1_1}')`));
         }
     }
 }
 
-export function method138(v0_1: string, v1_1: string): string {
+export function method135(v0_1: US16_$union, v1_1: string, v2_1: string): US17_$union {
+    const v3: boolean = (v0_1.tag as int32) === /* US16_0 */ 0;
+    return method136(v1_1, v2_1, v3, v3 ? ((v: string): boolean => closure62(undefined, v)) : ((v_1: string): boolean => closure63(undefined, v_1)));
+}
+
+export function method139(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
     let v10: any;
     closure6(v3, "{ ", undefined);
@@ -2409,12 +2466,12 @@ export function method138(v0_1: string, v1_1: string): string {
     return v3.l0;
 }
 
-export function method137(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: string, v9: string): string {
-    const v10: string = method138(v8, v9);
+export function method138(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: string, v9: string): string {
+    const v10: string = method139(v8, v9);
     return method23(`${v6} ${v7} #${v0_1.l0} ${"file_system.get_workspace_root"} / ${v10}`);
 }
 
-export function closure62(v0_1: string, v1_1: string, unitVar: void): void {
+export function closure64(v0_1: string, v1_1: string, unitVar: void): void {
     if (method11(US0_US0_3())) {
         let v6: any;
         closure0(undefined, undefined);
@@ -2426,64 +2483,65 @@ export function closure62(v0_1: string, v1_1: string, unitVar: void): void {
         const v22_1: Mut2 = patternInput[2];
         const v21_1: Mut1 = patternInput[1];
         const v20_1: Mut0 = patternInput[0];
-        method24(method137(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method50(), v0_1, v1_1));
+        method24(method138(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method50(), v0_1, v1_1));
     }
 }
 
 export function method134(v0_1: string): US5_$union {
-    const v4: US16_$union = method135(method86("spiral", "workspace"), v0_1);
-    if ((v4.tag as int32) === /* US16_0 */ 0) {
-        return US5_US5_0(method106(v4.fields[0] as any));
+    const v5: US17_$union = method135(US16_US16_1(), method86("spiral", "workspace"), v0_1);
+    if ((v5.tag as int32) === /* US17_0 */ 0) {
+        return US5_US5_0(method106(v5.fields[0] as any));
     }
     else {
-        let v11: any;
-        closure62(v0_1, v4.fields[0] as any, undefined);
-        v11 = undefined;
+        let v12: any;
+        closure64(v0_1, v5.fields[0] as any, undefined);
+        v12 = undefined;
         return US5_US5_1();
     }
 }
 
 export function closure61(unitVar: void, unitVar_1: void): string {
-    let v18_1: US5_$union;
-    const v1_1: US5_$union = method134("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral");
-    const v7: US5_$union = ((v1_1.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v1_1.fields[0] as any) : method134(method128());
-    let v11: string;
-    if ((v7.tag as int32) === /* US5_0 */ 0) {
-        v11 = (v7.fields[0] as any);
+    let v24_1: US5_$union;
+    const v1_1: US5_$union = method134(method128());
+    const v7: US5_$union = ((v1_1.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v1_1.fields[0] as any) : method134("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral");
+    const v13: US5_$union = ((v7.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v7.fields[0] as any) : method134("/workspaces");
+    let v17_1: string;
+    if ((v13.tag as int32) === /* US5_0 */ 0) {
+        v17_1 = (v13.fields[0] as any);
     }
     else {
         throw new Error("Option does not have a value.");
     }
-    return method86(("deps" === method20(v11)) ? ((v18_1 = method134(value_10(method113(v11))), ((v18_1.tag as int32) === /* US5_0 */ 0) ? (v18_1.fields[0] as any) : (() => {
+    return method86(("deps" === method20(v17_1)) ? ((v24_1 = method134(value_10(method113(v17_1))), ((v24_1.tag as int32) === /* US5_0 */ 0) ? (v24_1.fields[0] as any) : (() => {
         throw new Error("Option does not have a value.");
-    })())) : v11, "polyglot");
+    })())) : v17_1, "polyglot");
 }
 
-export function closure64(v0_1: Error, unitVar: void): Error {
+export function closure66(v0_1: Error, unitVar: void): Error {
     return v0_1;
 }
 
-export function method139(v0_1: string): void {
+export function method140(v0_1: string): void {
 }
 
-export function closure63(unitVar: void, v0_1: string): void {
-    method139(v0_1);
+export function closure65(unitVar: void, v0_1: string): void {
+    method140(v0_1);
 }
 
-export function closure65(unitVar: void, v0_1: boolean): void {
+export function closure67(unitVar: void, v0_1: boolean): void {
     let v3: any;
     closure0(undefined, undefined);
     v3 = undefined;
     const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
     const v37_1: ((arg0: string) => void) = v0_1 ? ((v: string): void => {
-        closure63(undefined, v);
+        closure65(undefined, v);
     }) : ((v_1: string): void => {
         closure2(undefined, v_1);
     });
     patternInput[1].l0 = v37_1;
 }
 
-export function method140(v0_1: string, v1_1: string): void {
+export function method141(v0_1: string, v1_1: string): void {
     let v14: FSharpResult$2_$union<any, any>;
     if (method10(v0_1) === false) {
         const v4: IDisposable = method89(v0_1);
@@ -2499,22 +2557,22 @@ export function method140(v0_1: string, v1_1: string): void {
     }
 }
 
-export function closure67(v0_1: string, v1_1: string): void {
-    method140(v0_1, v1_1);
+export function closure69(v0_1: string, v1_1: string): void {
+    method141(v0_1, v1_1);
 }
 
-export function closure66(unitVar: void, v0_1: string): ((arg0: string) => void) {
+export function closure68(unitVar: void, v0_1: string): ((arg0: string) => void) {
     return (v: string): void => {
-        closure67(v0_1, v);
+        closure69(v0_1, v);
     };
 }
 
-export function closure69(v0_1: string, v1_1: string): string {
+export function closure71(v0_1: string, v1_1: string): string {
     return method86(v0_1, v1_1);
 }
 
-export function closure68(unitVar: void, v0_1: string): ((arg0: string) => string) {
-    return (v: string): string => closure69(v0_1, v);
+export function closure70(unitVar: void, v0_1: string): ((arg0: string) => string) {
+    return (v: string): string => closure71(v0_1, v);
 }
 
 export const v0: any = undefined;
@@ -2640,7 +2698,7 @@ export function get_workspace_root(): string {
 }
 
 export const v35 = (v: string): void => {
-    closure63(undefined, v);
+    closure65(undefined, v);
 };
 
 export function trace_file(x: string): void {
@@ -2648,20 +2706,20 @@ export function trace_file(x: string): void {
 }
 
 export const v36 = (v: boolean): void => {
-    closure65(undefined, v);
+    closure67(undefined, v);
 };
 
 export function init_trace_file(x: boolean): void {
     v36(x);
 }
 
-export const v37 = (v: string): ((arg0: string) => void) => closure66(undefined, v);
+export const v37 = (v: string): ((arg0: string) => void) => closure68(undefined, v);
 
 export function link_directory(x: string): ((arg0: string) => void) {
     return v37(x);
 }
 
-export const v38 = (v: string): ((arg0: string) => string) => closure68(undefined, v);
+export const v38 = (v: string): ((arg0: string) => string) => closure70(undefined, v);
 
 export function op_LessDivideGreater(x: string): ((arg0: string) => string) {
     return v38(x);

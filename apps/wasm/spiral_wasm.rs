@@ -2085,7 +2085,7 @@ mod module_e3e534c3 {
                 async move {
                     /*;
                     let v7: bool = */
- //;
+                    ();
                     let v9: Result<
                         near_workspaces::Worker<near_workspaces::network::Sandbox>,
                         near_workspaces::error::Error,
@@ -2558,7 +2558,7 @@ mod module_e3e534c3 {
                 async move {
                     /*;
                     let v7: bool = */
- //;
+                    ();
                     let v8: std::pin::Pin<
                         Box<
                             dyn std::future::Future<
@@ -2597,7 +2597,7 @@ mod module_e3e534c3 {
                                         async move {
                                             /*;
                                             let v109: bool = */
- //;
+                                            ();
                                             let v112: string = string("}");
                                             let v118: bool = true;
                                             let _fix_closure_v115 =
@@ -2641,7 +2641,7 @@ mod module_e3e534c3 {
                                         async move {
                                             /*;
                                             let v35: bool = */
- //;
+                                            ();
                                             let v38: string = string("}");
                                             let v44: bool = true;
                                             let _fix_closure_v41 = (v1, Spiral_wasm::US7::US7_1);
@@ -2696,7 +2696,7 @@ mod module_e3e534c3 {
                                     async move {
                                         /*;
                                         let v191: bool = */
- //;
+                                        ();
                                         let v194: string = string("}");
                                         let v200: bool = true;
                                         let _fix_closure_v197 = (v1, Spiral_wasm::US7::US7_1);
@@ -2898,7 +2898,7 @@ mod module_e3e534c3 {
                 async move {
                     /*;
                     let v6: bool = */
- //;
+                    ();
                     let v7: string = Spiral_wasm::method25();
                     let v10: &str = &*v7;
                     let v33: Option<std::string::String> =

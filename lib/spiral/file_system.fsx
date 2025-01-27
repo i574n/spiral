@@ -111,6 +111,7 @@ type IPathDirname = abstract dirname: path: string -> string
 [<Fable.Core.Erase; Fable.Core.Emit("regex::Error")>]
 #endif
 type regex_Error = class end
+type IFs = abstract realpathSync: path: string -> string
 type [<Struct>] US0 =
     | US0_0
     | US0_1
@@ -178,8 +179,11 @@ and [<Struct>] US15 =
 and Mut5 = {mutable l0 : int32; mutable l1 : int32; mutable l2 : (string [])}
 and Mut6 = {mutable l0 : int32}
 and [<Struct>] US16 =
-    | US16_0 of f0_0 : string
-    | US16_1 of f1_0 : string
+    | US16_0
+    | US16_1
+and [<Struct>] US17 =
+    | US17_0 of f0_0 : string
+    | US17_1 of f1_0 : string
 let rec method3 (v0 : string) : string =
     v0
 and method4 () : string =
@@ -13089,75 +13093,88 @@ and method113 (v0 : string) : string option =
     let v137 : IPathDirname = Fable.Core.JsInterop.importAll v136 
     let v138 : string = "v137.dirname($0)"
     let v139 : string = Fable.Core.JsInterop.emitJsExpr v0 v138 
-    let v140 : string option = Some v139 
-    let _run_target_args'_v1 = v140 
+    let v140 : bool = v139 = v0
+    let v143 : US5 =
+        if v140 then
+            US5_1
+        else
+            US5_0(v139)
+    let v150 : string option =
+        match v143 with
+        | US5_1 -> (* None *)
+            let v148 : string option = None
+            v148
+        | US5_0(v144) -> (* Some *)
+            let v145 : string option = Some v144 
+            v145
+    let _run_target_args'_v1 = v150 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v143 : string option = None
-    let _run_target_args'_v1 = v143 
+    let v151 : string option = None
+    let _run_target_args'_v1 = v151 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v144 : string option = None
-    let _run_target_args'_v1 = v144 
+    let v152 : string option = None
+    let _run_target_args'_v1 = v152 
     #endif
 #else
-    let v145 : (string -> System_IO_DirectoryInfo) = System.IO.Directory.GetParent
-    let v146 : System_IO_DirectoryInfo = v145 v0
-    let v147 : System_IO_DirectoryInfo = null |> unbox<System_IO_DirectoryInfo>
-    let v150 : bool = v146 = v147 
-    let v181 : US5 =
-        if v150 then
+    let v153 : (string -> System_IO_DirectoryInfo) = System.IO.Directory.GetParent
+    let v154 : System_IO_DirectoryInfo = v153 v0
+    let v155 : System_IO_DirectoryInfo = null |> unbox<System_IO_DirectoryInfo>
+    let v158 : bool = v154 = v155 
+    let v189 : US5 =
+        if v158 then
             US5_1
         else
             (* run_target_args'
-            let v154 : unit = ()
+            let v162 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v155 : string = null |> unbox<string>
-            let _run_target_args'_v154 = v155 
+            let v163 : string = null |> unbox<string>
+            let _run_target_args'_v162 = v163 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v158 : string = null |> unbox<string>
-            let _run_target_args'_v154 = v158 
+            let v166 : string = null |> unbox<string>
+            let _run_target_args'_v162 = v166 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v161 : string = null |> unbox<string>
-            let _run_target_args'_v154 = v161 
+            let v169 : string = null |> unbox<string>
+            let _run_target_args'_v162 = v169 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v164 : string = null |> unbox<string>
-            let _run_target_args'_v154 = v164 
+            let v172 : string = null |> unbox<string>
+            let _run_target_args'_v162 = v172 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v167 : string = null |> unbox<string>
-            let _run_target_args'_v154 = v167 
+            let v175 : string = null |> unbox<string>
+            let _run_target_args'_v162 = v175 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v170 : string = null |> unbox<string>
-            let _run_target_args'_v154 = v170 
+            let v178 : string = null |> unbox<string>
+            let _run_target_args'_v162 = v178 
             #endif
 #else
-            let v173 : (System_IO_DirectoryInfo -> string) = _.FullName
-            let v174 : string = v173 v146
-            let _run_target_args'_v154 = v174 
+            let v181 : (System_IO_DirectoryInfo -> string) = _.FullName
+            let v182 : string = v181 v154
+            let _run_target_args'_v162 = v182 
             #endif
-            let v175 : string = _run_target_args'_v154 
-            US5_0(v175)
-    let v188 : string option =
-        match v181 with
+            let v183 : string = _run_target_args'_v162 
+            US5_0(v183)
+    let v196 : string option =
+        match v189 with
         | US5_1 -> (* None *)
-            let v186 : string option = None
-            v186
-        | US5_0(v182) -> (* Some *)
-            let v183 : string option = Some v182 
-            v183
-    let _run_target_args'_v1 = v188 
+            let v194 : string option = None
+            v194
+        | US5_0(v190) -> (* Some *)
+            let v191 : string option = Some v190 
+            v191
+    let _run_target_args'_v1 = v196 
     #endif
-    let v189 : string option = _run_target_args'_v1 
-    v189
+    let v197 : string option = _run_target_args'_v1 
+    v197
 and method114 (v0 : string) : string =
     let v1 : string = method18()
     let v2 : Mut3 = {l0 = v1} : Mut3
@@ -17007,24 +17024,27 @@ and method128 () : string =
     let _run_target_args'_v0 = v70 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v73 : string = null |> unbox<string>
-    let _run_target_args'_v0 = v73 
-    #endif
-#if FABLE_COMPILER_PYTHON
-    let v76 : string = null |> unbox<string>
+    let v73 : string = "fs"
+    let v74 : IFs = Fable.Core.JsInterop.importAll v73 
+    let v75 : string = "fs.realpathSync('.')"
+    let v76 : string = Fable.Core.JsInterop.emitJsExpr () v75 
     let _run_target_args'_v0 = v76 
     #endif
+#if FABLE_COMPILER_PYTHON
+    let v77 : string = null |> unbox<string>
+    let _run_target_args'_v0 = v77 
+    #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v79 : string = null |> unbox<string>
-    let _run_target_args'_v0 = v79 
+    let v80 : string = null |> unbox<string>
+    let _run_target_args'_v0 = v80 
     #endif
 #else
-    let v82 : (unit -> string) = System.IO.Directory.GetCurrentDirectory
-    let v83 : string = v82 ()
-    let _run_target_args'_v0 = v83 
+    let v83 : (unit -> string) = System.IO.Directory.GetCurrentDirectory
+    let v84 : string = v83 ()
+    let _run_target_args'_v0 = v84 
     #endif
-    let v84 : string = _run_target_args'_v0 
-    v84
+    let v85 : string = _run_target_args'_v0 
+    v85
 and method129 (v0 : int32, v1 : Mut5) : bool =
     let v2 : int32 = v1.l0
     let v3 : bool = v2 < v0
@@ -17473,45 +17493,62 @@ and closure60 () (v0 : string) : string =
     let v9 : string = v0.TrimStart v6 
     let v33 : string = $"file:///{v9}"
     v33
-and method136 (v0 : string, v1 : string, v2 : string) : US16 =
-    let v3 : string = method86(v2, v0)
-    let v4 : bool = method10(v3)
-    if v4 then
-        US16_0(v2)
+and closure62 () (v0 : string) : bool =
+    method33(v0)
+and closure63 () (v0 : string) : bool =
+    method10(v0)
+and method137 (v0 : string, v1 : string, v2 : bool, v3 : (string -> bool), v4 : string) : US17 =
+    let v5 : string = method86(v4, v0)
+    let v6 : bool = v3 v5
+    if v6 then
+        US17_0(v4)
     else
-        let v6 : string option = method113(v2)
-        let v7 : (string -> US5) = method5()
-        let v8 : US5 option = v6 |> Option.map v7 
-        let v19 : US5 = US5_1
-        let v20 : US5 = v8 |> Option.defaultValue v19 
-        match v20 with
+        let v8 : string option = method113(v4)
+        let v9 : (string -> US5) = method5()
+        let v10 : US5 option = v8 |> Option.map v9 
+        let v21 : US5 = US5_1
+        let v22 : US5 = v10 |> Option.defaultValue v21 
+        match v22 with
         | US5_1 -> (* None *)
-            let v26 : string = $"""No parent for {if false then "file" else "dir"} '{v0}'"""
-            let v27 : string = $" at '{v1}' (until '{v2}')"
-            let v28 : string = v26 + v27 
-            US16_1(v28)
-        | US5_0(v24) -> (* Some *)
-            method136(v0, v1, v24)
-and method135 (v0 : string, v1 : string) : US16 =
-    let v2 : string = method86(v1, v0)
-    let v3 : bool = method10(v2)
-    if v3 then
-        US16_0(v1)
+            let v28 : string = $"""file_system.find_parent / No parent for {if v2 then "file" else "dir"}"""
+            let v29 : string = $" '{v0}' at '{v1}' (until '{v4}')"
+            let v30 : string = v28 + v29 
+            US17_1(v30)
+        | US5_0(v26) -> (* Some *)
+            method137(v0, v1, v2, v3, v26)
+and method136 (v0 : string, v1 : string, v2 : bool, v3 : (string -> bool)) : US17 =
+    let v4 : string = method86(v1, v0)
+    let v5 : bool = v3 v4
+    if v5 then
+        US17_0(v1)
     else
-        let v5 : string option = method113(v1)
-        let v6 : (string -> US5) = method5()
-        let v7 : US5 option = v5 |> Option.map v6 
-        let v18 : US5 = US5_1
-        let v19 : US5 = v7 |> Option.defaultValue v18 
-        match v19 with
+        let v7 : string option = method113(v1)
+        let v8 : (string -> US5) = method5()
+        let v9 : US5 option = v7 |> Option.map v8 
+        let v20 : US5 = US5_1
+        let v21 : US5 = v9 |> Option.defaultValue v20 
+        match v21 with
         | US5_1 -> (* None *)
-            let v25 : string = $"""No parent for {if false then "file" else "dir"} '{v0}'"""
-            let v26 : string = $" at '{v1}' (until '{v1}')"
-            let v27 : string = v25 + v26 
-            US16_1(v27)
-        | US5_0(v23) -> (* Some *)
-            method136(v0, v1, v23)
-and method138 (v0 : string, v1 : string) : string =
+            let v27 : string = $"""file_system.find_parent / No parent for {if v2 then "file" else "dir"}"""
+            let v28 : string = $" '{v0}' at '{v1}' (until '{v1}')"
+            let v29 : string = v27 + v28 
+            US17_1(v29)
+        | US5_0(v25) -> (* Some *)
+            method137(v0, v1, v2, v3, v25)
+and method135 (v0 : US16, v1 : string, v2 : string) : US17 =
+    let v3 : bool =
+        match v0 with
+        | US16_0 -> (* File *)
+            true
+        | _ ->
+            false
+    let v6 : (string -> bool) =
+        if v3 then
+            closure62()
+        else
+            closure63()
+    method136(v1, v2, v3, v6)
+and method139 (v0 : string, v1 : string) : string =
     let v2 : string = method18()
     let v3 : Mut3 = {l0 = v2} : Mut3
     let v4 : string = "{ "
@@ -17558,13 +17595,13 @@ and method138 (v0 : string, v1 : string) : string =
     let v79 : unit = (fun () -> v78 (); v77) ()
     let v82 : string = v3.l0
     v82
-and method137 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string, v9 : string) : string =
-    let v10 : string = method138(v8, v9)
+and method138 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string, v9 : string) : string =
+    let v10 : string = method139(v8, v9)
     let v11 : int64 = v0.l0
     let v12 : string = "file_system.get_workspace_root"
     let v13 : string = $"{v6} {v7} #{v11} %s{v12} / {v10}"
     method23(v13)
-and closure62 (v0 : string, v1 : string) () : unit =
+and closure64 (v0 : string, v1 : string) () : unit =
     let v2 : US0 = US0_3
     let v3 : bool = method11(v2)
     if v3 then
@@ -17574,57 +17611,65 @@ and closure62 (v0 : string, v1 : string) () : unit =
         let struct (v20 : Mut0, v21 : Mut1, v22 : Mut2, v23 : Mut3, v24 : Mut4, v25 : int64 option) = TraceState.trace_state.Value
         let v38 : string = method12(v20, v21, v22, v23, v24, v25)
         let v39 : string = method50()
-        let v40 : string = method137(v20, v21, v22, v23, v24, v25, v38, v39, v0, v1)
+        let v40 : string = method138(v20, v21, v22, v23, v24, v25, v38, v39, v0, v1)
         method24(v40)
 and method134 (v0 : string) : US5 =
-    let v1 : string = "spiral"
-    let v2 : string = "workspace"
-    let v3 : string = method86(v1, v2)
-    let v4 : US16 = method135(v3, v0)
-    match v4 with
-    | US16_1(v8) -> (* Error *)
-        let v9 : unit = ()
-        let v10 : (unit -> unit) = closure62(v0, v8)
-        let v11 : unit = (fun () -> v10 (); v9) ()
+    let v1 : US16 = US16_1
+    let v2 : string = "spiral"
+    let v3 : string = "workspace"
+    let v4 : string = method86(v2, v3)
+    let v5 : US17 = method135(v1, v4, v0)
+    match v5 with
+    | US17_1(v9) -> (* Error *)
+        let v10 : unit = ()
+        let v11 : (unit -> unit) = closure64(v0, v9)
+        let v12 : unit = (fun () -> v11 (); v10) ()
         US5_1
-    | US16_0(v5) -> (* Ok *)
-        let v6 : string = method106(v5)
-        US5_0(v6)
+    | US17_0(v6) -> (* Ok *)
+        let v7 : string = method106(v6)
+        US5_0(v7)
 and closure61 () () : string =
-    let v0 : string = __SOURCE_DIRECTORY__
+    let v0 : string = method128()
     let v1 : US5 = method134(v0)
     let v7 : US5 =
         match v1 with
         | US5_1 -> (* None *)
-            let v4 : string = method128()
+            let v4 : string = __SOURCE_DIRECTORY__
             method134(v4)
         | US5_0(v2) -> (* Some *)
             US5_0(v2)
-    let v11 : string =
+    let v13 : US5 =
         match v7 with
         | US5_1 -> (* None *)
-            failwith<string> "Option does not have a value."
+            let v10 : string = "/workspaces"
+            method134(v10)
         | US5_0(v8) -> (* Some *)
-            v8
-    let v12 : string = method20(v11)
-    let v13 : bool = "deps" = v12
-    let v23 : string =
-        if v13 then
-            let v14 : string option = method113(v11)
-            let v15 : string = v14 |> Option.get
-            let v18 : US5 = method134(v15)
-            match v18 with
+            US5_0(v8)
+    let v17 : string =
+        match v13 with
+        | US5_1 -> (* None *)
+            failwith<string> "Option does not have a value."
+        | US5_0(v14) -> (* Some *)
+            v14
+    let v18 : string = method20(v17)
+    let v19 : bool = "deps" = v18
+    let v29 : string =
+        if v19 then
+            let v20 : string option = method113(v17)
+            let v21 : string = v20 |> Option.get
+            let v24 : US5 = method134(v21)
+            match v24 with
             | US5_1 -> (* None *)
                 failwith<string> "Option does not have a value."
-            | US5_0(v19) -> (* Some *)
-                v19
+            | US5_0(v25) -> (* Some *)
+                v25
         else
-            v11
-    let v24 : string = "polyglot"
-    method86(v23, v24)
-and closure64 (v0 : exn) () : exn =
+            v17
+    let v30 : string = "polyglot"
+    method86(v29, v30)
+and closure66 (v0 : exn) () : exn =
     v0
-and method139 (v0 : string) : unit =
+and method140 (v0 : string) : unit =
     (* run_target_args'
     let v1 : unit = ()
     run_target_args' *)
@@ -17685,44 +17730,51 @@ and method139 (v0 : string) : unit =
         let v19 : System.Guid = v18 ()
         let v22 : System.Guid = method78(v19, v13)
         let v23 : string = $"{v2}_{v22}.txt"
-        let v24 : string = __SOURCE_DIRECTORY__
+        let v24 : string = method128()
         let v25 : US5 = method134(v24)
         let v31 : US5 =
             match v25 with
             | US5_1 -> (* None *)
-                let v28 : string = method128()
+                let v28 : string = __SOURCE_DIRECTORY__
                 method134(v28)
             | US5_0(v26) -> (* Some *)
                 US5_0(v26)
-        let v35 : string =
+        let v37 : US5 =
             match v31 with
             | US5_1 -> (* None *)
-                failwith<string> "Option does not have a value."
+                let v34 : string = "/workspaces"
+                method134(v34)
             | US5_0(v32) -> (* Some *)
-                v32
-        let v36 : string = method20(v35)
-        let v37 : bool = "deps" = v36
-        let v47 : string =
-            if v37 then
-                let v38 : string option = method113(v35)
-                let v39 : string = v38 |> Option.get
-                let v42 : US5 = method134(v39)
-                match v42 with
+                US5_0(v32)
+        let v41 : string =
+            match v37 with
+            | US5_1 -> (* None *)
+                failwith<string> "Option does not have a value."
+            | US5_0(v38) -> (* Some *)
+                v38
+        let v42 : string = method20(v41)
+        let v43 : bool = "deps" = v42
+        let v53 : string =
+            if v43 then
+                let v44 : string option = method113(v41)
+                let v45 : string = v44 |> Option.get
+                let v48 : US5 = method134(v45)
+                match v48 with
                 | US5_1 -> (* None *)
                     failwith<string> "Option does not have a value."
-                | US5_0(v43) -> (* Some *)
-                    v43
+                | US5_0(v49) -> (* Some *)
+                    v49
             else
-                v35
-        let v48 : string = "polyglot"
-        let v49 : string = method86(v47, v48)
-        let v50 : string = "target/trace"
-        let v51 : string = method86(v49, v50)
-        let v52 : System_IO_DirectoryInfo = method99(v51)
-        let v53 : string = method86(v51, v23)
-        let v54 : Async<unit> = method35(v53, v0)
+                v41
+        let v54 : string = "polyglot"
+        let v55 : string = method86(v53, v54)
+        let v56 : string = "target/trace"
+        let v57 : string = method86(v55, v56)
+        let v58 : System_IO_DirectoryInfo = method99(v57)
+        let v59 : string = method86(v57, v23)
+        let v60 : Async<unit> = method35(v59, v0)
         (* run_target_args'
-        let v55 : unit = ()
+        let v61 : unit = ()
         run_target_args' *)
         
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -17740,29 +17792,29 @@ and method139 (v0 : string) : unit =
         null |> unbox<unit>
         #endif
 #if FABLE_COMPILER_PYTHON
-        let v56 : (Async<unit> -> unit) = Async.RunSynchronously
-        v56 v54
+        let v62 : (Async<unit> -> unit) = Async.RunSynchronously
+        v62 v60
         #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-        let v57 : (Async<unit> -> unit) = Async.RunSynchronously
-        v57 v54
+        let v63 : (Async<unit> -> unit) = Async.RunSynchronously
+        v63 v60
         #endif
 #else
-        let v58 : (Async<unit> -> unit) = Async.RunSynchronously
-        v58 v54
+        let v64 : (Async<unit> -> unit) = Async.RunSynchronously
+        v64 v60
         #endif
         // run_target_args' is_unit
         (* indent
         ()
     indent *)
     with ex ->
-        let v116 : exn = ex
-        let v117 : (unit -> exn) = closure64(v116)
-        let v118 : string = $"file_system.trace_file / ex: %A{v117}"
-        let v119 : unit = ()
-        let v120 : (unit -> unit) = closure9(v118)
-        let v121 : unit = (fun () -> v120 (); v119) ()
-        method139(v118)
+        let v128 : exn = ex
+        let v129 : (unit -> exn) = closure66(v128)
+        let v130 : string = $"file_system.trace_file / ex: %A{v129}"
+        let v131 : unit = ()
+        let v132 : (unit -> unit) = closure9(v130)
+        let v133 : unit = (fun () -> v132 (); v131) ()
+        method140(v130)
         (* indent
         ()
     indent *)
@@ -17771,21 +17823,21 @@ and method139 (v0 : string) : unit =
     #endif
     // run_target_args' is_unit
     ()
-and closure63 () (v0 : string) : unit =
-    method139(v0)
-and closure65 () (v0 : bool) : unit =
+and closure65 () (v0 : string) : unit =
+    method140(v0)
+and closure67 () (v0 : bool) : unit =
     let v1 : unit = ()
     let v2 : (unit -> unit) = closure0()
     let v3 : unit = (fun () -> v2 (); v1) ()
     let struct (v17 : Mut0, v18 : Mut1, v19 : Mut2, v20 : Mut3, v21 : Mut4, v22 : int64 option) = TraceState.trace_state.Value
     let v37 : (string -> unit) =
         if v0 then
-            closure63()
+            closure65()
         else
             closure2()
     v18.l0 <- v37
     ()
-and method140 (v0 : string, v1 : string) : unit =
+and method141 (v0 : string, v1 : string) : unit =
     let v2 : bool = method10(v0)
     let v3 : bool = v2 = false
     if v3 then
@@ -17873,14 +17925,14 @@ and method140 (v0 : string, v1 : string) : unit =
         #endif
         // run_target_args' is_unit
         ()
-and closure67 (v0 : string) (v1 : string) : unit =
-    method140(v0, v1)
-and closure66 () (v0 : string) : (string -> unit) =
-    closure67(v0)
-and closure69 (v0 : string) (v1 : string) : string =
-    method86(v0, v1)
-and closure68 () (v0 : string) : (string -> string) =
+and closure69 (v0 : string) (v1 : string) : unit =
+    method141(v0, v1)
+and closure68 () (v0 : string) : (string -> unit) =
     closure69(v0)
+and closure71 (v0 : string) (v1 : string) : string =
+    method86(v0, v1)
+and closure70 () (v0 : string) : (string -> string) =
+    closure71(v0)
 let v0 : unit = ()
 let v1 : (unit -> unit) = closure0()
 let v2 : unit = (fun () -> v1 (); v0) ()
@@ -17922,12 +17974,12 @@ let v33 : (string -> string) = closure60()
 let new_file_uri x = v33 x
 let v34 : (unit -> string) = closure61()
 let get_workspace_root () = v34 ()
-let v35 : (string -> unit) = closure63()
+let v35 : (string -> unit) = closure65()
 let trace_file x = v35 x
-let v36 : (bool -> unit) = closure65()
+let v36 : (bool -> unit) = closure67()
 let init_trace_file x = v36 x
-let v37 : (string -> (string -> unit)) = closure66()
+let v37 : (string -> (string -> unit)) = closure68()
 let link_directory x = v37 x
-let v38 : (string -> (string -> string)) = closure68()
+let v38 : (string -> (string -> string)) = closure70()
 let (</>) x = v38 x
 ()

@@ -9464,6 +9464,11 @@ a.anchor-link {
             <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.from_std_string</span>
         <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'System.IO.Directory.GetCurrentDirectory'</span> <span class="p">()</span>
+        <span class="o">|</span> <span class="n">TypeScript</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="nb">open</span> <span class="n">typescript_operators</span>
+            <span class="k">global</span> <span class="s2">"type IFs = abstract realpathSync: path: string -&gt; string"</span>
+            <span class="n">inl</span> <span class="n">fs</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'IFs'</span> <span class="o">=</span> <span class="n">typescript</span><span class="o">.</span><span class="n">import_all</span> <span class="s2">"fs"</span>
+            <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"fs.realpathSync(</span><span class="se">\'</span><span class="s1">.</span><span class="se">\'</span><span class="s1">)"'</span><span class="p">)</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
 </pre></div>
 </div>
@@ -9494,7 +9499,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_contains / actual: "C:\home\git\polyglot\lib\fsharp" / expected: '\\'
+<pre>__assert_contains / actual: "C:\home\git\spiral\deps\polyglot\lib\fsharp" / expected: '\\'
 </pre>
 </div>
 </div>
@@ -9572,8 +9577,12 @@ a.anchor-link {
         <span class="o">|</span> <span class="n">TypeScript</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
             <span class="nb">open</span> <span class="n">typescript_operators</span>
             <span class="k">global</span> <span class="s2">"type IPathDirname = abstract dirname: path: string -&gt; string"</span>
-            <span class="n">inl</span> <span class="n">fs</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'IPathDirname'</span> <span class="o">=</span> <span class="n">typescript</span><span class="o">.</span><span class="n">import_all</span> <span class="s2">"path"</span>
-            <span class="err">!</span>\\<span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"!fs.dirname($0)"'</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">Some</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.box</span>
+            <span class="n">inl</span> <span class="n">path</span><span class="s1">' : $'</span><span class="n">IPathDirname</span><span class="s1">' = typescript.import_all "path"</span>
+            <span class="n">inl</span> <span class="n">parent</span> <span class="o">=</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"!path'</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">)</span><span class="s2">"')</span>
+            <span class="k">if</span> <span class="n">parent</span> <span class="o">=</span> <span class="n">path</span>
+            <span class="n">then</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">Some</span>
+            <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.box</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">optionm</span><span class="s1">'.none'</span> <span class="p">()</span>
 </pre></div>
 </div>
@@ -9640,7 +9649,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output (rust -d chrono):
-__assert_contains / actual: "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_9660865c1d7547444a36d4d9cfb3bcf71b4da6283120a32b3edf92a0ecaf02ad\00000000-0000-0000-0000-000000000000" / expected: '\\'
+__assert_contains / actual: "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_81410a738bef51d52d86cc68fe0ecf1c2dbb7cf32c60e412d0c61b33a0c3a6bd\00000000-0000-0000-0000-000000000000" / expected: '\\'
 
 </pre>
 </div>
@@ -10007,21 +10016,22 @@ __assert_contains / actual: "C:\Users\i574n\AppData\Local\Temp\!create_temp_path
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">find_parent</span> <span class="n">file_type</span> <span class="n">name</span> <span class="n">root_dir</span> <span class="o">=</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">find_parent</span> <span class="n">file_type</span> <span class="n">name</span> <span class="n">root_dir</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">is_file</span> <span class="o">=</span> <span class="n">file_type</span> <span class="o">=</span> <span class="n">File</span>
+    <span class="n">inl</span> <span class="n">exists_fn</span> <span class="o">=</span> <span class="k">if</span> <span class="n">is_file</span> <span class="n">then</span> <span class="n">file_exists</span> <span class="k">else</span> <span class="n">directory_exists</span>
     <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="nb">dir</span> <span class="o">=</span>
-        <span class="k">if</span> <span class="nb">dir</span> <span class="o">&lt;/&gt;</span> <span class="n">name</span> <span class="o">|&gt;</span> <span class="p">(</span><span class="k">if</span> <span class="n">is_file</span> <span class="n">then</span> <span class="n">file_exists</span> <span class="k">else</span> <span class="n">directory_exists</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">dir</span> <span class="o">&lt;/&gt;</span> <span class="n">name</span> <span class="o">|&gt;</span> <span class="n">exists_fn</span>
         <span class="n">then</span> <span class="nb">dir</span> <span class="o">|&gt;</span> <span class="n">Ok</span>
         <span class="k">else</span>
             <span class="n">inl</span> <span class="n">parent</span> <span class="o">=</span> <span class="nb">dir</span> <span class="o">|&gt;</span> <span class="n">directory_get_parent</span>
             <span class="k">match</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.unbox with</span>
             <span class="o">|</span> <span class="n">Some</span> <span class="n">parent</span> <span class="o">=&gt;</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">loop</span>
             <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span>
-                <span class="err">$</span><span class="s1">'$"""No parent for {if !is_file then "file" else "dir"} </span><span class="se">\'</span><span class="s1">{!name}</span><span class="se">\'</span><span class="s1">"""'</span>
-                <span class="o">+.</span> <span class="err">$</span><span class="s1">'$" at </span><span class="se">\'</span><span class="s1">{!root_dir}</span><span class="se">\'</span><span class="s1"> (until </span><span class="se">\'</span><span class="s1">{!dir}</span><span class="se">\'</span><span class="s1">)"'</span>
+                <span class="err">$</span><span class="s1">'$"""file_system.find_parent / No parent for {if !is_file then "file" else "dir"}"""'</span>
+                <span class="o">+.</span> <span class="err">$</span><span class="s1">'$" </span><span class="se">\'</span><span class="s1">{!name}</span><span class="se">\'</span><span class="s1"> at </span><span class="se">\'</span><span class="s1">{!root_dir}</span><span class="se">\'</span><span class="s1"> (until </span><span class="se">\'</span><span class="s1">{!dir}</span><span class="se">\'</span><span class="s1">)"'</span>
                 <span class="o">|&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="p">:</span> <span class="n">string</span>
                 <span class="o">|&gt;</span> <span class="n">Error</span>
-    <span class="n">loop</span> <span class="n">root_dir</span>
+    <span class="n">root_dir</span> <span class="o">|&gt;</span> <span class="n">loop</span>
 </pre></div>
 </div>
 </div>
@@ -10305,7 +10315,7 @@ __assert_eq / actual: "polyglot" / expected: "polyglot"
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_workspace_root</span> <span class="p">()</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">dirs</span> <span class="o">=</span>
-        <span class="p">[</span> <span class="n">get_source_directory</span><span class="p">;</span> <span class="n">get_current_directory</span> <span class="p">]</span>
+        <span class="p">[</span> <span class="n">get_current_directory</span><span class="p">;</span> <span class="n">get_source_directory</span><span class="p">;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"/workspaces"</span> <span class="p">]</span>
     <span class="n">let</span> <span class="n">run</span> <span class="nb">dir</span> <span class="o">=</span>
         <span class="nb">dir</span>
         <span class="o">|&gt;</span> <span class="n">find_parent</span> <span class="n">Directory</span> <span class="p">(</span><span class="s2">"spiral"</span> <span class="o">&lt;/&gt;</span> <span class="s2">"workspace"</span><span class="p">)</span>
@@ -10516,7 +10526,7 @@ __assert_eq / actual: "polyglot" / expected: "polyglot"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: "C:\home\git\polyglot\lib\fsharp\._file" / expected: "C:\home\git\polyglot\lib\fsharp\._file"
+<pre>__assert_eq / actual: "C:\home\git\spiral\deps\polyglot\lib\fsharp\._file" / expected: "C:\home\git\spiral\deps\polyglot\lib\fsharp\._file"
 </pre>
 </div>
 </div>
@@ -10540,7 +10550,7 @@ __assert_eq / actual: "polyglot" / expected: "polyglot"
 <span class="o">|&gt;</span> <span class="n">path_buf_file_name</span>
 <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.unwrap</span>
 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.from_os_str_ref</span>
-<span class="o">|&gt;</span> <span class="n">_assert_in</span> <span class="p">[</span> <span class="s2">"polyglot"</span><span class="p">;</span> <span class="s2">"spiral"</span> <span class="p">]</span>
+<span class="o">|&gt;</span> <span class="n">_assert_in</span> <span class="p">[</span> <span class="s2">"polyglot"</span><span class="p">;</span> <span class="s2">"spiral"</span><span class="p">;</span> <span class="s2">"fsharp"</span> <span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -10938,7 +10948,7 @@ __assert_eq / actual: "polyglot" / expected: "polyglot"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 106L / expected: 106L
+<pre>__assert_eq / actual: 107L / expected: 107L
 </pre>
 </div>
 </div>
@@ -11103,7 +11113,7 @@ __assert_eq / actual: "polyglot" / expected: "polyglot"
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .rs output (rust -d chrono):
-00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_9835f4fef383368e87f328c8052e5446b2a105ac85b5ebf8803474e158d89a5a\20250123-1059-2214-1942-00000027c377 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_6d18205519f040063e4f4bd64cd075d04cde864d497d83d5801d1852d066a2c7\20250127-0526-1480-5553-0000003f843c }
 __assert_eq / actual: true / expected: true
 __assert_eq / actual: true / expected: true
 __assert_eq / actual: false / expected: false
@@ -11204,7 +11214,7 @@ __assert_eq / actual: false / expected: false
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #9 _3
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #10 5
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #11 6
-__assert_between / actual: 125L / expected: struct (50L, 180L)
+__assert_between / actual: 124L / expected: struct (50L, 180L)
 __assert_eq / actual: true / expected: true
 </pre>
 </div>

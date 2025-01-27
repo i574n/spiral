@@ -7662,41 +7662,43 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options / { file_name = cargo; arguments = ["test", "--", "--show-output"]; options = { command = cargo test -- --show-output; cancellation_token = None; environment_variables = Array(MutCell([("TEST", "1")])); on_line = None; stdin = None; trace = true; working_directory = Some(
-    "c:\home\git\polyglot\target\spiral\spiral\packages\Rust\1a30728c96af283f3088d5b0961ac7b875ab085d14d60a7f53e51fb1eb694fb6",
+    "c:\home\git\polyglot\target\spiral\spiral\packages\Rust\8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692",
 ) } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #2 !     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.55s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #3 !      Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_1a30728c96af283f3088d5b0961ac7b875ab085d14d60a7f53e51fb1eb694fb6-1fe31595da3146ee.exe)
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt; running 1 test
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; test module_d2cb9249::Spiral::a ... ok
-00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt; successes:
-00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #10 &gt; ---- module_d2cb9249::Spiral::a stdout ----
-00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; __assert_eq / actual: "a" / expected: "a"
-00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; successes:
-00:00:00 <span class="ansi-black-intense-fg">v</span> #15 &gt;     module_d2cb9249::Spiral::a
-00:00:00 <span class="ansi-black-intense-fg">v</span> #16 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #17 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #18 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #19 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 574 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #2 !    Compiling spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692 v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692)
+00:00:02 <span class="ansi-black-intense-fg">v</span> #3 !     Finished `test` profile [unoptimized + debuginfo] target(s) in 2.06s
+00:00:02 <span class="ansi-black-intense-fg">v</span> #4 !      Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692-57752bbcd3a814c6.exe)
+00:00:02 <span class="ansi-black-intense-fg">v</span> #5 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #6 &gt; running 1 test
+00:00:02 <span class="ansi-black-intense-fg">v</span> #7 &gt; test module_2818846a::Spiral::a ... ok
+00:00:02 <span class="ansi-black-intense-fg">v</span> #8 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #9 &gt; successes:
+00:00:02 <span class="ansi-black-intense-fg">v</span> #10 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #11 &gt; ---- module_2818846a::Spiral::a stdout ----
+00:00:02 <span class="ansi-black-intense-fg">v</span> #12 &gt; __assert_eq / actual: "a" / expected: "a"
+00:00:02 <span class="ansi-black-intense-fg">v</span> #13 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #14 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #15 &gt; successes:
+00:00:02 <span class="ansi-black-intense-fg">v</span> #16 &gt;     module_2818846a::Spiral::a
+00:00:02 <span class="ansi-black-intense-fg">v</span> #17 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #18 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+00:00:02 <span class="ansi-black-intense-fg">v</span> #19 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #20 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 799 }
 __assert_eq / actual: 0 / expected: 0
-__assert / actual: "test result: ok. 1 passed; 0 failed; 0 ignored;" / expected: "<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.55s</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_1a30728c96af283f3088d5b0961ac7b875ab085d14d60a7f53e51fb1eb694fb6-1fe31595da3146ee.exe)</span>
+__assert / actual: "test result: ok. 1 passed; 0 failed; 0 ignored;" / expected: "<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   Compiling spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692 v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692)</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.06s</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692-57752bbcd3a814c6.exe)</span>
 
 running 1 test
-test module_d2cb9249::Spiral::a ... ok
+test module_2818846a::Spiral::a ... ok
 
 successes:
 
----- module_d2cb9249::Spiral::a stdout ----
+---- module_2818846a::Spiral::a stdout ----
 __assert_eq / actual: "a" / expected: "a"
 
 
 successes:
-    module_d2cb9249::Spiral::a
+    module_2818846a::Spiral::a
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 "
@@ -7766,41 +7768,43 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options / { file_name = cargo; arguments = ["test", "--", "--show-output"]; options = { command = cargo test -- --show-output; cancellation_token = None; environment_variables = Array(MutCell([("TEST", "1")])); on_line = None; stdin = None; trace = true; working_directory = Some(
-    "c:\home\git\polyglot\target\spiral\spiral\packages\Rust\1a30728c96af283f3088d5b0961ac7b875ab085d14d60a7f53e51fb1eb694fb6",
+    "c:\home\git\polyglot\target\spiral\spiral\packages\Rust\8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692",
 ) } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #2 !     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.70s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #3 !      Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_1a30728c96af283f3088d5b0961ac7b875ab085d14d60a7f53e51fb1eb694fb6-1fe31595da3146ee.exe)
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt; running 1 test
-00:00:01 <span class="ansi-black-intense-fg">v</span> #6 &gt; test module_d2cb9249::Spiral::a ... ok
-00:00:01 <span class="ansi-black-intense-fg">v</span> #7 &gt;
-00:00:01 <span class="ansi-black-intense-fg">v</span> #8 &gt; successes:
-00:00:01 <span class="ansi-black-intense-fg">v</span> #9 &gt;
-00:00:01 <span class="ansi-black-intense-fg">v</span> #10 &gt; ---- module_d2cb9249::Spiral::a stdout ----
-00:00:01 <span class="ansi-black-intense-fg">v</span> #11 &gt; __assert_eq / actual: "a" / expected: "a"
-00:00:01 <span class="ansi-black-intense-fg">v</span> #12 &gt;
+00:00:00 <span class="ansi-black-intense-fg">v</span> #2 !    Compiling spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692 v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692)
+00:00:01 <span class="ansi-black-intense-fg">v</span> #3 !     Finished `test` profile [unoptimized + debuginfo] target(s) in 1.23s
+00:00:01 <span class="ansi-black-intense-fg">v</span> #4 !      Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692-57752bbcd3a814c6.exe)
+00:00:01 <span class="ansi-black-intense-fg">v</span> #5 &gt;
+00:00:01 <span class="ansi-black-intense-fg">v</span> #6 &gt; running 1 test
+00:00:01 <span class="ansi-black-intense-fg">v</span> #7 &gt; test module_2818846a::Spiral::a ... ok
+00:00:01 <span class="ansi-black-intense-fg">v</span> #8 &gt;
+00:00:01 <span class="ansi-black-intense-fg">v</span> #9 &gt; successes:
+00:00:01 <span class="ansi-black-intense-fg">v</span> #10 &gt;
+00:00:01 <span class="ansi-black-intense-fg">v</span> #11 &gt; ---- module_2818846a::Spiral::a stdout ----
+00:00:01 <span class="ansi-black-intense-fg">v</span> #12 &gt; __assert_eq / actual: "a" / expected: "a"
 00:00:01 <span class="ansi-black-intense-fg">v</span> #13 &gt;
-00:00:01 <span class="ansi-black-intense-fg">v</span> #14 &gt; successes:
-00:00:01 <span class="ansi-black-intense-fg">v</span> #15 &gt;     module_d2cb9249::Spiral::a
-00:00:01 <span class="ansi-black-intense-fg">v</span> #16 &gt;
-00:00:01 <span class="ansi-black-intense-fg">v</span> #17 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-00:00:01 <span class="ansi-black-intense-fg">v</span> #18 &gt;
-00:00:01 <span class="ansi-black-intense-fg">v</span> #19 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 574 }
+00:00:01 <span class="ansi-black-intense-fg">v</span> #14 &gt;
+00:00:01 <span class="ansi-black-intense-fg">v</span> #15 &gt; successes:
+00:00:01 <span class="ansi-black-intense-fg">v</span> #16 &gt;     module_2818846a::Spiral::a
+00:00:01 <span class="ansi-black-intense-fg">v</span> #17 &gt;
+00:00:01 <span class="ansi-black-intense-fg">v</span> #18 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+00:00:01 <span class="ansi-black-intense-fg">v</span> #19 &gt;
+00:00:01 <span class="ansi-black-intense-fg">v</span> #20 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 799 }
 __assert_eq / actual: 0 / expected: 0
-__assert / actual: "test result: ok. 1 passed; 0 failed; 0 ignored;" / expected: "<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.70s</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_1a30728c96af283f3088d5b0961ac7b875ab085d14d60a7f53e51fb1eb694fb6-1fe31595da3146ee.exe)</span>
+__assert / actual: "test result: ok. 1 passed; 0 failed; 0 ignored;" / expected: "<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   Compiling spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692 v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692)</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.23s</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_8c418dda61a9825e6bd005af03de9250ed87676de3bdf0332740e670db0a3692-57752bbcd3a814c6.exe)</span>
 
 running 1 test
-test module_d2cb9249::Spiral::a ... ok
+test module_2818846a::Spiral::a ... ok
 
 successes:
 
----- module_d2cb9249::Spiral::a stdout ----
+---- module_2818846a::Spiral::a stdout ----
 __assert_eq / actual: "a" / expected: "a"
 
 
 successes:
-    module_d2cb9249::Spiral::a
+    module_2818846a::Spiral::a
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 "
@@ -7870,41 +7874,43 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options / { file_name = cargo; arguments = ["test", "--", "--show-output"]; options = { command = cargo test -- --show-output; cancellation_token = None; environment_variables = Array(MutCell([("TEST", "1")])); on_line = None; stdin = None; trace = true; working_directory = Some(
-    "c:\home\git\polyglot\target\spiral\spiral\packages\Rust\25b4d5baab7c686873ad91031dc029cc4d8aa1250ab261324905f617dbe5c95d",
+    "c:\home\git\polyglot\target\spiral\spiral\packages\Rust\e6ad5ac87c9fb3bcbd53160124fa0c0d5d88f9d3ecb17ca8ca12ec4dcdf6af5e",
 ) } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #2 !     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.49s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #3 !      Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_25b4d5baab7c686873ad91031dc029cc4d8aa1250ab261324905f617dbe5c95d-3413af39f2609aaa.exe)
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt; running 1 test
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; test module_cf274238::Spiral::a ... ok
-00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt; successes:
-00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #10 &gt; ---- module_cf274238::Spiral::a stdout ----
-00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; __assert_eq / actual: false / expected: false
-00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; successes:
-00:00:00 <span class="ansi-black-intense-fg">v</span> #15 &gt;     module_cf274238::Spiral::a
-00:00:00 <span class="ansi-black-intense-fg">v</span> #16 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #17 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #18 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #19 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 578 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #2 !    Compiling spiral_e6ad5ac87c9fb3bcbd53160124fa0c0d5d88f9d3ecb17ca8ca12ec4dcdf6af5e v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\e6ad5ac87c9fb3bcbd53160124fa0c0d5d88f9d3ecb17ca8ca12ec4dcdf6af5e)
+00:00:02 <span class="ansi-black-intense-fg">v</span> #3 !     Finished `test` profile [unoptimized + debuginfo] target(s) in 2.54s
+00:00:02 <span class="ansi-black-intense-fg">v</span> #4 !      Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_e6ad5ac87c9fb3bcbd53160124fa0c0d5d88f9d3ecb17ca8ca12ec4dcdf6af5e-65adfe129679d053.exe)
+00:00:02 <span class="ansi-black-intense-fg">v</span> #5 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #6 &gt; running 1 test
+00:00:02 <span class="ansi-black-intense-fg">v</span> #7 &gt; test module_40eba165::Spiral::a ... ok
+00:00:02 <span class="ansi-black-intense-fg">v</span> #8 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #9 &gt; successes:
+00:00:02 <span class="ansi-black-intense-fg">v</span> #10 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #11 &gt; ---- module_40eba165::Spiral::a stdout ----
+00:00:02 <span class="ansi-black-intense-fg">v</span> #12 &gt; __assert_eq / actual: false / expected: false
+00:00:02 <span class="ansi-black-intense-fg">v</span> #13 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #14 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #15 &gt; successes:
+00:00:02 <span class="ansi-black-intense-fg">v</span> #16 &gt;     module_40eba165::Spiral::a
+00:00:02 <span class="ansi-black-intense-fg">v</span> #17 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #18 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+00:00:02 <span class="ansi-black-intense-fg">v</span> #19 &gt;
+00:00:02 <span class="ansi-black-intense-fg">v</span> #20 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 803 }
 __assert_eq / actual: 0 / expected: 0
-__assert / actual: "test result: ok. 1 passed; 0 failed; 0 ignored;" / expected: "<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.49s</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_25b4d5baab7c686873ad91031dc029cc4d8aa1250ab261324905f617dbe5c95d-3413af39f2609aaa.exe)</span>
+__assert / actual: "test result: ok. 1 passed; 0 failed; 0 ignored;" / expected: "<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   Compiling spiral_e6ad5ac87c9fb3bcbd53160124fa0c0d5d88f9d3ecb17ca8ca12ec4dcdf6af5e v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\e6ad5ac87c9fb3bcbd53160124fa0c0d5d88f9d3ecb17ca8ca12ec4dcdf6af5e)</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.54s</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     Running unittests spiral.rs (c:\home\git\polyglot\target\spiral\spiral\target\debug\deps\spiral_e6ad5ac87c9fb3bcbd53160124fa0c0d5d88f9d3ecb17ca8ca12ec4dcdf6af5e-65adfe129679d053.exe)</span>
 
 running 1 test
-test module_cf274238::Spiral::a ... ok
+test module_40eba165::Spiral::a ... ok
 
 successes:
 
----- module_cf274238::Spiral::a stdout ----
+---- module_40eba165::Spiral::a stdout ----
 __assert_eq / actual: false / expected: false
 
 
 successes:
-    module_cf274238::Spiral::a
+    module_40eba165::Spiral::a
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 "

@@ -8707,7 +8707,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_de117a1e {
+mod module_b65a97bb {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::NativeArray_::get_Count;
@@ -8787,19 +8787,19 @@ mod module_de117a1e {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_de117a1e::*;
+pub use module_b65a97bb::*;
 
 pub fn main() -&gt; Result&lt;(), String&gt; {
     Ok(Spiral::method0())
 }
 
 .ts:
-import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/Types.js";
-import { op_UnaryNegation_Int32, int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/Int32.js";
-import { IComparable, IEquatable } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/Util.js";
-import { record_type, string_type, int32_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/Reflection.js";
-import { item } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/Array.js";
-import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/String.js";
+import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/Types.js";
+import { op_UnaryNegation_Int32, int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/Int32.js";
+import { IComparable, IEquatable } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/Util.js";
+import { record_type, string_type, int32_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/Reflection.js";
+import { item } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/Array.js";
+import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/String.js";
 
 export class Mut0 extends Record implements IEquatable&lt;Mut0&gt;, IComparable&lt;Mut0&gt; {
     l0: int32;
@@ -9093,7 +9093,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_fa23a5e2 {
+mod module_a11ac3a {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::on_startup;
@@ -9127,14 +9127,14 @@ mod module_fa23a5e2 {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_fa23a5e2::*;
+pub use module_a11ac3a::*;
 
 pub fn main() -&gt; Result&lt;(), String&gt; {
     Ok(Spiral::method0())
 }
 
 .ts:
-import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/String.js";
+import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/String.js";
 
 export function method1(v0: boolean): boolean {
     return v0;
@@ -9459,7 +9459,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_5bddefcc {
+mod module_f5786279 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::NativeArray_::new_array;
@@ -9503,14 +9503,14 @@ mod module_5bddefcc {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_5bddefcc::*;
+pub use module_f5786279::*;
 
 pub fn main() -&gt; Result&lt;(), String&gt; {
     Ok(Spiral::method0())
 }
 
 .ts:
-import { interpolate, toText, concat } from "./fable_modules/fable-library-ts.5.0.0-alpha.2/String.js";
+import { interpolate, toText, concat } from "./fable_modules/fable-library-ts.5.0.0-alpha.7/String.js";
 
 export function method1(v0: boolean): boolean {
     return v0;
@@ -12541,7 +12541,7 @@ __assert_eq / actual: 3 / expected: 3
             <span class="err">!</span>\\<span class="p">((</span><span class="n">regex</span><span class="p">,</span> <span class="c1">#s, replacement), $'$"$0.replace_all($1, &amp;*$2)"')</span>
             <span class="o">|&gt;</span> <span class="n">cow_to_std_string</span>
             <span class="o">|&gt;</span> <span class="n">from_std_string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">""</span>
 </pre></div>
 </div>
 </div>
@@ -13577,7 +13577,7 @@ __assert_eq / actual: "12...67" / expected: "12...67"
             <span class="err">!</span>\\<span class="p">((</span><span class="n">regex</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">replacement</span><span class="p">),</span> <span class="err">$</span><span class="s1">'$"$0.replace_all(&amp;*$1, &amp;*$2)"'</span><span class="p">)</span>
             <span class="o">|&gt;</span> <span class="n">cow_to_std_string</span>
             <span class="o">|&gt;</span> <span class="n">from_std_string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">""</span>
 </pre></div>
 </div>
 </div>
