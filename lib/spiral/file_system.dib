@@ -814,6 +814,11 @@ let get_current_directory () : string =
             |> sm'.from_std_string
         | Fsharp (Native) => fun () =>
             $'System.IO.Directory.GetCurrentDirectory' ()
+        | TypeScript _ => fun () =>
+            open typescript_operators
+            global "type IFs = abstract realpathSync: path: string -> string"
+            inl fs : $'IFs' = typescript.import_all "fs"
+            !\($'"fs.realpathSync(\'.\')"')
         | _ => fun () => null ()
 
 #!spiral
@@ -865,8 +870,12 @@ let directory_get_parent (path : string) : optionm'.option' string =
         | TypeScript _ => fun path =>
             open typescript_operators
             global "type IPathDirname = abstract dirname: path: string -> string"
-            inl fs : $'IPathDirname' = typescript.import_all "path"
-            !\\(path, $'"!fs.dirname($0)"') |> Some |> optionm'.box
+            inl path' : $'IPathDirname' = typescript.import_all "path"
+            inl parent = !\\(path, $'"!path'.dirname($0)"')
+            if parent = path
+            then None
+            else parent |> Some
+            |> optionm'.box
         | _ => fun _ => optionm'.none' ()
 
 #!markdown
@@ -1063,21 +1072,22 @@ union file_type =
 
 #!spiral
 
-inl find_parent file_type name root_dir =
+let find_parent file_type name root_dir =
     inl is_file = file_type = File
+    inl exists_fn = if is_file then file_exists else directory_exists
     let rec loop dir =
-        if dir </> name |> (if is_file then file_exists else directory_exists)
+        if dir </> name |> exists_fn
         then dir |> Ok
         else
             inl parent = dir |> directory_get_parent
             match parent |> optionm'.unbox with
             | Some parent => parent |> loop
             | None =>
-                $'$"""No parent for {if !is_file then "file" else "dir"} \'{!name}\'"""'
-                +. $'$" at \'{!root_dir}\' (until \'{!dir}\')"'
+                $'$"""file_system.find_parent / No parent for {if !is_file then "file" else "dir"}"""'
+                +. $'$" \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"'
                 |> fun x => x : string
                 |> Error
-    loop root_dir
+    root_dir |> loop
 
 #!spiral
 
@@ -1246,7 +1256,7 @@ let normalize_path (path : string) : string =
 
 inl get_workspace_root () =
     inl dirs =
-        [ get_source_directory; get_current_directory ]
+        [ get_current_directory; get_source_directory; fun () => "/workspaces" ]
     let run dir =
         dir
         |> find_parent Directory ("spiral" </> "workspace")

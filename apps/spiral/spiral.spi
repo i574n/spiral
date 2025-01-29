@@ -656,6 +656,15 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                     "\\s\\sgetZero\\(\\);"
                     " getZero::<()>();"
                 |> sm'.replace
+                    ("(&e.get_Curren" +. !\($'"\\\"t\\\".into()"'))
+                    "(e.get_Current"
+                |> sm'.replace
+                    ("getNull" +. !\($'"\\\"::<()>()\\\".into()"'))
+                    "fable_library_rust::Native_::getZero()"
+                |> sm'.replace_regex
+                    "\\s\\sfable_library_rust::Native_::getZero\\(\\);"
+                    " fable_library_rust::Native_::getZero::<()>();"
+                |> sm'.replace
                     "::Slice'_"
                     "::Slice__"
                 |> sm'.replace

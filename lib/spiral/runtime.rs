@@ -14,7 +14,7 @@ pub mod Runtime {
     use fable_library_rust::NativeArray_::new_empty;
     use fable_library_rust::NativeArray_::new_init;
     use fable_library_rust::NativeArray_::Array;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::Native_::Any;
@@ -2624,7 +2624,7 @@ pub mod Runtime {
         v2_1
     }
     pub fn method45(v0_1: bool) -> string {
-        unbox::<string>(&getZero())
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn closure21(
         unitVar: (),
@@ -2636,7 +2636,7 @@ pub mod Runtime {
         Func1::new(move |v: Func1<(i32, string, bool), Arc<Async<()>>>| Runtime::closure21((), v))
     }
     pub fn method47(v0_1: bool) -> i32 {
-        unbox::<i32>(&getZero())
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method48() -> string {
         let v6: string = Runtime::method13(getCharAt(toLower(string("Verbose")), 0_i32));
@@ -2717,7 +2717,7 @@ pub mod Runtime {
         v9: bool,
         v10: bool,
     ) -> Arc<Async<()>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method43(
         v0_1: string,
@@ -2749,7 +2749,7 @@ pub mod Runtime {
     ) {
         let v11: Arc<Async<()>> =
             Runtime::method43(v0_1, v1_1, v2_1, v3, v4, v5, v6, v7, v8, v9, v10);
-        getZero::<()>();
+        fable_library_rust::Native_::getZero::<()>();
         ()
     }
     pub fn closure23(unitVar: (), v0_1: CancellationToken) -> Runtime::US15 {
@@ -2759,10 +2759,10 @@ pub mod Runtime {
         Func1::new(move |v: CancellationToken| Runtime::closure23((), v))
     }
     pub fn method51(v0_1: CancellationToken) -> Arc<Async<CancellationToken>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method52(v0_1: bool) -> bool {
-        unbox::<bool>(&getZero())
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method53(v0_1: bool) {
         ();
@@ -2862,7 +2862,7 @@ pub mod Runtime {
         v1_1: LrcPtr<ConcurrentStack_1<string>>,
         v2_1: CancellationToken,
     ) -> Arc<Async<i32>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method57() -> string {
         string("\n")
@@ -2974,7 +2974,7 @@ pub mod Runtime {
         v5: bool,
         v6: Option<string>,
     ) -> Arc<Async<(i32, string)>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method23(
         v0_1: string,

@@ -14,6 +14,9 @@ function FixRust {
             -replace "get_or_insert_with", "get_or_init" `
             -replace "([^=]\s)defaultOf\(\);", "`$1`defaultOf::<()>();" `
             -replace "([^=]\s)getZero\(\);", "`$1`getZero::<()>();" `
+            -replace "getNull::", "&getNull::" `
+            -replace "&getNull::<\(\)>\(\)", "fable_library_rust::Native_::getZero()" `
+            -replace "([^=]\s)fable_library_rust::Native_::getZero\(\);", "`$1fable_library_rust::Native_::getZero::<()>();" `
             -replace "__self__.", "self." `
             -replace "use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1;", "type ConcurrentStack_1<T> = T;" `
             -replace "use fable_library_rust::System::Threading::Tasks::TaskCanceledException;", "type TaskCanceledException = ();" `
