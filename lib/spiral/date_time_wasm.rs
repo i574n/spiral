@@ -6,7 +6,7 @@ pub mod Date_time {
     use fable_library_rust::Guid_::parse;
     use fable_library_rust::Guid_::Guid;
     use fable_library_rust::NativeArray_::new_array;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::Func1;
     use fable_library_rust::Native_::LrcPtr;
@@ -129,7 +129,7 @@ pub mod Date_time {
             .clone(),
             _ => string(""),
         };
-        let v654: LrcPtr<TimeZoneInfo> = getZero();
+        let v654: LrcPtr<TimeZoneInfo> = fable_library_rust::Native_::getZero();
         let v716: i64 = v534.ticks();
         let v745: string =
             string("chrono::FixedOffset::local_minus_utc(&chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(&chrono::DateTime::from_timestamp_nanos($1))))");

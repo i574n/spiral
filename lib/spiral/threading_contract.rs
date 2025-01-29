@@ -1,6 +1,6 @@
 pub mod Threading {
     use super::*;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::Native_::Func0;
@@ -50,7 +50,7 @@ pub mod Threading {
         Func1::new(move |v: CancellationToken| Threading::closure1((), v))
     }
     pub fn closure2(v0_1: LrcPtr<CancellationTokenSource>, unitVar: ()) {
-        getZero::<()>();
+        fable_library_rust::Native_::getZero::<()>();
         ()
     }
     pub fn method1(v0_1: LrcPtr<CancellationTokenSource>) -> Func0<()> {
@@ -70,7 +70,9 @@ pub mod Threading {
         v0_1: Option<CancellationToken>,
     ) -> (CancellationToken, LrcPtr<dyn IDisposable>) {
         let patternInput: (CancellationToken, LrcPtr<dyn IDisposable>) =
-            unbox::<(CancellationToken, LrcPtr<dyn IDisposable>)>(&getZero());
+            unbox::<(CancellationToken, LrcPtr<dyn IDisposable>)>(
+                fable_library_rust::Native_::getZero(),
+            );
         let _run_target_args__v1: (CancellationToken, LrcPtr<dyn IDisposable>) =
             (patternInput.0.clone(), patternInput.1.clone());
         (

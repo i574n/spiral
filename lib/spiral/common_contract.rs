@@ -9,7 +9,7 @@ pub mod Common {
     use fable_library_rust::Map_::find;
     use fable_library_rust::Map_::ofSeq;
     use fable_library_rust::NativeArray_::new_array;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::interface_cast;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::refCell;
@@ -352,8 +352,8 @@ pub mod Common {
             if (Common::method2(string("AUTOMATION"))) != string("True") {
                 Common::US2::US2_1
             } else {
-                let v58: DateTime = unbox::<DateTime>(&getZero());
-                Common::US2::US2_0(unbox::<i64>(&getZero()))
+                let v58: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
+                Common::US2::US2_0(unbox::<i64>(fable_library_rust::Native_::getZero()))
             },
         )
     }

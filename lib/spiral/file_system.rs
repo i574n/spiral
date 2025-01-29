@@ -17,7 +17,7 @@ pub mod File_system {
     use fable_library_rust::NativeArray_::new_empty;
     use fable_library_rust::NativeArray_::new_init;
     use fable_library_rust::NativeArray_::Array;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::interface_cast;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
@@ -956,10 +956,10 @@ pub mod File_system {
         };
     }
     pub fn method8(v0_1: string, v1_1: i64) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method7(v0_1: string, v1_1: i64) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method6(v0_1: string) -> Arc<Async<i64>> {
         File_system::method7(v0_1, 0_i64)
@@ -1093,10 +1093,10 @@ pub mod File_system {
         v3: File_system::US8,
         v4: File_system::US7,
     ) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method26(v0_1: File_system::US6, v1_1: string, v2_1: i64) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method25(v0_1: File_system::US6, v1_1: string) -> Arc<Async<i64>> {
         File_system::method26(v0_1, v1_1, 0_i64)
@@ -1120,7 +1120,7 @@ pub mod File_system {
         File_system::method30(v0_1)
     }
     pub fn method31(v0_1: string) -> Arc<Async<string>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn closure14(unitVar: (), v0_1: string) -> Arc<Async<string>> {
         File_system::method31(v0_1)
@@ -1160,7 +1160,7 @@ pub mod File_system {
         })
     }
     pub fn method35(v0_1: string, v1_1: string) -> Arc<Async<()>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn closure18(v0_1: string, v1_1: string) -> Arc<Async<()>> {
         File_system::method35(v0_1, v1_1)
@@ -1172,13 +1172,13 @@ pub mod File_system {
         })
     }
     pub fn method39(v0_1: string, v1_1: string) -> Arc<Async<bool>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method38(v0_1: string, v1_1: string) -> Arc<Async<bool>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method37(v0_1: string, v1_1: string) -> Arc<Async<()>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method36(v0_1: string, v1_1: string) -> Arc<Async<()>> {
         File_system::method37(v0_1, v1_1)
@@ -1426,10 +1426,10 @@ pub mod File_system {
         };
     }
     pub fn method42(v0_1: string, v1_1: i64) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method41(v0_1: string, v1_1: i64) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method40(v0_1: string) -> Arc<Async<i64>> {
         File_system::method41(v0_1, 0_i64)
@@ -1560,10 +1560,10 @@ pub mod File_system {
         };
     }
     pub fn method55(v0_1: string, v1_1: string, v2_1: i64) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method54(v0_1: string, v1_1: string, v2_1: i64) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method53(v0_1: string, v1_1: string) -> Arc<Async<i64>> {
         File_system::method54(v0_1, v1_1, 0_i64)
@@ -1592,10 +1592,10 @@ pub mod File_system {
     pub fn method64(
         v0_1: Arc<Async<LrcPtr<Choice_2<i64, LrcPtr<Exception>>>>>,
     ) -> Arc<Async<File_system::US10>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method67(v0_1: Arc<Async<File_system::US10>>) -> Arc<Async<File_system::US11>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method69() -> string {
         let v6: string = File_system::method17(getCharAt(toLower(string("Verbose")), 0_i32));
@@ -1793,16 +1793,16 @@ pub mod File_system {
         v0_1: i32,
         v1_1: Arc<Async<File_system::US11>>,
     ) -> Arc<Async<File_system::US2>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method63(v0_1: Arc<Async<i64>>, v1_1: i32) -> Arc<Async<File_system::US2>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method62(v0_1: i32, v1_1: Arc<Async<i64>>) -> Arc<Async<File_system::US2>> {
         File_system::method63(v1_1, v0_1)
     }
     pub fn method74(v0_1: Arc<Async<string>>) -> Arc<Async<Option<string>>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method76(v0_1: i64, v1_1: string) -> string {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
@@ -1906,7 +1906,7 @@ pub mod File_system {
         };
     }
     pub fn method61(v0_1: string, v1_1: i64) -> Arc<Async<Option<string>>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method60(v0_1: string, v1_1: i64) -> Arc<Async<Option<string>>> {
         File_system::method61(v0_1, v1_1)
@@ -2269,7 +2269,7 @@ pub mod File_system {
         })
     }
     pub fn method99(v0_1: string) -> bool {
-        unbox::<bool>(&getZero())
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method101(v0_1: string, v1_1: string) -> string {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
@@ -2374,8 +2374,8 @@ pub mod File_system {
     }
     pub fn closure46(v0_1: string, unitVar: ()) {
         let v1_1: Arc<Async<i64>> = File_system::method6(v0_1);
-        let v3: Arc<Async<()>> = getZero();
-        getZero::<()>();
+        let v3: Arc<Async<()>> = fable_library_rust::Native_::getZero();
+        fable_library_rust::Native_::getZero::<()>();
         ()
     }
     pub fn method102(v0_1: string) -> Func0<()> {
@@ -2762,13 +2762,13 @@ pub mod File_system {
         }
     }
     pub fn method117(v0_1: bool) -> i32 {
-        unbox::<i32>(&getZero())
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method118() -> i32 {
-        unbox::<i32>(&getZero())
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method119(v0_1: i32, v1_1: i32) -> bool {
-        unbox::<bool>(&getZero())
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method121(
         v0_1: string,
@@ -2859,11 +2859,12 @@ pub mod File_system {
         v1_1: u8,
         v2_1: string,
     ) -> Result<std::path::PathBuf, std::io::Error> {
-        let v30_1: i32 = File_system::method117(unbox::<bool>(&getZero()));
+        let v30_1: i32 =
+            File_system::method117(unbox::<bool>(fable_library_rust::Native_::getZero()));
         let v32_1: bool = File_system::method119(File_system::method118(), v30_1);
         if v32_1 {
-            let v34_1: bool = unbox::<bool>(&getZero());
-            let v86: std::path::PathBuf = getZero();
+            let v34_1: bool = unbox::<bool>(fable_library_rust::Native_::getZero());
+            let v86: std::path::PathBuf = fable_library_rust::Native_::getZero();
             Ok(v86)
         } else {
             let v107: string =
@@ -2989,11 +2990,12 @@ pub mod File_system {
         }
     }
     pub fn method116(v0_1: string, v1_1: u8) -> Result<std::path::PathBuf, std::io::Error> {
-        let v29_1: i32 = File_system::method117(unbox::<bool>(&getZero()));
+        let v29_1: i32 =
+            File_system::method117(unbox::<bool>(fable_library_rust::Native_::getZero()));
         let v31_1: bool = File_system::method119(File_system::method118(), v29_1);
         if v31_1 {
-            let v33_1: bool = unbox::<bool>(&getZero());
-            let v85: std::path::PathBuf = getZero();
+            let v33_1: bool = unbox::<bool>(fable_library_rust::Native_::getZero());
+            let v85: std::path::PathBuf = fable_library_rust::Native_::getZero();
             Ok(v85)
         } else {
             let v106: string =

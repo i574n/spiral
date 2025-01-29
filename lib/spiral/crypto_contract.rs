@@ -8,7 +8,7 @@ pub mod Crypto {
     use fable_library_rust::Map_::find;
     use fable_library_rust::Map_::ofSeq;
     use fable_library_rust::NativeArray_::new_array;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::Native_::Any;
@@ -234,7 +234,7 @@ pub mod Crypto {
         string("")
     }
     pub fn method0(v0_1: string) -> string {
-        unbox::<string>(&getZero())
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn closure0(unitVar: (), v0_1: string) -> string {
         Crypto::method0(v0_1)
@@ -347,8 +347,8 @@ pub mod Crypto {
             if (Crypto::method8(string("AUTOMATION"))) != string("True") {
                 Crypto::US2::US2_1
             } else {
-                let v58: DateTime = unbox::<DateTime>(&getZero());
-                Crypto::US2::US2_0(unbox::<i64>(&getZero()))
+                let v58: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
+                Crypto::US2::US2_0(unbox::<i64>(fable_library_rust::Native_::getZero()))
             },
         )
     }

@@ -9,7 +9,7 @@ pub mod Networking {
     use fable_library_rust::Map_::find;
     use fable_library_rust::Map_::ofSeq;
     use fable_library_rust::NativeArray_::new_array;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::Native_::Any;
@@ -348,8 +348,8 @@ pub mod Networking {
             if (Networking::method2(string("AUTOMATION"))) != string("True") {
                 Networking::US2::US2_1
             } else {
-                let v58: DateTime = unbox::<DateTime>(&getZero());
-                Networking::US2::US2_0(unbox::<i64>(&getZero()))
+                let v58: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
+                Networking::US2::US2_0(unbox::<i64>(fable_library_rust::Native_::getZero()))
             },
         )
     }
@@ -736,7 +736,7 @@ pub mod Networking {
         };
     }
     pub fn method7(v0_1: string, v1_1: i32) -> Arc<Async<bool>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method6(v0_1: string, v1_1: i32) -> Arc<Async<bool>> {
         Networking::method7(v0_1, v1_1)
@@ -765,10 +765,10 @@ pub mod Networking {
     pub fn method25(
         v0_1: Arc<Async<LrcPtr<Choice_2<bool, LrcPtr<Exception>>>>>,
     ) -> Arc<Async<Networking::US7>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method28(v0_1: Arc<Async<Networking::US7>>) -> Arc<Async<Networking::US8>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method31(v0_1: i32) -> string {
         let v2_1: LrcPtr<Networking::Mut3> = LrcPtr::new(Networking::Mut3 {
@@ -957,16 +957,16 @@ pub mod Networking {
         };
     }
     pub fn method29(v0_1: i32, v1_1: Arc<Async<Networking::US8>>) -> Arc<Async<Networking::US6>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method24(v0_1: Arc<Async<bool>>, v1_1: i32) -> Arc<Async<Networking::US6>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method23(v0_1: i32, v1_1: Arc<Async<bool>>) -> Arc<Async<Networking::US6>> {
         Networking::method24(v1_1, v0_1)
     }
     pub fn method22(v0_1: i32, v1_1: string, v2_1: i32) -> Arc<Async<bool>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method21(v0_1: i32, v1_1: string, v2_1: i32) -> Arc<Async<bool>> {
         Networking::method22(v0_1, v1_1, v2_1)
@@ -1143,7 +1143,7 @@ pub mod Networking {
         v3: i32,
         v4: i64,
     ) -> Arc<Async<i64>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method36(
         v0_1: Option<i32>,
@@ -1185,7 +1185,7 @@ pub mod Networking {
         })
     }
     pub fn method43(v0_1: Option<i32>, v1_1: string, v2_1: i32) -> Arc<Async<i32>> {
-        getZero()
+        fable_library_rust::Native_::getZero()
     }
     pub fn method42(v0_1: Option<i32>, v1_1: string, v2_1: i32) -> Arc<Async<i32>> {
         Networking::method43(v0_1, v1_1, v2_1)

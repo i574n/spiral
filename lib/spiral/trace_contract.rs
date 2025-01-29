@@ -7,7 +7,7 @@ pub mod Trace {
     use fable_library_rust::Map_::find;
     use fable_library_rust::Map_::ofSeq;
     use fable_library_rust::NativeArray_::new_array;
-    use fable_library_rust::Native_::getZero;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::Native_::Any;
@@ -301,8 +301,8 @@ pub mod Trace {
             if (Trace::method2(string("AUTOMATION"))) != string("True") {
                 Trace::US2::US2_1
             } else {
-                let v58: DateTime = unbox::<DateTime>(&getZero());
-                Trace::US2::US2_0(unbox::<i64>(&getZero()))
+                let v58: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
+                Trace::US2::US2_0(unbox::<i64>(fable_library_rust::Native_::getZero()))
             },
         )
     }
