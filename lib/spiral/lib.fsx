@@ -485,52 +485,104 @@ module SpiralFileSystem =
 let set_trace_level new_level =
 #if !INTERACTIVE
     Networking.TraceState.trace_state
+#else
+    trace_state_Networking
+#endif
     |> Option.iter (fun struct (_, _, _, _, level, _) ->
         level.l0 <-
+#if !INTERACTIVE
             match new_level with
             | Trace.US0_0 -> Networking.US0_0
             | Trace.US0_1 -> Networking.US0_1
             | Trace.US0_2 -> Networking.US0_2
             | Trace.US0_3 -> Networking.US0_3
             | Trace.US0_4 -> Networking.US0_4
+#else
+            match new_level with
+            | US0_0 -> Networking_US0.US0_0
+            | US0_1 -> Networking_US0.US0_1
+            | US0_2 -> Networking_US0.US0_2
+            | US0_3 -> Networking_US0.US0_3
+            | US0_4 -> Networking_US0.US0_4
+#endif
     )
 
+#if !INTERACTIVE
     File_system.TraceState.trace_state
+#else
+    trace_state_File_system
+#endif
     |> Option.iter (fun struct (_, _, _, _, level, _) ->
         level.l0 <-
+#if !INTERACTIVE
             match new_level with
             | Trace.US0_0 -> File_system.US0_0
             | Trace.US0_1 -> File_system.US0_1
             | Trace.US0_2 -> File_system.US0_2
             | Trace.US0_3 -> File_system.US0_3
             | Trace.US0_4 -> File_system.US0_4
+#else
+            match new_level with
+            | US0_0 -> File_system_US0.US0_0
+            | US0_1 -> File_system_US0.US0_1
+            | US0_2 -> File_system_US0.US0_2
+            | US0_3 -> File_system_US0.US0_3
+            | US0_4 -> File_system_US0.US0_4
+#endif
     )
 
+#if !INTERACTIVE
     Runtime.TraceState.trace_state
+#else
+    trace_state_Runtime
+#endif
     |> Option.iter (fun struct (_, _, _, _, level, _) ->
         level.l0 <-
+#if !INTERACTIVE
             match new_level with
             | Trace.US0_0 -> Runtime.US0_0
             | Trace.US0_1 -> Runtime.US0_1
             | Trace.US0_2 -> Runtime.US0_2
             | Trace.US0_3 -> Runtime.US0_3
             | Trace.US0_4 -> Runtime.US0_4
+#else
+            match new_level with
+            | US0_0 -> Runtime_US0.US0_0
+            | US0_1 -> Runtime_US0.US0_1
+            | US0_2 -> Runtime_US0.US0_2
+            | US0_3 -> Runtime_US0.US0_3
+            | US0_4 -> Runtime_US0.US0_4
+#endif
     )
 
+#if !INTERACTIVE
     Common.TraceState.trace_state
+#else
+    trace_state_Common
+#endif
     |> Option.iter (fun struct (_, _, _, _, level, _) ->
         level.l0 <-
+#if !INTERACTIVE
             match new_level with
             | Trace.US0_0 -> Common.US0_0
             | Trace.US0_1 -> Common.US0_1
             | Trace.US0_2 -> Common.US0_2
             | Trace.US0_3 -> Common.US0_3
             | Trace.US0_4 -> Common.US0_4
+#else
+            match new_level with
+            | US0_0 -> Common_US0.US0_0
+            | US0_1 -> Common_US0.US0_1
+            | US0_2 -> Common_US0.US0_2
+            | US0_3 -> Common_US0.US0_3
+            | US0_4 -> Common_US0.US0_4
+#endif
     )
 
+#if !INTERACTIVE
     Trace.TraceState.trace_state
 #else
-    TraceState.trace_state
+    trace_state_Trace
 #endif
     |> Option.iter (fun (struct (_, _, _, _, level, _)) ->
         level.l0 <- new_level
@@ -540,7 +592,7 @@ let get_trace_level () =
 #if !INTERACTIVE
     Trace.TraceState.trace_state
 #else
-    TraceState.trace_state
+    trace_state_Trace
 #endif
     |> Option.map (fun struct (_, _, _, _, level, _) ->
         level.l0
