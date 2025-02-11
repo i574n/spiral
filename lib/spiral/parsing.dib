@@ -20,7 +20,8 @@ open testing
 
 //// test
 
-#r "nuget:FParsec"
+#r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsec.dll"
+#r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsecCS.dll"
 
 ///! _
 

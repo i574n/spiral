@@ -33,22 +33,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - run: pwsh scripts/init.ps1
-
-      - run: pwsh deps/polyglot/scripts/init.ps1
-
-      - run: pwsh deps/polyglot/apps/builder/build.ps1 -fast 1
-      - run: pwsh deps/polyglot/apps/parser/build.ps1 -fast 1
-      - run: pwsh deps/polyglot/apps/spiral/build.ps1 -fast 1
-      - run: pwsh deps/polyglot/apps/dir-tree-html/build.ps1 -fast 1
-
-      - run: pwsh apps/spiral/build.ps1 -fast 1 -SkipFsx 1
-
-      - run: pwsh scripts/build.ps1
-
-      - run: pwsh scripts/outdated.ps1
-
-      - run: pwsh scripts/publish.ps1
+      - run: pwsh scripts/workflow.ps1
 
       - uses: actions/upload-artifact@v4
         with:

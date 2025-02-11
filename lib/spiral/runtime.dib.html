@@ -10947,14 +10947,14 @@ __assert_eq' / actual: "../../j, US1_0 "k.l -m \\"n o\\""" / expected: "../../j,
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options_async / { file_name = pwsh; arguments = US2_0
   "-c "Get-Content C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9\test.txt""; options = { command = pwsh -c "Get-Content C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9\test.txt"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = None } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #2 ! <span class="ansi-red-intense-fg ansi-bold">Get-Content: </span><span class="ansi-red-intense-fg ansi-bold">Cannot find path 'C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9\test.txt' because it does not exist.</span>
-00:00:01 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options_async / { exit_code = 1; output_length = 197 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options_async / { exit_code = 1; output_length = 197 }
 __assert_eq / actual: 1 / expected: 1
 __assert / actual: "not exist" / expected: "<span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">Get-Content: </span><span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">Cannot find path 'C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9\test.txt' because it does not exist.</span>"
-00:00:01 <span class="ansi-blue-intense-fg">d</span> #4 runtime.execute_with_options_async / { file_name = cat; arguments = US2_0 ""test.txt""; options = { command = cat "test.txt"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = Some
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #4 runtime.execute_with_options_async / { file_name = cat; arguments = US2_0 ""test.txt""; options = { command = cat "test.txt"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = Some
   "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9" } }
-00:00:01 <span class="ansi-black-intense-fg">v</span> #5 &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
-00:00:01 <span class="ansi-blue-intense-fg">d</span> #6 runtime.execute_with_options_async / { exit_code = 0; output_length = 22 }
-00:00:01 <span class="ansi-blue-intense-fg">d</span> #7 runtime.execute_with_options_async / { file_name = pwsh; arguments = US2_0
+00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #6 runtime.execute_with_options_async / { exit_code = 0; output_length = 22 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #7 runtime.execute_with_options_async / { file_name = pwsh; arguments = US2_0
   "-c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content test.txt""; options = { command = pwsh -c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content test.txt"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = Some
   "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9" } }
 00:00:01 <span class="ansi-black-intense-fg">v</span> #8 &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
@@ -11465,8 +11465,8 @@ __assert / actual: "not find file" / expected: "<span class="ansi-default-invers
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #8 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"]; options = { command = pwsh -c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
     "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_f49057ac3a477ec68301f868bf59ae79c1982bd93ef50c66b8d161ae68751fc7\9242780b-ce0e-9155-5e07-f6ee5667aa16",
 ) } }
-00:00:01 <span class="ansi-black-intense-fg">v</span> #9 &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
-00:00:01 <span class="ansi-black-intense-fg">v</span> #10 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 22 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
+00:00:00 <span class="ansi-black-intense-fg">v</span> #10 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 22 }
 __assert_eq / actual: 0 / expected: 0
 __assert_eq / actual: "╭─[ 你好，世界！こんにちは世界！ ]─╮" / expected: "╭─[ 你好，世界！こんにちは世界！ ]─╮"
 </pre>

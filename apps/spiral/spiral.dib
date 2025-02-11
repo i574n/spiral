@@ -294,8 +294,8 @@ let persist_code_project { workspace_root package_dir packages modules name code
 
     inl packages_code =
         packages
-        |> listm.map fun (package : string) =>
-            $'$"<PackageReference Include=\\\"{!package}\\\" Version=\\\"*\\\" />"' : string
+        |> listm.map fun (package : string), (version : string) =>
+            $'$"<PackageReference Include=\\\"{!package}\\\" Version=\\\"{!version}\\\" />"' : string
         |> listm'.box
         |> seq.of_list'
         |> sm'.concat "\\n        "
@@ -600,7 +600,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
         persist_code_project {
             workspace_root
             package_dir
-            packages = [ "Fable.Core" ]
+            packages = [ "Fable.Core", "4.3.0" ]
             modules = []
             name = workspace_name
             code
@@ -1102,7 +1102,7 @@ inl process_typescript { fs_path deps trace_level } =
         persist_code_project {
             workspace_root
             package_dir
-            packages = [ "Fable.Core" ]
+            packages = [ "Fable.Core", "4.3.0" ]
             modules = []
             name = workspace_name
             code
@@ -1355,7 +1355,7 @@ inl process_python { fs_path deps trace_level } =
         persist_code_project {
             workspace_root
             package_dir
-            packages = [ "Fable.Core" ]
+            packages = [ "Fable.Core", "4.3.0" ]
             modules = []
             name = workspace_name
             code
