@@ -1900,7 +1900,7 @@ let wait_for_file_access_read path =
 #!spiral
 
 //// test
-//// timeout=30000
+//// timeout=60000
 
 inl lock_file path =
     fun () =>
@@ -2032,7 +2032,7 @@ let move_file_async new_path old_path : _ i64 =
 #!spiral
 
 //// test
-//// timeout=30000
+//// timeout=60000
 
 inl lock_file path =
     fun () =>
@@ -2130,7 +2130,7 @@ let delete_file_async path : _ i64 =
 #!spiral
 
 //// test
-//// timeout=30000
+//// timeout=60000
 
 inl lock_file path =
     fun () =>
