@@ -11214,7 +11214,7 @@ a.anchor-link {
     <span class="o">|</span> <span class="n">TyVar</span><span class="p">(</span><span class="n">_</span><span class="p">,{</span><span class="n">contents</span><span class="o">=</span><span class="n">Some</span> <span class="n">x</span><span class="p">})</span> <span class="o">-&gt;</span> <span class="n">visit_t</span> <span class="n">x</span>
     <span class="o">|</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span>
 
-<span class="n">exception</span> <span class="n">TypeErrorException</span> <span class="n">of</span> <span class="p">(</span><span class="n">VSCRange</span> <span class="o">*</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="nb">list</span>
+<span class="n">exception</span> <span class="n">InferTypeErrorException</span> <span class="n">of</span> <span class="p">(</span><span class="n">VSCRange</span> <span class="o">*</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="nb">list</span>
 
 <span class="n">let</span> <span class="n">rec</span> <span class="n">metavars</span> <span class="o">=</span> <span class="n">function</span>
     <span class="o">|</span> <span class="n">RawTTypecase</span> <span class="n">_</span> <span class="o">|</span> <span class="n">RawTExists</span> <span class="n">_</span> <span class="o">|</span> <span class="n">RawTFilledNominal</span> <span class="n">_</span> <span class="o">|</span> <span class="n">RawTMacro</span> <span class="n">_</span> <span class="o">|</span> <span class="n">RawTVar</span> <span class="n">_</span> <span class="o">|</span> <span class="n">RawTTerm</span> <span class="n">_</span> 
@@ -11540,7 +11540,7 @@ a.anchor-link {
 
 <span class="n">let</span> <span class="n">assert_bound_vars</span> <span class="p">(</span><span class="n">top_env</span> <span class="p">:</span> <span class="n">InferEnv</span><span class="p">)</span> <span class="n">constraints</span> <span class="n">term</span> <span class="n">ty</span> <span class="n">x</span> <span class="o">=</span>
     <span class="n">let</span> <span class="n">errors</span> <span class="o">=</span> <span class="n">validate_bound_vars</span> <span class="n">top_env</span> <span class="n">constraints</span> <span class="n">term</span> <span class="n">ty</span> <span class="n">x</span>
-    <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">Count</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">(</span><span class="n">Seq</span><span class="o">.</span><span class="n">toList</span> <span class="n">errors</span><span class="p">))</span>
+    <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">Count</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">(</span><span class="n">Seq</span><span class="o">.</span><span class="n">toList</span> <span class="n">errors</span><span class="p">))</span>
 
 <span class="n">let</span> <span class="n">rec</span> <span class="n">subst</span> <span class="p">(</span><span class="n">m</span> <span class="p">:</span> <span class="p">(</span><span class="n">Var</span> <span class="o">*</span> <span class="n">T</span><span class="p">)</span> <span class="nb">list</span><span class="p">)</span> <span class="n">x</span> <span class="o">=</span>
     <span class="n">let</span> <span class="n">f</span> <span class="o">=</span> <span class="n">subst</span> <span class="n">m</span>
@@ -12114,12 +12114,12 @@ a.anchor-link {
             <span class="o">|</span> <span class="n">KindFun</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">a</span><span class="s1">'), KindFun(b,b'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">);</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="s1">',b'</span><span class="p">)</span>
             <span class="o">|</span> <span class="n">KindMetavar</span> <span class="n">a</span><span class="p">,</span> <span class="n">KindMetavar</span> <span class="n">b</span> <span class="o">&amp;</span> <span class="sa">b</span><span class="s1">' -&gt; if a &lt;&gt; b then a.contents'</span> <span class="o">&lt;-</span> <span class="n">Some</span> <span class="sa">b</span><span class="s1">'</span>
             <span class="o">|</span> <span class="n">KindMetavar</span> <span class="n">link</span><span class="p">,</span> <span class="n">b</span> <span class="o">|</span> <span class="n">b</span><span class="p">,</span> <span class="n">KindMetavar</span> <span class="n">link</span> <span class="o">-&gt;</span> <span class="n">link</span><span class="o">.</span><span class="n">contents</span><span class="s1">' &lt;- Some b</span>
-            <span class="o">|</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">er</span> <span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)])</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">er</span> <span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)])</span>
         <span class="n">loop</span> <span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
-    <span class="n">let</span> <span class="n">unify_kind</span> <span class="n">r</span> <span class="n">got</span> <span class="n">expected</span> <span class="o">=</span> <span class="k">try</span> <span class="n">unify_kind</span><span class="s1">' KindError r got expected with :? TypeErrorException as e -&gt; errors.AddRange e.Data0</span>
+    <span class="n">let</span> <span class="n">unify_kind</span> <span class="n">r</span> <span class="n">got</span> <span class="n">expected</span> <span class="o">=</span> <span class="k">try</span> <span class="n">unify_kind</span><span class="s1">' KindError r got expected with :? InferTypeErrorException as e -&gt; errors.AddRange e.Data0</span>
     <span class="n">let</span> <span class="n">unify_gadt</span> <span class="p">(</span><span class="n">gadt_links</span> <span class="p">:</span> <span class="n">T</span> <span class="n">option</span> <span class="n">ref</span> <span class="n">ResizeArray</span> <span class="n">option</span><span class="p">)</span> <span class="p">(</span><span class="n">r</span> <span class="p">:</span> <span class="n">VSCRange</span><span class="p">)</span> <span class="p">(</span><span class="n">got</span> <span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="p">(</span><span class="n">expected</span> <span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="p">:</span> <span class="n">unit</span> <span class="o">=</span>
         <span class="n">let</span> <span class="n">unify_kind</span> <span class="n">got</span> <span class="n">expected</span> <span class="o">=</span> <span class="n">unify_kind</span><span class="s1">' KindError r got expected</span>
-        <span class="n">let</span> <span class="n">er</span> <span class="p">()</span> <span class="o">=</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">TermError</span><span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)])</span>
+        <span class="n">let</span> <span class="n">er</span> <span class="p">()</span> <span class="o">=</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">TermError</span><span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)])</span>
 
         <span class="n">let</span> <span class="n">rec</span> <span class="n">constraint_process</span> <span class="p">(</span><span class="n">con</span> <span class="p">:</span> <span class="n">Constraint</span> <span class="n">Set</span><span class="p">)</span> <span class="n">b</span> <span class="o">=</span>
             <span class="n">let</span> <span class="n">unify_kind</span> <span class="n">got</span> <span class="n">expected</span> <span class="o">=</span> <span class="n">unify_kind</span><span class="s1">' KindErrorInConstraint r got expected</span>
@@ -12177,8 +12177,8 @@ a.anchor-link {
                 <span class="o">|</span> <span class="n">TyApply</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">|</span> <span class="n">TyFun</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">|</span> <span class="n">TyPair</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">f</span> <span class="n">a</span><span class="p">;</span> <span class="n">f</span> <span class="n">b</span>
                 <span class="o">|</span> <span class="n">TyUnion</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Map</span><span class="o">.</span><span class="n">iter</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="n">snd</span> <span class="o">&gt;&gt;</span> <span class="n">f</span><span class="p">)</span> <span class="n">l</span>
                 <span class="o">|</span> <span class="n">TyRecord</span> <span class="n">l</span> <span class="o">-&gt;</span> <span class="n">Map</span><span class="o">.</span><span class="n">iter</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="n">f</span><span class="p">)</span> <span class="n">l</span>
-                <span class="o">|</span> <span class="n">TyVar</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">nested_tvars</span><span class="o">.</span><span class="n">Contains</span> <span class="n">b</span> <span class="o">=</span> <span class="n">false</span> <span class="o">&amp;&amp;</span> <span class="n">i</span><span class="o">.</span><span class="n">scope</span> <span class="o">&lt;</span> <span class="n">b</span><span class="o">.</span><span class="n">scope</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">TypeVarScopeError</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">got</span><span class="p">,</span><span class="n">expected</span><span class="p">)])</span>
-                <span class="o">|</span> <span class="n">TyMetavar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">i</span> <span class="o">=</span> <span class="n">x</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">RecursiveMetavarsNotAllowed</span><span class="p">(</span><span class="n">got</span><span class="p">,</span><span class="n">expected</span><span class="p">)])</span> <span class="k">elif</span> <span class="n">i</span><span class="o">.</span><span class="n">scope</span> <span class="o">&lt;</span> <span class="n">x</span><span class="o">.</span><span class="n">scope</span> <span class="n">then</span> <span class="n">x</span><span class="o">.</span><span class="n">scope</span> <span class="o">&lt;-</span> <span class="n">i</span><span class="o">.</span><span class="n">scope</span>
+                <span class="o">|</span> <span class="n">TyVar</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">nested_tvars</span><span class="o">.</span><span class="n">Contains</span> <span class="n">b</span> <span class="o">=</span> <span class="n">false</span> <span class="o">&amp;&amp;</span> <span class="n">i</span><span class="o">.</span><span class="n">scope</span> <span class="o">&lt;</span> <span class="n">b</span><span class="o">.</span><span class="n">scope</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">TypeVarScopeError</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">got</span><span class="p">,</span><span class="n">expected</span><span class="p">)])</span>
+                <span class="o">|</span> <span class="n">TyMetavar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">i</span> <span class="o">=</span> <span class="n">x</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">RecursiveMetavarsNotAllowed</span><span class="p">(</span><span class="n">got</span><span class="p">,</span><span class="n">expected</span><span class="p">)])</span> <span class="k">elif</span> <span class="n">i</span><span class="o">.</span><span class="n">scope</span> <span class="o">&lt;</span> <span class="n">x</span><span class="o">.</span><span class="n">scope</span> <span class="n">then</span> <span class="n">x</span><span class="o">.</span><span class="n">scope</span> <span class="o">&lt;-</span> <span class="n">i</span><span class="o">.</span><span class="n">scope</span>
                 <span class="o">|</span> <span class="n">TyLayout</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">f</span> <span class="n">a</span>
             <span class="n">f</span> <span class="n">x</span>
 
@@ -12192,7 +12192,7 @@ a.anchor-link {
             <span class="o">|</span> <span class="n">TyApply</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">|</span> <span class="n">TyFun</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">|</span> <span class="n">TyPair</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">f</span> <span class="n">a</span><span class="p">;</span> <span class="n">f</span> <span class="n">b</span>
             <span class="o">|</span> <span class="n">TyUnion</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Map</span><span class="o">.</span><span class="n">iter</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="n">snd</span> <span class="o">&gt;&gt;</span> <span class="n">f</span><span class="p">)</span> <span class="n">l</span>
             <span class="o">|</span> <span class="n">TyRecord</span> <span class="n">l</span> <span class="o">-&gt;</span> <span class="n">Map</span><span class="o">.</span><span class="n">iter</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="n">f</span><span class="p">)</span> <span class="n">l</span>
-            <span class="o">|</span> <span class="n">TyVar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">i</span> <span class="o">=</span> <span class="n">x</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">RecursiveTypevarsNotAllowed</span><span class="p">(</span><span class="n">got</span><span class="p">,</span><span class="n">expected</span><span class="p">)])</span>
+            <span class="o">|</span> <span class="n">TyVar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">i</span> <span class="o">=</span> <span class="n">x</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">RecursiveTypevarsNotAllowed</span><span class="p">(</span><span class="n">got</span><span class="p">,</span><span class="n">expected</span><span class="p">)])</span>
             <span class="o">|</span> <span class="n">TyLayout</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">f</span> <span class="n">a</span>
 
         <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="s1">''</span><span class="p">,</span><span class="sa">b</span><span class="s1">''</span><span class="p">)</span> <span class="o">=</span> 
@@ -12209,14 +12209,14 @@ a.anchor-link {
                 <span class="n">unify_kind</span> <span class="n">a</span><span class="o">.</span><span class="n">kind</span> <span class="p">(</span><span class="n">tt</span> <span class="n">top_env</span> <span class="n">b</span><span class="p">)</span>
                 <span class="k">match</span> <span class="n">constraint_process</span> <span class="n">a</span><span class="o">.</span><span class="n">constraints</span> <span class="n">b</span> <span class="k">with</span>
                 <span class="o">|</span> <span class="p">[]</span> <span class="o">-&gt;</span> <span class="n">link</span><span class="o">.</span><span class="n">Value</span> <span class="o">&lt;-</span> <span class="n">Some</span> <span class="n">b</span>
-                <span class="o">|</span> <span class="n">constraint_errors</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">(</span><span class="n">List</span><span class="o">.</span><span class="n">map</span> <span class="p">(</span><span class="n">fun</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">r</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="n">constraint_errors</span><span class="p">))</span>
+                <span class="o">|</span> <span class="n">constraint_errors</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">(</span><span class="n">List</span><span class="o">.</span><span class="n">map</span> <span class="p">(</span><span class="n">fun</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">r</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="n">constraint_errors</span><span class="p">))</span>
             <span class="o">|</span> <span class="n">TyVar</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">_</span><span class="p">),</span> <span class="n">TyVar</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="n">when</span> <span class="n">a</span> <span class="o">=</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="p">()</span>
             <span class="o">|</span> <span class="n">TyVar</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">link</span><span class="p">),</span> <span class="n">b</span> <span class="o">|</span> <span class="n">b</span><span class="p">,</span> <span class="n">TyVar</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">link</span><span class="p">)</span> <span class="n">when</span> <span class="n">gadt_links</span><span class="o">.</span><span class="n">IsSome</span> <span class="o">-&gt;</span>
                 <span class="n">validate_tvar_unification</span> <span class="n">a</span> <span class="n">b</span>
                 <span class="n">unify_kind</span> <span class="n">a</span><span class="o">.</span><span class="n">kind</span> <span class="p">(</span><span class="n">tt</span> <span class="n">top_env</span> <span class="n">b</span><span class="p">)</span>
                 <span class="k">match</span> <span class="n">constraint_process</span> <span class="n">a</span><span class="o">.</span><span class="n">constraints</span> <span class="n">b</span> <span class="k">with</span>
                 <span class="o">|</span> <span class="p">[]</span> <span class="o">-&gt;</span> <span class="n">link</span><span class="o">.</span><span class="n">Value</span> <span class="o">&lt;-</span> <span class="n">Some</span> <span class="n">b</span><span class="p">;</span> <span class="n">gadt_links</span><span class="o">.</span><span class="n">Value</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">link</span><span class="p">)</span>
-                <span class="o">|</span> <span class="n">constraint_errors</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">(</span><span class="n">List</span><span class="o">.</span><span class="n">map</span> <span class="p">(</span><span class="n">fun</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">r</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="n">constraint_errors</span><span class="p">))</span>
+                <span class="o">|</span> <span class="n">constraint_errors</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">(</span><span class="n">List</span><span class="o">.</span><span class="n">map</span> <span class="p">(</span><span class="n">fun</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">r</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="n">constraint_errors</span><span class="p">))</span>
             <span class="o">|</span> <span class="n">TyFun</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">a</span><span class="s1">',ta), TyFun(b,b'</span><span class="p">,</span><span class="n">tb</span><span class="p">)</span> <span class="n">when</span> <span class="n">ta</span> <span class="o">=</span> <span class="n">tb</span> <span class="o">-&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">);</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="s1">',b'</span><span class="p">)</span>
             <span class="o">|</span> <span class="n">TyPair</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">a</span><span class="s1">'), TyPair(b,b'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">);</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="s1">',b'</span><span class="p">)</span>
             <span class="o">|</span> <span class="n">TyApply</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">a</span><span class="s1">',_), TyApply(b,b'</span><span class="p">,</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="s1">',b'</span><span class="p">);</span> <span class="n">loop</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
@@ -12225,7 +12225,7 @@ a.anchor-link {
                     <span class="n">let</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">toArray</span> <span class="n">l</span><span class="p">,</span> <span class="n">Map</span><span class="o">.</span><span class="n">toArray</span> <span class="n">l</span><span class="s1">'</span>
                     <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">Length</span> <span class="o">&lt;&gt;</span> <span class="n">b</span><span class="o">.</span><span class="n">Length</span> <span class="n">then</span> <span class="n">er</span> <span class="p">()</span>
                     <span class="k">else</span> <span class="n">Array</span><span class="o">.</span><span class="n">iter2</span> <span class="p">(</span><span class="n">fun</span> <span class="p">(</span><span class="n">ka</span><span class="p">,</span><span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">kb</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">ka</span> <span class="o">=</span> <span class="n">kb</span> <span class="o">&amp;&amp;</span> <span class="n">fst</span> <span class="n">a</span> <span class="o">=</span> <span class="n">fst</span> <span class="n">b</span> <span class="n">then</span> <span class="n">loop</span> <span class="p">(</span><span class="n">snd</span> <span class="n">a</span><span class="p">,</span><span class="n">snd</span> <span class="n">b</span><span class="p">)</span> <span class="k">else</span> <span class="n">er</span><span class="p">())</span> <span class="n">a</span> <span class="n">b</span>
-                <span class="k">else</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">UnionTypesMustHaveTheSameLayout</span><span class="p">])</span>
+                <span class="k">else</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span><span class="n">UnionTypesMustHaveTheSameLayout</span><span class="p">])</span>
             <span class="o">|</span> <span class="n">TyRecord</span> <span class="n">l</span><span class="p">,</span> <span class="n">TyRecord</span> <span class="n">l</span><span class="s1">' -&gt; </span>
                 <span class="n">let</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">toArray</span> <span class="n">l</span><span class="p">,</span> <span class="n">Map</span><span class="o">.</span><span class="n">toArray</span> <span class="n">l</span><span class="s1">'</span>
                 <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">Length</span> <span class="o">&lt;&gt;</span> <span class="n">b</span><span class="o">.</span><span class="n">Length</span> <span class="n">then</span> <span class="n">er</span> <span class="p">()</span>
@@ -12261,7 +12261,7 @@ a.anchor-link {
             <span class="o">|</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="n">er</span> <span class="p">()</span>
 
         <span class="k">try</span> <span class="n">loop</span> <span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
-        <span class="k">with</span> <span class="p">:</span><span class="err">?</span> <span class="n">TypeErrorException</span> <span class="k">as</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">AddRange</span> <span class="n">e</span><span class="o">.</span><span class="n">Data0</span>
+        <span class="k">with</span> <span class="p">:</span><span class="err">?</span> <span class="n">InferTypeErrorException</span> <span class="k">as</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">AddRange</span> <span class="n">e</span><span class="o">.</span><span class="n">Data0</span>
 
     <span class="n">let</span> <span class="n">unify</span> <span class="nb">range</span> <span class="n">got</span> <span class="n">expected</span> <span class="o">=</span> <span class="n">unify_gadt</span> <span class="kc">None</span> <span class="nb">range</span> <span class="n">got</span> <span class="n">expected</span>
 
@@ -12560,11 +12560,11 @@ a.anchor-link {
                 <span class="n">let</span> <span class="n">i</span> <span class="o">=</span> <span class="n">errors</span><span class="o">.</span><span class="n">Count</span>
                 <span class="n">f</span> <span class="n">v</span> <span class="n">a</span>
                 <span class="k">match</span> <span class="n">visit_t</span> <span class="n">v</span> <span class="k">with</span>
-                <span class="o">|</span> <span class="n">TyMetavar</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">LayoutSetMustBeAnnotated</span><span class="p">])</span>
+                <span class="o">|</span> <span class="n">TyMetavar</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">LayoutSetMustBeAnnotated</span><span class="p">])</span>
                 <span class="o">|</span> <span class="n">TyLayout</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">lay</span><span class="p">)</span> <span class="o">-&gt;</span>
                     <span class="k">match</span> <span class="n">lay</span> <span class="k">with</span>
                     <span class="o">|</span> <span class="n">HeapMutable</span> <span class="o">|</span> <span class="n">StackMutable</span> <span class="o">-&gt;</span>
-                        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">Count</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[])</span>
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">Count</span> <span class="n">then</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[])</span>
                         <span class="n">let</span> <span class="n">b</span> <span class="o">=</span> <span class="n">List</span><span class="o">.</span><span class="n">map</span> <span class="p">(</span><span class="n">fun</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">range_of_expr</span> <span class="n">x</span><span class="p">,</span> <span class="sa">f</span><span class="s1">' x) b</span>
                         <span class="n">List</span><span class="o">.</span><span class="n">fold</span> <span class="p">(</span><span class="n">fun</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">a</span><span class="s1">') (r'</span><span class="p">,</span><span class="sa">b</span><span class="s1">') -&gt;</span>
                             <span class="k">match</span> <span class="n">visit_t</span> <span class="n">a</span><span class="s1">' with</span>
@@ -12573,13 +12573,13 @@ a.anchor-link {
                                 <span class="o">|</span> <span class="n">TySymbol</span> <span class="n">b</span> <span class="o">-&gt;</span>
                                     <span class="k">match</span><span class="w"> </span><span class="n">a</span> <span class="o">|&gt;</span> <span class="n">Map</span><span class="o">.</span><span class="n">tryPick</span> <span class="p">(</span><span class="n">fun</span> <span class="p">(</span><span class="k">_</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="n">v</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">k</span> <span class="o">=</span> <span class="n">b</span> <span class="n">then</span> <span class="n">Some</span> <span class="n">v</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span> <span class="k">with</span>
                                     <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="sa">r</span><span class="s1">', x</span>
-                                    <span class="o">|</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">RecordIndexFailed</span> <span class="n">b</span><span class="p">])</span>
-                                <span class="o">|</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="sa">r</span><span class="s1">', ExpectedSymbol'</span> <span class="n">b</span><span class="p">])</span>
-                            <span class="o">|</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">ExpectedRecord</span> <span class="n">a</span><span class="p">])</span>
+                                    <span class="o">|</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">RecordIndexFailed</span> <span class="n">b</span><span class="p">])</span>
+                                <span class="o">|</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="sa">r</span><span class="s1">', ExpectedSymbol'</span> <span class="n">b</span><span class="p">])</span>
+                            <span class="o">|</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">ExpectedRecord</span> <span class="n">a</span><span class="p">])</span>
                             <span class="p">)</span> <span class="p">(</span><span class="n">range_of_expr</span> <span class="n">a</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="n">b</span> <span class="o">|&gt;</span> <span class="n">snd</span>
-                    <span class="o">|</span> <span class="n">Heap</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">ExpectedMutableLayout</span> <span class="n">v</span><span class="p">])</span>
-                <span class="o">|</span> <span class="n">v</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">TypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">ExpectedMutableLayout</span> <span class="n">v</span><span class="p">])</span>
-            <span class="k">with</span> <span class="p">:</span><span class="err">?</span> <span class="n">TypeErrorException</span> <span class="k">as</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">AddRange</span> <span class="n">e</span><span class="o">.</span><span class="n">Data0</span><span class="p">;</span> <span class="n">fresh_var</span> <span class="n">scope</span>
+                    <span class="o">|</span> <span class="n">Heap</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">ExpectedMutableLayout</span> <span class="n">v</span><span class="p">])</span>
+                <span class="o">|</span> <span class="n">v</span> <span class="o">-&gt;</span> <span class="k">raise</span> <span class="p">(</span><span class="n">InferTypeErrorException</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">ExpectedMutableLayout</span> <span class="n">v</span><span class="p">])</span>
+            <span class="k">with</span> <span class="p">:</span><span class="err">?</span> <span class="n">InferTypeErrorException</span> <span class="k">as</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">AddRange</span> <span class="n">e</span><span class="o">.</span><span class="n">Data0</span><span class="p">;</span> <span class="n">fresh_var</span> <span class="n">scope</span>
             <span class="o">|&gt;</span> <span class="n">fun</span> <span class="n">v</span> <span class="o">-&gt;</span> <span class="n">f</span> <span class="n">v</span> <span class="n">c</span>
         <span class="o">|</span> <span class="n">RawArray</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">a</span><span class="p">)</span> <span class="o">-&gt;</span>
             <span class="n">annotations</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">x</span><span class="p">,(</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">))</span>
@@ -13027,7 +13027,7 @@ a.anchor-link {
         <span class="n">let</span> <span class="n">assert_vars_count</span> <span class="n">vars_count</span> <span class="n">vars_expected</span> <span class="o">=</span> <span class="k">if</span> <span class="n">vars_count</span> <span class="o">&lt;&gt;</span> <span class="n">vars_expected</span> <span class="n">then</span> <span class="n">errors</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">InstanceCoreVarsShouldMatchTheArityDifference</span><span class="p">(</span><span class="n">vars_count</span><span class="p">,</span><span class="n">vars_expected</span><span class="p">))</span>
         <span class="n">let</span> <span class="n">assert_kind_compatibility</span> <span class="n">got</span> <span class="n">expected</span> <span class="o">=</span>
             <span class="k">try</span> <span class="n">unify_kind</span><span class="s1">' InstanceKindError r got expected</span>
-            <span class="k">with</span> <span class="p">:</span><span class="err">?</span> <span class="n">TypeErrorException</span> <span class="k">as</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">AddRange</span> <span class="n">e</span><span class="o">.</span><span class="n">Data0</span>
+            <span class="k">with</span> <span class="p">:</span><span class="err">?</span> <span class="n">InferTypeErrorException</span> <span class="k">as</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">errors</span><span class="o">.</span><span class="n">AddRange</span> <span class="n">e</span><span class="o">.</span><span class="n">Data0</span>
         <span class="n">let</span> <span class="n">assert_kind_arity</span> <span class="n">prot_kind_arity</span> <span class="n">ins_kind_arity</span> <span class="o">=</span> <span class="k">if</span> <span class="n">ins_kind_arity</span> <span class="o">&lt;</span> <span class="n">prot_kind_arity</span> <span class="n">then</span> <span class="n">errors</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">InstanceArityError</span><span class="p">(</span><span class="n">prot_kind_arity</span><span class="p">,</span><span class="n">ins_kind_arity</span><span class="p">))</span>
         <span class="n">let</span> <span class="n">assert_instance_forall_does_not_shadow_prototype_forall</span> <span class="n">prot_forall_name</span> <span class="o">=</span> <span class="n">List</span><span class="o">.</span><span class="n">iter</span> <span class="p">(</span><span class="n">fun</span> <span class="p">((</span><span class="n">r</span><span class="p">,(</span><span class="n">a</span><span class="p">,</span><span class="n">_</span><span class="p">)),</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">if</span> <span class="n">a</span> <span class="o">=</span> <span class="n">prot_forall_name</span> <span class="n">then</span> <span class="n">errors</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">InstanceVarShouldNotMatchAnyOfPrototypes</span><span class="p">))</span> <span class="nb">vars</span>
         <span class="n">let</span> <span class="n">assert_orphan_shadow_check</span> <span class="p">(</span><span class="n">prot_id</span> <span class="p">:</span> <span class="n">GlobalId</span><span class="p">)</span> <span class="p">(</span><span class="n">ins_id</span> <span class="p">:</span> <span class="n">GlobalId</span><span class="p">)</span> <span class="o">=</span>
@@ -21974,13 +21974,15 @@ a.anchor-link {
                     <span class="o">|&gt;</span> <span class="n">Some</span>
                     <span class="o">|&gt;</span> <span class="n">IVar</span><span class="o">.</span><span class="n">fill</span> <span class="n">res</span>
                 <span class="o">|</span> <span class="n">BuildFatalError</span> <span class="n">x</span> <span class="k">as</span> <span class="n">x</span><span class="s1">' -&gt;</span>
+                    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildFatalError x: %A</span><span class="si">{x}</span><span class="s2">"</span><span class="p">)</span> <span class="n">_locals</span>
                     <span class="n">Hopac</span><span class="o">.</span><span class="n">start</span> <span class="p">(</span><span class="n">Ch</span><span class="o">.</span><span class="n">send</span> <span class="n">errors</span><span class="o">.</span><span class="n">fatal</span> <span class="n">x</span><span class="p">)</span>
                     <span class="n">IVar</span><span class="o">.</span><span class="n">fill</span> <span class="n">res</span> <span class="kc">None</span>
                 <span class="o">|</span> <span class="n">BuildErrorTrace</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="k">as</span> <span class="n">x</span><span class="s1">' -&gt;</span>
+                    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildErrorTrace x': %A{x'}"</span><span class="p">)</span> <span class="n">_locals</span>
                     <span class="n">Hopac</span><span class="o">.</span><span class="n">start</span> <span class="p">(</span><span class="n">Ch</span><span class="o">.</span><span class="n">send</span> <span class="n">errors</span><span class="o">.</span><span class="n">traced</span> <span class="p">{</span><span class="o">|</span><span class="n">trace</span><span class="o">=</span><span class="n">a</span><span class="p">;</span> <span class="n">message</span><span class="o">=</span><span class="n">b</span><span class="o">|</span><span class="p">})</span>
                     <span class="n">IVar</span><span class="o">.</span><span class="n">fill</span> <span class="n">res</span> <span class="kc">None</span>
                 <span class="o">|</span> <span class="n">BuildSkip</span> <span class="o">-&gt;</span>
-                    <span class="n">trace</span> <span class="n">Debug</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip"</span><span class="p">)</span> <span class="n">_locals</span>
+                    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip"</span><span class="p">)</span> <span class="n">_locals</span>
                     <span class="n">IVar</span><span class="o">.</span><span class="n">fill</span> <span class="n">res</span> <span class="kc">None</span>
             <span class="n">let</span> <span class="n">file_build</span> <span class="p">(</span><span class="n">s</span> <span class="p">:</span> <span class="n">SupervisorState</span><span class="p">)</span> <span class="n">mid</span> <span class="p">(</span><span class="n">tc</span> <span class="p">:</span> <span class="n">ProjStateTC</span><span class="p">,</span> <span class="n">prepass</span> <span class="p">:</span> <span class="n">ProjStatePrepass</span><span class="p">)</span> <span class="o">=</span>
                 <span class="n">trace</span> <span class="n">Verbose</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"""Supervisor.supervisor_server.BuildFile.file_build / modules: %A{s.modules.Keys |&gt; SpiralSm.concat ", "} / packages: %A{s.packages.Keys |&gt; SpiralSm.concat ", "} / package_ids: %A{s.package_ids |&gt; fst |&gt; fun x -&gt; x.Keys |&gt; SpiralSm.concat ", "}"""</span><span class="p">)</span> <span class="n">_locals</span>
@@ -22305,7 +22307,6 @@ a.anchor-link {
             <span class="p">})</span>
             <span class="p">()</span>
 
-
     <span class="n">let</span> <span class="n">error_ch_create</span> <span class="n">msg</span> <span class="o">=</span>
         <span class="n">let</span> <span class="n">x</span> <span class="o">=</span> <span class="n">Ch</span><span class="p">()</span>
         <span class="n">Hopac</span><span class="o">.</span><span class="n">server</span> <span class="p">(</span><span class="n">Job</span><span class="o">.</span><span class="n">forever</span> <span class="p">(</span><span class="n">Ch</span><span class="o">.</span><span class="n">take</span> <span class="n">x</span> <span class="o">&gt;&gt;=</span> <span class="p">(</span>
@@ -22338,13 +22339,20 @@ a.anchor-link {
     <span class="n">let</span> <span class="n">env</span> <span class="o">=</span> <span class="n">parseStartup</span> <span class="n">args</span>
     <span class="n">do</span> <span class="n">Hopac</span><span class="o">.</span><span class="n">start</span> <span class="p">(</span><span class="n">supervisor_server</span> <span class="n">env</span> <span class="n">atten</span> <span class="n">errors</span> <span class="n">supervisor</span><span class="p">)</span>
 
-    <span class="n">let</span> <span class="n">job_null</span> <span class="n">job</span> <span class="o">=</span> <span class="n">Hopac</span><span class="o">.</span><span class="n">start</span> <span class="n">job</span><span class="p">;</span> <span class="n">task</span> <span class="p">{</span> <span class="k">return</span> <span class="n">null</span> <span class="p">}</span>
+    <span class="n">let</span> <span class="n">job_null</span> <span class="n">job</span> <span class="o">=</span>
+        <span class="n">job</span>
+        <span class="o">|&gt;</span> <span class="n">Hopac</span><span class="o">.</span><span class="n">start</span>
+        <span class="n">task</span> <span class="p">{</span> <span class="k">return</span> <span class="n">null</span> <span class="p">}</span>
     <span class="n">let</span> <span class="n">serialize</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">obj</span><span class="p">)</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">x</span> <span class="k">with</span>
         <span class="o">|</span> <span class="n">null</span> <span class="o">-&gt;</span> <span class="n">null</span>
         <span class="o">|</span> <span class="p">:</span><span class="err">?</span> <span class="n">Option</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="k">as</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">Value</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">-&gt;</span> <span class="n">FSharp</span><span class="o">.</span><span class="n">Json</span><span class="o">.</span><span class="n">Json</span><span class="o">.</span><span class="n">serialize</span> <span class="n">x</span>
-    <span class="n">let</span> <span class="n">job_val</span> <span class="n">job</span> <span class="o">=</span> <span class="n">let</span> <span class="n">res</span> <span class="o">=</span> <span class="n">IVar</span><span class="p">()</span> <span class="ow">in</span> <span class="n">Hopac</span><span class="o">.</span><span class="n">queueAsTask</span> <span class="p">(</span><span class="n">job</span> <span class="n">res</span> <span class="o">&gt;&gt;=.</span> <span class="n">IVar</span><span class="o">.</span><span class="n">read</span> <span class="n">res</span> <span class="o">&gt;&gt;-</span> <span class="n">serialize</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">job_val</span> <span class="n">job</span> <span class="o">=</span>
+        <span class="n">let</span> <span class="n">res</span> <span class="o">=</span> <span class="n">IVar</span><span class="p">()</span>
+        <span class="n">let</span> <span class="n">job</span><span class="s1">' =</span>
+            <span class="n">job</span> <span class="n">res</span>
+        <span class="n">Hopac</span><span class="o">.</span><span class="n">queueAsTask</span> <span class="p">(</span><span class="n">job</span><span class="s1">' &gt;&gt;=. IVar.read res &gt;&gt;- serialize)</span>
     <span class="p">{</span><span class="o">|</span>
         <span class="n">job_null</span> <span class="o">=</span> <span class="n">job_null</span>
         <span class="n">job_val</span> <span class="o">=</span> <span class="n">job_val</span>
@@ -22356,18 +22364,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=83">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="run">run<a class="anchor-link" href="#run">¶</a></h3>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=84">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=83">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22376,92 +22373,87 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="n">let</span> <span class="n">run</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">SpiralTrace</span><span class="o">.</span><span class="n">TraceLevel</span><span class="o">.</span><span class="n">US0_1</span> <span class="o">|&gt;</span> <span class="n">set_trace_level</span>
 
-    <span class="n">let</span> <span class="n">server</span> <span class="o">=</span> <span class="n">new_server</span> <span class="p">()</span>
-    <span class="k">async</span> <span class="p">{</span>
+<span class="n">SpiralTrace</span><span class="o">.</span><span class="n">TraceLevel</span><span class="o">.</span><span class="n">US0_0</span> <span class="o">|&gt;</span> <span class="n">set_trace_level</span>
+
+<span class="n">let</span> <span class="n">server</span> <span class="o">=</span> <span class="n">new_server</span><span class="o">&lt;</span><span class="n">Job</span><span class="o">&lt;</span><span class="n">unit</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">string</span> <span class="n">option</span><span class="p">,</span> <span class="n">Job</span><span class="o">&lt;</span><span class="n">unit</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">unit</span><span class="o">&gt;</span> <span class="p">()</span>
+<span class="k">async</span> <span class="p">{</span>
+<span class="p">(</span><span class="o">*</span>
+    <span class="n">let</span> <span class="n">fullPath</span> <span class="o">=</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">workspaceRoot</span> <span class="o">&lt;/&gt;</span> <span class="s2">"deps/spiral/lib/spiral/package.spiproj"</span>
+    <span class="n">let</span> <span class="n">fullPathUri</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">normalize_path</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">new_file_uri</span>
+    <span class="n">let</span><span class="err">!</span> <span class="n">spiprojCode</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">read_all_text_async</span>
+    <span class="n">let</span> <span class="n">projectFileOpenArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">spiprojText</span> <span class="o">=</span> <span class="n">spiprojCode</span> <span class="o">|</span><span class="p">}</span>
+    <span class="n">let</span><span class="err">!</span> <span class="n">projectFileOpenResult</span> <span class="o">=</span>
+        <span class="n">job_null</span> <span class="p">(</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">SupervisorReq</span><span class="o">.</span><span class="n">ProjectFileOpen</span> <span class="n">projectFileOpenArgs</span><span class="p">)</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
+    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.ProjectFileOpen / projectFileOpenResult: %A</span><span class="si">{projectFileOpenResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="n">do</span><span class="err">!</span> <span class="n">Async</span><span class="o">.</span><span class="n">Sleep</span> <span class="mi">500</span>
+
+    <span class="n">let</span> <span class="n">fullPath</span> <span class="o">=</span> <span class="s2">"C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/package.spiproj"</span>
+    <span class="n">let</span> <span class="n">fullPathUri</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">normalize_path</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">new_file_uri</span>
+    <span class="n">let</span><span class="err">!</span> <span class="n">spiprojCode</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">read_all_text_async</span>
+    <span class="n">let</span> <span class="n">projectFileOpenArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">spiprojText</span> <span class="o">=</span> <span class="n">spiprojCode</span> <span class="o">|</span><span class="p">}</span>
+    <span class="n">let</span><span class="err">!</span> <span class="n">projectFileOpenResult</span> <span class="o">=</span>
+        <span class="n">job_null</span> <span class="p">(</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">SupervisorReq</span><span class="o">.</span><span class="n">ProjectFileOpen</span> <span class="n">projectFileOpenArgs</span><span class="p">)</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
+    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.ProjectFileOpen / projectFileOpenResult: %A</span><span class="si">{projectFileOpenResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="n">do</span><span class="err">!</span> <span class="n">Async</span><span class="o">.</span><span class="n">Sleep</span> <span class="mi">500</span>
+<span class="o">*</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">code</span> <span class="o">=</span> <span class="s2">"inl main () = 1i32 + 1"</span>
+    <span class="n">let</span> <span class="n">struct</span> <span class="p">(</span><span class="n">fullPath</span><span class="p">,</span> <span class="n">disposable</span><span class="p">)</span> <span class="o">=</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">create_temp_dir</span> <span class="p">()</span>
+    <span class="n">use</span> <span class="n">_</span> <span class="o">=</span> <span class="n">disposable</span>
+    <span class="n">let</span> <span class="n">fullPathSpi</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">&lt;/&gt;</span> <span class="s2">"main.spi"</span>
+    <span class="n">do</span><span class="err">!</span> <span class="n">code</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">write_all_text_async</span> <span class="n">fullPathSpi</span>
+    <span class="n">let</span> <span class="n">fullPathSpiproj</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">&lt;/&gt;</span> <span class="s2">"package.spiproj"</span>
+    <span class="n">do</span><span class="err">!</span> <span class="s2">"packages:</span><span class="se">\n</span><span class="s2"> |core-</span><span class="se">\n</span><span class="s2">modules:</span><span class="se">\n</span><span class="s2"> main</span><span class="se">\n</span><span class="s2">"</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">write_all_text_async</span> <span class="n">fullPathSpiproj</span>
+    <span class="o">//</span> <span class="n">let</span> <span class="n">x</span> <span class="o">=</span> <span class="n">code</span> <span class="o">|&gt;</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">persistCode</span>
+    <span class="n">let</span> <span class="n">fullPathUri</span> <span class="o">=</span> <span class="n">fullPathSpi</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">normalize_path</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">new_file_uri</span>
+    <span class="o">//</span> <span class="n">let</span><span class="err">!</span> <span class="n">code</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">read_all_text_async</span>
+    <span class="n">let</span> <span class="n">fileOpenArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">spiText</span> <span class="o">=</span> <span class="n">code</span> <span class="o">|</span><span class="p">}</span>
+    <span class="n">let</span><span class="err">!</span> <span class="n">fileOpenResult</span> <span class="o">=</span>
+        <span class="n">server</span><span class="o">.</span><span class="n">job_null</span> <span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">SupervisorReq</span><span class="o">.</span><span class="n">FileOpen</span> <span class="n">fileOpenArgs</span><span class="p">)</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">runWithTimeoutAsync</span> <span class="mi">20000</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">map</span> <span class="n">Option</span><span class="o">.</span><span class="n">get</span>
+    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"spiral_compiler.run / FileOpen / fileOpenResult: %A</span><span class="si">{fileOpenResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
+
+<span class="o">//</span>    <span class="n">do</span><span class="err">!</span> <span class="n">Async</span><span class="o">.</span><span class="n">Sleep</span> <span class="mi">500</span>
+
+    <span class="n">let</span> <span class="n">backendId</span> <span class="o">=</span> <span class="s2">"Fsharp"</span>
+    <span class="n">let</span> <span class="n">buildFileArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">backend</span> <span class="o">=</span> <span class="n">backendId</span> <span class="o">|</span><span class="p">}</span>
+    <span class="n">let</span><span class="err">!</span> <span class="n">buildFileResult</span> <span class="o">=</span>
+        <span class="n">server</span><span class="o">.</span><span class="n">job_val</span> <span class="p">(</span><span class="n">fun</span> <span class="n">res</span> <span class="o">-&gt;</span> <span class="n">server</span><span class="o">.</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">SupervisorReq</span><span class="o">.</span><span class="n">BuildFile</span><span class="p">(</span><span class="n">buildFileArgs</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">runWithTimeoutAsync</span> <span class="mi">15000</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">map</span> <span class="n">Option</span><span class="o">.</span><span class="n">get</span>
+    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"spiral_compiler.run / BuildFile / buildFileResult: %A</span><span class="si">{buildFileResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">buildFileResult</span>
+
+
     <span class="p">(</span><span class="o">*</span>
-        <span class="n">let</span> <span class="n">fullPath</span> <span class="o">=</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">workspaceRoot</span> <span class="o">&lt;/&gt;</span> <span class="s2">"deps/spiral/lib/spiral/package.spiproj"</span>
-        <span class="n">let</span> <span class="n">fullPathUri</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">normalize_path</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">new_file_uri</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">spiprojCode</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">read_all_text_async</span>
-        <span class="n">let</span> <span class="n">projectFileOpenArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">spiprojText</span> <span class="o">=</span> <span class="n">spiprojCode</span> <span class="o">|</span><span class="p">}</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">projectFileOpenResult</span> <span class="o">=</span>
-            <span class="n">job_null</span> <span class="p">(</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">SupervisorReq</span><span class="o">.</span><span class="n">ProjectFileOpen</span> <span class="n">projectFileOpenArgs</span><span class="p">)</span>
-            <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
-        <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.ProjectFileOpen / projectFileOpenResult: %A</span><span class="si">{projectFileOpenResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
-        <span class="n">do</span><span class="err">!</span> <span class="n">Async</span><span class="o">.</span><span class="n">Sleep</span> <span class="mi">500</span>
-
-        <span class="n">let</span> <span class="n">fullPath</span> <span class="o">=</span> <span class="s2">"C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/package.spiproj"</span>
-        <span class="n">let</span> <span class="n">fullPathUri</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">normalize_path</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">new_file_uri</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">spiprojCode</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">read_all_text_async</span>
-        <span class="n">let</span> <span class="n">projectFileOpenArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">spiprojText</span> <span class="o">=</span> <span class="n">spiprojCode</span> <span class="o">|</span><span class="p">}</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">projectFileOpenResult</span> <span class="o">=</span>
-            <span class="n">job_null</span> <span class="p">(</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">SupervisorReq</span><span class="o">.</span><span class="n">ProjectFileOpen</span> <span class="n">projectFileOpenArgs</span><span class="p">)</span>
-            <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
-        <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.ProjectFileOpen / projectFileOpenResult: %A</span><span class="si">{projectFileOpenResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
-        <span class="n">do</span><span class="err">!</span> <span class="n">Async</span><span class="o">.</span><span class="n">Sleep</span> <span class="mi">500</span>
+    <span class="n">let</span> <span class="n">lines</span> <span class="o">=</span> <span class="n">code</span> <span class="o">|&gt;</span> <span class="n">SpiralSm</span><span class="o">.</span><span class="n">split</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+    <span class="n">let</span> <span class="n">fileTokenRangeArgs</span> <span class="o">=</span>
+        <span class="p">{</span><span class="o">|</span>
+            <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span>
+            <span class="nb">range</span> <span class="o">=</span>
+                <span class="p">{</span><span class="o">|</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">character</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="o">|</span><span class="p">},</span>
+                <span class="p">{</span><span class="o">|</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">lines</span><span class="o">.</span><span class="n">Length</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="n">character</span> <span class="o">=</span> <span class="n">lines</span><span class="o">.</span><span class="p">[</span><span class="n">lines</span><span class="o">.</span><span class="n">Length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">Length</span>
+                <span class="o">|</span><span class="p">}</span>
+        <span class="o">|</span><span class="p">}</span>
+    <span class="n">let</span><span class="err">!</span> <span class="n">fileTokenRangeResult</span> <span class="o">=</span>
+        <span class="n">job_val</span> <span class="p">(</span><span class="n">fun</span> <span class="n">res</span> <span class="o">-&gt;</span> <span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">SupervisorReq</span><span class="o">.</span><span class="n">FileTokenRange</span><span class="p">(</span><span class="n">fileTokenRangeArgs</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+        <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
+    <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.FileTokenRange / fileTokenRangeResult: %A</span><span class="si">{fileTokenRangeResult.Length}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
     <span class="o">*</span><span class="p">)</span>
-        <span class="n">let</span> <span class="n">fullPath</span> <span class="o">=</span> <span class="s2">"C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/main.spi"</span>
-        <span class="n">let</span> <span class="n">fullPathUri</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">normalize_path</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">new_file_uri</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">code</span> <span class="o">=</span> <span class="n">fullPath</span> <span class="o">|&gt;</span> <span class="n">SpiralFileSystem</span><span class="o">.</span><span class="n">read_all_text_async</span>
-        <span class="n">let</span> <span class="n">fileOpenArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">spiText</span> <span class="o">=</span> <span class="n">code</span> <span class="o">|</span><span class="p">}</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">fileOpenResult</span> <span class="o">=</span>
-            <span class="n">server</span><span class="o">.</span><span class="n">job_null</span> <span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">SupervisorReq</span><span class="o">.</span><span class="n">FileOpen</span> <span class="n">fileOpenArgs</span><span class="p">)</span>
-            <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
-        <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"spiral_compiler.run / FileOpen / fileOpenResult: %A</span><span class="si">{fileOpenResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
-
-    <span class="o">//</span>    <span class="n">do</span><span class="err">!</span> <span class="n">Async</span><span class="o">.</span><span class="n">Sleep</span> <span class="mi">500</span>
-
-        <span class="n">let</span> <span class="n">backendId</span> <span class="o">=</span> <span class="s2">"Fsharp"</span>
-        <span class="n">let</span> <span class="n">buildFileArgs</span> <span class="o">=</span> <span class="p">{</span><span class="o">|</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span><span class="p">;</span> <span class="n">backend</span> <span class="o">=</span> <span class="n">backendId</span> <span class="o">|</span><span class="p">}</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">buildFileResult</span> <span class="o">=</span>
-            <span class="n">server</span><span class="o">.</span><span class="n">job_val</span> <span class="p">(</span><span class="n">fun</span> <span class="n">res</span> <span class="o">-&gt;</span> <span class="n">server</span><span class="o">.</span><span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">SupervisorReq</span><span class="o">.</span><span class="n">BuildFile</span><span class="p">(</span><span class="n">buildFileArgs</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
-            <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
-        <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"spiral_compiler.run / BuildFile / buildFileResult: %A</span><span class="si">{buildFileResult}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">buildFileResult</span>
-
-
-        <span class="p">(</span><span class="o">*</span>
-        <span class="n">let</span> <span class="n">lines</span> <span class="o">=</span> <span class="n">code</span> <span class="o">|&gt;</span> <span class="n">SpiralSm</span><span class="o">.</span><span class="n">split</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
-        <span class="n">let</span> <span class="n">fileTokenRangeArgs</span> <span class="o">=</span>
-            <span class="p">{</span><span class="o">|</span>
-                <span class="n">uri</span> <span class="o">=</span> <span class="n">fullPathUri</span>
-                <span class="nb">range</span> <span class="o">=</span>
-                    <span class="p">{</span><span class="o">|</span>
-                        <span class="n">line</span> <span class="o">=</span> <span class="mi">0</span>
-                        <span class="n">character</span> <span class="o">=</span> <span class="mi">0</span>
-                    <span class="o">|</span><span class="p">},</span>
-                    <span class="p">{</span><span class="o">|</span>
-                        <span class="n">line</span> <span class="o">=</span> <span class="n">lines</span><span class="o">.</span><span class="n">Length</span> <span class="o">-</span> <span class="mi">1</span>
-                        <span class="n">character</span> <span class="o">=</span> <span class="n">lines</span><span class="o">.</span><span class="p">[</span><span class="n">lines</span><span class="o">.</span><span class="n">Length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">Length</span>
-                    <span class="o">|</span><span class="p">}</span>
-            <span class="o">|</span><span class="p">}</span>
-        <span class="n">let</span><span class="err">!</span> <span class="n">fileTokenRangeResult</span> <span class="o">=</span>
-            <span class="n">job_val</span> <span class="p">(</span><span class="n">fun</span> <span class="n">res</span> <span class="o">-&gt;</span> <span class="n">supervisor</span> <span class="o">*&lt;+</span> <span class="n">Supervisor</span><span class="o">.</span><span class="n">SupervisorReq</span><span class="o">.</span><span class="n">FileTokenRange</span><span class="p">(</span><span class="n">fileTokenRangeArgs</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
-            <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">AwaitTask</span>
-        <span class="n">trace</span> <span class="n">Info</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="err">$</span><span class="s2">"Supervisor.FileTokenRange / fileTokenRangeResult: %A</span><span class="si">{fileTokenRangeResult.Length}</span><span class="s2">"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">""</span><span class="p">)</span>
-        <span class="o">*</span><span class="p">)</span>
-    <span class="p">}</span>
-    <span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">runWithTimeout</span> <span class="mi">10000</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=85">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-
-<span class="n">run</span> <span class="p">()</span>
+<span class="p">}</span>
+<span class="o">|&gt;</span> <span class="n">Async</span><span class="o">.</span><span class="n">runWithTimeout</span> <span class="mi">10000</span>
 <span class="o">|&gt;</span> <span class="n">Option</span><span class="o">.</span><span class="n">map</span> <span class="p">(</span><span class="n">fun</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">SpiralSm</span><span class="o">.</span><span class="n">replace</span> <span class="s2">"</span><span class="se">\r\n</span><span class="s2">"</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">_assertEqual</span> <span class="p">(</span><span class="n">Some</span> <span class="s2">"()</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="o">|&gt;</span> <span class="n">_assertEqual</span> <span class="p">(</span><span class="n">Some</span> <span class="s2">"2</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -22474,10 +22466,10 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>00:01:28 <span class="ansi-green-intense-fg">i</span> #1 spiral_compiler.run / FileOpen / fileOpenResult: &lt;null&gt;
-00:01:32 <span class="ansi-green-intense-fg">i</span> #2 spiral_compiler.run / BuildFile / buildFileResult: "()
+<pre>00:01:41 <span class="ansi-green-intense-fg">i</span> #1 spiral_compiler.run / FileOpen / fileOpenResult: &lt;null&gt;
+00:01:42 <span class="ansi-green-intense-fg">i</span> #321 spiral_compiler.run / BuildFile / buildFileResult: "2
 "
-Some "()
+Some "2
 "
 
 </pre>
@@ -22486,7 +22478,7 @@ Some "()
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=86">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=84">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22496,7 +22488,7 @@ Some "()
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=87">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=85">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22522,7 +22514,7 @@ Some "()
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=88">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=86">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22532,7 +22524,7 @@ Some "()
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=89">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=87">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22547,7 +22539,7 @@ Some "()
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=90">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=88">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22557,7 +22549,7 @@ Some "()
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=91">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=89">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22590,7 +22582,7 @@ Some "()
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=92">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=90">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22600,7 +22592,7 @@ Some "()
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=93">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=91">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -22752,7 +22744,7 @@ Some "()
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=94">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=92">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

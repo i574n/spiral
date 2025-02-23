@@ -3321,7 +3321,7 @@ let rec visit_t x =
     | TyVar(_,{contents=Some x}) -> visit_t x
     | x -> x
 
-exception TypeErrorException of (VSCRange * TypeError) list
+exception InferTypeErrorException of (VSCRange * TypeError) list
 
 let rec metavars = function
     | RawTTypecase _ | RawTExists _ | RawTFilledNominal _ | RawTMacro _ | RawTVar _ | RawTTerm _ 
@@ -3647,7 +3647,7 @@ let validate_bound_vars (top_env : InferEnv) constraints term ty x =
 
 let assert_bound_vars (top_env : InferEnv) constraints term ty x =
     let errors = validate_bound_vars top_env constraints term ty x
-    if 0 < errors.Count then raise (TypeErrorException (Seq.toList errors))
+    if 0 < errors.Count then raise (InferTypeErrorException (Seq.toList errors))
 
 let rec subst (m : (Var * T) list) x =
     let f = subst m
@@ -4221,12 +4221,12 @@ let infer package_id module_id (top_env' : TopEnv) expr =
             | KindFun(a,a'), KindFun(b,b') -> loop (a,b); loop (a',b')
             | KindMetavar a, KindMetavar b & b' -> if a <> b then a.contents' <- Some b'
             | KindMetavar link, b | b, KindMetavar link -> link.contents' <- Some b
-            | _ -> raise (TypeErrorException [r, er (got, expected)])
+            | _ -> raise (InferTypeErrorException [r, er (got, expected)])
         loop (got, expected)
-    let unify_kind r got expected = try unify_kind' KindError r got expected with :? TypeErrorException as e -> errors.AddRange e.Data0
+    let unify_kind r got expected = try unify_kind' KindError r got expected with :? InferTypeErrorException as e -> errors.AddRange e.Data0
     let unify_gadt (gadt_links : T option ref ResizeArray option) (r : VSCRange) (got : T) (expected : T) : unit =
         let unify_kind got expected = unify_kind' KindError r got expected
-        let er () = raise (TypeErrorException [r, TermError(got, expected)])
+        let er () = raise (InferTypeErrorException [r, TermError(got, expected)])
 
         let rec constraint_process (con : Constraint Set) b =
             let unify_kind got expected = unify_kind' KindErrorInConstraint r got expected
@@ -4284,8 +4284,8 @@ let infer package_id module_id (top_env' : TopEnv) expr =
                 | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a; f b
                 | TyUnion(l,_) -> Map.iter (fun _ -> snd >> f) l
                 | TyRecord l -> Map.iter (fun _ -> f) l
-                | TyVar(b,_) -> if nested_tvars.Contains b = false && i.scope < b.scope then raise (TypeErrorException [r,TypeVarScopeError(b.name,got,expected)])
-                | TyMetavar(x,_) -> if i = x then raise (TypeErrorException [r,RecursiveMetavarsNotAllowed(got,expected)]) elif i.scope < x.scope then x.scope <- i.scope
+                | TyVar(b,_) -> if nested_tvars.Contains b = false && i.scope < b.scope then raise (InferTypeErrorException [r,TypeVarScopeError(b.name,got,expected)])
+                | TyMetavar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveMetavarsNotAllowed(got,expected)]) elif i.scope < x.scope then x.scope <- i.scope
                 | TyLayout(a,_) -> f a
             f x
 
@@ -4299,7 +4299,7 @@ let infer package_id module_id (top_env' : TopEnv) expr =
             | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a; f b
             | TyUnion(l,_) -> Map.iter (fun _ -> snd >> f) l
             | TyRecord l -> Map.iter (fun _ -> f) l
-            | TyVar(x,_) -> if i = x then raise (TypeErrorException [r,RecursiveTypevarsNotAllowed(got,expected)])
+            | TyVar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveTypevarsNotAllowed(got,expected)])
             | TyLayout(a,_) -> f a
 
         let rec loop (a'',b'') = 
@@ -4316,14 +4316,14 @@ let infer package_id module_id (top_env' : TopEnv) expr =
                 unify_kind a.kind (tt top_env b)
                 match constraint_process a.constraints b with
                 | [] -> link.Value <- Some b
-                | constraint_errors -> raise (TypeErrorException (List.map (fun x -> r,x) constraint_errors))
+                | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
             | TyVar (a,_), TyVar (b,_) when a = b -> ()
             | TyVar (a,link), b | b, TyVar (a,link) when gadt_links.IsSome ->
                 validate_tvar_unification a b
                 unify_kind a.kind (tt top_env b)
                 match constraint_process a.constraints b with
                 | [] -> link.Value <- Some b; gadt_links.Value.Add(link)
-                | constraint_errors -> raise (TypeErrorException (List.map (fun x -> r,x) constraint_errors))
+                | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
             | TyFun(a,a',ta), TyFun(b,b',tb) when ta = tb -> loop (a,b); loop (a',b')
             | TyPair(a,a'), TyPair(b,b') -> loop (a,b); loop (a',b')
             | TyApply(a,a',_), TyApply(b,b',_) -> loop (a',b'); loop (a,b)
@@ -4332,7 +4332,7 @@ let infer package_id module_id (top_env' : TopEnv) expr =
                     let a,b = Map.toArray l, Map.toArray l'
                     if a.Length <> b.Length then er ()
                     else Array.iter2 (fun (ka,a) (kb,b) -> if ka = kb && fst a = fst b then loop (snd a,snd b) else er()) a b
-                else raise (TypeErrorException [r,UnionTypesMustHaveTheSameLayout])
+                else raise (InferTypeErrorException [r,UnionTypesMustHaveTheSameLayout])
             | TyRecord l, TyRecord l' -> 
                 let a,b = Map.toArray l, Map.toArray l'
                 if a.Length <> b.Length then er ()
@@ -4368,7 +4368,7 @@ let infer package_id module_id (top_env' : TopEnv) expr =
             | _ -> er ()
 
         try loop (got, expected)
-        with :? TypeErrorException as e -> errors.AddRange e.Data0
+        with :? InferTypeErrorException as e -> errors.AddRange e.Data0
 
     let unify range got expected = unify_gadt None range got expected
 
@@ -4667,11 +4667,11 @@ let infer package_id module_id (top_env' : TopEnv) expr =
                 let i = errors.Count
                 f v a
                 match visit_t v with
-                | TyMetavar _ -> raise (TypeErrorException [r, LayoutSetMustBeAnnotated])
+                | TyMetavar _ -> raise (InferTypeErrorException [r, LayoutSetMustBeAnnotated])
                 | TyLayout(v,lay) ->
                     match lay with
                     | HeapMutable | StackMutable ->
-                        if i <> errors.Count then raise (TypeErrorException [])
+                        if i <> errors.Count then raise (InferTypeErrorException [])
                         let b = List.map (fun x -> range_of_expr x, f' x) b
                         List.fold (fun (r,a') (r',b') ->
                             match visit_t a' with
@@ -4680,13 +4680,13 @@ let infer package_id module_id (top_env' : TopEnv) expr =
                                 | TySymbol b ->
                                     match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
                                     | Some x -> r', x
-                                    | _ -> raise (TypeErrorException [r, RecordIndexFailed b])
-                                | b -> raise (TypeErrorException [r', ExpectedSymbol' b])
-                            | a -> raise (TypeErrorException [r, ExpectedRecord a])
+                                    | _ -> raise (InferTypeErrorException [r, RecordIndexFailed b])
+                                | b -> raise (InferTypeErrorException [r', ExpectedSymbol' b])
+                            | a -> raise (InferTypeErrorException [r, ExpectedRecord a])
                             ) (range_of_expr a, v) b |> snd
-                    | Heap -> raise (TypeErrorException [r, ExpectedMutableLayout v])
-                | v -> raise (TypeErrorException [r, ExpectedMutableLayout v])
-            with :? TypeErrorException as e -> errors.AddRange e.Data0; fresh_var scope
+                    | Heap -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
+                | v -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
+            with :? InferTypeErrorException as e -> errors.AddRange e.Data0; fresh_var scope
             |> fun v -> f v c
         | RawArray(r,a) ->
             annotations.Add(x,(r,s))
@@ -5134,7 +5134,7 @@ let infer package_id module_id (top_env' : TopEnv) expr =
         let assert_vars_count vars_count vars_expected = if vars_count <> vars_expected then errors.Add(r,InstanceCoreVarsShouldMatchTheArityDifference(vars_count,vars_expected))
         let assert_kind_compatibility got expected =
             try unify_kind' InstanceKindError r got expected
-            with :? TypeErrorException as e -> errors.AddRange e.Data0
+            with :? InferTypeErrorException as e -> errors.AddRange e.Data0
         let assert_kind_arity prot_kind_arity ins_kind_arity = if ins_kind_arity < prot_kind_arity then errors.Add(r,InstanceArityError(prot_kind_arity,ins_kind_arity))
         let assert_instance_forall_does_not_shadow_prototype_forall prot_forall_name = List.iter (fun ((r,(a,_)),_) -> if a = prot_forall_name then errors.Add(r,InstanceVarShouldNotMatchAnyOfPrototypes)) vars
         let assert_orphan_shadow_check (prot_id : GlobalId) (ins_id : GlobalId) =
@@ -13803,13 +13803,15 @@ let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorError
                     |> Some
                     |> IVar.fill res
                 | BuildFatalError x as x' ->
+                    trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildFatalError x: %A{x}") _locals
                     Hopac.start (Ch.send errors.fatal x)
                     IVar.fill res None
                 | BuildErrorTrace(a,b) as x' ->
+                    trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildErrorTrace x': %A{x'}") _locals
                     Hopac.start (Ch.send errors.traced {|trace=a; message=b|})
                     IVar.fill res None
                 | BuildSkip ->
-                    trace Debug (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip") _locals
+                    trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip") _locals
                     IVar.fill res None
             let file_build (s : SupervisorState) mid (tc : ProjStateTC, prepass : ProjStatePrepass) =
                 trace Verbose (fun () -> $"""Supervisor.supervisor_server.BuildFile.file_build / modules: %A{s.modules.Keys |> SpiralSm.concat ", "} / packages: %A{s.packages.Keys |> SpiralSm.concat ", "} / package_ids: %A{s.package_ids |> fst |> fun x -> x.Keys |> SpiralSm.concat ", "}""") _locals
@@ -14050,7 +14052,6 @@ let new_server () =
             })
             ()
 
-
     let error_ch_create msg =
         let x = Ch()
         Hopac.server (Job.forever (Ch.take x >>= (
@@ -14083,13 +14084,20 @@ let new_server () =
     let env = parseStartup args
     do Hopac.start (supervisor_server env atten errors supervisor)
 
-    let job_null job = Hopac.start job; task { return null }
+    let job_null job =
+        job
+        |> Hopac.start
+        task { return null }
     let serialize (x : obj) =
         match x with
         | null -> null
         | :? Option<string> as x -> x.Value
         | _ -> FSharp.Json.Json.serialize x
-    let job_val job = let res = IVar() in Hopac.queueAsTask (job res >>=. IVar.read res >>- serialize)
+    let job_val job =
+        let res = IVar()
+        let job' =
+            job res
+        Hopac.queueAsTask (job' >>=. IVar.read res >>- serialize)
     {|
         job_null = job_null
         job_val = job_val
@@ -14097,89 +14105,90 @@ let new_server () =
         supervisor = supervisor
     |}
 
-#!markdown
-
-### run
-
 #!fsharp
 
 //// test
-let run () =
-    SpiralTrace.TraceLevel.US0_1 |> set_trace_level
 
-    let server = new_server ()
-    async {
+SpiralTrace.TraceLevel.US0_0 |> set_trace_level
+
+let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+async {
+(*
+    let fullPath = Supervisor.workspaceRoot </> "deps/spiral/lib/spiral/package.spiproj"
+    let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+    let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
+    let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
+    let! projectFileOpenResult =
+        job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
+        |> Async.AwaitTask
+    trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
+    do! Async.Sleep 500
+
+    let fullPath = "C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/package.spiproj"
+    let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+    let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
+    let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
+    let! projectFileOpenResult =
+        job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
+        |> Async.AwaitTask
+    trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
+    do! Async.Sleep 500
+*)
+    let code = "inl main () = 1i32 + 1"
+    let struct (fullPath, disposable) = SpiralFileSystem.create_temp_dir ()
+    use _ = disposable
+    let fullPathSpi = fullPath </> "main.spi"
+    do! code |> SpiralFileSystem.write_all_text_async fullPathSpi
+    let fullPathSpiproj = fullPath </> "package.spiproj"
+    do! "packages:\n |core-\nmodules:\n main\n" |> SpiralFileSystem.write_all_text_async fullPathSpiproj
+    // let x = code |> Supervisor.persistCode
+    let fullPathUri = fullPathSpi |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+    // let! code = fullPath |> SpiralFileSystem.read_all_text_async
+    let fileOpenArgs = {| uri = fullPathUri; spiText = code |}
+    let! fileOpenResult =
+        server.job_null (server.supervisor *<+ SupervisorReq.FileOpen fileOpenArgs)
+        |> Async.AwaitTask
+        |> Async.runWithTimeoutAsync 20000
+        |> Async.map Option.get
+    trace Info (fun () -> $"spiral_compiler.run / FileOpen / fileOpenResult: %A{fileOpenResult}") (fun () -> "")
+
+//    do! Async.Sleep 500
+
+    let backendId = "Fsharp"
+    let buildFileArgs = {| uri = fullPathUri; backend = backendId |}
+    let! buildFileResult =
+        server.job_val (fun res -> server.supervisor *<+ SupervisorReq.BuildFile(buildFileArgs,res))
+        |> Async.AwaitTask
+        |> Async.runWithTimeoutAsync 15000
+        |> Async.map Option.get
+    trace Info (fun () -> $"spiral_compiler.run / BuildFile / buildFileResult: %A{buildFileResult}") (fun () -> "")
+    return buildFileResult
+
+
     (*
-        let fullPath = Supervisor.workspaceRoot </> "deps/spiral/lib/spiral/package.spiproj"
-        let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
-        let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
-        let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
-        let! projectFileOpenResult =
-            job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
-            |> Async.AwaitTask
-        trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
-        do! Async.Sleep 500
-
-        let fullPath = "C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/package.spiproj"
-        let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
-        let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
-        let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
-        let! projectFileOpenResult =
-            job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
-            |> Async.AwaitTask
-        trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
-        do! Async.Sleep 500
+    let lines = code |> SpiralSm.split "\n"
+    let fileTokenRangeArgs =
+        {|
+            uri = fullPathUri
+            range =
+                {|
+                    line = 0
+                    character = 0
+                |},
+                {|
+                    line = lines.Length - 1
+                    character = lines.[lines.Length - 1].Length
+                |}
+        |}
+    let! fileTokenRangeResult =
+        job_val (fun res -> supervisor *<+ Supervisor.SupervisorReq.FileTokenRange(fileTokenRangeArgs,res))
+        |> Async.AwaitTask
+    trace Info (fun () -> $"Supervisor.FileTokenRange / fileTokenRangeResult: %A{fileTokenRangeResult.Length}") (fun () -> "")
     *)
-        let fullPath = "C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/main.spi"
-        let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
-        let! code = fullPath |> SpiralFileSystem.read_all_text_async
-        let fileOpenArgs = {| uri = fullPathUri; spiText = code |}
-        let! fileOpenResult =
-            server.job_null (server.supervisor *<+ SupervisorReq.FileOpen fileOpenArgs)
-            |> Async.AwaitTask
-        trace Info (fun () -> $"spiral_compiler.run / FileOpen / fileOpenResult: %A{fileOpenResult}") (fun () -> "")
-
-    //    do! Async.Sleep 500
-
-        let backendId = "Fsharp"
-        let buildFileArgs = {| uri = fullPathUri; backend = backendId |}
-        let! buildFileResult =
-            server.job_val (fun res -> server.supervisor *<+ SupervisorReq.BuildFile(buildFileArgs,res))
-            |> Async.AwaitTask
-        trace Info (fun () -> $"spiral_compiler.run / BuildFile / buildFileResult: %A{buildFileResult}") (fun () -> "")
-        return buildFileResult
-
-
-        (*
-        let lines = code |> SpiralSm.split "\n"
-        let fileTokenRangeArgs =
-            {|
-                uri = fullPathUri
-                range =
-                    {|
-                        line = 0
-                        character = 0
-                    |},
-                    {|
-                        line = lines.Length - 1
-                        character = lines.[lines.Length - 1].Length
-                    |}
-            |}
-        let! fileTokenRangeResult =
-            job_val (fun res -> supervisor *<+ Supervisor.SupervisorReq.FileTokenRange(fileTokenRangeArgs,res))
-            |> Async.AwaitTask
-        trace Info (fun () -> $"Supervisor.FileTokenRange / fileTokenRangeResult: %A{fileTokenRangeResult.Length}") (fun () -> "")
-        *)
-    }
-    |> Async.runWithTimeout 10000
-
-#!fsharp
-
-//// test
-
-run ()
+}
+|> Async.runWithTimeout 10000
 |> Option.map (fun x -> x |> SpiralSm.replace "\r\n" "\n")
-|> _assertEqual (Some "()\n")
+|> _assertEqual (Some "2\n")
 
 #!markdown
 

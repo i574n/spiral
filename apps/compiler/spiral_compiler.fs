@@ -3200,7 +3200,7 @@ module spiral_compiler =
         | TyVar(_,{contents=Some x}) -> visit_t x
         | x -> x
 
-    exception TypeErrorException of (VSCRange * TypeError) list
+    exception InferTypeErrorException of (VSCRange * TypeError) list
 
     let rec metavars = function
         | RawTTypecase _ | RawTExists _ | RawTFilledNominal _ | RawTMacro _ | RawTVar _ | RawTTerm _ 
@@ -3526,7 +3526,7 @@ module spiral_compiler =
 
     let assert_bound_vars (top_env : InferEnv) constraints term ty x =
         let errors = validate_bound_vars top_env constraints term ty x
-        if 0 < errors.Count then raise (TypeErrorException (Seq.toList errors))
+        if 0 < errors.Count then raise (InferTypeErrorException (Seq.toList errors))
 
     let rec subst (m : (Var * T) list) x =
         let f = subst m
@@ -4100,12 +4100,12 @@ module spiral_compiler =
                 | KindFun(a,a'), KindFun(b,b') -> loop (a,b); loop (a',b')
                 | KindMetavar a, KindMetavar b & b' -> if a <> b then a.contents' <- Some b'
                 | KindMetavar link, b | b, KindMetavar link -> link.contents' <- Some b
-                | _ -> raise (TypeErrorException [r, er (got, expected)])
+                | _ -> raise (InferTypeErrorException [r, er (got, expected)])
             loop (got, expected)
-        let unify_kind r got expected = try unify_kind' KindError r got expected with :? TypeErrorException as e -> errors.AddRange e.Data0
+        let unify_kind r got expected = try unify_kind' KindError r got expected with :? InferTypeErrorException as e -> errors.AddRange e.Data0
         let unify_gadt (gadt_links : T option ref ResizeArray option) (r : VSCRange) (got : T) (expected : T) : unit =
             let unify_kind got expected = unify_kind' KindError r got expected
-            let er () = raise (TypeErrorException [r, TermError(got, expected)])
+            let er () = raise (InferTypeErrorException [r, TermError(got, expected)])
 
             let rec constraint_process (con : Constraint Set) b =
                 let unify_kind got expected = unify_kind' KindErrorInConstraint r got expected
@@ -4163,8 +4163,8 @@ module spiral_compiler =
                     | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a; f b
                     | TyUnion(l,_) -> Map.iter (fun _ -> snd >> f) l
                     | TyRecord l -> Map.iter (fun _ -> f) l
-                    | TyVar(b,_) -> if nested_tvars.Contains b = false && i.scope < b.scope then raise (TypeErrorException [r,TypeVarScopeError(b.name,got,expected)])
-                    | TyMetavar(x,_) -> if i = x then raise (TypeErrorException [r,RecursiveMetavarsNotAllowed(got,expected)]) elif i.scope < x.scope then x.scope <- i.scope
+                    | TyVar(b,_) -> if nested_tvars.Contains b = false && i.scope < b.scope then raise (InferTypeErrorException [r,TypeVarScopeError(b.name,got,expected)])
+                    | TyMetavar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveMetavarsNotAllowed(got,expected)]) elif i.scope < x.scope then x.scope <- i.scope
                     | TyLayout(a,_) -> f a
                 f x
 
@@ -4178,7 +4178,7 @@ module spiral_compiler =
                 | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a; f b
                 | TyUnion(l,_) -> Map.iter (fun _ -> snd >> f) l
                 | TyRecord l -> Map.iter (fun _ -> f) l
-                | TyVar(x,_) -> if i = x then raise (TypeErrorException [r,RecursiveTypevarsNotAllowed(got,expected)])
+                | TyVar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveTypevarsNotAllowed(got,expected)])
                 | TyLayout(a,_) -> f a
 
             let rec loop (a'',b'') = 
@@ -4195,14 +4195,14 @@ module spiral_compiler =
                     unify_kind a.kind (tt top_env b)
                     match constraint_process a.constraints b with
                     | [] -> link.Value <- Some b
-                    | constraint_errors -> raise (TypeErrorException (List.map (fun x -> r,x) constraint_errors))
+                    | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
                 | TyVar (a,_), TyVar (b,_) when a = b -> ()
                 | TyVar (a,link), b | b, TyVar (a,link) when gadt_links.IsSome ->
                     validate_tvar_unification a b
                     unify_kind a.kind (tt top_env b)
                     match constraint_process a.constraints b with
                     | [] -> link.Value <- Some b; gadt_links.Value.Add(link)
-                    | constraint_errors -> raise (TypeErrorException (List.map (fun x -> r,x) constraint_errors))
+                    | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
                 | TyFun(a,a',ta), TyFun(b,b',tb) when ta = tb -> loop (a,b); loop (a',b')
                 | TyPair(a,a'), TyPair(b,b') -> loop (a,b); loop (a',b')
                 | TyApply(a,a',_), TyApply(b,b',_) -> loop (a',b'); loop (a,b)
@@ -4211,7 +4211,7 @@ module spiral_compiler =
                         let a,b = Map.toArray l, Map.toArray l'
                         if a.Length <> b.Length then er ()
                         else Array.iter2 (fun (ka,a) (kb,b) -> if ka = kb && fst a = fst b then loop (snd a,snd b) else er()) a b
-                    else raise (TypeErrorException [r,UnionTypesMustHaveTheSameLayout])
+                    else raise (InferTypeErrorException [r,UnionTypesMustHaveTheSameLayout])
                 | TyRecord l, TyRecord l' -> 
                     let a,b = Map.toArray l, Map.toArray l'
                     if a.Length <> b.Length then er ()
@@ -4247,7 +4247,7 @@ module spiral_compiler =
                 | _ -> er ()
 
             try loop (got, expected)
-            with :? TypeErrorException as e -> errors.AddRange e.Data0
+            with :? InferTypeErrorException as e -> errors.AddRange e.Data0
 
         let unify range got expected = unify_gadt None range got expected
 
@@ -4546,11 +4546,11 @@ module spiral_compiler =
                     let i = errors.Count
                     f v a
                     match visit_t v with
-                    | TyMetavar _ -> raise (TypeErrorException [r, LayoutSetMustBeAnnotated])
+                    | TyMetavar _ -> raise (InferTypeErrorException [r, LayoutSetMustBeAnnotated])
                     | TyLayout(v,lay) ->
                         match lay with
                         | HeapMutable | StackMutable ->
-                            if i <> errors.Count then raise (TypeErrorException [])
+                            if i <> errors.Count then raise (InferTypeErrorException [])
                             let b = List.map (fun x -> range_of_expr x, f' x) b
                             List.fold (fun (r,a') (r',b') ->
                                 match visit_t a' with
@@ -4559,13 +4559,13 @@ module spiral_compiler =
                                     | TySymbol b ->
                                         match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
                                         | Some x -> r', x
-                                        | _ -> raise (TypeErrorException [r, RecordIndexFailed b])
-                                    | b -> raise (TypeErrorException [r', ExpectedSymbol' b])
-                                | a -> raise (TypeErrorException [r, ExpectedRecord a])
+                                        | _ -> raise (InferTypeErrorException [r, RecordIndexFailed b])
+                                    | b -> raise (InferTypeErrorException [r', ExpectedSymbol' b])
+                                | a -> raise (InferTypeErrorException [r, ExpectedRecord a])
                                 ) (range_of_expr a, v) b |> snd
-                        | Heap -> raise (TypeErrorException [r, ExpectedMutableLayout v])
-                    | v -> raise (TypeErrorException [r, ExpectedMutableLayout v])
-                with :? TypeErrorException as e -> errors.AddRange e.Data0; fresh_var scope
+                        | Heap -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
+                    | v -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
+                with :? InferTypeErrorException as e -> errors.AddRange e.Data0; fresh_var scope
                 |> fun v -> f v c
             | RawArray(r,a) ->
                 annotations.Add(x,(r,s))
@@ -5013,7 +5013,7 @@ module spiral_compiler =
             let assert_vars_count vars_count vars_expected = if vars_count <> vars_expected then errors.Add(r,InstanceCoreVarsShouldMatchTheArityDifference(vars_count,vars_expected))
             let assert_kind_compatibility got expected =
                 try unify_kind' InstanceKindError r got expected
-                with :? TypeErrorException as e -> errors.AddRange e.Data0
+                with :? InferTypeErrorException as e -> errors.AddRange e.Data0
             let assert_kind_arity prot_kind_arity ins_kind_arity = if ins_kind_arity < prot_kind_arity then errors.Add(r,InstanceArityError(prot_kind_arity,ins_kind_arity))
             let assert_instance_forall_does_not_shadow_prototype_forall prot_forall_name = List.iter (fun ((r,(a,_)),_) -> if a = prot_forall_name then errors.Add(r,InstanceVarShouldNotMatchAnyOfPrototypes)) vars
             let assert_orphan_shadow_check (prot_id : GlobalId) (ins_id : GlobalId) =
@@ -13594,13 +13594,15 @@ module spiral_compiler =
                         |> Some
                         |> IVar.fill res
                     | BuildFatalError x as x' ->
+                        trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildFatalError x: %A{x}") _locals
                         Hopac.start (Ch.send errors.fatal x)
                         IVar.fill res None
                     | BuildErrorTrace(a,b) as x' ->
+                        trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildErrorTrace x': %A{x'}") _locals
                         Hopac.start (Ch.send errors.traced {|trace=a; message=b|})
                         IVar.fill res None
                     | BuildSkip ->
-                        trace Debug (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip") _locals
+                        trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip") _locals
                         IVar.fill res None
                 let file_build (s : SupervisorState) mid (tc : ProjStateTC, prepass : ProjStatePrepass) =
                     trace Verbose (fun () -> $"""Supervisor.supervisor_server.BuildFile.file_build / modules: %A{s.modules.Keys |> SpiralSm.concat ", "} / packages: %A{s.packages.Keys |> SpiralSm.concat ", "} / package_ids: %A{s.package_ids |> fst |> fun x -> x.Keys |> SpiralSm.concat ", "}""") _locals
@@ -13789,7 +13791,6 @@ module spiral_compiler =
                 })
                 ()
 
-
         let error_ch_create msg =
             let x = Ch()
             Hopac.server (Job.forever (Ch.take x >>= (
@@ -13822,21 +13823,26 @@ module spiral_compiler =
         let env = parseStartup args
         do Hopac.start (supervisor_server env atten errors supervisor)
 
-        let job_null job = Hopac.start job; task { return null }
+        let job_null job =
+            job
+            |> Hopac.start
+            task { return null }
         let serialize (x : obj) =
             match x with
             | null -> null
             | :? Option<string> as x -> x.Value
             | _ -> FSharp.Json.Json.serialize x
-        let job_val job = let res = IVar() in Hopac.queueAsTask (job res >>=. IVar.read res >>- serialize)
+        let job_val job =
+            let res = IVar()
+            let job' =
+                job res
+            Hopac.queueAsTask (job' >>=. IVar.read res >>- serialize)
         {|
             job_null = job_null
             job_val = job_val
             errors = stream
             supervisor = supervisor
         |}
-
-    /// ### run
 
     /// ## getParentProcessId
     let getParentProcessId () =

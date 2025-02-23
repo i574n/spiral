@@ -7454,47 +7454,209 @@ mod module_1216f6c3 {
         ) -> Arc<Async<i32>> {
             fable_library_rust::Native_::getZero()
         }
-        pub fn method163(v0_1: i32, v1_1: i32) -> string {
-            let v3: LrcPtr<Spiral::Mut3> = LrcPtr::new(Spiral::Mut3 {
+        pub fn method163(
+            v0_1: i32,
+            v1_1: i32,
+            v2: string,
+            v3: Option<CancellationToken>,
+            v4: Array<(string, string)>,
+            v5: Option<Func1<(i32, string, bool), Arc<Async<()>>>>,
+            v6: Option<Func1<std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>, ()>>,
+            v7: bool,
+            v8: Option<string>,
+        ) -> string {
+            let v10: LrcPtr<Spiral::Mut3> = LrcPtr::new(Spiral::Mut3 {
                 l0: MutCell::new(Spiral::method14()),
             });
-            let v10: () = {
-                Spiral::closure7(v3.clone(), string("{ "), ());
+            let v17: () = {
+                Spiral::closure7(v10.clone(), string("{ "), ());
                 ()
             };
-            let v19: () = {
-                Spiral::closure7(v3.clone(), string("exit_code"), ());
+            let v26: () = {
+                Spiral::closure7(v10.clone(), string("exit_code"), ());
                 ()
             };
-            let v28: () = {
-                Spiral::closure7(v3.clone(), string(" = "), ());
+            let v35: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
                 ()
             };
-            let v36: () = {
-                Spiral::closure7(v3.clone(), sprintf!("{}", v0_1), ());
+            let v43: () = {
+                Spiral::closure7(v10.clone(), sprintf!("{}", v0_1), ());
                 ()
             };
-            let v45: () = {
-                Spiral::closure7(v3.clone(), string("; "), ());
+            let v52: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
                 ()
             };
-            let v54: () = {
-                Spiral::closure7(v3.clone(), string("output_length"), ());
+            let v61: () = {
+                Spiral::closure7(v10.clone(), string("output_length"), ());
                 ()
             };
-            let v62: () = {
-                Spiral::closure7(v3.clone(), string(" = "), ());
+            let v69: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
                 ()
             };
-            let v70: () = {
-                Spiral::closure7(v3.clone(), sprintf!("{}", v1_1), ());
+            let v77: () = {
+                Spiral::closure7(v10.clone(), sprintf!("{}", v1_1), ());
                 ()
             };
-            let v79: () = {
-                Spiral::closure7(v3.clone(), string(" }"), ());
+            let v85: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
                 ()
             };
-            v3.l0.get().clone()
+            let v94: () = {
+                Spiral::closure7(v10.clone(), string("options"), ());
+                ()
+            };
+            let v102: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v110: () = {
+                Spiral::closure7(v10.clone(), string("{ "), ());
+                ()
+            };
+            let v119: () = {
+                Spiral::closure7(v10.clone(), string("command"), ());
+                ()
+            };
+            let v127: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v135: () = {
+                Spiral::closure7(v10.clone(), v2, ());
+                ()
+            };
+            let v143: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
+                ()
+            };
+            let v152: () = {
+                Spiral::closure7(v10.clone(), string("cancellation_token"), ());
+                ()
+            };
+            let v160: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v165: std::string::String = format!("{:#?}", v3);
+            let v198: () = {
+                Spiral::closure7(
+                    v10.clone(),
+                    fable_library_rust::String_::fromString(v165),
+                    (),
+                );
+                ()
+            };
+            let v206: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
+                ()
+            };
+            let v215: () = {
+                Spiral::closure7(v10.clone(), string("environment_variables"), ());
+                ()
+            };
+            let v223: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v234: () = {
+                Spiral::closure7(v10.clone(), sprintf!("{:?}", v4), ());
+                ()
+            };
+            let v242: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
+                ()
+            };
+            let v251: () = {
+                Spiral::closure7(v10.clone(), string("on_line"), ());
+                ()
+            };
+            let v259: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v264: std::string::String = format!("{:#?}", v5);
+            let v297: () = {
+                Spiral::closure7(
+                    v10.clone(),
+                    fable_library_rust::String_::fromString(v264),
+                    (),
+                );
+                ()
+            };
+            let v305: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
+                ()
+            };
+            let v314: () = {
+                Spiral::closure7(v10.clone(), string("stdin"), ());
+                ()
+            };
+            let v322: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v327: std::string::String = format!("{:#?}", v6);
+            let v360: () = {
+                Spiral::closure7(
+                    v10.clone(),
+                    fable_library_rust::String_::fromString(v327),
+                    (),
+                );
+                ()
+            };
+            let v368: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
+                ()
+            };
+            let v377: () = {
+                Spiral::closure7(v10.clone(), string("trace"), ());
+                ()
+            };
+            let v385: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v396: () = {
+                Spiral::closure7(
+                    v10.clone(),
+                    if v7 { string("true") } else { string("false") },
+                    (),
+                );
+                ()
+            };
+            let v404: () = {
+                Spiral::closure7(v10.clone(), string("; "), ());
+                ()
+            };
+            let v413: () = {
+                Spiral::closure7(v10.clone(), string("working_directory"), ());
+                ()
+            };
+            let v421: () = {
+                Spiral::closure7(v10.clone(), string(" = "), ());
+                ()
+            };
+            let v426: std::string::String = format!("{:#?}", v8);
+            let v459: () = {
+                Spiral::closure7(
+                    v10.clone(),
+                    fable_library_rust::String_::fromString(v426),
+                    (),
+                );
+                ()
+            };
+            let v468: () = {
+                Spiral::closure7(v10.clone(), string(" }"), ());
+                ()
+            };
+            let v476: () = {
+                Spiral::closure7(v10.clone(), string(" }"), ());
+                ()
+            };
+            v10.l0.get().clone()
         }
         pub fn method162(
             v0_1: LrcPtr<Spiral::Mut0>,
@@ -7507,20 +7669,38 @@ mod module_1216f6c3 {
             v7: string,
             v8: i32,
             v9: i32,
+            v10: string,
+            v11: Option<CancellationToken>,
+            v12: Array<(string, string)>,
+            v13: Option<Func1<(i32, string, bool), Arc<Async<()>>>>,
+            v14: Option<Func1<std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>, ()>>,
+            v15: bool,
+            v16: Option<string>,
         ) -> string {
-            let v10: string = Spiral::method163(v8, v9);
+            let v17: string = Spiral::method163(v8, v9, v10, v11, v12, v13, v14, v15, v16);
             Spiral::method18(sprintf!(
                 "{} {} #{} {} / {}",
                 v6,
                 v7,
                 v0_1.l0.get().clone(),
                 string("runtime.execute_with_options_async"),
-                v10
+                v17
             ))
         }
-        pub fn closure69(v0_1: i32, v1_1: string, unitVar: ()) {
+        pub fn closure69(
+            v0_1: string,
+            v1_1: Option<CancellationToken>,
+            v2: Array<(string, string)>,
+            v3: Option<Func1<(i32, string, bool), Arc<Async<()>>>>,
+            v4: Option<Func1<std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>, ()>>,
+            v5: bool,
+            v6: Option<string>,
+            v7: i32,
+            v8: string,
+            unitVar: (),
+        ) {
             if Spiral::method7(Spiral::US0::US0_1) {
-                let v6: () = {
+                let v13: () = {
                     Spiral::closure2((), ());
                     ()
                 };
@@ -7532,23 +7712,30 @@ mod module_1216f6c3 {
                     LrcPtr<Spiral::Mut4>,
                     Option<i64>,
                 ) = Spiral::TraceState::trace_state().get().clone().unwrap();
-                let v25: Option<i64> = patternInput.5.clone();
-                let v24: LrcPtr<Spiral::Mut4> = patternInput.4.clone();
-                let v23: LrcPtr<Spiral::Mut3> = patternInput.3.clone();
-                let v22: LrcPtr<Spiral::Mut2> = patternInput.2.clone();
-                let v21: LrcPtr<Spiral::Mut1> = patternInput.1.clone();
-                let v20: LrcPtr<Spiral::Mut0> = patternInput.0.clone();
+                let v32: Option<i64> = patternInput.5.clone();
+                let v31: LrcPtr<Spiral::Mut4> = patternInput.4.clone();
+                let v30: LrcPtr<Spiral::Mut3> = patternInput.3.clone();
+                let v29: LrcPtr<Spiral::Mut2> = patternInput.2.clone();
+                let v28: LrcPtr<Spiral::Mut1> = patternInput.1.clone();
+                let v27: LrcPtr<Spiral::Mut0> = patternInput.0.clone();
                 Spiral::method19(Spiral::method162(
-                    v20.clone(),
-                    v21.clone(),
-                    v22.clone(),
-                    v23.clone(),
-                    v24.clone(),
-                    v25.clone(),
-                    Spiral::method8(v20, v21, v22, v23, v24, v25),
+                    v27.clone(),
+                    v28.clone(),
+                    v29.clone(),
+                    v30.clone(),
+                    v31.clone(),
+                    v32.clone(),
+                    Spiral::method8(v27, v28, v29, v30, v31, v32),
                     Spiral::method12(),
+                    v7,
+                    length(v8),
                     v0_1,
-                    length(v1_1),
+                    v1_1,
+                    v2,
+                    v3,
+                    v4,
+                    v5,
+                    v6,
                 ))
             };
         }
@@ -9945,7 +10132,7 @@ mod module_1216f6c3 {
                     concat(new_array(&[v1_1, string(".fsproj")])),
                 ));
                 Spiral::method64(v49.clone(),
-                                 append((append((append((append((append((append((append((append((append((append((append((append((append(string("<Project Sdk=\"Microsoft.NET.Sdk\">\n<PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n    <LangVersion>preview</LangVersion>\n    <RollForward>Major</RollForward>\n    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>\n    <PublishAot>false</PublishAot>\n    <ServerGarbageCollection>true</ServerGarbageCollection>\n    <PublishTrimmed>false</PublishTrimmed>\n    <PublishSingleFile>true</PublishSingleFile>\n    <SelfContained>true</SelfContained>\n    <Version>0.0.1-alpha.1</Version>\n    <OutputType>Exe</OutputType>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'FreeBSD\'))\">\n    <DefineConstants>_FREEBSD</DefineConstants>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'Linux\'))\">\n    <DefineConstants>_LINUX</DefineConstants>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'OSX\'))\">\n    <DefineConstants>_OSX</DefineConstants>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'Windows\'))\">\n    <DefineConstants>_WINDOWS</DefineConstants>\n</PropertyGroup>\n<ItemGroup>\n"),
+                                 append((append((append((append((append((append((append((append((append((append((append((append((append(string("<Project Sdk=\"Microsoft.NET.Sdk\">\n<PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n    <LangVersion>preview</LangVersion>\n    <RollForward>Major</RollForward>\n    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>\n    <PublishAot>false</PublishAot>\n    <PublishTrimmed>false</PublishTrimmed>\n    <PublishSingleFile>true</PublishSingleFile>\n    <SelfContained>true</SelfContained>\n    <Version>0.0.1-alpha.1</Version>\n    <OutputType>Exe</OutputType>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'FreeBSD\'))\">\n    <DefineConstants>_FREEBSD</DefineConstants>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'Linux\'))\">\n    <DefineConstants>_LINUX</DefineConstants>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'OSX\'))\">\n    <DefineConstants>_OSX</DefineConstants>\n</PropertyGroup>\n<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform(\'Windows\'))\">\n    <DefineConstants>_WINDOWS</DefineConstants>\n</PropertyGroup>\n<ItemGroup>\n"),
                                                                                                                                         (concat(new_array(&[string("    "),
                                                                                                                                                             v26]))))),
                                                                                                                                 string("\n"))),

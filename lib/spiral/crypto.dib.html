@@ -7535,7 +7535,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7546,6 +7546,19 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="nb">open</span> <span class="n">rust</span>
 <span class="nb">open</span> <span class="n">rust_operators</span>
 </pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>WARNING: You are using single-threaded workstation garbage collection, which means that parallel programs cannot scale.  Please configure your program to use server garbage collection.
+</pre>
 </div>
 </div>
 </div>
@@ -7717,7 +7730,7 @@ a.anchor-link {
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options_async / { file_name = pwsh; arguments = US2_0
   "-c "(Get-FileHash 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/dotnet-repl/9ca8b18d-ee77-4684-ad12-21e1354945fc/test.txt' -Algorithm SHA256).Hash""; options = { command = pwsh -c "(Get-FileHash 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/dotnet-repl/9ca8b18d-ee77-4684-ad12-21e1354945fc/test.txt' -Algorithm SHA256).Hash"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = None } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #2 &gt; 01BA4719C80B6FE911B091A7C05124B64EEECE964E09C058EF8F9805DACA546B
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options_async / { exit_code = 0; output_length = 64 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options_async / { exit_code = 0; output_length = 64; options = { command = pwsh -c "(Get-FileHash 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/dotnet-repl/9ca8b18d-ee77-4684-ad12-21e1354945fc/test.txt' -Algorithm SHA256).Hash"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = None } }
 __assert_eq / actual: "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b" / expected: "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
 </pre>
 </div>
@@ -7762,8 +7775,8 @@ __assert_eq / actual: "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805d
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_299be9d7954cc9b7883b719152fb19e4d334ff9f41f211105903d987f5f44e11\ba0aa16a-6c5a-be3f-b526-70110c680e36 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "(Get-FileHash 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_299be9d7954cc9b7883b719152fb19e4d334ff9f41f211105903d987f5f44e11/ba0aa16a-6c5a-be3f-b526-70110c680e36/test.txt' -Algorithm SHA256).Hash"]; options = { command = pwsh -c "(Get-FileHash 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_299be9d7954cc9b7883b719152fb19e4d334ff9f41f211105903d987f5f44e11/ba0aa16a-6c5a-be3f-b526-70110c680e36/test.txt' -Algorithm SHA256).Hash"; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = None } }
+<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_632b0910b1f53f5298ad592b1a96330aa576e3e138cf9b70c81f450f246dd2a4\ba0aa16a-6c5a-be3f-b526-70110c680e36 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "(Get-FileHash 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_632b0910b1f53f5298ad592b1a96330aa576e3e138cf9b70c81f450f246dd2a4/ba0aa16a-6c5a-be3f-b526-70110c680e36/test.txt' -Algorithm SHA256).Hash"]; options = { command = pwsh -c "(Get-FileHash 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_632b0910b1f53f5298ad592b1a96330aa576e3e138cf9b70c81f450f246dd2a4/ba0aa16a-6c5a-be3f-b526-70110c680e36/test.txt' -Algorithm SHA256).Hash"; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = None } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #3 &gt; 01BA4719C80B6FE911B091A7C05124B64EEECE964E09C058EF8F9805DACA546B
 00:00:00 <span class="ansi-black-intense-fg">v</span> #4 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 64 }
 __assert_eq / actual: "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b" / expected: "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"

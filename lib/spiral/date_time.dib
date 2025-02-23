@@ -934,7 +934,7 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
 //// test
 ///! fsharp
 ////! cuda
-///! rust -d chrono
+////! rust -d chrono // Ambiguous local time, ranging from 1970-01-01T00:00:00-03:00 to 1970-01-01T00:00:00-04:00
 
 inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
 unix_epoch ()

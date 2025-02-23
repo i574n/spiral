@@ -1793,56 +1793,152 @@ def method57(__unit: None=None) -> str:
     return "\n"
 
 
-def method59(v0_1: int, v1_1: int) -> str:
-    v3: Mut3 = Mut3(method14())
-    v10: None
-    closure7(v3, "{ ", None)
-    v10 = None
-    v19_1: None
-    closure7(v3, "exit_code", None)
-    v19_1 = None
-    v28: None
-    closure7(v3, " = ", None)
-    v28 = None
-    v36: None
-    closure7(v3, ("" + str(v0_1)) + "", None)
-    v36 = None
-    v45: None
-    closure7(v3, "; ", None)
-    v45 = None
-    v54: None
-    closure7(v3, "output_length", None)
-    v54 = None
-    v62: None
-    closure7(v3, " = ", None)
-    v62 = None
-    v70: None
-    closure7(v3, ("" + str(v1_1)) + "", None)
-    v70 = None
-    v79: None
-    closure7(v3, " }", None)
-    v79 = None
-    return v3.l0
+def method59(v0_1: int, v1_1: int, v2_1: str, v3: CancellationToken | None, v4: Array[tuple[str, str]], v5: Callable[[tuple[int, str, bool]], Async[None]] | None, v6: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v7: bool, v8: str | None=None) -> str:
+    v10: Mut3 = Mut3(method14())
+    v17_1: None
+    closure7(v10, "{ ", None)
+    v17_1 = None
+    v26: None
+    closure7(v10, "exit_code", None)
+    v26 = None
+    v35: None
+    closure7(v10, " = ", None)
+    v35 = None
+    v43: None
+    closure7(v10, ("" + str(v0_1)) + "", None)
+    v43 = None
+    v52: None
+    closure7(v10, "; ", None)
+    v52 = None
+    v61: None
+    closure7(v10, "output_length", None)
+    v61 = None
+    v69: None
+    closure7(v10, " = ", None)
+    v69 = None
+    v77: None
+    closure7(v10, ("" + str(v1_1)) + "", None)
+    v77 = None
+    v85: None
+    closure7(v10, "; ", None)
+    v85 = None
+    v94: None
+    closure7(v10, "options", None)
+    v94 = None
+    v102: None
+    closure7(v10, " = ", None)
+    v102 = None
+    v110: None
+    closure7(v10, "{ ", None)
+    v110 = None
+    v119: None
+    closure7(v10, "command", None)
+    v119 = None
+    v127: None
+    closure7(v10, " = ", None)
+    v127 = None
+    v135: None
+    closure7(v10, v2_1, None)
+    v135 = None
+    v143: None
+    closure7(v10, "; ", None)
+    v143 = None
+    v152: None
+    closure7(v10, "cancellation_token", None)
+    v152 = None
+    v160: None
+    closure7(v10, " = ", None)
+    v160 = None
+    v198: None
+    closure7(v10, to_text(interpolate("%A%P()", [v3])), None)
+    v198 = None
+    v206: None
+    closure7(v10, "; ", None)
+    v206 = None
+    v215: None
+    closure7(v10, "environment_variables", None)
+    v215 = None
+    v223: None
+    closure7(v10, " = ", None)
+    v223 = None
+    v234: None
+    closure7(v10, to_text(interpolate("%A%P()", [v4])), None)
+    v234 = None
+    v242: None
+    closure7(v10, "; ", None)
+    v242 = None
+    v251: None
+    closure7(v10, "on_line", None)
+    v251 = None
+    v259: None
+    closure7(v10, " = ", None)
+    v259 = None
+    v297: None
+    closure7(v10, to_text(interpolate("%A%P()", [v5])), None)
+    v297 = None
+    v305: None
+    closure7(v10, "; ", None)
+    v305 = None
+    v314: None
+    closure7(v10, "stdin", None)
+    v314 = None
+    v322: None
+    closure7(v10, " = ", None)
+    v322 = None
+    v360: None
+    closure7(v10, to_text(interpolate("%A%P()", [v6])), None)
+    v360 = None
+    v368: None
+    closure7(v10, "; ", None)
+    v368 = None
+    v377: None
+    closure7(v10, "trace", None)
+    v377 = None
+    v385: None
+    closure7(v10, " = ", None)
+    v385 = None
+    v396: None
+    closure7(v10, "true" if v7 else "false", None)
+    v396 = None
+    v404: None
+    closure7(v10, "; ", None)
+    v404 = None
+    v413: None
+    closure7(v10, "working_directory", None)
+    v413 = None
+    v421: None
+    closure7(v10, " = ", None)
+    v421 = None
+    v459: None
+    closure7(v10, to_text(interpolate("%A%P()", [v8])), None)
+    v459 = None
+    v468: None
+    closure7(v10, " }", None)
+    v468 = None
+    v476: None
+    closure7(v10, " }", None)
+    v476 = None
+    return v10.l0
 
 
-def method58(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: int, v9: int) -> str:
-    v10: str = method59(v8, v9)
-    return method18(((((((((("" + v6) + " ") + v7) + " #") + str(v0_1.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v10) + "")
+def method58(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: int, v9: int, v10: str, v11: CancellationToken | None, v12: Array[tuple[str, str]], v13: Callable[[tuple[int, str, bool]], Async[None]] | None, v14: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v15: bool, v16_1: str | None=None) -> str:
+    v17_1: str = method59(v8, v9, v10, v11, v12, v13, v14, v15, v16_1)
+    return method18(((((((((("" + v6) + " ") + v7) + " #") + str(v0_1.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v17_1) + "")
 
 
-def closure26(v0_1: int, v1_1: str, unit_var: None) -> None:
+def closure26(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, str]], v3: Callable[[tuple[int, str, bool]], Async[None]] | None, v4: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v5: bool, v6: str | None, v7: int, v8: str, unit_var: None) -> None:
     if method7(US0(1)):
-        v6: None
+        v13: None
         closure0(None, None)
-        v6 = None
+        v13 = None
         pattern_input: tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None] = value_12(TraceState_trace_state())
-        v25: int64 | None = pattern_input[5]
-        v24: Mut4 = pattern_input[4]
-        v23: Mut3 = pattern_input[3]
-        v22: Mut2 = pattern_input[2]
-        v21: Mut1 = pattern_input[1]
-        v20_1: Mut0 = pattern_input[0]
-        method19(method58(v20_1, v21, v22, v23, v24, v25, method8(v20_1, v21, v22, v23, v24, v25), method39(), v0_1, len(v1_1)))
+        v32: int64 | None = pattern_input[5]
+        v31: Mut4 = pattern_input[4]
+        v30: Mut3 = pattern_input[3]
+        v29: Mut2 = pattern_input[2]
+        v28: Mut1 = pattern_input[1]
+        v27: Mut0 = pattern_input[0]
+        method19(method58(v27, v28, v29, v30, v31, v32, method8(v27, v28, v29, v30, v31, v32), method39(), v7, len(v8), v0_1, v1_1, v2_1, v3, v4, v5, v6))
 
 
 

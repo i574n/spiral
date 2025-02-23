@@ -262,9 +262,46 @@ let file_move (new_path : string) (old_path : string) : () =
 #!spiral
 
 let read_all_text_async (path : string) : _ string =
-    run_target function
-        | Fsharp (Native) => fun () => path |> $'System.IO.File.ReadAllTextAsync' |> async.await_task
-        | _ => fun () => null ()
+    let rec loop (retry : i64) =
+        fun () =>
+            try_unit
+                fun () =>
+                    run_target function
+                        | Fsharp (Native) => fun () =>
+                            path
+                            |> $'System.IO.File.ReadAllTextAsync'
+                        | _ => fun () => null ()
+                        |> async.await_task
+                        |> fun x => x : _ string
+                        |> async.return_await
+                fun ex =>
+                    trace Verbose
+                        fun () => "file_system.read_all_text_async"
+                        fun () => {
+                            retry
+                            path
+                            ex = ex ()
+                        }
+                    async.sleep 10i32 |> async.do
+                    if retry < 3
+                    then loop (retry + 1)
+                    else failwith $'$"file_system.read_all_text_async / retry: {!retry} / path: {!path}"'
+                    |> async.return_await
+        |> async.new_async
+    loop 0
+
+#!spiral
+
+//// test
+
+$'System.Reflection.Assembly.GetEntryAssembly().Location'
+|> read_all_text_async
+|> async.run_synchronously
+|> sm'.length
+|> function
+    | 0i32 => 0
+    | _ => 1
+|> _assert_eq 1i32
 
 #!markdown
 
