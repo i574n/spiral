@@ -19941,70 +19941,76 @@ and method200 (v0 : string, v1 : string, v2 : UH2, v3 : UH4, v4 : string, v5 : s
     let v82 : string = $"    <OutputType>Exe</OutputType>"
     let v83 : string = v81 + v52 
     let v84 : string = v83 + v82 
-    let v85 : string = $"</PropertyGroup>"
+    let v85 : string = $"    <ServerGarbageCollection>true</ServerGarbageCollection>"
     let v86 : string = v84 + v52 
     let v87 : string = v86 + v85 
-    let v88 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('FreeBSD'))\">"
+    let v88 : string = $"    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>"
     let v89 : string = v87 + v52 
     let v90 : string = v89 + v88 
-    let v91 : string = $"    <DefineConstants>_FREEBSD</DefineConstants>"
+    let v91 : string = $"</PropertyGroup>"
     let v92 : string = v90 + v52 
     let v93 : string = v92 + v91 
-    let v94 : string = $"</PropertyGroup>"
+    let v94 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('FreeBSD'))\">"
     let v95 : string = v93 + v52 
     let v96 : string = v95 + v94 
-    let v97 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('Linux'))\">"
+    let v97 : string = $"    <DefineConstants>_FREEBSD</DefineConstants>"
     let v98 : string = v96 + v52 
     let v99 : string = v98 + v97 
-    let v100 : string = $"    <DefineConstants>_LINUX</DefineConstants>"
+    let v100 : string = $"</PropertyGroup>"
     let v101 : string = v99 + v52 
     let v102 : string = v101 + v100 
-    let v103 : string = $"</PropertyGroup>"
+    let v103 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('Linux'))\">"
     let v104 : string = v102 + v52 
     let v105 : string = v104 + v103 
-    let v106 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('OSX'))\">"
+    let v106 : string = $"    <DefineConstants>_LINUX</DefineConstants>"
     let v107 : string = v105 + v52 
     let v108 : string = v107 + v106 
-    let v109 : string = $"    <DefineConstants>_OSX</DefineConstants>"
+    let v109 : string = $"</PropertyGroup>"
     let v110 : string = v108 + v52 
     let v111 : string = v110 + v109 
-    let v112 : string = $"</PropertyGroup>"
+    let v112 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('OSX'))\">"
     let v113 : string = v111 + v52 
     let v114 : string = v113 + v112 
-    let v115 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('Windows'))\">"
+    let v115 : string = $"    <DefineConstants>_OSX</DefineConstants>"
     let v116 : string = v114 + v52 
     let v117 : string = v116 + v115 
-    let v118 : string = $"    <DefineConstants>_WINDOWS</DefineConstants>"
+    let v118 : string = $"</PropertyGroup>"
     let v119 : string = v117 + v52 
     let v120 : string = v119 + v118 
-    let v121 : string = $"</PropertyGroup>"
+    let v121 : string = $"<PropertyGroup Condition=\"$([MSBuild]::IsOSPlatform('Windows'))\">"
     let v122 : string = v120 + v52 
     let v123 : string = v122 + v121 
-    let v124 : string = $"<ItemGroup>"
+    let v124 : string = $"    <DefineConstants>_WINDOWS</DefineConstants>"
     let v125 : string = v123 + v52 
     let v126 : string = v125 + v124 
-    let v127 : string = $"    {v26}"
+    let v127 : string = $"</PropertyGroup>"
     let v128 : string = v126 + v52 
     let v129 : string = v128 + v127 
-    let v130 : string = $"    <Compile Include=\"{v9}\" />"
+    let v130 : string = $"<ItemGroup>"
     let v131 : string = v129 + v52 
     let v132 : string = v131 + v130 
-    let v133 : string = $"</ItemGroup>"
+    let v133 : string = $"    {v26}"
     let v134 : string = v132 + v52 
     let v135 : string = v134 + v133 
-    let v136 : string = $"<ItemGroup>"
+    let v136 : string = $"    <Compile Include=\"{v9}\" />"
     let v137 : string = v135 + v52 
     let v138 : string = v137 + v136 
-    let v139 : string = $"    {v44}"
+    let v139 : string = $"</ItemGroup>"
     let v140 : string = v138 + v52 
     let v141 : string = v140 + v139 
-    let v142 : string = $"</ItemGroup>"
+    let v142 : string = $"<ItemGroup>"
     let v143 : string = v141 + v52 
     let v144 : string = v143 + v142 
-    let v145 : string = $"</Project>"
+    let v145 : string = $"    {v44}"
     let v146 : string = v144 + v52 
     let v147 : string = v146 + v145 
-    method64(v49, v147)
+    let v148 : string = $"</ItemGroup>"
+    let v149 : string = v147 + v52 
+    let v150 : string = v149 + v148 
+    let v151 : string = $"</Project>"
+    let v152 : string = v150 + v52 
+    let v153 : string = v152 + v151 
+    method64(v49, v153)
     v49
 and closure82 () (v0 : chrono_DateTime<chrono_Utc>) : US40 =
     US40_0(v0)

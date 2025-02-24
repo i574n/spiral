@@ -314,6 +314,8 @@ let persist_code_project { workspace_root package_dir packages modules name code
         +#. $'$"    <SelfContained>true</SelfContained>"'
         +#. $'$"    <Version>0.0.1-alpha.1</Version>"'
         +#. $'$"    <OutputType>Exe</OutputType>"'
+        +#. $'$"    <ServerGarbageCollection>true</ServerGarbageCollection>"'
+        +#. $'$"    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>"'
         +#. $'$"</PropertyGroup>"'
 
         +#. $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'FreeBSD\'))\\\">"'
