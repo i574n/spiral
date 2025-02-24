@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "no_std", no_std)]
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
@@ -10,7 +9,6 @@
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-#![allow(unused_unsafe)]
 use fable_library_rust::NativeArray_::array_from;
 use fable_library_rust::String_::fromString;
 mod module_e3e534c3 {
@@ -3243,7 +3241,6 @@ pub use module_eb7e4788::*;
 pub mod Polyglot {
     pub use crate::module_eb7e4788::Polyglot::*;
 }
-#[cfg(not(feature = "no_std"))]
 pub fn main() {
     let args = std::env::args().skip(1).map(fromString).collect();
     Spiral_wasm::main(array_from(args));

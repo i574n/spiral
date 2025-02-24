@@ -45,7 +45,7 @@ class IPathJoin(Protocol):
         ...
 
 
-def _expr315() -> TypeInfo:
+def _expr293() -> TypeInfo:
     return class_type("File_system.Disposable", None, Disposable)
 
 
@@ -58,7 +58,7 @@ class Disposable(IDisposable):
         _.f(None)
 
 
-Disposable_reflection = _expr315
+Disposable_reflection = _expr293
 
 def Disposable__ctor_3A5B6456(f: Callable[[], None]) -> Disposable:
     return Disposable(f)
@@ -76,7 +76,7 @@ class IFs(Protocol):
         ...
 
 
-def _expr316() -> TypeInfo:
+def _expr294() -> TypeInfo:
     return union_type("File_system.US0", [], US0, lambda: [[], [], [], [], []])
 
 
@@ -92,9 +92,9 @@ class US0(Union):
         return ["US0_0", "US0_1", "US0_2", "US0_3", "US0_4"]
 
 
-US0_reflection = _expr316
+US0_reflection = _expr294
 
-def _expr317() -> TypeInfo:
+def _expr295() -> TypeInfo:
     return record_type("File_system.Mut0", [], Mut0, lambda: [("l0", int64_type)])
 
 
@@ -102,9 +102,9 @@ def _expr317() -> TypeInfo:
 class Mut0(Record):
     l0: int64
 
-Mut0_reflection = _expr317
+Mut0_reflection = _expr295
 
-def _expr318() -> TypeInfo:
+def _expr296() -> TypeInfo:
     return record_type("File_system.Mut1", [], Mut1, lambda: [("l0", lambda_type(string_type, unit_type))])
 
 
@@ -112,9 +112,9 @@ def _expr318() -> TypeInfo:
 class Mut1(Record):
     l0: Callable[[str], None]
 
-Mut1_reflection = _expr318
+Mut1_reflection = _expr296
 
-def _expr319() -> TypeInfo:
+def _expr297() -> TypeInfo:
     return record_type("File_system.Mut2", [], Mut2, lambda: [("l0", bool_type)])
 
 
@@ -122,9 +122,9 @@ def _expr319() -> TypeInfo:
 class Mut2(Record):
     l0: bool
 
-Mut2_reflection = _expr319
+Mut2_reflection = _expr297
 
-def _expr320() -> TypeInfo:
+def _expr298() -> TypeInfo:
     return record_type("File_system.Mut3", [], Mut3, lambda: [("l0", string_type)])
 
 
@@ -132,9 +132,9 @@ def _expr320() -> TypeInfo:
 class Mut3(Record):
     l0: str
 
-Mut3_reflection = _expr320
+Mut3_reflection = _expr298
 
-def _expr321() -> TypeInfo:
+def _expr299() -> TypeInfo:
     return record_type("File_system.Mut4", [], Mut4, lambda: [("l0", US0_reflection())])
 
 
@@ -142,9 +142,9 @@ def _expr321() -> TypeInfo:
 class Mut4(Record):
     l0: US0
 
-Mut4_reflection = _expr321
+Mut4_reflection = _expr299
 
-def _expr322() -> TypeInfo:
+def _expr300() -> TypeInfo:
     return union_type("File_system.US1", [], US1, lambda: [[("f0_0", US0_reflection())], []])
 
 
@@ -160,9 +160,9 @@ class US1(Union):
         return ["US1_0", "US1_1"]
 
 
-US1_reflection = _expr322
+US1_reflection = _expr300
 
-def _expr323() -> TypeInfo:
+def _expr301() -> TypeInfo:
     return union_type("File_system.US2", [], US2, lambda: [[("f0_0", int64_type)], []])
 
 
@@ -178,9 +178,9 @@ class US2(Union):
         return ["US2_0", "US2_1"]
 
 
-US2_reflection = _expr323
+US2_reflection = _expr301
 
-def _expr324() -> TypeInfo:
+def _expr302() -> TypeInfo:
     return union_type("File_system.US3", [], US3, lambda: [[], [], []])
 
 
@@ -196,9 +196,9 @@ class US3(Union):
         return ["US3_0", "US3_1", "US3_2"]
 
 
-US3_reflection = _expr324
+US3_reflection = _expr302
 
-def _expr325() -> TypeInfo:
+def _expr303() -> TypeInfo:
     return union_type("File_system.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())]])
 
 
@@ -214,9 +214,9 @@ class US4(Union):
         return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4"]
 
 
-US4_reflection = _expr325
+US4_reflection = _expr303
 
-def _expr326() -> TypeInfo:
+def _expr304() -> TypeInfo:
     return union_type("File_system.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -232,9 +232,9 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr326
+US5_reflection = _expr304
 
-def _expr327() -> TypeInfo:
+def _expr305() -> TypeInfo:
     return union_type("File_system.US7", [], US7, lambda: [[], [], []])
 
 
@@ -250,9 +250,9 @@ class US7(Union):
         return ["US7_0", "US7_1", "US7_2"]
 
 
-US7_reflection = _expr327
+US7_reflection = _expr305
 
-def _expr328() -> TypeInfo:
+def _expr306() -> TypeInfo:
     return union_type("File_system.US8", [], US8, lambda: [[], [], [], [], []])
 
 
@@ -268,9 +268,9 @@ class US8(Union):
         return ["US8_0", "US8_1", "US8_2", "US8_3", "US8_4"]
 
 
-US8_reflection = _expr328
+US8_reflection = _expr306
 
-def _expr329() -> TypeInfo:
+def _expr307() -> TypeInfo:
     return union_type("File_system.US6", [], US6, lambda: [[("f0_0", US7_reflection()), ("f0_1", US8_reflection())], []])
 
 
@@ -286,9 +286,9 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr329
+US6_reflection = _expr307
 
-def _expr330() -> TypeInfo:
+def _expr308() -> TypeInfo:
     return union_type("File_system.US9", [], US9, lambda: [[], [("f1_0", string_type)]])
 
 
@@ -304,9 +304,9 @@ class US9(Union):
         return ["US9_0", "US9_1"]
 
 
-US9_reflection = _expr330
+US9_reflection = _expr308
 
-def _expr331() -> TypeInfo:
+def _expr309() -> TypeInfo:
     return union_type("File_system.US10", [], US10, lambda: [[("f0_0", int64_type)], [("f1_0", class_type("System.Exception"))]])
 
 
@@ -322,9 +322,9 @@ class US10(Union):
         return ["US10_0", "US10_1"]
 
 
-US10_reflection = _expr331
+US10_reflection = _expr309
 
-def _expr332() -> TypeInfo:
+def _expr310() -> TypeInfo:
     return union_type("File_system.US11", [], US11, lambda: [[("f0_0", int64_type)], [("f1_0", class_type("System.Exception"))]])
 
 
@@ -340,9 +340,9 @@ class US11(Union):
         return ["US11_0", "US11_1"]
 
 
-US11_reflection = _expr332
+US11_reflection = _expr310
 
-def _expr333() -> TypeInfo:
+def _expr311() -> TypeInfo:
     return union_type("File_system.US12", [], US12, lambda: [[("f0_0", class_type("File_system.chrono_DateTime`1", [class_type("File_system.chrono_Utc")]))], []])
 
 
@@ -358,9 +358,9 @@ class US12(Union):
         return ["US12_0", "US12_1"]
 
 
-US12_reflection = _expr333
+US12_reflection = _expr311
 
-def _expr334() -> TypeInfo:
+def _expr312() -> TypeInfo:
     return union_type("File_system.US13", [], US13, lambda: [[], [("f1_0", class_type("File_system.std_string_String"))]])
 
 
@@ -376,9 +376,9 @@ class US13(Union):
         return ["US13_0", "US13_1"]
 
 
-US13_reflection = _expr334
+US13_reflection = _expr312
 
-def _expr335() -> TypeInfo:
+def _expr313() -> TypeInfo:
     return union_type("File_system.US14", [], US14, lambda: [[("f0_0", class_type("File_system.std_path_PathBuf"))], [("f1_0", string_type)]])
 
 
@@ -394,9 +394,9 @@ class US14(Union):
         return ["US14_0", "US14_1"]
 
 
-US14_reflection = _expr335
+US14_reflection = _expr313
 
-def _expr336() -> TypeInfo:
+def _expr314() -> TypeInfo:
     return union_type("File_system.US15", [], US15, lambda: [[("f0_0", class_type("File_system.std_path_PathBuf"))], []])
 
 
@@ -412,9 +412,9 @@ class US15(Union):
         return ["US15_0", "US15_1"]
 
 
-US15_reflection = _expr336
+US15_reflection = _expr314
 
-def _expr337() -> TypeInfo:
+def _expr315() -> TypeInfo:
     return record_type("File_system.Mut5", [], Mut5, lambda: [("l0", int32_type), ("l1", int32_type), ("l2", array_type(string_type))])
 
 
@@ -424,9 +424,9 @@ class Mut5(Record):
     l1: int
     l2: Array[str]
 
-Mut5_reflection = _expr337
+Mut5_reflection = _expr315
 
-def _expr338() -> TypeInfo:
+def _expr316() -> TypeInfo:
     return record_type("File_system.Mut6", [], Mut6, lambda: [("l0", int32_type)])
 
 
@@ -434,9 +434,9 @@ def _expr338() -> TypeInfo:
 class Mut6(Record):
     l0: int
 
-Mut6_reflection = _expr338
+Mut6_reflection = _expr316
 
-def _expr339() -> TypeInfo:
+def _expr317() -> TypeInfo:
     return union_type("File_system.US16", [], US16, lambda: [[], []])
 
 
@@ -452,9 +452,9 @@ class US16(Union):
         return ["US16_0", "US16_1"]
 
 
-US16_reflection = _expr339
+US16_reflection = _expr317
 
-def _expr340() -> TypeInfo:
+def _expr318() -> TypeInfo:
     return union_type("File_system.US17", [], US17, lambda: [[("f0_0", string_type)], [("f1_0", string_type)]])
 
 
@@ -470,7 +470,7 @@ class US17(Union):
         return ["US17_0", "US17_1"]
 
 
-US17_reflection = _expr340
+US17_reflection = _expr318
 
 def method3(v0_1: str) -> str:
     return v0_1
@@ -485,10 +485,10 @@ def closure1(unit_var: None, v0_1: str) -> US5:
 
 
 def method5(__unit: None=None) -> Callable[[str], US5]:
-    def _arrow341(v: str) -> US5:
+    def _arrow319(v: str) -> US5:
         return closure1(None, v)
 
-    return _arrow341
+    return _arrow319
 
 
 def method2(v0_1: str) -> str:
@@ -516,7 +516,7 @@ def method2(v0_1: str) -> str:
 def method1(__unit: None=None) -> tuple[US1, US2]:
     v1_1: str = method2("TRACE_LEVEL")
     v6: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
-    def _arrow342(__unit: None=None) -> US1:
+    def _arrow320(__unit: None=None) -> US1:
         v13: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
         if v13.tag == 0:
             return US1(0, v13.fields[0])
@@ -538,7 +538,7 @@ def method1(__unit: None=None) -> tuple[US1, US2]:
 
 
 
-    return (US1(0, v6.fields[0]) if (v6.tag == 0) else _arrow342(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
+    return (US1(0, v6.fields[0]) if (v6.tag == 0) else _arrow320(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
 
 
 def closure2(unit_var: None, v0_1: str) -> None:
@@ -581,17 +581,17 @@ def method11(v0_1: US0) -> bool:
         return False
 
     else: 
-        class ObjectExpr343:
+        class ObjectExpr321:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        class ObjectExpr344:
+        class ObjectExpr322:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr343())) >= find(v35_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr344()))
+        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr321())) >= find(v35_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr322()))
 
 
 
@@ -600,10 +600,10 @@ def closure5(unit_var: None, v0_1: int64) -> US2:
 
 
 def method13(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow345(v: int64) -> US2:
+    def _arrow323(v: int64) -> US2:
         return closure5(None, v)
 
-    return _arrow345
+    return _arrow323
 
 
 def method14(__unit: None=None) -> str:
@@ -743,32 +743,32 @@ def closure4(v0_1: str, v1_1: Exception, unit_var: None) -> None:
 
 
 def method8(v0_1: str, v1_1: int64) -> Async[int64]:
-    def _arrow351(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[int64]:
-        def _arrow346(__unit: None=None) -> Async[int64]:
+    def _arrow329(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[int64]:
+        def _arrow324(__unit: None=None) -> Async[int64]:
             method9(True, v0_1)
             return singleton.Return(v1_1)
 
-        def _arrow350(_arg: Exception) -> Async[int64]:
+        def _arrow328(_arg: Exception) -> Async[int64]:
             v1519: bool = op_modulus(v1_1, int64(100)) == int64(0)
-            def _arrow347(__unit: None=None) -> Async[None]:
+            def _arrow325(__unit: None=None) -> Async[None]:
                 v1522: None
                 closure4(v0_1, _arg, None)
                 v1522 = None
                 return singleton.Zero()
 
-            def _arrow349(__unit: None=None) -> Async[int64]:
+            def _arrow327(__unit: None=None) -> Async[int64]:
                 v1598: Async[None] = sleep(10)
-                def _arrow348(__unit: None=None) -> Async[int64]:
+                def _arrow326(__unit: None=None) -> Async[int64]:
                     v1607: Async[int64] = method7(v0_1, op_addition(v1_1, int64(1)))
                     return singleton.ReturnFrom(v1607)
 
-                return singleton.Bind(v1598, _arrow348)
+                return singleton.Bind(v1598, _arrow326)
 
-            return singleton.Combine(_arrow347() if v1519 else singleton.Zero(), singleton.Delay(_arrow349))
+            return singleton.Combine(_arrow325() if v1519 else singleton.Zero(), singleton.Delay(_arrow327))
 
-        return singleton.TryWith(singleton.Delay(_arrow346), _arrow350)
+        return singleton.TryWith(singleton.Delay(_arrow324), _arrow328)
 
-    return singleton.Delay(_arrow351)
+    return singleton.Delay(_arrow329)
 
 
 def method7(v0_1: str, v1_1: int64) -> Async[int64]:
@@ -849,34 +849,34 @@ def closure12(v0_1: str, v1_1: int64, v2_1: Exception, unit_var: None) -> None:
 
 
 def method27(v0_1: US6, v1_1: str, v2_1: int64, v3: US8, v4: US7) -> Async[int64]:
-    def _arrow358(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> Async[int64]:
-        def _arrow353(__unit: None=None) -> Async[int64]:
-            def _arrow352(_arg: Any) -> Async[int64]:
+    def _arrow336(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> Async[int64]:
+        def _arrow331(__unit: None=None) -> Async[int64]:
+            def _arrow330(_arg: Any) -> Async[int64]:
                 return singleton.Return(v2_1)
 
-            return singleton.Using(None, _arrow352)
+            return singleton.Using(None, _arrow330)
 
-        def _arrow357(_arg_1: Exception) -> Async[int64]:
+        def _arrow335(_arg_1: Exception) -> Async[int64]:
             v2312: bool = (op_modulus(v2_1, int64(100)) == int64(0)) if (v2_1 > int64(0)) else False
-            def _arrow354(__unit: None=None) -> Async[None]:
+            def _arrow332(__unit: None=None) -> Async[None]:
                 v2315: None
                 closure12(v1_1, v2_1, _arg_1, None)
                 v2315 = None
                 return singleton.Zero()
 
-            def _arrow356(__unit: None=None) -> Async[int64]:
+            def _arrow334(__unit: None=None) -> Async[int64]:
                 v2391: Async[None] = sleep(10)
-                def _arrow355(__unit: None=None) -> Async[int64]:
+                def _arrow333(__unit: None=None) -> Async[int64]:
                     v2400: Async[int64] = method26(v0_1, v1_1, op_addition(v2_1, int64(1)))
                     return singleton.ReturnFrom(v2400)
 
-                return singleton.Bind(v2391, _arrow355)
+                return singleton.Bind(v2391, _arrow333)
 
-            return singleton.Combine(_arrow354() if v2312 else singleton.Zero(), singleton.Delay(_arrow356))
+            return singleton.Combine(_arrow332() if v2312 else singleton.Zero(), singleton.Delay(_arrow334))
 
-        return singleton.TryWith(singleton.Delay(_arrow353), _arrow357)
+        return singleton.TryWith(singleton.Delay(_arrow331), _arrow335)
 
-    return singleton.Delay(_arrow358)
+    return singleton.Delay(_arrow336)
 
 
 def method26(v0_1: US6, v1_1: str, v2_1: int64) -> Async[int64]:
@@ -892,10 +892,10 @@ def closure11(v0_1: US6, v1_1: str) -> Async[int64]:
 
 
 def closure10(unit_var: None, v0_1: US6) -> Callable[[str], Async[int64]]:
-    def _arrow359(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[int64]:
+    def _arrow337(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[int64]:
         return closure11(v0_1, v)
 
-    return _arrow359
+    return _arrow337
 
 
 def method30(v0_1: str) -> Async[int64]:
@@ -977,17 +977,17 @@ def closure15(v0_1: str, v1_1: int64, v2_1: Exception, unit_var: None) -> None:
 
 
 def method33(v0_1: str, v1_1: int64) -> Async[str]:
-    def _arrow363(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[str]:
-        def _arrow360(__unit: None=None) -> Async[str]:
+    def _arrow341(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[str]:
+        def _arrow338(__unit: None=None) -> Async[str]:
             v1938: Async[str] = await_task(None)
             return singleton.ReturnFrom(v1938)
 
-        def _arrow362(_arg: Exception) -> Async[str]:
+        def _arrow340(_arg: Exception) -> Async[str]:
             v2000: None
             closure15(v0_1, v1_1, _arg, None)
             v2000 = None
             v2050: Async[None] = sleep(10)
-            def _arrow361(__unit: None=None) -> Async[str]:
+            def _arrow339(__unit: None=None) -> Async[str]:
                 v2063: Async[str]
                 if v1_1 < int64(3):
                     v2063 = method32(v0_1, op_addition(v1_1, int64(1)))
@@ -997,11 +997,11 @@ def method33(v0_1: str, v1_1: int64) -> Async[str]:
 
                 return singleton.ReturnFrom(v2063)
 
-            return singleton.Bind(v2050, _arrow361)
+            return singleton.Bind(v2050, _arrow339)
 
-        return singleton.TryWith(singleton.Delay(_arrow360), _arrow362)
+        return singleton.TryWith(singleton.Delay(_arrow338), _arrow340)
 
-    return singleton.Delay(_arrow363)
+    return singleton.Delay(_arrow341)
 
 
 def method32(v0_1: str, v1_1: int64) -> Async[str]:
@@ -1033,10 +1033,10 @@ def closure17(v0_1: str, v1_1: str) -> bool:
 
 
 def closure16(unit_var: None, v0_1: str) -> Callable[[str], bool]:
-    def _arrow364(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> bool:
+    def _arrow342(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> bool:
         return closure17(v0_1, v)
 
-    return _arrow364
+    return _arrow342
 
 
 def method40(v0_1: str, v1_1: str) -> Async[None]:
@@ -1048,27 +1048,27 @@ def closure19(v0_1: str, v1_1: str) -> Async[None]:
 
 
 def closure18(unit_var: None, v0_1: str) -> Callable[[str], Async[None]]:
-    def _arrow365(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[None]:
+    def _arrow343(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[None]:
         return closure19(v0_1, v)
 
-    return _arrow365
+    return _arrow343
 
 
 def method44(v0_1: str, v1_1: str) -> Async[bool]:
-    def _arrow367(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[bool]:
+    def _arrow345(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[bool]:
         if method38(v0_1) == False:
             return singleton.Return(False)
 
         else: 
             v61: Async[str] = method31(v0_1)
-            def _arrow366(_arg: str) -> Async[bool]:
+            def _arrow344(_arg: str) -> Async[bool]:
                 v63: bool = v1_1 == _arg
                 return singleton.Return(v63)
 
-            return singleton.Bind(v61, _arrow366)
+            return singleton.Bind(v61, _arrow344)
 
 
-    return singleton.Delay(_arrow367)
+    return singleton.Delay(_arrow345)
 
 
 def method43(v0_1: str, v1_1: str) -> Async[bool]:
@@ -1076,25 +1076,25 @@ def method43(v0_1: str, v1_1: str) -> Async[bool]:
 
 
 def method42(v0_1: str, v1_1: str) -> Async[None]:
-    def _arrow372(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[None]:
+    def _arrow350(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[None]:
         v51: Async[bool] = method43(v0_1, v1_1)
-        def _arrow371(_arg: bool) -> Async[None]:
+        def _arrow349(_arg: bool) -> Async[None]:
             v53: bool = _arg == False
-            def _arrow369(__unit: None=None) -> Async[None]:
+            def _arrow347(__unit: None=None) -> Async[None]:
                 v54: Async[None] = method40(v0_1, v1_1)
-                def _arrow368(__unit: None=None) -> Async[None]:
+                def _arrow346(__unit: None=None) -> Async[None]:
                     return singleton.Zero()
 
-                return singleton.Bind(v54, _arrow368)
+                return singleton.Bind(v54, _arrow346)
 
-            def _arrow370(__unit: None=None) -> Async[None]:
+            def _arrow348(__unit: None=None) -> Async[None]:
                 return singleton.Zero()
 
-            return singleton.Combine(_arrow369() if v53 else singleton.Zero(), singleton.Delay(_arrow370))
+            return singleton.Combine(_arrow347() if v53 else singleton.Zero(), singleton.Delay(_arrow348))
 
-        return singleton.Bind(v51, _arrow371)
+        return singleton.Bind(v51, _arrow349)
 
-    return singleton.Delay(_arrow372)
+    return singleton.Delay(_arrow350)
 
 
 def method41(v0_1: str, v1_1: str) -> Async[None]:
@@ -1106,10 +1106,10 @@ def closure21(v0_1: str, v1_1: str) -> Async[None]:
 
 
 def closure20(unit_var: None, v0_1: str) -> Callable[[str], Async[None]]:
-    def _arrow373(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[None]:
+    def _arrow351(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[None]:
         return closure21(v0_1, v)
 
-    return _arrow373
+    return _arrow351
 
 
 def method49(v0_1: std_io_error) -> str:
@@ -1125,10 +1125,10 @@ def closure23(unit_var: None, v0_1: std_io_error) -> str:
 
 
 def method48(__unit: None=None) -> Callable[[std_io_error], str]:
-    def _arrow374(v: std_io_error) -> str:
+    def _arrow352(v: std_io_error) -> str:
         return closure23(None, v)
 
-    return _arrow374
+    return _arrow352
 
 
 def closure24(unit_var: None, unit_var_1: None) -> US9:
@@ -1136,10 +1136,10 @@ def closure24(unit_var: None, unit_var_1: None) -> US9:
 
 
 def method50(__unit: None=None) -> Callable[[], US9]:
-    def _arrow375(__unit: None=None) -> US9:
+    def _arrow353(__unit: None=None) -> US9:
         return closure24(None, None)
 
-    return _arrow375
+    return _arrow353
 
 
 def closure25(unit_var: None, v0_1: str) -> US9:
@@ -1147,10 +1147,10 @@ def closure25(unit_var: None, v0_1: str) -> US9:
 
 
 def method51(__unit: None=None) -> Callable[[str], US9]:
-    def _arrow376(v: str) -> US9:
+    def _arrow354(v: str) -> US9:
         return closure25(None, v)
 
-    return _arrow376
+    return _arrow354
 
 
 def method52(__unit: None=None) -> str:
@@ -1258,31 +1258,31 @@ def closure27(v0_1: str, v1_1: Exception, unit_var: None) -> None:
 
 
 def method47(v0_1: str, v1_1: int64) -> Async[int64]:
-    def _arrow382(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[int64]:
-        def _arrow377(__unit: None=None) -> Async[int64]:
+    def _arrow360(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[int64]:
+        def _arrow355(__unit: None=None) -> Async[int64]:
             return singleton.Return(v1_1)
 
-        def _arrow381(_arg: Exception) -> Async[int64]:
+        def _arrow359(_arg: Exception) -> Async[int64]:
             v2671: bool = op_modulus(v1_1, int64(100)) == int64(0)
-            def _arrow378(__unit: None=None) -> Async[None]:
+            def _arrow356(__unit: None=None) -> Async[None]:
                 v2674: None
                 closure27(v0_1, _arg, None)
                 v2674 = None
                 return singleton.Zero()
 
-            def _arrow380(__unit: None=None) -> Async[int64]:
+            def _arrow358(__unit: None=None) -> Async[int64]:
                 v2750: Async[None] = sleep(10)
-                def _arrow379(__unit: None=None) -> Async[int64]:
+                def _arrow357(__unit: None=None) -> Async[int64]:
                     v2759: Async[int64] = method46(v0_1, op_addition(v1_1, int64(1)))
                     return singleton.ReturnFrom(v2759)
 
-                return singleton.Bind(v2750, _arrow379)
+                return singleton.Bind(v2750, _arrow357)
 
-            return singleton.Combine(_arrow378() if v2671 else singleton.Zero(), singleton.Delay(_arrow380))
+            return singleton.Combine(_arrow356() if v2671 else singleton.Zero(), singleton.Delay(_arrow358))
 
-        return singleton.TryWith(singleton.Delay(_arrow377), _arrow381)
+        return singleton.TryWith(singleton.Delay(_arrow355), _arrow359)
 
-    return singleton.Delay(_arrow382)
+    return singleton.Delay(_arrow360)
 
 
 def method46(v0_1: str, v1_1: int64) -> Async[int64]:
@@ -1367,32 +1367,32 @@ def closure30(v0_1: str, v1_1: str, v2_1: Exception, unit_var: None) -> None:
 
 
 def method60(v0_1: str, v1_1: str, v2_1: int64) -> Async[int64]:
-    def _arrow388(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> Async[int64]:
-        def _arrow383(__unit: None=None) -> Async[int64]:
+    def _arrow366(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> Async[int64]:
+        def _arrow361(__unit: None=None) -> Async[int64]:
             method61(v0_1, v1_1)
             return singleton.Return(v2_1)
 
-        def _arrow387(_arg: Exception) -> Async[int64]:
+        def _arrow365(_arg: Exception) -> Async[int64]:
             v1494: bool = op_modulus(v2_1, int64(100)) == int64(0)
-            def _arrow384(__unit: None=None) -> Async[None]:
+            def _arrow362(__unit: None=None) -> Async[None]:
                 v1497: None
                 closure30(v0_1, v1_1, _arg, None)
                 v1497 = None
                 return singleton.Zero()
 
-            def _arrow386(__unit: None=None) -> Async[int64]:
+            def _arrow364(__unit: None=None) -> Async[int64]:
                 v1574: Async[None] = sleep(10)
-                def _arrow385(__unit: None=None) -> Async[int64]:
+                def _arrow363(__unit: None=None) -> Async[int64]:
                     v1583: Async[int64] = method59(v0_1, v1_1, op_addition(v2_1, int64(1)))
                     return singleton.ReturnFrom(v1583)
 
-                return singleton.Bind(v1574, _arrow385)
+                return singleton.Bind(v1574, _arrow363)
 
-            return singleton.Combine(_arrow384() if v1494 else singleton.Zero(), singleton.Delay(_arrow386))
+            return singleton.Combine(_arrow362() if v1494 else singleton.Zero(), singleton.Delay(_arrow364))
 
-        return singleton.TryWith(singleton.Delay(_arrow383), _arrow387)
+        return singleton.TryWith(singleton.Delay(_arrow361), _arrow365)
 
-    return singleton.Delay(_arrow388)
+    return singleton.Delay(_arrow366)
 
 
 def method59(v0_1: str, v1_1: str, v2_1: int64) -> Async[int64]:
@@ -1408,10 +1408,10 @@ def closure29(v0_1: str, v1_1: str) -> Async[int64]:
 
 
 def closure28(unit_var: None, v0_1: str) -> Callable[[str], Async[int64]]:
-    def _arrow389(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[int64]:
+    def _arrow367(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Async[int64]:
         return closure29(v0_1, v)
 
-    return _arrow389
+    return _arrow367
 
 
 def closure32(unit_var: None, v0_1: int64) -> US10:
@@ -1419,10 +1419,10 @@ def closure32(unit_var: None, v0_1: int64) -> US10:
 
 
 def method70(__unit: None=None) -> Callable[[int64], US10]:
-    def _arrow390(v: int64) -> US10:
+    def _arrow368(v: int64) -> US10:
         return closure32(None, v)
 
-    return _arrow390
+    return _arrow368
 
 
 def closure33(unit_var: None, v0_1: Exception) -> US10:
@@ -1430,32 +1430,32 @@ def closure33(unit_var: None, v0_1: Exception) -> US10:
 
 
 def method71(__unit: None=None) -> Callable[[Exception], US10]:
-    def _arrow391(v: Exception) -> US10:
+    def _arrow369(v: Exception) -> US10:
         return closure33(None, v)
 
-    return _arrow391
+    return _arrow369
 
 
 def method69(v0_1: Async[Any]) -> Async[US10]:
-    def _arrow393(__unit: None=None, v0_1: Any=v0_1) -> Async[US10]:
-        def _arrow392(_arg: Any) -> Async[US10]:
+    def _arrow371(__unit: None=None, v0_1: Any=v0_1) -> Async[US10]:
+        def _arrow370(_arg: Any) -> Async[US10]:
             return singleton.Return(None)
 
-        return singleton.Bind(v0_1, _arrow392)
+        return singleton.Bind(v0_1, _arrow370)
 
-    return singleton.Delay(_arrow393)
+    return singleton.Delay(_arrow371)
 
 
 def method72(v0_1: Async[US10]) -> Async[US11]:
-    def _arrow395(__unit: None=None, v0_1: Any=v0_1) -> Async[US11]:
-        def _arrow394(_arg: US10) -> Async[US11]:
+    def _arrow373(__unit: None=None, v0_1: Any=v0_1) -> Async[US11]:
+        def _arrow372(_arg: US10) -> Async[US11]:
             v74: US10 = _arg
             v80: US11 = US11(1, v74.fields[0]) if (v74.tag == 1) else US11(0, v74.fields[0])
             return singleton.Return(v80)
 
-        return singleton.Bind(v0_1, _arrow394)
+        return singleton.Bind(v0_1, _arrow372)
 
-    return singleton.Delay(_arrow395)
+    return singleton.Delay(_arrow373)
 
 
 def method75(v0_1: int) -> str:
@@ -1553,8 +1553,8 @@ def closure35(v0_1: int, v1_1: Exception, unit_var: None) -> None:
 
 
 def method73(v0_1: int, v1_1: Async[US11]) -> Async[US2]:
-    def _arrow397(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[US2]:
-        def _arrow396(_arg: US11) -> Async[US2]:
+    def _arrow375(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[US2]:
+        def _arrow374(_arg: US11) -> Async[US2]:
             v1019: US11 = _arg
             v1143: US2
             if v1019.tag == 0:
@@ -1578,21 +1578,21 @@ def method73(v0_1: int, v1_1: Async[US11]) -> Async[US2]:
 
             return singleton.Return(v1143)
 
-        return singleton.Bind(v1_1, _arrow396)
+        return singleton.Bind(v1_1, _arrow374)
 
-    return singleton.Delay(_arrow397)
+    return singleton.Delay(_arrow375)
 
 
 def method68(v0_1: Async[int64], v1_1: int) -> Async[US2]:
-    def _arrow399(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[US2]:
+    def _arrow377(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[US2]:
         v398: Async[Async[int64]] = start_child(v0_1, v1_1)
-        def _arrow398(_arg: Async[int64]) -> Async[US2]:
+        def _arrow376(_arg: Async[int64]) -> Async[US2]:
             v432: Async[US2] = method73(v1_1, method72(method69(catch_async(_arg))))
             return singleton.ReturnFrom(v432)
 
-        return singleton.Bind(v398, _arrow398)
+        return singleton.Bind(v398, _arrow376)
 
-    return singleton.Delay(_arrow399)
+    return singleton.Delay(_arrow377)
 
 
 def method67(v0_1: int, v1_1: Async[int64]) -> Async[US2]:
@@ -1600,13 +1600,13 @@ def method67(v0_1: int, v1_1: Async[int64]) -> Async[US2]:
 
 
 def method78(v0_1: Async[str]) -> Async[str | None]:
-    def _arrow401(__unit: None=None, v0_1: Any=v0_1) -> Async[str | None]:
-        def _arrow400(_arg: str) -> Async[str | None]:
+    def _arrow379(__unit: None=None, v0_1: Any=v0_1) -> Async[str | None]:
+        def _arrow378(_arg: str) -> Async[str | None]:
             return singleton.Return(_arg)
 
-        return singleton.Bind(v0_1, _arrow400)
+        return singleton.Bind(v0_1, _arrow378)
 
-    return singleton.Delay(_arrow401)
+    return singleton.Delay(_arrow379)
 
 
 def method80(v0_1: int64, v1_1: str) -> str:
@@ -1663,23 +1663,23 @@ def closure36(v0_1: int64, v1_1: Exception, unit_var: None) -> None:
 
 
 def method66(v0_1: str, v1_1: int64) -> Async[str | None]:
-    def _arrow407(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[str | None]:
-        def _arrow405(__unit: None=None) -> Async[str | None]:
+    def _arrow385(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[str | None]:
+        def _arrow383(__unit: None=None) -> Async[str | None]:
             v1675: bool = v1_1 > int64(0)
-            def _arrow403(__unit: None=None) -> Async[None]:
+            def _arrow381(__unit: None=None) -> Async[None]:
                 v1692: Async[None] = ignore(method67(1000, method30(v0_1)))
-                def _arrow402(__unit: None=None) -> Async[None]:
+                def _arrow380(__unit: None=None) -> Async[None]:
                     return singleton.Zero()
 
-                return singleton.Bind(v1692, _arrow402)
+                return singleton.Bind(v1692, _arrow380)
 
-            def _arrow404(__unit: None=None) -> Async[str | None]:
+            def _arrow382(__unit: None=None) -> Async[str | None]:
                 v1703: Async[str | None] = method78(method31(v0_1))
                 return singleton.ReturnFrom(v1703)
 
-            return singleton.Combine(_arrow403() if v1675 else singleton.Zero(), singleton.Delay(_arrow404))
+            return singleton.Combine(_arrow381() if v1675 else singleton.Zero(), singleton.Delay(_arrow382))
 
-        def _arrow406(_arg_1: Exception) -> Async[str | None]:
+        def _arrow384(_arg_1: Exception) -> Async[str | None]:
             if (v1_1 == int64(0)) != True:
                 v1738: None
                 closure36(v1_1, _arg_1, None)
@@ -1691,9 +1691,9 @@ def method66(v0_1: str, v1_1: int64) -> Async[str | None]:
                 return singleton.ReturnFrom(v1805)
 
 
-        return singleton.TryWith(singleton.Delay(_arrow405), _arrow406)
+        return singleton.TryWith(singleton.Delay(_arrow383), _arrow384)
 
-    return singleton.Delay(_arrow407)
+    return singleton.Delay(_arrow385)
 
 
 def method65(v0_1: str, v1_1: int64) -> Async[str | None]:
@@ -1713,10 +1713,10 @@ def closure38(unit_var: None, v0_1: chrono_date_time_1[chrono_utc]) -> US12:
 
 
 def method83(__unit: None=None) -> Callable[[chrono_date_time_1[chrono_utc]], US12]:
-    def _arrow408(v: chrono_date_time_1[chrono_utc]) -> US12:
+    def _arrow386(v: chrono_date_time_1[chrono_utc]) -> US12:
         return closure38(None, v)
 
-    return _arrow408
+    return _arrow386
 
 
 def method84(__unit: None=None) -> str:
@@ -1783,10 +1783,10 @@ def closure40(unit_var: None, v0_1: std_io_error) -> std_string_string:
 
 
 def method94(__unit: None=None) -> Callable[[std_io_error], std_string_string]:
-    def _arrow409(v: std_io_error) -> std_string_string:
+    def _arrow387(v: std_io_error) -> std_string_string:
         return closure40(None, v)
 
-    return _arrow409
+    return _arrow387
 
 
 def closure41(unit_var: None, unit_var_1: None) -> US13:
@@ -1794,10 +1794,10 @@ def closure41(unit_var: None, unit_var_1: None) -> US13:
 
 
 def method95(__unit: None=None) -> Callable[[], US13]:
-    def _arrow410(__unit: None=None) -> US13:
+    def _arrow388(__unit: None=None) -> US13:
         return closure41(None, None)
 
-    return _arrow410
+    return _arrow388
 
 
 def closure42(unit_var: None, v0_1: std_string_string) -> US13:
@@ -1805,10 +1805,10 @@ def closure42(unit_var: None, v0_1: std_string_string) -> US13:
 
 
 def method96(__unit: None=None) -> Callable[[std_string_string], US13]:
-    def _arrow411(v: std_string_string) -> US13:
+    def _arrow389(v: std_string_string) -> US13:
         return closure42(None, v)
 
-    return _arrow411
+    return _arrow389
 
 
 def method98(v0_1: str, v1_1: std_string_string) -> str:
@@ -1910,17 +1910,17 @@ def closure45(v0_1: str, unit_var: None) -> None:
 
 
 def method101(v0_1: str) -> Callable[[], None]:
-    def _arrow412(__unit: None=None, v0_1: Any=v0_1) -> None:
+    def _arrow390(__unit: None=None, v0_1: Any=v0_1) -> None:
         closure45(v0_1, None)
 
-    return _arrow412
+    return _arrow390
 
 
 def method102(v0_1: str) -> Callable[[], None]:
-    def _arrow413(__unit: None=None, v0_1: Any=v0_1) -> None:
+    def _arrow391(__unit: None=None, v0_1: Any=v0_1) -> None:
         closure45(v0_1, None)
 
-    return _arrow413
+    return _arrow391
 
 
 def method103(v0_1: str) -> bool:
@@ -1985,17 +1985,17 @@ def closure47(v0_1: str, unit_var: None) -> None:
 
 
 def method106(v0_1: str) -> Callable[[], None]:
-    def _arrow414(__unit: None=None, v0_1: Any=v0_1) -> None:
+    def _arrow392(__unit: None=None, v0_1: Any=v0_1) -> None:
         closure47(v0_1, None)
 
-    return _arrow414
+    return _arrow392
 
 
 def method107(v0_1: str) -> Callable[[], None]:
-    def _arrow415(__unit: None=None, v0_1: Any=v0_1) -> None:
+    def _arrow393(__unit: None=None, v0_1: Any=v0_1) -> None:
         closure47(v0_1, None)
 
-    return _arrow415
+    return _arrow393
 
 
 def method93(v0_1: str) -> IDisposable:
@@ -2010,11 +2010,11 @@ def method93(v0_1: str) -> IDisposable:
         v311 = None
 
     v360: Callable[[], None] = method107(v0_1)
-    class ObjectExpr416(IDisposable):
+    class ObjectExpr394(IDisposable):
         def Dispose(self, __unit: None=None, v0_1: Any=v0_1) -> None:
             v360(None)
 
-    return ObjectExpr416()
+    return ObjectExpr394()
 
 
 def closure39(unit_var: None, unit_var_1: None) -> tuple[str, IDisposable]:
@@ -2032,10 +2032,10 @@ def closure49(v0_1: int, v1_1: str, v2_1: int, v3: str) -> str:
 
 
 def method109(v0_1: int, v1_1: str, v2_1: int) -> Callable[[str], str]:
-    def _arrow417(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> str:
+    def _arrow395(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> str:
         return closure49(v0_1, v1_1, v2_1, v)
 
-    return _arrow417
+    return _arrow395
 
 
 def method108(v0_1: str) -> str:
@@ -2062,10 +2062,10 @@ def closure52(unit_var: None, v0_1: std_path_path_buf) -> US14:
 
 
 def method113(__unit: None=None) -> Callable[[std_path_path_buf], US14]:
-    def _arrow418(v: std_path_path_buf) -> US14:
+    def _arrow396(v: std_path_path_buf) -> US14:
         return closure52(None, v)
 
-    return _arrow418
+    return _arrow396
 
 
 def closure53(unit_var: None, v0_1: str) -> US14:
@@ -2073,10 +2073,10 @@ def closure53(unit_var: None, v0_1: str) -> US14:
 
 
 def method114(__unit: None=None) -> Callable[[str], US14]:
-    def _arrow419(v: str) -> US14:
+    def _arrow397(v: str) -> US14:
         return closure53(None, v)
 
-    return _arrow419
+    return _arrow397
 
 
 def method117(v0_1: str) -> str | None:
@@ -2132,10 +2132,10 @@ def closure55(v0_1: str, v1_1: uint8, v2_1: str) -> FSharpResult_2[std_path_path
 
 
 def closure54(v0_1: str, v1_1: uint8) -> Callable[[str], FSharpResult_2[std_path_path_buf, std_io_error]]:
-    def _arrow420(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> FSharpResult_2[std_path_path_buf, std_io_error]:
+    def _arrow398(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> FSharpResult_2[std_path_path_buf, std_io_error]:
         return closure55(v0_1, v1_1, v)
 
-    return _arrow420
+    return _arrow398
 
 
 def method119(v0_1: str, v1_1: Callable[[uint8, str], FSharpResult_2[std_path_path_buf, std_io_error]], v2_1: uint8, v3: str) -> FSharpResult_2[std_path_path_buf, std_io_error]:
@@ -2237,10 +2237,10 @@ def closure57(v0_1: str, v1_1: uint8, v2_1: str) -> FSharpResult_2[std_path_path
 
 
 def closure56(v0_1: str, v1_1: uint8) -> Callable[[str], FSharpResult_2[std_path_path_buf, std_io_error]]:
-    def _arrow421(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> FSharpResult_2[std_path_path_buf, std_io_error]:
+    def _arrow399(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> FSharpResult_2[std_path_path_buf, std_io_error]:
         return closure57(v0_1, v1_1, v)
 
-    return _arrow421
+    return _arrow399
 
 
 def method126(v0_1: str, v1_1: Callable[[uint8, str], FSharpResult_2[std_path_path_buf, std_io_error]], v2_1: uint8, v3: std_io_error) -> FSharpResult_2[std_path_path_buf, std_io_error]:
@@ -2298,10 +2298,10 @@ def closure58(unit_var: None, v0_1: std_path_path_buf) -> US15:
 
 
 def method127(__unit: None=None) -> Callable[[std_path_path_buf], US15]:
-    def _arrow422(v: std_path_path_buf) -> US15:
+    def _arrow400(v: std_path_path_buf) -> US15:
         return closure58(None, v)
 
-    return _arrow422
+    return _arrow400
 
 
 def method129(v0_1: str) -> str:
@@ -2330,11 +2330,11 @@ def method110(v0_1: str) -> str:
             return v0_1
 
         else: 
-            def _arrow423(__unit: None=None, v0_1: Any=v0_1) -> str:
+            def _arrow401(__unit: None=None, v0_1: Any=v0_1) -> str:
                 _arg: str = v69[0]
                 return _arg.lower()
 
-            return replace(concat(_arrow423(), *v69[1:len(v69)]), "\\", "/")
+            return replace(concat(_arrow401(), *v69[1:len(v69)]), "\\", "/")
 
 
 
@@ -2433,13 +2433,13 @@ def method140(v0_1: str, v1_1: str, v2_1: bool, v3: Callable[[str], bool]) -> US
 
 def method139(v0_1: US16, v1_1: str, v2_1: str) -> US17:
     v3: bool = True if (v0_1.tag == 0) else False
-    def _arrow424(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> bool:
+    def _arrow402(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> bool:
         return closure63(None, v)
 
-    def _arrow425(v_1: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> bool:
+    def _arrow403(v_1: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> bool:
         return closure64(None, v_1)
 
-    return method140(v1_1, v2_1, v3, _arrow424 if v3 else _arrow425)
+    return method140(v1_1, v2_1, v3, _arrow402 if v3 else _arrow403)
 
 
 def method143(v0_1: str, v1_1: str) -> str:
@@ -2519,7 +2519,7 @@ def closure62(unit_var: None, unit_var_1: None) -> str:
     else: 
         raise Exception("Option does not have a value.")
 
-    def _arrow426(__unit: None=None, unit_var: Any=unit_var, unit_var_1: Any=unit_var_1) -> str:
+    def _arrow404(__unit: None=None, unit_var: Any=unit_var, unit_var_1: Any=unit_var_1) -> str:
         v24_1: US5 = method138(value_10(method117(v17_1)))
         if v24_1.tag == 0:
             return v24_1.fields[0]
@@ -2528,7 +2528,7 @@ def closure62(unit_var: None, unit_var_1: None) -> str:
             raise Exception("Option does not have a value.")
 
 
-    return method90(_arrow426() if ("deps" == method20(v17_1)) else v17_1, "polyglot")
+    return method90(_arrow404() if ("deps" == method20(v17_1)) else v17_1, "polyglot")
 
 
 def closure67(v0_1: Exception, unit_var: None) -> Exception:
@@ -2548,13 +2548,13 @@ def closure68(unit_var: None, v0_1: bool) -> None:
     closure0(None, None)
     v3 = None
     pattern_input: tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None] = value_10(TraceState_trace_state())
-    def _arrow427(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
+    def _arrow405(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
         closure66(None, v)
 
-    def _arrow428(v_1: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
+    def _arrow406(v_1: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
         closure2(None, v_1)
 
-    v37_1: Callable[[str], None] = _arrow427 if v0_1 else _arrow428
+    v37_1: Callable[[str], None] = _arrow405 if v0_1 else _arrow406
     pattern_input[1].l0 = v37_1
 
 
@@ -2566,11 +2566,11 @@ def method145(v0_1: str, v1_1: str) -> None:
     if method10(v7) == False:
         v12: IDisposable = method93(v7)
 
-    def _arrow429(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> bool:
+    def _arrow407(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> bool:
         v14: FSharpResult_2[std_path_path_buf, std_io_error] = method111(v1_1)
         return True
 
-    if _arrow429() if method10(v1_1) else False:
+    if _arrow407() if method10(v1_1) else False:
         method9(True, v1_1)
 
     if method10(v1_1) == False:
@@ -2583,10 +2583,10 @@ def closure70(v0_1: str, v1_1: str) -> None:
 
 
 def closure69(unit_var: None, v0_1: str) -> Callable[[str], None]:
-    def _arrow430(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
+    def _arrow408(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
         closure70(v0_1, v)
 
-    return _arrow430
+    return _arrow408
 
 
 def closure72(v0_1: str, v1_1: str) -> str:
@@ -2594,252 +2594,252 @@ def closure72(v0_1: str, v1_1: str) -> str:
 
 
 def closure71(unit_var: None, v0_1: str) -> Callable[[str], str]:
-    def _arrow431(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
+    def _arrow409(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
         return closure72(v0_1, v)
 
-    return _arrow431
+    return _arrow409
 
 
 v0: None = None
 
-def _arrow432(__unit: None=None) -> None:
+def _arrow410(__unit: None=None) -> None:
     closure0(None, None)
 
 
-v1: Callable[[], None] = _arrow432
+v1: Callable[[], None] = _arrow410
 
-def _expr433():
+def _expr411():
     v1(None)
     return v0
 
 
-v2: None = _expr433()
+v2: None = _expr411()
 
-def _arrow434(v: str) -> Async[int64]:
+def _arrow412(v: str) -> Async[int64]:
     return closure3(None, v)
 
 
-v16: Callable[[str], Async[int64]] = _arrow434
+v16: Callable[[str], Async[int64]] = _arrow412
 
 def delete_directory_async(x: str) -> Async[int64]:
     return v16(x)
 
 
-def _arrow435(v: US6) -> Callable[[str], Async[int64]]:
+def _arrow413(v: US6) -> Callable[[str], Async[int64]]:
     return closure10(None, v)
 
 
-v17: Callable[[US6, str], Async[int64]] = _arrow435
+v17: Callable[[US6, str], Async[int64]] = _arrow413
 
 def wait_for_file_access(x: US6) -> Callable[[str], Async[int64]]:
     return v17(x)
 
 
-def _arrow436(v: str) -> Async[int64]:
+def _arrow414(v: str) -> Async[int64]:
     return closure13(None, v)
 
 
-v18: Callable[[str], Async[int64]] = _arrow436
+v18: Callable[[str], Async[int64]] = _arrow414
 
 def wait_for_file_access_read(x: str) -> Async[int64]:
     return v18(x)
 
 
-def _arrow437(v: str) -> Async[str]:
+def _arrow415(v: str) -> Async[str]:
     return closure14(None, v)
 
 
-v19: Callable[[str], Async[str]] = _arrow437
+v19: Callable[[str], Async[str]] = _arrow415
 
 def read_all_text_async(x: str) -> Async[str]:
     return v19(x)
 
 
-def _arrow438(v: str) -> Callable[[str], bool]:
+def _arrow416(v: str) -> Callable[[str], bool]:
     return closure16(None, v)
 
 
-v20: Callable[[str, str], bool] = _arrow438
+v20: Callable[[str, str], bool] = _arrow416
 
 def file_exists_content(x: str) -> Callable[[str], bool]:
     return v20(x)
 
 
-def _arrow439(v: str) -> Callable[[str], Async[None]]:
+def _arrow417(v: str) -> Callable[[str], Async[None]]:
     return closure18(None, v)
 
 
-v21: Callable[[str, str], Async[None]] = _arrow439
+v21: Callable[[str, str], Async[None]] = _arrow417
 
 def write_all_text_async(x: str) -> Callable[[str], Async[None]]:
     return v21(x)
 
 
-def _arrow440(v: str) -> Callable[[str], Async[None]]:
+def _arrow418(v: str) -> Callable[[str], Async[None]]:
     return closure20(None, v)
 
 
-v22: Callable[[str, str], Async[None]] = _arrow440
+v22: Callable[[str, str], Async[None]] = _arrow418
 
 def write_all_text_exists(x: str) -> Callable[[str], Async[None]]:
     return v22(x)
 
 
-def _arrow441(v: str) -> Async[int64]:
+def _arrow419(v: str) -> Async[int64]:
     return closure22(None, v)
 
 
-v23: Callable[[str], Async[int64]] = _arrow441
+v23: Callable[[str], Async[int64]] = _arrow419
 
 def delete_file_async(x: str) -> Async[int64]:
     return v23(x)
 
 
-def _arrow442(v: str) -> Callable[[str], Async[int64]]:
+def _arrow420(v: str) -> Callable[[str], Async[int64]]:
     return closure28(None, v)
 
 
-v24: Callable[[str, str], Async[int64]] = _arrow442
+v24: Callable[[str, str], Async[int64]] = _arrow420
 
 def move_file_async(x: str) -> Callable[[str], Async[int64]]:
     return v24(x)
 
 
-def _arrow443(v: str) -> Async[str | None]:
+def _arrow421(v: str) -> Async[str | None]:
     return closure31(None, v)
 
 
-v25: Callable[[str], Async[str | None]] = _arrow443
+v25: Callable[[str], Async[str | None]] = _arrow421
 
 def read_all_text_retry_async(x: str) -> Async[str | None]:
     return v25(x)
 
 
-def _arrow444(__unit: None=None) -> str:
+def _arrow422(__unit: None=None) -> str:
     return closure37(None, None)
 
 
-v26: Callable[[], str] = _arrow444
+v26: Callable[[], str] = _arrow422
 
 def create_temp_path(__unit: None=None) -> str:
     return v26(None)
 
 
-def _arrow445(__unit: None=None) -> tuple[str, IDisposable]:
+def _arrow423(__unit: None=None) -> tuple[str, IDisposable]:
     return closure39(None, None)
 
 
-v27: Callable[[], tuple[str, IDisposable]] = _arrow445
+v27: Callable[[], tuple[str, IDisposable]] = _arrow423
 
 def create_temp_dir(__unit: None=None) -> tuple[str, IDisposable]:
     return v27(None)
 
 
-def _arrow446(v: str) -> tuple[str, IDisposable]:
+def _arrow424(v: str) -> tuple[str, IDisposable]:
     return closure48(None, v)
 
 
-v28: Callable[[str], tuple[str, IDisposable]] = _arrow446
+v28: Callable[[str], tuple[str, IDisposable]] = _arrow424
 
 def create_temp_dir_0027(x: str) -> tuple[str, IDisposable]:
     return v28(x)
 
 
-def _arrow447(__unit: None=None) -> str:
+def _arrow425(__unit: None=None) -> str:
     return closure50(None, None)
 
 
-v29: Callable[[], str] = _arrow447
+v29: Callable[[], str] = _arrow425
 
 def get_source_directory(__unit: None=None) -> str:
     return v29(None)
 
 
-def _arrow448(v: str) -> str:
+def _arrow426(v: str) -> str:
     return closure51(None, v)
 
 
-v30: Callable[[str], str] = _arrow448
+v30: Callable[[str], str] = _arrow426
 
 def normalize_path(x: str) -> str:
     return v30(x)
 
 
-def _arrow449(v: str) -> str:
+def _arrow427(v: str) -> str:
     return closure59(None, v)
 
 
-v31: Callable[[str], str] = _arrow449
+v31: Callable[[str], str] = _arrow427
 
 def get_full_path(x: str) -> str:
     return v31(x)
 
 
-def _arrow450(v: str) -> str:
+def _arrow428(v: str) -> str:
     return closure60(None, v)
 
 
-v32: Callable[[str], str] = _arrow450
+v32: Callable[[str], str] = _arrow428
 
 def standardize_path(x: str) -> str:
     return v32(x)
 
 
-def _arrow451(v: str) -> str:
+def _arrow429(v: str) -> str:
     return closure61(None, v)
 
 
-v33: Callable[[str], str] = _arrow451
+v33: Callable[[str], str] = _arrow429
 
 def new_file_uri(x: str) -> str:
     return v33(x)
 
 
-def _arrow452(__unit: None=None) -> str:
+def _arrow430(__unit: None=None) -> str:
     return closure62(None, None)
 
 
-v34: Callable[[], str] = _arrow452
+v34: Callable[[], str] = _arrow430
 
 def get_workspace_root(__unit: None=None) -> str:
     return v34(None)
 
 
-def _arrow453(v: str) -> None:
+def _arrow431(v: str) -> None:
     closure66(None, v)
 
 
-v35: Callable[[str], None] = _arrow453
+v35: Callable[[str], None] = _arrow431
 
 def trace_file(x: str) -> None:
     v35(x)
 
 
-def _arrow454(v: bool) -> None:
+def _arrow432(v: bool) -> None:
     closure68(None, v)
 
 
-v36: Callable[[bool], None] = _arrow454
+v36: Callable[[bool], None] = _arrow432
 
 def init_trace_file(x: bool) -> None:
     v36(x)
 
 
-def _arrow455(v: str) -> Callable[[str], None]:
+def _arrow433(v: str) -> Callable[[str], None]:
     return closure69(None, v)
 
 
-v37: Callable[[str, str], None] = _arrow455
+v37: Callable[[str, str], None] = _arrow433
 
 def link_directory(x: str) -> Callable[[str], None]:
     return v37(x)
 
 
-def _arrow456(v: str) -> Callable[[str], str]:
+def _arrow434(v: str) -> Callable[[str], str]:
     return closure71(None, v)
 
 
-v38: Callable[[str, str], str] = _arrow456
+v38: Callable[[str, str], str] = _arrow434
 
 def op_less_divide_greater(x: str) -> Callable[[str], str]:
     return v38(x)
