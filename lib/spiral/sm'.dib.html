@@ -7535,7 +7535,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=2">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7547,19 +7547,6 @@ a.anchor-link {
 
 <span class="nb">open</span> <span class="n">testing</span>
 </pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>WARNING: You are using single-threaded workstation garbage collection, which means that parallel programs cannot scale.  Please configure your program to use server garbage collection.
-</pre>
 </div>
 </div>
 </div>
@@ -8802,9 +8789,9 @@ mod module_b65a97bb {
 }
 pub use module_b65a97bb::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -8874,9 +8861,6 @@ export function method0(): void {
 method0();
 
 
-
-// spiral.process_typescript
-
 .py:
 from __future__ import annotations
 from fable_modules.fable_library.int32 import op_unary_negation_int32
@@ -8939,9 +8923,6 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
-
-
-# spiral.process_python
 
 .fsx output:
 __assert_eq / actual: "1
@@ -9142,9 +9123,9 @@ mod module_a11ac3a {
 }
 pub use module_a11ac3a::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
@@ -9173,9 +9154,6 @@ export function method0(): void {
 method0();
 
 
-
-// spiral.process_typescript
-
 .py:
 from fable_modules.fable_library.string_ import (to_text, interpolate)
 
@@ -9202,9 +9180,6 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Cuda):
 kernel = r"""
@@ -9518,9 +9493,9 @@ mod module_f5786279 {
 }
 pub use module_f5786279::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { interpolate, toText, concat } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
@@ -9549,9 +9524,6 @@ export function method0(): void {
 method0();
 
 
-
-// spiral.process_typescript
-
 .py:
 from fable_modules.fable_library.string_ import (concat, to_text, interpolate)
 
@@ -9578,9 +9550,6 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Cuda):
 kernel = r"""
