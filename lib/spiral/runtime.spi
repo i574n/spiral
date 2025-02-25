@@ -719,7 +719,7 @@ let execute_with_options_async (options : execution_options) : _ (int * string) 
                     |> sm'.concat "\n"
                 trace Debug
                     fun () => "runtime.execute_with_options_async"
-                    fun () => { exit_code output_length = output |> sm'.length : i32 }
+                    fun () => { exit_code output_length = output |> sm'.length : i32; options }
                 (exit_code, output) |> return
             | _ => fun _ =>
                 global "#if FABLE_COMPILER\n[<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]\nmodule System =\n module Diagnostics =\n  type Process = bool\n  type DataReceivedEventArgs = bool\n#endif"

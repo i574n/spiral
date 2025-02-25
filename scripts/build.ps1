@@ -8,6 +8,8 @@ $ErrorActionPreference = "Stop"
 . ../deps/polyglot/scripts/core.ps1
 
 
+{ pwsh ../apps/compiler/build.ps1 } | Invoke-Block
+
 { pwsh ../apps/spiral/build.ps1 } | Invoke-Block
 
 { pwsh ../apps/wasm/build.ps1 } | Invoke-Block

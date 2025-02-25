@@ -88,7 +88,7 @@ function CopyTarget {
         } else {
             $to = ResolveLink "$root/lib/$lib/$name$_runtime.$Language"
         }
-        Write-Output "spiral/lib/spiral/lib.ps1/CopyItem / from: $from / to: $to"
+        # Write-Output "spiral/lib/spiral/lib.ps1/CopyItem / from: $from / to: $to"
         Copy-Item $from $to -Force
 
         $text = Get-Content $to

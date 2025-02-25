@@ -2867,47 +2867,209 @@ pub mod Runtime {
     pub fn method57() -> string {
         string("\n")
     }
-    pub fn method59(v0_1: i32, v1_1: i32) -> string {
-        let v3: LrcPtr<Runtime::Mut3> = LrcPtr::new(Runtime::Mut3 {
+    pub fn method59(
+        v0_1: i32,
+        v1_1: i32,
+        v2_1: string,
+        v3: Option<CancellationToken>,
+        v4: Array<(string, string)>,
+        v5: Option<Func1<(i32, string, bool), Arc<Async<()>>>>,
+        v6: Option<Func1<std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>, ()>>,
+        v7: bool,
+        v8: Option<string>,
+    ) -> string {
+        let v10: LrcPtr<Runtime::Mut3> = LrcPtr::new(Runtime::Mut3 {
             l0: MutCell::new(Runtime::method14()),
         });
-        let v10: () = {
-            Runtime::closure7(v3.clone(), string("{ "), ());
+        let v17_1: () = {
+            Runtime::closure7(v10.clone(), string("{ "), ());
             ()
         };
-        let v19_1: () = {
-            Runtime::closure7(v3.clone(), string("exit_code"), ());
+        let v26: () = {
+            Runtime::closure7(v10.clone(), string("exit_code"), ());
             ()
         };
-        let v28: () = {
-            Runtime::closure7(v3.clone(), string(" = "), ());
+        let v35: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
             ()
         };
-        let v36: () = {
-            Runtime::closure7(v3.clone(), sprintf!("{}", v0_1), ());
+        let v43: () = {
+            Runtime::closure7(v10.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v45: () = {
-            Runtime::closure7(v3.clone(), string("; "), ());
+        let v52: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
             ()
         };
-        let v54: () = {
-            Runtime::closure7(v3.clone(), string("output_length"), ());
+        let v61: () = {
+            Runtime::closure7(v10.clone(), string("output_length"), ());
             ()
         };
-        let v62: () = {
-            Runtime::closure7(v3.clone(), string(" = "), ());
+        let v69: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
             ()
         };
-        let v70: () = {
-            Runtime::closure7(v3.clone(), sprintf!("{}", v1_1), ());
+        let v77: () = {
+            Runtime::closure7(v10.clone(), sprintf!("{}", v1_1), ());
             ()
         };
-        let v79: () = {
-            Runtime::closure7(v3.clone(), string(" }"), ());
+        let v85: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
             ()
         };
-        v3.l0.get().clone()
+        let v94: () = {
+            Runtime::closure7(v10.clone(), string("options"), ());
+            ()
+        };
+        let v102: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v110: () = {
+            Runtime::closure7(v10.clone(), string("{ "), ());
+            ()
+        };
+        let v119: () = {
+            Runtime::closure7(v10.clone(), string("command"), ());
+            ()
+        };
+        let v127: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v135: () = {
+            Runtime::closure7(v10.clone(), v2_1, ());
+            ()
+        };
+        let v143: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
+            ()
+        };
+        let v152: () = {
+            Runtime::closure7(v10.clone(), string("cancellation_token"), ());
+            ()
+        };
+        let v160: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v165: std::string::String = format!("{:#?}", v3);
+        let v198: () = {
+            Runtime::closure7(
+                v10.clone(),
+                fable_library_rust::String_::fromString(v165),
+                (),
+            );
+            ()
+        };
+        let v206: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
+            ()
+        };
+        let v215: () = {
+            Runtime::closure7(v10.clone(), string("environment_variables"), ());
+            ()
+        };
+        let v223: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v234: () = {
+            Runtime::closure7(v10.clone(), sprintf!("{:?}", v4), ());
+            ()
+        };
+        let v242: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
+            ()
+        };
+        let v251: () = {
+            Runtime::closure7(v10.clone(), string("on_line"), ());
+            ()
+        };
+        let v259: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v264: std::string::String = format!("{:#?}", v5);
+        let v297: () = {
+            Runtime::closure7(
+                v10.clone(),
+                fable_library_rust::String_::fromString(v264),
+                (),
+            );
+            ()
+        };
+        let v305: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
+            ()
+        };
+        let v314: () = {
+            Runtime::closure7(v10.clone(), string("stdin"), ());
+            ()
+        };
+        let v322: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v327: std::string::String = format!("{:#?}", v6);
+        let v360: () = {
+            Runtime::closure7(
+                v10.clone(),
+                fable_library_rust::String_::fromString(v327),
+                (),
+            );
+            ()
+        };
+        let v368: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
+            ()
+        };
+        let v377: () = {
+            Runtime::closure7(v10.clone(), string("trace"), ());
+            ()
+        };
+        let v385: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v396: () = {
+            Runtime::closure7(
+                v10.clone(),
+                if v7 { string("true") } else { string("false") },
+                (),
+            );
+            ()
+        };
+        let v404: () = {
+            Runtime::closure7(v10.clone(), string("; "), ());
+            ()
+        };
+        let v413: () = {
+            Runtime::closure7(v10.clone(), string("working_directory"), ());
+            ()
+        };
+        let v421: () = {
+            Runtime::closure7(v10.clone(), string(" = "), ());
+            ()
+        };
+        let v426: std::string::String = format!("{:#?}", v8);
+        let v459: () = {
+            Runtime::closure7(
+                v10.clone(),
+                fable_library_rust::String_::fromString(v426),
+                (),
+            );
+            ()
+        };
+        let v468: () = {
+            Runtime::closure7(v10.clone(), string(" }"), ());
+            ()
+        };
+        let v476: () = {
+            Runtime::closure7(v10.clone(), string(" }"), ());
+            ()
+        };
+        v10.l0.get().clone()
     }
     pub fn method58(
         v0_1: LrcPtr<Runtime::Mut0>,
@@ -2920,20 +3082,38 @@ pub mod Runtime {
         v7: string,
         v8: i32,
         v9: i32,
+        v10: string,
+        v11: Option<CancellationToken>,
+        v12: Array<(string, string)>,
+        v13: Option<Func1<(i32, string, bool), Arc<Async<()>>>>,
+        v14: Option<Func1<std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>, ()>>,
+        v15: bool,
+        v16_1: Option<string>,
     ) -> string {
-        let v10: string = Runtime::method59(v8, v9);
+        let v17_1: string = Runtime::method59(v8, v9, v10, v11, v12, v13, v14, v15, v16_1);
         Runtime::method18(sprintf!(
             "{} {} #{} {} / {}",
             v6,
             v7,
             v0_1.l0.get().clone(),
             string("runtime.execute_with_options_async"),
-            v10
+            v17_1
         ))
     }
-    pub fn closure26(v0_1: i32, v1_1: string, unitVar: ()) {
+    pub fn closure26(
+        v0_1: string,
+        v1_1: Option<CancellationToken>,
+        v2_1: Array<(string, string)>,
+        v3: Option<Func1<(i32, string, bool), Arc<Async<()>>>>,
+        v4: Option<Func1<std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>, ()>>,
+        v5: bool,
+        v6: Option<string>,
+        v7: i32,
+        v8: string,
+        unitVar: (),
+    ) {
         if Runtime::method7(Runtime::US0::US0_1) {
-            let v6: () = {
+            let v13: () = {
                 Runtime::closure0((), ());
                 ()
             };
@@ -2945,23 +3125,30 @@ pub mod Runtime {
                 LrcPtr<Runtime::Mut4>,
                 Option<i64>,
             ) = Runtime::TraceState::trace_state().get().clone().unwrap();
-            let v25: Option<i64> = patternInput.5.clone();
-            let v24: LrcPtr<Runtime::Mut4> = patternInput.4.clone();
-            let v23: LrcPtr<Runtime::Mut3> = patternInput.3.clone();
-            let v22: LrcPtr<Runtime::Mut2> = patternInput.2.clone();
-            let v21: LrcPtr<Runtime::Mut1> = patternInput.1.clone();
-            let v20_1: LrcPtr<Runtime::Mut0> = patternInput.0.clone();
+            let v32: Option<i64> = patternInput.5.clone();
+            let v31: LrcPtr<Runtime::Mut4> = patternInput.4.clone();
+            let v30: LrcPtr<Runtime::Mut3> = patternInput.3.clone();
+            let v29: LrcPtr<Runtime::Mut2> = patternInput.2.clone();
+            let v28: LrcPtr<Runtime::Mut1> = patternInput.1.clone();
+            let v27: LrcPtr<Runtime::Mut0> = patternInput.0.clone();
             Runtime::method19(Runtime::method58(
-                v20_1.clone(),
-                v21.clone(),
-                v22.clone(),
-                v23.clone(),
-                v24.clone(),
-                v25.clone(),
-                Runtime::method8(v20_1, v21, v22, v23, v24, v25),
+                v27.clone(),
+                v28.clone(),
+                v29.clone(),
+                v30.clone(),
+                v31.clone(),
+                v32.clone(),
+                Runtime::method8(v27, v28, v29, v30, v31, v32),
                 Runtime::method39(),
+                v7,
+                length(v8),
                 v0_1,
-                length(v1_1),
+                v1_1,
+                v2_1,
+                v3,
+                v4,
+                v5,
+                v6,
             ))
         };
     }
