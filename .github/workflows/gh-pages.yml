@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.101'
+          dotnet-version: '9.0.200'
 
       - uses: actions/setup-node@v4
         with:
