@@ -16,19 +16,6 @@ open sm'_operators
 
 ## spiral_compiler
 
-#!markdown
-
-### get_args
-
-#!spiral
-
-inl get_args () =
-    {
-        exception = "exception", 'e'
-        trace_level = "trace_level", 't'
-        wasm = "wasm", 'w'
-    }
-
 #!fsharp
 
 open FSharp.Core
@@ -75,12 +62,24 @@ open Common
 // open System
 // open FSharpx.Collections
 
-let private range_checks from near_to vec =
+#!markdown
+
+### private
+
+#!fsharp
+
+let range_checks from near_to vec =
     if from <= near_to = false then
         Common.trace Common.Critical (fun () -> $"PersistentVectorExtensions.range_checks / `from` must be less or equal to `near_to`. / from: {from} / near_to: {near_to} / vec: {vec}") Common._locals
         // raise (System.ArgumentException("`from` must be less or equal to `near_to`."))
     if from < 0 then raise (System.ArgumentException("`from` must not be negative."))
     if FSharpx.Collections.PersistentVector.length vec < near_to then raise (System.ArgumentException("`near_to` must not be beyond the length of the vector."))
+
+#!markdown
+
+### replace
+
+#!fsharp
 
 /// O(n+m). Replace the specified range in a vector with the sequence.
 let replace from near_to seq vec =
@@ -98,13 +97,31 @@ let replace from near_to seq vec =
             rest s
     init vec
 
+#!markdown
+
+### mapi
+
+#!fsharp
+
 /// O(n). Returns a vector of the supplied length using the supplied function operating on the index.
 let mapi f vec = FSharpx.Collections.PersistentVector.init (FSharpx.Collections.PersistentVector.length vec) (fun i -> f i vec.[i])
+
+#!markdown
+
+### iter
+
+#!fsharp
 
 /// O(n). Iterates over a vector using the supplied function operating on the index.
 let iter f vec = 
     let rec loop i = if i < FSharpx.Collections.PersistentVector.length vec then f vec.[i]
     loop 0
+
+#!markdown
+
+### unzip
+
+#!fsharp
 
 /// O(n). Unzips a vector of pairs into pairs of vectors.
 let unzip vec = 
@@ -112,14 +129,32 @@ let unzip vec =
     let mutable b = FSharpx.Collections.PersistentVector.empty
     iter (fun (a',b') -> a <- FSharpx.Collections.PersistentVector.conj a' a; b <- FSharpx.Collections.PersistentVector.conj b' b) vec
     a,b
-        
+
+#!markdown
+
+### concat
+
+#!fsharp
+
 /// O(n). Concatenates a vector of vectors.
 let concat vec = FSharpx.Collections.PersistentVector.fold (FSharpx.Collections.PersistentVector.append) FSharpx.Collections.PersistentVector.empty vec
+
+#!markdown
+
+### rangePersistentVector 
+
+#!fsharp
 
 /// O(near_to-from). Get the vector at a range.
 let rangePersistentVector from near_to vec =
     range_checks from near_to vec
     FSharpx.Collections.PersistentVector.init (near_to-from) (fun i -> vec.[i+from])
+
+#!markdown
+
+### tryFindBack
+
+#!fsharp
 
 /// O(~n). Returns the last element for which a given function returns true. None if such an element does not exist.
 let tryFindBack f vec =
@@ -143,6 +178,12 @@ let tryFindBack f vec =
 // open System
 open System.Runtime.InteropServices
 
+#!markdown
+
+### ConsedNode<'a>
+
+#!fsharp
+
 [<CustomComparison;CustomEquality;StructuredFormatDisplay("{AsString}")>]
 type ConsedNode<'a> =
     {
@@ -164,6 +205,12 @@ type ConsedNode<'a> =
             match y with
             | :? ConsedNode<'a> as y -> compare x.tag y.tag
             | _ -> raise <| System.ArgumentException "Invalid comparison for HashConsed."
+
+#!markdown
+
+### HashConsTable
+
+#!fsharp
 
 type HashConsTable() =
     let mutable table: ResizeArray<GCHandle> [] = Array.init 7 (fun _ -> ResizeArray(0))
@@ -230,17 +277,23 @@ type HashConsTable() =
             table |> (Array.iter << Seq.iter) (fun x -> x.Free())
             is_finalized <- true
 
-#!fsharp
-
-#r @"../../../../../../../.nuget/packages/argu/6.2.4/lib/netstandard2.0/Argu.dll"
-
 #!markdown
 
 ## Startup
 
 #!fsharp
 
+#r @"../../../../../../../.nuget/packages/argu/6.2.4/lib/netstandard2.0/Argu.dll"
+
+#!fsharp
+
 open Argu
+
+#!markdown
+
+### PrimitiveType
+
+#!fsharp
 
 type PrimitiveType =
     | UInt8T | UInt16T | UInt32T | UInt64T
@@ -248,12 +301,24 @@ type PrimitiveType =
     | Float32T | Float64T
     | BoolT | StringT | CharT
 
+#!markdown
+
+### DefaultEnv
+
+#!fsharp
+
 type DefaultEnv = {
     port : int
     default_int : PrimitiveType
     default_uint : PrimitiveType
     default_float : PrimitiveType
     }
+
+#!markdown
+
+### CliArguments
+
+#!fsharp
 
 type CliArguments =
     | [<Mandatory;Unique>] Port of int
@@ -266,6 +331,12 @@ type CliArguments =
             | Port _ -> "specify a primary port."
             | Default_Int _ -> "specify the default int: i8, i16, i32, i64, u8, u16, u32, u64"
             | Default_Float _ -> "specify the default float: f32, f64"
+
+#!markdown
+
+### parseStartup
+
+#!fsharp
 
 let parseStartup args =
     let parser = ArgumentParser.Create<CliArguments>(programName = "spiral.exe")
@@ -313,28 +384,79 @@ open System.Runtime.CompilerServices
 open Lib
 #endif
 
-let list_try_zip a b = try Some (List.zip a b) with _ -> None
+#!markdown
+
+### list_try_zip
+
+#!fsharp
+
+let list_try_zip a b =
+    try Some (List.zip a b) with _ -> None
+
+#!markdown
+
+### get_default
+
+#!fsharp
 
 let inline get_default (memo_dict: Dictionary<_,_>) k def =
     match memo_dict.TryGetValue k with
     | true, v -> v
     | false, _ -> def()
+
+#!markdown
+
+### memoize'
+
+#!fsharp
+
 let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
     match memo_dict.TryGetValue k with
     | true, v -> v
     | false, _ -> let v = f k in memo_dict.Add(k,v); v
+
+#!markdown
+
+### memoize
+
+#!fsharp
+
 let inline memoize (memo_dict: Dictionary<_,_>) f k =
     match memo_dict.TryGetValue k with
     | true, v -> v
     | false, _ -> let v = f k in memo_dict.Add(k,v); v
-let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
+
+#!markdown
+
+### lines 
+
+#!fsharp
+
+let lines (str : string) =
+    str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
+
+#!markdown
+
+### remove 
+
+#!fsharp
+
 let inline remove (dict : Dictionary<_,_>) x on_succ on_fail =
     let mutable q = Unchecked.defaultof<_>
     if dict.Remove(x, &q) then on_succ q else on_fail ()
+
+#!markdown
+
+### file_uri
+
+#!fsharp
+
 let file_uri (x : string) =
     let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
     trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
     result
+
+#!fsharp
 
 //open Hopac
 //open Hopac.Infixes
@@ -348,10 +470,28 @@ let file_uri (x : string) =
 
 ## ParserCombinators
 
+#!markdown
+
+### index
+
 #!fsharp
 
 let inline index d = (^a : (member Index: ^b) d)
-let inline index_set i d = (^a : (member set_Index: ^b -> unit) (d,i))
+
+#!markdown
+
+### index_set
+
+#!fsharp
+
+let inline index_set i d =
+    (^a : (member set_Index: ^b -> unit) (d,i))
+
+#!markdown
+
+### (.>>.)
+
+#!fsharp
 
 let inline (.>>.) a b d =
     match a d with
@@ -360,6 +500,12 @@ let inline (.>>.) a b d =
         | Ok b -> Ok (a,b)
         | Error x -> Error x
     | Error x -> Error x   
+
+#!markdown
+
+### tuple3
+
+#!fsharp
 
 let inline tuple3 a b c d =
     match a d with
@@ -371,6 +517,12 @@ let inline tuple3 a b c d =
             | Error x -> Error x
         | Error x -> Error x
     | Error x -> Error x  
+
+#!markdown
+
+### tuple4 
+
+#!fsharp
 
 let inline tuple4 a b c d' d =
     match a d with
@@ -385,6 +537,12 @@ let inline tuple4 a b c d' d =
             | Error x -> Error x
         | Error x -> Error x
     | Error x -> Error x  
+
+#!markdown
+
+### tuple5 
+
+#!fsharp
 
 let inline tuple5 a b c d' e d =
     match a d with
@@ -402,6 +560,12 @@ let inline tuple5 a b c d' e d =
             | Error x -> Error x
         | Error x -> Error x
     | Error x -> Error x  
+
+#!markdown
+
+### tuple6 
+
+#!fsharp
 
 let inline tuple6 a b c d' e f d =
     match a d with
@@ -422,6 +586,12 @@ let inline tuple6 a b c d' e f d =
             | Error x -> Error x
         | Error x -> Error x
     | Error x -> Error x 
+
+#!markdown
+
+### tuple7 
+
+#!fsharp
 
 let inline tuple7 a b c d' e f g d =
     match a d with
@@ -446,6 +616,12 @@ let inline tuple7 a b c d' e f g d =
         | Error x -> Error x
     | Error x -> Error x  
 
+#!markdown
+
+### pipe2
+
+#!fsharp
+
 let inline pipe2 a b f d =
     match a d with
     | Ok a ->
@@ -453,6 +629,12 @@ let inline pipe2 a b f d =
         | Ok b -> Ok (f a b)
         | Error x -> Error x
     | Error x -> Error x  
+
+#!markdown
+
+### pipe3
+
+#!fsharp
 
 let inline pipe3 a b c f d =
     match a d with
@@ -464,6 +646,12 @@ let inline pipe3 a b c f d =
             | Error x -> Error x
         | Error x -> Error x
     | Error x -> Error x  
+
+#!markdown
+
+### pipe4
+
+#!fsharp
 
 let inline pipe4 a b c d' f d =
     match a d with
@@ -478,6 +666,12 @@ let inline pipe4 a b c d' f d =
             | Error x -> Error x
         | Error x -> Error x
     | Error x -> Error x  
+
+#!markdown
+
+### pipe5
+
+#!fsharp
 
 let inline pipe5 a b c d' e f d =
     match a d with
@@ -496,6 +690,12 @@ let inline pipe5 a b c d' e f d =
         | Error x -> Error x
     | Error x -> Error x  
 
+#!markdown
+
+### (.>>)
+
+#!fsharp
+
 let inline (.>>) a b d =
     match a d with
     | Ok a ->
@@ -503,6 +703,12 @@ let inline (.>>) a b d =
         | Ok b -> Ok a
         | Error x -> Error x
     | Error x -> Error x   
+
+#!markdown
+
+### (>>.) 
+
+#!fsharp
 
 let inline (>>.) a b d =
     match a d with
@@ -512,6 +718,12 @@ let inline (>>.) a b d =
         | Error x -> Error x
     | Error x -> Error x   
 
+#!markdown
+
+### opt
+
+#!fsharp
+
 let inline opt a d =
     let s = index d
     match a d with
@@ -519,6 +731,12 @@ let inline opt a d =
     | Error x -> 
         if s = index d then Ok(None)
         else Error x
+
+#!markdown
+
+### optional
+
+#!fsharp
 
 let inline optional a d = 
     let s = index d
@@ -528,20 +746,44 @@ let inline optional a d =
         if s = index d then Ok()
         else Error x
 
+#!markdown
+
+### (|>>)
+
+#!fsharp
+
 let inline (|>>) a b d =
     match a d with
     | Ok a -> Ok(b a)
     | Error x -> Error x
 
+#!markdown
+
+### (>>%) 
+
+#!fsharp
+
 let inline (>>%) a b d =
     match a d with
     | Ok a -> Ok(b)
     | Error x -> Error x
-        
+
+#!markdown
+
+### (>>=)
+
+#!fsharp
+
 let inline (>>=) a b d =
     match a d with
     | Ok a -> b a d
     | Error x -> Error x
+
+#!markdown
+
+### (>>=?)
+
+#!fsharp
 
 let inline (>>=?) a b d =
     let i = index d
@@ -553,6 +795,12 @@ let inline (>>=?) a b d =
         | Error _ as x -> (if i' = index d then index_set i d); x // Backtracks to the beginning if the parser state has not changed.
     | Error x -> Error x
 
+#!markdown
+
+### many_iter
+
+#!fsharp
+
 let inline many_iter f a d =
     let rec loop () =
         let s = index d
@@ -562,13 +810,41 @@ let inline many_iter f a d =
         | Error er -> if s = index d then Ok() else Error er
     loop ()
 
+#!markdown
+
+### many_resize_array
+
+#!fsharp
+
 let inline many_resize_array a d =
     let ar = ResizeArray()
     match many_iter ar.Add a d with
     | Ok() -> Ok(ar)
     | Error er -> Error er
-let inline many_array a d = many_resize_array a d |> Result.map (fun x -> x.ToArray())
-let inline many a d = many_resize_array a d |> Result.map Seq.toList
+
+#!markdown
+
+### many_array
+
+#!fsharp
+
+let inline many_array a d =
+    many_resize_array a d |> Result.map (fun x -> x.ToArray())
+
+#!markdown
+
+### many
+
+#!fsharp
+
+let inline many a d =
+    many_resize_array a d |> Result.map Seq.toList
+
+#!markdown
+
+### sepBy
+
+#!fsharp
 
 let inline sepBy a b d =
     let s = index d
@@ -576,15 +852,33 @@ let inline sepBy a b d =
     | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
     | Error x -> if s = index d then Ok [] else Error x
 
+#!markdown
+
+### sepBy1
+
+#!fsharp
+
 let inline sepBy1 a b d =
     match a d with
     | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
     | Error x -> Error x
 
+#!markdown
+
+### many1
+
+#!fsharp
+
 let inline many1 a d =
     match a d with
     | Ok a' -> (many a |>> fun b -> a' :: b) d
     | Error x -> Error x
+
+#!markdown
+
+### attempt
+
+#!fsharp
 
 let inline attempt a d =
     let s = index d
@@ -592,12 +886,24 @@ let inline attempt a d =
     | Ok x -> Ok x
     | Error a as a' -> index_set s d; a'
 
+#!markdown
+
+### restore
+
+#!fsharp
+
 /// Restores the index on an error if at least i tokens have been consumed.
 let inline restore i a d =
     let s = index d
     match a d with
     | Ok x -> Ok x
     | Error _ as er -> (if index d <= s + i then index_set s d); er
+
+#!markdown
+
+### alt
+
+#!fsharp
 
 let inline alt s a b d =
     match a d with
@@ -610,13 +916,31 @@ let inline alt s a b d =
         else
             a'
 
+#!markdown
+
+### (<|>)
+
+#!fsharp
+
 let inline (<|>) a b d = let s = index d in alt s a b d
+
+#!markdown
+
+### (<|>%)
+
+#!fsharp
 
 let inline (<|>%) a b d =
     let s = index d
     match a d with
     | Ok x -> Ok x
     | Error _ as a' -> if s = index d then Ok b else a'
+
+#!markdown
+
+### choice
+
+#!fsharp
 
 let inline choice ar d =
     let s = index d
@@ -635,6 +959,12 @@ let inline choice ar d =
             Error []
     loop 0
 
+#!markdown
+
+### between
+
+#!fsharp
+
 let inline between a b c = a >>. c .>> b
 
 #!markdown
@@ -646,8 +976,27 @@ let inline between a b c = a >>. c .>> b
 // open System
 // open System.Text
 
+#!markdown
+
+### TokenizerRange
+
+#!fsharp
+
 type TokenizerRange = {from : int; nearTo : int}
+
+#!markdown
+
+### TokenizerError
+
+#!fsharp
+
 type TokenizerError = string
+
+#!markdown
+
+### Tokenizer
+
+#!fsharp
 
 type Tokenizer = {
     text : string // A single line.
@@ -656,20 +1005,71 @@ type Tokenizer = {
 
     member t.Index with get() = t.from and set i = t.from <- i
 
+#!markdown
+
+### range_char
+
+#!fsharp
+
 let range_char i = {from=i; nearTo=i+1}
+
+#!markdown
+
+### error_char
+
+#!fsharp
+
 let error_char i er = Result.Error [range_char i, er]
 
+#!markdown
+
+### inc'
+
+#!fsharp
+
 let inc' i (s : Tokenizer) = s.from <- s.from+i
+
+#!markdown
+
+### inc
+
+#!fsharp
+
 let inc (s : Tokenizer) = inc' 1 s
+
+#!markdown
+
+### eolLineParsers
+
+#!fsharp
 
 /// End Of Line character
 let eolLineParsers = System.Char.MaxValue
+
+#!markdown
+
+### peek'
+
+#!fsharp
+
 let peek' (s : Tokenizer) i =
     let i = s.from + i
     if 0 <= i && i < s.text.Length then s.text.[i]
     else eolLineParsers
 
+#!markdown
+
+### peek
+
+#!fsharp
+
 let peek (s : Tokenizer) = peek' s 0
+
+#!markdown
+
+### many1Satisfy2L
+
+#!fsharp
 
 let inline many1Satisfy2L init body label (s : Tokenizer) = 
     let x = peek s
@@ -684,22 +1084,76 @@ let inline many1Satisfy2L init body label (s : Tokenizer) =
         let i = s.from
         error_char i label
 
-let inline many1SatisfyL body label (s : Tokenizer) = many1Satisfy2L body body label s
+#!markdown
 
-let inline skip c (s : Tokenizer) = let b = peek s = c in (if b then inc s); b
-let rec spaces' (s : Tokenizer) = if peek s = ' ' then inc s; spaces' s
-let spaces s = spaces' s |> Result.Ok
+### many1SatisfyL
+
+#!fsharp
+
+let inline many1SatisfyL body label (s : Tokenizer) =
+    many1Satisfy2L body body label s
+
+#!markdown
+
+### skip
+
+#!fsharp
+
+let inline skip c (s : Tokenizer) =
+    let b = peek s = c in (if b then inc s); b
+
+#!markdown
+
+### spaces'
+
+#!fsharp
+
+let rec spaces' (s : Tokenizer) =
+    if peek s = ' ' then inc s; spaces' s
+
+#!markdown
+
+### spaces
+
+#!fsharp
+
+let spaces s =
+    spaces' s |> Result.Ok
+
+#!markdown
+
+### spaces1
+
+#!fsharp
 
 let spaces1 (s : Tokenizer) =
     if peek s = ' ' then inc s; spaces s else error_char s.from "space"
+
+#!markdown
+
+### skip_char
+
+#!fsharp
 
 let skip_char c (s : Tokenizer) =
     let from = s.from
     if skip c s then Ok() else error_char from (sprintf "'%c'" c)
 
+#!markdown
+
+### skip_string 
+
+#!fsharp
+
 let skip_string x (s : Tokenizer) =
     if System.String.Compare(s.text,s.from,x,0,x.Length) = 0 then inc' x.Length s; Ok()
     else error_char s.from x
+
+#!markdown
+
+### anyOf
+
+#!fsharp
 
 let anyOf (l : char list) (s : Tokenizer) =
     let c = peek s
@@ -708,6 +1162,12 @@ let anyOf (l : char list) (s : Tokenizer) =
     else
         let i = s.from
         Error (List.map (fun c -> range_char i, string c) l)
+
+#!markdown
+
+### chars_till_string
+
+#!fsharp
 
 let chars_till_string close (s : Tokenizer) =
     assert (close <> "")
@@ -718,6 +1178,12 @@ let chars_till_string close (s : Tokenizer) =
             if x <> eolLineParsers then inc s; b.Append(x) |> loop
             else error_char s.from close
     loop(System.Text.StringBuilder())
+
+#!markdown
+
+### numberLineParsers
+
+#!fsharp
 
 /// Parses a number as a sequence of digits and optionally underscores. Filters out the underscores from the result.
 let numberLineParsers (s : Tokenizer) = 
@@ -734,23 +1200,89 @@ let numberLineParsers (s : Tokenizer) =
         let i = s.from
         error_char i "number"
 
-let number_fractional s = (numberLineParsers .>>. (opt (skip_char '.' >>. numberLineParsers))) s
+#!markdown
+
+### number_fractional
+
+#!fsharp
+
+let number_fractional s =
+    (numberLineParsers .>>. (opt (skip_char '.' >>. numberLineParsers))) s
 
 #!markdown
 
 ## VSCTypes
 
+#!markdown
+
+### VSCPos
+
 #!fsharp
 
 type VSCPos = {|line : int; character : int|}
+
+#!markdown
+
+### VSCRange
+
+#!fsharp
+
 type VSCRange = VSCPos * VSCPos
+
+#!markdown
+
+### RString
+
+#!fsharp
+
 type RString = VSCRange * string
 
+#!markdown
+
+### PackageId
+
+#!fsharp
+
 type PackageId = int
+
+#!markdown
+
+### ModuleId
+
+#!fsharp
+
 type ModuleId = int
+
+#!markdown
+
+### DirId
+
+#!fsharp
+
 type DirId = int
+
+#!markdown
+
+### GlobalId
+
+#!fsharp
+
 type GlobalId = { package_id : PackageId; module_id : ModuleId; tag : int }
+
+#!markdown
+
+### RGlobalId
+
+#!fsharp
+
 type RGlobalId = VSCRange * GlobalId
+
+#!markdown
+
+### SpiEdit
+
+#!fsharp
+
 type SpiEdit = {|from: int; nearTo: int; lines: string []|}
 
 #!markdown
@@ -762,6 +1294,12 @@ type SpiEdit = {|from: int; nearTo: int; lines: string []|}
 // open System
 // open System.Text
 // open FSharpx.Collections
+
+#!markdown
+
+### TokenKeyword
+
+#!fsharp
 
 type TokenKeyword =
     | SpecIn
@@ -796,9 +1334,35 @@ type TokenKeyword =
     | SpecPrototype
     | SpecInstance
 
+#!markdown
+
+### ParenthesisState
+
+#!fsharp
+
 type ParenthesisState = Open | Close
+
+#!markdown
+
+### Parenthesis
+
+#!fsharp
+
 type Parenthesis = Round | Square | Curly
+
+#!markdown
+
+### MacroEnum
+
+#!fsharp
+
 type MacroEnum = MTerm | MType | MTypeLit
+
+#!markdown
+
+### Literal
+
+#!fsharp
 
 type Literal = 
     | LitUInt8 of uint8
@@ -832,6 +1396,11 @@ type Literal =
         | LitString x -> x
         | LitChar x -> x.ToString()
 
+#!markdown
+
+### SemanticTokenLegend
+
+#!fsharp
 
 type SemanticTokenLegend =
     | variable = 0
@@ -848,6 +1417,12 @@ type SemanticTokenLegend =
     | unescaped_char = 11
     | number_suffix = 12
     | escaped_var = 13
+
+#!markdown
+
+### SpiralToken
+
+#!fsharp
 
 type SpiralToken =
     | TokVar of string * SemanticTokenLegend
@@ -871,6 +1446,12 @@ type SpiralToken =
     | TokMacroTypeLitVar of string
     | TokMacroExpression of MacroEnum * ParenthesisState
 
+#!markdown
+
+### token_groups
+
+#!fsharp
+
 let token_groups = function
     | TokUnaryOperator(_,r) | TokOperator(_,r) | TokVar(_,r) | TokSymbol(_,r) -> r
     | TokValue (LitChar _) | TokStringOpen | TokStringClose | TokText _ | TokMacroOpen | TokMacroClose | TokValue(LitString _) -> SemanticTokenLegend.string
@@ -887,6 +1468,12 @@ let token_groups = function
     | TokValue _ | TokDefaultValue _ -> SemanticTokenLegend.number
     | TokValueSuffix -> SemanticTokenLegend.number_suffix
 
+#!markdown
+
+### show_lit
+
+#!fsharp
+
 let show_lit = function
     | LitUInt8 x -> sprintf "%iu8" x
     | LitUInt16 x -> sprintf "%iu16" x
@@ -902,28 +1489,102 @@ let show_lit = function
     | LitString x -> sprintf "%s" x
     | LitChar x -> sprintf "%c" x
 
+#!markdown
+
+### is_small_var_char_starting
+
+#!fsharp
+
 let is_small_var_char_starting c = System.Char.IsLower c || c = '_'
+
+#!markdown
+
+### is_var_char
+
+#!fsharp
+
 let is_var_char c = System.Char.IsLetterOrDigit c || c = '_' || c = '''
+
+#!markdown
+
+### is_big_var_char_starting
+
+#!fsharp
+
 let is_big_var_char_starting c = System.Char.IsUpper c
+
+#!markdown
+
+### is_parenth_open
+
+#!fsharp
+
 let is_var_char_starting c = System.Char.IsLetter c || c = '_'
+
+#!markdown
+
+### is_parenth_open
+
+#!fsharp
+
 let is_parenth_open c = 
     let f x = c = x
     f '(' || f '[' || f '{'
+
+#!markdown
+
+### is_parenth_close
+
+#!fsharp
+
 let is_parenth_close c = 
     let f x = c = x
     f ')' || f ']' || f '}'
+
+#!markdown
+
+### is_operator_char
+
+#!fsharp
 
 // http://www.asciitable.com/
 let is_operator_char c =
     let f x = c = x
     '!' <= c && c <= '~' && (is_var_char c || f '"' || is_parenth_open c || is_parenth_close c) = false
+
+#!markdown
+
+### is_prefix_separator_char
+
+#!fsharp
+
 let is_prefix_separator_char c = 
     let f x = c = x
     f ' ' || f eolLineParsers || is_parenth_open c
+
+#!markdown
+
+### is_postfix_separator_char
+
+#!fsharp
+
 let is_postfix_separator_char c = 
     let f x = c = x
     f ' ' || f eolLineParsers || is_parenth_close c
+
+#!markdown
+
+### is_separator_char
+
+#!fsharp
+
 let is_separator_char c = is_prefix_separator_char c || is_parenth_close c
+
+#!markdown
+
+### var
+
+#!fsharp
 
 let var (s: Tokenizer) = 
     let from = s.from
@@ -955,6 +1616,12 @@ let var (s: Tokenizer) =
             |> ok
 
     (many1Satisfy2L is_var_char_starting is_var_char "variable" >>= body .>> spaces) s
+
+#!markdown
+
+### numberTokenize
+
+#!fsharp
 
 let numberTokenize (s: Tokenizer) = 
     let from = s.from
@@ -998,6 +1665,12 @@ let numberTokenize (s: Tokenizer) =
 
     (parser >>= followedBySuffix .>> spaces) s
 
+#!markdown
+
+### symbol
+
+#!fsharp
+
 let symbol s =
     let from = s.from
     let f x = ({from=from; nearTo=s.from}, x)
@@ -1008,6 +1681,12 @@ let symbol s =
     if x = '.' && x' = '(' then inc' 2 s; ((many1SatisfyL is_operator_char "operator") .>> skip_char ')' |>> (symbol >> f) .>> spaces) s
     elif x = '.' && is_var_char_starting x' then inc s; ((many1SatisfyL is_var_char "variable") |>> (symbol >> f) .>> spaces) s
     else error_char from "symbol"
+
+#!markdown
+
+### comment
+
+#!fsharp
 
 let comment (s : Tokenizer) =
     if peek s = '/' && peek' s 1 = '/' then 
@@ -1023,6 +1702,12 @@ let comment (s : Tokenizer) =
     else
         error_char s.from "comment"
 
+#!markdown
+
+### operator
+
+#!fsharp
+
 let operator (s : Tokenizer) = 
     let from = s.from
     let ok x = ({from=from; nearTo=s.from}, x) |> Ok
@@ -1032,10 +1717,22 @@ let operator (s : Tokenizer) =
         else TokOperator(name,SemanticTokenLegend.operator) |> ok
     (many1SatisfyL is_operator_char "operator"  >>= f .>> spaces) s
 
+#!markdown
+
+### string_raw
+
+#!fsharp
+
 let string_raw s =
     let from = s.from
     let f x = {from=from; nearTo=s.from}, TokValue(LitString x)
     (skip_string "@\"" >>. chars_till_string "\"" |>> f .>> spaces) s
+
+#!markdown
+
+### char_quoted
+
+#!fsharp
 
 let char_quoted s = 
     let char_quoted_body (s: Tokenizer) =
@@ -1055,6 +1752,12 @@ let char_quoted s =
     let f _ x _ = {from=from; nearTo=s.from}, TokValue(LitChar x)
     (pipe3 (skip_char '\'') char_quoted_body (skip_char '\'') f .>> spaces) s
 
+#!markdown
+
+### special_char
+
+#!fsharp
+
 let inline special_char l text s =
     let inline f from x = {from=from; nearTo=s.from}, x
     let f = f s.from
@@ -1065,6 +1768,12 @@ let inline special_char l text s =
     | x when x = eolLineParsers -> error_char s.from "character"
     | 'n' -> esc '\n' | 'r' -> esc '\r'  | 't' -> esc '\t'  | 'b' -> esc '\b' 
     | x -> unesc x
+
+#!markdown
+
+### string_quoted'
+
+#!fsharp
 
 let string_quoted' s =
     let inline f from x = {from=from; nearTo=s.from}, x
@@ -1083,9 +1792,22 @@ let string_quoted' s =
     match peek s with
     | '"' -> let f = f s.from in inc s; text [f TokStringOpen]
     | _ -> error_char s.from "\""
+
+#!markdown
+
+### string_quoted
+
+#!fsharp
+
 let string_quoted s = (string_quoted' .>> spaces) s
 
-type private TokenizerMacro =
+#!markdown
+
+### TokenizerMacro
+
+#!fsharp
+
+type TokenizerMacro =
     | Text of TokenizerRange * string
     | EscapedChar of TokenizerRange * char
     | EscapedVar of TokenizerRange
@@ -1093,11 +1815,23 @@ type private TokenizerMacro =
     | Expression of TokenizerRange * string * MacroEnum
     | Var of TokenizerRange * string * MacroEnum
 
+#!markdown
+
+### range
+
+#!fsharp
+
 let inline range p s = 
     let from = s.from
     match p s with
     | Ok x -> Ok({from=from; nearTo=s.from}, x)
     | Error l -> Error l
+
+#!markdown
+
+### brackets
+
+#!fsharp
 
 let brackets s =
     let from = s.from
@@ -1107,8 +1841,27 @@ let brackets s =
     | ')' -> f (Round,Close) | ']' -> f (Square,Close) | '}' -> f (Curly,Close)
     | _ -> error_char s.from "`(`,`[`,`{`,`}`,`]` or `)`"
 
+#!markdown
+
+### tab
+
+#!fsharp
+
 let tab s = if peek s = '\t' then Error [range_char (index s), "Tabs are not allowed."] else Error []
+
+#!markdown
+
+### eolTokenize
+
+#!fsharp
+
 let eolTokenize s = if peek s = eolLineParsers then Ok [] else Error [range_char (index s), "end of line"]
+
+#!markdown
+
+### token
+
+#!fsharp
 
 let rec token s =
     let i = s.from
@@ -1207,9 +1960,35 @@ and macro s =
         |> fun l -> Ok(List.concat [[start]; l; [end_]], er)
     | Error er -> Error er
 
+#!markdown
+
+### LineToken
+
+#!fsharp
+
 type LineToken = TokenizerRange * SpiralToken
+
+#!markdown
+
+### LineComment
+
+#!fsharp
+
 type LineComment = TokenizerRange * string
+
+#!markdown
+
+### LineTokenErrors
+
+#!fsharp
+
 type LineTokenErrors = (TokenizerRange * TokenizerError) list
+
+#!markdown
+
+### vscode_tokens
+
+#!fsharp
 
 let vscode_tokens ((a,b) : VSCRange) (lines : LineToken FSharpx.Collections.PersistentVector FSharpx.Collections.PersistentVector) =
     let in_range x = min lines.Length x
@@ -1234,8 +2013,27 @@ let vscode_tokens ((a,b) : VSCRange) (lines : LineToken FSharpx.Collections.Pers
 
 // open FSharpx.Collections
 
+#!markdown
+
+### LineTokens
+
+#!fsharp
+
 type LineTokens = LineToken FSharpx.Collections.PersistentVector FSharpx.Collections.PersistentVector
+
+#!markdown
+
+### Block<'a>
+
+#!fsharp
+
 type Block<'a> = {block: 'a; offset: int}
+
+#!markdown
+
+### block_at
+
+#!fsharp
 
 /// Reads the comments up to a statement, and then reads the statement body. Leaves any errors for the parsing stage.
 let block_at (lines : LineTokens) i =
@@ -1263,11 +2061,23 @@ let block_at (lines : LineTokens) i =
     loop_initial i
     {block = block; offset = i}
 
+#!markdown
+
+### block_all
+
+#!fsharp
+
 // Parses all the blocks.
 let rec block_all lines i = 
     if i < FSharpx.Collections.PersistentVector.length lines then 
         let x = block_at lines i
         x :: block_all lines (i+x.block.Length) else []
+
+#!markdown
+
+### wdiff_block_all
+
+#!fsharp
 
 // Parses all the blocks with diffing. Only parses those blocks which are dirty based of the edit range. Preserves ref equality and saves work.
 // Without considering ref preservation, it is functionally equivalent to just call `block_all` on just `lines`.
@@ -1313,12 +2123,51 @@ let wdiff_block_all (blocks : LineTokens Block list) (lines : LineTokens, lines_
 // open FParsec
 // open FSharp.Core
 
+#!markdown
+
+### SymbolString
+
+#!fsharp
+
 type SymbolString = string
+
+#!markdown
+
+### VarString
+
+#!fsharp
+
 type VarString = string
+
+#!markdown
+
+### NominalString
+
+#!fsharp
+
 type NominalString = string
 
+#!markdown
+
+### Layout
+
+#!fsharp
+
 type Layout = Heap | HeapMutable | StackMutable
+
+#!markdown
+
+### FunType
+
+#!fsharp
+
 type FunType = FT_Vanilla | FT_Pointer | FT_Closure // The closure and the pointer are specific to the C++ backend.
+
+#!markdown
+
+### Op
+
+#!fsharp
 
 type Op =
     // Converts the function to a specialized type specific to the C++ backend.
@@ -1503,6 +2352,12 @@ type Op =
     | FreeVarsReplace
     | SizeOf
 
+#!markdown
+
+### PatternCompilationErrors
+
+#!fsharp
+
 type PatternCompilationErrors =
     | DisjointOrPatternVar
     | DuplicateTermVar
@@ -1510,6 +2365,12 @@ type PatternCompilationErrors =
     | ShadowedVar
     | DuplicateRecordSymbol
     | DuplicateRecordInjection
+
+#!markdown
+
+### ParserErrors
+
+#!fsharp
 
 type ParserErrors =
     | TypeVarsNeedToBeExplicitForExists
@@ -1569,15 +2430,47 @@ type ParserErrors =
     | ForallNotAllowedInTypecase
     | ExistsNotAllowedInTypecase
 
+#!markdown
+
+### RawKindExpr
+
+#!fsharp
+
 type RawKindExpr =
     | RawKindWildcard
     | RawKindStar
     | RawKindFun of RawKindExpr * RawKindExpr
 
+#!markdown
+
+### UnionLayout
+
+#!fsharp
+
 type UnionLayout = UStack | UHeap
 
+#!markdown
+
+### HoVar
+
+#!fsharp
+
 type HoVar = VSCRange * (VarString * RawKindExpr)
+
+#!markdown
+
+### TypeVar
+
+#!fsharp
+
 type TypeVar = HoVar * (VSCRange * VarString) list
+
+#!markdown
+
+### RawMacro
+
+#!fsharp
+
 type RawMacro =
     | RawMacroText of VSCRange * string
     | RawMacroTerm of VSCRange * RawExpr
@@ -1664,19 +2557,74 @@ and RawTExpr =
     | RawTTypecase of VSCRange * RawTExpr * (RawTExpr * RawTExpr) list
     | RawTFilledNominal of VSCRange * GlobalId // Filled in by the inferencer.
 
+#!markdown
+
+### (+.)
+
+#!fsharp
+
 let (+.) (a,_) (_,b) = a,b
+
+#!markdown
+
+### range_of_hovar
+
+#!fsharp
+
 let range_of_hovar ((r,_) : HoVar) = r
+
+#!markdown
+
+### range_of_typevar
+
+#!fsharp
+
 let range_of_typevar ((x,_) : TypeVar) = range_of_hovar x
+
+#!markdown
+
+### hovar_name
+
+#!fsharp
+
 let hovar_name ((_,(name,_)) : HoVar) = name
+
+#!markdown
+
+### typevar_name
+
+#!fsharp
+
 let typevar_name ((h,_) : TypeVar) = hovar_name h
+
+#!markdown
+
+### range_of_record_with
+
+#!fsharp
+
 let range_of_record_with = function
     | RawRecordWithSymbol((r,_),_)
     | RawRecordWithSymbolModify((r,_),_)
     | RawRecordWithInjectVar((r,_),_)
     | RawRecordWithInjectVarModify((r,_),_) -> r
+
+#!markdown
+
+### range_of_record_without
+
+#!fsharp
+
 let range_of_record_without = function
     | RawRecordWithoutSymbol(r,_)
     | RawRecordWithoutInjectVar(r,_) -> r
+
+#!markdown
+
+### range_of_pattern
+
+#!fsharp
+
 let range_of_pattern = function
     | PatB r
     | PatE r
@@ -1696,9 +2644,23 @@ let range_of_pattern = function
     | PatWhen(r,_,_)
     | PatFilledDefaultValue(r,_,_)
     | PatNominal(r,_,_,_) -> r
+
+#!markdown
+
+### range_of_pat_record_member
+
+#!fsharp
+
 let range_of_pat_record_member = function
     | PatRecordMembersSymbol((r,_),x)
     | PatRecordMembersInjectVar((r,_),x) -> r +. range_of_pattern x
+
+#!markdown
+
+### range_of_expr
+
+#!fsharp
+
 let range_of_expr = function
     | RawB r
     | RawMissingBody r
@@ -1729,8 +2691,20 @@ let range_of_expr = function
     | RawIfThenElse(r,_,_,_)
     | RawOpen(r,_,_,_) -> r
 
+#!markdown
+
+### rawv
+
+#!fsharp
+
 let rawv (r,x) = RawV(r,x,true)
-    
+
+#!markdown
+
+### range_of_texpr
+
+#!fsharp
+
 let range_of_texpr = function
     | RawTWildcard r
     | RawTB r
@@ -1753,15 +2727,40 @@ let range_of_texpr = function
     | RawTTypecase(r,_,_)
     | RawTForall(r,_,_) -> r
 
+#!markdown
+
+### range_of_texpr_gadt_constructor
+
+#!fsharp
+
 let rec range_of_texpr_gadt_constructor = function
     | RawTForall(_,_,x) -> range_of_texpr_gadt_constructor x
     | RawTFun(_,_,x,_) | x -> range_of_texpr x
+
+#!markdown
+
+### range_of_texpr_gadt_body
+
+#!fsharp
 
 let rec range_of_texpr_gadt_body = function
     | RawTForall(_,_,x) -> range_of_texpr_gadt_body x
     | RawTFun(_,x,_,_) | x -> range_of_texpr x
 
+#!markdown
+
+### VectorCord
+
+#!fsharp
+
 type VectorCord = {|row : int; col : int|}
+
+#!markdown
+
+### Env__
+
+#!fsharp
+
 type Env__ = {
     semantic_updates : (VectorCord * SemanticTokenLegend) ResizeArray
     tokens_cords : VectorCord []
@@ -1773,41 +2772,131 @@ type Env__ = {
     } with
 
     member d.Index with get() = d.i.contents and set(i) = d.i.Value <- i
+
+#!markdown
+
+### BlockParsingEnv
+
+#!fsharp
+
 type BlockParsingEnv = Env__
+
+#!markdown
+
+### try_current_template
+
+#!fsharp
 
 let inline try_current_template (d : BlockParsingEnv) on_succ on_fail =
     let i = d.Index
     if i < d.tokens.Length then on_succ d.tokens.[i]
     else on_fail()
 
+#!markdown
+
+### try_current
+
+#!fsharp
+
 let inline try_current d f = try_current_template d (fun (p,t) -> f (p, t)) (fun () -> Result.Error [])
+
+#!markdown
+
+### print_current
+
+#!fsharp
+
 let print_current d = try_current d (fun x -> printfn "%A" x; Ok()) // For parser debugging purposes.
+
+#!markdown
+
+### line_template
+
+#!fsharp
+
 let inline line_template d f = try_current_template d (fst >> f) (fun _ -> -1)
+
+#!markdown
+
+### col
+
+#!fsharp
+
 let col d = line_template d (fun (r,_) -> r.character)
+
+#!markdown
+
+### lineBlockParsing
+
+#!fsharp
+
 let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
 
+#!markdown
+
+### skip'
+
+#!fsharp
+
 let skip' (d : BlockParsingEnv) i = d.i.Value <- d.i.contents+i
+
+#!markdown
+
+### skipBlockParsing
+
+#!fsharp
+
 let skipBlockParsing d = skip' d 1
+
+#!markdown
+
+### skip_string_open
+
+#!fsharp
 
 let skip_string_open d =
     try_current d <| function
         | p,TokStringOpen -> skipBlockParsing d; Result.Ok(p)
         | p, _ -> Result.Error [p, ExpectedStringOpen]
 
+#!markdown
+
+### skip_string_close
+
+#!fsharp
+
 let skip_string_close d =
     try_current d <| function
         | p,TokStringClose -> skipBlockParsing d; Result.Ok(p)
         | p, _ -> Result.Error [p, ExpectedStringClose]
+
+#!markdown
+
+### skip_macro_open
+
+#!fsharp
 
 let skip_macro_open d =
     try_current d <| function
         | p,TokMacroOpen -> skipBlockParsing d; Ok(p)
         | p, _ -> Result.Error [p, ExpectedMacroOpen]
 
+#!markdown
+
+### skip_macro_close
+
+#!fsharp
+
 let skip_macro_close d =
     try_current d <| function
         | p,TokMacroClose -> skipBlockParsing d; Ok(p)
         | p, _ -> Result.Error [p, ExpectedMacroClose]
+
+#!markdown
+
+### read_text
+
+#!fsharp
 
 let read_text is_term_macro d =
     let (+.) a b =
@@ -1824,129 +2913,286 @@ let read_text is_term_macro d =
                 else Result.Ok(Option.get a, str.ToString())
     loop None (System.Text.StringBuilder())
 
+#!markdown
+
+### read_macro_var
+
+#!fsharp
+
 let read_macro_var d =
     try_current d <| function
         | p, TokMacroTermVar x -> skipBlockParsing d; Result.Ok(RawMacroTerm(p,rawv(p,x)))
         | p, TokMacroTypeVar x -> skipBlockParsing d; Result.Ok(RawMacroType(p,RawTVar(p,x)))
         | p, TokMacroTypeLitVar x -> skipBlockParsing d; Result.Ok(RawMacroTypeLit(p,RawTVar(p,x)))
         | p,_ -> Error [p, ExpectedMacroVar]
-    
+
+#!markdown
+
+### read_macro_type_var
+
+#!fsharp
+
 let read_macro_type_var d =
     try_current d <| function
         | p, TokMacroTypeVar x -> skipBlockParsing d; Result.Ok(RawMacroType(p,RawTVar(p,x)))
         | p, TokMacroTypeLitVar x -> skipBlockParsing d; Result.Ok(RawMacroTypeLit(p,RawTVar(p,x)))
         | p,_ -> Error [p, ExpectedMacroTypeVar]
 
+#!markdown
+
+### skip_keyword
+
+#!fsharp
+
 let skip_keyword t d =
     try_current d <| function
         | p,TokKeyword t' when t = t' -> skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedKeyword t]
+
+#!markdown
+
+### skip_keyword'
+
+#!fsharp
 
 let skip_keyword' t d =
     try_current d <| function
         | p,TokKeyword t' when t = t' -> skipBlockParsing d; Result.Ok p
         | p, _ -> Error [p, ExpectedKeyword t]
 
+#!markdown
+
+### read_unary_op
+
+#!fsharp
+
 let read_unary_op d =
     try_current d <| function
         | p, TokUnaryOperator(t',_) -> skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedUnaryOperator']
+
+#!markdown
+
+### read_unary_op'
+
+#!fsharp
 
 let read_unary_op' d =
     try_current d <| function
         | p, TokUnaryOperator(t',_) -> skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedUnaryOperator']
 
+#!markdown
+
+### read_op
+
+#!fsharp
+
 let read_op d =
     try_current d <| function
         | p, TokOperator(t',_) -> skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedOperator']
+
+#!markdown
+
+### read_op'
+
+#!fsharp
 
 let read_op' d =
     try_current d <| function
         | p, TokOperator(t',_) -> skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedOperator']
 
+#!markdown
+
+### update_semantic
+
+#!fsharp
+
 let update_semantic (d : BlockParsingEnv) = let i = d.Index in fun x -> d.semantic_updates.Add(d.tokens_cords.[i], x)
+
+#!markdown
+
+### read_op_type
+
+#!fsharp
+
 let read_op_type d =
     try_current d <| function
         | p, TokOperator(t',r) -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedOperator']
+
+#!markdown
+
+### skip_op
+
+#!fsharp
 
 let skip_op t d =
     try_current d <| function
         | p, TokOperator(t',_) when t' = t -> skipBlockParsing d; Result.Ok p
         | p, _ -> Error [p, ExpectedOperator t]
 
+#!markdown
+
+### skip_unary_op
+
+#!fsharp
+
 let skip_unary_op t d =
     try_current d <| function
         | p, TokUnaryOperator(t',_) when t' = t -> skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedUnaryOperator t]
+
+#!markdown
+
+### read_var
+
+#!fsharp
 
 let read_var d =
     try_current d <| function
         | p, TokVar(t',_) -> skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedVar]
 
+#!markdown
+
+### read_var'
+
+#!fsharp
+
 let read_var' d =
     try_current d <| function
         | p, TokVar(t',_) -> let r = update_semantic d in skipBlockParsing d; Result.Ok(p,t',r)
         | p, _ -> Error [p, ExpectedVar]
+
+#!markdown
+
+### read_var''
+
+#!fsharp
 
 let read_var'' d =
     try_current d <| function
         | p, TokVar(t',_) -> skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedVar]
 
+#!markdown
+
+### read_big_var
+
+#!fsharp
+
 let read_big_var d =
     try_current d <| function
         | p, TokVar(t',_) when System.Char.IsUpper(t',0) -> skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedBigVar]
+
+#!markdown
+
+### read_var_as_symbol
+
+#!fsharp
 
 let read_var_as_symbol d =
     try_current d <| function
         | p, TokVar(t',_) -> update_semantic d SemanticTokenLegend.symbol; skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedVar]
 
+#!markdown
+
+### read_big_var_as_symbol
+
+#!fsharp
+
 let read_big_var_as_symbol d =
     try_current d <| function
         | p, TokVar(t',_) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.symbol; skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedBigVar]
+
+#!markdown
+
+### read_big_var_as_keyword
+
+#!fsharp
 
 let read_big_var_as_keyword d =
     try_current d <| function
         | p, TokVar(t',_) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.keyword; skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedBigVar]
 
+#!markdown
+
+### read_small_var
+
+#!fsharp
+
 let read_small_var d =
     try_current d <| function
         | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> skipBlockParsing d; Result.Ok t'
         | p, _ -> Error [p, ExpectedSmallVar]
+
+#!markdown
+
+### read_small_var'
+
+#!fsharp
 
 let read_small_var' d =
     try_current d <| function
         | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedSmallVar]
 
+#!markdown
+
+### read_big_type_var
+
+#!fsharp
+
 let read_big_type_var d =
     try_current d <| function
         | p, TokVar(t',r) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(t')
         | p, _ -> Error [p, ExpectedSmallVar]
+
+#!markdown
+
+### read_big_type_var'
+
+#!fsharp
 
 let read_big_type_var' d =
     try_current d <| function
         | p, TokVar(t',r) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedSmallVar]
 
+#!markdown
+
+### read_small_type_var
+
+#!fsharp
+
 let read_small_type_var d =
     try_current d <| function
         | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(t')
         | p, _ -> Error [p, ExpectedSmallVar]
 
+#!markdown
+
+### read_small_type_var'
+
+#!fsharp
+
 let read_small_type_var' d =
     try_current d <| function
         | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedSmallVar]
+
+#!markdown
+
+### read_value
+
+#!fsharp
 
 let read_value d =
     try_current d <| function
@@ -1959,30 +3205,101 @@ let read_value d =
             Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedLit]
 
+#!markdown
+
+### read_symbol
+
+#!fsharp
+
 let read_symbol d =
     try_current d <| function
         | p, TokSymbol(t',r) -> skipBlockParsing d; Result.Ok(p,t')
         | p, _ -> Error [p, ExpectedSymbol]
+
+#!markdown
+
+### skip_parenthesis
+
+#!fsharp
 
 let skip_parenthesis a b d =
     try_current d <| function
         | p, TokParenthesis(a',b') when a = a' && b = b' -> skipBlockParsing d; Result.Ok()
         | p, _ -> Error [p, ExpectedParenthesis(a,b)]
 
+#!markdown
+
+### skip_macro_expression
+
+#!fsharp
+
 let skip_macro_expression a b d =
     try_current d <| function
         | p, TokMacroExpression(a',b') when a = a' && b = b' -> skipBlockParsing d; Result.Ok()
         | p, _ -> Error [p, ExpectedMacroExpression(a,b)]
 
+#!markdown
+
+### on_succ
+
+#!fsharp
+
 let on_succ x _ = Result.Ok x
+
+#!markdown
+
+### macro_expression
+
+#!fsharp
+
 // open FParsec
 let macro_expression ty a d = (skip_macro_expression ty Open >>. a .>> skip_macro_expression ty Close) d
+
+#!markdown
+
+### rounds
+
+#!fsharp
+
 let rounds a d = (skip_parenthesis Round Open >>. a .>> skip_parenthesis Round Close) d
+
+#!markdown
+
+### curlies
+
+#!fsharp
+
 let curlies a d = (skip_parenthesis Curly Open >>. a .>> skip_parenthesis Curly Close) d
+
+#!markdown
+
+### squares
+
+#!fsharp
+
 let squares a d = (skip_parenthesis Square Open >>. a .>> skip_parenthesis Square Close) d
 
+#!markdown
+
+### indexBlockParsing
+
+#!fsharp
+
 let indexBlockParsing (t : BlockParsingEnv) = t.Index
+
+#!markdown
+
+### index_setBlockParsing
+
+#!fsharp
+
 let index_setBlockParsing v (t : BlockParsingEnv) = t.Index <- v
+
+#!markdown
+
+### rangeBlockParsing
+
+#!fsharp
 
 let inline rangeBlockParsing exp s =
     let i = indexBlockParsing s
@@ -1993,15 +3310,45 @@ let inline rangeBlockParsing exp s =
             failwith "Compiler error: The parser passed into `range` has to consume at least one token for it to work."
         )
 
+#!markdown
+
+### kind
+
+#!fsharp
+
 let rec kind d = (sepBy1 ((skip_op "*" >>% RawKindStar) <|> rounds kind) (skip_op "->") |>> List.reduceBack (fun a b -> RawKindFun (a,b))) d
+
+#!markdown
+
+### duplicates
+
+#!fsharp
 
 let duplicates er x = 
     let h = System.Collections.Generic.HashSet()
     x |> List.choose (fun (r : VSCRange,n : string) -> if h.Add n = false then Some(r,er) else None)
 
+#!markdown
+
+### indentBlockParsing
+
+#!fsharp
+
 let inline indentBlockParsing i op next d = if op i (col d) then next d else Error []
 
+#!markdown
+
+### record_var
+
+#!fsharp
+
 let record_var d = (read_var_as_symbol <|> rounds read_op) d
+
+#!markdown
+
+### patterns_validate
+
+#!fsharp
 
 let patterns_validate pats = 
     let pos = System.Collections.Generic.Dictionary(HashIdentity.Reference)
@@ -2066,13 +3413,38 @@ let patterns_validate pats =
     validate true; validate false
     errors |> Seq.toList
 
+#!markdown
+
+### join_point
+
+#!fsharp
+
 let join_point is_let name = function // Has the effect of removing nested join points due to not duplicating them.
     | RawJoinPoint(a,b,c,_) -> RawJoinPoint(a,b,c,name)
     | x -> if is_let then RawJoinPoint(range_of_expr x, None, x, name) else x
+
+#!markdown
+
+### join_point_backend
+
+#!fsharp
+
 let join_point_backend (a,b) = RawJoinPoint(range_of_expr b, Some a, b, None)
+
+#!markdown
+
+### unintern
+
+#!fsharp
 
 /// Some places need unique string refs, so this is to keep the compiler from interning static strings.
 let unintern (x : string) = System.Text.StringBuilder(x).ToString()
+
+#!markdown
+
+### adjust_join_point
+
+#!fsharp
 
 let rec adjust_join_point is_let name x =
     let dyn_if_let a = if is_let then PatDyn(range_of_pattern a, a) else a
@@ -2087,9 +3459,21 @@ let rec adjust_join_point is_let name x =
         RawFun(r,[a,join_point is_let name b])
     | x -> join_point is_let name x
 
+#!markdown
+
+### adjust_join_point'
+
+#!fsharp
+
 let adjust_join_point' is_let name = function
     | RawForall _ | RawFun _ as x -> adjust_join_point is_let name x
     | x -> x
+
+#!markdown
+
+### inl_or_let_process
+
+#!fsharp
 
 let inl_or_let_process (r, (is_let, is_rec, name, foralls, pats, body)) _ =
     match is_rec, name, foralls, pats with
@@ -2112,8 +3496,28 @@ let inl_or_let_process (r, (is_let, is_rec, name, foralls, pats, body)) _ =
     | true, _, _, _ -> Error [range_of_pattern name, ExpectedVarOrOpAsNameOfRecStatement]
     | false, _, _, _ -> Error [range_of_pattern name, ExpectedSinglePatternWhenStatementNameIsNorVarOrOp]
 
+#!markdown
+
+### ho_var
+
+#!fsharp
+
 let ho_var d : Result<HoVar,_> = rangeBlockParsing ((read_small_type_var |>> fun x -> x, RawKindWildcard) <|> rounds ((read_small_type_var .>> skip_op ":") .>>. kind)) d
+
+#!markdown
+
+### forall_var
+
+#!fsharp
+
 let forall_var d : Result<TypeVar,_> = (ho_var .>>. (curlies (sepBy (read_small_type_var' <|> rounds read_op_type) (skip_op ";")) <|>% [])) d
+
+#!markdown
+
+### forall
+
+#!fsharp
+
 let forall d = 
     (skip_keyword SpecForall >>. many1 forall_var .>> skip_op "." 
     >>= fun q _ -> 
@@ -2121,11 +3525,25 @@ let forall d =
         let x = q |> List.map (fun ((r,(a,_)),_) -> r,a) |> duplicates DuplicateForallVar
         match List.append x x' with [] -> Result.Ok q | er -> Result.Error er
         ) d
+
+#!markdown
+
+### pat_exists'
+
+#!fsharp
+
 let pat_exists' d = 
     (skip_keyword SpecExists >>. many (rangeBlockParsing read_small_type_var) .>> skip_op "." 
     >>= fun q _ -> 
         match duplicates DuplicateExistsVar q with [] -> Result.Ok q | er -> Error er
         ) d
+
+#!markdown
+
+### exists
+
+#!fsharp
+
 let exists d = 
     (skip_keyword SpecExists >>. many forall_var .>> skip_op "." 
     >>= fun q _ -> 
@@ -2133,6 +3551,12 @@ let exists d =
         let x = q |> List.map (fun ((r,(a,_)),_) -> r,a) |> duplicates DuplicateExistsVar
         match List.append x x' with [] -> Result.Ok q | er -> Error er
         ) d
+
+#!markdown
+
+### annotated_body
+
+#!fsharp
 
 let inline annotated_body sep exp ty =
     pipe2 (opt (skip_op ":" >>. ty))
@@ -2143,11 +3567,23 @@ let inline annotated_body sep exp ty =
             | Some a -> RawAnnot(range_of_expr b +. range_of_texpr a,b,a)
             | None -> b)
 
+#!markdown
+
+### inl_or_let
+
+#!fsharp
+
 let inline inl_or_let exp pattern ty =
     rangeBlockParsing (tuple6 ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true))
             ((skip_keyword SpecRec >>% true) <|>% false) pattern
             (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
     >>= inl_or_let_process
+
+#!markdown
+
+### and_inl_or_let
+
+#!fsharp
 
 let inline and_inl_or_let exp pattern ty =
     rangeBlockParsing (tuple6 (skip_keyword SpecAnd >>. ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true)))
@@ -2155,7 +3591,20 @@ let inline and_inl_or_let exp pattern ty =
             (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
     >>= inl_or_let_process
 
+#!markdown
+
+### Associativity
+
+#!fsharp
+
 type Associativity = FParsec.Associativity
+
+#!markdown
+
+### inbuilt_operators
+
+#!fsharp
+
 let inbuilt_operators x = 
     match x with
     | "+" -> ValueSome(60, Associativity.Left)
@@ -2192,6 +3641,12 @@ let inbuilt_operators x =
     | "**" -> ValueSome(80, Associativity.Right)
     | _ -> ValueNone
 
+#!markdown
+
+### precedence_associativity
+
+#!fsharp
+
 // The `.` operator has special behavior similar to F#.
 let rec precedence_associativity name = 
     if 0 < String.length name then
@@ -2201,6 +3656,12 @@ let rec precedence_associativity name =
             | ValueNone -> precedence_associativity (name.[0..name.Length-2])
             | v -> v
     else ValueNone
+
+#!markdown
+
+### op
+
+#!fsharp
 
 let op (d : BlockParsingEnv) =
     rangeBlockParsing read_op d |> Result.bind (fun (o,x) ->
@@ -2230,22 +3691,69 @@ let op (d : BlockParsingEnv) =
                 | x -> f (fun (r,a,b) -> RawApply(r,RawApply(r +. o,rawv(o,x),a),b))
         )
 
-let private string_to_op_dict = System.Collections.Generic.Dictionary(HashIdentity.Structural)
+#!markdown
+
+### string_to_op_dict
+
+#!fsharp
+
+let string_to_op_dict : Dictionary<string,Op> = System.Collections.Generic.Dictionary(HashIdentity.Structural)
+
+#!fsharp
+
 Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>)
 |> Array.iter (fun x -> string_to_op_dict.[x.Name] <- Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(x,[||]) :?> Op)
+
+#!markdown
+
+### string_to_op
+
+#!fsharp
+
 let string_to_op x = string_to_op_dict.TryGetValue x
+
+#!markdown
+
+### symbol_paired_concat
+
+#!fsharp
 
 let symbol_paired_concat k =
     let b = System.Text.StringBuilder()
     List.iter (fun (_, x : string) -> b.Append(x).Append('_') |> ignore) k
     b.ToString()
 
+#!markdown
+
+### module_openBlockParsing
+
+#!fsharp
+
 let module_openBlockParsing = rangeBlockParsing ((skip_keyword SpecOpen >>. read_small_var') .>>. (many read_symbol))
+
+#!markdown
+
+### bar
+
+#!fsharp
+
 let bar i d = indentBlockParsing i (<=) (skip_op "|") d
+
+#!markdown
+
+### pat_pair
+
+#!fsharp
 
 let inline pat_pair next = 
     sepBy1 next (skip_op ",") 
     |>> List.reduceBack (fun a b -> PatPair(range_of_pattern a +. range_of_pattern b,a,b))
+
+#!markdown
+
+### RootTypeFlags
+
+#!fsharp
 
 type RootTypeFlags = {
     allow_typecase_metavars : bool
@@ -2253,11 +3761,23 @@ type RootTypeFlags = {
     allow_wildcard : bool
     }
 
+#!markdown
+
+### root_type_defaults
+
+#!fsharp
+
 let root_type_defaults = {
     allow_typecase_metavars = false
     allow_term = false
     allow_wildcard = false
     }
+
+#!markdown
+
+### bottom_up_number
+
+#!fsharp
 
 let bottom_up_number (default_env : DefaultEnv) (r : VSCRange,x : string) =
     let inline f string_to_val val_to_lit val_dsc =
@@ -2281,6 +3801,12 @@ let bottom_up_number (default_env : DefaultEnv) (r : VSCRange,x : string) =
         | UInt64T -> f System.UInt64.TryParse LitUInt64 "u64"
         | x -> failwithf "Compiler error: Invalid default int type. Got: %A" x
 
+#!markdown
+
+### typecase_validate
+
+#!fsharp
+
 let typecase_validate x _ =
     let metavars = System.Collections.Generic.HashSet()    
     let vars = System.Collections.Generic.HashSet()
@@ -2300,6 +3826,12 @@ let typecase_validate x _ =
     f x
     if 0 < errors.Count then Error (Seq.toList errors) else Ok(x)
 
+#!markdown
+
+### expr_tight
+
+#!fsharp
+
 // Parses an expression only if it is directly next to the previous one.
 let inline expr_tight next (d: BlockParsingEnv) = 
     let i = indexBlockParsing d
@@ -2308,18 +3840,59 @@ let inline expr_tight next (d: BlockParsingEnv) =
         if r.line = r'.line && r.character = r'.character then next d else Error []
     else Error []
 
+#!markdown
+
+### read_default_value'
+
+#!fsharp
+
 let inline read_default_value' f d =
     try_current d <| function
         | p, TokDefaultValue t' -> skipBlockParsing d; f (p,t')
         | p, _ -> Error [p, ExpectedLit]
+
+#!markdown
+
+### read_default_value
+
+#!fsharp
+
 let inline read_default_value on_top on_bot d =
     read_default_value' (fun (p,t') ->
         if d.is_top_down then Ok(on_top (p,t'))
         else bottom_up_number d.default_env (p,t') |> Result.map on_bot
         ) d
+
+#!markdown
+
+### read_string
+
+#!fsharp
+
 let read_string = tuple3 skip_string_open ((read_text false |>> snd) <|>% "") skip_string_close
+
+#!markdown
+
+### pat_var
+
+#!fsharp
+
 let pat_var d = (read_small_var' |>> PatVar) d
+
+#!markdown
+
+### pat_list_pair
+
+#!fsharp
+
 let pat_list_pair r a b = PatUnbox(r,"Cons",PatPair(r,a,b))
+
+#!markdown
+
+### root_pattern_var_nominal_union
+
+#!fsharp
+
 let rec root_pattern_var_nominal_union s =
     (read_var' >>= fun (r,a,re) s ->
         if System.Char.IsUpper(a,0) then
@@ -2692,6 +4265,12 @@ and root_term d =
 
     statements d
 
+#!markdown
+
+### comments
+
+#!fsharp
+
 let comments (s : BlockParsingEnv) = 
     let line_near_to = lineBlockParsing s
     let rec loop line d =
@@ -2706,7 +4285,19 @@ let comments (s : BlockParsingEnv) =
     |> String.concat ""
     |> fun x -> Ok(x.TrimEnd())
 
+#!markdown
+
+### Comments
+
+#!fsharp
+
 type Comments = string
+
+#!markdown
+
+### TopStatement
+
+#!fsharp
 
 type [<ReferenceEquality>] TopStatement =
     | TopAnd of VSCRange * TopStatement
@@ -2719,6 +4310,12 @@ type [<ReferenceEquality>] TopStatement =
     | TopInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
     | TopOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
 
+#!markdown
+
+### top_inl_or_let_process
+
+#!fsharp
+
 let top_inl_or_let_process comments is_top_down = function
     | (r,PatVar(r',name),body),is_rec -> 
         let rec loop = function
@@ -2729,7 +4326,20 @@ let top_inl_or_let_process comments is_top_down = function
             | _ -> Error [r, ExpectedGlobalFunction]
         loop body
     | (_,x,_),_ -> Error [range_of_pattern x, ExpectedVarOrOpAsNameOfGlobalStatement]
+
+#!markdown
+
+### top_inl_or_let
+
+#!fsharp
+
 let top_inl_or_let d = ((comments .>>. inl_or_let root_term root_pattern_pair root_type_annot) >>= fun (comments,x) d -> top_inl_or_let_process comments d.is_top_down x) d
+
+#!markdown
+
+### process_union
+
+#!fsharp
 
 let process_union (r,(layout,n,a,(r',b))) _ =
     let this = (RawTVar n,a) ||> List.fold (fun s x -> RawTApply(r',s,RawTVar(r',hovar_name x)))
@@ -2737,41 +4347,140 @@ let process_union (r,(layout,n,a,(r',b))) _ =
     | UHeap -> Ok(TopNominalRec(r,n,a,RawTUnion(r',b,layout,this)))
     | UStack -> Ok(TopNominal(r,n,a,RawTUnion(r',b,layout,this)))
 
+#!markdown
+
+### union_clauses
+
+#!fsharp
+
 let union_clauses d = root_type_union root_type_defaults d
+
+#!markdown
+
+### top_union
+
+#!fsharp
+
 let top_union d = ((rangeBlockParsing (tuple4 (skip_keyword SpecUnion >>. ((skip_keyword SpecRec >>% UHeap) <|>% UStack)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
+
+#!markdown
+
+### top_nominal
+
+#!fsharp
+
 let top_nominal d = 
     (rangeBlockParsing (tuple3 (skip_keyword SpecNominal >>. read_small_type_var') (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
     |>> fun (r,(n,a,b)) -> TopNominal(r,n,a,b)) d
 
+#!markdown
+
+### type_forall
+
+#!fsharp
+
 let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d 
+
+#!markdown
+
+### top_prototype
+
+#!fsharp
+
 let top_prototype d = 
     (rangeBlockParsing 
         (tuple5 comments
             (skip_keyword SpecPrototype >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var) 
             (skip_op ":" >>. type_forall (root_type root_type_defaults)))
     |>> fun (r,(com,a,b,c,d)) -> TopPrototype(com,r,a,b,c,d)) d
+
+#!markdown
+
+### top_instance
+
+#!fsharp
+
 let top_instance d =
     (rangeBlockParsing
         (tuple4 (skip_keyword SpecInstance >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var) (skip_op "=" >>. root_term))
     >>= fun (r,(prototype_name, nominal_name, nominal_foralls, body)) _ ->
             Ok(TopInstance(r,prototype_name,nominal_name,nominal_foralls,body))
             ) d
+
+#!markdown
+
+### top_type
+
+#!fsharp
+
 let top_type d = (rangeBlockParsing (tuple3 (skip_keyword SpecType >>. read_small_type_var') (many ho_var) (skip_op "=" >>. root_type root_type_defaults)) |>> fun (r,(a,b,c)) -> TopType(r,a,b,c)) d
+
+#!markdown
+
+### top_and_inl_or_let
+
+#!fsharp
 
 let top_and_inl_or_let d = 
     (comments .>>. restore 1 (rangeBlockParsing (and_inl_or_let root_term root_pattern_pair root_type_annot)) 
     >>= fun (comments,(r,x)) d -> top_inl_or_let_process comments d.is_top_down x |> Result.map (fun x -> TopAnd(r,x))) d
 
+#!markdown
+
+### top_and
+
+#!fsharp
+
 let inline top_and f = restore 1 (rangeBlockParsing (skip_keyword SpecAnd >>. f)) |>> TopAnd
+
+#!markdown
+
+### top_and_union
+
+#!fsharp
+
 let top_and_union d = top_and ((rangeBlockParsing (tuple4 (skip_keyword SpecUnion >>% UHeap) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
+
+#!markdown
+
+### top_open
+
+#!fsharp
+
 let top_open d = (module_openBlockParsing |>> fun (r,(name,acs)) -> TopOpen(r,name,acs)) d
+
+#!markdown
+
+### top_statement
+
+#!fsharp
 
 let top_statement s =
     let (+) = alt (indexBlockParsing s)
     (top_inl_or_let + top_union + top_nominal + top_prototype + top_type + top_instance + top_and_inl_or_let + top_and_union + top_open) s
 
+#!markdown
+
+### ParserErrorsList
+
+#!fsharp
+
 type ParserErrorsList = (VSCRange * ParserErrors) list
+
+#!markdown
+
+### ParseResult
+
+#!fsharp
+
 type ParseResult = Result<TopStatement,ParserErrorsList>
+
+#!markdown
+
+### parseBlockParsing
+
+#!fsharp
+
 let parseBlockParsing (s : BlockParsingEnv) : ParseResult =
     if 0 < s.tokens.Length then
         match top_statement s with
@@ -2782,6 +4491,12 @@ let parseBlockParsing (s : BlockParsingEnv) : ParseResult =
         | Error _ as l -> l
     else
         Error []
+
+#!markdown
+
+### show_parser_error
+
+#!fsharp
 
 let show_parser_error = function
     | TypeVarsNeedToBeExplicitForExists -> "The type vars for the exists body have to be specified up front in the bottom-up segment."
@@ -2923,6 +4638,12 @@ open Hopac.Stream
 
 // open FSharpx.Collections
 
+#!markdown
+
+### Bundle
+
+#!fsharp
+
 // These bundles are top statements that have their range offsets distributed into them.
 type [<ReferenceEquality>] Bundle =
     | BundleType of VSCRange * (VSCRange * VarString) * HoVar list * RawTExpr
@@ -2934,20 +4655,66 @@ type [<ReferenceEquality>] Bundle =
     | BundleInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
     | BundleOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
 
+#!markdown
+
+### bundle_range
+
+#!fsharp
+
 let bundle_range = function
     | BundleType(r,_,_,_) | BundleNominal(r,_,_,_) | BundleInl(_,r,_,_,_) 
     | BundlePrototype(_,r,_,_,_,_) | BundleInstance(r,_,_,_,_) | BundleOpen(r,_,_) -> r
     | BundleNominalRec l -> List.head l |> fun (r,_,_,_) -> r
     | BundleRecInl(l,_) -> List.head l |> fun (_,r,_,_) -> r
 
+#!markdown
+
+### add_offset
+
+#!fsharp
+
 let add_offset offset (range : VSCRange) : VSCRange = 
     let f (a : VSCPos) = {|a with line=offset + a.line|}
     let a,b = range
     f a, f b
+
+#!markdown
+
+### add_offset_hovar
+
+#!fsharp
+
 let add_offset_hovar offset (a,b) = add_offset offset a, b
+
+#!markdown
+
+### add_offset_hovar_list
+
+#!fsharp
+
 let add_offset_hovar_list offset x = List.map (add_offset_hovar offset) x
+
+#!markdown
+
+### add_offset_typevar
+
+#!fsharp
+
 let add_offset_typevar offset ((a,b),c) = (add_offset offset a, b), add_offset_hovar_list offset c
+
+#!markdown
+
+### add_offset_typevar_list
+
+#!fsharp
+
 let add_offset_typevar_list offset x = List.map (add_offset_typevar offset) x
+
+#!markdown
+
+### fold_offset_ty
+
+#!fsharp
 
 let rec fold_offset_ty offset x = 
     let f = fold_offset_ty offset
@@ -3057,7 +4824,13 @@ and fold_offset_pattern offset x =
     | PatNominal(r,a,b,c) -> PatNominal(g r,g' a,List.map g' b,f c)
     | PatExists(r,a,b) -> PatExists(g r,List.map g' a,f b)
     | PatArray(r,a) -> PatArray(g r,List.map f a)
-    
+
+#!markdown
+
+### bundle_blocks
+
+#!fsharp
+
 let bundle_blocks (blocks : TopStatement Block list) =
     match blocks with
     | [] -> None
@@ -3082,7 +4855,19 @@ let bundle_blocks (blocks : TopStatement Block list) =
     | [{offset=i; block=TopOpen(r,a,b)}] -> BundleOpen(add_offset i r, add_offset_hovar i a, add_offset_hovar_list i b) |> Some
     | {block=TopInl _ | TopPrototype _ | TopNominal _ | TopType _ | TopInstance _ | TopOpen _} :: _ -> failwith "Compiler error: Regular top level statements should be singleton bundles."
 
+#!markdown
+
+### add_line_to_range
+
+#!fsharp
+
 let add_line_to_range line ((a,b) : VSCRange) = {|a with line=line+a.line|}, {|b with line=line+b.line|}
+
+#!markdown
+
+### process_error
+
+#!fsharp
 
 let process_error v = 
     let messages, expecteds = v |> List.distinct |> List.partition (fun x -> System.Char.IsUpper(x,0))
@@ -3092,6 +4877,12 @@ let process_error v =
     elif List.isEmpty messages then ex ()
     else f (ex () :: "" :: "Other error messages:" :: messages)
 
+#!markdown
+
+### show_block_parsing_error
+
+#!fsharp
+
 let show_block_parsing_error line (l : ParserErrorsList) : RString list =
     l |> List.groupBy fst
     |> List.map (fun (k,v) -> 
@@ -3100,16 +4891,63 @@ let show_block_parsing_error line (l : ParserErrorsList) : RString list =
         k, process_error v
         )
 
+#!markdown
+
+### ParsedBlock
+
+#!fsharp
+
 type ParsedBlock = {result : ParseResult; semantic_tokens : LineTokens}
+
+#!markdown
+
+### ParserState
+
+#!fsharp
+
 type ParserState = {
     is_top_down : bool
     blocks : (LineTokens * ParsedBlock Promise Block) list
     }
+
+#!markdown
+
+### BlockBundleValue
+
+#!fsharp
+
 type BlockBundleValue = {bundle : Bundle option; errors : RString list}
+
+#!markdown
+
+### BlockBundleState
+
+#!fsharp
+
 type BlockBundleState = (TopStatement Block list * BlockBundleValue) Stream
-type private BlockBundleStateInner = {errors : RString list; tmp : TopStatement Block list; state : BlockBundleState}
+
+#!markdown
+
+### BlockBundleStateInner
+
+#!fsharp
+
+type BlockBundleStateInner = {errors : RString list; tmp : TopStatement Block list; state : BlockBundleState}
+
+#!markdown
+
+### wdiff_block_bundle_init
+
+#!fsharp
 
 let wdiff_block_bundle_init : BlockBundleState = Promise.Now.never()
+
+#!markdown
+
+### wdiff_block_bundle
+
+#!fsharp
+
 /// Bundles the blocks with the `and` statements. Also collects the parser errors.
 /// Does diffing to ref preserve the bundles.
 let wdiff_block_bundle (state : BlockBundleState) (l : ParserState) : BlockBundleState =
@@ -3152,6 +4990,12 @@ let wdiff_block_bundle (state : BlockBundleState) (l : ParserState) : BlockBundl
 
     init {empty with state=state} l.blocks
 
+#!markdown
+
+### semantic_tokens
+
+#!fsharp
+
 let semantic_tokens (l : ParserState) = 
     let rec loop s = function
         | (_,x) :: xs -> x.block >>= fun x -> loop (FSharpx.Collections.PersistentVector.append s x.semantic_tokens) xs
@@ -3162,13 +5006,30 @@ let semantic_tokens (l : ParserState) =
 
 ## Infer
 
+#!markdown
+
+### 'a ref'
+
 #!fsharp
 
 type [<ReferenceEquality>] 'a ref' = {mutable contents' : 'a}
+
+#!markdown
+
+### TT
+
+#!fsharp
+
 type TT =
     | KindType
     | KindFun of TT * TT
     | KindMetavar of TT option ref'
+
+#!markdown
+
+### Constraint
+
+#!fsharp
 
 type Constraint =
     | CUInt
@@ -3181,7 +5042,19 @@ type Constraint =
     | CRecord
     | CPrototype of GlobalId
 
+#!markdown
+
+### ConstraintOrModule
+
+#!fsharp
+
 type ConstraintOrModule = C of Constraint | M of Map<string,ConstraintOrModule>
+
+#!markdown
+
+### Var
+
+#!fsharp
 
 type [<ReferenceEquality>] Var = {
     scope : int
@@ -3190,11 +5063,23 @@ type [<ReferenceEquality>] Var = {
     name : string // Is what gets printed.
     }
 
+#!markdown
+
+### MVar
+
+#!fsharp
+
 type [<ReferenceEquality>] MVar = {
     mutable scope : int
     mutable constraints : Constraint Set // Must be stated up front and needs to be static in forall vars
     kind : TT // Has metavars, and so is mutable.
     }
+
+#!markdown
+
+### TM
+
+#!fsharp
 
 type TM =
     | TMText of string
@@ -3222,7 +5107,19 @@ and T =
     | TyMacro of TM list
     | TyLayout of T * Layout
 
+#!markdown
+
+### tyvar
+
+#!fsharp
+
 let tyvar x = TyVar(x, ref None)
+
+#!markdown
+
+### TypeError
+
+#!fsharp
 
 type TypeError =
     | KindError of TT * TT
@@ -3299,29 +5196,73 @@ type TypeError =
     | IncorrectGADTConstructorType
     | IncorrectRecursiveNominal
 
+#!markdown
+
+### shorten'<'a>
+
+#!fsharp
+
 let inline shorten'<'a> (x : 'a) link next =
     let x' : 'a = next x
     if System.Object.ReferenceEquals(x,x') = false then link.contents' <- Some x'
     x'
+
+#!markdown
+
+### visit_tt
+
+#!fsharp
+
 let rec visit_tt = function
     | KindMetavar({contents'=Some x} & link) -> shorten' x link visit_tt
     | a -> a
+
+#!markdown
+
+### shorten<'a>
+
+#!fsharp
 
 let inline shorten<'a> (x : 'a) (link : ref<option<'a>>) next =
     let x' : 'a = next x
     if System.Object.ReferenceEquals(x,x') = false then link.Value <- Some x'
     x'
+
+#!markdown
+
+### visit_t_mvar
+
+#!fsharp
+
 let rec visit_t_mvar = function
     | TyComment(_,a) -> visit_t_mvar a
     | TyMetavar(_,{contents=Some x} & link) -> shorten x link visit_t_mvar
     | a -> a
+
+#!markdown
+
+### visit_t
+
+#!fsharp
 
 let rec visit_t x = 
     match visit_t_mvar x with
     | TyVar(_,{contents=Some x}) -> visit_t x
     | x -> x
 
+#!markdown
+
+### InferTypeErrorException
+
+#!fsharp
+
 exception InferTypeErrorException of (VSCRange * TypeError) list
+
+#!markdown
+
+### metavars
+
+#!fsharp
 
 let rec metavars = function
     | RawTTypecase _ | RawTExists _ | RawTFilledNominal _ | RawTMacro _ | RawTVar _ | RawTTerm _ 
@@ -3331,6 +5272,12 @@ let rec metavars = function
     | RawTPair(_,a,b) | RawTApply(_,a,b) | RawTFun(_,a,b,_) -> metavars a + metavars b
     | RawTUnion(_,l,_,this) -> Map.fold (fun s _ (_,v) -> s + metavars v) (metavars this) l
     | RawTRecord(_,l) -> Map.fold (fun s _ v -> s + metavars v) Set.empty l
+
+#!markdown
+
+### TopEnv
+
+#!fsharp
 
 type TopEnv = {
     nominals_next_tag : int
@@ -3344,6 +5291,12 @@ type TopEnv = {
     constraints : Map<string,ConstraintOrModule>
     }
 
+#!markdown
+
+### top_env_emptyInfer
+
+#!fsharp
+
 let top_env_emptyInfer = {
     nominals_next_tag = 0
     nominals_aux = Map.empty
@@ -3355,6 +5308,12 @@ let top_env_emptyInfer = {
     term = Map.empty
     constraints = Map.empty
     }
+
+#!markdown
+
+### unionInfer
+
+#!fsharp
 
 let unionInfer small big = {
     nominals_next_tag = max small.nominals_next_tag big.nominals_next_tag
@@ -3389,6 +5348,11 @@ let unionInfer small big = {
         ) small.constraints big.constraints
     }
 
+#!markdown
+
+### in_moduleInfer
+
+#!fsharp
 
 let in_moduleInfer m a : TopEnv =
     {a with
@@ -3397,8 +5361,27 @@ let in_moduleInfer m a : TopEnv =
         constraints = Map.add m (M a.constraints) Map.empty
         }
 
+#!markdown
+
+### Env_
+
+#!fsharp
+
 type Env_ = { ty : Map<string,T>; term : Map<string,T>; constraints : Map<string,ConstraintOrModule> }
+
+#!markdown
+
+### InferEnv
+
+#!fsharp
+
 type InferEnv = Env_
+
+#!markdown
+
+### kind_get
+
+#!fsharp
 
 let kind_get x =
     let rec loop = function
@@ -3407,9 +5390,21 @@ let kind_get x =
     let l = loop x
     {|arity=List.length l; args=l|}
 
+#!markdown
+
+### prototype_init_forall_kind
+
+#!fsharp
+
 let prototype_init_forall_kind = function
     | TyForall(a,_) -> a.kind
     | _ -> failwith "Compiler error: The prototype should have at least one forall."
+
+#!markdown
+
+### show_primt
+
+#!fsharp
 
 let show_primt = function
     | UInt8T -> "u8"
@@ -3426,15 +5421,33 @@ let show_primt = function
     | StringT -> "string"
     | CharT -> "char"
 
+#!markdown
+
+### constraint_name
+
+#!fsharp
+
 let rec constraint_name (env : TopEnv) = function
     | CSInt -> "sint" | CUInt -> "uint" | CInt -> "int"
     | CFloat -> "float" | CNumber -> "number" | CPrim -> "prim"
     | CSymbol -> "symbol" | CRecord -> "record"
     | CPrototype i -> env.prototypes.[i].name
 
+#!markdown
+
+### constraint_kind
+
+#!fsharp
+
 let constraint_kind (env : TopEnv) = function
     | CSInt | CUInt | CInt | CFloat | CNumber | CPrim | CSymbol | CRecord -> KindType
     | CPrototype i -> env.prototypes.[i].kind
+
+#!markdown
+
+### tt
+
+#!fsharp
 
 let rec tt (env : TopEnv) = function
     | TyComment(_,x) | TyMetavar(_,{contents=Some x}) -> tt env x
@@ -3442,6 +5455,12 @@ let rec tt (env : TopEnv) = function
     | TyApply(_,_,x) | TyMetavar({kind=x},_) | TyVar({kind=x},_) -> x
     | TyExists _ | TyLit _ | TyUnion _ | TyLayout _ | TyMacro _ | TyB | TyPrim _ | TyForall _ | TyFun _ | TyRecord _ | TyModule _ | TyPair _ | TySymbol _ | TyArray _ -> KindType
     | TyInl(v,a) -> KindFun(v.kind,tt env a)
+
+#!markdown
+
+### has_metavars
+
+#!fsharp
 
 let rec has_metavars x =
     let f = has_metavars
@@ -3453,6 +5472,12 @@ let rec has_metavars x =
     | TyUnion(l,_) -> Map.exists (fun _ -> snd >> f) l
     | TyRecord l -> Map.exists (fun _ -> f) l
     | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
+
+#!markdown
+
+### term_subst
+
+#!fsharp
 
 // Eliminates the metavars in the type if possible.
 let term_subst a =
@@ -3488,6 +5513,12 @@ let term_subst a =
         | TyLayout(a,b) -> TyLayout(f a,b)
     f a
 
+#!markdown
+
+### HoverTypes
+
+#!fsharp
+
 type HoverTypes() =
     // This is to allocate less trash for code that doesn't use GADTs. 
     // Unfortunately, we cannot use memoization instead as term_subst is not functionally pure.
@@ -3503,8 +5534,15 @@ type HoverTypes() =
         | TyRecord l -> Map.exists (fun _ -> f) l
         | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
     let hover_types = ResizeArray()
-    member _.AddHover(r,(x,com)) = hover_types.Add(r,((if has_substituted_tvars x then term_subst x else x), com))
+    member _.AddHover((r : VSCRange),(x,(com : string))) =
+        hover_types.Add(r,((if has_substituted_tvars x then term_subst x else x), com))
     member _.ToArray() = hover_types.ToArray()
+
+#!markdown
+
+### module_openInfer
+
+#!fsharp
 
 let module_openInfer (hover_types : HoverTypes option) (top_env : InferEnv) (local_env_ty : Map<string,T>) (r : VSCRange) b l =
     let tryFind env x =
@@ -3530,6 +5568,11 @@ let module_openInfer (hover_types : HoverTypes option) (top_env : InferEnv) (loc
             else Result.Ok env
             )
 
+#!markdown
+
+### validate_bound_vars
+
+#!fsharp
 
 let validate_bound_vars (top_env : InferEnv) constraints term ty x =
     let errors = ResizeArray()
@@ -3645,9 +5688,21 @@ let validate_bound_vars (top_env : InferEnv) constraints term ty x =
     | Choice2Of2 x -> ctype constraints term ty x
     errors
 
+#!markdown
+
+### assert_bound_vars
+
+#!fsharp
+
 let assert_bound_vars (top_env : InferEnv) constraints term ty x =
     let errors = validate_bound_vars top_env constraints term ty x
     if 0 < errors.Count then raise (InferTypeErrorException (Seq.toList errors))
+
+#!markdown
+
+### subst
+
+#!fsharp
 
 let rec subst (m : (Var * T) list) x =
     let f = subst m
@@ -3672,6 +5727,12 @@ let rec subst (m : (Var * T) list) x =
         | TyMacro a -> TyMacro(List.map (function TMVar x -> TMVar(f x) | x -> x) a)
         | TyLayout(a,b) -> TyLayout(f a,b)
 
+#!markdown
+
+### type_apply_split
+
+#!fsharp
+
 let type_apply_split x =
     let rec loop s x =
         match visit_t x with
@@ -3679,18 +5740,42 @@ let type_apply_split x =
         | x -> x, s
     loop [] x
 
+#!markdown
+
+### kind_subst
+
+#!fsharp
+
 let rec kind_subst = function
     | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_subst
     | KindMetavar _ | KindType as x -> x
     | KindFun(a,b) -> KindFun(kind_subst a,kind_subst b)
 
+#!markdown
+
+### foralls_get
+
+#!fsharp
+
 let rec foralls_get = function
     | RawForall(_,a,b) -> let a', b = foralls_get b in a :: a', b
     | b -> [], b
 
+#!markdown
+
+### foralls_ty_get
+
+#!fsharp
+
 let rec foralls_ty_get = function
     | TyForall(a,b) -> let a', b = foralls_ty_get b in a :: a', b
     | b -> [], b
+
+#!markdown
+
+### kind_force
+
+#!fsharp
 
 let rec kind_force = function
     | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_force
@@ -3698,7 +5783,21 @@ let rec kind_force = function
     | KindType as x -> x
     | KindFun(a,b) -> KindFun(kind_force a,kind_force b)
 
-let p prec prec' x = if prec < prec' then x else sprintf "(%s)" x
+#!markdown
+
+### p
+
+#!fsharp
+
+let p prec prec' x =
+    if prec < prec' then x else sprintf "(%s)" x
+
+#!markdown
+
+### show_kind
+
+#!fsharp
+
 let show_kind x =
     let rec f prec x =
         let p = p prec
@@ -3709,9 +5808,35 @@ let show_kind x =
         | KindFun(a,b) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
     f -1 x
 
+#!markdown
+
+### show_constraints
+
+#!fsharp
+
 let show_constraints env x = Set.toList x |> List.map (constraint_name env) |> String.concat "; " |> sprintf "{%s}"
+
+#!markdown
+
+### show_nominal
+
+#!fsharp
+
 let show_nominal (env : TopEnv) i = match Map.tryFind i env.nominals_aux with Some x -> x.name | None -> "?"
+
+#!markdown
+
+### show_layout_type
+
+#!fsharp
+
 let show_layout_type = function Heap -> "heap" | HeapMutable -> "mut" | StackMutable -> "stack_mut"
+
+#!markdown
+
+### show_t
+
+#!fsharp
 
 let show_t (env : TopEnv) x =
     let show_var (a : Var) =
@@ -3774,6 +5899,12 @@ let show_t (env : TopEnv) x =
         | TyLayout(a,b) -> p 30 (sprintf "%s %s" (show_layout_type b) (f 30 a))
 
     f -2 x
+
+#!markdown
+
+### show_type_error
+
+#!fsharp
 
 let show_type_error (env : TopEnv) x =
     let f = show_t env
@@ -3854,8 +5985,27 @@ let show_type_error (env : TopEnv) x =
     | UnusedTypeVariable vars -> sprintf "The type variables %s are unused in the function's type signature." (vars |> String.concat ", ")
     | CompilerError x -> x
 
+#!markdown
+
+### loc_env
+
+#!fsharp
+
 let loc_env (x : TopEnv) = {term=x.term; ty=x.ty; constraints=x.constraints}
+
+#!markdown
+
+### names_of
+
+#!fsharp
+
 let names_of vars = List.map (fun x -> x.name) vars |> Set
+
+#!markdown
+
+### lit
+
+#!fsharp
 
 let lit = function
     | LitUInt8 _ -> TyPrim UInt8T
@@ -3872,9 +6022,35 @@ let lit = function
     | LitString _ -> TyPrim StringT
     | LitChar _ -> TyPrim CharT
 
+#!markdown
+
+### autogen_name_in_fun
+
+#!fsharp
+
 let autogen_name_in_fun (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'%i" i else sprintf "'%c" x
+
+#!markdown
+
+### autogen_name_in_typecase
+
+#!fsharp
+
 let autogen_name_in_typecase (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'t%i" i else sprintf "'t%c" x
+
+#!markdown
+
+### trim_kind
+
+#!fsharp
+
 let trim_kind = function KindFun(_,k) -> k | _ -> failwith "impossible"
+
+#!markdown
+
+### FilledTop
+
+#!fsharp
 
 // Similar to BundleTop except with type annotations and type application filled in.
 type FilledTop =
@@ -3887,13 +6063,30 @@ type FilledTop =
     | FInstance of VSCRange * RGlobalId * RGlobalId * RawExpr
     | FOpen of VSCRange * RString * RString list
 
+#!markdown
+
+### 'a AdditionType
+
+#!fsharp
+
 type 'a AdditionType =
     | AOpen of 'a
     | AInclude of 'a
 
+#!markdown
+
+### InferScope
+
+#!fsharp
+
 type InferScope = int
 
-open System.Collections.Generic
+#!markdown
+
+### InferResult
+
+#!fsharp
+
 type [<ReferenceEquality>] InferResult = {
     filled_top : FilledTop Hopac.Promise
     top_env_additions : TopEnv AdditionType
@@ -3902,7 +6095,19 @@ type [<ReferenceEquality>] InferResult = {
     errors : RString list
     }
 
+#!markdown
+
+### dispose_gadt_links
+
+#!fsharp
+
 let dispose_gadt_links gadt_links = Seq.iter (fun (x : ref<option<'a>>) -> x.Value <- None) gadt_links
+
+#!markdown
+
+### assert_foralls_used'
+
+#!fsharp
 
 let assert_foralls_used' (errors : (VSCRange * TypeError) ResizeArray) outside_foralls r x =
     let h = HashSet()
@@ -3933,7 +6138,19 @@ let assert_foralls_used' (errors : (VSCRange * TypeError) ResizeArray) outside_f
     if 0 < h.Count then
         errors.Add(r, UnusedTypeVariable (Seq.toList h))
 
+#!markdown
+
+### assert_foralls_used
+
+#!fsharp
+
 let assert_foralls_used errors r x = assert_foralls_used' errors Set.empty r x
+
+#!markdown
+
+### validate_nominal
+
+#!fsharp
 
 let validate_nominal (errors : _ ResizeArray) global_id body v =
     // Stack union types and regular nominals must not be recursive.
@@ -3988,13 +6205,38 @@ let validate_nominal (errors : _ ResizeArray) global_id body v =
     | _ ->
         assert_nominal_non_recursive v
 
+#!markdown
+
+### kind_to_rawkind
+
+#!fsharp
+
 let rec kind_to_rawkind (x : TT) : RawKindExpr =
     match visit_tt x with
     | KindMetavar _ | KindType -> RawKindStar
     | KindFun(a,b) -> RawKindFun(kind_to_rawkind a, kind_to_rawkind b)
-    
+
+#!markdown
+
+### var_to_hovar
+
+#!fsharp
+
 let var_to_hovar r (x : Var) : HoVar = r,(x.name,kind_to_rawkind x.kind)
+
+#!markdown
+
+### var_to_typevar
+
+#!fsharp
+
 let var_to_typevar r (x : Var) : TypeVar = var_to_hovar r x, [] // In the bottom up segment the constrains aren't checked anywhere so we'll put an empty list here.
+
+#!markdown
+
+### infer
+
+#!fsharp
 
 let infer package_id module_id (top_env' : TopEnv) expr =
     let at_tag i = {package_id=package_id; module_id=module_id; tag=i}
@@ -5213,9 +7455,15 @@ let infer package_id module_id (top_env' : TopEnv) expr =
         filled_top = filled_top
         top_env_additions = top_env_additions
         offset = bundle_range expr |> fst |> fun x -> x.line
-        hovers = hover_types.ToArray() |> Array.map (fun (a,(b,com)) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
+        hovers = hover_types.ToArray() |> Array.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
         errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, show_type_error top_env b)
         }
+
+#!markdown
+
+### base_types
+
+#!fsharp
 
 let base_types (default_env : DefaultEnv) =
     let var name = {scope=0; kind=KindType; constraints=Set.empty; name=name} 
@@ -5246,6 +7494,12 @@ let base_types (default_env : DefaultEnv) =
     "float", TyPrim default_env.default_float
     ]
 
+#!markdown
+
+### top_env_defaultInfer
+
+#!fsharp
+
 let top_env_defaultInfer default_env : TopEnv =
     // Note: `top_env_default` should have no nominals, prototypes or terms.
     {top_env_emptyInfer with
@@ -5267,12 +7521,43 @@ let top_env_defaultInfer default_env : TopEnv =
 
 ## PartEvalPrepass
 
+#!markdown
+
+### Id
+
 #!fsharp
 
 type Id = int32
+
+#!markdown
+
+### ScopeEnv
+
+#!fsharp
+
 type ScopeEnv = {|free_vars : int []; stack_size : int|}
+
+#!markdown
+
+### Scope
+
+#!fsharp
+
 type Scope = {term : ScopeEnv; ty : ScopeEnv}
+
+#!markdown
+
+### Range
+
+#!fsharp
+
 type Range = {path : string; range : VSCRange}
+
+#!markdown
+
+### Macro
+
+#!fsharp
 
 type Macro =
     | MText of string
@@ -5372,6 +7657,12 @@ and [<ReferenceEquality>] TPrepass =
     | TLayout of TPrepass * Layout
     | TMetaV of Id
     | TTypecase of Range * TPrepass * (TPrepass * TPrepass) list
+
+#!markdown
+
+### Printable
+
+#!fsharp
 
 module Printable =
     type PMacro =
@@ -5599,7 +7890,12 @@ module Printable =
         | Choice1Of2(x,ret) -> ret (term x)
         | Choice2Of2(x,ret) -> ret (ty x)
 
-// open FSharpx.Collections
+#!markdown
+
+### PrepassTopEnv
+
+#!fsharp
+
 type PrepassTopEnv = {
     prototypes_next_tag : int
     prototypes_instances : Map<GlobalId * GlobalId,E>
@@ -5609,6 +7905,12 @@ type PrepassTopEnv = {
     ty : Map<string,TPrepass>
     }
 
+#!markdown
+
+### top_env_emptyPrepass
+
+#!fsharp
+
 let top_env_emptyPrepass = {
     prototypes_next_tag = 0
     prototypes_instances = Map.empty
@@ -5617,6 +7919,12 @@ let top_env_emptyPrepass = {
     term = Map.empty
     ty = Map.empty
     }
+
+#!markdown
+
+### unionPrepass
+
+#!fsharp
 
 let unionPrepass small big = {
     prototypes_next_tag = max small.prototypes_next_tag big.prototypes_next_tag
@@ -5640,17 +7948,40 @@ let unionPrepass small big = {
             s |> Map.add k v
         ) small.ty big.ty
     }
-    
+
+#!markdown
+
+### in_modulePrepass
+
+#!fsharp
+
 let in_modulePrepass m (a : PrepassTopEnv) =
     {a with 
         ty = Map.add m (TModule a.ty) Map.empty
         term = Map.add m (EModule a.term) Map.empty
         }
 
-open System.Collections.Generic
+#!markdown
+
+### PropagatedVarsEnv
+
+#!fsharp
 
 type PropagatedVarsEnv = {|vars : Set<int>; range : (int * int) option|}
+
+#!markdown
+
+### PropagatedVars
+
+#!fsharp
+
 type PropagatedVars = {term : PropagatedVarsEnv; ty : PropagatedVarsEnv}
+
+#!markdown
+
+### propagate
+
+#!fsharp
 
 // Attaches scopes to all the nodes.
 let propagate x =
@@ -5764,8 +8095,28 @@ let propagate x =
     let _ = match x with Choice1Of2 x -> term x | Choice2Of2 x -> ty x
     scope_dict
 
+#!markdown
+
+### ResolveEnvValue
+
+#!fsharp
+
 type ResolveEnvValue = {|term : Set<Id>; ty : Set<Id> |}
+
+#!markdown
+
+### ResolveEnv
+
+#!fsharp
+
 type ResolveEnv = Map<int, ResolveEnvValue>
+
+#!markdown
+
+### resolve_recursive_free_vars
+
+#!fsharp
+
 let resolve_recursive_free_vars env =
     Map.fold (fun (env : ResolveEnv) k v ->
         let has_visited = HashSet()
@@ -5776,6 +8127,12 @@ let resolve_recursive_free_vars env =
             else s
         Map.add k (f {|term=Set.empty; ty=Set.empty|} k v) env
         ) env env
+
+#!markdown
+
+### resolve
+
+#!fsharp
 
 let resolve (scope : Dictionary<obj,PropagatedVars>) x =
     let dict = Dictionary(HashIdentity.Reference)
@@ -5864,9 +8221,36 @@ let resolve (scope : Dictionary<obj,PropagatedVars>) x =
     | Choice1Of2 x -> term Map.empty x
     | Choice2Of2 x -> ty Map.empty x
 
+#!markdown
+
+### LowerSubEnv
+
+#!fsharp
+
 type LowerSubEnv = {|var : Map<int,int>; adj : int|}
+
+#!markdown
+
+### LowerEnv
+
+#!fsharp
+
 type LowerEnv = {term : LowerSubEnv; ty : LowerSubEnv }
+
+#!markdown
+
+### LowerEnvRec
+
+#!fsharp
+
 type LowerEnvRec = Map<int,LowerEnv -> E>
+
+#!markdown
+
+### lower
+
+#!fsharp
+
 let lower (scope : Dictionary<obj,PropagatedVars>) x =
     let dict = Dictionary(HashIdentity.Reference)
     let scope (env : LowerEnv) x =
@@ -6104,33 +8488,132 @@ let lower (scope : Dictionary<obj,PropagatedVars>) x =
     | Choice1Of2(x,ret) -> ret (term Map.empty env x)
     | Choice2Of2(x,ret) -> ret (ty Map.empty env x)
 
+#!markdown
+
+### Env___
+
+#!fsharp
+
 type Env___ = {
     term : {| env : Map<string,E>; i : Id; i_rec : Id |}
     ty : {| env : Map<string,TPrepass>; i : Id |}
     }
+
+#!markdown
+
+### PartEvalPrepassEnv
+
+#!fsharp
+
 type PartEvalPrepassEnv = Env___
 
+#!markdown
+
+### add_term
+
+#!fsharp
+
 let add_term (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i = term.i+1; env = Map.add k v term.env|} }
+
+#!markdown
+
+### add_term_rec
+
+#!fsharp
+
 let add_term_rec (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i_rec = term.i_rec-1; env = Map.add k v term.env|} }
+
+#!markdown
+
+### add_ty
+
+#!fsharp
+
 let add_ty (e : PartEvalPrepassEnv) k v = let ty = e.ty in {e with ty = {|ty with i = ty.i+1; env = Map.add k v ty.env|} }
+
+#!markdown
+
+### add_wildcard
+
+#!fsharp
+
 let add_wildcard (e : PartEvalPrepassEnv) = let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} }
 
+#!markdown
+
+### add_term_var
+
+#!fsharp
+
 let add_term_var (e : PartEvalPrepassEnv) k = e.term.i, add_term e k (EV e.term.i)
+
+#!markdown
+
+### fresh_term_var
+
+#!fsharp
+
 let fresh_term_var (e : PartEvalPrepassEnv) = e.term.i, (let term = e.term in {e with term = {|term with i = term.i+1|} })
+
+#!markdown
+
+### fresh_ty_var
+
+#!fsharp
+
 let fresh_ty_var (e : PartEvalPrepassEnv) = e.ty.i, (let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} })
+
+#!markdown
+
+### add_term_rec_var
+
+#!fsharp
+
 let add_term_rec_var (e : PartEvalPrepassEnv) k = e.term.i_rec, add_term_rec e k (EV e.term.i_rec)
+
+#!markdown
+
+### add_ty_var
+
+#!fsharp
+
 let add_ty_var (e : PartEvalPrepassEnv) k = e.ty.i, add_ty e k (TV e.ty.i)
+
+#!markdown
+
+### add_ty_wildcard
+
+#!fsharp
+
 let add_ty_wildcard (e : PartEvalPrepassEnv) = e.ty.i, add_wildcard e
+
+#!markdown
+
+### process_term
+
+#!fsharp
 
 let process_term (x : E) =
     let scope = propagate (Choice1Of2 x)
     resolve scope (Choice1Of2 x)
     lower scope (Choice1Of2(x,id))
 
+#!markdown
+
+### process_ty
+
+#!fsharp
+
 let process_ty (x : TPrepass) =
     let scope = propagate (Choice2Of2 x)
     resolve scope (Choice2Of2 x)
     lower scope (Choice2Of2(x,id))
+
+#!markdown
+
+### module_openPrepass
+
+#!fsharp
 
 let module_openPrepass (top_env : PrepassTopEnv) env a l =
     let a,b = 
@@ -6146,6 +8629,12 @@ let module_openPrepass (top_env : PrepassTopEnv) env a l =
     term = {|env.term with env = Map.foldBack Map.add a env.term.env|}
     ty = {|env.ty with env = Map.foldBack Map.add b env.ty.env|}
     }
+
+#!markdown
+
+### prepassPrepass
+
+#!fsharp
 
 let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
     let p r = {path=path; range=r}
@@ -6529,6 +9018,12 @@ let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
             AOpen {top_env_emptyPrepass with term=x.term.env; ty=x.ty.env}
     |}
 
+#!markdown
+
+### top_env_defaultPrepass
+
+#!fsharp
+
 let top_env_defaultPrepass default_env =
     let convert_infer_to_prepass x = 
         let m = Dictionary(HashIdentity.Reference)
@@ -6562,7 +9057,20 @@ open System.Collections.Generic
 // open SoftCircuits.Collections
 // open Common
 
+#!markdown
+
+### Tag
+
+#!fsharp
+
 type Tag = int
+
+#!markdown
+
+### L<'a,'b when 'a: equality and 'a: comparison>
+
+#!fsharp
+
 type [<CustomComparison;CustomEquality>] L<'a,'b when 'a: equality and 'a: comparison> = 
     | L of 'a * 'b
 
@@ -6577,6 +9085,12 @@ type [<CustomComparison;CustomEquality>] L<'a,'b when 'a: equality and 'a: compa
             | :? L<'a,'b> as b -> match a,b with L(a,_), L(b,_) -> compare a b
             | _ -> raise <| System.ArgumentException "Invalid comparison for T."
 
+#!markdown
+
+### H<'a when 'a : equality>
+
+#!fsharp
+
 type H<'a when 'a : equality>(x : 'a) = 
     let h = hash x
 
@@ -6587,8 +9101,28 @@ type H<'a when 'a : equality>(x : 'a) =
         | _ -> false
     override _.GetHashCode() = h
 
+#!markdown
+
+### StackSize
+
+#!fsharp
+
 type StackSize = int
+
+#!markdown
+
+### Nominal
+
+#!fsharp
+
 type Nominal = {|body : TPrepass; id : GlobalId; name : string|} ConsedNode // TODO: When the time comes to implement incremental compilation, make the `body` field a weak reference.
+
+#!markdown
+
+### PartEvalMacro
+
+#!fsharp
+
 type PartEvalMacro = Text of string | Type of Ty | TypeLit of Ty
 and Ty =
     | YVoid
@@ -6629,9 +9163,21 @@ and TyV = L<Tag,Ty>
 // tags and tag_cases are straightforward mapping from cases for the sake of efficiency.
 and Union = {|cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool|} H
 
+#!markdown
+
+### TermVar
+
+#!fsharp
+
 type TermVar =
     | WV of TyV
     | WLit of Literal
+
+#!markdown
+
+### RData
+
+#!fsharp
 
 type RData =
     | ReB
@@ -6648,18 +9194,49 @@ type RData =
     | ReV of ConsedNode<Tag * Ty>
     | ReHashMap of ConsedNode<(RData * RData)[]>
 
+#!markdown
+
+### Trace
+
+#!fsharp
+
 type Trace = Range list
+
+#!markdown
+
+### JoinPointKey
+
+#!fsharp
+
 type JoinPointKey = 
     | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty []>
     | JPClosure of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
-    
+
+#!markdown
+
+### JoinPointCall
+
+#!fsharp
+
 type JoinPointCall = JoinPointKey * TyV []
+
+#!markdown
+
+### CodeMacro
+
+#!fsharp
 
 type CodeMacro =
     | CMText of string
     | CMTerm of Data
     | CMType of Ty
     | CMTypeLit of Ty
+
+#!markdown
+
+### TypedBind
+
+#!fsharp
 
 type TypedBind =
     | TyLet of Data * Trace * TypedOp
@@ -6690,7 +9267,21 @@ and TypedOp =
     | TyIndent of TypedBind []
     | TyJoinPoint of JoinPointCall
     | TyBackend of (string ConsedNode * E) * ConsedNode<RData [] * Ty []> * Range
+
+#!markdown
+
+### UnionRewrite
+
+#!fsharp
+
 type UnionRewrite = UnionData of string * Data | UnionBlockers of string Set
+
+#!markdown
+
+### LangEnv
+
+#!fsharp
+
 type LangEnv = {
     trace : Trace
     seq : ResizeArray<TypedBind>
@@ -6705,14 +9296,39 @@ type LangEnv = {
     globals : ResizeArray<string>
     }
 
+#!markdown
+
+### PartEvalTopEnv
+
+#!fsharp
+
 type PartEvalTopEnv = {
     prototypes_instances : Dictionary<GlobalId * GlobalId, E>
     nominals : Dictionary<GlobalId, Nominal>
     backend : string
     }
 
+#!markdown
+
+### PartEvalTypeError
+
+#!fsharp
+
 exception PartEvalTypeError of Trace * string
+
+#!markdown
+
+### raise_type_error
+
+#!fsharp
+
 let raise_type_error (d: LangEnv) x = raise (PartEvalTypeError(d.trace,x))
+
+#!markdown
+
+### data_to_rdata
+
+#!fsharp
 
 let data_to_rdata (d: LangEnv) (hc : HashConsTable) call_data =
     let hc x = hc.Add x
@@ -6739,6 +9355,12 @@ let data_to_rdata (d: LangEnv) (hc : HashConsTable) call_data =
     let x = Array.map f call_data
     call_args.ToArray(),x
 
+#!markdown
+
+### rename_global_term
+
+#!fsharp
+
 // This rename is a consideration for when I do incremental compilation.
 // In order to allow them to be cleaned by the garbage collection, I do not want the 
 // references to unused nodes to end up in anywhere other than join point keys (which will be weak).
@@ -6764,6 +9386,12 @@ let rename_global_term (s : LangEnv) =
             ) x
     {s with env_global_term = Array.map f s.env_global_term}
 
+#!markdown
+
+### data_free_vars
+
+#!fsharp
+
 let data_free_vars call_data =
     let m = HashSet(HashIdentity.Reference)
     let free_vars = ResizeArray()
@@ -6780,6 +9408,12 @@ let data_free_vars call_data =
             | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
     f call_data
     free_vars.ToArray()
+
+#!markdown
+
+### data_free_vars_replace
+
+#!fsharp
 
 let data_free_vars_replace s (d : Dictionary<TyV,TyV>) (x : Data) =
     let m = Dictionary(HashIdentity.Reference)
@@ -6802,8 +9436,29 @@ let data_free_vars_replace s (d : Dictionary<TyV,TyV>) (x : Data) =
                 raise_type_error s "The mutable compile-time HashSets cannot have their free vars replaced."
             ) x
     f x
+
+#!markdown
+
+### (|C|)
+
+#!fsharp
+
 let inline (|C|) (x : _ ConsedNode) = x.node
+
+#!markdown
+
+### (|C'|)
+
+#!fsharp
+
 let inline (|C'|) (x : _ ConsedNode) = x.node, x.tag
+
+#!markdown
+
+### rdata_free_vars
+
+#!fsharp
+
 let rdata_free_vars call_data =
     let m = HashSet(HashIdentity.Structural)
     let free_vars = ResizeArray()
@@ -6818,6 +9473,12 @@ let rdata_free_vars call_data =
     Array.iter g call_data
     free_vars.ToArray()
 
+#!markdown
+
+### data_term_vars'
+
+#!fsharp
+
 let data_term_vars' call_data =
     let term_vars = ResizeArray(64)
     let rec f = function
@@ -6831,7 +9492,13 @@ let data_term_vars' call_data =
         | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
     f call_data
     term_vars.ToArray()
-    
+
+#!markdown
+
+### data_nominals
+
+#!fsharp
+
 let data_nominals call_data =
     let term_vars = ResizeArray(64)
     let rec f = function
@@ -6845,6 +9512,12 @@ let data_nominals call_data =
         | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
     f call_data
     term_vars.ToArray()
+
+#!markdown
+
+### data_term_vars
+
+#!fsharp
 
 let data_term_vars call_data =
     let term_vars = ResizeArray(64)
@@ -6861,6 +9534,12 @@ let data_term_vars call_data =
     f call_data
     term_vars.ToArray()
 
+#!markdown
+
+### lit_to_primitive_type
+
+#!fsharp
+
 let lit_to_primitive_type = function
     | LitUInt8 _ -> UInt8T
     | LitUInt16 _ -> UInt16T
@@ -6876,11 +9555,30 @@ let lit_to_primitive_type = function
     | LitString _ -> StringT
     | LitChar _ -> CharT
 
+#!markdown
+
+### lit_to_ty
+
+#!fsharp
+
 let lit_to_ty x = lit_to_primitive_type x |> YPrim
+
+#!markdown
+
+### is_tco_compatible
+
+#!fsharp
+
 let is_tco_compatible = function 
     | TyApply _ | TyJoinPoint _ | TyArrayLiteral _ | TyUnionBox _ | TyToLayout _
     | TyIf _ | TyIntSwitch _ | TyUnionUnbox _ | TyArrayCreate _ | TyFailwith _ -> true 
     | _ -> false
+
+#!markdown
+
+### seq_apply
+
+#!fsharp
 
 let seq_apply (d: LangEnv) end_dat =
     let inline end_ () = d.seq.Add(TyLocalReturnData(end_dat,d.trace))
@@ -6891,6 +9589,12 @@ let seq_apply (d: LangEnv) end_dat =
     else end_()
     d.seq.ToArray()
 
+#!markdown
+
+### cse_tryfind
+
+#!fsharp
+
 let cse_tryfind (d: LangEnv) key =
     d.cse |> List.tryPick (fun x ->
         match x.TryGetValue key with
@@ -6898,8 +9602,19 @@ let cse_tryfind (d: LangEnv) key =
         | _ -> None
         )
 
+#!markdown
+
+### cse_add
+
+#!fsharp
+
 let cse_add (d: LangEnv) k v = (List.head d.cse).Add(k,v)
 
+#!markdown
+
+### show_ty
+
+#!fsharp
 
 let show_ty x =
     let rec f prec x =
@@ -6927,6 +9642,12 @@ let show_ty x =
         | YMetavar _ -> "?"
     f -1 x
 
+#!markdown
+
+### show_data
+
+#!fsharp
+
 let show_data x =
     let rec f prec x =
         let p = p prec
@@ -6950,9 +9671,21 @@ let show_data x =
 
     f -1 x
 
+#!markdown
+
+### is_lit
+
+#!fsharp
+
 let is_lit = function
     | DLit _ -> true
     | _ -> false
+
+#!markdown
+
+### is_numeric
+
+#!fsharp
 
 let is_numeric = function
     | YPrim (UInt8T | UInt16T | UInt32T | UInt64T 
@@ -6960,51 +9693,123 @@ let is_numeric = function
         | Float32T | Float64T) -> true
     | _ -> false
 
+#!markdown
+
+### is_signed_numeric
+
+#!fsharp
+
 let is_signed_numeric = function
     | YPrim (Int8T | Int16T | Int32T | Int64T | Float32T | Float64T) -> true
     | _ -> false
+
+#!markdown
+
+### is_non_float_primitive
+
+#!fsharp
 
 let is_non_float_primitive = function
     | YPrim (Float32T | Float64T) -> false
     | YPrim _ -> true
     | _ -> false
 
+#!markdown
+
+### is_primitive
+
+#!fsharp
+
 let is_primitive = function
     | YPrim _ -> true
     | _ -> false
+
+#!markdown
+
+### is_string
+
+#!fsharp
 
 let is_string = function
     | YPrim StringT -> true
     | _ -> false
 
+#!markdown
+
+### is_char
+
+#!fsharp
+
 let is_char = function
     | YPrim CharT -> true
     | _ -> false
+
+#!markdown
+
+### is_float
+
+#!fsharp
 
 let is_float = function
     | YPrim (Float32T | Float64T) -> true
     | _ -> false
 
+#!markdown
+
+### is_bool
+
+#!fsharp
+
 let is_bool = function
     | YPrim BoolT -> true
     | _ -> false
 
+#!markdown
+
+### is_int
+
+#!fsharp
+
 let is_int = function
     | YPrim (UInt32T | UInt64T | Int32T | Int64T) -> true
     | _ -> false
+
+#!markdown
+
+### is_int
+
+#!fsharp
 
 let is_any_int = function
     | YPrim (UInt8T | UInt16T | UInt32T | UInt64T 
         | Int8T | Int16T | Int32T | Int64T) -> true
     | _ -> false
 
+#!markdown
+
+### is_int64
+
+#!fsharp
+
 let is_int64 = function
     | YPrim Int64T -> true
     | _ -> false
 
+#!markdown
+
+### is_int32
+
+#!fsharp
+
 let is_int32 = function
     | YPrim Int32T -> true
     | _ -> false
+
+#!markdown
+
+### is_lit_zero
+
+#!fsharp
 
 let is_lit_zero = function
     | DLit a ->
@@ -7015,6 +9820,12 @@ let is_lit_zero = function
         | _ -> false
     | _ -> false
 
+#!markdown
+
+### is_lit_one
+
+#!fsharp
+
 let is_lit_one = function
     | DLit a ->
         match a with
@@ -7024,6 +9835,12 @@ let is_lit_one = function
         | _ -> false
     | _ -> false
 
+#!markdown
+
+### is_int_lit_zero
+
+#!fsharp
+
 let is_int_lit_zero = function
     | DLit a ->
         match a with
@@ -7032,6 +9849,12 @@ let is_int_lit_zero = function
         | _ -> false
     | _ -> false
 
+#!markdown
+
+### is_int_lit_one
+
+#!fsharp
+
 let is_int_lit_one = function
     | DLit a ->
         match a with
@@ -7039,6 +9862,12 @@ let is_int_lit_one = function
         | LitUInt8 1uy | LitUInt16 1us | LitUInt32 1u | LitUInt64 1UL -> true
         | _ -> false
     | _ -> false
+
+#!markdown
+
+### lit_zero
+
+#!fsharp
 
 let lit_zero = function
     | YPrim Int8T -> LitInt8 0y
@@ -7053,11 +9882,51 @@ let lit_zero = function
     | YPrim Float64T -> LitFloat64 0.0
     | _ -> failwith "Compiler error: Expected a numeric value."
 
+#!markdown
+
+### vt
+
+#!fsharp
+
 let vt s i = if i < s.env_global_type.Length then s.env_global_type.[i] else s.env_stack_type.[i-s.env_global_type.Length]
+
+#!markdown
+
+### v
+
+#!fsharp
+
 let v s i = if i < s.env_global_term.Length then s.env_global_term.[i] else s.env_stack_term.[i-s.env_global_term.Length]
+
+#!markdown
+
+### add_trace
+
+#!fsharp
+
 let add_trace (s : LangEnv) r = {s with trace = r :: s.trace}
+
+#!markdown
+
+### store_term
+
+#!fsharp
+
 let store_term (s : LangEnv) i v = s.env_stack_term.[i-s.env_global_term.Length] <- v
+
+#!markdown
+
+### store_ty
+
+#!fsharp
+
 let store_ty (s : LangEnv) i v = s.env_stack_type.[i-s.env_global_type.Length] <- v
+
+#!markdown
+
+### is_unify
+
+#!fsharp
 
 let is_unify s x =
     let is_metavar = HashSet()
@@ -7086,6 +9955,12 @@ let is_unify s x =
         | _ -> false
     f x
 
+#!markdown
+
+### PartEvalResult
+
+#!fsharp
+
 type PartEvalResult = {
     join_point_method : Dictionary<string ConsedNode * E,Dictionary<ConsedNode<RData [] * Ty []>,TypedBind [] option * Ty option * string option> * HashConsTable>
     join_point_closure : Dictionary<string ConsedNode * E,Dictionary<ConsedNode<RData [] * Ty [] * Ty>,(Data * TypedBind []) option> * HashConsTable>
@@ -7094,7 +9969,11 @@ type PartEvalResult = {
     globals : ResizeArray<string>
     }
 
+#!markdown
 
+### peval
+
+#!fsharp
 
 let peval (env : PartEvalTopEnv) (x : E) =
     let join_point_method = Dictionary(HashIdentity.Structural)
@@ -9175,33 +12054,99 @@ let peval (env : PartEvalTopEnv) (x : E) =
 
 // open System.Text
 
+#!markdown
+
+### CodegenEnv
+
+#!fsharp
+
 type CodegenEnv =
     {
     text : System.Text.StringBuilder
     indent : int
     }
 
+#!markdown
+
+### line
+
+#!fsharp
+
 let line x (s : string) = x.text.Append(' ', x.indent).AppendLine s |> ignore
+
+#!markdown
+
+### indent
+
+#!fsharp
+
 let indent x : CodegenEnv = {x with indent=x.indent+4}
+
+#!markdown
+
+### add_dec_point
+
+#!fsharp
+
 let add_dec_point (x : string) = if x.IndexOf('.') = -1 && x.Contains "E" |> not then x + ".0" else x
 
+#!markdown
+
+### CodegenError
+
+#!fsharp
+
 exception CodegenError of Range option * string
+
+#!markdown
+
+### CodegenErrorWithPos
+
+#!fsharp
+
 exception CodegenErrorWithPos of Trace * string
+
+#!markdown
+
+### raise_codegen_error
+
+#!fsharp
+
 let raise_codegen_error x = raise (CodegenError (None,x))
+
+#!markdown
+
+### raise_codegen_error_backend
+
+#!fsharp
+
 let raise_codegen_error_backend r x = raise (CodegenError (Some r,x))
+
+#!markdown
+
+### raise_codegen_error'
+
+#!fsharp
+
 let raise_codegen_error' trace (r,x) = raise (CodegenErrorWithPos(Option.fold (fun s x -> x :: s) trace r,x))
 
 #!markdown
 
 ## CodegenFsharp
 
+#!markdown
+
+### backend_nameFsharp
+
 #!fsharp
 
-// open System
-// open System.Text
-open System.Collections.Generic
+let backend_nameFsharp = "Fsharp"
 
-let private backend_nameFsharp = "Fsharp"
+#!markdown
+
+### litFsharp
+
+#!fsharp
 
 let litFsharp = function
     | LitInt8 x -> sprintf "%iy" x
@@ -9248,6 +12193,12 @@ let litFsharp = function
         |> sprintf "'%s'"
     | LitBool x -> if x then "true" else "false"
 
+#!markdown
+
+### prim
+
+#!fsharp
+
 let prim = function
     | Int8T -> "int8"
     | Int16T -> "int16"
@@ -9263,15 +12214,54 @@ let prim = function
     | StringT -> "string"
     | CharT -> "char"
 
+#!markdown
+
+### type_lit
+
+#!fsharp
+
 let type_lit = function
     | YLit x -> litFsharp x
     | YSymbol x -> x
     | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro." 
 
+#!markdown
+
+### UnionRecFsharp
+
+#!fsharp
+
 type UnionRecFsharp = {tag : int; free_vars : Map<int * string, TyV[]>}
+
+#!markdown
+
+### LayoutRecFsharp
+
+#!fsharp
+
 type LayoutRecFsharp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
+
+#!markdown
+
+### MethodRecFsharp
+
+#!fsharp
+
 type MethodRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
+
+#!markdown
+
+### ClosureRecFsharp
+
+#!fsharp
+
 type ClosureRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
+
+#!markdown
+
+### codegenFsharp
+
+#!fsharp
 
 let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
     let types = ResizeArray()
@@ -9675,10 +12665,30 @@ let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
 // Here are the reference counting analysis passes.
 open System.Collections.Generic
 
+#!markdown
+
+### varc_add
+
+#!fsharp
+
 let varc_add x i v =
     let c = Option.defaultValue 0 (Map.tryFind x v) + i
     if c = 0 then Map.remove x v else Map.add x c v
+
+#!markdown
+
+### varc_union
+
+#!fsharp
+
 let varc_union a b = Map.foldBack varc_add a b
+
+#!markdown
+
+### varc_data
+
+#!fsharp
+
 let varc_data call_data =
     let mutable v = Map.empty
     let rec f = function
@@ -9692,7 +12702,20 @@ let varc_data call_data =
         | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
     f call_data
     v
+
+#!markdown
+
+### varc_set
+
+#!fsharp
+
 let varc_set x i = Set.fold (fun s v -> Map.add v i s) Map.empty x
+
+#!markdown
+
+### refc_used_vars
+
+#!fsharp
 
 let refc_used_vars (x : TypedBind []) =
     let g_bind : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
@@ -9736,7 +12759,19 @@ let refc_used_vars (x : TypedBind []) =
     binds x |> ignore
     g_bind
 
+#!markdown
+
+### RefcVars
+
+#!fsharp
+
 type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : Dictionary<TypedBind,TyV Set>; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
+
+#!markdown
+
+### refc_prepass
+
+#!fsharp
 
 let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
     let used_vars = refc_used_vars x
@@ -10374,7 +13409,6 @@ module CodegenC =
                 | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun _ s_typ s_fun x ->
-                
                 let i, range = x.tag, tup_ty x.range
                 line s_typ (sprintf "typedef struct Closure%i Closure%i;" i i)
                 line s_typ (sprintf "struct Closure%i {" i)
@@ -10710,8 +13744,8 @@ module CodegenCuda =
     // open System.Text
     open System.Collections.Generic
 
-    let private backend_nameCuda = "Cuda"
-    let private max_tag = 255uy
+    let backend_nameCuda = "Cuda"
+    let max_tag = 255uy
 
     let is_stringCuda = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
     let sizeof_tyvCuda = function
@@ -11578,7 +14612,7 @@ module CodegenPython =
     // open System.Text
     open System.Collections.Generic
 
-    let private backend_namePython = "Python"
+    let backend_namePython = "Python"
 
     let litPython = function
         | LitInt8 x -> sprintf "%i" x
@@ -12135,6 +15169,12 @@ open Hopac.Infixes
 open Hopac.Extensions
 open Hopac.Stream
 
+#!markdown
+
+### process_errors
+
+#!fsharp
+
 let process_errors line (ers : LineTokenErrors list) : RString list =
     ers |> List.mapi (fun i l -> 
         let i = line + i
@@ -12143,6 +15183,12 @@ let process_errors line (ers : LineTokenErrors list) : RString list =
     |> List.concat
     |> List.groupBy snd
     |> List.map (fun (k,v) -> k, process_error (List.map fst v))
+
+#!markdown
+
+### tokenize_replace
+
+#!fsharp
 
 /// Replaces the token lines and updates the errors given the edit.
 let tokenize_replace (lines : _ FSharpx.Collections.PersistentVector FSharpx.Collections.PersistentVector, errors : _ list) (edit : SpiEdit) =
@@ -12165,7 +15211,19 @@ type [<ReferenceEquality>] TokenizerState = {
     errors : RString list
     }
 
+#!markdown
+
+### wdiff_tokenizer_init
+
+#!fsharp
+
 let wdiff_tokenizer_init = { lines_text = FSharpx.Collections.PersistentVector.empty; lines_token = FSharpx.Collections.PersistentVector.empty; blocks = []; errors = [] }
+
+#!markdown
+
+### replace'
+
+#!fsharp
 
 /// Immutably updates the state based on the request. Does diffing to make the operation efficient.
 /// It is possible for the server to go out of sync, in which case an error is returned.
@@ -12174,6 +15232,13 @@ let replace' (state : TokenizerState) (edit : SpiEdit) =
     let lines_token, errors = tokenize_replace (state.lines_token, state.errors) edit
     let blocks = wdiff_block_all state.blocks (lines_token, edit.lines.Length, edit.from, edit.nearTo)
     {lines_text=lines_text; lines_token=lines_token; errors=errors; blocks=blocks}
+
+#!markdown
+
+### wdiff_tokenizer_all
+
+#!fsharp
+
 let wdiff_tokenizer_all (state : TokenizerState) text = 
     let text = lines text
     let text' = state.lines_text |> Seq.toArray
@@ -12183,9 +15248,22 @@ let wdiff_tokenizer_all (state : TokenizerState) text =
     let text = text.[from..]
     let fromRev = loop ((fun text i -> text.[text.Length-1-i]),text) 0
     replace' state {|from=from; nearTo=text'.Length-fromRev; lines=text.[..text.Length-1-fromRev]|}
+
+#!markdown
+
+### wdiff_tokenizer_edit
+
+#!fsharp
+
 let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) = 
     if edit.nearTo <= state.lines_text.Length then Ok (replace' state edit)
     else Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
+
+#!markdown
+
+### semantic_updates_apply
+
+#!fsharp
 
 let semantic_updates_apply (block : LineTokens) updates =
     Seq.fold (fun block (c : VectorCord, l) -> 
@@ -12201,6 +15279,12 @@ let semantic_updates_apply (block : LineTokens) updates =
             r, x
         FSharpx.Collections.PersistentVector.updateNth c.row c.col x block
         ) block updates
+
+#!markdown
+
+### parse_block
+
+#!fsharp
 
 let parse_block default_env is_top_down (block : LineTokens) =
     let comments, cords_tokens = 
@@ -12224,7 +15308,20 @@ let parse_block default_env is_top_down (block : LineTokens) =
         }
     {result=parseBlockParsing env; semantic_tokens=semantic_updates_apply block semantic_updates}
 
+#!markdown
+
+### wdiff_parse_init
+
+#!fsharp
+
 let wdiff_parse_init is_top_down : ParserState = {is_top_down=is_top_down; blocks=[]}
+
+#!markdown
+
+### wdiff_parse
+
+#!fsharp
+
 let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens Block list) =
     let dict = Dictionary(HashIdentity.Reference)
     // Offset should be ignored when memoizing the results of parsing.
@@ -12234,26 +15331,106 @@ let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens 
         )  
     {state with blocks = blocks }
 
+#!markdown
+
+### ModuleState
+
+#!fsharp
+
 type ModuleState = { tokenizer : TokenizerState; bundler : BlockBundleState; parser : ParserState }
+
+#!markdown
+
+### wdiff_module_init
+
+#!fsharp
+
 let wdiff_module_init is_top_down = {tokenizer = wdiff_tokenizer_init; bundler = wdiff_block_bundle_init; parser = wdiff_parse_init is_top_down}
+
+#!markdown
+
+### wdiff_module_body
+
+#!fsharp
+
 let wdiff_module_body default_env state tokenizer =
     if state.tokenizer = tokenizer then state else
     let parser = wdiff_parse default_env state.parser tokenizer.blocks
     let bundler = wdiff_block_bundle state.bundler parser
     {tokenizer=tokenizer; parser=parser; bundler=bundler}
+
+#!markdown
+
+### wdiff_module_edit
+
+#!fsharp
+
 let wdiff_module_edit default_env (state : ModuleState) x = wdiff_tokenizer_edit state.tokenizer x |> Result.map (wdiff_module_body default_env state)
+
+#!markdown
+
+### wdiff_module_all
+
+#!fsharp
+
 let wdiff_module_all default_env state x = wdiff_tokenizer_all state.tokenizer x |> wdiff_module_body default_env state
+
+#!markdown
+
+### wdiff_module_init_all
+
+#!fsharp
+
 let wdiff_module_init_all default_env is_top_down x = wdiff_module_all default_env (wdiff_module_init is_top_down) x
 
+#!markdown
+
+### FileState<'input,'result,'state>
+
+#!fsharp
+
 type [<ReferenceEquality>] FileState<'input,'result,'state> = { input : 'input; result : 'result; state : 'state }
+
+#!markdown
+
+### FileFuns<'a,'b,'state>
+
+#!fsharp
+
 type FileFuns<'a,'b,'state> =
     abstract member eval : 'state * 'a -> 'b
     abstract member diff : 'state * 'b * 'a -> 'b
     abstract member init : 'a -> FileState<'a,'b,'state>
 
+#!markdown
+
+### TypecheckerStateValue
+
+#!fsharp
+
 type TypecheckerStateValue = Bundle option * InferResult * TopEnv
+
+#!markdown
+
+### TypecheckerStatePropagated
+
+#!fsharp
+
 type TypecheckerStatePropagated = (bool * TopEnv) Promise
+
+#!markdown
+
+### TypecheckerState
+
+#!fsharp
+
 type TypecheckerState = FileState<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated>
+
+#!markdown
+
+### typecheck
+
+#!fsharp
 
 let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
     | Cons((_,b : BlockBundleValue), ls) ->
@@ -12268,6 +15445,12 @@ let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
     | Nil ->
         Job.result Nil
 
+#!markdown
+
+### diff
+
+#!fsharp
+
 let rec diff (package_id,module_id,env) (result,input : BlockBundleState) = 
     let tc () = typecheck (package_id,module_id,env) input
     if Promise.Now.isFulfilled result then
@@ -12276,6 +15459,12 @@ let rec diff (package_id,module_id,env) (result,input : BlockBundleState) =
         | Cons((b',_,env as x),next), Cons((_,b),bs) when b' = b.bundle -> Promise.Now.withValue (Cons(x,diff (package_id,module_id,env) (next,bs)))
         | _ -> tc()
     else tc()
+
+#!markdown
+
+### funs_file_tc
+
+#!fsharp
 
 let funs_file_tc = {new FileFuns<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated> with
     member _.eval(state,(pid,mid,x)) = 
@@ -12290,20 +15479,56 @@ let funs_file_tc = {new FileFuns<PackageId * ModuleId * BlockBundleState, Typech
         }
     }
 
+#!markdown
+
+### wdiff_file_update_state
+
+#!fsharp
+
 let wdiff_file_update_state (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'state) =
     if state.state = x then state else {state with state=x; result=funs.eval(x,state.input)}
+
+#!markdown
+
+### wdiff_file_update_input
+
+#!fsharp
 
 let wdiff_file_update_input (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'a) =
     if state.input = x then state else {state with input=x; result=funs.diff(state.state,state.result,x)}
 
+#!markdown
+
+### wdiff_file
+
+#!fsharp
+
 let wdiff_file (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (a,b) =
     if state.state = a then wdiff_file_update_input funs state b else {state=a; input=b; result=funs.eval(a,b)}
+
+#!markdown
+
+### ProjFilesTree
+
+#!fsharp
 
 type ProjFilesTree =
     | File of module_id: ModuleId * path: string * name: string option
     | Directory of dir_id: DirId * name: string * ProjFilesTree list
 
+#!markdown
+
+### ProjFiles
+
+#!fsharp
+
 type ProjFiles = { tree : ProjFilesTree list; num_dirs : int; num_files : int }
+
+#!markdown
+
+### ProjFileFuns<'a,'state>
+
+#!fsharp
 
 type ProjFileFuns<'a,'state> =
     abstract member file : string option * 'state * 'a -> 'a * 'state
@@ -12312,6 +15537,12 @@ type ProjFileFuns<'a,'state> =
     abstract member default' : DefaultEnv -> 'state
     abstract member empty : 'state
 
+#!markdown
+
+### ProjFilesState<'a,'state>
+
+#!fsharp
+
 type [<ReferenceEquality>] ProjFilesState<'a,'state> = {
     init : 'state
     uids_file : ('a * 'state) []
@@ -12319,6 +15550,12 @@ type [<ReferenceEquality>] ProjFilesState<'a,'state> = {
     files : ProjFiles
     result : 'state
     }
+
+#!markdown
+
+### proj_files_diff
+
+#!fsharp
 
 let proj_files_diff (uids_file : ('a * 'b) [], uids_directory : 'b [], files) (uids, files') =
     let uids_file' = Array.zeroCreate (Array.length uids)
@@ -12337,6 +15574,12 @@ let proj_files_diff (uids_file : ('a * 'b) [], uids_directory : 'b [], files) (u
         | _ -> false
     if list (files.tree, files'.tree) then None else Some (uids_file',uids_directory')
 
+#!markdown
+
+### proj_files
+
+#!fsharp
+
 let proj_files (funs : ProjFileFuns<'a,'state>) uids_file uids_directory uids s l =
     let inline memo (uids : _ []) uid f = 
         let x = uids.[uid]
@@ -12352,10 +15595,22 @@ let proj_files (funs : ProjFileFuns<'a,'state>) uids_file uids_directory uids s 
             ) (funs.empty, s) l |> fst
     list s l.tree
 
+#!markdown
+
+### wdiff_proj_files_update_files
+
+#!fsharp
+
 let wdiff_proj_files_update_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (uids,files : ProjFiles) =
     match proj_files_diff (state.uids_file,state.uids_directory,state.files) (uids,files) with
     | Some (uids_file, uids_directory) -> {state with files=files; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids state.init files}
     | None -> state
+
+#!markdown
+
+### wdiff_proj_files_update_packages
+
+#!fsharp
 
 let wdiff_proj_files_update_packages (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init : 'state) =
     if state.init = init then state else
@@ -12363,11 +15618,23 @@ let wdiff_proj_files_update_packages (funs : ProjFileFuns<'a,'state>) (state : P
     let uids = Array.map fst state.uids_file
     {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init state.files}
 
+#!markdown
+
+### wdiff_proj_files
+
+#!fsharp
+
 let wdiff_proj_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init,(uids,files)) =
     if state.init = init then wdiff_proj_files_update_files funs state (uids,files)
     else
         let uids_file, uids_directory = Array.zeroCreate files.num_files, Array.zeroCreate files.num_dirs
         {files=files; init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init files}
+
+#!markdown
+
+### typechecker_results_summary
+
+#!fsharp
 
 let typechecker_results_summary l =
     Stream.foldFun (fun (has_error,big) (_,x : InferResult,_) -> 
@@ -12376,6 +15643,12 @@ let typechecker_results_summary l =
         | AOpen _ -> big 
         | AInclude small -> unionInfer small big
         ) (false,top_env_emptyInfer) l
+
+#!markdown
+
+### funs_proj_file_tc
+
+#!fsharp
 
 let funs_proj_file_tc = {new ProjFileFuns<TypecheckerState,TypecheckerStatePropagated> with
     member _.file(name,state,x) = 
@@ -12390,6 +15663,12 @@ let funs_proj_file_tc = {new ProjFileFuns<TypecheckerState,TypecheckerStatePropa
     member _.empty = Promise.Now.withValue (false,top_env_emptyInfer)
     }
 
+#!markdown
+
+### PackageEnv
+
+#!fsharp
+
 type PackageEnv = {
     nominals_aux : Map<PackageId,Map<GlobalId, {|name : string; kind : TT|}>>
     nominals : Map<PackageId,Map<GlobalId, {|vars : Var list; body : T|}>>
@@ -12399,6 +15678,12 @@ type PackageEnv = {
     term : Map<string,T>
     constraints : Map<string,ConstraintOrModule>
     }
+
+#!markdown
+
+### union
+
+#!fsharp
 
 let union small big = {
     nominals_aux = Map.foldBack Map.add small.nominals_aux big.nominals_aux
@@ -12410,12 +15695,24 @@ let union small big = {
     constraints = Map.foldBack Map.add small.constraints big.constraints
     }
 
+#!markdown
+
+### in_moduleWDiff
+
+#!fsharp
+
 let in_moduleWDiff m (a : PackageEnv) =
     {a with 
         ty = Map.add m (TyModule a.ty) Map.empty
         term = Map.add m (TyModule a.term) Map.empty
         constraints = Map.add m (M a.constraints) Map.empty
         }
+
+#!markdown
+
+### package_to_file
+
+#!fsharp
 
 let package_to_file (x : PackageEnv) = {
     nominals_next_tag = 0
@@ -12429,6 +15726,12 @@ let package_to_file (x : PackageEnv) = {
     constraints = x.constraints
     }
 
+#!markdown
+
+### add_file_to_package
+
+#!fsharp
+
 let add_file_to_package package_id (small : TopEnv) (big : PackageEnv): PackageEnv = {
     nominals_aux = Map.add package_id small.nominals_aux big.nominals_aux
     nominals = Map.add package_id small.nominals big.nominals
@@ -12438,6 +15741,12 @@ let add_file_to_package package_id (small : TopEnv) (big : PackageEnv): PackageE
     term = small.term
     constraints = small.constraints
     }
+
+#!markdown
+
+### package_env_empty
+
+#!fsharp
 
 let package_env_empty = {
     nominals_aux = Map.empty
@@ -12449,23 +15758,69 @@ let package_env_empty = {
     constraints = Map.empty
     }
 
+#!markdown
+
+### package_env_default
+
+#!fsharp
+
 let package_env_default default_env = 
     let x = top_env_defaultInfer default_env
     {package_env_empty with ty = x.ty; term = x.term; constraints = x.constraints}
+
+#!markdown
+
+### ProjPackagesState<'a>
+
+#!fsharp
 
 type ProjPackagesState<'a> = {
     packages : (string option * 'a) list
     result : 'a
     }
+
+#!markdown
+
+### ProjState<'file_inputs,'files,'packages>
+
+#!fsharp
+
 type ProjState<'file_inputs,'files,'packages> = {
     package_id : PackageId
     packages : 'packages ProjPackagesState
     files : ProjFilesState<'file_inputs,'files>
     result : 'packages
     }
+
+#!markdown
+
+### TypecheckerStateTop
+
+#!fsharp
+
 type TypecheckerStateTop = (bool * PackageEnv) Promise
+
+#!markdown
+
+### ProjStateTC
+
+#!fsharp
+
 type ProjStateTC = ProjState<TypecheckerState,TypecheckerStatePropagated,TypecheckerStateTop>
+
+#!markdown
+
+### ProjEnvTC
+
+#!fsharp
+
 type ProjEnvTC = Map<PackageId,ProjStateTC>
+
+#!markdown
+
+### ProjPackageFuns<'file,'package>
+
+#!fsharp
 
 type ProjPackageFuns<'file,'package> =
     abstract member unions : DefaultEnv -> (string option * 'package) list -> 'package
@@ -12475,6 +15830,12 @@ type ProjPackageFuns<'file,'package> =
     abstract member add_file_to_package : PackageId * 'file * 'package -> 'package
     abstract member default' : DefaultEnv -> 'package
     abstract member empty : 'package
+
+#!markdown
+
+### funs_proj_package_tc
+
+#!fsharp
 
 let funs_proj_package_tc = {new ProjPackageFuns<TypecheckerStatePropagated,TypecheckerStateTop> with
     member funs.unions default_env l = 
@@ -12497,6 +15858,12 @@ let funs_proj_package_tc = {new ProjPackageFuns<TypecheckerStatePropagated,Typec
     member _.empty = Promise.Now.withValue (false, package_env_empty)
     }
 
+#!markdown
+
+### wdiff_proj_init
+
+#!fsharp
+
 let wdiff_proj_init default_env (funs_packages : ProjPackageFuns<'file,'package>) (funs_files : ProjFileFuns<'file_input,'file>) package_id : ProjState<'file_input,'file,'package> = 
     let packages = { packages = []; result = funs_packages.default' default_env}
     let files = {
@@ -12507,8 +15874,20 @@ let wdiff_proj_init default_env (funs_packages : ProjPackageFuns<'file,'package>
     let result = funs_packages.empty
     { package_id = package_id; packages = packages; files = files; result = result}
 
+#!markdown
+
+### wdiff_proj_packages
+
+#!fsharp
+
 let wdiff_proj_packages default_env (funs : ProjPackageFuns<_,'a>) (state : 'a ProjPackagesState) x =
     if state.packages = x then state else {packages = x; result = funs.unions default_env x }
+
+#!markdown
+
+### wdiff_proj_update_packages
+
+#!fsharp
 
 let wdiff_proj_update_packages default_env funs_packages funs_files (state : ProjState<'a,'b,'state>) x =
     let packages = wdiff_proj_packages default_env funs_packages state.packages x
@@ -12517,11 +15896,23 @@ let wdiff_proj_update_packages default_env funs_packages funs_files (state : Pro
     let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
     {state with packages=packages; files=files; result=result}
 
+#!markdown
+
+### wdiff_proj_update_files
+
+#!fsharp
+
 let wdiff_proj_update_files (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'a,'b,'state>) x =
     let files = wdiff_proj_files_update_files funs_files state.files x
     if state.files = files then state else
     let result = funs_packages.add_file_to_package(state.package_id,files.result,state.packages.result)
     {state with files=files; result=result}
+
+#!markdown
+
+### wdiff_proj
+
+#!fsharp
 
 let wdiff_proj default_env (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'file_input,'file,'state>) (packages,files) =
     let packages = wdiff_proj_packages default_env funs_packages state.packages packages
@@ -12531,11 +15922,30 @@ let wdiff_proj default_env (funs_packages : ProjPackageFuns<_,_>) funs_files (st
         let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
         {state with packages=packages; files=files; result=result}
 
+#!markdown
+
+### ProjEnvUpdate<'a>
+
+#!fsharp
+
 type ProjEnvUpdate<'a> =
     | UpdatePackageModule of PackageId * (string option * PackageId) list * ('a [] * ProjFiles)
     | UpdatePackage of PackageId * (string option * PackageId) list
 
+#!markdown
+
+### map_packages
+
+#!fsharp
+
 let map_packages s packages = packages |> List.map (fun (a,b) -> a, (Map.find b s).result)
+
+#!markdown
+
+### wdiff_projenv
+
+#!fsharp
+
 let wdiff_projenv default_env funs_packages funs_files (s : Map<PackageId,ProjState<'a,'b,'state>>) l =
     List.fold (fun s -> function
         | UpdatePackageModule(uid,packages,files) -> Map.add uid (wdiff_proj default_env funs_packages funs_files s.[uid] (map_packages s packages,files)) s
@@ -12553,9 +15963,35 @@ open Hopac.Infixes
 open Hopac.Extensions
 open Hopac.Stream
 
+#!markdown
+
+### PrepassStateValue
+
+#!fsharp
+
 type PrepassStateValue = InferResult * PrepassTopEnv AdditionType * PrepassTopEnv
+
+#!markdown
+
+### PrepassStatePropagated
+
+#!fsharp
+
 type PrepassStatePropagated = PrepassTopEnv Promise
+
+#!markdown
+
+### PrepassState
+
+#!fsharp
+
 type PrepassState = FileState<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated>
+
+#!markdown
+
+### prepass
+
+#!fsharp
 
 let rec prepass (package_id,module_id,path,env) = function
     | Cons((_,r,_) : TypecheckerStateValue, ls) ->
@@ -12567,6 +16003,12 @@ let rec prepass (package_id,module_id,path,env) = function
     | Nil ->
         Job.result Nil
 
+#!markdown
+
+### diffWDiffPrepass
+
+#!fsharp
+
 let rec diffWDiffPrepass (package_id,module_id,path,env) (result,input : TypecheckerStateValue Stream) = 
     input >>** fun input ->
     let tc () = prepass (package_id,module_id,path,env) input |> Hopac.memo
@@ -12575,6 +16017,12 @@ let rec diffWDiffPrepass (package_id,module_id,path,env) (result,input : Typeche
         | Cons((b',_,env as x),next), Cons((_,b,_),bs) when b' = b -> Cons(x,diffWDiffPrepass (package_id,module_id,path,env) (next,bs)) |> Promise.Now.withValue
         | _ -> tc()
     else tc()
+
+#!markdown
+
+### funs_file_prepass
+
+#!fsharp
 
 let funs_file_prepass = {new FileFuns<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated> with
     member _.eval(state,(pid,mid,path,x)) = 
@@ -12589,12 +16037,24 @@ let funs_file_prepass = {new FileFuns<PackageId * ModuleId * string * Typechecke
         }
     }
 
+#!markdown
+
+### prepass_results_summary
+
+#!fsharp
+
 let prepass_results_summary l =
     Stream.foldFun (fun big (_,x,_) ->
         match x with
         | AOpen _ -> big
         | AInclude small -> unionPrepass small big
         ) (top_env_emptyPrepass) l
+
+#!markdown
+
+### funs_proj_file_prepass
+
+#!fsharp
 
 let funs_proj_file_prepass = {new ProjFileFuns<PrepassState,PrepassStatePropagated> with
     member _.file(name,state,x) = 
@@ -12609,6 +16069,12 @@ let funs_proj_file_prepass = {new ProjFileFuns<PrepassState,PrepassStatePropagat
     member _.empty = Promise.Now.withValue top_env_emptyPrepass
     }
 
+#!markdown
+
+### PrepassPackageEnv
+
+#!fsharp
+
 type PrepassPackageEnv = {
     prototypes_instances : Map<int, Map<GlobalId * GlobalId,E>>
     nominals : Map<int, Map<GlobalId,{|body : TPrepass; name : string|}>>
@@ -12616,18 +16082,36 @@ type PrepassPackageEnv = {
     ty : Map<string,TPrepass>
     }
 
+#!markdown
+
+### unionWDiffPrepass
+
+#!fsharp
+
 let unionWDiffPrepass small big = {
     prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
     nominals = Map.foldBack Map.add small.nominals big.nominals
     term = Map.foldBack Map.add small.term big.term
     ty = Map.foldBack Map.add small.ty big.ty
     }
-    
+
+#!markdown
+
+### in_module
+
+#!fsharp
+
 let in_module m (a : PrepassPackageEnv) =
     {a with 
         ty = Map.add m (TModule a.ty) Map.empty
         term = Map.add m (EModule a.term) Map.empty
         }
+
+#!markdown
+
+### package_env_emptyWDiffPrepass
+
+#!fsharp
 
 let package_env_emptyWDiffPrepass = {
     prototypes_instances = Map.empty
@@ -12635,6 +16119,12 @@ let package_env_emptyWDiffPrepass = {
     term = Map.empty
     ty = Map.empty
     }
+
+#!markdown
+
+### package_to_fileWDiffPrepass
+
+#!fsharp
 
 let package_to_fileWDiffPrepass (x : PrepassPackageEnv) = {
     nominals_next_tag = 0
@@ -12645,6 +16135,12 @@ let package_to_fileWDiffPrepass (x : PrepassPackageEnv) = {
     term = x.term
     }
 
+#!markdown
+
+### add_file_to_packageWDiffPrepass
+
+#!fsharp
+
 let add_file_to_packageWDiffPrepass package_id (small : PrepassTopEnv) (big : PrepassPackageEnv): PrepassPackageEnv = {
     nominals = Map.add package_id small.nominals big.nominals
     prototypes_instances = Map.add package_id small.prototypes_instances big.prototypes_instances
@@ -12652,9 +16148,28 @@ let add_file_to_packageWDiffPrepass package_id (small : PrepassTopEnv) (big : Pr
     term = small.term
     }
 
+#!markdown
+
+### package_env_defaultWDiffPrepass
+
+#!fsharp
+
 let package_env_defaultWDiffPrepass default_env = { package_env_emptyWDiffPrepass with ty = (top_env_defaultPrepass default_env).ty }
 
+#!markdown
+
+### ProjStatePrepass
+
+#!fsharp
+
 type ProjStatePrepass = ProjState<PrepassState,PrepassStatePropagated,PrepassPackageEnv Promise>
+
+#!markdown
+
+### funs_proj_package_prepass
+
+#!fsharp
+
 let funs_proj_package_prepass = {new ProjPackageFuns<PrepassStatePropagated,PrepassPackageEnv Promise> with
     member funs.unions default_env l = 
         let f = function Some name, small -> funs.in_module(name,small) | None, small -> small
@@ -12695,39 +16210,172 @@ let funs_proj_package_prepass = {new ProjPackageFuns<PrepassStatePropagated,Prep
 
 // Everything that deals with Spiral project files themselves goes here
 open FParsec
-
 // open Common
 
+#!markdown
+
+### RawFileHierarchy
+
+#!fsharp
 
 type RawFileHierarchy =
     | Directory of VSCRange * RString * RawFileHierarchy list
     | File of VSCRange * RString * is_top_down : bool * is_include : bool
+
+#!markdown
+
+### ConfigResumableError
+
+#!fsharp
+
 type ConfigResumableError =
     | DuplicateFiles of VSCRange [] []
     | DuplicateRecordFields of VSCRange [] []
     | MissingNecessaryRecordFields of string [] * VSCRange
+
+#!markdown
+
+### ConfigFatalError
+
+#!fsharp
+
 type ConfigFatalError =
     | Tabs of VSCRange []
     | ParserError of string * VSCRange
+
+#!markdown
+
+### ConfigException
+
+#!fsharp
+
 exception ConfigException of ConfigFatalError
 
+#!markdown
+
+### spaces_template
+
+#!fsharp
+
 let rec spaces_template s = (spaces >>. optional (followedByString "//" >>. skipRestOfLine true >>. spaces_template)) s
+
+#!markdown
+
+### spacesSpiProj
+
+#!fsharp
+
 let spacesSpiProj s = spaces_template s
 
+#!markdown
+
+### raise'
+
+#!fsharp
+
 let raise' x = raise (ConfigException x)
+
+#!markdown
+
+### raise_if_not_empty
+
+#!fsharp
+
 let raise_if_not_empty exn l = if Array.isEmpty l = false then raise' (exn l)
+
+#!markdown
+
+### add_to_exception_list'
+
+#!fsharp
+
 let add_to_exception_list' (p: CharStream<ResizeArray<ConfigResumableError>>) = p.State.UserState.Add
+
+#!markdown
+
+### add_to_exception_list
+
+#!fsharp
+
 let add_to_exception_list (p: CharStream<ResizeArray<ConfigResumableError>>) exn l = if Array.isEmpty l = false then p.State.UserState.Add (exn l)
+
+#!markdown
+
+### column
+
+#!fsharp
+
 let column (p : CharStream<_>) = p.Column
+
+#!markdown
+
+### pos
+
+#!fsharp
+
 let pos (p : CharStream<_>) : VSCPos = {|line=int p.Line - 1; character=int p.Column - 1|}
+
+#!markdown
+
+### pos'
+
+#!fsharp
+
 let pos' p = Reply(pos p)
+
+#!markdown
+
+### rangeSpiProj
+
+#!fsharp
+
 let rangeSpiProj f p = pipe3 pos' f pos' (fun a b c -> ((a, c) : VSCRange), b) p
 
+#!markdown
+
+### is_small_var_char_startingSpiProj
+
+#!fsharp
+
 let is_small_var_char_startingSpiProj c = isAsciiLower c
+
+#!markdown
+
+### is_var_charSpiProj
+
+#!fsharp
+
 let is_var_charSpiProj c = isAsciiLetter c || c = '_' || c = ''' || isDigit c
+
+#!markdown
+
+### file'
+
+#!fsharp
+
 let file' p = many1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" p
+
+#!markdown
+
+### fileSpiProj
+
+#!fsharp
+
 let fileSpiProj p = (rangeSpiProj file' .>> spacesSpiProj) p
+
+#!markdown
+
+### file_verify
+
+#!fsharp
+
 let file_verify p = (skipMany1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" .>> spacesSpiProj .>> eof) p
+
+#!markdown
+
+### file_hierarchy
+
+#!fsharp
 
 let rec file_hierarchy p =
     let i = column p
@@ -12757,7 +16405,20 @@ and file_or_directory p =
         )
     |>> fun (r',f) -> f r') p
 
+#!markdown
+
+### RawSchemaPackages
+
+#!fsharp
+
 type RawSchemaPackages = {range : VSCRange; name : string; is_in_compiler_dir : bool; is_include : bool}
+
+#!markdown
+
+### packages
+
+#!fsharp
+
 let packages p =
     let i = column p
     let file = rangeSpiProj (((skipChar '|' >>% true) <|>% false) .>>.  file') >>= fun (r,(is_in_compiler_dir,name)) p ->
@@ -12767,6 +16428,12 @@ let packages p =
     let file p = if i <= column p then file p else Reply(ReplyStatus.Error,expected "directory on the same or greater indentation as the first one")
     many file p
 
+#!markdown
+
+### tab_positions
+
+#!fsharp
+
 let tab_positions (str : string): VSCRange [] =
     let mutable line = -1
     lines str |> Array.choose (fun x -> 
@@ -12775,6 +16442,12 @@ let tab_positions (str : string): VSCRange [] =
         if x.character <> -1 then Some(x,{|x with character=x.character+1|}) else None
         )
 
+#!markdown
+
+### record_reduce
+
+#!fsharp
+
 let record_reduce (field: Parser<'schema -> 'schema, _>) s p =
     let record_body p =
         let i = column p
@@ -12782,9 +16455,21 @@ let record_reduce (field: Parser<'schema -> 'schema, _>) s p =
         many (indent field) p
     (rangeSpiProj record_body |>> fun (r,l) -> r, List.fold (|>) s l) p
 
+#!markdown
+
+### record_field
+
+#!fsharp
+
 let record_field (name, p) = 
     (skipString name >>. skipChar ':' >>. spacesSpiProj >>. rangeSpiProj p)
     |>> (fun (r,f) (s,l) -> f s, (r, name) :: l)
+
+#!markdown
+
+### record
+
+#!fsharp
 
 let record fields fields_necessary schema =
     let fields = choice (List.map record_field fields)
@@ -12802,6 +16487,12 @@ let record fields fields_necessary schema =
 
         Reply(schema)
 
+#!markdown
+
+### RawSchema
+
+#!fsharp
+
 type RawSchema = {
     name : RString option
     version : RString option
@@ -12810,6 +16501,12 @@ type RawSchema = {
     packageDir : RString option
     packages : RawSchemaPackages list
     }
+
+#!markdown
+
+### schema_def
+
+#!fsharp
 
 let schema_def: RawSchema = {
     name=None
@@ -12820,9 +16517,20 @@ let schema_def: RawSchema = {
     packages=[]
     }
 
+#!markdown
+
+### ConfigError
+
+#!fsharp
+
 type ConfigError = ResumableError of ConfigResumableError [] | FatalError of ConfigFatalError
 
-open System.IO
+#!markdown
+
+### config
+
+#!fsharp
+
 let config text =
     try 
         let _ = tab_positions text |> raise_if_not_empty Tabs
@@ -12863,10 +16571,30 @@ let config text =
         |> Array.toList
         )
 
+#!markdown
+
+### FileHierarchy
+
+#!fsharp
+
 type FileHierarchy =
     | Directory of VSCRange * path: RString * name : string * FileHierarchy list
     | File of VSCRange * path: RString * string option
+
+#!markdown
+
+### SchemaPackages
+
+#!fsharp
+
 type SchemaPackages = {dir : RString; name : string option}
+
+#!markdown
+
+### Schema
+
+#!fsharp
+
 type Schema = {
     moduleDir : VSCRange option * string
     modules : FileHierarchy list
@@ -12874,8 +16602,28 @@ type Schema = {
     packages : SchemaPackages list
     }
 
+#!markdown
+
+### SchemaException
+
+#!fsharp
+
 exception SchemaException of RString
+
+#!markdown
+
+### SchemaResult
+
+#!fsharp
+
 type SchemaResult = Result<Schema,RString list>
+
+#!markdown
+
+### schema
+
+#!fsharp
+
 let schema (pdir,text) : SchemaResult = config text |> Result.bind (fun x ->
     try
         let combine a (r,b) =
@@ -12942,16 +16690,54 @@ let schema (pdir,text) : SchemaResult = config text |> Result.bind (fun x ->
 
 open System.Collections.Generic
 
+#!markdown
+
+### Graph
+
+#!fsharp
+
 type Graph = Map<string,string Set>
+
+#!markdown
+
+### MirroredGraph
+
+#!fsharp
+
 type MirroredGraph = Graph * Graph
 
+#!markdown
+
+### mirrored_graph_empty
+
+#!fsharp
+
 let mirrored_graph_empty : MirroredGraph = Map.empty, Map.empty
+
+#!markdown
+
+### link_add'
+
+#!fsharp
 
 let link_add' (abs : Graph) a b: Graph = 
     match Map.tryFind a abs with
     | Some bs -> Map.add a (Set.add b bs) abs
     | None -> Map.add a (Set.singleton b) abs
+
+#!markdown
+
+### link_add
+
+#!fsharp
+
 let link_add (s : MirroredGraph) a b: MirroredGraph = link_add' (fst s) a b, link_add' (snd s) b a
+
+#!markdown
+
+### link_remove'
+
+#!fsharp
 
 let link_remove' (abs : Graph) a b = 
     match Map.tryFind a abs with
@@ -12959,16 +16745,63 @@ let link_remove' (abs : Graph) a b =
         let bs = Set.remove b bs
         if Set.isEmpty bs then Map.remove a abs else Map.add a bs abs
     | None -> abs
+
+#!markdown
+
+### link_remove
+
+#!fsharp
+
 let link_remove (s : MirroredGraph) a b: MirroredGraph = link_remove' (fst s) a b, link_remove' (snd s) b a
+
+#!markdown
+
+### links_remove
+
+#!fsharp
 
 let links_remove ((abs,bas as s) : MirroredGraph) a: MirroredGraph = 
     match Map.tryFind a abs with
     | Some bs -> Map.remove a abs, Set.fold (fun bas b -> link_remove' bas b a) bas bs
     | None -> s
+
+#!markdown
+
+### links_add
+
+#!fsharp
+
 let links_add s a bs = List.fold (fun s b -> link_add s a b) s bs
+
+#!markdown
+
+### links_replace
+
+#!fsharp
+
 let links_replace (s : MirroredGraph) a bs = links_add (links_remove s a) a bs
+
+#!markdown
+
+### links_get
+
+#!fsharp
+
 let links_get (abs : Graph) a = Map.tryFind a abs |> Option.defaultValue Set.empty
+
+#!markdown
+
+### link_exists
+
+#!fsharp
+
 let link_exists ((abs,bas) : MirroredGraph) x = Map.containsKey x abs || Map.containsKey x bas
+
+#!markdown
+
+### topological_sort_template
+
+#!fsharp
 
 let inline topological_sort_template add bas dirty_nodes =
     let sort_visited = HashSet()
@@ -12976,10 +16809,29 @@ let inline topological_sort_template add bas dirty_nodes =
     Seq.iter dfs_rev dirty_nodes
     sort_visited
 
+#!markdown
+
+### topological_sort'
+
+#!fsharp
+
 // Returns the order end -> mid -> start.
 let topological_sort' bas start_nodes = let sort_order = Queue() in sort_order, topological_sort_template sort_order.Enqueue bas start_nodes
+
+#!markdown
+
+### topological_sort
+
+#!fsharp
+
 // Returns the order start -> mid -> end.
 let topological_sort bas start_nodes = let sort_order = Stack() in sort_order, topological_sort_template sort_order.Push bas start_nodes
+
+#!markdown
+
+### circular_nodes
+
+#!fsharp
 
 let circular_nodes ((abs,bas) : MirroredGraph) dirty_nodes =
     let sort_order, sort_visited = topological_sort bas dirty_nodes
@@ -13010,6 +16862,11 @@ open System.Collections.Generic
 
 // open Common
 
+#!markdown
+
+### ProjectCodeAction
+
+#!fsharp
 
 type ProjectCodeAction = 
     | CreateFile of {|filePath : string|}
@@ -13018,6 +16875,12 @@ type ProjectCodeAction =
     | CreateDirectory of {|dirPath : string|}
     | DeleteDirectory of {|range: VSCRange; dirPath : string|} // The range here is for the whole tree, not just the code action activation.
     | RenameDirectory of {|dirPath : string; target : string; validate_as_file : bool|}
+
+#!markdown
+
+### code_action_execute
+
+#!fsharp
 
 let code_action_execute a =
     try match a with
@@ -13043,19 +16906,65 @@ let code_action_execute a =
             | FParsec.CharParsers.ParserResult.Failure(er,_,_) -> Result.Error er
     with e -> Result.Error e.Message
 
+#!markdown
+
+### RAction
+
+#!fsharp
+
 type RAction = VSCRange * ProjectCodeAction
 
+#!markdown
+
+### SchemaState
+
+#!fsharp
+
 type SchemaState = { schema : Schema; errors_parse : RString list; errors_modules : RString list; errors_packages : RString list}
+
+#!markdown
+
+### SchemaEnv
+
+#!fsharp
+
 type SchemaEnv = Map<string,SchemaState>
+
+#!markdown
+
+### ModuleEnv
+
+#!fsharp
+
 type ModuleEnv = Map<string,ModuleState>
+
+#!markdown
+
+### ss_empty
+
+#!fsharp
 
 let ss_empty = {
     schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []}
     errors_parse = []; errors_modules = []; errors_packages = []
     }
+
+#!markdown
+
+### ss_from_result
+
+#!fsharp
+
 let ss_from_result = function
     | Result.Ok schema -> {ss_empty with schema = schema}
     | Result.Error ers -> {ss_empty with errors_parse = ers}
+
+#!markdown
+
+### ss_validate_module
+
+#!fsharp
+
 let ss_validate_module (packages : SchemaEnv) (modules : ModuleEnv) (x : SchemaState) =
     let errors = ResizeArray()
     let rec loop = function
@@ -13070,6 +16979,13 @@ let ss_validate_module (packages : SchemaEnv) (modules : ModuleEnv) (x : SchemaS
     and list l = List.iter loop l
     list x.schema.modules
     Seq.toList errors
+
+#!markdown
+
+### ss_validate_modules
+
+#!fsharp
+
 let ss_validate_modules (packages : SchemaEnv) modules order = 
     Array.fold (fun s x ->
         match Map.tryFind x s with
@@ -13077,7 +16993,21 @@ let ss_validate_modules (packages : SchemaEnv) modules order =
         | None -> s
         ) packages order
 
-let ss_has_error x = (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
+#!markdown
+
+### ss_has_error
+
+#!fsharp
+
+let ss_has_error x =
+    (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
+
+#!markdown
+
+### ss_validate_packages
+
+#!fsharp
+
 let ss_validate_packages (packages : SchemaEnv) (order : string [], socs : Dictionary<string,int>) : SchemaEnv =
     Array.fold (fun s path ->
         match Map.tryFind path s with
@@ -13101,12 +17031,37 @@ let ss_validate_packages (packages : SchemaEnv) (order : string [], socs : Dicti
         | _ -> s
         ) packages order
 
+#!markdown
+
+### ss_validate
+
+#!fsharp
+
 let ss_validate packages modules (order,socs) =
     let packages = ss_validate_modules packages modules order
     ss_validate_packages packages (order,socs)
 
+#!markdown
+
+### ResultMap<'a,'b>
+
+#!fsharp
+
 type ResultMap<'a,'b> when 'a : comparison = {ok : Map<'a,'b>; error: Map<'a,'b>}
+
+#!markdown
+
+### ProjEnvTCResult
+
+#!fsharp
+
 type ProjEnvTCResult = ResultMap<PackageId,ProjStateTC>
+
+#!markdown
+
+### wdiff_projenvr_sync_schema
+
+#!fsharp
 
 let wdiff_projenvr_sync_schema default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv) 
         (state : ResultMap<PackageId,ProjState<'file_input,'file,'package>>) order =
@@ -13129,6 +17084,12 @@ let wdiff_projenvr_sync_schema default_env funs_packages funs_files (ids : Map<s
         | None -> s
         ) state order
 
+#!markdown
+
+### projenv_update_packages
+
+#!fsharp
+
 let projenv_update_packages default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
         (state : Map<PackageId,ProjState<'a,'b,'state>>)  (dirty_packages : Dictionary<_,_>, order : string []) =
     Array.foldBack (fun x l ->
@@ -13146,6 +17107,12 @@ let projenv_update_packages default_env funs_packages funs_files (ids : Map<stri
         ) order []
     |> wdiff_projenv default_env funs_packages funs_files state
 
+#!markdown
+
+### proj_file_iter_file
+
+#!fsharp
+
 let inline proj_file_iter_file f (files : ProjFiles) =
     let rec loop = function
         | ProjFilesTree.File(module_id,path,_) -> f module_id path
@@ -13153,10 +17120,22 @@ let inline proj_file_iter_file f (files : ProjFiles) =
     and list l = List.iter loop l
     list files.tree
 
+#!markdown
+
+### proj_file_get_input
+
+#!fsharp
+
 let proj_file_get_input uids_file (x : ProjFiles) =
     let d = Dictionary(Array.length uids_file)
     proj_file_iter_file (fun mid path -> d.Add(path, Array.get uids_file mid |> fst)) x
     d
+
+#!markdown
+
+### proj_file_from_schema
+
+#!fsharp
 
 let proj_file_from_schema (x : Schema) : ProjFiles =
     let mutable num_files = 0
@@ -13176,10 +17155,22 @@ let proj_file_from_schema (x : Schema) : ProjFiles =
     let tree = list x.modules
     { tree = tree; num_files = num_files; num_dirs = num_dirs }
 
+#!markdown
+
+### proj_file_make_input
+
+#!fsharp
+
 let inline proj_file_make_input f (files : ProjFiles) =
     let ar = Array.zeroCreate files.num_files
     proj_file_iter_file (fun mid path -> ar.[mid] <- f mid path) files
     ar
+
+#!markdown
+
+### dirty_nodes_template
+
+#!fsharp
 
 let inline dirty_nodes_template funs (ids : Map<string, PackageId>) (packages : SchemaEnv) modules
         (state : Map<PackageId,_>) (dirty_packages : string HashSet) =
@@ -13207,9 +17198,21 @@ let inline dirty_nodes_template funs (ids : Map<string, PackageId>) (packages : 
         )
     d
 
+#!markdown
+
+### dirty_nodes_tc
+
+#!fsharp
+
 let dirty_nodes_tc (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : ModuleEnv)
         (state : Map<PackageId,ProjStateTC>) (dirty_packages : string HashSet) =
     dirty_nodes_template funs_file_tc ids packages (fun pid mid path -> pid, mid, modules.[path].bundler) state dirty_packages
+
+#!markdown
+
+### dirty_nodes_prepass
+
+#!fsharp
 
 let dirty_nodes_prepass (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : Map<PackageId,ProjStateTC>)
         (state : Map<PackageId,ProjStatePrepass>) (dirty_packages : string HashSet) =
@@ -13219,27 +17222,74 @@ let dirty_nodes_prepass (ids : Map<string, PackageId>) (packages : SchemaEnv) (m
         fun (mid : ModuleId) path -> pid, mid, path, state.[path].result
     dirty_nodes_template funs_file_prepass ids packages modules state dirty_packages
 
+#!markdown
+
+### wdiff_projenvr
+
+#!fsharp
+
 let wdiff_projenvr default_env dirty_nodes funs_proj_package funs_proj_file 
         ids packages modules (state : ResultMap<PackageId,_>) (dirty_packages, order) =
     let state = wdiff_projenvr_sync_schema default_env funs_proj_package funs_proj_file ids packages state order
     let dirty_packages = dirty_nodes ids packages modules state.ok dirty_packages
     {state with ok=projenv_update_packages default_env funs_proj_package funs_proj_file ids packages state.ok (dirty_packages, order)}
 
+#!markdown
+
+### wdiff_projenvr_tc
+
+#!fsharp
+
 let wdiff_projenvr_tc default_env ids packages modules state (dirty_packages, order) =
     wdiff_projenvr default_env dirty_nodes_tc funs_proj_package_tc funs_proj_file_tc 
         ids packages modules state (dirty_packages, order)
+
+#!markdown
+
+### wdiff_projenvr_prepass
+
+#!fsharp
 
 let wdiff_projenvr_prepass default_env ids packages modules state (dirty_packages, order) =
     wdiff_projenvr default_env dirty_nodes_prepass funs_proj_package_prepass funs_proj_file_prepass 
         ids packages modules state (dirty_packages, order)
 
+#!markdown
+
+### LoadResult
+
+#!fsharp
+
 type LoadResult =
     | LoadModule of path: string * ModuleState option
     | LoadPackage of package_dir: string * SchemaState option
 
+#!markdown
+
+### is_top_down
+
+#!fsharp
+
 open System.Threading.Tasks
+
+#!fsharp
+
 let is_top_down (x : string) = Path.GetExtension x = ".spi"
+
+#!markdown
+
+### spiproj_suffix
+
+#!fsharp
+
 let spiproj_suffix x = Path.Combine(x,"package.spiproj")
+
+#!markdown
+
+### loader_package
+
+#!fsharp
+
 let loader_package default_env (packages : SchemaEnv) (modules : ModuleEnv) (pdir, text) =
     let pdir' = pdir |> SpiralFileSystem.standardize_path
     trace Verbose (fun () -> $"ServerUtils.loader_package / pdir: {pdir} / pdir': {pdir'}") _locals
@@ -13324,12 +17374,24 @@ let loader_package default_env (packages : SchemaEnv) (modules : ModuleEnv) (pdi
         | LoadModule(mdir,None) -> modules <- Map.remove mdir modules
     packages, dirty_packages, modules
 
+#!markdown
+
+### graph_update
+
+#!fsharp
+
 let graph_update (packages : SchemaEnv) (g : MirroredGraph) (dirty_packages : string HashSet) =
     Seq.fold (fun g x ->
         match Map.tryFind x packages with
         | Some v -> links_replace g x (v.schema.packages |> List.map (fun x -> snd x.dir))
         | None -> links_remove g x
         ) g dirty_packages
+
+#!markdown
+
+### package_ids_update
+
+#!fsharp
 
 let package_ids_update (packages : SchemaEnv) package_ids (dirty_packages : string HashSet) =
     let adds,removals = dirty_packages |> Seq.toArray |> Array.partition (fun x -> Map.containsKey x packages)
@@ -13342,7 +17404,14 @@ let package_ids_update (packages : SchemaEnv) package_ids (dirty_packages : stri
         ) adds (snd package_ids)
     |> Array.fold (fun (a,b) (k,v) -> Map.add v k a, Map.add k v b) package_ids
 
-let package_ids_remove (s : ResultMap<PackageId,_>) l = List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
+#!markdown
+
+### package_ids_remove
+
+#!fsharp
+
+let package_ids_remove (s : ResultMap<PackageId,_>) l =
+    List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
 
 #!markdown
 
@@ -13373,8 +17442,28 @@ open Hopac.Stream
 // open Common
 open SpiralFileSystem.Operators
 
+#!markdown
+
+### LocalizedErrors
+
+#!fsharp
+
 type LocalizedErrors = {|uri : string; errors : RString list|}
+
+#!markdown
+
+### TracedError
+
+#!fsharp
+
 type TracedError = {|trace : string list; message : string|}
+
+#!markdown
+
+### SupervisorErrorSources
+
+#!fsharp
+
 type SupervisorErrorSources = {
     fatal : string Ch
     tokenizer : LocalizedErrors Ch
@@ -13383,6 +17472,12 @@ type SupervisorErrorSources = {
     package : LocalizedErrors Ch
     traced : TracedError Ch
     }
+
+#!markdown
+
+### SupervisorReq
+
+#!fsharp
 
 type SupervisorReq =
     | ProjectFileOpen of {|uri : string; spiprojText : string|}
@@ -13397,6 +17492,12 @@ type SupervisorReq =
     | HoverAt of {|uri : string; pos : VSCPos|} * string option IVar
     | BuildFile of {|uri : string; backend : string|} * string option IVar
 
+#!markdown
+
+### SupervisorState
+
+#!fsharp
+
 type SupervisorState = {
     packages : SchemaEnv
     modules : ModuleEnv
@@ -13406,11 +17507,23 @@ type SupervisorState = {
     package_ids : Map<string,int> * Map<int,string>
     }
 
+#!markdown
+
+### proj_validate
+
+#!fsharp
+
 let proj_validate default_env s dirty_packages =
     let order,socs = circular_nodes s.graph dirty_packages
     let packages = ss_validate s.packages s.modules (order,socs)
     let packages_infer = wdiff_projenvr_tc default_env (fst s.package_ids) packages s.modules s.packages_infer (dirty_packages, order)
     order, {s with packages_infer = packages_infer; packages=packages}
+
+#!markdown
+
+### proj_graph_update
+
+#!fsharp
 
 let proj_graph_update default_env s dirty_packages =
     let removed_pids,package_ids = package_ids_update s.packages s.package_ids dirty_packages
@@ -13418,9 +17531,21 @@ let proj_graph_update default_env s dirty_packages =
     let graph = graph_update s.packages s.graph dirty_packages
     proj_validate default_env {s with graph = graph; package_ids = package_ids; packages_infer = packages_infer; packages_prepass = packages_prepass} dirty_packages
 
+#!markdown
+
+### proj_open
+
+#!fsharp
+
 let proj_open default_env s (dir, text) =
     let packages,dirty_packages,modules = loader_package default_env s.packages s.modules (dir,text)
     proj_graph_update default_env {s with packages = packages; modules = modules} dirty_packages
+
+#!markdown
+
+### proj_revalidate_owner
+
+#!fsharp
 
 let proj_revalidate_owner default_env s file =
     let rec loop (x : DirectoryInfo) =
@@ -13434,6 +17559,12 @@ let proj_revalidate_owner default_env s file =
             elif File.Exists(spiproj_suffix x.FullName) then proj_open default_env s (x.FullName,None)
             else loop x_.Parent
     loop (Directory.GetParent(file))
+
+#!markdown
+
+### file_delete
+
+#!fsharp
 
 let file_delete default_env s (files : string []) =
     let deleted_modules = HashSet()
@@ -13457,12 +17588,24 @@ let file_delete default_env s (files : string []) =
     Seq.iter revalidate_parent deleted_modules; Seq.iter revalidate_parent deleted_packages
     Seq.toArray deleted_modules, proj_graph_update default_env {s with modules = modules; packages = packages} dirty_packages
 
+#!markdown
+
+### AttentionState
+
+#!fsharp
+
 type AttentionState = {
     modules : string Set * string list
     packages : string Set * string list
     old_packages : SchemaEnv
     supervisor : SupervisorState
     }
+
+#!markdown
+
+### attention_server
+
+#!fsharp
 
 let attention_server (errors : SupervisorErrorSources) (req : _ Ch) =
     let push path (s,o) = Set.add path s, path :: o
@@ -13575,6 +17718,12 @@ let attention_server (errors : SupervisorErrorSources) (req : _ Ch) =
         loop {modules = Set.ofArray modules, Array.toList modules; packages = Set.ofArray packages, Array.toList packages; supervisor = supervisor; old_packages = Map.empty}
         )
 
+#!markdown
+
+### show_position
+
+#!fsharp
+
 let show_position (s : SupervisorState) (x : Range) =
     let line = (fst x.range).line
     let col = (fst x.range).character
@@ -13586,6 +17735,12 @@ let show_position (s : SupervisorState) (x : Range) =
         .AppendLine("^")
         .ToString()
 
+#!markdown
+
+### show_trace
+
+#!fsharp
+
 let show_trace s (x : Trace) (msg : string) =
     let rec loop (l : Trace) = function
         | (x : Range) :: xs ->
@@ -13595,20 +17750,60 @@ let show_trace s (x : Trace) (msg : string) =
         | _ -> l
     List.map (show_position s) (loop [] x), msg
 
+#!markdown
+
+### BuildResult
+
+#!fsharp
+
 type BuildResult =
     | BuildOk of {|code: string; file_extension : string|} list
     | BuildErrorTrace of string list * string
     | BuildFatalError of string
     | BuildSkip
 
+#!markdown
+
+### workspaceRoot
+
+#!fsharp
+
 let workspaceRoot = SpiralFileSystem.get_workspace_root ()
+
+#!markdown
+
+### targetDir
+
+#!fsharp
+
 let targetDir = workspaceRoot </> "target/spiral_Eval"
+
+#!markdown
+
+### traceDir
+
+#!fsharp
+
 let traceDir = targetDir </> "supervisor_trace"
+
+#!markdown
+
+### dir
+
+#!fsharp
+
 let dir uri =
     let result = System.IO.FileInfo(System.Uri(uri).LocalPath).Directory.FullName
     let result' = result |> SpiralFileSystem.standardize_path
     trace Verbose (fun () -> $"Supervisor.dir / uri: {uri} / result: {result} / result': {result'}") _locals
     result'
+
+#!markdown
+
+### file
+
+#!fsharp
+
 let file uri =
     let result =
         try
@@ -13620,6 +17815,13 @@ let file uri =
     // let result = result |> SpiralSm.replace "\\" "|"
     // trace Verbose (fun () -> $"Supervisor.file / uri: {uri} / result: {result} / result': {result'}") _locals
     result'
+
+#!markdown
+
+### supervisor_server
+
+#!fsharp
+
 let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorErrorSources) req =
     let fatal x = Hopac.start (Ch.send errors.fatal x)
     let handle_packages (dirty_packages,s) = Hopac.start (Ch.send atten ([||],dirty_packages,s)); s
@@ -13794,7 +17996,6 @@ let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorError
                     Job.fromAsync (async {
                         for x in l do
                             do! System.IO.File.WriteAllTextAsync(System.IO.Path.ChangeExtension(file,x.file_extension), x.code) |> Async.AwaitTask
-
                     })
                     |> Hopac.start
                     l
@@ -13909,6 +18110,12 @@ let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorError
         package_ids = Map.empty, Map.empty
         } loop
 
+#!markdown
+
+### ClientReq
+
+#!fsharp
+
 type ClientReq =
     | ProjectFileOpen of {|uri : string; spiprojText : string|}
     | ProjectFileChange of {|uri : string; spiprojText : string|}
@@ -13924,6 +18131,12 @@ type ClientReq =
     | Ping of bool
     | Exit of bool
 
+#!markdown
+
+### ClientErrorsRes
+
+#!fsharp
+
 type ClientErrorsRes =
     | FatalError of string
     | TracedError of TracedError
@@ -13932,6 +18145,11 @@ type ClientErrorsRes =
     | ParserErrors of {|uri : string; errors : RString list|}
     | TypeErrors of {|uri : string; errors : RString list|}
 
+#!markdown
+
+### Supervisor
+
+#!fsharp
 
 type Supervisor = {
     supervisor_ch : SupervisorReq Ch
@@ -14034,10 +18252,6 @@ type Supervisor = {
 open Hopac
 open Hopac.Infixes
 // open Common
-
-#!markdown
-
-### new_server
 
 #!fsharp
 
@@ -14323,6 +18537,12 @@ type SpiralHub(supervisor : Supervisor) =
                 return null
             }
             |> Async.StartAsTask
+
+#!markdown
+
+## main
+
+#!fsharp
 
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
