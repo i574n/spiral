@@ -5,8 +5,6 @@ namespace Polyglot
 module spiral_compiler =
 
     /// ## spiral_compiler
-
-    /// ### get_args
     open FSharp.Core
 
     // #!import '../../../polyglot/deps/The-Spiral-Language/The Spiral Language 2/Supervisor.fs'
@@ -28,13 +26,15 @@ module spiral_compiler =
     // open System
     // open FSharpx.Collections
 
-    let private range_checks from near_to vec =
+    /// ### private
+    let range_checks from near_to vec =
         if from <= near_to = false then
             Common.trace Common.Critical (fun () -> $"PersistentVectorExtensions.range_checks / `from` must be less or equal to `near_to`. / from: {from} / near_to: {near_to} / vec: {vec}") Common._locals
             // raise (System.ArgumentException("`from` must be less or equal to `near_to`."))
         if from < 0 then raise (System.ArgumentException("`from` must not be negative."))
         if FSharpx.Collections.PersistentVector.length vec < near_to then raise (System.ArgumentException("`near_to` must not be beyond the length of the vector."))
 
+    /// ### replace
     /// O(n+m). Replace the specified range in a vector with the sequence.
     let replace from near_to seq vec =
         range_checks from near_to vec
@@ -51,14 +51,17 @@ module spiral_compiler =
                 rest s
         init vec
 
+    /// ### mapi
     /// O(n). Returns a vector of the supplied length using the supplied function operating on the index.
     let mapi f vec = FSharpx.Collections.PersistentVector.init (FSharpx.Collections.PersistentVector.length vec) (fun i -> f i vec.[i])
 
+    /// ### iter
     /// O(n). Iterates over a vector using the supplied function operating on the index.
     let iter f vec = 
         let rec loop i = if i < FSharpx.Collections.PersistentVector.length vec then f vec.[i]
         loop 0
 
+    /// ### unzip
     /// O(n). Unzips a vector of pairs into pairs of vectors.
     let unzip vec = 
         let mutable a = FSharpx.Collections.PersistentVector.empty
@@ -66,14 +69,17 @@ module spiral_compiler =
         iter (fun (a',b') -> a <- FSharpx.Collections.PersistentVector.conj a' a; b <- FSharpx.Collections.PersistentVector.conj b' b) vec
         a,b
 
+    /// ### concat
     /// O(n). Concatenates a vector of vectors.
     let concat vec = FSharpx.Collections.PersistentVector.fold (FSharpx.Collections.PersistentVector.append) FSharpx.Collections.PersistentVector.empty vec
 
+    /// ### rangePersistentVector
     /// O(near_to-from). Get the vector at a range.
     let rangePersistentVector from near_to vec =
         range_checks from near_to vec
         FSharpx.Collections.PersistentVector.init (near_to-from) (fun i -> vec.[i+from])
 
+    /// ### tryFindBack
     /// O(~n). Returns the last element for which a given function returns true. None if such an element does not exist.
     let tryFindBack f vec =
         let rec loop i =
@@ -91,6 +97,7 @@ module spiral_compiler =
     // open System
     open System.Runtime.InteropServices
 
+    /// ### ConsedNode<'a>
     [<CustomComparison;CustomEquality;StructuredFormatDisplay("{AsString}")>]
     type ConsedNode<'a> =
         {
@@ -113,6 +120,7 @@ module spiral_compiler =
                 | :? ConsedNode<'a> as y -> compare x.tag y.tag
                 | _ -> raise <| System.ArgumentException "Invalid comparison for HashConsed."
 
+    /// ### HashConsTable
     type HashConsTable() =
         let mutable table: ResizeArray<GCHandle> [] = Array.init 7 (fun _ -> ResizeArray(0))
         let mutable total_size: int = 0
@@ -181,12 +189,14 @@ module spiral_compiler =
     /// ## Startup
     open Argu
 
+    /// ### PrimitiveType
     type PrimitiveType =
         | UInt8T | UInt16T | UInt32T | UInt64T
         | Int8T | Int16T | Int32T | Int64T
         | Float32T | Float64T
         | BoolT | StringT | CharT
 
+    /// ### DefaultEnv
     type DefaultEnv = {
         port : int
         default_int : PrimitiveType
@@ -194,6 +204,7 @@ module spiral_compiler =
         default_float : PrimitiveType
         }
 
+    /// ### CliArguments
     type CliArguments =
         | [<Mandatory;Unique>] Port of int
         | [<Unique>] Default_Int of string
@@ -206,6 +217,7 @@ module spiral_compiler =
                 | Default_Int _ -> "specify the default int: i8, i16, i32, i64, u8, u16, u32, u64"
                 | Default_Float _ -> "specify the default float: f32, f64"
 
+    /// ### parseStartup
     let parseStartup args =
         let parser = ArgumentParser.Create<CliArguments>(programName = "spiral.exe")
         let results = parser.ParseCommandLine(args)
@@ -247,24 +259,38 @@ module spiral_compiler =
     open Lib
 #endif
 
-    let list_try_zip a b = try Some (List.zip a b) with _ -> None
+    /// ### list_try_zip
+    let list_try_zip a b =
+        try Some (List.zip a b) with _ -> None
 
+    /// ### get_default
     let inline get_default (memo_dict: Dictionary<_,_>) k def =
         match memo_dict.TryGetValue k with
         | true, v -> v
         | false, _ -> def()
+
+    /// ### memoize'
     let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
         | false, _ -> let v = f k in memo_dict.Add(k,v); v
+
+    /// ### memoize
     let inline memoize (memo_dict: Dictionary<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
         | false, _ -> let v = f k in memo_dict.Add(k,v); v
-    let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
+
+    /// ### lines
+    let lines (str : string) =
+        str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
+
+    /// ### remove
     let inline remove (dict : Dictionary<_,_>) x on_succ on_fail =
         let mutable q = Unchecked.defaultof<_>
         if dict.Remove(x, &q) then on_succ q else on_fail ()
+
+    /// ### file_uri
     let file_uri (x : string) =
         let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
         trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
@@ -279,17 +305,24 @@ module spiral_compiler =
     //let pr x = Hopac.run (Ch.send print_ch (x.ToString()))
 
     /// ## ParserCombinators
-    let inline index d = (^a : (member Index: ^b) d)
-    let inline index_set i d = (^a : (member set_Index: ^b -> unit) (d,i))
 
+    /// ### index
+    let inline index d = (^a : (member Index: ^b) d)
+
+    /// ### index_set
+    let inline index_set i d =
+        (^a : (member set_Index: ^b -> unit) (d,i))
+
+    /// ### (.>>.)
     let inline (.>>.) a b d =
         match a d with
         | Ok a ->
             match b d with
             | Ok b -> Ok (a,b)
             | Error x -> Error x
-        | Error x -> Error x   
+        | Error x -> Error x
 
+    /// ### tuple3
     let inline tuple3 a b c d =
         match a d with
         | Ok a ->
@@ -299,8 +332,9 @@ module spiral_compiler =
                 | Ok c -> Ok (a, b, c)
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### tuple4
     let inline tuple4 a b c d' d =
         match a d with
         | Ok a ->
@@ -313,8 +347,9 @@ module spiral_compiler =
                     | Error x -> Error x
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### tuple5
     let inline tuple5 a b c d' e d =
         match a d with
         | Ok a ->
@@ -330,8 +365,9 @@ module spiral_compiler =
                     | Error x -> Error x
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### tuple6
     let inline tuple6 a b c d' e f d =
         match a d with
         | Ok a ->
@@ -350,8 +386,9 @@ module spiral_compiler =
                     | Error x -> Error x
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x 
+        | Error x -> Error x
 
+    /// ### tuple7
     let inline tuple7 a b c d' e f g d =
         match a d with
         | Ok a ->
@@ -373,16 +410,18 @@ module spiral_compiler =
                     | Error x -> Error x
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### pipe2
     let inline pipe2 a b f d =
         match a d with
         | Ok a ->
             match b d with
             | Ok b -> Ok (f a b)
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### pipe3
     let inline pipe3 a b c f d =
         match a d with
         | Ok a ->
@@ -392,8 +431,9 @@ module spiral_compiler =
                 | Ok c -> Ok (f a b c)
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### pipe4
     let inline pipe4 a b c d' f d =
         match a d with
         | Ok a ->
@@ -406,8 +446,9 @@ module spiral_compiler =
                     | Error x -> Error x
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### pipe5
     let inline pipe5 a b c d' e f d =
         match a d with
         | Ok a ->
@@ -423,24 +464,27 @@ module spiral_compiler =
                     | Error x -> Error x
                 | Error x -> Error x
             | Error x -> Error x
-        | Error x -> Error x  
+        | Error x -> Error x
 
+    /// ### (.>>)
     let inline (.>>) a b d =
         match a d with
         | Ok a ->
             match b d with
             | Ok b -> Ok a
             | Error x -> Error x
-        | Error x -> Error x   
+        | Error x -> Error x
 
+    /// ### (>>.)
     let inline (>>.) a b d =
         match a d with
         | Ok a ->
             match b d with
             | Ok b -> Ok b
             | Error x -> Error x
-        | Error x -> Error x   
+        | Error x -> Error x
 
+    /// ### opt
     let inline opt a d =
         let s = index d
         match a d with
@@ -449,6 +493,7 @@ module spiral_compiler =
             if s = index d then Ok(None)
             else Error x
 
+    /// ### optional
     let inline optional a d = 
         let s = index d
         match a d with
@@ -457,21 +502,25 @@ module spiral_compiler =
             if s = index d then Ok()
             else Error x
 
+    /// ### (|>>)
     let inline (|>>) a b d =
         match a d with
         | Ok a -> Ok(b a)
         | Error x -> Error x
 
+    /// ### (>>%)
     let inline (>>%) a b d =
         match a d with
         | Ok a -> Ok(b)
         | Error x -> Error x
 
+    /// ### (>>=)
     let inline (>>=) a b d =
         match a d with
         | Ok a -> b a d
         | Error x -> Error x
 
+    /// ### (>>=?)
     let inline (>>=?) a b d =
         let i = index d
         match a d with
@@ -482,6 +531,7 @@ module spiral_compiler =
             | Error _ as x -> (if i' = index d then index_set i d); x // Backtracks to the beginning if the parser state has not changed.
         | Error x -> Error x
 
+    /// ### many_iter
     let inline many_iter f a d =
         let rec loop () =
             let s = index d
@@ -491,36 +541,48 @@ module spiral_compiler =
             | Error er -> if s = index d then Ok() else Error er
         loop ()
 
+    /// ### many_resize_array
     let inline many_resize_array a d =
         let ar = ResizeArray()
         match many_iter ar.Add a d with
         | Ok() -> Ok(ar)
         | Error er -> Error er
-    let inline many_array a d = many_resize_array a d |> Result.map (fun x -> x.ToArray())
-    let inline many a d = many_resize_array a d |> Result.map Seq.toList
 
+    /// ### many_array
+    let inline many_array a d =
+        many_resize_array a d |> Result.map (fun x -> x.ToArray())
+
+    /// ### many
+    let inline many a d =
+        many_resize_array a d |> Result.map Seq.toList
+
+    /// ### sepBy
     let inline sepBy a b d =
         let s = index d
         match a d with
         | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
         | Error x -> if s = index d then Ok [] else Error x
 
+    /// ### sepBy1
     let inline sepBy1 a b d =
         match a d with
         | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
         | Error x -> Error x
 
+    /// ### many1
     let inline many1 a d =
         match a d with
         | Ok a' -> (many a |>> fun b -> a' :: b) d
         | Error x -> Error x
 
+    /// ### attempt
     let inline attempt a d =
         let s = index d
         match a d with
         | Ok x -> Ok x
         | Error a as a' -> index_set s d; a'
 
+    /// ### restore
     /// Restores the index on an error if at least i tokens have been consumed.
     let inline restore i a d =
         let s = index d
@@ -528,6 +590,7 @@ module spiral_compiler =
         | Ok x -> Ok x
         | Error _ as er -> (if index d <= s + i then index_set s d); er
 
+    /// ### alt
     let inline alt s a b d =
         match a d with
         | Ok x -> Ok x
@@ -539,14 +602,17 @@ module spiral_compiler =
             else
                 a'
 
+    /// ### (<|>)
     let inline (<|>) a b d = let s = index d in alt s a b d
 
+    /// ### (<|>%)
     let inline (<|>%) a b d =
         let s = index d
         match a d with
         | Ok x -> Ok x
         | Error _ as a' -> if s = index d then Ok b else a'
 
+    /// ### choice
     let inline choice ar d =
         let s = index d
         let rec loop i =
@@ -564,15 +630,20 @@ module spiral_compiler =
                 Error []
         loop 0
 
+    /// ### between
     let inline between a b c = a >>. c .>> b
 
     /// ## LineParsers
     // open System
     // open System.Text
 
+    /// ### TokenizerRange
     type TokenizerRange = {from : int; nearTo : int}
+
+    /// ### TokenizerError
     type TokenizerError = string
 
+    /// ### Tokenizer
     type Tokenizer = {
         text : string // A single line.
         mutable from : int
@@ -580,21 +651,32 @@ module spiral_compiler =
 
         member t.Index with get() = t.from and set i = t.from <- i
 
+    /// ### range_char
     let range_char i = {from=i; nearTo=i+1}
+
+    /// ### error_char
     let error_char i er = Result.Error [range_char i, er]
 
+    /// ### inc'
     let inc' i (s : Tokenizer) = s.from <- s.from+i
+
+    /// ### inc
     let inc (s : Tokenizer) = inc' 1 s
 
+    /// ### eolLineParsers
     /// End Of Line character
     let eolLineParsers = System.Char.MaxValue
+
+    /// ### peek'
     let peek' (s : Tokenizer) i =
         let i = s.from + i
         if 0 <= i && i < s.text.Length then s.text.[i]
         else eolLineParsers
 
+    /// ### peek
     let peek (s : Tokenizer) = peek' s 0
 
+    /// ### many1Satisfy2L
     let inline many1Satisfy2L init body label (s : Tokenizer) = 
         let x = peek s
         if init x && x <> eolLineParsers then
@@ -608,23 +690,37 @@ module spiral_compiler =
             let i = s.from
             error_char i label
 
-    let inline many1SatisfyL body label (s : Tokenizer) = many1Satisfy2L body body label s
+    /// ### many1SatisfyL
+    let inline many1SatisfyL body label (s : Tokenizer) =
+        many1Satisfy2L body body label s
 
-    let inline skip c (s : Tokenizer) = let b = peek s = c in (if b then inc s); b
-    let rec spaces' (s : Tokenizer) = if peek s = ' ' then inc s; spaces' s
-    let spaces s = spaces' s |> Result.Ok
+    /// ### skip
+    let inline skip c (s : Tokenizer) =
+        let b = peek s = c in (if b then inc s); b
 
+    /// ### spaces'
+    let rec spaces' (s : Tokenizer) =
+        if peek s = ' ' then inc s; spaces' s
+
+    /// ### spaces
+    let spaces s =
+        spaces' s |> Result.Ok
+
+    /// ### spaces1
     let spaces1 (s : Tokenizer) =
         if peek s = ' ' then inc s; spaces s else error_char s.from "space"
 
+    /// ### skip_char
     let skip_char c (s : Tokenizer) =
         let from = s.from
         if skip c s then Ok() else error_char from (sprintf "'%c'" c)
 
+    /// ### skip_string
     let skip_string x (s : Tokenizer) =
         if System.String.Compare(s.text,s.from,x,0,x.Length) = 0 then inc' x.Length s; Ok()
         else error_char s.from x
 
+    /// ### anyOf
     let anyOf (l : char list) (s : Tokenizer) =
         let c = peek s
         if Seq.contains c l then 
@@ -633,6 +729,7 @@ module spiral_compiler =
             let i = s.from
             Error (List.map (fun c -> range_char i, string c) l)
 
+    /// ### chars_till_string
     let chars_till_string close (s : Tokenizer) =
         assert (close <> "")
         let rec loop (b : System.Text.StringBuilder) =
@@ -643,6 +740,7 @@ module spiral_compiler =
                 else error_char s.from close
         loop(System.Text.StringBuilder())
 
+    /// ### numberLineParsers
     /// Parses a number as a sequence of digits and optionally underscores. Filters out the underscores from the result.
     let numberLineParsers (s : Tokenizer) = 
         let x = peek s
@@ -658,18 +756,37 @@ module spiral_compiler =
             let i = s.from
             error_char i "number"
 
-    let number_fractional s = (numberLineParsers .>>. (opt (skip_char '.' >>. numberLineParsers))) s
+    /// ### number_fractional
+    let number_fractional s =
+        (numberLineParsers .>>. (opt (skip_char '.' >>. numberLineParsers))) s
 
     /// ## VSCTypes
+
+    /// ### VSCPos
     type VSCPos = {|line : int; character : int|}
+
+    /// ### VSCRange
     type VSCRange = VSCPos * VSCPos
+
+    /// ### RString
     type RString = VSCRange * string
 
+    /// ### PackageId
     type PackageId = int
+
+    /// ### ModuleId
     type ModuleId = int
+
+    /// ### DirId
     type DirId = int
+
+    /// ### GlobalId
     type GlobalId = { package_id : PackageId; module_id : ModuleId; tag : int }
+
+    /// ### RGlobalId
     type RGlobalId = VSCRange * GlobalId
+
+    /// ### SpiEdit
     type SpiEdit = {|from: int; nearTo: int; lines: string []|}
 
     /// ## Tokenize
@@ -677,6 +794,7 @@ module spiral_compiler =
     // open System.Text
     // open FSharpx.Collections
 
+    /// ### TokenKeyword
     type TokenKeyword =
         | SpecIn
         | SpecAnd
@@ -710,10 +828,16 @@ module spiral_compiler =
         | SpecPrototype
         | SpecInstance
 
+    /// ### ParenthesisState
     type ParenthesisState = Open | Close
+
+    /// ### Parenthesis
     type Parenthesis = Round | Square | Curly
+
+    /// ### MacroEnum
     type MacroEnum = MTerm | MType | MTypeLit
 
+    /// ### Literal
     type Literal = 
         | LitUInt8 of uint8
         | LitUInt16 of uint16
@@ -746,7 +870,7 @@ module spiral_compiler =
             | LitString x -> x
             | LitChar x -> x.ToString()
 
-
+    /// ### SemanticTokenLegend
     type SemanticTokenLegend =
         | variable = 0
         | symbol = 1
@@ -763,6 +887,7 @@ module spiral_compiler =
         | number_suffix = 12
         | escaped_var = 13
 
+    /// ### SpiralToken
     type SpiralToken =
         | TokVar of string * SemanticTokenLegend
         | TokSymbol of string * SemanticTokenLegend
@@ -785,6 +910,7 @@ module spiral_compiler =
         | TokMacroTypeLitVar of string
         | TokMacroExpression of MacroEnum * ParenthesisState
 
+    /// ### token_groups
     let token_groups = function
         | TokUnaryOperator(_,r) | TokOperator(_,r) | TokVar(_,r) | TokSymbol(_,r) -> r
         | TokValue (LitChar _) | TokStringOpen | TokStringClose | TokText _ | TokMacroOpen | TokMacroClose | TokValue(LitString _) -> SemanticTokenLegend.string
@@ -801,6 +927,7 @@ module spiral_compiler =
         | TokValue _ | TokDefaultValue _ -> SemanticTokenLegend.number
         | TokValueSuffix -> SemanticTokenLegend.number_suffix
 
+    /// ### show_lit
     let show_lit = function
         | LitUInt8 x -> sprintf "%iu8" x
         | LitUInt16 x -> sprintf "%iu16" x
@@ -816,29 +943,48 @@ module spiral_compiler =
         | LitString x -> sprintf "%s" x
         | LitChar x -> sprintf "%c" x
 
+    /// ### is_small_var_char_starting
     let is_small_var_char_starting c = System.Char.IsLower c || c = '_'
+
+    /// ### is_var_char
     let is_var_char c = System.Char.IsLetterOrDigit c || c = '_' || c = '''
+
+    /// ### is_big_var_char_starting
     let is_big_var_char_starting c = System.Char.IsUpper c
+
+    /// ### is_parenth_open
     let is_var_char_starting c = System.Char.IsLetter c || c = '_'
+
+    /// ### is_parenth_open
     let is_parenth_open c = 
         let f x = c = x
         f '(' || f '[' || f '{'
+
+    /// ### is_parenth_close
     let is_parenth_close c = 
         let f x = c = x
         f ')' || f ']' || f '}'
 
+    /// ### is_operator_char
     // http://www.asciitable.com/
     let is_operator_char c =
         let f x = c = x
         '!' <= c && c <= '~' && (is_var_char c || f '"' || is_parenth_open c || is_parenth_close c) = false
+
+    /// ### is_prefix_separator_char
     let is_prefix_separator_char c = 
         let f x = c = x
         f ' ' || f eolLineParsers || is_parenth_open c
+
+    /// ### is_postfix_separator_char
     let is_postfix_separator_char c = 
         let f x = c = x
         f ' ' || f eolLineParsers || is_parenth_close c
+
+    /// ### is_separator_char
     let is_separator_char c = is_prefix_separator_char c || is_parenth_close c
 
+    /// ### var
     let var (s: Tokenizer) = 
         let from = s.from
         let ok x = Result.Ok ({from=from; nearTo=s.from}, x)
@@ -870,6 +1016,7 @@ module spiral_compiler =
 
         (many1Satisfy2L is_var_char_starting is_var_char "variable" >>= body .>> spaces) s
 
+    /// ### numberTokenize
     let numberTokenize (s: Tokenizer) = 
         let from = s.from
 
@@ -912,6 +1059,7 @@ module spiral_compiler =
 
         (parser >>= followedBySuffix .>> spaces) s
 
+    /// ### symbol
     let symbol s =
         let from = s.from
         let f x = ({from=from; nearTo=s.from}, x)
@@ -923,6 +1071,7 @@ module spiral_compiler =
         elif x = '.' && is_var_char_starting x' then inc s; ((many1SatisfyL is_var_char "variable") |>> (symbol >> f) .>> spaces) s
         else error_char from "symbol"
 
+    /// ### comment
     let comment (s : Tokenizer) =
         if peek s = '/' && peek' s 1 = '/' then 
             let from = s.from
@@ -937,6 +1086,7 @@ module spiral_compiler =
         else
             error_char s.from "comment"
 
+    /// ### operator
     let operator (s : Tokenizer) = 
         let from = s.from
         let ok x = ({from=from; nearTo=s.from}, x) |> Ok
@@ -946,11 +1096,13 @@ module spiral_compiler =
             else TokOperator(name,SemanticTokenLegend.operator) |> ok
         (many1SatisfyL is_operator_char "operator"  >>= f .>> spaces) s
 
+    /// ### string_raw
     let string_raw s =
         let from = s.from
         let f x = {from=from; nearTo=s.from}, TokValue(LitString x)
         (skip_string "@\"" >>. chars_till_string "\"" |>> f .>> spaces) s
 
+    /// ### char_quoted
     let char_quoted s = 
         let char_quoted_body (s: Tokenizer) =
             let inline read on_succ =
@@ -969,6 +1121,7 @@ module spiral_compiler =
         let f _ x _ = {from=from; nearTo=s.from}, TokValue(LitChar x)
         (pipe3 (skip_char '\'') char_quoted_body (skip_char '\'') f .>> spaces) s
 
+    /// ### special_char
     let inline special_char l text s =
         let inline f from x = {from=from; nearTo=s.from}, x
         let f = f s.from
@@ -980,6 +1133,7 @@ module spiral_compiler =
         | 'n' -> esc '\n' | 'r' -> esc '\r'  | 't' -> esc '\t'  | 'b' -> esc '\b' 
         | x -> unesc x
 
+    /// ### string_quoted'
     let string_quoted' s =
         let inline f from x = {from=from; nearTo=s.from}, x
         let close l = let f = f s.from in inc s; List.rev (f TokStringClose :: l) |> Ok
@@ -997,9 +1151,12 @@ module spiral_compiler =
         match peek s with
         | '"' -> let f = f s.from in inc s; text [f TokStringOpen]
         | _ -> error_char s.from "\""
+
+    /// ### string_quoted
     let string_quoted s = (string_quoted' .>> spaces) s
 
-    type private TokenizerMacro =
+    /// ### TokenizerMacro
+    type TokenizerMacro =
         | Text of TokenizerRange * string
         | EscapedChar of TokenizerRange * char
         | EscapedVar of TokenizerRange
@@ -1007,12 +1164,14 @@ module spiral_compiler =
         | Expression of TokenizerRange * string * MacroEnum
         | Var of TokenizerRange * string * MacroEnum
 
+    /// ### range
     let inline range p s = 
         let from = s.from
         match p s with
         | Ok x -> Ok({from=from; nearTo=s.from}, x)
         | Error l -> Error l
 
+    /// ### brackets
     let brackets s =
         let from = s.from
         let f spec = inc s; (spaces >>% ({from=from; nearTo=s.from}, TokParenthesis(spec))) s
@@ -1021,9 +1180,13 @@ module spiral_compiler =
         | ')' -> f (Round,Close) | ']' -> f (Square,Close) | '}' -> f (Curly,Close)
         | _ -> error_char s.from "`(`,`[`,`{`,`}`,`]` or `)`"
 
+    /// ### tab
     let tab s = if peek s = '\t' then Error [range_char (index s), "Tabs are not allowed."] else Error []
+
+    /// ### eolTokenize
     let eolTokenize s = if peek s = eolLineParsers then Ok [] else Error [range_char (index s), "end of line"]
 
+    /// ### token
     let rec token s =
         let i = s.from
         let inline (+) a b = alt i a b
@@ -1121,10 +1284,16 @@ module spiral_compiler =
             |> fun l -> Ok(List.concat [[start]; l; [end_]], er)
         | Error er -> Error er
 
+    /// ### LineToken
     type LineToken = TokenizerRange * SpiralToken
+
+    /// ### LineComment
     type LineComment = TokenizerRange * string
+
+    /// ### LineTokenErrors
     type LineTokenErrors = (TokenizerRange * TokenizerError) list
 
+    /// ### vscode_tokens
     let vscode_tokens ((a,b) : VSCRange) (lines : LineToken FSharpx.Collections.PersistentVector FSharpx.Collections.PersistentVector) =
         let in_range x = min lines.Length x
         let from, near_to = in_range a.line, in_range (b.line+1)
@@ -1143,9 +1312,13 @@ module spiral_compiler =
     /// ## BlockSplitting
     // open FSharpx.Collections
 
+    /// ### LineTokens
     type LineTokens = LineToken FSharpx.Collections.PersistentVector FSharpx.Collections.PersistentVector
+
+    /// ### Block<'a>
     type Block<'a> = {block: 'a; offset: int}
 
+    /// ### block_at
     /// Reads the comments up to a statement, and then reads the statement body. Leaves any errors for the parsing stage.
     let block_at (lines : LineTokens) i =
         let mutable block = FSharpx.Collections.PersistentVector.empty
@@ -1172,12 +1345,14 @@ module spiral_compiler =
         loop_initial i
         {block = block; offset = i}
 
+    /// ### block_all
     // Parses all the blocks.
     let rec block_all lines i = 
         if i < FSharpx.Collections.PersistentVector.length lines then 
             let x = block_at lines i
             x :: block_all lines (i+x.block.Length) else []
 
+    /// ### wdiff_block_all
     // Parses all the blocks with diffing. Only parses those blocks which are dirty based of the edit range. Preserves ref equality and saves work.
     // Without considering ref preservation, it is functionally equivalent to just call `block_all` on just `lines`.
     // This function is difficult to read as it is several operations fused into one loop.
@@ -1212,13 +1387,22 @@ module spiral_compiler =
     // open FParsec
     // open FSharp.Core
 
+    /// ### SymbolString
     type SymbolString = string
+
+    /// ### VarString
     type VarString = string
+
+    /// ### NominalString
     type NominalString = string
 
+    /// ### Layout
     type Layout = Heap | HeapMutable | StackMutable
+
+    /// ### FunType
     type FunType = FT_Vanilla | FT_Pointer | FT_Closure // The closure and the pointer are specific to the C++ backend.
 
+    /// ### Op
     type Op =
         // Converts the function to a specialized type specific to the C++ backend.
         | ToFunPtr
@@ -1402,6 +1586,7 @@ module spiral_compiler =
         | FreeVarsReplace
         | SizeOf
 
+    /// ### PatternCompilationErrors
     type PatternCompilationErrors =
         | DisjointOrPatternVar
         | DuplicateTermVar
@@ -1410,6 +1595,7 @@ module spiral_compiler =
         | DuplicateRecordSymbol
         | DuplicateRecordInjection
 
+    /// ### ParserErrors
     type ParserErrors =
         | TypeVarsNeedToBeExplicitForExists
         | InvalidPattern of PatternCompilationErrors
@@ -1468,15 +1654,22 @@ module spiral_compiler =
         | ForallNotAllowedInTypecase
         | ExistsNotAllowedInTypecase
 
+    /// ### RawKindExpr
     type RawKindExpr =
         | RawKindWildcard
         | RawKindStar
         | RawKindFun of RawKindExpr * RawKindExpr
 
+    /// ### UnionLayout
     type UnionLayout = UStack | UHeap
 
+    /// ### HoVar
     type HoVar = VSCRange * (VarString * RawKindExpr)
+
+    /// ### TypeVar
     type TypeVar = HoVar * (VSCRange * VarString) list
+
+    /// ### RawMacro
     type RawMacro =
         | RawMacroText of VSCRange * string
         | RawMacroTerm of VSCRange * RawExpr
@@ -1563,19 +1756,34 @@ module spiral_compiler =
         | RawTTypecase of VSCRange * RawTExpr * (RawTExpr * RawTExpr) list
         | RawTFilledNominal of VSCRange * GlobalId // Filled in by the inferencer.
 
+    /// ### (+.)
     let (+.) (a,_) (_,b) = a,b
+
+    /// ### range_of_hovar
     let range_of_hovar ((r,_) : HoVar) = r
+
+    /// ### range_of_typevar
     let range_of_typevar ((x,_) : TypeVar) = range_of_hovar x
+
+    /// ### hovar_name
     let hovar_name ((_,(name,_)) : HoVar) = name
+
+    /// ### typevar_name
     let typevar_name ((h,_) : TypeVar) = hovar_name h
+
+    /// ### range_of_record_with
     let range_of_record_with = function
         | RawRecordWithSymbol((r,_),_)
         | RawRecordWithSymbolModify((r,_),_)
         | RawRecordWithInjectVar((r,_),_)
         | RawRecordWithInjectVarModify((r,_),_) -> r
+
+    /// ### range_of_record_without
     let range_of_record_without = function
         | RawRecordWithoutSymbol(r,_)
         | RawRecordWithoutInjectVar(r,_) -> r
+
+    /// ### range_of_pattern
     let range_of_pattern = function
         | PatB r
         | PatE r
@@ -1595,9 +1803,13 @@ module spiral_compiler =
         | PatWhen(r,_,_)
         | PatFilledDefaultValue(r,_,_)
         | PatNominal(r,_,_,_) -> r
+
+    /// ### range_of_pat_record_member
     let range_of_pat_record_member = function
         | PatRecordMembersSymbol((r,_),x)
         | PatRecordMembersInjectVar((r,_),x) -> r +. range_of_pattern x
+
+    /// ### range_of_expr
     let range_of_expr = function
         | RawB r
         | RawMissingBody r
@@ -1628,8 +1840,10 @@ module spiral_compiler =
         | RawIfThenElse(r,_,_,_)
         | RawOpen(r,_,_,_) -> r
 
+    /// ### rawv
     let rawv (r,x) = RawV(r,x,true)
 
+    /// ### range_of_texpr
     let range_of_texpr = function
         | RawTWildcard r
         | RawTB r
@@ -1652,15 +1866,20 @@ module spiral_compiler =
         | RawTTypecase(r,_,_)
         | RawTForall(r,_,_) -> r
 
+    /// ### range_of_texpr_gadt_constructor
     let rec range_of_texpr_gadt_constructor = function
         | RawTForall(_,_,x) -> range_of_texpr_gadt_constructor x
         | RawTFun(_,_,x,_) | x -> range_of_texpr x
 
+    /// ### range_of_texpr_gadt_body
     let rec range_of_texpr_gadt_body = function
         | RawTForall(_,_,x) -> range_of_texpr_gadt_body x
         | RawTFun(_,x,_,_) | x -> range_of_texpr x
 
+    /// ### VectorCord
     type VectorCord = {|row : int; col : int|}
+
+    /// ### Env__
     type Env__ = {
         semantic_updates : (VectorCord * SemanticTokenLegend) ResizeArray
         tokens_cords : VectorCord []
@@ -1672,42 +1891,62 @@ module spiral_compiler =
         } with
 
         member d.Index with get() = d.i.contents and set(i) = d.i.Value <- i
+
+    /// ### BlockParsingEnv
     type BlockParsingEnv = Env__
 
+    /// ### try_current_template
     let inline try_current_template (d : BlockParsingEnv) on_succ on_fail =
         let i = d.Index
         if i < d.tokens.Length then on_succ d.tokens.[i]
         else on_fail()
 
+    /// ### try_current
     let inline try_current d f = try_current_template d (fun (p,t) -> f (p, t)) (fun () -> Result.Error [])
+
+    /// ### print_current
     let print_current d = try_current d (fun x -> printfn "%A" x; Ok()) // For parser debugging purposes.
+
+    /// ### line_template
     let inline line_template d f = try_current_template d (fst >> f) (fun _ -> -1)
+
+    /// ### col
     let col d = line_template d (fun (r,_) -> r.character)
+
+    /// ### lineBlockParsing
     let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
 
+    /// ### skip'
     let skip' (d : BlockParsingEnv) i = d.i.Value <- d.i.contents+i
+
+    /// ### skipBlockParsing
     let skipBlockParsing d = skip' d 1
 
+    /// ### skip_string_open
     let skip_string_open d =
         try_current d <| function
             | p,TokStringOpen -> skipBlockParsing d; Result.Ok(p)
             | p, _ -> Result.Error [p, ExpectedStringOpen]
 
+    /// ### skip_string_close
     let skip_string_close d =
         try_current d <| function
             | p,TokStringClose -> skipBlockParsing d; Result.Ok(p)
             | p, _ -> Result.Error [p, ExpectedStringClose]
 
+    /// ### skip_macro_open
     let skip_macro_open d =
         try_current d <| function
             | p,TokMacroOpen -> skipBlockParsing d; Ok(p)
             | p, _ -> Result.Error [p, ExpectedMacroOpen]
 
+    /// ### skip_macro_close
     let skip_macro_close d =
         try_current d <| function
             | p,TokMacroClose -> skipBlockParsing d; Ok(p)
             | p, _ -> Result.Error [p, ExpectedMacroClose]
 
+    /// ### read_text
     let read_text is_term_macro d =
         let (+.) a b =
             match a with
@@ -1723,6 +1962,7 @@ module spiral_compiler =
                     else Result.Ok(Option.get a, str.ToString())
         loop None (System.Text.StringBuilder())
 
+    /// ### read_macro_var
     let read_macro_var d =
         try_current d <| function
             | p, TokMacroTermVar x -> skipBlockParsing d; Result.Ok(RawMacroTerm(p,rawv(p,x)))
@@ -1730,123 +1970,149 @@ module spiral_compiler =
             | p, TokMacroTypeLitVar x -> skipBlockParsing d; Result.Ok(RawMacroTypeLit(p,RawTVar(p,x)))
             | p,_ -> Error [p, ExpectedMacroVar]
 
+    /// ### read_macro_type_var
     let read_macro_type_var d =
         try_current d <| function
             | p, TokMacroTypeVar x -> skipBlockParsing d; Result.Ok(RawMacroType(p,RawTVar(p,x)))
             | p, TokMacroTypeLitVar x -> skipBlockParsing d; Result.Ok(RawMacroTypeLit(p,RawTVar(p,x)))
             | p,_ -> Error [p, ExpectedMacroTypeVar]
 
+    /// ### skip_keyword
     let skip_keyword t d =
         try_current d <| function
             | p,TokKeyword t' when t = t' -> skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedKeyword t]
 
+    /// ### skip_keyword'
     let skip_keyword' t d =
         try_current d <| function
             | p,TokKeyword t' when t = t' -> skipBlockParsing d; Result.Ok p
             | p, _ -> Error [p, ExpectedKeyword t]
 
+    /// ### read_unary_op
     let read_unary_op d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) -> skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedUnaryOperator']
 
+    /// ### read_unary_op'
     let read_unary_op' d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) -> skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedUnaryOperator']
 
+    /// ### read_op
     let read_op d =
         try_current d <| function
             | p, TokOperator(t',_) -> skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedOperator']
 
+    /// ### read_op'
     let read_op' d =
         try_current d <| function
             | p, TokOperator(t',_) -> skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedOperator']
 
+    /// ### update_semantic
     let update_semantic (d : BlockParsingEnv) = let i = d.Index in fun x -> d.semantic_updates.Add(d.tokens_cords.[i], x)
+
+    /// ### read_op_type
     let read_op_type d =
         try_current d <| function
             | p, TokOperator(t',r) -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedOperator']
 
+    /// ### skip_op
     let skip_op t d =
         try_current d <| function
             | p, TokOperator(t',_) when t' = t -> skipBlockParsing d; Result.Ok p
             | p, _ -> Error [p, ExpectedOperator t]
 
+    /// ### skip_unary_op
     let skip_unary_op t d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) when t' = t -> skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedUnaryOperator t]
 
+    /// ### read_var
     let read_var d =
         try_current d <| function
             | p, TokVar(t',_) -> skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedVar]
 
+    /// ### read_var'
     let read_var' d =
         try_current d <| function
             | p, TokVar(t',_) -> let r = update_semantic d in skipBlockParsing d; Result.Ok(p,t',r)
             | p, _ -> Error [p, ExpectedVar]
 
+    /// ### read_var''
     let read_var'' d =
         try_current d <| function
             | p, TokVar(t',_) -> skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedVar]
 
+    /// ### read_big_var
     let read_big_var d =
         try_current d <| function
             | p, TokVar(t',_) when System.Char.IsUpper(t',0) -> skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedBigVar]
 
+    /// ### read_var_as_symbol
     let read_var_as_symbol d =
         try_current d <| function
             | p, TokVar(t',_) -> update_semantic d SemanticTokenLegend.symbol; skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedVar]
 
+    /// ### read_big_var_as_symbol
     let read_big_var_as_symbol d =
         try_current d <| function
             | p, TokVar(t',_) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.symbol; skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedBigVar]
 
+    /// ### read_big_var_as_keyword
     let read_big_var_as_keyword d =
         try_current d <| function
             | p, TokVar(t',_) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.keyword; skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedBigVar]
 
+    /// ### read_small_var
     let read_small_var d =
         try_current d <| function
             | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> skipBlockParsing d; Result.Ok t'
             | p, _ -> Error [p, ExpectedSmallVar]
 
+    /// ### read_small_var'
     let read_small_var' d =
         try_current d <| function
             | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
 
+    /// ### read_big_type_var
     let read_big_type_var d =
         try_current d <| function
             | p, TokVar(t',r) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(t')
             | p, _ -> Error [p, ExpectedSmallVar]
 
+    /// ### read_big_type_var'
     let read_big_type_var' d =
         try_current d <| function
             | p, TokVar(t',r) when System.Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
 
+    /// ### read_small_type_var
     let read_small_type_var d =
         try_current d <| function
             | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(t')
             | p, _ -> Error [p, ExpectedSmallVar]
 
+    /// ### read_small_type_var'
     let read_small_type_var' d =
         try_current d <| function
             | p, TokVar(t',r) when System.Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
 
+    /// ### read_value
     let read_value d =
         try_current d <| function
             | p, TokValue t' -> 
@@ -1858,31 +2124,47 @@ module spiral_compiler =
                 Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedLit]
 
+    /// ### read_symbol
     let read_symbol d =
         try_current d <| function
             | p, TokSymbol(t',r) -> skipBlockParsing d; Result.Ok(p,t')
             | p, _ -> Error [p, ExpectedSymbol]
 
+    /// ### skip_parenthesis
     let skip_parenthesis a b d =
         try_current d <| function
             | p, TokParenthesis(a',b') when a = a' && b = b' -> skipBlockParsing d; Result.Ok()
             | p, _ -> Error [p, ExpectedParenthesis(a,b)]
 
+    /// ### skip_macro_expression
     let skip_macro_expression a b d =
         try_current d <| function
             | p, TokMacroExpression(a',b') when a = a' && b = b' -> skipBlockParsing d; Result.Ok()
             | p, _ -> Error [p, ExpectedMacroExpression(a,b)]
 
+    /// ### on_succ
     let on_succ x _ = Result.Ok x
+
+    /// ### macro_expression
     // open FParsec
     let macro_expression ty a d = (skip_macro_expression ty Open >>. a .>> skip_macro_expression ty Close) d
+
+    /// ### rounds
     let rounds a d = (skip_parenthesis Round Open >>. a .>> skip_parenthesis Round Close) d
+
+    /// ### curlies
     let curlies a d = (skip_parenthesis Curly Open >>. a .>> skip_parenthesis Curly Close) d
+
+    /// ### squares
     let squares a d = (skip_parenthesis Square Open >>. a .>> skip_parenthesis Square Close) d
 
+    /// ### indexBlockParsing
     let indexBlockParsing (t : BlockParsingEnv) = t.Index
+
+    /// ### index_setBlockParsing
     let index_setBlockParsing v (t : BlockParsingEnv) = t.Index <- v
 
+    /// ### rangeBlockParsing
     let inline rangeBlockParsing exp s =
         let i = indexBlockParsing s
         exp s |> Result.map (fun x ->
@@ -1892,16 +2174,21 @@ module spiral_compiler =
                 failwith "Compiler error: The parser passed into `range` has to consume at least one token for it to work."
             )
 
+    /// ### kind
     let rec kind d = (sepBy1 ((skip_op "*" >>% RawKindStar) <|> rounds kind) (skip_op "->") |>> List.reduceBack (fun a b -> RawKindFun (a,b))) d
 
+    /// ### duplicates
     let duplicates er x = 
         let h = System.Collections.Generic.HashSet()
         x |> List.choose (fun (r : VSCRange,n : string) -> if h.Add n = false then Some(r,er) else None)
 
+    /// ### indentBlockParsing
     let inline indentBlockParsing i op next d = if op i (col d) then next d else Error []
 
+    /// ### record_var
     let record_var d = (read_var_as_symbol <|> rounds read_op) d
 
+    /// ### patterns_validate
     let patterns_validate pats = 
         let pos = System.Collections.Generic.Dictionary(HashIdentity.Reference)
         let errors = ResizeArray()
@@ -1965,14 +2252,19 @@ module spiral_compiler =
         validate true; validate false
         errors |> Seq.toList
 
+    /// ### join_point
     let join_point is_let name = function // Has the effect of removing nested join points due to not duplicating them.
         | RawJoinPoint(a,b,c,_) -> RawJoinPoint(a,b,c,name)
         | x -> if is_let then RawJoinPoint(range_of_expr x, None, x, name) else x
+
+    /// ### join_point_backend
     let join_point_backend (a,b) = RawJoinPoint(range_of_expr b, Some a, b, None)
 
+    /// ### unintern
     /// Some places need unique string refs, so this is to keep the compiler from interning static strings.
     let unintern (x : string) = System.Text.StringBuilder(x).ToString()
 
+    /// ### adjust_join_point
     let rec adjust_join_point is_let name x =
         let dyn_if_let a = if is_let then PatDyn(range_of_pattern a, a) else a
         match x with
@@ -1986,10 +2278,12 @@ module spiral_compiler =
             RawFun(r,[a,join_point is_let name b])
         | x -> join_point is_let name x
 
+    /// ### adjust_join_point'
     let adjust_join_point' is_let name = function
         | RawForall _ | RawFun _ as x -> adjust_join_point is_let name x
         | x -> x
 
+    /// ### inl_or_let_process
     let inl_or_let_process (r, (is_let, is_rec, name, foralls, pats, body)) _ =
         match is_rec, name, foralls, pats with
         | false, _, [], [] -> 
@@ -2011,8 +2305,13 @@ module spiral_compiler =
         | true, _, _, _ -> Error [range_of_pattern name, ExpectedVarOrOpAsNameOfRecStatement]
         | false, _, _, _ -> Error [range_of_pattern name, ExpectedSinglePatternWhenStatementNameIsNorVarOrOp]
 
+    /// ### ho_var
     let ho_var d : Result<HoVar,_> = rangeBlockParsing ((read_small_type_var |>> fun x -> x, RawKindWildcard) <|> rounds ((read_small_type_var .>> skip_op ":") .>>. kind)) d
+
+    /// ### forall_var
     let forall_var d : Result<TypeVar,_> = (ho_var .>>. (curlies (sepBy (read_small_type_var' <|> rounds read_op_type) (skip_op ";")) <|>% [])) d
+
+    /// ### forall
     let forall d = 
         (skip_keyword SpecForall >>. many1 forall_var .>> skip_op "." 
         >>= fun q _ -> 
@@ -2020,11 +2319,15 @@ module spiral_compiler =
             let x = q |> List.map (fun ((r,(a,_)),_) -> r,a) |> duplicates DuplicateForallVar
             match List.append x x' with [] -> Result.Ok q | er -> Result.Error er
             ) d
+
+    /// ### pat_exists'
     let pat_exists' d = 
         (skip_keyword SpecExists >>. many (rangeBlockParsing read_small_type_var) .>> skip_op "." 
         >>= fun q _ -> 
             match duplicates DuplicateExistsVar q with [] -> Result.Ok q | er -> Error er
             ) d
+
+    /// ### exists
     let exists d = 
         (skip_keyword SpecExists >>. many forall_var .>> skip_op "." 
         >>= fun q _ -> 
@@ -2033,6 +2336,7 @@ module spiral_compiler =
             match List.append x x' with [] -> Result.Ok q | er -> Error er
             ) d
 
+    /// ### annotated_body
     let inline annotated_body sep exp ty =
         pipe2 (opt (skip_op ":" >>. ty))
             (skip_op sep .>>. opt exp)
@@ -2042,19 +2346,24 @@ module spiral_compiler =
                 | Some a -> RawAnnot(range_of_expr b +. range_of_texpr a,b,a)
                 | None -> b)
 
+    /// ### inl_or_let
     let inline inl_or_let exp pattern ty =
         rangeBlockParsing (tuple6 ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true))
                 ((skip_keyword SpecRec >>% true) <|>% false) pattern
                 (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
         >>= inl_or_let_process
 
+    /// ### and_inl_or_let
     let inline and_inl_or_let exp pattern ty =
         rangeBlockParsing (tuple6 (skip_keyword SpecAnd >>. ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true)))
                 (fun _ -> Result.Ok true) pattern
                 (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
         >>= inl_or_let_process
 
+    /// ### Associativity
     type Associativity = FParsec.Associativity
+
+    /// ### inbuilt_operators
     let inbuilt_operators x = 
         match x with
         | "+" -> ValueSome(60, Associativity.Left)
@@ -2091,6 +2400,7 @@ module spiral_compiler =
         | "**" -> ValueSome(80, Associativity.Right)
         | _ -> ValueNone
 
+    /// ### precedence_associativity
     // The `.` operator has special behavior similar to F#.
     let rec precedence_associativity name = 
         if 0 < String.length name then
@@ -2101,6 +2411,7 @@ module spiral_compiler =
                 | v -> v
         else ValueNone
 
+    /// ### op
     let op (d : BlockParsingEnv) =
         rangeBlockParsing read_op d |> Result.bind (fun (o,x) ->
             match x with
@@ -2129,35 +2440,47 @@ module spiral_compiler =
                     | x -> f (fun (r,a,b) -> RawApply(r,RawApply(r +. o,rawv(o,x),a),b))
             )
 
-    let private string_to_op_dict = System.Collections.Generic.Dictionary(HashIdentity.Structural)
+    /// ### string_to_op_dict
+    let string_to_op_dict : Dictionary<string,Op> = System.Collections.Generic.Dictionary(HashIdentity.Structural)
+
     Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>)
     |> Array.iter (fun x -> string_to_op_dict.[x.Name] <- Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(x,[||]) :?> Op)
+
+    /// ### string_to_op
     let string_to_op x = string_to_op_dict.TryGetValue x
 
+    /// ### symbol_paired_concat
     let symbol_paired_concat k =
         let b = System.Text.StringBuilder()
         List.iter (fun (_, x : string) -> b.Append(x).Append('_') |> ignore) k
         b.ToString()
 
+    /// ### module_openBlockParsing
     let module_openBlockParsing = rangeBlockParsing ((skip_keyword SpecOpen >>. read_small_var') .>>. (many read_symbol))
+
+    /// ### bar
     let bar i d = indentBlockParsing i (<=) (skip_op "|") d
 
+    /// ### pat_pair
     let inline pat_pair next = 
         sepBy1 next (skip_op ",") 
         |>> List.reduceBack (fun a b -> PatPair(range_of_pattern a +. range_of_pattern b,a,b))
 
+    /// ### RootTypeFlags
     type RootTypeFlags = {
         allow_typecase_metavars : bool
         allow_term : bool
         allow_wildcard : bool
         }
 
+    /// ### root_type_defaults
     let root_type_defaults = {
         allow_typecase_metavars = false
         allow_term = false
         allow_wildcard = false
         }
 
+    /// ### bottom_up_number
     let bottom_up_number (default_env : DefaultEnv) (r : VSCRange,x : string) =
         let inline f string_to_val val_to_lit val_dsc =
             match string_to_val x with
@@ -2180,6 +2503,7 @@ module spiral_compiler =
             | UInt64T -> f System.UInt64.TryParse LitUInt64 "u64"
             | x -> failwithf "Compiler error: Invalid default int type. Got: %A" x
 
+    /// ### typecase_validate
     let typecase_validate x _ =
         let metavars = System.Collections.Generic.HashSet()    
         let vars = System.Collections.Generic.HashSet()
@@ -2199,6 +2523,7 @@ module spiral_compiler =
         f x
         if 0 < errors.Count then Error (Seq.toList errors) else Ok(x)
 
+    /// ### expr_tight
     // Parses an expression only if it is directly next to the previous one.
     let inline expr_tight next (d: BlockParsingEnv) = 
         let i = indexBlockParsing d
@@ -2207,18 +2532,29 @@ module spiral_compiler =
             if r.line = r'.line && r.character = r'.character then next d else Error []
         else Error []
 
+    /// ### read_default_value'
     let inline read_default_value' f d =
         try_current d <| function
             | p, TokDefaultValue t' -> skipBlockParsing d; f (p,t')
             | p, _ -> Error [p, ExpectedLit]
+
+    /// ### read_default_value
     let inline read_default_value on_top on_bot d =
         read_default_value' (fun (p,t') ->
             if d.is_top_down then Ok(on_top (p,t'))
             else bottom_up_number d.default_env (p,t') |> Result.map on_bot
             ) d
+
+    /// ### read_string
     let read_string = tuple3 skip_string_open ((read_text false |>> snd) <|>% "") skip_string_close
+
+    /// ### pat_var
     let pat_var d = (read_small_var' |>> PatVar) d
+
+    /// ### pat_list_pair
     let pat_list_pair r a b = PatUnbox(r,"Cons",PatPair(r,a,b))
+
+    /// ### root_pattern_var_nominal_union
     let rec root_pattern_var_nominal_union s =
         (read_var' >>= fun (r,a,re) s ->
             if System.Char.IsUpper(a,0) then
@@ -2591,6 +2927,7 @@ module spiral_compiler =
 
         statements d
 
+    /// ### comments
     let comments (s : BlockParsingEnv) = 
         let line_near_to = lineBlockParsing s
         let rec loop line d =
@@ -2605,8 +2942,10 @@ module spiral_compiler =
         |> String.concat ""
         |> fun x -> Ok(x.TrimEnd())
 
+    /// ### Comments
     type Comments = string
 
+    /// ### TopStatement
     type [<ReferenceEquality>] TopStatement =
         | TopAnd of VSCRange * TopStatement
         | TopInl of Comments * VSCRange * (VSCRange * VarString) * RawExpr * is_top_down: bool
@@ -2618,6 +2957,7 @@ module spiral_compiler =
         | TopInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
         | TopOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
 
+    /// ### top_inl_or_let_process
     let top_inl_or_let_process comments is_top_down = function
         | (r,PatVar(r',name),body),is_rec -> 
             let rec loop = function
@@ -2628,49 +2968,76 @@ module spiral_compiler =
                 | _ -> Error [r, ExpectedGlobalFunction]
             loop body
         | (_,x,_),_ -> Error [range_of_pattern x, ExpectedVarOrOpAsNameOfGlobalStatement]
+
+    /// ### top_inl_or_let
     let top_inl_or_let d = ((comments .>>. inl_or_let root_term root_pattern_pair root_type_annot) >>= fun (comments,x) d -> top_inl_or_let_process comments d.is_top_down x) d
 
+    /// ### process_union
     let process_union (r,(layout,n,a,(r',b))) _ =
         let this = (RawTVar n,a) ||> List.fold (fun s x -> RawTApply(r',s,RawTVar(r',hovar_name x)))
         match layout with
         | UHeap -> Ok(TopNominalRec(r,n,a,RawTUnion(r',b,layout,this)))
         | UStack -> Ok(TopNominal(r,n,a,RawTUnion(r',b,layout,this)))
 
+    /// ### union_clauses
     let union_clauses d = root_type_union root_type_defaults d
+
+    /// ### top_union
     let top_union d = ((rangeBlockParsing (tuple4 (skip_keyword SpecUnion >>. ((skip_keyword SpecRec >>% UHeap) <|>% UStack)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
+
+    /// ### top_nominal
     let top_nominal d = 
         (rangeBlockParsing (tuple3 (skip_keyword SpecNominal >>. read_small_type_var') (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
         |>> fun (r,(n,a,b)) -> TopNominal(r,n,a,b)) d
 
-    let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d 
+    /// ### type_forall
+    let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d
+
+    /// ### top_prototype
     let top_prototype d = 
         (rangeBlockParsing 
             (tuple5 comments
                 (skip_keyword SpecPrototype >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var) 
                 (skip_op ":" >>. type_forall (root_type root_type_defaults)))
         |>> fun (r,(com,a,b,c,d)) -> TopPrototype(com,r,a,b,c,d)) d
+
+    /// ### top_instance
     let top_instance d =
         (rangeBlockParsing
             (tuple4 (skip_keyword SpecInstance >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var) (skip_op "=" >>. root_term))
         >>= fun (r,(prototype_name, nominal_name, nominal_foralls, body)) _ ->
                 Ok(TopInstance(r,prototype_name,nominal_name,nominal_foralls,body))
                 ) d
+
+    /// ### top_type
     let top_type d = (rangeBlockParsing (tuple3 (skip_keyword SpecType >>. read_small_type_var') (many ho_var) (skip_op "=" >>. root_type root_type_defaults)) |>> fun (r,(a,b,c)) -> TopType(r,a,b,c)) d
 
+    /// ### top_and_inl_or_let
     let top_and_inl_or_let d = 
         (comments .>>. restore 1 (rangeBlockParsing (and_inl_or_let root_term root_pattern_pair root_type_annot)) 
         >>= fun (comments,(r,x)) d -> top_inl_or_let_process comments d.is_top_down x |> Result.map (fun x -> TopAnd(r,x))) d
 
+    /// ### top_and
     let inline top_and f = restore 1 (rangeBlockParsing (skip_keyword SpecAnd >>. f)) |>> TopAnd
+
+    /// ### top_and_union
     let top_and_union d = top_and ((rangeBlockParsing (tuple4 (skip_keyword SpecUnion >>% UHeap) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
+
+    /// ### top_open
     let top_open d = (module_openBlockParsing |>> fun (r,(name,acs)) -> TopOpen(r,name,acs)) d
 
+    /// ### top_statement
     let top_statement s =
         let (+) = alt (indexBlockParsing s)
         (top_inl_or_let + top_union + top_nominal + top_prototype + top_type + top_instance + top_and_inl_or_let + top_and_union + top_open) s
 
+    /// ### ParserErrorsList
     type ParserErrorsList = (VSCRange * ParserErrors) list
+
+    /// ### ParseResult
     type ParseResult = Result<TopStatement,ParserErrorsList>
+
+    /// ### parseBlockParsing
     let parseBlockParsing (s : BlockParsingEnv) : ParseResult =
         if 0 < s.tokens.Length then
             match top_statement s with
@@ -2682,6 +3049,7 @@ module spiral_compiler =
         else
             Error []
 
+    /// ### show_parser_error
     let show_parser_error = function
         | TypeVarsNeedToBeExplicitForExists -> "The type vars for the exists body have to be specified up front in the bottom-up segment."
         | DuplicateExistsVar -> "Duplicate variable in the exists type."
@@ -2807,6 +3175,7 @@ module spiral_compiler =
 
     // open FSharpx.Collections
 
+    /// ### Bundle
     // These bundles are top statements that have their range offsets distributed into them.
     type [<ReferenceEquality>] Bundle =
         | BundleType of VSCRange * (VSCRange * VarString) * HoVar list * RawTExpr
@@ -2818,21 +3187,32 @@ module spiral_compiler =
         | BundleInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
         | BundleOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
 
+    /// ### bundle_range
     let bundle_range = function
         | BundleType(r,_,_,_) | BundleNominal(r,_,_,_) | BundleInl(_,r,_,_,_) 
         | BundlePrototype(_,r,_,_,_,_) | BundleInstance(r,_,_,_,_) | BundleOpen(r,_,_) -> r
         | BundleNominalRec l -> List.head l |> fun (r,_,_,_) -> r
         | BundleRecInl(l,_) -> List.head l |> fun (_,r,_,_) -> r
 
+    /// ### add_offset
     let add_offset offset (range : VSCRange) : VSCRange = 
         let f (a : VSCPos) = {|a with line=offset + a.line|}
         let a,b = range
         f a, f b
+
+    /// ### add_offset_hovar
     let add_offset_hovar offset (a,b) = add_offset offset a, b
+
+    /// ### add_offset_hovar_list
     let add_offset_hovar_list offset x = List.map (add_offset_hovar offset) x
+
+    /// ### add_offset_typevar
     let add_offset_typevar offset ((a,b),c) = (add_offset offset a, b), add_offset_hovar_list offset c
+
+    /// ### add_offset_typevar_list
     let add_offset_typevar_list offset x = List.map (add_offset_typevar offset) x
 
+    /// ### fold_offset_ty
     let rec fold_offset_ty offset x = 
         let f = fold_offset_ty offset
         let g = add_offset offset
@@ -2942,6 +3322,7 @@ module spiral_compiler =
         | PatExists(r,a,b) -> PatExists(g r,List.map g' a,f b)
         | PatArray(r,a) -> PatArray(g r,List.map f a)
 
+    /// ### bundle_blocks
     let bundle_blocks (blocks : TopStatement Block list) =
         match blocks with
         | [] -> None
@@ -2966,8 +3347,10 @@ module spiral_compiler =
         | [{offset=i; block=TopOpen(r,a,b)}] -> BundleOpen(add_offset i r, add_offset_hovar i a, add_offset_hovar_list i b) |> Some
         | {block=TopInl _ | TopPrototype _ | TopNominal _ | TopType _ | TopInstance _ | TopOpen _} :: _ -> failwith "Compiler error: Regular top level statements should be singleton bundles."
 
+    /// ### add_line_to_range
     let add_line_to_range line ((a,b) : VSCRange) = {|a with line=line+a.line|}, {|b with line=line+b.line|}
 
+    /// ### process_error
     let process_error v = 
         let messages, expecteds = v |> List.distinct |> List.partition (fun x -> System.Char.IsUpper(x,0))
         let ex () = match expecteds with [x] -> sprintf "Expected: %s" x | x -> sprintf "Expected one of: %s" (String.concat ", " x)
@@ -2976,6 +3359,7 @@ module spiral_compiler =
         elif List.isEmpty messages then ex ()
         else f (ex () :: "" :: "Other error messages:" :: messages)
 
+    /// ### show_block_parsing_error
     let show_block_parsing_error line (l : ParserErrorsList) : RString list =
         l |> List.groupBy fst
         |> List.map (fun (k,v) -> 
@@ -2984,16 +3368,28 @@ module spiral_compiler =
             k, process_error v
             )
 
+    /// ### ParsedBlock
     type ParsedBlock = {result : ParseResult; semantic_tokens : LineTokens}
+
+    /// ### ParserState
     type ParserState = {
         is_top_down : bool
         blocks : (LineTokens * ParsedBlock Promise Block) list
         }
-    type BlockBundleValue = {bundle : Bundle option; errors : RString list}
-    type BlockBundleState = (TopStatement Block list * BlockBundleValue) Stream
-    type private BlockBundleStateInner = {errors : RString list; tmp : TopStatement Block list; state : BlockBundleState}
 
+    /// ### BlockBundleValue
+    type BlockBundleValue = {bundle : Bundle option; errors : RString list}
+
+    /// ### BlockBundleState
+    type BlockBundleState = (TopStatement Block list * BlockBundleValue) Stream
+
+    /// ### BlockBundleStateInner
+    type BlockBundleStateInner = {errors : RString list; tmp : TopStatement Block list; state : BlockBundleState}
+
+    /// ### wdiff_block_bundle_init
     let wdiff_block_bundle_init : BlockBundleState = Promise.Now.never()
+
+    /// ### wdiff_block_bundle
     /// Bundles the blocks with the `and` statements. Also collects the parser errors.
     /// Does diffing to ref preserve the bundles.
     let wdiff_block_bundle (state : BlockBundleState) (l : ParserState) : BlockBundleState =
@@ -3036,6 +3432,7 @@ module spiral_compiler =
 
         init {empty with state=state} l.blocks
 
+    /// ### semantic_tokens
     let semantic_tokens (l : ParserState) = 
         let rec loop s = function
             | (_,x) :: xs -> x.block >>= fun x -> loop (FSharpx.Collections.PersistentVector.append s x.semantic_tokens) xs
@@ -3043,12 +3440,17 @@ module spiral_compiler =
         loop FSharpx.Collections.PersistentVector.empty l.blocks
 
     /// ## Infer
+
+    /// ### 'a ref'
     type [<ReferenceEquality>] 'a ref' = {mutable contents' : 'a}
+
+    /// ### TT
     type TT =
         | KindType
         | KindFun of TT * TT
         | KindMetavar of TT option ref'
 
+    /// ### Constraint
     type Constraint =
         | CUInt
         | CSInt
@@ -3060,8 +3462,10 @@ module spiral_compiler =
         | CRecord
         | CPrototype of GlobalId
 
+    /// ### ConstraintOrModule
     type ConstraintOrModule = C of Constraint | M of Map<string,ConstraintOrModule>
 
+    /// ### Var
     type [<ReferenceEquality>] Var = {
         scope : int
         constraints : Constraint Set // Must be stated up front and needs to be static in forall vars
@@ -3069,12 +3473,14 @@ module spiral_compiler =
         name : string // Is what gets printed.
         }
 
+    /// ### MVar
     type [<ReferenceEquality>] MVar = {
         mutable scope : int
         mutable constraints : Constraint Set // Must be stated up front and needs to be static in forall vars
         kind : TT // Has metavars, and so is mutable.
         }
 
+    /// ### TM
     type TM =
         | TMText of string
         | TMVar of T
@@ -3101,8 +3507,10 @@ module spiral_compiler =
         | TyMacro of TM list
         | TyLayout of T * Layout
 
+    /// ### tyvar
     let tyvar x = TyVar(x, ref None)
 
+    /// ### TypeError
     type TypeError =
         | KindError of TT * TT
         | KindErrorInConstraint of TT * TT
@@ -3178,30 +3586,39 @@ module spiral_compiler =
         | IncorrectGADTConstructorType
         | IncorrectRecursiveNominal
 
+    /// ### shorten'<'a>
     let inline shorten'<'a> (x : 'a) link next =
         let x' : 'a = next x
         if System.Object.ReferenceEquals(x,x') = false then link.contents' <- Some x'
         x'
+
+    /// ### visit_tt
     let rec visit_tt = function
         | KindMetavar({contents'=Some x} & link) -> shorten' x link visit_tt
         | a -> a
 
+    /// ### shorten<'a>
     let inline shorten<'a> (x : 'a) (link : ref<option<'a>>) next =
         let x' : 'a = next x
         if System.Object.ReferenceEquals(x,x') = false then link.Value <- Some x'
         x'
+
+    /// ### visit_t_mvar
     let rec visit_t_mvar = function
         | TyComment(_,a) -> visit_t_mvar a
         | TyMetavar(_,{contents=Some x} & link) -> shorten x link visit_t_mvar
         | a -> a
 
+    /// ### visit_t
     let rec visit_t x = 
         match visit_t_mvar x with
         | TyVar(_,{contents=Some x}) -> visit_t x
         | x -> x
 
+    /// ### InferTypeErrorException
     exception InferTypeErrorException of (VSCRange * TypeError) list
 
+    /// ### metavars
     let rec metavars = function
         | RawTTypecase _ | RawTExists _ | RawTFilledNominal _ | RawTMacro _ | RawTVar _ | RawTTerm _ 
         | RawTPrim _ | RawTWildcard _ | RawTLit _ | RawTB _ | RawTSymbol _ -> Set.empty
@@ -3211,6 +3628,7 @@ module spiral_compiler =
         | RawTUnion(_,l,_,this) -> Map.fold (fun s _ (_,v) -> s + metavars v) (metavars this) l
         | RawTRecord(_,l) -> Map.fold (fun s _ v -> s + metavars v) Set.empty l
 
+    /// ### TopEnv
     type TopEnv = {
         nominals_next_tag : int
         nominals_aux : Map<GlobalId, {|name : string; kind : TT|}>
@@ -3223,6 +3641,7 @@ module spiral_compiler =
         constraints : Map<string,ConstraintOrModule>
         }
 
+    /// ### top_env_emptyInfer
     let top_env_emptyInfer = {
         nominals_next_tag = 0
         nominals_aux = Map.empty
@@ -3235,6 +3654,7 @@ module spiral_compiler =
         constraints = Map.empty
         }
 
+    /// ### unionInfer
     let unionInfer small big = {
         nominals_next_tag = max small.nominals_next_tag big.nominals_next_tag
         nominals_aux = Map.foldBack Map.add small.nominals_aux big.nominals_aux
@@ -3268,7 +3688,7 @@ module spiral_compiler =
             ) small.constraints big.constraints
         }
 
-
+    /// ### in_moduleInfer
     let in_moduleInfer m a : TopEnv =
         {a with
             ty = Map.add m (TyModule a.ty) Map.empty
@@ -3276,9 +3696,13 @@ module spiral_compiler =
             constraints = Map.add m (M a.constraints) Map.empty
             }
 
+    /// ### Env_
     type Env_ = { ty : Map<string,T>; term : Map<string,T>; constraints : Map<string,ConstraintOrModule> }
+
+    /// ### InferEnv
     type InferEnv = Env_
 
+    /// ### kind_get
     let kind_get x =
         let rec loop = function
             | KindFun(a,b) -> a :: loop b
@@ -3286,10 +3710,12 @@ module spiral_compiler =
         let l = loop x
         {|arity=List.length l; args=l|}
 
+    /// ### prototype_init_forall_kind
     let prototype_init_forall_kind = function
         | TyForall(a,_) -> a.kind
         | _ -> failwith "Compiler error: The prototype should have at least one forall."
 
+    /// ### show_primt
     let show_primt = function
         | UInt8T -> "u8"
         | UInt16T -> "u16"
@@ -3305,16 +3731,19 @@ module spiral_compiler =
         | StringT -> "string"
         | CharT -> "char"
 
+    /// ### constraint_name
     let rec constraint_name (env : TopEnv) = function
         | CSInt -> "sint" | CUInt -> "uint" | CInt -> "int"
         | CFloat -> "float" | CNumber -> "number" | CPrim -> "prim"
         | CSymbol -> "symbol" | CRecord -> "record"
         | CPrototype i -> env.prototypes.[i].name
 
+    /// ### constraint_kind
     let constraint_kind (env : TopEnv) = function
         | CSInt | CUInt | CInt | CFloat | CNumber | CPrim | CSymbol | CRecord -> KindType
         | CPrototype i -> env.prototypes.[i].kind
 
+    /// ### tt
     let rec tt (env : TopEnv) = function
         | TyComment(_,x) | TyMetavar(_,{contents=Some x}) -> tt env x
         | TyNominal i -> env.nominals_aux.[i].kind
@@ -3322,6 +3751,7 @@ module spiral_compiler =
         | TyExists _ | TyLit _ | TyUnion _ | TyLayout _ | TyMacro _ | TyB | TyPrim _ | TyForall _ | TyFun _ | TyRecord _ | TyModule _ | TyPair _ | TySymbol _ | TyArray _ -> KindType
         | TyInl(v,a) -> KindFun(v.kind,tt env a)
 
+    /// ### has_metavars
     let rec has_metavars x =
         let f = has_metavars
         match visit_t x with
@@ -3333,6 +3763,7 @@ module spiral_compiler =
         | TyRecord l -> Map.exists (fun _ -> f) l
         | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
 
+    /// ### term_subst
     // Eliminates the metavars in the type if possible.
     let term_subst a =
         let h = System.Collections.Generic.HashSet(HashIdentity.Reference)
@@ -3367,6 +3798,7 @@ module spiral_compiler =
             | TyLayout(a,b) -> TyLayout(f a,b)
         f a
 
+    /// ### HoverTypes
     type HoverTypes() =
         // This is to allocate less trash for code that doesn't use GADTs. 
         // Unfortunately, we cannot use memoization instead as term_subst is not functionally pure.
@@ -3382,9 +3814,11 @@ module spiral_compiler =
             | TyRecord l -> Map.exists (fun _ -> f) l
             | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
         let hover_types = ResizeArray()
-        member _.AddHover(r,(x,com)) = hover_types.Add(r,((if has_substituted_tvars x then term_subst x else x), com))
+        member _.AddHover((r : VSCRange),(x,(com : string))) =
+            hover_types.Add(r,((if has_substituted_tvars x then term_subst x else x), com))
         member _.ToArray() = hover_types.ToArray()
 
+    /// ### module_openInfer
     let module_openInfer (hover_types : HoverTypes option) (top_env : InferEnv) (local_env_ty : Map<string,T>) (r : VSCRange) b l =
         let tryFind env x =
             match Map.tryFind x env.term, Map.tryFind x env.ty, Map.tryFind x env.constraints with
@@ -3409,7 +3843,7 @@ module spiral_compiler =
                 else Result.Ok env
                 )
 
-
+    /// ### validate_bound_vars
     let validate_bound_vars (top_env : InferEnv) constraints term ty x =
         let errors = ResizeArray()
         let check_term term (a,b) = if Set.contains b term = false && Map.containsKey b top_env.term = false then errors.Add(a,UnboundVariable b)
@@ -3524,10 +3958,12 @@ module spiral_compiler =
         | Choice2Of2 x -> ctype constraints term ty x
         errors
 
+    /// ### assert_bound_vars
     let assert_bound_vars (top_env : InferEnv) constraints term ty x =
         let errors = validate_bound_vars top_env constraints term ty x
         if 0 < errors.Count then raise (InferTypeErrorException (Seq.toList errors))
 
+    /// ### subst
     let rec subst (m : (Var * T) list) x =
         let f = subst m
         if List.isEmpty m then x 
@@ -3551,6 +3987,7 @@ module spiral_compiler =
             | TyMacro a -> TyMacro(List.map (function TMVar x -> TMVar(f x) | x -> x) a)
             | TyLayout(a,b) -> TyLayout(f a,b)
 
+    /// ### type_apply_split
     let type_apply_split x =
         let rec loop s x =
             match visit_t x with
@@ -3558,26 +3995,34 @@ module spiral_compiler =
             | x -> x, s
         loop [] x
 
+    /// ### kind_subst
     let rec kind_subst = function
         | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_subst
         | KindMetavar _ | KindType as x -> x
         | KindFun(a,b) -> KindFun(kind_subst a,kind_subst b)
 
+    /// ### foralls_get
     let rec foralls_get = function
         | RawForall(_,a,b) -> let a', b = foralls_get b in a :: a', b
         | b -> [], b
 
+    /// ### foralls_ty_get
     let rec foralls_ty_get = function
         | TyForall(a,b) -> let a', b = foralls_ty_get b in a :: a', b
         | b -> [], b
 
+    /// ### kind_force
     let rec kind_force = function
         | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_force
         | KindMetavar link -> let x = KindType in link.contents' <- Some x; x
         | KindType as x -> x
         | KindFun(a,b) -> KindFun(kind_force a,kind_force b)
 
-    let p prec prec' x = if prec < prec' then x else sprintf "(%s)" x
+    /// ### p
+    let p prec prec' x =
+        if prec < prec' then x else sprintf "(%s)" x
+
+    /// ### show_kind
     let show_kind x =
         let rec f prec x =
             let p = p prec
@@ -3588,10 +4033,16 @@ module spiral_compiler =
             | KindFun(a,b) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
         f -1 x
 
+    /// ### show_constraints
     let show_constraints env x = Set.toList x |> List.map (constraint_name env) |> String.concat "; " |> sprintf "{%s}"
+
+    /// ### show_nominal
     let show_nominal (env : TopEnv) i = match Map.tryFind i env.nominals_aux with Some x -> x.name | None -> "?"
+
+    /// ### show_layout_type
     let show_layout_type = function Heap -> "heap" | HeapMutable -> "mut" | StackMutable -> "stack_mut"
 
+    /// ### show_t
     let show_t (env : TopEnv) x =
         let show_var (a : Var) =
             let n = match a.kind with KindType -> a.name | _ -> sprintf "(%s : %s)" a.name (show_kind a.kind)
@@ -3654,6 +4105,7 @@ module spiral_compiler =
 
         f -2 x
 
+    /// ### show_type_error
     let show_type_error (env : TopEnv) x =
         let f = show_t env
         match x with
@@ -3733,9 +4185,13 @@ module spiral_compiler =
         | UnusedTypeVariable vars -> sprintf "The type variables %s are unused in the function's type signature." (vars |> String.concat ", ")
         | CompilerError x -> x
 
+    /// ### loc_env
     let loc_env (x : TopEnv) = {term=x.term; ty=x.ty; constraints=x.constraints}
+
+    /// ### names_of
     let names_of vars = List.map (fun x -> x.name) vars |> Set
 
+    /// ### lit
     let lit = function
         | LitUInt8 _ -> TyPrim UInt8T
         | LitUInt16 _ -> TyPrim UInt16T
@@ -3751,10 +4207,16 @@ module spiral_compiler =
         | LitString _ -> TyPrim StringT
         | LitChar _ -> TyPrim CharT
 
+    /// ### autogen_name_in_fun
     let autogen_name_in_fun (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'%i" i else sprintf "'%c" x
+
+    /// ### autogen_name_in_typecase
     let autogen_name_in_typecase (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'t%i" i else sprintf "'t%c" x
+
+    /// ### trim_kind
     let trim_kind = function KindFun(_,k) -> k | _ -> failwith "impossible"
 
+    /// ### FilledTop
     // Similar to BundleTop except with type annotations and type application filled in.
     type FilledTop =
         | FType of VSCRange * RString * HoVar list * RawTExpr
@@ -3766,13 +4228,15 @@ module spiral_compiler =
         | FInstance of VSCRange * RGlobalId * RGlobalId * RawExpr
         | FOpen of VSCRange * RString * RString list
 
+    /// ### 'a AdditionType
     type 'a AdditionType =
         | AOpen of 'a
         | AInclude of 'a
 
+    /// ### InferScope
     type InferScope = int
 
-    open System.Collections.Generic
+    /// ### InferResult
     type [<ReferenceEquality>] InferResult = {
         filled_top : FilledTop Hopac.Promise
         top_env_additions : TopEnv AdditionType
@@ -3781,8 +4245,10 @@ module spiral_compiler =
         errors : RString list
         }
 
+    /// ### dispose_gadt_links
     let dispose_gadt_links gadt_links = Seq.iter (fun (x : ref<option<'a>>) -> x.Value <- None) gadt_links
 
+    /// ### assert_foralls_used'
     let assert_foralls_used' (errors : (VSCRange * TypeError) ResizeArray) outside_foralls r x =
         let h = HashSet()
         let rec f x =
@@ -3812,8 +4278,10 @@ module spiral_compiler =
         if 0 < h.Count then
             errors.Add(r, UnusedTypeVariable (Seq.toList h))
 
+    /// ### assert_foralls_used
     let assert_foralls_used errors r x = assert_foralls_used' errors Set.empty r x
 
+    /// ### validate_nominal
     let validate_nominal (errors : _ ResizeArray) global_id body v =
         // Stack union types and regular nominals must not be recursive.
         // Unlike in the previous version of Spiral which simply didn't put the nominal type in the environment
@@ -3867,14 +4335,19 @@ module spiral_compiler =
         | _ ->
             assert_nominal_non_recursive v
 
+    /// ### kind_to_rawkind
     let rec kind_to_rawkind (x : TT) : RawKindExpr =
         match visit_tt x with
         | KindMetavar _ | KindType -> RawKindStar
         | KindFun(a,b) -> RawKindFun(kind_to_rawkind a, kind_to_rawkind b)
 
+    /// ### var_to_hovar
     let var_to_hovar r (x : Var) : HoVar = r,(x.name,kind_to_rawkind x.kind)
+
+    /// ### var_to_typevar
     let var_to_typevar r (x : Var) : TypeVar = var_to_hovar r x, [] // In the bottom up segment the constrains aren't checked anywhere so we'll put an empty list here.
 
+    /// ### infer
     let infer package_id module_id (top_env' : TopEnv) expr =
         let at_tag i = {package_id=package_id; module_id=module_id; tag=i}
         let mutable top_env = top_env' // Is mutated only in two places at the top level. During actual inference can otherwise be thought of as immutable.
@@ -5092,10 +5565,11 @@ module spiral_compiler =
             filled_top = filled_top
             top_env_additions = top_env_additions
             offset = bundle_range expr |> fst |> fun x -> x.line
-            hovers = hover_types.ToArray() |> Array.map (fun (a,(b,com)) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
+            hovers = hover_types.ToArray() |> Array.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
             errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, show_type_error top_env b)
             }
 
+    /// ### base_types
     let base_types (default_env : DefaultEnv) =
         let var name = {scope=0; kind=KindType; constraints=Set.empty; name=name} 
         let inline inl f = let x = var "x" in TyInl(x,f x)
@@ -5125,6 +5599,7 @@ module spiral_compiler =
         "float", TyPrim default_env.default_float
         ]
 
+    /// ### top_env_defaultInfer
     let top_env_defaultInfer default_env : TopEnv =
         // Note: `top_env_default` should have no nominals, prototypes or terms.
         {top_env_emptyInfer with
@@ -5143,11 +5618,20 @@ module spiral_compiler =
             }
 
     /// ## PartEvalPrepass
+
+    /// ### Id
     type Id = int32
+
+    /// ### ScopeEnv
     type ScopeEnv = {|free_vars : int []; stack_size : int|}
+
+    /// ### Scope
     type Scope = {term : ScopeEnv; ty : ScopeEnv}
+
+    /// ### Range
     type Range = {path : string; range : VSCRange}
 
+    /// ### Macro
     type Macro =
         | MText of string
         | MTerm of E
@@ -5247,6 +5731,7 @@ module spiral_compiler =
         | TMetaV of Id
         | TTypecase of Range * TPrepass * (TPrepass * TPrepass) list
 
+    /// ### Printable
     module Printable =
         type PMacro =
             | MText of string
@@ -5473,7 +5958,7 @@ module spiral_compiler =
             | Choice1Of2(x,ret) -> ret (term x)
             | Choice2Of2(x,ret) -> ret (ty x)
 
-    // open FSharpx.Collections
+    /// ### PrepassTopEnv
     type PrepassTopEnv = {
         prototypes_next_tag : int
         prototypes_instances : Map<GlobalId * GlobalId,E>
@@ -5483,6 +5968,7 @@ module spiral_compiler =
         ty : Map<string,TPrepass>
         }
 
+    /// ### top_env_emptyPrepass
     let top_env_emptyPrepass = {
         prototypes_next_tag = 0
         prototypes_instances = Map.empty
@@ -5492,6 +5978,7 @@ module spiral_compiler =
         ty = Map.empty
         }
 
+    /// ### unionPrepass
     let unionPrepass small big = {
         prototypes_next_tag = max small.prototypes_next_tag big.prototypes_next_tag
         prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
@@ -5515,17 +6002,20 @@ module spiral_compiler =
             ) small.ty big.ty
         }
 
+    /// ### in_modulePrepass
     let in_modulePrepass m (a : PrepassTopEnv) =
         {a with 
             ty = Map.add m (TModule a.ty) Map.empty
             term = Map.add m (EModule a.term) Map.empty
             }
 
-    open System.Collections.Generic
-
+    /// ### PropagatedVarsEnv
     type PropagatedVarsEnv = {|vars : Set<int>; range : (int * int) option|}
+
+    /// ### PropagatedVars
     type PropagatedVars = {term : PropagatedVarsEnv; ty : PropagatedVarsEnv}
 
+    /// ### propagate
     // Attaches scopes to all the nodes.
     let propagate x =
         let dict = Dictionary(HashIdentity.Reference)
@@ -5638,8 +6128,13 @@ module spiral_compiler =
         let _ = match x with Choice1Of2 x -> term x | Choice2Of2 x -> ty x
         scope_dict
 
+    /// ### ResolveEnvValue
     type ResolveEnvValue = {|term : Set<Id>; ty : Set<Id> |}
+
+    /// ### ResolveEnv
     type ResolveEnv = Map<int, ResolveEnvValue>
+
+    /// ### resolve_recursive_free_vars
     let resolve_recursive_free_vars env =
         Map.fold (fun (env : ResolveEnv) k v ->
             let has_visited = HashSet()
@@ -5651,6 +6146,7 @@ module spiral_compiler =
             Map.add k (f {|term=Set.empty; ty=Set.empty|} k v) env
             ) env env
 
+    /// ### resolve
     let resolve (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = Dictionary(HashIdentity.Reference)
         let subst' (env : ResolveEnv) (x : PropagatedVars) : PropagatedVars = 
@@ -5738,9 +6234,16 @@ module spiral_compiler =
         | Choice1Of2 x -> term Map.empty x
         | Choice2Of2 x -> ty Map.empty x
 
+    /// ### LowerSubEnv
     type LowerSubEnv = {|var : Map<int,int>; adj : int|}
+
+    /// ### LowerEnv
     type LowerEnv = {term : LowerSubEnv; ty : LowerSubEnv }
+
+    /// ### LowerEnvRec
     type LowerEnvRec = Map<int,LowerEnv -> E>
+
+    /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = Dictionary(HashIdentity.Reference)
         let scope (env : LowerEnv) x =
@@ -5978,34 +6481,58 @@ module spiral_compiler =
         | Choice1Of2(x,ret) -> ret (term Map.empty env x)
         | Choice2Of2(x,ret) -> ret (ty Map.empty env x)
 
+    /// ### Env___
     type Env___ = {
         term : {| env : Map<string,E>; i : Id; i_rec : Id |}
         ty : {| env : Map<string,TPrepass>; i : Id |}
         }
+
+    /// ### PartEvalPrepassEnv
     type PartEvalPrepassEnv = Env___
 
+    /// ### add_term
     let add_term (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i = term.i+1; env = Map.add k v term.env|} }
+
+    /// ### add_term_rec
     let add_term_rec (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i_rec = term.i_rec-1; env = Map.add k v term.env|} }
+
+    /// ### add_ty
     let add_ty (e : PartEvalPrepassEnv) k v = let ty = e.ty in {e with ty = {|ty with i = ty.i+1; env = Map.add k v ty.env|} }
+
+    /// ### add_wildcard
     let add_wildcard (e : PartEvalPrepassEnv) = let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} }
 
+    /// ### add_term_var
     let add_term_var (e : PartEvalPrepassEnv) k = e.term.i, add_term e k (EV e.term.i)
+
+    /// ### fresh_term_var
     let fresh_term_var (e : PartEvalPrepassEnv) = e.term.i, (let term = e.term in {e with term = {|term with i = term.i+1|} })
+
+    /// ### fresh_ty_var
     let fresh_ty_var (e : PartEvalPrepassEnv) = e.ty.i, (let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} })
+
+    /// ### add_term_rec_var
     let add_term_rec_var (e : PartEvalPrepassEnv) k = e.term.i_rec, add_term_rec e k (EV e.term.i_rec)
+
+    /// ### add_ty_var
     let add_ty_var (e : PartEvalPrepassEnv) k = e.ty.i, add_ty e k (TV e.ty.i)
+
+    /// ### add_ty_wildcard
     let add_ty_wildcard (e : PartEvalPrepassEnv) = e.ty.i, add_wildcard e
 
+    /// ### process_term
     let process_term (x : E) =
         let scope = propagate (Choice1Of2 x)
         resolve scope (Choice1Of2 x)
         lower scope (Choice1Of2(x,id))
 
+    /// ### process_ty
     let process_ty (x : TPrepass) =
         let scope = propagate (Choice2Of2 x)
         resolve scope (Choice2Of2 x)
         lower scope (Choice2Of2(x,id))
 
+    /// ### module_openPrepass
     let module_openPrepass (top_env : PrepassTopEnv) env a l =
         let a,b = 
             match top_env.term.[snd a], top_env.ty.[snd a] with
@@ -6021,6 +6548,7 @@ module spiral_compiler =
         ty = {|env.ty with env = Map.foldBack Map.add b env.ty.env|}
         }
 
+    /// ### prepassPrepass
     let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
         let p r = {path=path; range=r}
         let at_tag i = { package_id = package_id; module_id = module_id; tag = i }
@@ -6403,6 +6931,7 @@ module spiral_compiler =
                 AOpen {top_env_emptyPrepass with term=x.term.env; ty=x.ty.env}
         |}
 
+    /// ### top_env_defaultPrepass
     let top_env_defaultPrepass default_env =
         let convert_infer_to_prepass x = 
             let m = Dictionary(HashIdentity.Reference)
@@ -6429,7 +6958,10 @@ module spiral_compiler =
     // open SoftCircuits.Collections
     // open Common
 
+    /// ### Tag
     type Tag = int
+
+    /// ### L<'a,'b when 'a: equality and 'a: comparison>
     type [<CustomComparison;CustomEquality>] L<'a,'b when 'a: equality and 'a: comparison> = 
         | L of 'a * 'b
 
@@ -6444,6 +6976,7 @@ module spiral_compiler =
                 | :? L<'a,'b> as b -> match a,b with L(a,_), L(b,_) -> compare a b
                 | _ -> raise <| System.ArgumentException "Invalid comparison for T."
 
+    /// ### H<'a when 'a : equality>
     type H<'a when 'a : equality>(x : 'a) = 
         let h = hash x
 
@@ -6454,8 +6987,13 @@ module spiral_compiler =
             | _ -> false
         override _.GetHashCode() = h
 
+    /// ### StackSize
     type StackSize = int
+
+    /// ### Nominal
     type Nominal = {|body : TPrepass; id : GlobalId; name : string|} ConsedNode // TODO: When the time comes to implement incremental compilation, make the `body` field a weak reference.
+
+    /// ### PartEvalMacro
     type PartEvalMacro = Text of string | Type of Ty | TypeLit of Ty
     and Ty =
         | YVoid
@@ -6496,10 +7034,12 @@ module spiral_compiler =
     // tags and tag_cases are straightforward mapping from cases for the sake of efficiency.
     and Union = {|cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool|} H
 
+    /// ### TermVar
     type TermVar =
         | WV of TyV
         | WLit of Literal
 
+    /// ### RData
     type RData =
         | ReB
         | RePair of ConsedNode<RData * RData>
@@ -6515,19 +7055,25 @@ module spiral_compiler =
         | ReV of ConsedNode<Tag * Ty>
         | ReHashMap of ConsedNode<(RData * RData)[]>
 
+    /// ### Trace
     type Trace = Range list
+
+    /// ### JoinPointKey
     type JoinPointKey = 
         | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty []>
         | JPClosure of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
 
+    /// ### JoinPointCall
     type JoinPointCall = JoinPointKey * TyV []
 
+    /// ### CodeMacro
     type CodeMacro =
         | CMText of string
         | CMTerm of Data
         | CMType of Ty
         | CMTypeLit of Ty
 
+    /// ### TypedBind
     type TypedBind =
         | TyLet of Data * Trace * TypedOp
         | TyLocalReturnOp of Trace * TypedOp * Data
@@ -6557,7 +7103,11 @@ module spiral_compiler =
         | TyIndent of TypedBind []
         | TyJoinPoint of JoinPointCall
         | TyBackend of (string ConsedNode * E) * ConsedNode<RData [] * Ty []> * Range
+
+    /// ### UnionRewrite
     type UnionRewrite = UnionData of string * Data | UnionBlockers of string Set
+
+    /// ### LangEnv
     type LangEnv = {
         trace : Trace
         seq : ResizeArray<TypedBind>
@@ -6572,15 +7122,20 @@ module spiral_compiler =
         globals : ResizeArray<string>
         }
 
+    /// ### PartEvalTopEnv
     type PartEvalTopEnv = {
         prototypes_instances : Dictionary<GlobalId * GlobalId, E>
         nominals : Dictionary<GlobalId, Nominal>
         backend : string
         }
 
+    /// ### PartEvalTypeError
     exception PartEvalTypeError of Trace * string
+
+    /// ### raise_type_error
     let raise_type_error (d: LangEnv) x = raise (PartEvalTypeError(d.trace,x))
 
+    /// ### data_to_rdata
     let data_to_rdata (d: LangEnv) (hc : HashConsTable) call_data =
         let hc x = hc.Add x
         let m = Dictionary(HashIdentity.Reference)
@@ -6606,6 +7161,7 @@ module spiral_compiler =
         let x = Array.map f call_data
         call_args.ToArray(),x
 
+    /// ### rename_global_term
     // This rename is a consideration for when I do incremental compilation.
     // In order to allow them to be cleaned by the garbage collection, I do not want the 
     // references to unused nodes to end up in anywhere other than join point keys (which will be weak).
@@ -6631,6 +7187,7 @@ module spiral_compiler =
                 ) x
         {s with env_global_term = Array.map f s.env_global_term}
 
+    /// ### data_free_vars
     let data_free_vars call_data =
         let m = HashSet(HashIdentity.Reference)
         let free_vars = ResizeArray()
@@ -6648,6 +7205,7 @@ module spiral_compiler =
         f call_data
         free_vars.ToArray()
 
+    /// ### data_free_vars_replace
     let data_free_vars_replace s (d : Dictionary<TyV,TyV>) (x : Data) =
         let m = Dictionary(HashIdentity.Reference)
         let rec f x =
@@ -6669,8 +7227,14 @@ module spiral_compiler =
                     raise_type_error s "The mutable compile-time HashSets cannot have their free vars replaced."
                 ) x
         f x
+
+    /// ### (|C|)
     let inline (|C|) (x : _ ConsedNode) = x.node
+
+    /// ### (|C'|)
     let inline (|C'|) (x : _ ConsedNode) = x.node, x.tag
+
+    /// ### rdata_free_vars
     let rdata_free_vars call_data =
         let m = HashSet(HashIdentity.Structural)
         let free_vars = ResizeArray()
@@ -6685,6 +7249,7 @@ module spiral_compiler =
         Array.iter g call_data
         free_vars.ToArray()
 
+    /// ### data_term_vars'
     let data_term_vars' call_data =
         let term_vars = ResizeArray(64)
         let rec f = function
@@ -6699,6 +7264,7 @@ module spiral_compiler =
         f call_data
         term_vars.ToArray()
 
+    /// ### data_nominals
     let data_nominals call_data =
         let term_vars = ResizeArray(64)
         let rec f = function
@@ -6713,6 +7279,7 @@ module spiral_compiler =
         f call_data
         term_vars.ToArray()
 
+    /// ### data_term_vars
     let data_term_vars call_data =
         let term_vars = ResizeArray(64)
         let rec f = function
@@ -6728,6 +7295,7 @@ module spiral_compiler =
         f call_data
         term_vars.ToArray()
 
+    /// ### lit_to_primitive_type
     let lit_to_primitive_type = function
         | LitUInt8 _ -> UInt8T
         | LitUInt16 _ -> UInt16T
@@ -6743,12 +7311,16 @@ module spiral_compiler =
         | LitString _ -> StringT
         | LitChar _ -> CharT
 
+    /// ### lit_to_ty
     let lit_to_ty x = lit_to_primitive_type x |> YPrim
+
+    /// ### is_tco_compatible
     let is_tco_compatible = function 
         | TyApply _ | TyJoinPoint _ | TyArrayLiteral _ | TyUnionBox _ | TyToLayout _
         | TyIf _ | TyIntSwitch _ | TyUnionUnbox _ | TyArrayCreate _ | TyFailwith _ -> true 
         | _ -> false
 
+    /// ### seq_apply
     let seq_apply (d: LangEnv) end_dat =
         let inline end_ () = d.seq.Add(TyLocalReturnData(end_dat,d.trace))
         if d.seq.Count > 0 then
@@ -6758,6 +7330,7 @@ module spiral_compiler =
         else end_()
         d.seq.ToArray()
 
+    /// ### cse_tryfind
     let cse_tryfind (d: LangEnv) key =
         d.cse |> List.tryPick (fun x ->
             match x.TryGetValue key with
@@ -6765,9 +7338,10 @@ module spiral_compiler =
             | _ -> None
             )
 
+    /// ### cse_add
     let cse_add (d: LangEnv) k v = (List.head d.cse).Add(k,v)
 
-
+    /// ### show_ty
     let show_ty x =
         let rec f prec x =
             let p = p prec
@@ -6794,6 +7368,7 @@ module spiral_compiler =
             | YMetavar _ -> "?"
         f -1 x
 
+    /// ### show_data
     let show_data x =
         let rec f prec x =
             let p = p prec
@@ -6817,62 +7392,76 @@ module spiral_compiler =
 
         f -1 x
 
+    /// ### is_lit
     let is_lit = function
         | DLit _ -> true
         | _ -> false
 
+    /// ### is_numeric
     let is_numeric = function
         | YPrim (UInt8T | UInt16T | UInt32T | UInt64T 
             | Int8T | Int16T | Int32T | Int64T 
             | Float32T | Float64T) -> true
         | _ -> false
 
+    /// ### is_signed_numeric
     let is_signed_numeric = function
         | YPrim (Int8T | Int16T | Int32T | Int64T | Float32T | Float64T) -> true
         | _ -> false
 
+    /// ### is_non_float_primitive
     let is_non_float_primitive = function
         | YPrim (Float32T | Float64T) -> false
         | YPrim _ -> true
         | _ -> false
 
+    /// ### is_primitive
     let is_primitive = function
         | YPrim _ -> true
         | _ -> false
 
+    /// ### is_string
     let is_string = function
         | YPrim StringT -> true
         | _ -> false
 
+    /// ### is_char
     let is_char = function
         | YPrim CharT -> true
         | _ -> false
 
+    /// ### is_float
     let is_float = function
         | YPrim (Float32T | Float64T) -> true
         | _ -> false
 
+    /// ### is_bool
     let is_bool = function
         | YPrim BoolT -> true
         | _ -> false
 
+    /// ### is_int
     let is_int = function
         | YPrim (UInt32T | UInt64T | Int32T | Int64T) -> true
         | _ -> false
 
+    /// ### is_int
     let is_any_int = function
         | YPrim (UInt8T | UInt16T | UInt32T | UInt64T 
             | Int8T | Int16T | Int32T | Int64T) -> true
         | _ -> false
 
+    /// ### is_int64
     let is_int64 = function
         | YPrim Int64T -> true
         | _ -> false
 
+    /// ### is_int32
     let is_int32 = function
         | YPrim Int32T -> true
         | _ -> false
 
+    /// ### is_lit_zero
     let is_lit_zero = function
         | DLit a ->
             match a with
@@ -6882,6 +7471,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
 
+    /// ### is_lit_one
     let is_lit_one = function
         | DLit a ->
             match a with
@@ -6891,6 +7481,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
 
+    /// ### is_int_lit_zero
     let is_int_lit_zero = function
         | DLit a ->
             match a with
@@ -6899,6 +7490,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
 
+    /// ### is_int_lit_one
     let is_int_lit_one = function
         | DLit a ->
             match a with
@@ -6907,6 +7499,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
 
+    /// ### lit_zero
     let lit_zero = function
         | YPrim Int8T -> LitInt8 0y
         | YPrim Int16T -> LitInt16 0s
@@ -6920,12 +7513,22 @@ module spiral_compiler =
         | YPrim Float64T -> LitFloat64 0.0
         | _ -> failwith "Compiler error: Expected a numeric value."
 
+    /// ### vt
     let vt s i = if i < s.env_global_type.Length then s.env_global_type.[i] else s.env_stack_type.[i-s.env_global_type.Length]
+
+    /// ### v
     let v s i = if i < s.env_global_term.Length then s.env_global_term.[i] else s.env_stack_term.[i-s.env_global_term.Length]
+
+    /// ### add_trace
     let add_trace (s : LangEnv) r = {s with trace = r :: s.trace}
+
+    /// ### store_term
     let store_term (s : LangEnv) i v = s.env_stack_term.[i-s.env_global_term.Length] <- v
+
+    /// ### store_ty
     let store_ty (s : LangEnv) i v = s.env_stack_type.[i-s.env_global_type.Length] <- v
 
+    /// ### is_unify
     let is_unify s x =
         let is_metavar = HashSet()
         let rec f = function
@@ -6953,6 +7556,7 @@ module spiral_compiler =
             | _ -> false
         f x
 
+    /// ### PartEvalResult
     type PartEvalResult = {
         join_point_method : Dictionary<string ConsedNode * E,Dictionary<ConsedNode<RData [] * Ty []>,TypedBind [] option * Ty option * string option> * HashConsTable>
         join_point_closure : Dictionary<string ConsedNode * E,Dictionary<ConsedNode<RData [] * Ty [] * Ty>,(Data * TypedBind []) option> * HashConsTable>
@@ -6961,8 +7565,7 @@ module spiral_compiler =
         globals : ResizeArray<string>
         }
 
-
-
+    /// ### peval
     let peval (env : PartEvalTopEnv) (x : E) =
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
@@ -9037,29 +9640,43 @@ module spiral_compiler =
     /// ## CodegenUtils
     // open System.Text
 
+    /// ### CodegenEnv
     type CodegenEnv =
         {
         text : System.Text.StringBuilder
         indent : int
         }
 
+    /// ### line
     let line x (s : string) = x.text.Append(' ', x.indent).AppendLine s |> ignore
+
+    /// ### indent
     let indent x : CodegenEnv = {x with indent=x.indent+4}
+
+    /// ### add_dec_point
     let add_dec_point (x : string) = if x.IndexOf('.') = -1 && x.Contains "E" |> not then x + ".0" else x
 
+    /// ### CodegenError
     exception CodegenError of Range option * string
+
+    /// ### CodegenErrorWithPos
     exception CodegenErrorWithPos of Trace * string
+
+    /// ### raise_codegen_error
     let raise_codegen_error x = raise (CodegenError (None,x))
+
+    /// ### raise_codegen_error_backend
     let raise_codegen_error_backend r x = raise (CodegenError (Some r,x))
+
+    /// ### raise_codegen_error'
     let raise_codegen_error' trace (r,x) = raise (CodegenErrorWithPos(Option.fold (fun s x -> x :: s) trace r,x))
 
     /// ## CodegenFsharp
-    // open System
-    // open System.Text
-    open System.Collections.Generic
 
-    let private backend_nameFsharp = "Fsharp"
+    /// ### backend_nameFsharp
+    let backend_nameFsharp = "Fsharp"
 
+    /// ### litFsharp
     let litFsharp = function
         | LitInt8 x -> sprintf "%iy" x
         | LitInt16 x -> sprintf "%is" x
@@ -9105,6 +9722,7 @@ module spiral_compiler =
             |> sprintf "'%s'"
         | LitBool x -> if x then "true" else "false"
 
+    /// ### prim
     let prim = function
         | Int8T -> "int8"
         | Int16T -> "int16"
@@ -9120,16 +9738,25 @@ module spiral_compiler =
         | StringT -> "string"
         | CharT -> "char"
 
+    /// ### type_lit
     let type_lit = function
         | YLit x -> litFsharp x
         | YSymbol x -> x
-        | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro." 
+        | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
+    /// ### UnionRecFsharp
     type UnionRecFsharp = {tag : int; free_vars : Map<int * string, TyV[]>}
+
+    /// ### LayoutRecFsharp
     type LayoutRecFsharp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
+
+    /// ### MethodRecFsharp
     type MethodRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
+
+    /// ### ClosureRecFsharp
     type ClosureRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
 
+    /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
         let types = ResizeArray()
         let functions = ResizeArray()
@@ -9527,10 +10154,15 @@ module spiral_compiler =
     // Here are the reference counting analysis passes.
     open System.Collections.Generic
 
+    /// ### varc_add
     let varc_add x i v =
         let c = Option.defaultValue 0 (Map.tryFind x v) + i
         if c = 0 then Map.remove x v else Map.add x c v
+
+    /// ### varc_union
     let varc_union a b = Map.foldBack varc_add a b
+
+    /// ### varc_data
     let varc_data call_data =
         let mutable v = Map.empty
         let rec f = function
@@ -9544,8 +10176,11 @@ module spiral_compiler =
             | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
         f call_data
         v
+
+    /// ### varc_set
     let varc_set x i = Set.fold (fun s v -> Map.add v i s) Map.empty x
 
+    /// ### refc_used_vars
     let refc_used_vars (x : TypedBind []) =
         let g_bind : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
         let fv x = x |> data_free_vars |> Set
@@ -9588,8 +10223,10 @@ module spiral_compiler =
         binds x |> ignore
         g_bind
 
+    /// ### RefcVars
     type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : Dictionary<TypedBind,TyV Set>; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
 
+    /// ### refc_prepass
     let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
         let used_vars = refc_used_vars x
         let g_incr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
@@ -10221,7 +10858,6 @@ module spiral_compiler =
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     ) (fun _ s_typ s_fun x ->
-
                     let i, range = x.tag, tup_ty x.range
                     line s_typ (sprintf "typedef struct Closure%i Closure%i;" i i)
                     line s_typ (sprintf "struct Closure%i {" i)
@@ -10552,8 +11188,8 @@ module spiral_compiler =
         // open System.Text
         open System.Collections.Generic
 
-        let private backend_nameCuda = "Cuda"
-        let private max_tag = 255uy
+        let backend_nameCuda = "Cuda"
+        let max_tag = 255uy
 
         let is_stringCuda = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
         let sizeof_tyvCuda = function
@@ -11415,7 +12051,7 @@ module spiral_compiler =
         // open System.Text
         open System.Collections.Generic
 
-        let private backend_namePython = "Python"
+        let backend_namePython = "Python"
 
         let litPython = function
             | LitInt8 x -> sprintf "%i" x
@@ -11967,6 +12603,7 @@ module spiral_compiler =
     open Hopac.Extensions
     open Hopac.Stream
 
+    /// ### process_errors
     let process_errors line (ers : LineTokenErrors list) : RString list =
         ers |> List.mapi (fun i l -> 
             let i = line + i
@@ -11976,6 +12613,7 @@ module spiral_compiler =
         |> List.groupBy snd
         |> List.map (fun (k,v) -> k, process_error (List.map fst v))
 
+    /// ### tokenize_replace
     /// Replaces the token lines and updates the errors given the edit.
     let tokenize_replace (lines : _ FSharpx.Collections.PersistentVector FSharpx.Collections.PersistentVector, errors : _ list) (edit : SpiEdit) =
         let toks, ers = Array.map tokenize edit.lines |> Array.unzip
@@ -11997,8 +12635,10 @@ module spiral_compiler =
         errors : RString list
         }
 
+    /// ### wdiff_tokenizer_init
     let wdiff_tokenizer_init = { lines_text = FSharpx.Collections.PersistentVector.empty; lines_token = FSharpx.Collections.PersistentVector.empty; blocks = []; errors = [] }
 
+    /// ### replace'
     /// Immutably updates the state based on the request. Does diffing to make the operation efficient.
     /// It is possible for the server to go out of sync, in which case an error is returned.
     let replace' (state : TokenizerState) (edit : SpiEdit) =
@@ -12006,6 +12646,8 @@ module spiral_compiler =
         let lines_token, errors = tokenize_replace (state.lines_token, state.errors) edit
         let blocks = wdiff_block_all state.blocks (lines_token, edit.lines.Length, edit.from, edit.nearTo)
         {lines_text=lines_text; lines_token=lines_token; errors=errors; blocks=blocks}
+
+    /// ### wdiff_tokenizer_all
     let wdiff_tokenizer_all (state : TokenizerState) text = 
         let text = lines text
         let text' = state.lines_text |> Seq.toArray
@@ -12015,10 +12657,13 @@ module spiral_compiler =
         let text = text.[from..]
         let fromRev = loop ((fun text i -> text.[text.Length-1-i]),text) 0
         replace' state {|from=from; nearTo=text'.Length-fromRev; lines=text.[..text.Length-1-fromRev]|}
+
+    /// ### wdiff_tokenizer_edit
     let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) = 
         if edit.nearTo <= state.lines_text.Length then Ok (replace' state edit)
         else Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
 
+    /// ### semantic_updates_apply
     let semantic_updates_apply (block : LineTokens) updates =
         Seq.fold (fun block (c : VectorCord, l) -> 
             let x =
@@ -12034,6 +12679,7 @@ module spiral_compiler =
             FSharpx.Collections.PersistentVector.updateNth c.row c.col x block
             ) block updates
 
+    /// ### parse_block
     let parse_block default_env is_top_down (block : LineTokens) =
         let comments, cords_tokens = 
             Array.init block.Length (fun line ->
@@ -12056,7 +12702,10 @@ module spiral_compiler =
             }
         {result=parseBlockParsing env; semantic_tokens=semantic_updates_apply block semantic_updates}
 
+    /// ### wdiff_parse_init
     let wdiff_parse_init is_top_down : ParserState = {is_top_down=is_top_down; blocks=[]}
+
+    /// ### wdiff_parse
     let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens Block list) =
         let dict = Dictionary(HashIdentity.Reference)
         // Offset should be ignored when memoizing the results of parsing.
@@ -12066,27 +12715,47 @@ module spiral_compiler =
             )  
         {state with blocks = blocks }
 
+    /// ### ModuleState
     type ModuleState = { tokenizer : TokenizerState; bundler : BlockBundleState; parser : ParserState }
+
+    /// ### wdiff_module_init
     let wdiff_module_init is_top_down = {tokenizer = wdiff_tokenizer_init; bundler = wdiff_block_bundle_init; parser = wdiff_parse_init is_top_down}
+
+    /// ### wdiff_module_body
     let wdiff_module_body default_env state tokenizer =
         if state.tokenizer = tokenizer then state else
         let parser = wdiff_parse default_env state.parser tokenizer.blocks
         let bundler = wdiff_block_bundle state.bundler parser
         {tokenizer=tokenizer; parser=parser; bundler=bundler}
+
+    /// ### wdiff_module_edit
     let wdiff_module_edit default_env (state : ModuleState) x = wdiff_tokenizer_edit state.tokenizer x |> Result.map (wdiff_module_body default_env state)
+
+    /// ### wdiff_module_all
     let wdiff_module_all default_env state x = wdiff_tokenizer_all state.tokenizer x |> wdiff_module_body default_env state
+
+    /// ### wdiff_module_init_all
     let wdiff_module_init_all default_env is_top_down x = wdiff_module_all default_env (wdiff_module_init is_top_down) x
 
+    /// ### FileState<'input,'result,'state>
     type [<ReferenceEquality>] FileState<'input,'result,'state> = { input : 'input; result : 'result; state : 'state }
+
+    /// ### FileFuns<'a,'b,'state>
     type FileFuns<'a,'b,'state> =
         abstract member eval : 'state * 'a -> 'b
         abstract member diff : 'state * 'b * 'a -> 'b
         abstract member init : 'a -> FileState<'a,'b,'state>
 
+    /// ### TypecheckerStateValue
     type TypecheckerStateValue = Bundle option * InferResult * TopEnv
+
+    /// ### TypecheckerStatePropagated
     type TypecheckerStatePropagated = (bool * TopEnv) Promise
+
+    /// ### TypecheckerState
     type TypecheckerState = FileState<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated>
 
+    /// ### typecheck
     let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
         | Cons((_,b : BlockBundleValue), ls) ->
             match b.bundle with
@@ -12100,6 +12769,7 @@ module spiral_compiler =
         | Nil ->
             Job.result Nil
 
+    /// ### diff
     let rec diff (package_id,module_id,env) (result,input : BlockBundleState) = 
         let tc () = typecheck (package_id,module_id,env) input
         if Promise.Now.isFulfilled result then
@@ -12109,6 +12779,7 @@ module spiral_compiler =
             | _ -> tc()
         else tc()
 
+    /// ### funs_file_tc
     let funs_file_tc = {new FileFuns<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated> with
         member _.eval(state,(pid,mid,x)) = 
             state >>=* fun (_,env) -> 
@@ -12122,21 +12793,27 @@ module spiral_compiler =
             }
         }
 
+    /// ### wdiff_file_update_state
     let wdiff_file_update_state (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'state) =
         if state.state = x then state else {state with state=x; result=funs.eval(x,state.input)}
 
+    /// ### wdiff_file_update_input
     let wdiff_file_update_input (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'a) =
         if state.input = x then state else {state with input=x; result=funs.diff(state.state,state.result,x)}
 
+    /// ### wdiff_file
     let wdiff_file (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (a,b) =
         if state.state = a then wdiff_file_update_input funs state b else {state=a; input=b; result=funs.eval(a,b)}
 
+    /// ### ProjFilesTree
     type ProjFilesTree =
         | File of module_id: ModuleId * path: string * name: string option
         | Directory of dir_id: DirId * name: string * ProjFilesTree list
 
+    /// ### ProjFiles
     type ProjFiles = { tree : ProjFilesTree list; num_dirs : int; num_files : int }
 
+    /// ### ProjFileFuns<'a,'state>
     type ProjFileFuns<'a,'state> =
         abstract member file : string option * 'state * 'a -> 'a * 'state
         abstract member union : 'state * 'state -> 'state
@@ -12144,6 +12821,7 @@ module spiral_compiler =
         abstract member default' : DefaultEnv -> 'state
         abstract member empty : 'state
 
+    /// ### ProjFilesState<'a,'state>
     type [<ReferenceEquality>] ProjFilesState<'a,'state> = {
         init : 'state
         uids_file : ('a * 'state) []
@@ -12152,6 +12830,7 @@ module spiral_compiler =
         result : 'state
         }
 
+    /// ### proj_files_diff
     let proj_files_diff (uids_file : ('a * 'b) [], uids_directory : 'b [], files) (uids, files') =
         let uids_file' = Array.zeroCreate (Array.length uids)
         let uids_directory' = Array.zeroCreate files'.num_dirs
@@ -12169,6 +12848,7 @@ module spiral_compiler =
             | _ -> false
         if list (files.tree, files'.tree) then None else Some (uids_file',uids_directory')
 
+    /// ### proj_files
     let proj_files (funs : ProjFileFuns<'a,'state>) uids_file uids_directory uids s l =
         let inline memo (uids : _ []) uid f = 
             let x = uids.[uid]
@@ -12184,23 +12864,27 @@ module spiral_compiler =
                 ) (funs.empty, s) l |> fst
         list s l.tree
 
+    /// ### wdiff_proj_files_update_files
     let wdiff_proj_files_update_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (uids,files : ProjFiles) =
         match proj_files_diff (state.uids_file,state.uids_directory,state.files) (uids,files) with
         | Some (uids_file, uids_directory) -> {state with files=files; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids state.init files}
         | None -> state
 
+    /// ### wdiff_proj_files_update_packages
     let wdiff_proj_files_update_packages (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init : 'state) =
         if state.init = init then state else
         let uids_file, uids_directory = Array.zeroCreate state.uids_file.Length, Array.zeroCreate state.uids_directory.Length
         let uids = Array.map fst state.uids_file
         {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init state.files}
 
+    /// ### wdiff_proj_files
     let wdiff_proj_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init,(uids,files)) =
         if state.init = init then wdiff_proj_files_update_files funs state (uids,files)
         else
             let uids_file, uids_directory = Array.zeroCreate files.num_files, Array.zeroCreate files.num_dirs
             {files=files; init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init files}
 
+    /// ### typechecker_results_summary
     let typechecker_results_summary l =
         Stream.foldFun (fun (has_error,big) (_,x : InferResult,_) -> 
             has_error || List.isEmpty x.errors = false,
@@ -12209,6 +12893,7 @@ module spiral_compiler =
             | AInclude small -> unionInfer small big
             ) (false,top_env_emptyInfer) l
 
+    /// ### funs_proj_file_tc
     let funs_proj_file_tc = {new ProjFileFuns<TypecheckerState,TypecheckerStatePropagated> with
         member _.file(name,state,x) = 
             let x = wdiff_file_update_state funs_file_tc x state
@@ -12222,6 +12907,7 @@ module spiral_compiler =
         member _.empty = Promise.Now.withValue (false,top_env_emptyInfer)
         }
 
+    /// ### PackageEnv
     type PackageEnv = {
         nominals_aux : Map<PackageId,Map<GlobalId, {|name : string; kind : TT|}>>
         nominals : Map<PackageId,Map<GlobalId, {|vars : Var list; body : T|}>>
@@ -12232,6 +12918,7 @@ module spiral_compiler =
         constraints : Map<string,ConstraintOrModule>
         }
 
+    /// ### union
     let union small big = {
         nominals_aux = Map.foldBack Map.add small.nominals_aux big.nominals_aux
         nominals = Map.foldBack Map.add small.nominals big.nominals
@@ -12242,6 +12929,7 @@ module spiral_compiler =
         constraints = Map.foldBack Map.add small.constraints big.constraints
         }
 
+    /// ### in_moduleWDiff
     let in_moduleWDiff m (a : PackageEnv) =
         {a with 
             ty = Map.add m (TyModule a.ty) Map.empty
@@ -12249,6 +12937,7 @@ module spiral_compiler =
             constraints = Map.add m (M a.constraints) Map.empty
             }
 
+    /// ### package_to_file
     let package_to_file (x : PackageEnv) = {
         nominals_next_tag = 0
         nominals_aux = Map.foldBack (fun _ -> Map.foldBack Map.add) x.nominals_aux Map.empty
@@ -12261,6 +12950,7 @@ module spiral_compiler =
         constraints = x.constraints
         }
 
+    /// ### add_file_to_package
     let add_file_to_package package_id (small : TopEnv) (big : PackageEnv): PackageEnv = {
         nominals_aux = Map.add package_id small.nominals_aux big.nominals_aux
         nominals = Map.add package_id small.nominals big.nominals
@@ -12271,6 +12961,7 @@ module spiral_compiler =
         constraints = small.constraints
         }
 
+    /// ### package_env_empty
     let package_env_empty = {
         nominals_aux = Map.empty
         nominals = Map.empty
@@ -12281,24 +12972,35 @@ module spiral_compiler =
         constraints = Map.empty
         }
 
+    /// ### package_env_default
     let package_env_default default_env = 
         let x = top_env_defaultInfer default_env
         {package_env_empty with ty = x.ty; term = x.term; constraints = x.constraints}
 
+    /// ### ProjPackagesState<'a>
     type ProjPackagesState<'a> = {
         packages : (string option * 'a) list
         result : 'a
         }
+
+    /// ### ProjState<'file_inputs,'files,'packages>
     type ProjState<'file_inputs,'files,'packages> = {
         package_id : PackageId
         packages : 'packages ProjPackagesState
         files : ProjFilesState<'file_inputs,'files>
         result : 'packages
         }
+
+    /// ### TypecheckerStateTop
     type TypecheckerStateTop = (bool * PackageEnv) Promise
+
+    /// ### ProjStateTC
     type ProjStateTC = ProjState<TypecheckerState,TypecheckerStatePropagated,TypecheckerStateTop>
+
+    /// ### ProjEnvTC
     type ProjEnvTC = Map<PackageId,ProjStateTC>
 
+    /// ### ProjPackageFuns<'file,'package>
     type ProjPackageFuns<'file,'package> =
         abstract member unions : DefaultEnv -> (string option * 'package) list -> 'package
         abstract member union : 'package * 'package -> 'package
@@ -12308,6 +13010,7 @@ module spiral_compiler =
         abstract member default' : DefaultEnv -> 'package
         abstract member empty : 'package
 
+    /// ### funs_proj_package_tc
     let funs_proj_package_tc = {new ProjPackageFuns<TypecheckerStatePropagated,TypecheckerStateTop> with
         member funs.unions default_env l = 
             let f = function Some name, small -> funs.in_module(name,small) | None, small -> small
@@ -12329,6 +13032,7 @@ module spiral_compiler =
         member _.empty = Promise.Now.withValue (false, package_env_empty)
         }
 
+    /// ### wdiff_proj_init
     let wdiff_proj_init default_env (funs_packages : ProjPackageFuns<'file,'package>) (funs_files : ProjFileFuns<'file_input,'file>) package_id : ProjState<'file_input,'file,'package> = 
         let packages = { packages = []; result = funs_packages.default' default_env}
         let files = {
@@ -12339,9 +13043,11 @@ module spiral_compiler =
         let result = funs_packages.empty
         { package_id = package_id; packages = packages; files = files; result = result}
 
+    /// ### wdiff_proj_packages
     let wdiff_proj_packages default_env (funs : ProjPackageFuns<_,'a>) (state : 'a ProjPackagesState) x =
         if state.packages = x then state else {packages = x; result = funs.unions default_env x }
 
+    /// ### wdiff_proj_update_packages
     let wdiff_proj_update_packages default_env funs_packages funs_files (state : ProjState<'a,'b,'state>) x =
         let packages = wdiff_proj_packages default_env funs_packages state.packages x
         if state.packages = packages then state else
@@ -12349,12 +13055,14 @@ module spiral_compiler =
         let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
         {state with packages=packages; files=files; result=result}
 
+    /// ### wdiff_proj_update_files
     let wdiff_proj_update_files (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'a,'b,'state>) x =
         let files = wdiff_proj_files_update_files funs_files state.files x
         if state.files = files then state else
         let result = funs_packages.add_file_to_package(state.package_id,files.result,state.packages.result)
         {state with files=files; result=result}
 
+    /// ### wdiff_proj
     let wdiff_proj default_env (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'file_input,'file,'state>) (packages,files) =
         let packages = wdiff_proj_packages default_env funs_packages state.packages packages
         if state.packages = packages then wdiff_proj_update_files funs_packages funs_files state files
@@ -12363,11 +13071,15 @@ module spiral_compiler =
             let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
             {state with packages=packages; files=files; result=result}
 
+    /// ### ProjEnvUpdate<'a>
     type ProjEnvUpdate<'a> =
         | UpdatePackageModule of PackageId * (string option * PackageId) list * ('a [] * ProjFiles)
         | UpdatePackage of PackageId * (string option * PackageId) list
 
+    /// ### map_packages
     let map_packages s packages = packages |> List.map (fun (a,b) -> a, (Map.find b s).result)
+
+    /// ### wdiff_projenv
     let wdiff_projenv default_env funs_packages funs_files (s : Map<PackageId,ProjState<'a,'b,'state>>) l =
         List.fold (fun s -> function
             | UpdatePackageModule(uid,packages,files) -> Map.add uid (wdiff_proj default_env funs_packages funs_files s.[uid] (map_packages s packages,files)) s
@@ -12380,10 +13092,16 @@ module spiral_compiler =
     open Hopac.Extensions
     open Hopac.Stream
 
+    /// ### PrepassStateValue
     type PrepassStateValue = InferResult * PrepassTopEnv AdditionType * PrepassTopEnv
+
+    /// ### PrepassStatePropagated
     type PrepassStatePropagated = PrepassTopEnv Promise
+
+    /// ### PrepassState
     type PrepassState = FileState<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated>
 
+    /// ### prepass
     let rec prepass (package_id,module_id,path,env) = function
         | Cons((_,r,_) : TypecheckerStateValue, ls) ->
             r.filled_top >>- fun filled_top -> 
@@ -12394,6 +13112,7 @@ module spiral_compiler =
         | Nil ->
             Job.result Nil
 
+    /// ### diffWDiffPrepass
     let rec diffWDiffPrepass (package_id,module_id,path,env) (result,input : TypecheckerStateValue Stream) = 
         input >>** fun input ->
         let tc () = prepass (package_id,module_id,path,env) input |> Hopac.memo
@@ -12403,6 +13122,7 @@ module spiral_compiler =
             | _ -> tc()
         else tc()
 
+    /// ### funs_file_prepass
     let funs_file_prepass = {new FileFuns<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated> with
         member _.eval(state,(pid,mid,path,x)) = 
             state >>=* fun env -> 
@@ -12416,6 +13136,7 @@ module spiral_compiler =
             }
         }
 
+    /// ### prepass_results_summary
     let prepass_results_summary l =
         Stream.foldFun (fun big (_,x,_) ->
             match x with
@@ -12423,6 +13144,7 @@ module spiral_compiler =
             | AInclude small -> unionPrepass small big
             ) (top_env_emptyPrepass) l
 
+    /// ### funs_proj_file_prepass
     let funs_proj_file_prepass = {new ProjFileFuns<PrepassState,PrepassStatePropagated> with
         member _.file(name,state,x) = 
             let x = wdiff_file_update_state funs_file_prepass x state
@@ -12436,6 +13158,7 @@ module spiral_compiler =
         member _.empty = Promise.Now.withValue top_env_emptyPrepass
         }
 
+    /// ### PrepassPackageEnv
     type PrepassPackageEnv = {
         prototypes_instances : Map<int, Map<GlobalId * GlobalId,E>>
         nominals : Map<int, Map<GlobalId,{|body : TPrepass; name : string|}>>
@@ -12443,6 +13166,7 @@ module spiral_compiler =
         ty : Map<string,TPrepass>
         }
 
+    /// ### unionWDiffPrepass
     let unionWDiffPrepass small big = {
         prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
         nominals = Map.foldBack Map.add small.nominals big.nominals
@@ -12450,12 +13174,14 @@ module spiral_compiler =
         ty = Map.foldBack Map.add small.ty big.ty
         }
 
+    /// ### in_module
     let in_module m (a : PrepassPackageEnv) =
         {a with 
             ty = Map.add m (TModule a.ty) Map.empty
             term = Map.add m (EModule a.term) Map.empty
             }
 
+    /// ### package_env_emptyWDiffPrepass
     let package_env_emptyWDiffPrepass = {
         prototypes_instances = Map.empty
         nominals = Map.empty
@@ -12463,6 +13189,7 @@ module spiral_compiler =
         ty = Map.empty
         }
 
+    /// ### package_to_fileWDiffPrepass
     let package_to_fileWDiffPrepass (x : PrepassPackageEnv) = {
         nominals_next_tag = 0
         nominals = Map.foldBack (fun _ -> Map.foldBack Map.add) x.nominals Map.empty
@@ -12472,6 +13199,7 @@ module spiral_compiler =
         term = x.term
         }
 
+    /// ### add_file_to_packageWDiffPrepass
     let add_file_to_packageWDiffPrepass package_id (small : PrepassTopEnv) (big : PrepassPackageEnv): PrepassPackageEnv = {
         nominals = Map.add package_id small.nominals big.nominals
         prototypes_instances = Map.add package_id small.prototypes_instances big.prototypes_instances
@@ -12479,9 +13207,13 @@ module spiral_compiler =
         term = small.term
         }
 
+    /// ### package_env_defaultWDiffPrepass
     let package_env_defaultWDiffPrepass default_env = { package_env_emptyWDiffPrepass with ty = (top_env_defaultPrepass default_env).ty }
 
+    /// ### ProjStatePrepass
     type ProjStatePrepass = ProjState<PrepassState,PrepassStatePropagated,PrepassPackageEnv Promise>
+
+    /// ### funs_proj_package_prepass
     let funs_proj_package_prepass = {new ProjPackageFuns<PrepassStatePropagated,PrepassPackageEnv Promise> with
         member funs.unions default_env l = 
             let f = function Some name, small -> funs.in_module(name,small) | None, small -> small
@@ -12503,40 +13235,73 @@ module spiral_compiler =
     /// ## SpiProj
     // Everything that deals with Spiral project files themselves goes here
     open FParsec
-
     // open Common
 
-
+    /// ### RawFileHierarchy
     type RawFileHierarchy =
         | Directory of VSCRange * RString * RawFileHierarchy list
         | File of VSCRange * RString * is_top_down : bool * is_include : bool
+
+    /// ### ConfigResumableError
     type ConfigResumableError =
         | DuplicateFiles of VSCRange [] []
         | DuplicateRecordFields of VSCRange [] []
         | MissingNecessaryRecordFields of string [] * VSCRange
+
+    /// ### ConfigFatalError
     type ConfigFatalError =
         | Tabs of VSCRange []
         | ParserError of string * VSCRange
+
+    /// ### ConfigException
     exception ConfigException of ConfigFatalError
 
+    /// ### spaces_template
     let rec spaces_template s = (spaces >>. optional (followedByString "//" >>. skipRestOfLine true >>. spaces_template)) s
+
+    /// ### spacesSpiProj
     let spacesSpiProj s = spaces_template s
 
+    /// ### raise'
     let raise' x = raise (ConfigException x)
+
+    /// ### raise_if_not_empty
     let raise_if_not_empty exn l = if Array.isEmpty l = false then raise' (exn l)
+
+    /// ### add_to_exception_list'
     let add_to_exception_list' (p: CharStream<ResizeArray<ConfigResumableError>>) = p.State.UserState.Add
+
+    /// ### add_to_exception_list
     let add_to_exception_list (p: CharStream<ResizeArray<ConfigResumableError>>) exn l = if Array.isEmpty l = false then p.State.UserState.Add (exn l)
+
+    /// ### column
     let column (p : CharStream<_>) = p.Column
+
+    /// ### pos
     let pos (p : CharStream<_>) : VSCPos = {|line=int p.Line - 1; character=int p.Column - 1|}
+
+    /// ### pos'
     let pos' p = Reply(pos p)
+
+    /// ### rangeSpiProj
     let rangeSpiProj f p = pipe3 pos' f pos' (fun a b c -> ((a, c) : VSCRange), b) p
 
+    /// ### is_small_var_char_startingSpiProj
     let is_small_var_char_startingSpiProj c = isAsciiLower c
+
+    /// ### is_var_charSpiProj
     let is_var_charSpiProj c = isAsciiLetter c || c = '_' || c = ''' || isDigit c
+
+    /// ### file'
     let file' p = many1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" p
+
+    /// ### fileSpiProj
     let fileSpiProj p = (rangeSpiProj file' .>> spacesSpiProj) p
+
+    /// ### file_verify
     let file_verify p = (skipMany1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" .>> spacesSpiProj .>> eof) p
 
+    /// ### file_hierarchy
     let rec file_hierarchy p =
         let i = column p
         let expr p = if i = column p then file_or_directory p else Reply(ReplyStatus.Error,expected "file or directory on the same or greater indentation as the first one")
@@ -12565,7 +13330,10 @@ module spiral_compiler =
             )
         |>> fun (r',f) -> f r') p
 
+    /// ### RawSchemaPackages
     type RawSchemaPackages = {range : VSCRange; name : string; is_in_compiler_dir : bool; is_include : bool}
+
+    /// ### packages
     let packages p =
         let i = column p
         let file = rangeSpiProj (((skipChar '|' >>% true) <|>% false) .>>.  file') >>= fun (r,(is_in_compiler_dir,name)) p ->
@@ -12575,6 +13343,7 @@ module spiral_compiler =
         let file p = if i <= column p then file p else Reply(ReplyStatus.Error,expected "directory on the same or greater indentation as the first one")
         many file p
 
+    /// ### tab_positions
     let tab_positions (str : string): VSCRange [] =
         let mutable line = -1
         lines str |> Array.choose (fun x -> 
@@ -12583,6 +13352,7 @@ module spiral_compiler =
             if x.character <> -1 then Some(x,{|x with character=x.character+1|}) else None
             )
 
+    /// ### record_reduce
     let record_reduce (field: Parser<'schema -> 'schema, _>) s p =
         let record_body p =
             let i = column p
@@ -12590,10 +13360,12 @@ module spiral_compiler =
             many (indent field) p
         (rangeSpiProj record_body |>> fun (r,l) -> r, List.fold (|>) s l) p
 
+    /// ### record_field
     let record_field (name, p) = 
         (skipString name >>. skipChar ':' >>. spacesSpiProj >>. rangeSpiProj p)
         |>> (fun (r,f) (s,l) -> f s, (r, name) :: l)
 
+    /// ### record
     let record fields fields_necessary schema =
         let fields = choice (List.map record_field fields)
         record_reduce fields (schema, []) >>= fun (range,(schema,l)) p ->
@@ -12610,6 +13382,7 @@ module spiral_compiler =
 
             Reply(schema)
 
+    /// ### RawSchema
     type RawSchema = {
         name : RString option
         version : RString option
@@ -12619,6 +13392,7 @@ module spiral_compiler =
         packages : RawSchemaPackages list
         }
 
+    /// ### schema_def
     let schema_def: RawSchema = {
         name=None
         version=None
@@ -12628,9 +13402,10 @@ module spiral_compiler =
         packages=[]
         }
 
+    /// ### ConfigError
     type ConfigError = ResumableError of ConfigResumableError [] | FatalError of ConfigFatalError
 
-    open System.IO
+    /// ### config
     let config text =
         try 
             let _ = tab_positions text |> raise_if_not_empty Tabs
@@ -12671,10 +13446,15 @@ module spiral_compiler =
             |> Array.toList
             )
 
+    /// ### FileHierarchy
     type FileHierarchy =
         | Directory of VSCRange * path: RString * name : string * FileHierarchy list
         | File of VSCRange * path: RString * string option
+
+    /// ### SchemaPackages
     type SchemaPackages = {dir : RString; name : string option}
+
+    /// ### Schema
     type Schema = {
         moduleDir : VSCRange option * string
         modules : FileHierarchy list
@@ -12682,8 +13462,13 @@ module spiral_compiler =
         packages : SchemaPackages list
         }
 
+    /// ### SchemaException
     exception SchemaException of RString
+
+    /// ### SchemaResult
     type SchemaResult = Result<Schema,RString list>
+
+    /// ### schema
     let schema (pdir,text) : SchemaResult = config text |> Result.bind (fun x ->
         try
             let combine a (r,b) =
@@ -12745,45 +13530,69 @@ module spiral_compiler =
     /// ## Graph
     open System.Collections.Generic
 
+    /// ### Graph
     type Graph = Map<string,string Set>
+
+    /// ### MirroredGraph
     type MirroredGraph = Graph * Graph
 
+    /// ### mirrored_graph_empty
     let mirrored_graph_empty : MirroredGraph = Map.empty, Map.empty
 
+    /// ### link_add'
     let link_add' (abs : Graph) a b: Graph = 
         match Map.tryFind a abs with
         | Some bs -> Map.add a (Set.add b bs) abs
         | None -> Map.add a (Set.singleton b) abs
+
+    /// ### link_add
     let link_add (s : MirroredGraph) a b: MirroredGraph = link_add' (fst s) a b, link_add' (snd s) b a
 
+    /// ### link_remove'
     let link_remove' (abs : Graph) a b = 
         match Map.tryFind a abs with
         | Some bs -> 
             let bs = Set.remove b bs
             if Set.isEmpty bs then Map.remove a abs else Map.add a bs abs
         | None -> abs
+
+    /// ### link_remove
     let link_remove (s : MirroredGraph) a b: MirroredGraph = link_remove' (fst s) a b, link_remove' (snd s) b a
 
+    /// ### links_remove
     let links_remove ((abs,bas as s) : MirroredGraph) a: MirroredGraph = 
         match Map.tryFind a abs with
         | Some bs -> Map.remove a abs, Set.fold (fun bas b -> link_remove' bas b a) bas bs
         | None -> s
+
+    /// ### links_add
     let links_add s a bs = List.fold (fun s b -> link_add s a b) s bs
+
+    /// ### links_replace
     let links_replace (s : MirroredGraph) a bs = links_add (links_remove s a) a bs
+
+    /// ### links_get
     let links_get (abs : Graph) a = Map.tryFind a abs |> Option.defaultValue Set.empty
+
+    /// ### link_exists
     let link_exists ((abs,bas) : MirroredGraph) x = Map.containsKey x abs || Map.containsKey x bas
 
+    /// ### topological_sort_template
     let inline topological_sort_template add bas dirty_nodes =
         let sort_visited = HashSet()
         let rec dfs_rev a = if sort_visited.Add(a) then Seq.iter dfs_rev (links_get bas a); add a
         Seq.iter dfs_rev dirty_nodes
         sort_visited
 
+    /// ### topological_sort'
     // Returns the order end -> mid -> start.
     let topological_sort' bas start_nodes = let sort_order = Queue() in sort_order, topological_sort_template sort_order.Enqueue bas start_nodes
+
+    /// ### topological_sort
     // Returns the order start -> mid -> end.
     let topological_sort bas start_nodes = let sort_order = Stack() in sort_order, topological_sort_template sort_order.Push bas start_nodes
 
+    /// ### circular_nodes
     let circular_nodes ((abs,bas) : MirroredGraph) dirty_nodes =
         let sort_order, sort_visited = topological_sort bas dirty_nodes
         let order = sort_order.ToArray()
@@ -12808,7 +13617,7 @@ module spiral_compiler =
 
     // open Common
 
-
+    /// ### ProjectCodeAction
     type ProjectCodeAction = 
         | CreateFile of {|filePath : string|}
         | DeleteFile of {|range: VSCRange; filePath : string|} // The range here includes the postfix operators.
@@ -12817,6 +13626,7 @@ module spiral_compiler =
         | DeleteDirectory of {|range: VSCRange; dirPath : string|} // The range here is for the whole tree, not just the code action activation.
         | RenameDirectory of {|dirPath : string; target : string; validate_as_file : bool|}
 
+    /// ### code_action_execute
     let code_action_execute a =
         try match a with
             | CreateDirectory a -> Directory.CreateDirectory(a.dirPath) |> ignore; Result.Ok null
@@ -12841,19 +13651,30 @@ module spiral_compiler =
                 | FParsec.CharParsers.ParserResult.Failure(er,_,_) -> Result.Error er
         with e -> Result.Error e.Message
 
+    /// ### RAction
     type RAction = VSCRange * ProjectCodeAction
 
+    /// ### SchemaState
     type SchemaState = { schema : Schema; errors_parse : RString list; errors_modules : RString list; errors_packages : RString list}
+
+    /// ### SchemaEnv
     type SchemaEnv = Map<string,SchemaState>
+
+    /// ### ModuleEnv
     type ModuleEnv = Map<string,ModuleState>
 
+    /// ### ss_empty
     let ss_empty = {
         schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
+
+    /// ### ss_from_result
     let ss_from_result = function
         | Result.Ok schema -> {ss_empty with schema = schema}
         | Result.Error ers -> {ss_empty with errors_parse = ers}
+
+    /// ### ss_validate_module
     let ss_validate_module (packages : SchemaEnv) (modules : ModuleEnv) (x : SchemaState) =
         let errors = ResizeArray()
         let rec loop = function
@@ -12868,6 +13689,8 @@ module spiral_compiler =
         and list l = List.iter loop l
         list x.schema.modules
         Seq.toList errors
+
+    /// ### ss_validate_modules
     let ss_validate_modules (packages : SchemaEnv) modules order = 
         Array.fold (fun s x ->
             match Map.tryFind x s with
@@ -12875,7 +13698,11 @@ module spiral_compiler =
             | None -> s
             ) packages order
 
-    let ss_has_error x = (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
+    /// ### ss_has_error
+    let ss_has_error x =
+        (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
+
+    /// ### ss_validate_packages
     let ss_validate_packages (packages : SchemaEnv) (order : string [], socs : Dictionary<string,int>) : SchemaEnv =
         Array.fold (fun s path ->
             match Map.tryFind path s with
@@ -12899,13 +13726,18 @@ module spiral_compiler =
             | _ -> s
             ) packages order
 
+    /// ### ss_validate
     let ss_validate packages modules (order,socs) =
         let packages = ss_validate_modules packages modules order
         ss_validate_packages packages (order,socs)
 
+    /// ### ResultMap<'a,'b>
     type ResultMap<'a,'b> when 'a : comparison = {ok : Map<'a,'b>; error: Map<'a,'b>}
+
+    /// ### ProjEnvTCResult
     type ProjEnvTCResult = ResultMap<PackageId,ProjStateTC>
 
+    /// ### wdiff_projenvr_sync_schema
     let wdiff_projenvr_sync_schema default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv) 
             (state : ResultMap<PackageId,ProjState<'file_input,'file,'package>>) order =
         Array.fold (fun (s : ResultMap<_,_>) x ->
@@ -12927,6 +13759,7 @@ module spiral_compiler =
             | None -> s
             ) state order
 
+    /// ### projenv_update_packages
     let projenv_update_packages default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
             (state : Map<PackageId,ProjState<'a,'b,'state>>)  (dirty_packages : Dictionary<_,_>, order : string []) =
         Array.foldBack (fun x l ->
@@ -12944,6 +13777,7 @@ module spiral_compiler =
             ) order []
         |> wdiff_projenv default_env funs_packages funs_files state
 
+    /// ### proj_file_iter_file
     let inline proj_file_iter_file f (files : ProjFiles) =
         let rec loop = function
             | ProjFilesTree.File(module_id,path,_) -> f module_id path
@@ -12951,11 +13785,13 @@ module spiral_compiler =
         and list l = List.iter loop l
         list files.tree
 
+    /// ### proj_file_get_input
     let proj_file_get_input uids_file (x : ProjFiles) =
         let d = Dictionary(Array.length uids_file)
         proj_file_iter_file (fun mid path -> d.Add(path, Array.get uids_file mid |> fst)) x
         d
 
+    /// ### proj_file_from_schema
     let proj_file_from_schema (x : Schema) : ProjFiles =
         let mutable num_files = 0
         let mutable num_dirs = 0
@@ -12974,11 +13810,13 @@ module spiral_compiler =
         let tree = list x.modules
         { tree = tree; num_files = num_files; num_dirs = num_dirs }
 
+    /// ### proj_file_make_input
     let inline proj_file_make_input f (files : ProjFiles) =
         let ar = Array.zeroCreate files.num_files
         proj_file_iter_file (fun mid path -> ar.[mid] <- f mid path) files
         ar
 
+    /// ### dirty_nodes_template
     let inline dirty_nodes_template funs (ids : Map<string, PackageId>) (packages : SchemaEnv) modules
             (state : Map<PackageId,_>) (dirty_packages : string HashSet) =
         let d = Dictionary<string,_ [] * ProjFiles>()
@@ -13005,10 +13843,12 @@ module spiral_compiler =
             )
         d
 
+    /// ### dirty_nodes_tc
     let dirty_nodes_tc (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : ModuleEnv)
             (state : Map<PackageId,ProjStateTC>) (dirty_packages : string HashSet) =
         dirty_nodes_template funs_file_tc ids packages (fun pid mid path -> pid, mid, modules.[path].bundler) state dirty_packages
 
+    /// ### dirty_nodes_prepass
     let dirty_nodes_prepass (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : Map<PackageId,ProjStateTC>)
             (state : Map<PackageId,ProjStatePrepass>) (dirty_packages : string HashSet) =
         let modules pid =
@@ -13017,27 +13857,37 @@ module spiral_compiler =
             fun (mid : ModuleId) path -> pid, mid, path, state.[path].result
         dirty_nodes_template funs_file_prepass ids packages modules state dirty_packages
 
+    /// ### wdiff_projenvr
     let wdiff_projenvr default_env dirty_nodes funs_proj_package funs_proj_file 
             ids packages modules (state : ResultMap<PackageId,_>) (dirty_packages, order) =
         let state = wdiff_projenvr_sync_schema default_env funs_proj_package funs_proj_file ids packages state order
         let dirty_packages = dirty_nodes ids packages modules state.ok dirty_packages
         {state with ok=projenv_update_packages default_env funs_proj_package funs_proj_file ids packages state.ok (dirty_packages, order)}
 
+    /// ### wdiff_projenvr_tc
     let wdiff_projenvr_tc default_env ids packages modules state (dirty_packages, order) =
         wdiff_projenvr default_env dirty_nodes_tc funs_proj_package_tc funs_proj_file_tc 
             ids packages modules state (dirty_packages, order)
 
+    /// ### wdiff_projenvr_prepass
     let wdiff_projenvr_prepass default_env ids packages modules state (dirty_packages, order) =
         wdiff_projenvr default_env dirty_nodes_prepass funs_proj_package_prepass funs_proj_file_prepass 
             ids packages modules state (dirty_packages, order)
 
+    /// ### LoadResult
     type LoadResult =
         | LoadModule of path: string * ModuleState option
         | LoadPackage of package_dir: string * SchemaState option
 
+    /// ### is_top_down
     open System.Threading.Tasks
+
     let is_top_down (x : string) = Path.GetExtension x = ".spi"
+
+    /// ### spiproj_suffix
     let spiproj_suffix x = Path.Combine(x,"package.spiproj")
+
+    /// ### loader_package
     let loader_package default_env (packages : SchemaEnv) (modules : ModuleEnv) (pdir, text) =
         let pdir' = pdir |> SpiralFileSystem.standardize_path
         trace Verbose (fun () -> $"ServerUtils.loader_package / pdir: {pdir} / pdir': {pdir'}") _locals
@@ -13122,6 +13972,7 @@ module spiral_compiler =
             | LoadModule(mdir,None) -> modules <- Map.remove mdir modules
         packages, dirty_packages, modules
 
+    /// ### graph_update
     let graph_update (packages : SchemaEnv) (g : MirroredGraph) (dirty_packages : string HashSet) =
         Seq.fold (fun g x ->
             match Map.tryFind x packages with
@@ -13129,6 +13980,7 @@ module spiral_compiler =
             | None -> links_remove g x
             ) g dirty_packages
 
+    /// ### package_ids_update
     let package_ids_update (packages : SchemaEnv) package_ids (dirty_packages : string HashSet) =
         let adds,removals = dirty_packages |> Seq.toArray |> Array.partition (fun x -> Map.containsKey x packages)
         let adds = adds |> Array.filter (fun x -> Map.containsKey x (fst package_ids) = false) |> Array.mapi (fun i x -> (i,x))
@@ -13140,7 +13992,9 @@ module spiral_compiler =
             ) adds (snd package_ids)
         |> Array.fold (fun (a,b) (k,v) -> Map.add v k a, Map.add k v b) package_ids
 
-    let package_ids_remove (s : ResultMap<PackageId,_>) l = List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
+    /// ### package_ids_remove
+    let package_ids_remove (s : ResultMap<PackageId,_>) l =
+        List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
 
     /// ## SignalRSupervisor
     // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.ref/7.0.11/ref/net7.0/Microsoft.AspNetCore.SignalR.Core.dll"
@@ -13164,8 +14018,13 @@ module spiral_compiler =
     // open Common
     open SpiralFileSystem.Operators
 
+    /// ### LocalizedErrors
     type LocalizedErrors = {|uri : string; errors : RString list|}
+
+    /// ### TracedError
     type TracedError = {|trace : string list; message : string|}
+
+    /// ### SupervisorErrorSources
     type SupervisorErrorSources = {
         fatal : string Ch
         tokenizer : LocalizedErrors Ch
@@ -13175,6 +14034,7 @@ module spiral_compiler =
         traced : TracedError Ch
         }
 
+    /// ### SupervisorReq
     type SupervisorReq =
         | ProjectFileOpen of {|uri : string; spiprojText : string|}
         | ProjectFileChange of {|uri : string; spiprojText : string|}
@@ -13188,6 +14048,7 @@ module spiral_compiler =
         | HoverAt of {|uri : string; pos : VSCPos|} * string option IVar
         | BuildFile of {|uri : string; backend : string|} * string option IVar
 
+    /// ### SupervisorState
     type SupervisorState = {
         packages : SchemaEnv
         modules : ModuleEnv
@@ -13197,22 +14058,26 @@ module spiral_compiler =
         package_ids : Map<string,int> * Map<int,string>
         }
 
+    /// ### proj_validate
     let proj_validate default_env s dirty_packages =
         let order,socs = circular_nodes s.graph dirty_packages
         let packages = ss_validate s.packages s.modules (order,socs)
         let packages_infer = wdiff_projenvr_tc default_env (fst s.package_ids) packages s.modules s.packages_infer (dirty_packages, order)
         order, {s with packages_infer = packages_infer; packages=packages}
 
+    /// ### proj_graph_update
     let proj_graph_update default_env s dirty_packages =
         let removed_pids,package_ids = package_ids_update s.packages s.package_ids dirty_packages
         let packages_infer, packages_prepass = package_ids_remove s.packages_infer removed_pids, package_ids_remove s.packages_prepass removed_pids
         let graph = graph_update s.packages s.graph dirty_packages
         proj_validate default_env {s with graph = graph; package_ids = package_ids; packages_infer = packages_infer; packages_prepass = packages_prepass} dirty_packages
 
+    /// ### proj_open
     let proj_open default_env s (dir, text) =
         let packages,dirty_packages,modules = loader_package default_env s.packages s.modules (dir,text)
         proj_graph_update default_env {s with packages = packages; modules = modules} dirty_packages
 
+    /// ### proj_revalidate_owner
     let proj_revalidate_owner default_env s file =
         let rec loop (x : DirectoryInfo) =
             if x = null then [||], s
@@ -13226,6 +14091,7 @@ module spiral_compiler =
                 else loop x_.Parent
         loop (Directory.GetParent(file))
 
+    /// ### file_delete
     let file_delete default_env s (files : string []) =
         let deleted_modules = HashSet()
         let deleted_packages = HashSet()
@@ -13248,6 +14114,7 @@ module spiral_compiler =
         Seq.iter revalidate_parent deleted_modules; Seq.iter revalidate_parent deleted_packages
         Seq.toArray deleted_modules, proj_graph_update default_env {s with modules = modules; packages = packages} dirty_packages
 
+    /// ### AttentionState
     type AttentionState = {
         modules : string Set * string list
         packages : string Set * string list
@@ -13255,6 +14122,7 @@ module spiral_compiler =
         supervisor : SupervisorState
         }
 
+    /// ### attention_server
     let attention_server (errors : SupervisorErrorSources) (req : _ Ch) =
         let push path (s,o) = Set.add path s, path :: o
         let add (s,o) l = Array.foldBack (fun x (s,o as z) -> if Set.contains x s then z else Set.add x s, x :: o) l (s,o)
@@ -13366,6 +14234,7 @@ module spiral_compiler =
             loop {modules = Set.ofArray modules, Array.toList modules; packages = Set.ofArray packages, Array.toList packages; supervisor = supervisor; old_packages = Map.empty}
             )
 
+    /// ### show_position
     let show_position (s : SupervisorState) (x : Range) =
         let line = (fst x.range).line
         let col = (fst x.range).character
@@ -13377,6 +14246,7 @@ module spiral_compiler =
             .AppendLine("^")
             .ToString()
 
+    /// ### show_trace
     let show_trace s (x : Trace) (msg : string) =
         let rec loop (l : Trace) = function
             | (x : Range) :: xs ->
@@ -13386,20 +14256,30 @@ module spiral_compiler =
             | _ -> l
         List.map (show_position s) (loop [] x), msg
 
+    /// ### BuildResult
     type BuildResult =
         | BuildOk of {|code: string; file_extension : string|} list
         | BuildErrorTrace of string list * string
         | BuildFatalError of string
         | BuildSkip
 
+    /// ### workspaceRoot
     let workspaceRoot = SpiralFileSystem.get_workspace_root ()
+
+    /// ### targetDir
     let targetDir = workspaceRoot </> "target/spiral_Eval"
+
+    /// ### traceDir
     let traceDir = targetDir </> "supervisor_trace"
+
+    /// ### dir
     let dir uri =
         let result = System.IO.FileInfo(System.Uri(uri).LocalPath).Directory.FullName
         let result' = result |> SpiralFileSystem.standardize_path
         trace Verbose (fun () -> $"Supervisor.dir / uri: {uri} / result: {result} / result': {result'}") _locals
         result'
+
+    /// ### file
     let file uri =
         let result =
             try
@@ -13411,6 +14291,8 @@ module spiral_compiler =
         // let result = result |> SpiralSm.replace "\\" "|"
         // trace Verbose (fun () -> $"Supervisor.file / uri: {uri} / result: {result} / result': {result'}") _locals
         result'
+
+    /// ### supervisor_server
     let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorErrorSources) req =
         let fatal x = Hopac.start (Ch.send errors.fatal x)
         let handle_packages (dirty_packages,s) = Hopac.start (Ch.send atten ([||],dirty_packages,s)); s
@@ -13585,7 +14467,6 @@ module spiral_compiler =
                         Job.fromAsync (async {
                             for x in l do
                                 do! System.IO.File.WriteAllTextAsync(System.IO.Path.ChangeExtension(file,x.file_extension), x.code) |> Async.AwaitTask
-
                         })
                         |> Hopac.start
                         l
@@ -13700,6 +14581,7 @@ module spiral_compiler =
             package_ids = Map.empty, Map.empty
             } loop
 
+    /// ### ClientReq
     type ClientReq =
         | ProjectFileOpen of {|uri : string; spiprojText : string|}
         | ProjectFileChange of {|uri : string; spiprojText : string|}
@@ -13715,6 +14597,7 @@ module spiral_compiler =
         | Ping of bool
         | Exit of bool
 
+    /// ### ClientErrorsRes
     type ClientErrorsRes =
         | FatalError of string
         | TracedError of TracedError
@@ -13723,7 +14606,7 @@ module spiral_compiler =
         | ParserErrors of {|uri : string; errors : RString list|}
         | TypeErrors of {|uri : string; errors : RString list|}
 
-
+    /// ### Supervisor
     type Supervisor = {
         supervisor_ch : SupervisorReq Ch
         }
@@ -13779,7 +14662,6 @@ module spiral_compiler =
     open Hopac.Infixes
     // open Common
 
-    /// ### new_server
     let new_server () =
         let event = Event<ClientErrorsRes> ()
         // let disposable' = connection.On<string> ("ServerToClientMsg", event.Trigger)
@@ -13958,6 +14840,7 @@ module spiral_compiler =
                 }
                 |> Async.StartAsTask
 
+    /// ## main
     open Microsoft.AspNetCore.Builder
     open Microsoft.AspNetCore.Hosting
     open Microsoft.Extensions.DependencyInjection
