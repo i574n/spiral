@@ -1331,14 +1331,6 @@ fun () =>
     content |> file_system.write_all_text_async path |> async.do
 
     execution_options fun x => { x with
-        command = $'\@$"cat ""{!file_name}"""'
-        working_directory = Some temp_dir |> optionm'.box
-    }
-    |> execute_with_options_async
-    |> async.let'
-    |> ignore
-
-    execution_options fun x => { x with
         command = $'\@$"pwsh -c ""[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content {!file_name}"""'
         working_directory = Some temp_dir |> optionm'.box
     }
