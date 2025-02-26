@@ -1680,13 +1680,6 @@ result |> _assert sm'.contains "not find file"
 
 content |> file_system.write_all_text path
 
-execution_options fun x => { x with
-    command = $'\@$"cat ""{!file_name}"""'
-    working_directory = Some temp_dir |> optionm'.box
-}
-|> execute_with_options
-|> ignore
-
 inl exit_code, output =
     execution_options fun x => { x with
         command = $'\@$"pwsh -c ""[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText(\'{!file_name}\')"""'
