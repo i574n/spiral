@@ -15,7 +15,7 @@ $projectName = "spiral_wasm"
 if (!$SkipFsx) {
     if (!$fast -and !$SkipNotebook) {
         $workingDirectory = ResolveLink (GetFullPath "../../deps/polyglot")
-        { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --execute-command "../../workspace/target/release/spiral$(_exe) dib --path $ScriptDir/$projectName.dib --working-directory $workingDirectory" } | Invoke-Block -Retries 3
+        { . ../../workspace/target/release/spiral$(_exe) dib --path $ScriptDir/$projectName.dib --working-directory $workingDirectory } | Invoke-Block -Retries 3
     }
 
     { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "$projectName.dib" spi } | Invoke-Block
