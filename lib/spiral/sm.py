@@ -58,10 +58,10 @@ def closure1(v0_1: str, v1_1: str) -> bool:
 
 
 def closure0(unit_var: None, v0_1: str) -> Callable[[str], bool]:
-    def _arrow3(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> bool:
+    def _arrow4(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> bool:
         return closure1(v0_1, v)
 
-    return _arrow3
+    return _arrow4
 
 
 def closure3(v0_1: str, v1_1: str) -> bool:
@@ -69,10 +69,10 @@ def closure3(v0_1: str, v1_1: str) -> bool:
 
 
 def closure2(unit_var: None, v0_1: str) -> Callable[[str], bool]:
-    def _arrow4(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> bool:
+    def _arrow5(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> bool:
         return closure3(v0_1, v)
 
-    return _arrow4
+    return _arrow5
 
 
 def closure7(v0_1: int, v1_1: str, v2_1: int, v3_1: str) -> str:
@@ -85,10 +85,10 @@ def closure7(v0_1: int, v1_1: str, v2_1: int, v3_1: str) -> str:
 
 
 def method0(v0_1: int, v1_1: str, v2_1: int) -> Callable[[str], str]:
-    def _arrow10(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> str:
+    def _arrow19(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> str:
         return closure7(v0_1, v1_1, v2_1, v)
 
-    return _arrow10
+    return _arrow19
 
 
 def closure6(v0_1: int, v1_1: str, v2_1: str) -> str:
@@ -96,17 +96,17 @@ def closure6(v0_1: int, v1_1: str, v2_1: str) -> str:
 
 
 def closure5(v0_1: int, v1_1: str) -> Callable[[str], str]:
-    def _arrow17(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+    def _arrow21(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
         return closure6(v0_1, v1_1, v)
 
-    return _arrow17
+    return _arrow21
 
 
 def closure4(unit_var: None, v0_1: int) -> Callable[[str, str], str]:
-    def _arrow19(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
+    def _arrow22(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
         return closure5(v0_1, v)
 
-    return _arrow19
+    return _arrow22
 
 
 def closure10(v0_1: int, v1_1: str, v2_1: str) -> str:
@@ -114,17 +114,17 @@ def closure10(v0_1: int, v1_1: str, v2_1: str) -> str:
 
 
 def closure9(v0_1: int, v1_1: str) -> Callable[[str], str]:
-    def _arrow21(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+    def _arrow23(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
         return closure10(v0_1, v1_1, v)
 
-    return _arrow21
+    return _arrow23
 
 
 def closure8(unit_var: None, v0_1: int) -> Callable[[str, str], str]:
-    def _arrow22(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
+    def _arrow24(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
         return closure9(v0_1, v)
 
-    return _arrow22
+    return _arrow24
 
 
 def closure13(v0_1: str, v1_1: str, v2_1: str) -> str:
@@ -132,17 +132,17 @@ def closure13(v0_1: str, v1_1: str, v2_1: str) -> str:
 
 
 def closure12(v0_1: str, v1_1: str) -> Callable[[str], str]:
-    def _arrow23(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+    def _arrow25(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
         return closure13(v0_1, v1_1, v)
 
-    return _arrow23
+    return _arrow25
 
 
 def closure11(unit_var: None, v0_1: str) -> Callable[[str, str], str]:
-    def _arrow25(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
+    def _arrow26(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
         return closure12(v0_1, v)
 
-    return _arrow25
+    return _arrow26
 
 
 def method2(v0_1: str) -> str:
@@ -162,10 +162,10 @@ def closure16(v0_1: str, v1_1: str, v2_1: str) -> str:
 
 
 def closure15(v0_1: str, v1_1: str) -> Callable[[str], str]:
-    def _arrow26(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+    def _arrow27(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
         return closure16(v0_1, v1_1, v)
 
-    return _arrow26
+    return _arrow27
 
 
 def closure14(unit_var: None, v0_1: str) -> Callable[[str, str], str]:
@@ -213,9 +213,9 @@ def method5(v0_1: str) -> str:
 
 
 def closure23(v0_1: Array[str], v1_1: str) -> Array[str]:
-    v63: IEnumerable_1[str] = of_array(v0_1)
-    v66: str = method4()
-    return split_1(v1_1, [join(method5(v66) if (v66 == "\n") else v66, v63)], None, 0)
+    v94: IEnumerable_1[str] = of_array(v0_1)
+    v97: str = method4()
+    return split_1(v1_1, [join(method5(v97) if (v97 == "\n") else v97, v94)], None, 0)
 
 
 def closure22(unit_var: None, v0_1: Array[str]) -> Callable[[str], Array[str]]:
@@ -298,10 +298,10 @@ def closure35(v0_1: UH0, v1_1: str) -> str:
 
 
 def closure32(unit_var: None, v0_1: Array[str]) -> Callable[[str], str]:
-    v1_1: FSharpList[str] = of_array_1(v0_1)
-    v9_1: UH0 = fold_back(uncurry2(method6()), v1_1, UH0(0))
+    v2_1: FSharpList[str] = of_array_1(v0_1)
+    v11_1: UH0 = fold_back(uncurry2(method6()), v2_1, UH0(0))
     def _arrow38(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
-        return closure35(v9_1, v)
+        return closure35(v11_1, v)
 
     return _arrow38
 
@@ -311,12 +311,12 @@ def closure37(v0_1: UH0, v1_1: str) -> str:
 
 
 def closure36(unit_var: None, v0_1: Array[str]) -> Callable[[str], str]:
-    v1_1: FSharpList[str] = of_array_1(v0_1)
-    v9_1: UH0 = fold_back(uncurry2(method6()), v1_1, UH0(0))
-    def _arrow40(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
-        return closure37(v9_1, v)
+    v2_1: FSharpList[str] = of_array_1(v0_1)
+    v11_1: UH0 = fold_back(uncurry2(method6()), v2_1, UH0(0))
+    def _arrow39(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
+        return closure37(v11_1, v)
 
-    return _arrow40
+    return _arrow39
 
 
 def closure39(v0_1: int, v1_1: str) -> str:
@@ -342,14 +342,14 @@ def method8(v0_1: int64, v1_1: str) -> str:
         return v1_1
 
     else: 
-        v8_1: float = divide(to_number(v0_1), 2.0)
-        v12_1: int64 = from_number(ceil(v8_1), False)
-        v18_1: int64 = from_number(floor(v8_1), False)
-        v21_1: int64 = op_subtraction(v12_1, int64(1))
-        v22_1: str = v1_1[int(to_int(int64(0))):int(to_int(v21_1)) + 1]
-        v26: int64 = op_subtraction(v2_1, v18_1)
-        v27: int64 = op_subtraction(v2_1, int64(1))
-        return join("", of_array([v22_1, "...", v1_1[int(to_int(v26)):int(to_int(v27)) + 1]]))
+        v9_1: float = divide(to_number(v0_1), 2.0)
+        v14_1: int64 = from_number(ceil(v9_1), False)
+        v21_1: int64 = from_number(floor(v9_1), False)
+        v24: int64 = op_subtraction(v14_1, int64(1))
+        v26: str = v1_1[int(to_int(int64(0))):int(to_int(v24)) + 1]
+        v30: int64 = op_subtraction(v2_1, v21_1)
+        v31: int64 = op_subtraction(v2_1, int64(1))
+        return join("", of_array([v26, "...", v1_1[int(to_int(v30)):int(to_int(v31)) + 1]]))
 
 
 
@@ -413,10 +413,10 @@ def closure48(v0_1: str, v1_1: Array[str]) -> str:
 
 
 def closure47(unit_var: None, v0_1: str) -> Callable[[Array[str]], str]:
-    def _arrow46(v: Array[str], unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
+    def _arrow45(v: Array[str], unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
         return closure48(v0_1, v)
 
-    return _arrow46
+    return _arrow45
 
 
 def method10(v0_1: int, v1_1: Mut1) -> bool:
@@ -586,21 +586,21 @@ def trim_end(x: Array[str]) -> Callable[[str], str]:
     return v14(x)
 
 
-def _arrow63(v: Array[str]) -> Callable[[str], str]:
+def _arrow62(v: Array[str]) -> Callable[[str], str]:
     return closure36(None, v)
 
 
-v15: Callable[[Array[str], str], str] = _arrow63
+v15: Callable[[Array[str], str], str] = _arrow62
 
 def trim_start(x: Array[str]) -> Callable[[str], str]:
     return v15(x)
 
 
-def _arrow65(v: int) -> Callable[[str], str]:
+def _arrow64(v: int) -> Callable[[str], str]:
     return closure38(None, v)
 
 
-v16: Callable[[int, str], str] = _arrow65
+v16: Callable[[int, str], str] = _arrow64
 
 def ellipsis(x: int) -> Callable[[str], str]:
     return v16(x)
@@ -616,11 +616,11 @@ def ellipsis_end(x: int64) -> Callable[[str], str]:
     return v17(x)
 
 
-def _arrow68(v: Exception) -> str:
+def _arrow67(v: Exception) -> str:
     return closure42(None, v)
 
 
-v18: Callable[[Exception], str] = _arrow68
+v18: Callable[[Exception], str] = _arrow67
 
 def format_exception(x: Exception) -> str:
     return v18(x)

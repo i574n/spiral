@@ -8683,15 +8683,15 @@ and method0 () : unit =
             true
         else
             method2(v20)
-    let v29 : string = "__assert_eq"
-    let v30 : string = "1\n2\n3"
-    let v31 : string = $"{v29} / actual: %A{v18} / expected: %A{v30}"
-    let v34 : unit = ()
-    let v35 : (unit -&gt; unit) = closure0(v31)
-    let v36 : unit = (fun () -&gt; v35 (); v34) ()
-    let v38 : bool = v22 = false
-    if v38 then
-        failwith&lt;unit&gt; v31
+    let v28 : string = "__assert_eq"
+    let v29 : string = "1\n2\n3"
+    let v30 : string = $"{v28} / actual: %A{v18} / expected: %A{v29}"
+    let v33 : unit = ()
+    let v34 : (unit -&gt; unit) = closure0(v30)
+    let v35 : unit = (fun () -&gt; v34 (); v33) ()
+    let v37 : bool = v22 = false
+    if v37 then
+        failwith&lt;unit&gt; v30
 method0()
 
 
@@ -8707,7 +8707,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_ee5416de {
+mod module_2361d7e8 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::NativeArray_::get_Count;
@@ -8769,25 +8769,25 @@ mod module_ee5416de {
                 let v18: string = matchValue_2;
                 let v20: bool = (v18.clone()) == string("1\n2\n3");
                 let v22: bool = if v20 { true } else { Spiral::method2(v20) };
-                let v31: string = sprintf!(
+                let v30: string = sprintf!(
                     "{} / actual: {:?} / expected: {:?}",
                     string("__assert_eq"),
                     v18,
                     string("1\n2\n3")
                 );
-                let v36: () = {
-                    Spiral::closure0(v31.clone(), ());
+                let v35: () = {
+                    Spiral::closure0(v30.clone(), ());
                     ()
                 };
                 if (v22) == false {
-                    panic!("{}", v31,);
+                    panic!("{}", v30,);
                 }
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_ee5416de::*;
+pub use module_2361d7e8::*;
 
 
 
@@ -8849,12 +8849,12 @@ export function method0(): void {
     const v18: string = matchValue_2;
     const v20: boolean = v18 === "1\n2\n3";
     const v22: boolean = v20 ? true : method2(v20);
-    const v31: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, "1\n2\n3"]));
-    let v36: any;
-    closure0(v31, undefined);
-    v36 = undefined;
+    const v30: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, "1\n2\n3"]));
+    let v35: any;
+    closure0(v30, undefined);
+    v35 = undefined;
     if (v22 === false) {
-        throw new Error(v31);
+        throw new Error(v30);
     }
 }
 
@@ -8912,12 +8912,12 @@ def method0(__unit: None=None) -&gt; None:
     v18: str = match_value_2
     v20: bool = v18 == "1\n2\n3"
     v22: bool = True if v20 else method2(v20)
-    v31: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, "1\n2\n3"]))
-    v36: None
-    closure0(v31, None)
-    v36 = None
+    v30: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, "1\n2\n3"]))
+    v35: None
+    closure0(v30, None)
+    v35 = None
     if v22 == False:
-        raise Exception(v31)
+        raise Exception(v30)
 
 
 
@@ -9063,15 +9063,15 @@ and method0 () : unit =
             true
         else
             method1(v8)
-    let v17 : string = "__assert_eq"
-    let v18 : string = "1\n2\n3"
-    let v19 : string = $"{v17} / actual: %A{v7} / expected: %A{v18}"
-    let v22 : unit = ()
-    let v23 : (unit -&gt; unit) = closure0(v19)
-    let v24 : unit = (fun () -&gt; v23 (); v22) ()
-    let v26 : bool = v10 = false
-    if v26 then
-        failwith&lt;unit&gt; v19
+    let v16 : string = "__assert_eq"
+    let v17 : string = "1\n2\n3"
+    let v18 : string = $"{v16} / actual: %A{v7} / expected: %A{v17}"
+    let v21 : unit = ()
+    let v22 : (unit -&gt; unit) = closure0(v18)
+    let v23 : unit = (fun () -&gt; v22 (); v21) ()
+    let v25 : bool = v10 = false
+    if v25 then
+        failwith&lt;unit&gt; v18
 method0()
 
 
@@ -9087,7 +9087,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_bb6e0ccc {
+mod module_ae3b5c44 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::on_startup;
@@ -9104,24 +9104,24 @@ mod module_bb6e0ccc {
             let v7: string = string("1\n2\n3");
             let v8: bool = (v7.clone()) == string("1\n2\n3");
             let v10: bool = if v8 { true } else { Spiral::method1(v8) };
-            let v19: string = sprintf!(
+            let v18: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v7,
                 string("1\n2\n3")
             );
-            let v24: () = {
-                Spiral::closure0(v19.clone(), ());
+            let v23: () = {
+                Spiral::closure0(v18.clone(), ());
                 ()
             };
             if (v10) == false {
-                panic!("{}", v19,);
+                panic!("{}", v18,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_bb6e0ccc::*;
+pub use module_ae3b5c44::*;
 
 
 
@@ -9142,12 +9142,12 @@ export function method0(): void {
     const v7 = "1\n2\n3";
     const v8: boolean = v7 === "1\n2\n3";
     const v10: boolean = v8 ? true : method1(v8);
-    const v19: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v7, "1\n2\n3"]));
-    let v24: any;
-    closure0(v19, undefined);
-    v24 = undefined;
+    const v18: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v7, "1\n2\n3"]));
+    let v23: any;
+    closure0(v18, undefined);
+    v23 = undefined;
     if (v10 === false) {
-        throw new Error(v19);
+        throw new Error(v18);
     }
 }
 
@@ -9169,12 +9169,12 @@ def method0(__unit: None=None) -&gt; None:
     v7: str = "1\n2\n3"
     v8: bool = v7 == "1\n2\n3"
     v10: bool = True if v8 else method1(v8)
-    v19: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v7, "1\n2\n3"]))
-    v24: None
-    closure0(v19, None)
-    v24 = None
+    v18: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v7, "1\n2\n3"]))
+    v23: None
+    closure0(v18, None)
+    v23 = None
     if v10 == False:
-        raise Exception(v19)
+        raise Exception(v18)
 
 
 
@@ -9258,18 +9258,18 @@ def method0() -&gt; None:
     else:
         v10 = method1(v8)
     del v8
-    v20 = "__assert_eq"
-    v21 = "1\n2\n3"
-    v22 = f"{v20} / actual: {v7} / expected: {v21}"
-    del v7, v20, v21
-    print(v22)
-    v28 = v10 == False
+    v19 = "__assert_eq"
+    v20 = "1\n2\n3"
+    v21 = f"{v19} / actual: {v7} / expected: {v20}"
+    del v7, v19, v20
+    print(v21)
+    v27 = v10 == False
     del v10
-    if v28:
-        del v28
-        raise Exception(v22)
+    if v27:
+        del v27
+        raise Exception(v21)
     else:
-        del v22, v28
+        del v21, v27
         return 
 def main_body():
     return method0()
@@ -9423,15 +9423,15 @@ and method0 () : unit =
             true
         else
             method1(v24)
-    let v33 : string = "__assert_eq"
-    let v34 : string = "1\n2\n3"
-    let v35 : string = $"{v33} / actual: %A{v20} / expected: %A{v34}"
-    let v38 : unit = ()
-    let v39 : (unit -&gt; unit) = closure0(v35)
-    let v40 : unit = (fun () -&gt; v39 (); v38) ()
-    let v42 : bool = v26 = false
-    if v42 then
-        failwith&lt;unit&gt; v35
+    let v32 : string = "__assert_eq"
+    let v33 : string = "1\n2\n3"
+    let v34 : string = $"{v32} / actual: %A{v20} / expected: %A{v33}"
+    let v37 : unit = ()
+    let v38 : (unit -&gt; unit) = closure0(v34)
+    let v39 : unit = (fun () -&gt; v38 (); v37) ()
+    let v41 : bool = v26 = false
+    if v41 then
+        failwith&lt;unit&gt; v34
 method0()
 
 
@@ -9447,7 +9447,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_b34080c0 {
+mod module_bfca7375 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::NativeArray_::new_array;
@@ -9474,24 +9474,24 @@ mod module_b34080c0 {
             ]));
             let v24: bool = (v20.clone()) == string("1\n2\n3");
             let v26: bool = if v24 { true } else { Spiral::method1(v24) };
-            let v35: string = sprintf!(
+            let v34: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v20,
                 string("1\n2\n3")
             );
-            let v40: () = {
-                Spiral::closure0(v35.clone(), ());
+            let v39: () = {
+                Spiral::closure0(v34.clone(), ());
                 ()
             };
             if (v26) == false {
-                panic!("{}", v35,);
+                panic!("{}", v34,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_b34080c0::*;
+pub use module_bfca7375::*;
 
 
 
@@ -9512,12 +9512,12 @@ export function method0(): void {
     const v20: string = concat("1", "\n", ...concat("2", "\n", ...concat("3", "", ..."")));
     const v24: boolean = v20 === "1\n2\n3";
     const v26: boolean = v24 ? true : method1(v24);
-    const v35: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v20, "1\n2\n3"]));
-    let v40: any;
-    closure0(v35, undefined);
-    v40 = undefined;
+    const v34: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v20, "1\n2\n3"]));
+    let v39: any;
+    closure0(v34, undefined);
+    v39 = undefined;
     if (v26 === false) {
-        throw new Error(v35);
+        throw new Error(v34);
     }
 }
 
@@ -9539,12 +9539,12 @@ def method0(__unit: None=None) -&gt; None:
     v20: str = concat("1", "\n", *concat("2", "\n", *concat("3", "", *"")))
     v24: bool = v20 == "1\n2\n3"
     v26: bool = True if v24 else method1(v24)
-    v35: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v20, "1\n2\n3"]))
-    v40: None
-    closure0(v35, None)
-    v40 = None
+    v34: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v20, "1\n2\n3"]))
+    v39: None
+    closure0(v34, None)
+    v39 = None
     if v26 == False:
-        raise Exception(v35)
+        raise Exception(v34)
 
 
 
@@ -9628,18 +9628,18 @@ def method0() -&gt; None:
     else:
         v30 = method1(v28)
     del v28
-    v40 = "__assert_eq"
-    v41 = "1\n2\n3"
-    v42 = f"{v40} / actual: {v25} / expected: {v41}"
-    del v25, v40, v41
-    print(v42)
-    v48 = v30 == False
+    v39 = "__assert_eq"
+    v40 = "1\n2\n3"
+    v41 = f"{v39} / actual: {v25} / expected: {v40}"
+    del v25, v39, v40
+    print(v41)
+    v47 = v30 == False
     del v30
-    if v48:
-        del v48
-        raise Exception(v42)
+    if v47:
+        del v47
+        raise Exception(v41)
     else:
-        del v42, v48
+        del v41, v47
         return 
 def main_body():
     return method0()
@@ -9901,15 +9901,15 @@ and method0 () : unit =
             true
         else
             method1(v5)
-    let v14 : string = "__assert_eq"
-    let v15 : string = "121212"
-    let v16 : string = $"{v14} / actual: %A{v4} / expected: %A{v15}"
-    let v19 : unit = ()
-    let v20 : (unit -&gt; unit) = closure0(v16)
-    let v21 : unit = (fun () -&gt; v20 (); v19) ()
-    let v23 : bool = v7 = false
-    if v23 then
-        failwith&lt;unit&gt; v16
+    let v13 : string = "__assert_eq"
+    let v14 : string = "121212"
+    let v15 : string = $"{v13} / actual: %A{v4} / expected: %A{v14}"
+    let v18 : unit = ()
+    let v19 : (unit -&gt; unit) = closure0(v15)
+    let v20 : unit = (fun () -&gt; v19 (); v18) ()
+    let v22 : bool = v7 = false
+    if v22 then
+        failwith&lt;unit&gt; v15
 method0()
 
 

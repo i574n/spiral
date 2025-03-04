@@ -271,13 +271,15 @@ export type US4_$union =
     | US4<2>
     | US4<3>
     | US4<4>
+    | US4<5>
 
 export type US4_$cases = {
     0: ["US4_0", [US3_$union]],
     1: ["US4_1", [US3_$union]],
     2: ["US4_2", [US3_$union]],
     3: ["US4_3", [US3_$union]],
-    4: ["US4_4", [US3_$union]]
+    4: ["US4_4", [US3_$union]],
+    5: ["US4_5", [US3_$union]]
 }
 
 export function US4_US4_0(f0_0: US3_$union) {
@@ -300,17 +302,21 @@ export function US4_US4_4(f4_0: US3_$union) {
     return new US4<4>(4, [f4_0]);
 }
 
+export function US4_US4_5(f5_0: US3_$union) {
+    return new US4<5>(5, [f5_0]);
+}
+
 export class US4<Tag extends keyof US4_$cases> extends Union<Tag, US4_$cases[Tag][0]> {
     constructor(readonly tag: Tag, readonly fields: US4_$cases[Tag][1]) {
         super();
     }
     cases() {
-        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4"];
+        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"];
     }
 }
 
 export function US4_$reflection(): TypeInfo {
-    return union_type("File_system.US4", [], US4, () => [[["f0_0", US3_$reflection()]], [["f1_0", US3_$reflection()]], [["f2_0", US3_$reflection()]], [["f3_0", US3_$reflection()]], [["f4_0", US3_$reflection()]]]);
+    return union_type("File_system.US4", [], US4, () => [[["f0_0", US3_$reflection()]], [["f1_0", US3_$reflection()]], [["f2_0", US3_$reflection()]], [["f3_0", US3_$reflection()]], [["f4_0", US3_$reflection()]], [["f5_0", US3_$reflection()]]]);
 }
 
 export type US5_$union = 
@@ -787,12 +793,12 @@ export function closure2(unitVar: void, v0_1: string): void {
 
 export function method0(v0_1: US0_$union): [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] {
     const patternInput: [US1_$union, US2_$union] = method1();
-    const _run_target_args$0027_v1 = [patternInput[0], patternInput[1]] as [US1_$union, US2_$union];
-    const v132: US2_$union = _run_target_args$0027_v1[1];
-    const v131: US1_$union = _run_target_args$0027_v1[0];
+    const _run_target_args$0027_v3 = [patternInput[0], patternInput[1]] as [US1_$union, US2_$union];
+    const v173: US2_$union = _run_target_args$0027_v3[1];
+    const v172: US1_$union = _run_target_args$0027_v3[0];
     return [new Mut0(1n), new Mut1((v: string): void => {
         closure2(undefined, v);
-    }), new Mut2(true), new Mut3(""), new Mut4(((v131.tag as int32) === /* US1_0 */ 0) ? (v131.fields[0] as any) : v0_1), ((v132.tag as int32) === /* US2_0 */ 0) ? (v132.fields[0] as any) : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
+    }), new Mut2(true), new Mut3(""), new Mut4(((v172.tag as int32) === /* US1_0 */ 0) ? (v172.fields[0] as any) : v0_1), ((v173.tag as int32) === /* US2_0 */ 0) ? (v173.fields[0] as any) : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
 }
 
 export function closure0(unitVar: void, unitVar_1: void): void {
@@ -803,8 +809,8 @@ export function closure0(unitVar: void, unitVar_1: void): void {
 }
 
 export function method10(v0_1: string): boolean {
-    const v86: IFsExistsSync = fs;
-    return v86.existsSync(v0_1);
+    const v119: IFsExistsSync = fs;
+    return v119.existsSync(v0_1);
 }
 
 export function method9(v0_1: boolean, v1_1: string): void {
@@ -815,14 +821,14 @@ export function method11(v0_1: US0_$union): boolean {
     closure0(undefined, undefined);
     v3 = undefined;
     const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-    const v35_1: US0_$union = patternInput[4].l0;
+    const v42: US0_$union = patternInput[4].l0;
     if (patternInput[2].l0 === false) {
         return false;
     }
     else {
         return find<US0_$union, int32>(v0_1, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
             Compare: compare,
-        })) >= find<US0_$union, int32>(v35_1, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
+        })) >= find<US0_$union, int32>(v42, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
             Compare: compare,
         }));
     }
@@ -845,18 +851,18 @@ export function method15(): string {
 }
 
 export function method12(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>): string {
-    const v321: US2_$union = defaultArg(map<int64, US2_$union>(method13(), v5), US2_US2_1());
-    let v418: Date;
-    if ((v321.tag as int32) === /* US2_0 */ 0) {
-        const v325 = v321.fields[0] as any;
-        const v378: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v325)));
-        v418 = create(1, 1, 1, hours(v378), minutes(v378), seconds(v378), milliseconds(v378));
+    const v541: US2_$union = defaultArg(map<int64, US2_$union>(method13(), v5), US2_US2_1());
+    let v659: Date;
+    if ((v541.tag as int32) === /* US2_0 */ 0) {
+        const v545 = v541.fields[0] as any;
+        const v611: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v545)));
+        v659 = create(1, 1, 1, hours(v611), minutes(v611), seconds(v611), milliseconds(v611));
     }
     else {
-        v418 = now();
+        v659 = now();
     }
-    const v419: string = method15();
-    return toString(v418, (v419 === "") ? "M-d-y hh:mm:ss tt" : v419);
+    const v661: string = method15();
+    return toString(v659, (v661 === "") ? "M-d-y hh:mm:ss tt" : v661);
 }
 
 export function method18(): string {
@@ -870,9 +876,9 @@ export function closure6(v0_1: Mut3, v1_1: string, unitVar: void): void {
 
 export function method17(v0_1: string): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v8: any;
+    let v9: any;
     closure6(v2_1, `${v0_1}`, undefined);
-    v8 = undefined;
+    v9 = undefined;
     return v2_1.l0;
 }
 
@@ -881,44 +887,44 @@ export function method19(): string {
 }
 
 export function method16(): string {
-    const v2_1: string = "Debug".toLocaleLowerCase();
-    return ("\u001b[94m" + method17(v2_1[0])) + method19();
+    const v3: string = "Debug".toLocaleLowerCase();
+    return ("\u001b[94m" + method17(v3[0])) + method19();
 }
 
 export function method20(v0_1: string): string {
-    const v145: IPathBasename = path;
-    return v145.basename(v0_1);
+    const v189: IPathBasename = path;
+    return v189.basename(v0_1);
 }
 
 export function method22(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v3, "{ ", undefined);
-    v10 = undefined;
-    let v19_1: any;
+    v11 = undefined;
+    let v21_1: any;
     closure6(v3, "ex", undefined);
-    v19_1 = undefined;
-    let v28_1: any;
+    v21_1 = undefined;
+    let v31_1: any;
     closure6(v3, " = ", undefined);
-    v28_1 = undefined;
-    let v36_1: any;
+    v31_1 = undefined;
+    let v40: any;
     closure6(v3, v0_1, undefined);
-    v36_1 = undefined;
-    let v45: any;
+    v40 = undefined;
+    let v50: any;
     closure6(v3, "; ", undefined);
-    v45 = undefined;
-    let v54: any;
+    v50 = undefined;
+    let v60: any;
     closure6(v3, "path", undefined);
-    v54 = undefined;
-    let v62: any;
+    v60 = undefined;
+    let v69: any;
     closure6(v3, " = ", undefined);
-    v62 = undefined;
-    let v70: any;
+    v69 = undefined;
+    let v78: any;
     closure6(v3, v1_1, undefined);
-    v70 = undefined;
-    let v79: any;
+    v78 = undefined;
+    let v88: any;
     closure6(v3, " }", undefined);
-    v79 = undefined;
+    v88 = undefined;
     return v3.l0;
 }
 
@@ -951,9 +957,9 @@ export function method24(v0_1: string): void {
     closure0(undefined, undefined);
     v3 = undefined;
     const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-    let v37_1: any;
+    let v44: any;
     closure7(patternInput[0], undefined);
-    v37_1 = undefined;
+    v44 = undefined;
     closure8(undefined, v0_1);
     patternInput[1].l0(v0_1);
 }
@@ -964,13 +970,13 @@ export function closure4(v0_1: string, v1_1: Error, unitVar: void): void {
         closure0(undefined, undefined);
         v6 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v25_1: Option<int64> = patternInput[5];
-        const v24_1: Mut4 = patternInput[4];
-        const v23_1: Mut3 = patternInput[3];
-        const v22_1: Mut2 = patternInput[2];
-        const v21_1: Mut1 = patternInput[1];
-        const v20_1: Mut0 = patternInput[0];
-        method24(method21(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method16(), toText(interpolate("%A%P()", [v1_1])), method20(v0_1)));
+        const v32_1: Option<int64> = patternInput[5];
+        const v31_1: Mut4 = patternInput[4];
+        const v30_1: Mut3 = patternInput[3];
+        const v29_1: Mut2 = patternInput[2];
+        const v28_1: Mut1 = patternInput[1];
+        const v27_1: Mut0 = patternInput[0];
+        method24(method21(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1, method12(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1), method16(), toText(interpolate("%A%P()", [v1_1])), method20(v0_1)));
     }
 }
 
@@ -979,13 +985,13 @@ export function method8(v0_1: string, v1_1: int64): Async<int64> {
         method9(true, v0_1);
         return singleton.Return<int64>(v1_1);
     }), (_arg: Error): Async<int64> => {
-        let v22_1: any;
-        const v19_1: boolean = equals(toInt64(op_Modulus(v1_1, 100n)), 0n);
-        return singleton.Combine<int64>(v19_1 ? ((v22_1 = ((closure4(v0_1, _arg, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
-            const v96: Async<void> = sleep(10);
-            return singleton.Bind<void, int64>(v96, (): Async<int64> => {
-                const v107: Async<int64> = method7(v0_1, toInt64(op_Addition(v1_1, 1n)));
-                return singleton.ReturnFrom<int64>(v107);
+        let v30_1: any;
+        const v27_1: boolean = equals(toInt64(op_Modulus(v1_1, 100n)), 0n);
+        return singleton.Combine<int64>(v27_1 ? ((v30_1 = ((closure4(v0_1, _arg, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
+            const v126: Async<void> = sleep(10);
+            return singleton.Bind<void, int64>(v126, (): Async<int64> => {
+                const v137: Async<int64> = method7(v0_1, toInt64(op_Addition(v1_1, 1n)));
+                return singleton.ReturnFrom<int64>(v137);
             });
         }));
     }));
@@ -1005,45 +1011,45 @@ export function closure3(unitVar: void, v0_1: string): Async<int64> {
 
 export function method29(v0_1: string, v1_1: int64, v2_1: string): string {
     const v4: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v4, "{ ", undefined);
-    v11 = undefined;
-    let v20_1: any;
+    v12 = undefined;
+    let v22_1: any;
     closure6(v4, "path", undefined);
-    v20_1 = undefined;
-    let v29_1: any;
+    v22_1 = undefined;
+    let v32_1: any;
     closure6(v4, " = ", undefined);
-    v29_1 = undefined;
-    let v37_1: any;
+    v32_1 = undefined;
+    let v41: any;
     closure6(v4, v0_1, undefined);
-    v37_1 = undefined;
-    let v46: any;
+    v41 = undefined;
+    let v51: any;
     closure6(v4, "; ", undefined);
-    v46 = undefined;
-    let v55: any;
+    v51 = undefined;
+    let v61: any;
     closure6(v4, "retry", undefined);
-    v55 = undefined;
-    let v63: any;
+    v61 = undefined;
+    let v70: any;
     closure6(v4, " = ", undefined);
-    v63 = undefined;
-    let v71: any;
-    closure6(v4, `${v1_1}`, undefined);
-    v71 = undefined;
+    v70 = undefined;
     let v79: any;
-    closure6(v4, "; ", undefined);
+    closure6(v4, `${v1_1}`, undefined);
     v79 = undefined;
     let v88: any;
-    closure6(v4, "ex", undefined);
+    closure6(v4, "; ", undefined);
     v88 = undefined;
-    let v96: any;
+    let v98: any;
+    closure6(v4, "ex", undefined);
+    v98 = undefined;
+    let v107: any;
     closure6(v4, " = ", undefined);
-    v96 = undefined;
-    let v104: any;
+    v107 = undefined;
+    let v116: any;
     closure6(v4, v2_1, undefined);
-    v104 = undefined;
-    let v113: any;
+    v116 = undefined;
+    let v126: any;
     closure6(v4, " }", undefined);
-    v113 = undefined;
+    v126 = undefined;
     return v4.l0;
 }
 
@@ -1058,28 +1064,28 @@ export function closure12(v0_1: string, v1_1: int64, v2_1: Error, unitVar: void)
         closure0(undefined, undefined);
         v7 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v26_1: Option<int64> = patternInput[5];
-        const v25_1: Mut4 = patternInput[4];
-        const v24_1: Mut3 = patternInput[3];
-        const v23_1: Mut2 = patternInput[2];
-        const v22_1: Mut1 = patternInput[1];
-        const v21_1: Mut0 = patternInput[0];
-        method24(method28(v21_1, v22_1, v23_1, v24_1, v25_1, v26_1, method12(v21_1, v22_1, v23_1, v24_1, v25_1, v26_1), method16(), method20(v0_1), v1_1, toText(interpolate("%A%P()", [v2_1]))));
+        const v33_1: Option<int64> = patternInput[5];
+        const v32_1: Mut4 = patternInput[4];
+        const v31_1: Mut3 = patternInput[3];
+        const v30_1: Mut2 = patternInput[2];
+        const v29_1: Mut1 = patternInput[1];
+        const v28_1: Mut0 = patternInput[0];
+        method24(method28(v28_1, v29_1, v30_1, v31_1, v32_1, v33_1, method12(v28_1, v29_1, v30_1, v31_1, v32_1, v33_1), method16(), method20(v0_1), v1_1, toText(interpolate("%A%P()", [v2_1]))));
     }
 }
 
 export function method27(v0_1: US6_$union, v1_1: string, v2_1: int64, v3: US8_$union, v4: US7_$union): Async<int64> {
     return singleton.Delay<int64>((): Async<int64> => singleton.TryWith<int64>(singleton.Delay<int64>((): Async<int64> => {
-        const v28_1: any = defaultOf();
-        return singleton.Using<any, int64>(v28_1, (_arg: any): Async<int64> => singleton.Return<int64>(v2_1));
+        const v44: any = defaultOf();
+        return singleton.Using<any, int64>(v44, (_arg: any): Async<int64> => singleton.Return<int64>(v2_1));
     }), (_arg_1: Error): Async<int64> => {
-        let v111: any;
-        const v108: boolean = (compare_1(v2_1, 0n) > 0) && equals(toInt64(op_Modulus(v2_1, 100n)), 0n);
-        return singleton.Combine<int64>(v108 ? ((v111 = ((closure12(v1_1, v2_1, _arg_1, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
-            const v185: Async<void> = sleep(10);
-            return singleton.Bind<void, int64>(v185, (): Async<int64> => {
-                const v196: Async<int64> = method26(v0_1, v1_1, toInt64(op_Addition(v2_1, 1n)));
-                return singleton.ReturnFrom<int64>(v196);
+        let v141: any;
+        const v138: boolean = (compare_1(v2_1, 0n) > 0) && equals(toInt64(op_Modulus(v2_1, 100n)), 0n);
+        return singleton.Combine<int64>(v138 ? ((v141 = ((closure12(v1_1, v2_1, _arg_1, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
+            const v237: Async<void> = sleep(10);
+            return singleton.Bind<void, int64>(v237, (): Async<int64> => {
+                const v248: Async<int64> = method26(v0_1, v1_1, toInt64(op_Addition(v2_1, 1n)));
+                return singleton.ReturnFrom<int64>(v248);
             });
         }));
     }));
@@ -1110,51 +1116,51 @@ export function closure13(unitVar: void, v0_1: string): Async<int64> {
 }
 
 export function method34(): string {
-    const v2_1: string = "Verbose".toLocaleLowerCase();
-    return ("\u001b[90m" + method17(v2_1[0])) + method19();
+    const v3: string = "Verbose".toLocaleLowerCase();
+    return ("\u001b[90m" + method17(v3[0])) + method19();
 }
 
 export function method36(v0_1: int64, v1_1: string, v2_1: Error): string {
     const v4: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v4, "{ ", undefined);
-    v11 = undefined;
-    let v20_1: any;
+    v12 = undefined;
+    let v22_1: any;
     closure6(v4, "retry", undefined);
-    v20_1 = undefined;
-    let v29_1: any;
+    v22_1 = undefined;
+    let v32_1: any;
     closure6(v4, " = ", undefined);
-    v29_1 = undefined;
-    let v37_1: any;
+    v32_1 = undefined;
+    let v41: any;
     closure6(v4, `${v0_1}`, undefined);
-    v37_1 = undefined;
-    let v46: any;
+    v41 = undefined;
+    let v51: any;
     closure6(v4, "; ", undefined);
-    v46 = undefined;
-    let v55: any;
+    v51 = undefined;
+    let v61: any;
     closure6(v4, "path", undefined);
-    v55 = undefined;
-    let v63: any;
+    v61 = undefined;
+    let v70: any;
     closure6(v4, " = ", undefined);
-    v63 = undefined;
-    let v71: any;
-    closure6(v4, v1_1, undefined);
-    v71 = undefined;
+    v70 = undefined;
     let v79: any;
-    closure6(v4, "; ", undefined);
+    closure6(v4, v1_1, undefined);
     v79 = undefined;
     let v88: any;
-    closure6(v4, "ex", undefined);
+    closure6(v4, "; ", undefined);
     v88 = undefined;
-    let v96: any;
+    let v98: any;
+    closure6(v4, "ex", undefined);
+    v98 = undefined;
+    let v107: any;
     closure6(v4, " = ", undefined);
-    v96 = undefined;
-    let v134: any;
+    v107 = undefined;
+    let v155: any;
     closure6(v4, toText(interpolate("%A%P()", [v2_1])), undefined);
-    v134 = undefined;
-    let v143: any;
+    v155 = undefined;
+    let v165: any;
     closure6(v4, " }", undefined);
-    v143 = undefined;
+    v165 = undefined;
     return v4.l0;
 }
 
@@ -1169,34 +1175,34 @@ export function closure15(v0_1: string, v1_1: int64, v2_1: Error, unitVar: void)
         closure0(undefined, undefined);
         v7 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v26_1: Option<int64> = patternInput[5];
-        const v25_1: Mut4 = patternInput[4];
-        const v24_1: Mut3 = patternInput[3];
-        const v23_1: Mut2 = patternInput[2];
-        const v22_1: Mut1 = patternInput[1];
-        const v21_1: Mut0 = patternInput[0];
-        method24(method35(v21_1, v22_1, v23_1, v24_1, v25_1, v26_1, method12(v21_1, v22_1, v23_1, v24_1, v25_1, v26_1), method34(), v1_1, v0_1, v2_1));
+        const v33_1: Option<int64> = patternInput[5];
+        const v32_1: Mut4 = patternInput[4];
+        const v31_1: Mut3 = patternInput[3];
+        const v30_1: Mut2 = patternInput[2];
+        const v29_1: Mut1 = patternInput[1];
+        const v28_1: Mut0 = patternInput[0];
+        method24(method35(v28_1, v29_1, v30_1, v31_1, v32_1, v33_1, method12(v28_1, v29_1, v30_1, v31_1, v32_1, v33_1), method34(), v1_1, v0_1, v2_1));
     }
 }
 
 export function method33(v0_1: string, v1_1: int64): Async<string> {
     return singleton.Delay<string>((): Async<string> => singleton.TryWith<string>(singleton.Delay<string>((): Async<string> => {
-        const v52: Async<string> = awaitTask<string>(defaultOf());
-        return singleton.ReturnFrom<string>(v52);
+        const v78: Async<string> = awaitTask<string>(defaultOf());
+        return singleton.ReturnFrom<string>(v78);
     }), (_arg: Error): Async<string> => {
-        let v116: any;
+        let v162: any;
         closure15(v0_1, v1_1, _arg, undefined);
-        v116 = undefined;
-        const v164: Async<void> = sleep(10);
-        return singleton.Bind<void, string>(v164, (): Async<string> => {
-            let v179: Async<string>;
+        v162 = undefined;
+        const v221: Async<void> = sleep(10);
+        return singleton.Bind<void, string>(v221, (): Async<string> => {
+            let v236: Async<string>;
             if (compare_1(v1_1, 3n) < 0) {
-                v179 = method32(v0_1, toInt64(op_Addition(v1_1, 1n)));
+                v236 = method32(v0_1, toInt64(op_Addition(v1_1, 1n)));
             }
             else {
                 throw new Error(`file_system.read_all_text_async / retry: ${v1_1} / path: ${v0_1}`);
             }
-            return singleton.ReturnFrom<string>(v179);
+            return singleton.ReturnFrom<string>(v236);
         });
     }));
 }
@@ -1214,8 +1220,8 @@ export function closure14(unitVar: void, v0_1: string): Async<string> {
 }
 
 export function method38(v0_1: string): boolean {
-    const v86: IFsExistsSync = fs;
-    return v86.existsSync(v0_1);
+    const v119: IFsExistsSync = fs;
+    return v119.existsSync(v0_1);
 }
 
 export function method39(v0_1: any): any {
@@ -1252,10 +1258,10 @@ export function method44(v0_1: string, v1_1: string): Async<boolean> {
             return singleton.Return<boolean>(false);
         }
         else {
-            const v17_1: Async<string> = method31(v0_1);
-            return singleton.Bind<string, boolean>(v17_1, (_arg: string): Async<boolean> => {
-                const v19_1: boolean = v1_1 === _arg;
-                return singleton.Return<boolean>(v19_1);
+            const v25_1: Async<string> = method31(v0_1);
+            return singleton.Bind<string, boolean>(v25_1, (_arg: string): Async<boolean> => {
+                const v27_1: boolean = v1_1 === _arg;
+                return singleton.Return<boolean>(v27_1);
             });
         }
     });
@@ -1267,11 +1273,11 @@ export function method43(v0_1: string, v1_1: string): Async<boolean> {
 
 export function method42(v0_1: string, v1_1: string): Async<void> {
     return singleton.Delay<void>((): Async<void> => {
-        const v15: Async<boolean> = method43(v0_1, v1_1);
-        return singleton.Bind<boolean, void>(v15, (_arg: boolean): Async<void> => {
-            let v18_1: Async<void>;
-            const v17_1: boolean = _arg === false;
-            return singleton.Combine<void>(v17_1 ? ((v18_1 = method40(v0_1, v1_1), singleton.Bind<void, void>(v18_1, (): Async<void> => {
+        const v23_1: Async<boolean> = method43(v0_1, v1_1);
+        return singleton.Bind<boolean, void>(v23_1, (_arg: boolean): Async<void> => {
+            let v26_1: Async<void>;
+            const v25_1: boolean = _arg === false;
+            return singleton.Combine<void>(v25_1 ? ((v26_1 = method40(v0_1, v1_1), singleton.Bind<void, void>(v26_1, (): Async<void> => {
                 return singleton.Zero();
             }))) : singleton.Zero(), singleton.Delay<void>((): Async<void> => {
                 return singleton.Zero();
@@ -1294,9 +1300,9 @@ export function closure20(unitVar: void, v0_1: string): ((arg0: string) => Async
 
 export function method49(v0_1: any): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v38_1: any;
+    let v48: any;
     closure6(v2_1, toText(interpolate("%A%P()", [v0_1])), undefined);
-    v38_1 = undefined;
+    v48 = undefined;
     return v2_1.l0;
 }
 
@@ -1325,27 +1331,27 @@ export function method51(): ((arg0: string) => US9_$union) {
 }
 
 export function method52(): string {
-    const v2_1: string = "Critical".toLocaleLowerCase();
-    return ("\u001b[91m" + method17(v2_1[0])) + method19();
+    const v3: string = "Critical".toLocaleLowerCase();
+    return ("\u001b[91m" + method17(v3[0])) + method19();
 }
 
 export function method54(v0_1: string): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v9: any;
+    let v10: any;
     closure6(v2_1, "{ ", undefined);
-    v9 = undefined;
-    let v18_1: any;
+    v10 = undefined;
+    let v20_1: any;
     closure6(v2_1, "error\'", undefined);
-    v18_1 = undefined;
-    let v27_1: any;
+    v20_1 = undefined;
+    let v30_1: any;
     closure6(v2_1, " = ", undefined);
-    v27_1 = undefined;
-    let v35_1: any;
+    v30_1 = undefined;
+    let v39_1: any;
     closure6(v2_1, v0_1, undefined);
-    v35_1 = undefined;
-    let v44: any;
+    v39_1 = undefined;
+    let v49: any;
     closure6(v2_1, " }", undefined);
-    v44 = undefined;
+    v49 = undefined;
     return v2_1.l0;
 }
 
@@ -1360,50 +1366,50 @@ export function closure26(v0_1: string, unitVar: void): void {
         closure0(undefined, undefined);
         v5 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v24_1: Option<int64> = patternInput[5];
-        const v23_1: Mut4 = patternInput[4];
-        const v22_1: Mut3 = patternInput[3];
-        const v21_1: Mut2 = patternInput[2];
-        const v20_1: Mut1 = patternInput[1];
-        const v19_1: Mut0 = patternInput[0];
-        method24(method53(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1, method12(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1), method52(), v0_1));
+        const v31_1: Option<int64> = patternInput[5];
+        const v30_1: Mut4 = patternInput[4];
+        const v29_1: Mut3 = patternInput[3];
+        const v28_1: Mut2 = patternInput[2];
+        const v27_1: Mut1 = patternInput[1];
+        const v26_1: Mut0 = patternInput[0];
+        method24(method53(v26_1, v27_1, v28_1, v29_1, v30_1, v31_1, method12(v26_1, v27_1, v28_1, v29_1, v30_1, v31_1), method52(), v0_1));
     }
 }
 
 export function method55(): string {
-    const v2_1: string = "Warning".toLocaleLowerCase();
-    return ("\u001b[93m" + method17(v2_1[0])) + method19();
+    const v3: string = "Warning".toLocaleLowerCase();
+    return ("\u001b[93m" + method17(v3[0])) + method19();
 }
 
 export function method57(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v3, "{ ", undefined);
-    v10 = undefined;
-    let v19_1: any;
+    v11 = undefined;
+    let v21_1: any;
     closure6(v3, "path", undefined);
-    v19_1 = undefined;
-    let v28_1: any;
+    v21_1 = undefined;
+    let v31_1: any;
     closure6(v3, " = ", undefined);
-    v28_1 = undefined;
-    let v36_1: any;
+    v31_1 = undefined;
+    let v40: any;
     closure6(v3, v0_1, undefined);
-    v36_1 = undefined;
-    let v45: any;
+    v40 = undefined;
+    let v50: any;
     closure6(v3, "; ", undefined);
-    v45 = undefined;
-    let v54: any;
+    v50 = undefined;
+    let v60: any;
     closure6(v3, "ex", undefined);
-    v54 = undefined;
-    let v62: any;
+    v60 = undefined;
+    let v69: any;
     closure6(v3, " = ", undefined);
-    v62 = undefined;
-    let v70: any;
+    v69 = undefined;
+    let v78: any;
     closure6(v3, v1_1, undefined);
-    v70 = undefined;
-    let v79: any;
+    v78 = undefined;
+    let v88: any;
     closure6(v3, " }", undefined);
-    v79 = undefined;
+    v88 = undefined;
     return v3.l0;
 }
 
@@ -1418,25 +1424,25 @@ export function closure27(v0_1: string, v1_1: Error, unitVar: void): void {
         closure0(undefined, undefined);
         v6 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v25_1: Option<int64> = patternInput[5];
-        const v24_1: Mut4 = patternInput[4];
-        const v23_1: Mut3 = patternInput[3];
-        const v22_1: Mut2 = patternInput[2];
-        const v21_1: Mut1 = patternInput[1];
-        const v20_1: Mut0 = patternInput[0];
-        method24(method56(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method55(), method20(v0_1), toText(interpolate("%A%P()", [v1_1]))));
+        const v32_1: Option<int64> = patternInput[5];
+        const v31_1: Mut4 = patternInput[4];
+        const v30_1: Mut3 = patternInput[3];
+        const v29_1: Mut2 = patternInput[2];
+        const v28_1: Mut1 = patternInput[1];
+        const v27_1: Mut0 = patternInput[0];
+        method24(method56(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1, method12(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1), method55(), method20(v0_1), toText(interpolate("%A%P()", [v1_1]))));
     }
 }
 
 export function method47(v0_1: string, v1_1: int64): Async<int64> {
     return singleton.Delay<int64>((): Async<int64> => singleton.TryWith<int64>(singleton.Delay<int64>((): Async<int64> => singleton.Return<int64>(v1_1)), (_arg: Error): Async<int64> => {
-        let v150: any;
-        const v147: boolean = equals(toInt64(op_Modulus(v1_1, 100n)), 0n);
-        return singleton.Combine<int64>(v147 ? ((v150 = ((closure27(v0_1, _arg, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
-            const v224: Async<void> = sleep(10);
-            return singleton.Bind<void, int64>(v224, (): Async<int64> => {
-                const v235: Async<int64> = method46(v0_1, toInt64(op_Addition(v1_1, 1n)));
-                return singleton.ReturnFrom<int64>(v235);
+        let v174: any;
+        const v171: boolean = equals(toInt64(op_Modulus(v1_1, 100n)), 0n);
+        return singleton.Combine<int64>(v171 ? ((v174 = ((closure27(v0_1, _arg, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
+            const v270: Async<void> = sleep(10);
+            return singleton.Bind<void, int64>(v270, (): Async<int64> => {
+                const v281: Async<int64> = method46(v0_1, toInt64(op_Addition(v1_1, 1n)));
+                return singleton.ReturnFrom<int64>(v281);
             });
         }));
     }));
@@ -1459,45 +1465,45 @@ export function method61(v0_1: string, v1_1: string): void {
 
 export function method63(v0_1: string, v1_1: string, v2_1: string): string {
     const v4: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v4, "{ ", undefined);
-    v11 = undefined;
-    let v20_1: any;
+    v12 = undefined;
+    let v22_1: any;
     closure6(v4, "old_path", undefined);
-    v20_1 = undefined;
-    let v29_1: any;
+    v22_1 = undefined;
+    let v32_1: any;
     closure6(v4, " = ", undefined);
-    v29_1 = undefined;
-    let v37_1: any;
+    v32_1 = undefined;
+    let v41: any;
     closure6(v4, v0_1, undefined);
-    v37_1 = undefined;
-    let v46: any;
+    v41 = undefined;
+    let v51: any;
     closure6(v4, "; ", undefined);
-    v46 = undefined;
-    let v55: any;
+    v51 = undefined;
+    let v61: any;
     closure6(v4, "new_path", undefined);
-    v55 = undefined;
-    let v63: any;
+    v61 = undefined;
+    let v70: any;
     closure6(v4, " = ", undefined);
-    v63 = undefined;
-    let v71: any;
-    closure6(v4, v1_1, undefined);
-    v71 = undefined;
+    v70 = undefined;
     let v79: any;
-    closure6(v4, "; ", undefined);
+    closure6(v4, v1_1, undefined);
     v79 = undefined;
     let v88: any;
-    closure6(v4, "ex", undefined);
+    closure6(v4, "; ", undefined);
     v88 = undefined;
-    let v96: any;
+    let v98: any;
+    closure6(v4, "ex", undefined);
+    v98 = undefined;
+    let v107: any;
     closure6(v4, " = ", undefined);
-    v96 = undefined;
-    let v104: any;
+    v107 = undefined;
+    let v116: any;
     closure6(v4, v2_1, undefined);
-    v104 = undefined;
-    let v113: any;
+    v116 = undefined;
+    let v126: any;
     closure6(v4, " }", undefined);
-    v113 = undefined;
+    v126 = undefined;
     return v4.l0;
 }
 
@@ -1512,13 +1518,13 @@ export function closure30(v0_1: string, v1_1: string, v2_1: Error, unitVar: void
         closure0(undefined, undefined);
         v7 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v26_1: Option<int64> = patternInput[5];
-        const v25_1: Mut4 = patternInput[4];
-        const v24_1: Mut3 = patternInput[3];
-        const v23_1: Mut2 = patternInput[2];
-        const v22_1: Mut1 = patternInput[1];
-        const v21_1: Mut0 = patternInput[0];
-        method24(method62(v21_1, v22_1, v23_1, v24_1, v25_1, v26_1, method12(v21_1, v22_1, v23_1, v24_1, v25_1, v26_1), method55(), method20(v1_1), method20(v0_1), toText(interpolate("%A%P()", [v2_1]))));
+        const v33_1: Option<int64> = patternInput[5];
+        const v32_1: Mut4 = patternInput[4];
+        const v31_1: Mut3 = patternInput[3];
+        const v30_1: Mut2 = patternInput[2];
+        const v29_1: Mut1 = patternInput[1];
+        const v28_1: Mut0 = patternInput[0];
+        method24(method62(v28_1, v29_1, v30_1, v31_1, v32_1, v33_1, method12(v28_1, v29_1, v30_1, v31_1, v32_1, v33_1), method55(), method20(v1_1), method20(v0_1), toText(interpolate("%A%P()", [v2_1]))));
     }
 }
 
@@ -1527,13 +1533,13 @@ export function method60(v0_1: string, v1_1: string, v2_1: int64): Async<int64> 
         method61(v0_1, v1_1);
         return singleton.Return<int64>(v2_1);
     }), (_arg: Error): Async<int64> => {
-        let v21_1: any;
-        const v18_1: boolean = equals(toInt64(op_Modulus(v2_1, 100n)), 0n);
-        return singleton.Combine<int64>(v18_1 ? ((v21_1 = ((closure30(v0_1, v1_1, _arg, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
-            const v96: Async<void> = sleep(10);
-            return singleton.Bind<void, int64>(v96, (): Async<int64> => {
-                const v107: Async<int64> = method59(v0_1, v1_1, toInt64(op_Addition(v2_1, 1n)));
-                return singleton.ReturnFrom<int64>(v107);
+        let v29_1: any;
+        const v26_1: boolean = equals(toInt64(op_Modulus(v2_1, 100n)), 0n);
+        return singleton.Combine<int64>(v26_1 ? ((v29_1 = ((closure30(v0_1, v1_1, _arg, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
+            const v126: Async<void> = sleep(10);
+            return singleton.Bind<void, int64>(v126, (): Async<int64> => {
+                const v137: Async<int64> = method59(v0_1, v1_1, toInt64(op_Addition(v2_1, 1n)));
+                return singleton.ReturnFrom<int64>(v137);
             });
         }));
     }));
@@ -1573,36 +1579,36 @@ export function method71(): ((arg0: Error) => US10_$union) {
 
 export function method69(v0_1: Async<FSharpChoice$2_$union<int64, Error>>): Async<US10_$union> {
     return singleton.Delay<US10_$union>((): Async<US10_$union> => singleton.Bind<FSharpChoice$2_$union<int64, Error>, US10_$union>(v0_1, (_arg: FSharpChoice$2_$union<int64, Error>): Async<US10_$union> => {
-        const v25_1: US10_$union = defaultOf();
-        return singleton.Return<US10_$union>(v25_1);
+        const v41: US10_$union = defaultOf();
+        return singleton.Return<US10_$union>(v41);
     }));
 }
 
 export function method72(v0_1: Async<US10_$union>): Async<US11_$union> {
     return singleton.Delay<US11_$union>((): Async<US11_$union> => singleton.Bind<US10_$union, US11_$union>(v0_1, (_arg: US10_$union): Async<US11_$union> => {
-        const v14: US10_$union = _arg;
-        const v20_1: US11_$union = ((v14.tag as int32) === /* US10_1 */ 1) ? US11_US11_1(v14.fields[0] as any) : US11_US11_0(v14.fields[0] as any);
-        return singleton.Return<US11_$union>(v20_1);
+        const v22_1: US10_$union = _arg;
+        const v28_1: US11_$union = ((v22_1.tag as int32) === /* US10_1 */ 1) ? US11_US11_1(v22_1.fields[0] as any) : US11_US11_0(v22_1.fields[0] as any);
+        return singleton.Return<US11_$union>(v28_1);
     }));
 }
 
 export function method75(v0_1: int32): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v9: any;
+    let v10: any;
     closure6(v2_1, "{ ", undefined);
-    v9 = undefined;
-    let v18_1: any;
+    v10 = undefined;
+    let v20_1: any;
     closure6(v2_1, "timeout", undefined);
-    v18_1 = undefined;
-    let v27_1: any;
+    v20_1 = undefined;
+    let v30_1: any;
     closure6(v2_1, " = ", undefined);
-    v27_1 = undefined;
-    let v35_1: any;
+    v30_1 = undefined;
+    let v39_1: any;
     closure6(v2_1, `${v0_1}`, undefined);
-    v35_1 = undefined;
-    let v44: any;
+    v39_1 = undefined;
+    let v49: any;
     closure6(v2_1, " }", undefined);
-    v44 = undefined;
+    v49 = undefined;
     return v2_1.l0;
 }
 
@@ -1617,45 +1623,45 @@ export function closure34(v0_1: int32, unitVar: void): void {
         closure0(undefined, undefined);
         v5 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v24_1: Option<int64> = patternInput[5];
-        const v23_1: Mut4 = patternInput[4];
-        const v22_1: Mut3 = patternInput[3];
-        const v21_1: Mut2 = patternInput[2];
-        const v20_1: Mut1 = patternInput[1];
-        const v19_1: Mut0 = patternInput[0];
-        method24(method74(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1, method12(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1), method34(), v0_1));
+        const v31_1: Option<int64> = patternInput[5];
+        const v30_1: Mut4 = patternInput[4];
+        const v29_1: Mut3 = patternInput[3];
+        const v28_1: Mut2 = patternInput[2];
+        const v27_1: Mut1 = patternInput[1];
+        const v26_1: Mut0 = patternInput[0];
+        method24(method74(v26_1, v27_1, v28_1, v29_1, v30_1, v31_1, method12(v26_1, v27_1, v28_1, v29_1, v30_1, v31_1), method34(), v0_1));
     }
 }
 
 export function method77(v0_1: int32, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v3, "{ ", undefined);
-    v10 = undefined;
-    let v19_1: any;
+    v11 = undefined;
+    let v21_1: any;
     closure6(v3, "timeout", undefined);
-    v19_1 = undefined;
-    let v28_1: any;
+    v21_1 = undefined;
+    let v31_1: any;
     closure6(v3, " = ", undefined);
-    v28_1 = undefined;
-    let v36_1: any;
+    v31_1 = undefined;
+    let v40: any;
     closure6(v3, `${v0_1}`, undefined);
-    v36_1 = undefined;
-    let v45: any;
+    v40 = undefined;
+    let v50: any;
     closure6(v3, "; ", undefined);
-    v45 = undefined;
-    let v54: any;
+    v50 = undefined;
+    let v60: any;
     closure6(v3, "ex", undefined);
-    v54 = undefined;
-    let v62: any;
+    v60 = undefined;
+    let v69: any;
     closure6(v3, " = ", undefined);
-    v62 = undefined;
-    let v70: any;
+    v69 = undefined;
+    let v78: any;
     closure6(v3, v1_1, undefined);
-    v70 = undefined;
-    let v79: any;
+    v78 = undefined;
+    let v88: any;
     closure6(v3, " }", undefined);
-    v79 = undefined;
+    v88 = undefined;
     return v3.l0;
 }
 
@@ -1670,49 +1676,49 @@ export function closure35(v0_1: int32, v1_1: Error, unitVar: void): void {
         closure0(undefined, undefined);
         v6 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v25_1: Option<int64> = patternInput[5];
-        const v24_1: Mut4 = patternInput[4];
-        const v23_1: Mut3 = patternInput[3];
-        const v22_1: Mut2 = patternInput[2];
-        const v21_1: Mut1 = patternInput[1];
-        const v20_1: Mut0 = patternInput[0];
-        method24(method76(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method52(), v0_1, toText(interpolate("%A%P()", [v1_1]))));
+        const v32_1: Option<int64> = patternInput[5];
+        const v31_1: Mut4 = patternInput[4];
+        const v30_1: Mut3 = patternInput[3];
+        const v29_1: Mut2 = patternInput[2];
+        const v28_1: Mut1 = patternInput[1];
+        const v27_1: Mut0 = patternInput[0];
+        method24(method76(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1, method12(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1), method52(), v0_1, toText(interpolate("%A%P()", [v1_1]))));
     }
 }
 
 export function method73(v0_1: int32, v1_1: Async<US11_$union>): Async<US2_$union> {
     return singleton.Delay<US2_$union>((): Async<US2_$union> => singleton.Bind<US11_$union, US2_$union>(v1_1, (_arg: US11_$union): Async<US2_$union> => {
-        const v15: US11_$union = _arg;
-        let v139: US2_$union;
-        if ((v15.tag as int32) === /* US11_0 */ 0) {
-            v139 = US2_US2_0(v15.fields[0] as any);
+        const v23_1: US11_$union = _arg;
+        let v174: US2_$union;
+        if ((v23_1.tag as int32) === /* US11_0 */ 0) {
+            v174 = US2_US2_0(v23_1.fields[0] as any);
         }
         else {
-            const v18_1 = v15.fields[0] as any;
-            const v19_1: string = toText(interpolate("%A%P()", [v18_1]));
-            if (v19_1.indexOf("System.TimeoutException") >= 0) {
-                let v28_1: any;
+            const v26_1 = v23_1.fields[0] as any;
+            const v28_1: string = toText(interpolate("%A%P()", [v26_1]));
+            if (v28_1.indexOf("System.TimeoutException") >= 0) {
+                let v38_1: any;
                 closure34(v0_1, undefined);
-                v28_1 = undefined;
-                v139 = US2_US2_1();
+                v38_1 = undefined;
+                v174 = US2_US2_1();
             }
             else {
-                let v71: any;
-                closure35(v0_1, v18_1, undefined);
-                v71 = undefined;
-                v139 = US2_US2_1();
+                let v88: any;
+                closure35(v0_1, v26_1, undefined);
+                v88 = undefined;
+                v174 = US2_US2_1();
             }
         }
-        return singleton.Return<US2_$union>(v139);
+        return singleton.Return<US2_$union>(v174);
     }));
 }
 
 export function method68(v0_1: Async<int64>, v1_1: int32): Async<US2_$union> {
     return singleton.Delay<US2_$union>((): Async<US2_$union> => {
-        const v25_1: Async<Async<int64>> = startChild<int64>(v0_1, v1_1);
-        return singleton.Bind<Async<int64>, US2_$union>(v25_1, (_arg: Async<int64>): Async<US2_$union> => {
-            const v60: Async<US2_$union> = method73(v1_1, method72(method69(catchAsync<int64>(_arg))));
-            return singleton.ReturnFrom<US2_$union>(v60);
+        const v40: Async<Async<int64>> = startChild<int64>(v0_1, v1_1);
+        return singleton.Bind<Async<int64>, US2_$union>(v40, (_arg: Async<int64>): Async<US2_$union> => {
+            const v84: Async<US2_$union> = method73(v1_1, method72(method69(catchAsync<int64>(_arg))));
+            return singleton.ReturnFrom<US2_$union>(v84);
         });
     });
 }
@@ -1727,33 +1733,33 @@ export function method78(v0_1: Async<string>): Async<Option<string>> {
 
 export function method80(v0_1: int64, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v3, "{ ", undefined);
-    v10 = undefined;
-    let v19_1: any;
+    v11 = undefined;
+    let v21_1: any;
     closure6(v3, "retry", undefined);
-    v19_1 = undefined;
-    let v28_1: any;
+    v21_1 = undefined;
+    let v31_1: any;
     closure6(v3, " = ", undefined);
-    v28_1 = undefined;
-    let v36_1: any;
+    v31_1 = undefined;
+    let v40: any;
     closure6(v3, `${v0_1}`, undefined);
-    v36_1 = undefined;
-    let v45: any;
+    v40 = undefined;
+    let v50: any;
     closure6(v3, "; ", undefined);
-    v45 = undefined;
-    let v54: any;
+    v50 = undefined;
+    let v60: any;
     closure6(v3, "ex", undefined);
-    v54 = undefined;
-    let v62: any;
+    v60 = undefined;
+    let v69: any;
     closure6(v3, " = ", undefined);
-    v62 = undefined;
-    let v70: any;
+    v69 = undefined;
+    let v78: any;
     closure6(v3, v1_1, undefined);
-    v70 = undefined;
-    let v79: any;
+    v78 = undefined;
+    let v88: any;
     closure6(v3, " }", undefined);
-    v79 = undefined;
+    v88 = undefined;
     return v3.l0;
 }
 
@@ -1768,36 +1774,36 @@ export function closure36(v0_1: int64, v1_1: Error, unitVar: void): void {
         closure0(undefined, undefined);
         v6 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v25_1: Option<int64> = patternInput[5];
-        const v24_1: Mut4 = patternInput[4];
-        const v23_1: Mut3 = patternInput[3];
-        const v22_1: Mut2 = patternInput[2];
-        const v21_1: Mut1 = patternInput[1];
-        const v20_1: Mut0 = patternInput[0];
-        method24(method79(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method16(), v0_1, toText(interpolate("%A%P()", [v1_1]))));
+        const v32_1: Option<int64> = patternInput[5];
+        const v31_1: Mut4 = patternInput[4];
+        const v30_1: Mut3 = patternInput[3];
+        const v29_1: Mut2 = patternInput[2];
+        const v28_1: Mut1 = patternInput[1];
+        const v27_1: Mut0 = patternInput[0];
+        method24(method79(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1, method12(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1), method16(), v0_1, toText(interpolate("%A%P()", [v1_1]))));
     }
 }
 
 export function method66(v0_1: string, v1_1: int64): Async<Option<string>> {
     return singleton.Delay<Option<string>>((): Async<Option<string>> => singleton.TryWith<Option<string>>(singleton.Delay<Option<string>>((): Async<Option<string>> => {
-        let v30_1: Async<void>;
-        const v15: boolean = compare_1(v1_1, 0n) > 0;
-        return singleton.Combine<Option<string>>(v15 ? ((v30_1 = ignore<US2_$union>(method67(1000, method30(v0_1))), singleton.Bind<void, void>(v30_1, (): Async<void> => {
+        let v45: Async<void>;
+        const v23_1: boolean = compare_1(v1_1, 0n) > 0;
+        return singleton.Combine<Option<string>>(v23_1 ? ((v45 = ignore<US2_$union>(method67(1000, method30(v0_1))), singleton.Bind<void, void>(v45, (): Async<void> => {
             return singleton.Zero();
         }))) : singleton.Zero(), singleton.Delay<Option<string>>((): Async<Option<string>> => {
-            const v43: Async<Option<string>> = method78(method31(v0_1));
-            return singleton.ReturnFrom<Option<string>>(v43);
+            const v59: Async<Option<string>> = method78(method31(v0_1));
+            return singleton.ReturnFrom<Option<string>>(v59);
         }));
     }), (_arg_1: Error): Async<Option<string>> => {
         if (equals(v1_1, 0n) !== true) {
-            let v78: any;
+            let v102: any;
             closure36(v1_1, _arg_1, undefined);
-            v78 = undefined;
+            v102 = undefined;
             return singleton.Return<Option<string>>(undefined);
         }
         else {
-            const v145: Async<Option<string>> = method65(v0_1, toInt64(op_Addition(v1_1, 1n)));
-            return singleton.ReturnFrom<Option<string>>(v145);
+            const v187: Async<Option<string>> = method65(v0_1, toInt64(op_Addition(v1_1, 1n)));
+            return singleton.ReturnFrom<Option<string>>(v187);
         }
     }));
 }
@@ -1835,22 +1841,22 @@ export function method86(): string {
 }
 
 export function method82(v0_1: string, v1_1: Date): string {
-    const v1044: string = method85();
-    const v1049: string = toString(v1_1, (v1044 === "") ? "M-d-y hh:mm:ss tt" : v1044);
-    const v1072: any = defaultOf();
-    let v1230: number;
-    throw new Error(`date_time.get_utc_offset / target: ${US4_US4_3(US3_US3_0())}`);
-    const v1243: uint8 = (hours(v1230) > 0) ? 1 : 0;
-    const v1244: string = method86();
-    const v1394 = `${v1243}${toString_1(v1230, "c", {})}`;
-    const v1396: string = v0_1;
-    const v1406: int32 = (v1049.length + v1394.length) | 0;
-    const v1420: int32 = (v1396.length - 1) | 0;
-    return parse(concat(v1049, v1394, ...v1396.slice(v1406, v1420 + 1)));
+    const v1970: string = method85();
+    const v1976: string = toString(v1_1, (v1970 === "") ? "M-d-y hh:mm:ss tt" : v1970);
+    const v2007: any = defaultOf();
+    let v2211: number;
+    throw new Error(`date_time.get_utc_offset / target: ${US4_US4_4(US3_US3_0())}`);
+    const v2226: uint8 = (hours(v2211) > 0) ? 1 : 0;
+    const v2227: string = method86();
+    const v2451 = `${v2226}${toString_1(v2211, "c", {})}`;
+    const v2454: string = v0_1;
+    const v2470: int32 = (v1976.length + v2451.length) | 0;
+    const v2491: int32 = (v2454.length - 1) | 0;
+    return parse(concat(v1976, v2451, ...v2454.slice(v2470, v2491 + 1)));
 }
 
 export function method88(): string {
-    throw new Error(`file_system.get_temp_path / target: ${US4_US4_3(US3_US3_0())}`);
+    throw new Error(`file_system.get_temp_path / target: ${US4_US4_4(US3_US3_0())}`);
 }
 
 export function method89(): string {
@@ -1858,8 +1864,8 @@ export function method89(): string {
 }
 
 export function method90(v0_1: string, v1_1: string): string {
-    const v183: IPathJoin = path;
-    return v183.join(v0_1, v1_1);
+    const v251: IPathJoin = path;
+    return v251.join(v0_1, v1_1);
 }
 
 export function method92(): string {
@@ -1867,7 +1873,7 @@ export function method92(): string {
 }
 
 export function method91(): string {
-    throw new Error(`env.get_entry_assembly_name / target: ${US4_US4_3(US3_US3_0())}`);
+    throw new Error(`env.get_entry_assembly_name / target: ${US4_US4_4(US3_US3_0())}`);
 }
 
 export function method87(v0_1: string): string {
@@ -1875,8 +1881,8 @@ export function method87(v0_1: string): string {
 }
 
 export function method81(): string {
-    const v52: Date = now();
-    return method87(method82(newGuid(), v52));
+    const v89: Date = now();
+    return method87(method82(newGuid(), v89));
 }
 
 export function closure37(unitVar: void, unitVar_1: void): string {
@@ -1909,33 +1915,33 @@ export function method96(): ((arg0: any) => US13_$union) {
 
 export function method98(v0_1: string, v1_1: any): string {
     const v3: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v3, "{ ", undefined);
-    v10 = undefined;
-    let v19_1: any;
+    v11 = undefined;
+    let v21_1: any;
     closure6(v3, "dir", undefined);
-    v19_1 = undefined;
-    let v28_1: any;
+    v21_1 = undefined;
+    let v31_1: any;
     closure6(v3, " = ", undefined);
-    v28_1 = undefined;
-    let v36_1: any;
+    v31_1 = undefined;
+    let v40: any;
     closure6(v3, v0_1, undefined);
-    v36_1 = undefined;
-    let v45: any;
+    v40 = undefined;
+    let v50: any;
     closure6(v3, "; ", undefined);
-    v45 = undefined;
-    let v54: any;
+    v50 = undefined;
+    let v60: any;
     closure6(v3, "error", undefined);
-    v54 = undefined;
-    let v62: any;
+    v60 = undefined;
+    let v69: any;
     closure6(v3, " = ", undefined);
-    v62 = undefined;
-    let v100: any;
+    v69 = undefined;
+    let v117: any;
     closure6(v3, toText(interpolate("%A%P()", [v1_1])), undefined);
-    v100 = undefined;
-    let v109: any;
+    v117 = undefined;
+    let v127: any;
     closure6(v3, " }", undefined);
-    v109 = undefined;
+    v127 = undefined;
     return v3.l0;
 }
 
@@ -1950,33 +1956,33 @@ export function closure43(v0_1: string, v1_1: any, unitVar: void): void {
         closure0(undefined, undefined);
         v6 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v25_1: Option<int64> = patternInput[5];
-        const v24_1: Mut4 = patternInput[4];
-        const v23_1: Mut3 = patternInput[3];
-        const v22_1: Mut2 = patternInput[2];
-        const v21_1: Mut1 = patternInput[1];
-        const v20_1: Mut0 = patternInput[0];
-        method24(method97(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method52(), v0_1, v1_1));
+        const v32_1: Option<int64> = patternInput[5];
+        const v31_1: Mut4 = patternInput[4];
+        const v30_1: Mut3 = patternInput[3];
+        const v29_1: Mut2 = patternInput[2];
+        const v28_1: Mut1 = patternInput[1];
+        const v27_1: Mut0 = patternInput[0];
+        method24(method97(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1, method12(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1), method52(), v0_1, v1_1));
     }
 }
 
 export function method100(v0_1: string): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v9: any;
+    let v10: any;
     closure6(v2_1, "{ ", undefined);
-    v9 = undefined;
-    let v18_1: any;
+    v10 = undefined;
+    let v20_1: any;
     closure6(v2_1, "dir", undefined);
-    v18_1 = undefined;
-    let v27_1: any;
+    v20_1 = undefined;
+    let v30_1: any;
     closure6(v2_1, " = ", undefined);
-    v27_1 = undefined;
-    let v35_1: any;
+    v30_1 = undefined;
+    let v39_1: any;
     closure6(v2_1, v0_1, undefined);
-    v35_1 = undefined;
-    let v44: any;
+    v39_1 = undefined;
+    let v49: any;
     closure6(v2_1, " }", undefined);
-    v44 = undefined;
+    v49 = undefined;
     return v2_1.l0;
 }
 
@@ -1991,13 +1997,13 @@ export function closure44(v0_1: string, unitVar: void): void {
         closure0(undefined, undefined);
         v5 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v24_1: Option<int64> = patternInput[5];
-        const v23_1: Mut4 = patternInput[4];
-        const v22_1: Mut3 = patternInput[3];
-        const v21_1: Mut2 = patternInput[2];
-        const v20_1: Mut1 = patternInput[1];
-        const v19_1: Mut0 = patternInput[0];
-        method24(method99(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1, method12(v19_1, v20_1, v21_1, v22_1, v23_1, v24_1), method34(), v0_1));
+        const v31_1: Option<int64> = patternInput[5];
+        const v30_1: Mut4 = patternInput[4];
+        const v29_1: Mut3 = patternInput[3];
+        const v28_1: Mut2 = patternInput[2];
+        const v27_1: Mut1 = patternInput[1];
+        const v26_1: Mut0 = patternInput[0];
+        method24(method99(v26_1, v27_1, v28_1, v29_1, v30_1, v31_1, method12(v26_1, v27_1, v28_1, v29_1, v30_1, v31_1), method34(), v0_1));
     }
 }
 
@@ -2023,33 +2029,33 @@ export function method103(v0_1: string): boolean {
 
 export function method105(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v3, "{ ", undefined);
-    v10 = undefined;
-    let v19_1: any;
+    v11 = undefined;
+    let v21_1: any;
     closure6(v3, "dir", undefined);
-    v19_1 = undefined;
-    let v28_1: any;
+    v21_1 = undefined;
+    let v31_1: any;
     closure6(v3, " = ", undefined);
-    v28_1 = undefined;
-    let v36_1: any;
+    v31_1 = undefined;
+    let v40: any;
     closure6(v3, v0_1, undefined);
-    v36_1 = undefined;
-    let v45: any;
+    v40 = undefined;
+    let v50: any;
     closure6(v3, "; ", undefined);
-    v45 = undefined;
-    let v54: any;
+    v50 = undefined;
+    let v60: any;
     closure6(v3, "result", undefined);
-    v54 = undefined;
-    let v62: any;
+    v60 = undefined;
+    let v69: any;
     closure6(v3, " = ", undefined);
-    v62 = undefined;
-    let v70: any;
+    v69 = undefined;
+    let v78: any;
     closure6(v3, v1_1, undefined);
-    v70 = undefined;
-    let v79: any;
+    v78 = undefined;
+    let v88: any;
     closure6(v3, " }", undefined);
-    v79 = undefined;
+    v88 = undefined;
     return v3.l0;
 }
 
@@ -2064,18 +2070,18 @@ export function closure46(v0_1: string, v1_1: string, unitVar: void): void {
         closure0(undefined, undefined);
         v6 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v25_1: Option<int64> = patternInput[5];
-        const v24_1: Mut4 = patternInput[4];
-        const v23_1: Mut3 = patternInput[3];
-        const v22_1: Mut2 = patternInput[2];
-        const v21_1: Mut1 = patternInput[1];
-        const v20_1: Mut0 = patternInput[0];
-        method24(method104(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method16(), v0_1, v1_1));
+        const v32_1: Option<int64> = patternInput[5];
+        const v31_1: Mut4 = patternInput[4];
+        const v30_1: Mut3 = patternInput[3];
+        const v29_1: Mut2 = patternInput[2];
+        const v28_1: Mut1 = patternInput[1];
+        const v27_1: Mut0 = patternInput[0];
+        method24(method104(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1, method12(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1), method16(), v0_1, v1_1));
     }
 }
 
 export function closure47(v0_1: string, unitVar: void): void {
-    const v13: Async<void> = ignore<int64>(method6(v0_1));
+    const v20_1: Async<void> = ignore<int64>(method6(v0_1));
     defaultOf();
 }
 
@@ -2092,20 +2098,20 @@ export function method107(v0_1: string): (() => void) {
 }
 
 export function method93(v0_1: string): IDisposable {
-    const v132: boolean = method103(v0_1);
-    const v154: boolean = defaultOf();
-    if (v154 === false) {
-        let v192: any;
+    const v306: boolean = method103(v0_1);
+    const v338: boolean = defaultOf();
+    if (v338 === false) {
+        let v389: any;
         closure46(v0_1, toText(interpolate("%A%P()", [{
             CreationTime: defaultOf(),
-            Exists: v154,
+            Exists: v338,
         }])), undefined);
-        v192 = undefined;
+        v389 = undefined;
     }
-    const v239: (() => void) = method107(v0_1);
+    const v447: (() => void) = method107(v0_1);
     return {
         Dispose(): void {
-            v239();
+            v447();
         },
     };
 }
@@ -2129,19 +2135,19 @@ export function method109(v0_1: int32, v1_1: string, v2_1: int32): ((arg0: strin
 }
 
 export function method108(v0_1: string): string {
-    const v2_1 = "0";
-    const v11: string = method109(32 - v0_1.length, v2_1, 0)("") + v0_1;
-    const v262 = 0;
-    const v276: int32 = (8 - 1) | 0;
-    const v281 = 8;
-    const v295: int32 = (12 - 1) | 0;
-    const v300 = 12;
-    const v314: int32 = (16 - 1) | 0;
-    const v319 = 16;
-    const v333: int32 = (20 - 1) | 0;
-    const v338 = 20;
-    const v352: int32 = (32 - 1) | 0;
-    return parse(`${v11.slice(v262, v276 + 1)}-${v11.slice(v281, v295 + 1)}-${v11.slice(v300, v314 + 1)}-${v11.slice(v319, v333 + 1)}-${v11.slice(v338, v352 + 1)}`);
+    const v3 = "0";
+    const v12: string = method109(32 - v0_1.length, v3, 0)("") + v0_1;
+    const v623 = 0;
+    const v644: int32 = (8 - 1) | 0;
+    const v655 = 8;
+    const v676: int32 = (12 - 1) | 0;
+    const v687 = 12;
+    const v708: int32 = (16 - 1) | 0;
+    const v719 = 16;
+    const v740: int32 = (20 - 1) | 0;
+    const v751 = 20;
+    const v772: int32 = (32 - 1) | 0;
+    return parse(`${v12.slice(v623, v644 + 1)}-${v12.slice(v655, v676 + 1)}-${v12.slice(v687, v708 + 1)}-${v12.slice(v719, v740 + 1)}-${v12.slice(v751, v772 + 1)}`);
 }
 
 export function closure48(unitVar: void, v0_1: string): [string, IDisposable] {
@@ -2170,11 +2176,11 @@ export function method114(): ((arg0: string) => US14_$union) {
 }
 
 export function method117(v0_1: string): Option<string> {
-    const v137: IPathDirname = path;
-    const v139: string = v137.dirname(v0_1);
-    const v143: US5_$union = (v139 === v0_1) ? US5_US5_1() : US5_US5_0(v139);
-    if ((v143.tag as int32) === /* US5_0 */ 0) {
-        return v143.fields[0] as any;
+    const v183: IPathDirname = path;
+    const v185: string = v183.dirname(v0_1);
+    const v189: US5_$union = (v185 === v0_1) ? US5_US5_1() : US5_US5_0(v185);
+    if ((v189.tag as int32) === /* US5_0 */ 0) {
+        return v189.fields[0] as any;
     }
     else {
         return undefined;
@@ -2183,42 +2189,42 @@ export function method117(v0_1: string): Option<string> {
 
 export function method118(v0_1: string): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v8: any;
+    let v9: any;
     closure6(v2_1, v0_1, undefined);
-    v8 = undefined;
+    v9 = undefined;
     return v2_1.l0;
 }
 
 export function method116(v0_1: string, v1_1: ((arg0: uint8, arg1: string) => FSharpResult$2_$union<any, any>), v2_1: uint8, v3: string, v4: string): FSharpResult$2_$union<any, any> {
     const v5: string = method20(v4);
     const v6: Option<string> = method117(v4);
-    const v20_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v6), US5_US5_1());
-    const v24_1: string = method118(v3);
+    const v23_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v6), US5_US5_1());
+    const v27_1: string = method118(v3);
     if (v2_1 >= 11) {
         return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`path: ${v0_1} / n: ${v2_1} / path': ${v4} / name: ${v5}`));
     }
-    else if ((v20_1.tag as int32) === /* US5_0 */ 0) {
-        const v67 = v20_1.fields[0] as any;
+    else if ((v23_1.tag as int32) === /* US5_0 */ 0) {
+        const v80 = v23_1.fields[0] as any;
         if (v4 !== "") {
-            const v74: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v67);
-            const v75: ((arg0: any) => string) = method48();
-            const v87: FSharpResult$2_$union<any, string> = ((v74.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v75(v74.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v74.fields[0] as any);
-            const v90: ((arg0: any) => US14_$union) = method113();
-            const v91: ((arg0: string) => US14_$union) = method114();
-            const v92: US14_$union = ((v87.tag as int32) === /* Error */ 1) ? v91(v87.fields[0] as any) : v90(v87.fields[0] as any);
-            if ((v92.tag as int32) === /* US14_0 */ 0) {
-                return FSharpResult$2_Ok<any, any>(method90(toString_2(v92.fields[0] as any), v5));
+            const v89: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v80);
+            const v90: ((arg0: any) => string) = method48();
+            const v103: FSharpResult$2_$union<any, string> = ((v89.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v90(v89.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v89.fields[0] as any);
+            const v106: ((arg0: any) => US14_$union) = method113();
+            const v107: ((arg0: string) => US14_$union) = method114();
+            const v108: US14_$union = ((v103.tag as int32) === /* Error */ 1) ? v107(v103.fields[0] as any) : v106(v103.fields[0] as any);
+            if ((v108.tag as int32) === /* US14_0 */ 0) {
+                return FSharpResult$2_Ok<any, any>(method90(toString_2(v108.fields[0] as any), v5));
             }
             else {
-                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v92.fields[0] as any} / error: ${v24_1} / name: ${v5}`));
+                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v108.fields[0] as any} / error: ${v27_1} / name: ${v5}`));
             }
         }
         else {
-            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v24_1} / path': ${v4} / name: ${v5}`));
+            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v27_1} / path': ${v4} / name: ${v5}`));
         }
     }
     else {
-        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v24_1} / path': ${v4} / name: ${v5}`));
+        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v27_1} / path': ${v4} / name: ${v5}`));
     }
 }
 
@@ -2237,33 +2243,33 @@ export function closure54(v0_1: string, v1_1: uint8): ((arg0: string) => FSharpR
 export function method119(v0_1: string, v1_1: ((arg0: uint8, arg1: string) => FSharpResult$2_$union<any, any>), v2_1: uint8, v3: string): FSharpResult$2_$union<any, any> {
     const v4: string = method20(v0_1);
     const v5: Option<string> = method117(v0_1);
-    const v19_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v5), US5_US5_1());
-    const v23_1: string = method118(v3);
+    const v22_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v5), US5_US5_1());
+    const v26_1: string = method118(v3);
     if (v2_1 >= 11) {
         return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`path: ${v0_1} / n: ${v2_1} / path': ${v0_1} / name: ${v4}`));
     }
-    else if ((v19_1.tag as int32) === /* US5_0 */ 0) {
-        const v66 = v19_1.fields[0] as any;
+    else if ((v22_1.tag as int32) === /* US5_0 */ 0) {
+        const v79 = v22_1.fields[0] as any;
         if (v0_1 !== "") {
-            const v73: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v66);
-            const v74: ((arg0: any) => string) = method48();
-            const v86: FSharpResult$2_$union<any, string> = ((v73.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v74(v73.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v73.fields[0] as any);
-            const v89: ((arg0: any) => US14_$union) = method113();
-            const v90: ((arg0: string) => US14_$union) = method114();
-            const v91: US14_$union = ((v86.tag as int32) === /* Error */ 1) ? v90(v86.fields[0] as any) : v89(v86.fields[0] as any);
-            if ((v91.tag as int32) === /* US14_0 */ 0) {
-                return FSharpResult$2_Ok<any, any>(method90(toString_2(v91.fields[0] as any), v4));
+            const v88: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v79);
+            const v89: ((arg0: any) => string) = method48();
+            const v102: FSharpResult$2_$union<any, string> = ((v88.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v89(v88.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v88.fields[0] as any);
+            const v105: ((arg0: any) => US14_$union) = method113();
+            const v106: ((arg0: string) => US14_$union) = method114();
+            const v107: US14_$union = ((v102.tag as int32) === /* Error */ 1) ? v106(v102.fields[0] as any) : v105(v102.fields[0] as any);
+            if ((v107.tag as int32) === /* US14_0 */ 0) {
+                return FSharpResult$2_Ok<any, any>(method90(toString_2(v107.fields[0] as any), v4));
             }
             else {
-                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v91.fields[0] as any} / error: ${v23_1} / name: ${v4}`));
+                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v107.fields[0] as any} / error: ${v26_1} / name: ${v4}`));
             }
         }
         else {
-            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v23_1} / path': ${v0_1} / name: ${v4}`));
+            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v26_1} / path': ${v0_1} / name: ${v4}`));
         }
     }
     else {
-        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v23_1} / path': ${v0_1} / name: ${v4}`));
+        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v26_1} / path': ${v0_1} / name: ${v4}`));
     }
 }
 
@@ -2286,45 +2292,45 @@ export function method123(v0_1: int32, v1_1: int32): boolean {
 export function method125(v0_1: string, v1_1: ((arg0: uint8, arg1: string) => FSharpResult$2_$union<any, any>), v2_1: uint8, v3: any, v4: string): FSharpResult$2_$union<any, any> {
     const v5: string = method20(v4);
     const v6: Option<string> = method117(v4);
-    const v20_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v6), US5_US5_1());
-    const v24_1: string = method49(v3);
+    const v23_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v6), US5_US5_1());
+    const v27_1: string = method49(v3);
     if (v2_1 >= 11) {
         return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`path: ${v0_1} / n: ${v2_1} / path': ${v4} / name: ${v5}`));
     }
-    else if ((v20_1.tag as int32) === /* US5_0 */ 0) {
-        const v67 = v20_1.fields[0] as any;
+    else if ((v23_1.tag as int32) === /* US5_0 */ 0) {
+        const v80 = v23_1.fields[0] as any;
         if (v4 !== "") {
-            const v74: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v67);
-            const v75: ((arg0: any) => string) = method48();
-            const v87: FSharpResult$2_$union<any, string> = ((v74.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v75(v74.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v74.fields[0] as any);
-            const v90: ((arg0: any) => US14_$union) = method113();
-            const v91: ((arg0: string) => US14_$union) = method114();
-            const v92: US14_$union = ((v87.tag as int32) === /* Error */ 1) ? v91(v87.fields[0] as any) : v90(v87.fields[0] as any);
-            if ((v92.tag as int32) === /* US14_0 */ 0) {
-                return FSharpResult$2_Ok<any, any>(method90(toString_2(v92.fields[0] as any), v5));
+            const v89: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v80);
+            const v90: ((arg0: any) => string) = method48();
+            const v103: FSharpResult$2_$union<any, string> = ((v89.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v90(v89.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v89.fields[0] as any);
+            const v106: ((arg0: any) => US14_$union) = method113();
+            const v107: ((arg0: string) => US14_$union) = method114();
+            const v108: US14_$union = ((v103.tag as int32) === /* Error */ 1) ? v107(v103.fields[0] as any) : v106(v103.fields[0] as any);
+            if ((v108.tag as int32) === /* US14_0 */ 0) {
+                return FSharpResult$2_Ok<any, any>(method90(toString_2(v108.fields[0] as any), v5));
             }
             else {
-                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v92.fields[0] as any} / error: ${v24_1} / name: ${v5}`));
+                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v108.fields[0] as any} / error: ${v27_1} / name: ${v5}`));
             }
         }
         else {
-            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v24_1} / path': ${v4} / name: ${v5}`));
+            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v27_1} / path': ${v4} / name: ${v5}`));
         }
     }
     else {
-        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v24_1} / path': ${v4} / name: ${v5}`));
+        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v27_1} / path': ${v4} / name: ${v5}`));
     }
 }
 
 export function method124(v0_1: string, v1_1: uint8, v2_1: string): FSharpResult$2_$union<any, any> {
-    const v30_1: int32 = method121(defaultOf()) | 0;
-    const v32_1: boolean = method123(method122(), v30_1);
-    if (v32_1) {
-        const v43: boolean = defaultOf();
+    const v42: int32 = method121(defaultOf()) | 0;
+    const v44: boolean = method123(method122(), v42);
+    if (v44) {
+        const v63: boolean = defaultOf();
         return FSharpResult$2_Ok<any, any>(defaultOf());
     }
     else {
-        return method125(v0_1, uncurry2((v: uint8): ((arg0: string) => FSharpResult$2_$union<any, any>) => closure56(v0_1, v)), v1_1, "file_system.read_link / Fsharp / The file or directory is not a reparse point. / " + (`path: ${v0_1} / result: ${v32_1} / path': ${v2_1} / n: ${v1_1}`), v2_1);
+        return method125(v0_1, uncurry2((v: uint8): ((arg0: string) => FSharpResult$2_$union<any, any>) => closure56(v0_1, v)), v1_1, "file_system.read_link / Fsharp / The file or directory is not a reparse point. / " + (`path: ${v0_1} / result: ${v44} / path': ${v2_1} / n: ${v1_1}`), v2_1);
     }
 }
 
@@ -2339,45 +2345,45 @@ export function closure56(v0_1: string, v1_1: uint8): ((arg0: string) => FSharpR
 export function method126(v0_1: string, v1_1: ((arg0: uint8, arg1: string) => FSharpResult$2_$union<any, any>), v2_1: uint8, v3: any): FSharpResult$2_$union<any, any> {
     const v4: string = method20(v0_1);
     const v5: Option<string> = method117(v0_1);
-    const v19_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v5), US5_US5_1());
-    const v23_1: string = method49(v3);
+    const v22_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v5), US5_US5_1());
+    const v26_1: string = method49(v3);
     if (v2_1 >= 11) {
         return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`path: ${v0_1} / n: ${v2_1} / path': ${v0_1} / name: ${v4}`));
     }
-    else if ((v19_1.tag as int32) === /* US5_0 */ 0) {
-        const v66 = v19_1.fields[0] as any;
+    else if ((v22_1.tag as int32) === /* US5_0 */ 0) {
+        const v79 = v22_1.fields[0] as any;
         if (v0_1 !== "") {
-            const v73: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v66);
-            const v74: ((arg0: any) => string) = method48();
-            const v86: FSharpResult$2_$union<any, string> = ((v73.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v74(v73.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v73.fields[0] as any);
-            const v89: ((arg0: any) => US14_$union) = method113();
-            const v90: ((arg0: string) => US14_$union) = method114();
-            const v91: US14_$union = ((v86.tag as int32) === /* Error */ 1) ? v90(v86.fields[0] as any) : v89(v86.fields[0] as any);
-            if ((v91.tag as int32) === /* US14_0 */ 0) {
-                return FSharpResult$2_Ok<any, any>(method90(toString_2(v91.fields[0] as any), v4));
+            const v88: FSharpResult$2_$union<any, any> = v1_1(v2_1 + 1, v79);
+            const v89: ((arg0: any) => string) = method48();
+            const v102: FSharpResult$2_$union<any, string> = ((v88.tag as int32) === /* Error */ 1) ? FSharpResult$2_Error<any, string>(v89(v88.fields[0] as any)) : FSharpResult$2_Ok<any, string>(v88.fields[0] as any);
+            const v105: ((arg0: any) => US14_$union) = method113();
+            const v106: ((arg0: string) => US14_$union) = method114();
+            const v107: US14_$union = ((v102.tag as int32) === /* Error */ 1) ? v106(v102.fields[0] as any) : v105(v102.fields[0] as any);
+            if ((v107.tag as int32) === /* US14_0 */ 0) {
+                return FSharpResult$2_Ok<any, any>(method90(toString_2(v107.fields[0] as any), v4));
             }
             else {
-                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v91.fields[0] as any} / error: ${v23_1} / name: ${v4}`));
+                return FSharpResult$2_Error<any, any>("file_system.read_link / " + (`error': ${v107.fields[0] as any} / error: ${v26_1} / name: ${v4}`));
             }
         }
         else {
-            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v23_1} / path': ${v0_1} / name: ${v4}`));
+            return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v26_1} / path': ${v0_1} / name: ${v4}`));
         }
     }
     else {
-        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v23_1} / path': ${v0_1} / name: ${v4}`));
+        return FSharpResult$2_Error<any, any>("file_system.read_link / run / The file or directory is not a reparse point. / " + (`path: ${v0_1} / error: ${v26_1} / path': ${v0_1} / name: ${v4}`));
     }
 }
 
 export function method120(v0_1: string, v1_1: uint8): FSharpResult$2_$union<any, any> {
-    const v29_1: int32 = method121(defaultOf()) | 0;
-    const v31_1: boolean = method123(method122(), v29_1);
-    if (v31_1) {
-        const v42: boolean = defaultOf();
+    const v41: int32 = method121(defaultOf()) | 0;
+    const v43: boolean = method123(method122(), v41);
+    if (v43) {
+        const v62: boolean = defaultOf();
         return FSharpResult$2_Ok<any, any>(defaultOf());
     }
     else {
-        return method126(v0_1, uncurry2((v: uint8): ((arg0: string) => FSharpResult$2_$union<any, any>) => closure56(v0_1, v)), v1_1, "file_system.read_link / Fsharp / The file or directory is not a reparse point. / " + (`path: ${v0_1} / result: ${v31_1} / path': ${v0_1} / n: ${v1_1}`));
+        return method126(v0_1, uncurry2((v: uint8): ((arg0: string) => FSharpResult$2_$union<any, any>) => closure56(v0_1, v)), v1_1, "file_system.read_link / Fsharp / The file or directory is not a reparse point. / " + (`path: ${v0_1} / result: ${v43} / path': ${v0_1} / n: ${v1_1}`));
     }
 }
 
@@ -2412,15 +2418,15 @@ export function method110(v0_1: string): string {
     }
     else {
         const v3: FSharpResult$2_$union<any, any> = method111(v0_1);
-        const v11: Option<any> = ((v3.tag as int32) === /* Error */ 1) ? undefined : (v3.fields[0] as any);
-        const v31_1: US15_$union = defaultArg(map<any, US15_$union>(method127(), v11), US15_US15_1());
-        const v64: string = ((v31_1.tag as int32) === /* US15_0 */ 0) ? toString_2(v31_1.fields[0] as any) : v0_1;
-        const v69: string = method128("^\\\\\\\\\\?\\\\", "", (v64 === "") ? v0_1 : v64);
-        if (v69.length < 2) {
+        const v12: Option<any> = ((v3.tag as int32) === /* Error */ 1) ? undefined : (v3.fields[0] as any);
+        const v35_1: US15_$union = defaultArg(map<any, US15_$union>(method127(), v12), US15_US15_1());
+        const v78: string = ((v35_1.tag as int32) === /* US15_0 */ 0) ? toString_2(v35_1.fields[0] as any) : v0_1;
+        const v83: string = method128("^\\\\\\\\\\?\\\\", "", (v78 === "") ? v0_1 : v78);
+        if (v83.length < 2) {
             return v0_1;
         }
         else {
-            return replace(concat((_arg = v69[0], _arg.toLocaleLowerCase()), ...v69.slice(1, v69.length)), "\\", "/");
+            return replace(concat((_arg = v83[0], _arg.toLocaleLowerCase()), ...v83.slice(1, v83.length)), "\\", "/");
         }
     }
 }
@@ -2430,7 +2436,7 @@ export function closure51(unitVar: void, v0_1: string): string {
 }
 
 export function method132(): string {
-    const v74: IFs = fs;
+    const v99: IFs = fs;
     return fs.realpathSync('.');
 }
 
@@ -2487,13 +2493,13 @@ export function method141(v0_1_mut: string, v1_1_mut: string, v2_1_mut: boolean,
         }
         else {
             const v8: Option<string> = method117(v4);
-            const v22_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v8), US5_US5_1());
-            if ((v22_1.tag as int32) === /* US5_0 */ 0) {
+            const v25_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v8), US5_US5_1());
+            if ((v25_1.tag as int32) === /* US5_0 */ 0) {
                 v0_1_mut = v0_1;
                 v1_1_mut = v1_1;
                 v2_1_mut = v2_1;
                 v3_mut = v3;
-                v4_mut = (v22_1.fields[0] as any);
+                v4_mut = (v25_1.fields[0] as any);
                 continue method141;
             }
             else {
@@ -2510,9 +2516,9 @@ export function method140(v0_1: string, v1_1: string, v2_1: boolean, v3: ((arg0:
     }
     else {
         const v7: Option<string> = method117(v1_1);
-        const v21_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v7), US5_US5_1());
-        if ((v21_1.tag as int32) === /* US5_0 */ 0) {
-            return method141(v0_1, v1_1, v2_1, v3, v21_1.fields[0] as any);
+        const v24_1: US5_$union = defaultArg(map<string, US5_$union>(method5(), v7), US5_US5_1());
+        if ((v24_1.tag as int32) === /* US5_0 */ 0) {
+            return method141(v0_1, v1_1, v2_1, v3, v24_1.fields[0] as any);
         }
         else {
             return US17_US17_1(concat("file_system.find_parent / No parent for ", ...(v2_1 ? "file" : "dir")) + (` '${v0_1}' at '${v1_1}' (until '${v1_1}')`));
@@ -2527,33 +2533,33 @@ export function method139(v0_1: US16_$union, v1_1: string, v2_1: string): US17_$
 
 export function method143(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v3, "{ ", undefined);
-    v10 = undefined;
-    let v19_1: any;
+    v11 = undefined;
+    let v21_1: any;
     closure6(v3, "dir", undefined);
-    v19_1 = undefined;
-    let v28_1: any;
+    v21_1 = undefined;
+    let v31_1: any;
     closure6(v3, " = ", undefined);
-    v28_1 = undefined;
-    let v36_1: any;
+    v31_1 = undefined;
+    let v40: any;
     closure6(v3, v0_1, undefined);
-    v36_1 = undefined;
-    let v45: any;
+    v40 = undefined;
+    let v50: any;
     closure6(v3, "; ", undefined);
-    v45 = undefined;
-    let v54: any;
+    v50 = undefined;
+    let v60: any;
     closure6(v3, "error", undefined);
-    v54 = undefined;
-    let v62: any;
+    v60 = undefined;
+    let v69: any;
     closure6(v3, " = ", undefined);
-    v62 = undefined;
-    let v70: any;
+    v69 = undefined;
+    let v78: any;
     closure6(v3, v1_1, undefined);
-    v70 = undefined;
-    let v79: any;
+    v78 = undefined;
+    let v88: any;
     closure6(v3, " }", undefined);
-    v79 = undefined;
+    v88 = undefined;
     return v3.l0;
 }
 
@@ -2568,13 +2574,13 @@ export function closure65(v0_1: string, v1_1: string, unitVar: void): void {
         closure0(undefined, undefined);
         v6 = undefined;
         const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-        const v25_1: Option<int64> = patternInput[5];
-        const v24_1: Mut4 = patternInput[4];
-        const v23_1: Mut3 = patternInput[3];
-        const v22_1: Mut2 = patternInput[2];
-        const v21_1: Mut1 = patternInput[1];
-        const v20_1: Mut0 = patternInput[0];
-        method24(method142(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1, method12(v20_1, v21_1, v22_1, v23_1, v24_1, v25_1), method55(), v0_1, v1_1));
+        const v32_1: Option<int64> = patternInput[5];
+        const v31_1: Mut4 = patternInput[4];
+        const v30_1: Mut3 = patternInput[3];
+        const v29_1: Mut2 = patternInput[2];
+        const v28_1: Mut1 = patternInput[1];
+        const v27_1: Mut0 = patternInput[0];
+        method24(method142(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1, method12(v27_1, v28_1, v29_1, v30_1, v31_1, v32_1), method55(), v0_1, v1_1));
     }
 }
 
@@ -2592,7 +2598,7 @@ export function method138(v0_1: string): US5_$union {
 }
 
 export function closure62(unitVar: void, unitVar_1: void): string {
-    let v24_1: US5_$union;
+    let v25_1: US5_$union;
     const v1_1: US5_$union = method138(method132());
     const v7: US5_$union = ((v1_1.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v1_1.fields[0] as any) : method138("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral");
     const v13: US5_$union = ((v7.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v7.fields[0] as any) : method138("/workspaces");
@@ -2603,7 +2609,7 @@ export function closure62(unitVar: void, unitVar_1: void): string {
     else {
         throw new Error("Option does not have a value.");
     }
-    return method90(("deps" === method20(v17_1)) ? ((v24_1 = method138(value_10(method117(v17_1))), ((v24_1.tag as int32) === /* US5_0 */ 0) ? (v24_1.fields[0] as any) : (() => {
+    return method90(("deps" === method20(v17_1)) ? ((v25_1 = method138(value_10(method117(v17_1))), ((v25_1.tag as int32) === /* US5_0 */ 0) ? (v25_1.fields[0] as any) : (() => {
         throw new Error("Option does not have a value.");
     })())) : v17_1, "polyglot");
 }
@@ -2624,24 +2630,24 @@ export function closure68(unitVar: void, v0_1: boolean): void {
     closure0(undefined, undefined);
     v3 = undefined;
     const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_10(TraceState_trace_state());
-    const v37_1: ((arg0: string) => void) = v0_1 ? ((v: string): void => {
+    const v44: ((arg0: string) => void) = v0_1 ? ((v: string): void => {
         closure66(undefined, v);
     }) : ((v_1: string): void => {
         closure2(undefined, v_1);
     });
-    patternInput[1].l0 = v37_1;
+    patternInput[1].l0 = v44;
 }
 
 export function method145(v0_1: string, v1_1: string): void {
-    let v14: FSharpResult$2_$union<any, any>;
+    let v15: FSharpResult$2_$union<any, any>;
     if (method10(v0_1) === false) {
         const v4: IDisposable = method93(v0_1);
     }
-    const v7: string = defaultArg(method117(v1_1), "");
-    if (method10(v7) === false) {
-        const v12: IDisposable = method93(v7);
+    const v8: string = defaultArg(method117(v1_1), "");
+    if (method10(v8) === false) {
+        const v13: IDisposable = method93(v8);
     }
-    if (method10(v1_1) && ((v14 = method111(v1_1), true))) {
+    if (method10(v1_1) && ((v15 = method111(v1_1), true))) {
         method9(true, v1_1);
     }
     if (method10(v1_1) === false) {
@@ -2674,146 +2680,146 @@ export const v1 = (): void => {
 
 export const v2: any = (v1(), v0);
 
-export const v16 = (v: string): Async<int64> => closure3(undefined, v);
+export const v17 = (v: string): Async<int64> => closure3(undefined, v);
 
 export function delete_directory_async(x: string): Async<int64> {
-    return v16(x);
-}
-
-export const v17 = (v: US6_$union): ((arg0: string) => Async<int64>) => closure10(undefined, v);
-
-export function wait_for_file_access(x: US6_$union): ((arg0: string) => Async<int64>) {
     return v17(x);
 }
 
-export const v18 = (v: string): Async<int64> => closure13(undefined, v);
+export const v18 = (v: US6_$union): ((arg0: string) => Async<int64>) => closure10(undefined, v);
 
-export function wait_for_file_access_read(x: string): Async<int64> {
+export function wait_for_file_access(x: US6_$union): ((arg0: string) => Async<int64>) {
     return v18(x);
 }
 
-export const v19 = (v: string): Async<string> => closure14(undefined, v);
+export const v19 = (v: string): Async<int64> => closure13(undefined, v);
 
-export function read_all_text_async(x: string): Async<string> {
+export function wait_for_file_access_read(x: string): Async<int64> {
     return v19(x);
 }
 
-export const v20 = (v: string): ((arg0: string) => boolean) => closure16(undefined, v);
+export const v20 = (v: string): Async<string> => closure14(undefined, v);
 
-export function file_exists_content(x: string): ((arg0: string) => boolean) {
+export function read_all_text_async(x: string): Async<string> {
     return v20(x);
 }
 
-export const v21 = (v: string): ((arg0: string) => Async<void>) => closure18(undefined, v);
+export const v21 = (v: string): ((arg0: string) => boolean) => closure16(undefined, v);
 
-export function write_all_text_async(x: string): ((arg0: string) => Async<void>) {
+export function file_exists_content(x: string): ((arg0: string) => boolean) {
     return v21(x);
 }
 
-export const v22 = (v: string): ((arg0: string) => Async<void>) => closure20(undefined, v);
+export const v22 = (v: string): ((arg0: string) => Async<void>) => closure18(undefined, v);
 
-export function write_all_text_exists(x: string): ((arg0: string) => Async<void>) {
+export function write_all_text_async(x: string): ((arg0: string) => Async<void>) {
     return v22(x);
 }
 
-export const v23 = (v: string): Async<int64> => closure22(undefined, v);
+export const v23 = (v: string): ((arg0: string) => Async<void>) => closure20(undefined, v);
 
-export function delete_file_async(x: string): Async<int64> {
+export function write_all_text_exists(x: string): ((arg0: string) => Async<void>) {
     return v23(x);
 }
 
-export const v24 = (v: string): ((arg0: string) => Async<int64>) => closure28(undefined, v);
+export const v24 = (v: string): Async<int64> => closure22(undefined, v);
 
-export function move_file_async(x: string): ((arg0: string) => Async<int64>) {
+export function delete_file_async(x: string): Async<int64> {
     return v24(x);
 }
 
-export const v25 = (v: string): Async<Option<string>> => closure31(undefined, v);
+export const v25 = (v: string): ((arg0: string) => Async<int64>) => closure28(undefined, v);
 
-export function read_all_text_retry_async(x: string): Async<Option<string>> {
+export function move_file_async(x: string): ((arg0: string) => Async<int64>) {
     return v25(x);
 }
 
-export const v26 = (): string => closure37(undefined, undefined);
+export const v26 = (v: string): Async<Option<string>> => closure31(undefined, v);
 
-export function create_temp_path(): string {
-    return v26();
+export function read_all_text_retry_async(x: string): Async<Option<string>> {
+    return v26(x);
 }
 
-export const v27 = (): [string, IDisposable] => closure39(undefined, undefined);
+export const v27 = (): string => closure37(undefined, undefined);
 
-export function create_temp_dir(): [string, IDisposable] {
+export function create_temp_path(): string {
     return v27();
 }
 
-export const v28 = (v: string): [string, IDisposable] => closure48(undefined, v);
+export const v28 = (): [string, IDisposable] => closure39(undefined, undefined);
+
+export function create_temp_dir(): [string, IDisposable] {
+    return v28();
+}
+
+export const v29 = (v: string): [string, IDisposable] => closure48(undefined, v);
 
 export function create_temp_dir$0027(x: string): [string, IDisposable] {
-    return v28(x);
+    return v29(x);
 }
 
-export const v29 = (): string => closure50(undefined, undefined);
+export const v30 = (): string => closure50(undefined, undefined);
 
 export function get_source_directory(): string {
-    return v29();
+    return v30();
 }
 
-export const v30 = (v: string): string => closure51(undefined, v);
+export const v31 = (v: string): string => closure51(undefined, v);
 
 export function normalize_path(x: string): string {
-    return v30(x);
-}
-
-export const v31 = (v: string): string => closure59(undefined, v);
-
-export function get_full_path(x: string): string {
     return v31(x);
 }
 
-export const v32 = (v: string): string => closure60(undefined, v);
+export const v32 = (v: string): string => closure59(undefined, v);
 
-export function standardize_path(x: string): string {
+export function get_full_path(x: string): string {
     return v32(x);
 }
 
-export const v33 = (v: string): string => closure61(undefined, v);
+export const v33 = (v: string): string => closure60(undefined, v);
 
-export function new_file_uri(x: string): string {
+export function standardize_path(x: string): string {
     return v33(x);
 }
 
-export const v34 = (): string => closure62(undefined, undefined);
+export const v34 = (v: string): string => closure61(undefined, v);
 
-export function get_workspace_root(): string {
-    return v34();
+export function new_file_uri(x: string): string {
+    return v34(x);
 }
 
-export const v35 = (v: string): void => {
+export const v35 = (): string => closure62(undefined, undefined);
+
+export function get_workspace_root(): string {
+    return v35();
+}
+
+export const v36 = (v: string): void => {
     closure66(undefined, v);
 };
 
 export function trace_file(x: string): void {
-    v35(x);
+    v36(x);
 }
 
-export const v36 = (v: boolean): void => {
+export const v37 = (v: boolean): void => {
     closure68(undefined, v);
 };
 
 export function init_trace_file(x: boolean): void {
-    v36(x);
+    v37(x);
 }
 
-export const v37 = (v: string): ((arg0: string) => void) => closure69(undefined, v);
+export const v38 = (v: string): ((arg0: string) => void) => closure69(undefined, v);
 
 export function link_directory(x: string): ((arg0: string) => void) {
-    return v37(x);
+    return v38(x);
 }
 
-export const v38 = (v: string): ((arg0: string) => string) => closure71(undefined, v);
+export const v39 = (v: string): ((arg0: string) => string) => closure71(undefined, v);
 
 export function op_LessDivideGreater(x: string): ((arg0: string) => string) {
-    return v38(x);
+    return v39(x);
 }
 
 

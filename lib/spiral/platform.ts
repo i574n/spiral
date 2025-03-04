@@ -43,13 +43,15 @@ export type US1_$union =
     | US1<2>
     | US1<3>
     | US1<4>
+    | US1<5>
 
 export type US1_$cases = {
     0: ["US1_0", [US0_$union]],
     1: ["US1_1", [US0_$union]],
     2: ["US1_2", [US0_$union]],
     3: ["US1_3", [US0_$union]],
-    4: ["US1_4", [US0_$union]]
+    4: ["US1_4", [US0_$union]],
+    5: ["US1_5", [US0_$union]]
 }
 
 export function US1_US1_0(f0_0: US0_$union) {
@@ -72,26 +74,30 @@ export function US1_US1_4(f4_0: US0_$union) {
     return new US1<4>(4, [f4_0]);
 }
 
+export function US1_US1_5(f5_0: US0_$union) {
+    return new US1<5>(5, [f5_0]);
+}
+
 export class US1<Tag extends keyof US1_$cases> extends Union<Tag, US1_$cases[Tag][0]> {
     constructor(readonly tag: Tag, readonly fields: US1_$cases[Tag][1]) {
         super();
     }
     cases() {
-        return ["US1_0", "US1_1", "US1_2", "US1_3", "US1_4"];
+        return ["US1_0", "US1_1", "US1_2", "US1_3", "US1_4", "US1_5"];
     }
 }
 
 export function US1_$reflection(): TypeInfo {
-    return union_type("Platform.US1", [], US1, () => [[["f0_0", US0_$reflection()]], [["f1_0", US0_$reflection()]], [["f2_0", US0_$reflection()]], [["f3_0", US0_$reflection()]], [["f4_0", US0_$reflection()]]]);
+    return union_type("Platform.US1", [], US1, () => [[["f0_0", US0_$reflection()]], [["f1_0", US0_$reflection()]], [["f2_0", US0_$reflection()]], [["f3_0", US0_$reflection()]], [["f4_0", US0_$reflection()]], [["f5_0", US0_$reflection()]]]);
 }
 
 export function closure0(unitVar: void, unitVar_1: void): boolean {
-    throw new Error(`platform.is_windows / target: ${US1_US1_3(US0_US0_0())}`);
+    throw new Error(`platform.is_windows / target: ${US1_US1_4(US0_US0_0())}`);
 }
 
 export function closure1(unitVar: void, unitVar_1: void): string {
     if ((() => {
-        throw new Error(`platform.is_windows / target: ${US1_US1_3(US0_US0_0())}`);
+        throw new Error(`platform.is_windows / target: ${US1_US1_4(US0_US0_0())}`);
     })()) {
         return ".exe";
     }

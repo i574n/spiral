@@ -7957,8 +7957,12 @@ __assert_eq / actual: 1 / expected: 1
 .py output:
 __assert_eq / actual: 1 / expected: 1
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\60cf0654bee59a601f7f5bd49ba00a6948cf7506e54fea0d15eb95854818030c\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/60cf0654bee59a601f7f5bd49ba00a6948cf7506e54fea0d15eb95854818030c/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: 1 / expected: 1
+
 
 </pre>
 </div>
@@ -8469,8 +8473,12 @@ __assert_eq / actual: 15 / expected: 15
 .py output:
 __assert_eq / actual: 15 / expected: 15
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\9739c0697bf9119e6b1a20b99a5107f1c1ecc52e982a2f80d295d10b61a86673\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/9739c0697bf9119e6b1a20b99a5107f1c1ecc52e982a2f80d295d10b61a86673/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: 15 / expected: 15
+
 
 
 
@@ -8481,7 +8489,7 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (Gleam):
-import gleam/int
+import gleam/string
 import gleam/io
 pub fn method1 () -&gt; Int {
     3
@@ -8505,15 +8513,14 @@ pub fn method0 () -&gt; Nil   {
             }
         }
     let v7 = "__assert_eq"
-    let v8 = int.to_string(v3)
-    let v9 = 15 
-    let v10 = int.to_string(v9)
-    let v11 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v10
-    io.println(v11)
-    let v19 = v6 == False
-    case v19 {
+    let v8 = string.inspect(v3)
+    let v9 = string.inspect(15)
+    let v10 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v9
+    io.println(v10)
+    let v18 = v6 == False
+    case v18 {
         True -&gt; {
-            panic as v11
+            panic as v10
         }
         False -&gt; {
         Nil
@@ -8541,14 +8548,14 @@ and method0 () : unit =
             true
         else
             method2(v4)
-    let v12 : string = "__assert_eq"
-    let v13 : string = $"{v12} / actual: %A{v3} / expected: %A{15}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v13)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v20 : bool = v6 = false
-    if v20 then
-        failwith&lt;unit&gt; v13
+    let v11 : string = "__assert_eq"
+    let v12 : string = $"{v11} / actual: %A{v3} / expected: %A{15}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v12)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v19 : bool = v6 = false
+    if v19 then
+        failwith&lt;unit&gt; v12
 method0()
 
 
@@ -8564,7 +8571,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_1c6f8404 {
+mod module_57c6984e {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::on_startup;
@@ -8584,28 +8591,28 @@ mod module_1c6f8404 {
             let v3: i32 = ((9_i32 + (Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method2(v4) };
-            let v13: string = sprintf!(
+            let v12: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v3,
                 15_i32
             );
-            let v18: () = {
-                Spiral::closure0(v13.clone(), ());
+            let v17: () = {
+                Spiral::closure0(v12.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v13,);
+                panic!("{}", v12,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_1c6f8404::*;
+pub use module_57c6984e::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
@@ -8627,20 +8634,17 @@ export function method0(): void {
     const v3: int32 = (((9 + method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method2(v4);
-    const v13: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
-    let v18: any;
-    closure0(v13, undefined);
-    v18 = undefined;
+    const v12: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
+    let v17: any;
+    closure0(v12, undefined);
+    v17 = undefined;
     if (v6 === false) {
-        throw new Error(v13);
+        throw new Error(v12);
     }
 }
 
 method0();
 
-
-
-// spiral.process_typescript
 
 .py:
 from fable_modules.fable_library.string_ import (to_text, interpolate)
@@ -8661,20 +8665,17 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = (((9 + method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method2(v4)
-    v13: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
-    v18: None
-    closure0(v13, None)
-    v18 = None
+    v12: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
+    v17: None
+    closure0(v12, None)
+    v17 = None
     if v6 == False:
-        raise Exception(v13)
+        raise Exception(v12)
 
 
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Cuda):
 kernel = r"""
@@ -8751,17 +8752,17 @@ def method0() -&gt; None:
     else:
         v6 = method2(v4)
     del v4
-    v14 = "__assert_eq"
-    v15 = f"{v14} / actual: {v3} / expected: {15}"
-    del v3, v14
-    print(v15)
-    v21 = v6 == False
+    v13 = "__assert_eq"
+    v14 = f"{v13} / actual: {v3} / expected: {15}"
+    del v3, v13
+    print(v14)
+    v20 = v6 == False
     del v6
-    if v21:
-        del v21
-        raise Exception(v15)
+    if v20:
+        del v20
+        raise Exception(v14)
     else:
-        del v15, v21
+        del v14, v20
         return 
 def main_body():
     return method0()
@@ -8824,8 +8825,12 @@ __assert_eq / actual: 15 / expected: 15
 .py output:
 __assert_eq / actual: 15 / expected: 15
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\6e144c7e2b9fe912aa0c67ed98af9fda6323d88ddd814a2d657e8dc8bb00e8c2\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/6e144c7e2b9fe912aa0c67ed98af9fda6323d88ddd814a2d657e8dc8bb00e8c2/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: 15 / expected: 15
+
 
 
 
@@ -8836,7 +8841,7 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (Gleam):
-import gleam/int
+import gleam/string
 import gleam/io
 pub fn method1 () -&gt; Int {
     3
@@ -8865,15 +8870,14 @@ pub fn method0 () -&gt; Nil   {
             }
         }
     let v8 = "__assert_eq"
-    let v9 = int.to_string(v4)
-    let v10 = 15 
-    let v11 = int.to_string(v10)
-    let v12 = v8 &lt;&gt; " / actual: " &lt;&gt; v9 &lt;&gt; " / expected: " &lt;&gt; v11
-    io.println(v12)
-    let v20 = v7 == False
-    case v20 {
+    let v9 = string.inspect(v4)
+    let v10 = string.inspect(15)
+    let v11 = v8 &lt;&gt; " / actual: " &lt;&gt; v9 &lt;&gt; " / expected: " &lt;&gt; v10
+    io.println(v11)
+    let v19 = v7 == False
+    case v19 {
         True -&gt; {
-            panic as v12
+            panic as v11
         }
         False -&gt; {
         Nil
@@ -8905,14 +8909,14 @@ and method0 () : unit =
             true
         else
             method3(v5)
-    let v13 : string = "__assert_eq"
-    let v14 : string = $"{v13} / actual: %A{v4} / expected: %A{15}"
-    let v17 : unit = ()
-    let v18 : (unit -&gt; unit) = closure0(v14)
-    let v19 : unit = (fun () -&gt; v18 (); v17) ()
-    let v21 : bool = v7 = false
-    if v21 then
-        failwith&lt;unit&gt; v14
+    let v12 : string = "__assert_eq"
+    let v13 : string = $"{v12} / actual: %A{v4} / expected: %A{15}"
+    let v16 : unit = ()
+    let v17 : (unit -&gt; unit) = closure0(v13)
+    let v18 : unit = (fun () -&gt; v17 (); v16) ()
+    let v20 : bool = v7 = false
+    if v20 then
+        failwith&lt;unit&gt; v13
 method0()
 
 
@@ -8928,7 +8932,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_cbb8c373 {
+mod module_ac6a73d6 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::on_startup;
@@ -8951,28 +8955,28 @@ mod module_cbb8c373 {
             let v4: i32 = ((Spiral::method2(Spiral::method1(), 9_i32)) + 2_i32) + 1_i32;
             let v5: bool = (v4) == 15_i32;
             let v7: bool = if v5 { true } else { Spiral::method3(v5) };
-            let v14: string = sprintf!(
+            let v13: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v4,
                 15_i32
             );
-            let v19: () = {
-                Spiral::closure0(v14.clone(), ());
+            let v18: () = {
+                Spiral::closure0(v13.clone(), ());
                 ()
             };
             if (v7) == false {
-                panic!("{}", v14,);
+                panic!("{}", v13,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_cbb8c373::*;
+pub use module_ac6a73d6::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
@@ -8998,20 +9002,17 @@ export function method0(): void {
     const v4: int32 = ((method2(method1(), 9) + 2) + 1) | 0;
     const v5: boolean = v4 === 15;
     const v7: boolean = v5 ? true : method3(v5);
-    const v14: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]));
-    let v19: any;
-    closure0(v14, undefined);
-    v19 = undefined;
+    const v13: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]));
+    let v18: any;
+    closure0(v13, undefined);
+    v18 = undefined;
     if (v7 === false) {
-        throw new Error(v14);
+        throw new Error(v13);
     }
 }
 
 method0();
 
-
-
-// spiral.process_typescript
 
 .py:
 from fable_modules.fable_library.string_ import (to_text, interpolate)
@@ -9036,20 +9037,17 @@ def method0(__unit: None=None) -&gt; None:
     v4: int = ((method2(method1(), 9) + 2) + 1) or 0
     v5: bool = v4 == 15
     v7: bool = True if v5 else method3(v5)
-    v14: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]))
-    v19: None
-    closure0(v14, None)
-    v19 = None
+    v13: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]))
+    v18: None
+    closure0(v13, None)
+    v18 = None
     if v7 == False:
-        raise Exception(v14)
+        raise Exception(v13)
 
 
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Cuda):
 kernel = r"""
@@ -9131,17 +9129,17 @@ def method0() -&gt; None:
     else:
         v7 = method3(v5)
     del v5
-    v15 = "__assert_eq"
-    v16 = f"{v15} / actual: {v4} / expected: {15}"
-    del v4, v15
-    print(v16)
-    v22 = v7 == False
+    v14 = "__assert_eq"
+    v15 = f"{v14} / actual: {v4} / expected: {15}"
+    del v4, v14
+    print(v15)
+    v21 = v7 == False
     del v7
-    if v22:
-        del v22
-        raise Exception(v16)
+    if v21:
+        del v21
+        raise Exception(v15)
     else:
-        del v16, v22
+        del v15, v21
         return 
 def main_body():
     return method0()
@@ -9234,8 +9232,12 @@ __assert_eq / actual: 15 / expected: 15
 .py output:
 __assert_eq / actual: 15 / expected: 15
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\c2f2c8101e7eaceb92634ddbcbaed9dae72b80abe63498c91b1cf99de5a61f74\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/c2f2c8101e7eaceb92634ddbcbaed9dae72b80abe63498c91b1cf99de5a61f74/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: 15 / expected: 15
+
 
 
 
@@ -9246,7 +9248,7 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (Gleam):
-import gleam/int
+import gleam/string
 import gleam/io
 pub fn method1 () -&gt; Int {
     3
@@ -9274,15 +9276,14 @@ pub fn method0 () -&gt; Nil   {
             }
         }
     let v7 = "__assert_eq"
-    let v8 = int.to_string(v3)
-    let v9 = 15 
-    let v10 = int.to_string(v9)
-    let v11 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v10
-    io.println(v11)
-    let v19 = v6 == False
-    case v19 {
+    let v8 = string.inspect(v3)
+    let v9 = string.inspect(15)
+    let v10 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v9
+    io.println(v10)
+    let v18 = v6 == False
+    case v18 {
         True -&gt; {
-            panic as v11
+            panic as v10
         }
         False -&gt; {
         Nil
@@ -9313,14 +9314,14 @@ and method0 () : unit =
             true
         else
             method3(v4)
-    let v12 : string = "__assert_eq"
-    let v13 : string = $"{v12} / actual: %A{v3} / expected: %A{15}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v13)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v20 : bool = v6 = false
-    if v20 then
-        failwith&lt;unit&gt; v13
+    let v11 : string = "__assert_eq"
+    let v12 : string = $"{v11} / actual: %A{v3} / expected: %A{15}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v12)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v19 : bool = v6 = false
+    if v19 then
+        failwith&lt;unit&gt; v12
 method0()
 
 
@@ -9336,7 +9337,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_2b92c048 {
+mod module_70a05241 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::on_startup;
@@ -9359,28 +9360,28 @@ mod module_2b92c048 {
             let v3: i32 = ((Spiral::method2(Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method3(v4) };
-            let v13: string = sprintf!(
+            let v12: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v3,
                 15_i32
             );
-            let v18: () = {
-                Spiral::closure0(v13.clone(), ());
+            let v17: () = {
+                Spiral::closure0(v12.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v13,);
+                panic!("{}", v12,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_2b92c048::*;
+pub use module_70a05241::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
@@ -9406,20 +9407,17 @@ export function method0(): void {
     const v3: int32 = ((method2(method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method3(v4);
-    const v13: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
-    let v18: any;
-    closure0(v13, undefined);
-    v18 = undefined;
+    const v12: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
+    let v17: any;
+    closure0(v12, undefined);
+    v17 = undefined;
     if (v6 === false) {
-        throw new Error(v13);
+        throw new Error(v12);
     }
 }
 
 method0();
 
-
-
-// spiral.process_typescript
 
 .py:
 from fable_modules.fable_library.string_ import (to_text, interpolate)
@@ -9444,20 +9442,17 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = ((method2(method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method3(v4)
-    v13: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
-    v18: None
-    closure0(v13, None)
-    v18 = None
+    v12: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
+    v17: None
+    closure0(v12, None)
+    v17 = None
     if v6 == False:
-        raise Exception(v13)
+        raise Exception(v12)
 
 
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Cuda):
 kernel = r"""
@@ -9538,17 +9533,17 @@ def method0() -&gt; None:
     else:
         v6 = method3(v4)
     del v4
-    v14 = "__assert_eq"
-    v15 = f"{v14} / actual: {v3} / expected: {15}"
-    del v3, v14
-    print(v15)
-    v21 = v6 == False
+    v13 = "__assert_eq"
+    v14 = f"{v13} / actual: {v3} / expected: {15}"
+    del v3, v13
+    print(v14)
+    v20 = v6 == False
     del v6
-    if v21:
-        del v21
-        raise Exception(v15)
+    if v20:
+        del v20
+        raise Exception(v14)
     else:
-        del v15, v21
+        del v14, v20
         return 
 def main_body():
     return method0()
@@ -9646,8 +9641,12 @@ __assert_eq / actual: -3 / expected: -3
 .py output:
 __assert_eq / actual: -3 / expected: -3
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d18f54133a13fcc40e63faf7b7a5be09b6fcb80b2d8406cc355d962ff389ad27\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/d18f54133a13fcc40e63faf7b7a5be09b6fcb80b2d8406cc355d962ff389ad27/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9730,8 +9729,12 @@ __assert_eq / actual: -3 / expected: -3
 .py output:
 __assert_eq / actual: -3 / expected: -3
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\aa04bd57fbeca7f43fd86c2f1d31aba5e44db2a0c1624147f985b09da84d81e3\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/aa04bd57fbeca7f43fd86c2f1d31aba5e44db2a0c1624147f985b09da84d81e3/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9814,8 +9817,12 @@ __assert_eq / actual: -3 / expected: -3
 .py output:
 __assert_eq / actual: -3 / expected: -3
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\63b495b15fd6e3c3d94a52991187ba9857b6ec85c14fd3b12321ee89012f97fc\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/63b495b15fd6e3c3d94a52991187ba9857b6ec85c14fd3b12321ee89012f97fc/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9898,8 +9905,12 @@ __assert_eq / actual: -3 / expected: -3
 .py output:
 __assert_eq / actual: -3 / expected: -3
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\16d823e3d58ae85a6666ba82f9f8af4fcdd7fa9115f6b0909d7d2b4784ac2941\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/16d823e3d58ae85a6666ba82f9f8af4fcdd7fa9115f6b0909d7d2b4784ac2941/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9997,8 +10008,12 @@ __assert_eq / actual: true / expected: true
 .py output:
 __assert_eq / actual: true / expected: true
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\cf7cc2eb49cc37f97567ad25b8d8d8e9468f561292428bedd4b4e95390e6916b\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/cf7cc2eb49cc37f97567ad25b8d8d8e9468f561292428bedd4b4e95390e6916b/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: True / expected: True
+
 
 </pre>
 </div>
@@ -10085,8 +10100,12 @@ __assert_eq / actual: true / expected: true
 .py output:
 __assert_eq / actual: true / expected: true
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\ae9622e2db8e75ee7d3148af62782049b59d0311a5304059384bee882f864acb\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/ae9622e2db8e75ee7d3148af62782049b59d0311a5304059384bee882f864acb/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: True / expected: True
+
 
 </pre>
 </div>
@@ -10172,8 +10191,12 @@ __assert_eq / actual: true / expected: true
 .py output:
 __assert_eq / actual: true / expected: true
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\a3c68476eab528c66e2490bd40e5e2543fcfb370e97a0403edeeccd7d96b1133\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/a3c68476eab528c66e2490bd40e5e2543fcfb370e97a0403edeeccd7d96b1133/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: True / expected: True
+
 
 </pre>
 </div>
@@ -10337,8 +10360,12 @@ __assert_eq / actual: 1,2 / expected: 1,2
 .py output:
 __assert_eq / actual: (1, 2) / expected: (1, 2)
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\de25d0dca00689027a1e2ab5890bc3cf5474b395820d270deb0810b6cb3ecf06\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/de25d0dca00689027a1e2ab5890bc3cf5474b395820d270deb0810b6cb3ecf06/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: #(1, 2) / expected: #(1, 2)
+
 
 </pre>
 </div>
@@ -10465,8 +10492,12 @@ __assert_eq' / actual: a,1,b / expected: a,1,b
 .py output:
 __assert_eq' / actual: ('a', (1, 'b')) / expected: ('a', (1, 'b'))
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\a813095faceb7aa07142334a872a6f24b1c45eab5df32cdd4dd10b8ae5e53130\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/a813095faceb7aa07142334a872a6f24b1c45eab5df32cdd4dd10b8ae5e53130/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq' / actual: #("a", #(1, "b")) / expected: #("a", #(1, "b"))
+
 
 </pre>
 </div>
@@ -10572,8 +10603,12 @@ __assert_eq / actual: 1 / expected: 1
 .py output:
 __assert_eq / actual: 1 / expected: 1
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\4bf08aa40d8c4f12d89db6ce910e7726c0d6235a92e4e64fe54be30f764c7aa8\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/4bf08aa40d8c4f12d89db6ce910e7726c0d6235a92e4e64fe54be30f764c7aa8/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: 1 / expected: 1
+
 
 </pre>
 </div>
@@ -10631,8 +10666,12 @@ __assert_eq / actual: 2,1 / expected: 2,1
 .py output:
 __assert_eq / actual: (2, 1) / expected: (2, 1)
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\ed15d0c18e437886904953e91bf8ef4bcc2b6414d2a10ed34b2bccf9565f022d\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/ed15d0c18e437886904953e91bf8ef4bcc2b6414d2a10ed34b2bccf9565f022d/build/dev/erlang/main/ebin/main.beam"}
 __assert_eq / actual: #(2, 1) / expected: #(2, 1)
+
 
 </pre>
 </div>

@@ -10,7 +10,7 @@ from fable_modules.fable_library.util import int64_to_string
 from collections.abc import Callable
 from typing import Any
 
-def _expr108() -> TypeInfo:
+def _expr102() -> TypeInfo:
     return union_type("Date_time.US0", [], US0, lambda: [[("f0_0", class_type("Date_time.chrono_DateTime`1", [class_type("Date_time.chrono_Utc")]))], []])
 
 
@@ -26,9 +26,9 @@ class US0(Union):
         return ["US0_0", "US0_1"]
 
 
-US0_reflection = _expr108
+US0_reflection = _expr102
 
-def _expr109() -> TypeInfo:
+def _expr103() -> TypeInfo:
     return union_type("Date_time.US1", [], US1, lambda: [[("f0_0", string_type)], []])
 
 
@@ -44,9 +44,9 @@ class US1(Union):
         return ["US1_0", "US1_1"]
 
 
-US1_reflection = _expr109
+US1_reflection = _expr103
 
-def _expr110() -> TypeInfo:
+def _expr104() -> TypeInfo:
     return union_type("Date_time.US2", [], US2, lambda: [[], [], []])
 
 
@@ -62,10 +62,10 @@ class US2(Union):
         return ["US2_0", "US2_1", "US2_2"]
 
 
-US2_reflection = _expr110
+US2_reflection = _expr104
 
-def _expr111() -> TypeInfo:
-    return union_type("Date_time.US3", [], US3, lambda: [[("f0_0", US2_reflection())], [("f1_0", US2_reflection())], [("f2_0", US2_reflection())], [("f3_0", US2_reflection())], [("f4_0", US2_reflection())]])
+def _expr106() -> TypeInfo:
+    return union_type("Date_time.US3", [], US3, lambda: [[("f0_0", US2_reflection())], [("f1_0", US2_reflection())], [("f2_0", US2_reflection())], [("f3_0", US2_reflection())], [("f4_0", US2_reflection())], [("f5_0", US2_reflection())]])
 
 
 class US3(Union):
@@ -77,20 +77,20 @@ class US3(Union):
 
     @staticmethod
     def cases() -> list[str]:
-        return ["US3_0", "US3_1", "US3_2", "US3_3", "US3_4"]
+        return ["US3_0", "US3_1", "US3_2", "US3_3", "US3_4", "US3_5"]
 
 
-US3_reflection = _expr111
+US3_reflection = _expr106
 
 def closure2(unit_var: None, v0_1: chrono_date_time_1[chrono_utc]) -> US0:
     return US0(0, v0_1)
 
 
 def method1(__unit: None=None) -> Callable[[chrono_date_time_1[chrono_utc]], US0]:
-    def _arrow112(v: chrono_date_time_1[chrono_utc]) -> US0:
+    def _arrow109(v: chrono_date_time_1[chrono_utc]) -> US0:
         return closure2(None, v)
 
-    return _arrow112
+    return _arrow109
 
 
 def method2(__unit: None=None) -> str:
@@ -106,17 +106,17 @@ def method4(__unit: None=None) -> str:
 
 
 def method0(v0_1: str, v1_1: Any) -> str:
-    v1453: str = method3()
-    v1458: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v1453 == "") else v1453)
-    v1639: Any
-    raise Exception(("date_time.get_utc_offset / target: " + str(US3(4, US2(0)))) + "")
-    v1652: uint8 = uint8(1) if (hours(v1639) > 0) else uint8(0)
-    v1653: str = method4()
-    v1803: str = ((("" + str(v1652)) + "") + to_string_1(v1639, "c", {})) + ""
-    v1805: str = str(v0_1)
-    v1810: int = (len(v1458) + len(v1803)) or 0
-    v1829: int = (len(v1805) - 1) or 0
-    return parse(concat(v1458, v1803, *v1805[v1810:v1829 + 1]))
+    v2537: str = method3()
+    v2543: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v2537 == "") else v2537)
+    v2778: Any
+    raise Exception(("date_time.get_utc_offset / target: " + str(US3(5, US2(0)))) + "")
+    v2793: uint8 = uint8(1) if (hours(v2778) > 0) else uint8(0)
+    v2794: str = method4()
+    v3018: str = ((("" + str(v2793)) + "") + to_string_1(v2778, "c", {})) + ""
+    v3021: str = str(v0_1)
+    v3026: int = (len(v2543) + len(v3018)) or 0
+    v3058: int = (len(v3021) - 1) or 0
+    return parse(concat(v2543, v3018, *v3021[v3026:v3058 + 1]))
 
 
 def closure1(v0_1: str, v1_1: Any) -> str:
@@ -135,8 +135,8 @@ def closure4(unit_var: None, v0_1: str) -> str:
 
 
 def closure3(unit_var: None, v0_1: str) -> Any:
-    v2_1: str = str(v0_1)
-    return parse_exact(closure4(None, v2_1[:24 + 1]), "yyyyMMddHHmmssfffffff", None)
+    v3_1: str = str(v0_1)
+    return parse_exact(closure4(None, v3_1[:24 + 1]), "yyyyMMddHHmmssfffffff", None)
 
 
 def closure7(v0_1: int, v1_1: str, v2_1: int, v3_1: str) -> str:
@@ -156,10 +156,10 @@ def method5(v0_1: int, v1_1: str, v2_1: int) -> Callable[[str], str]:
 
 
 def closure6(v0_1: str, v1_1: int64) -> str:
-    v3_1: str = str(v0_1)
-    v7_1: str = int64_to_string(v1_1)
-    v20: str = method5(18 - len(v7_1), "0", 0)("") + v7_1
-    return parse(((((((((("" + v20[0:7 + 1]) + "-") + v20[8:11 + 1]) + "-") + v20[12:15 + 1]) + "-") + v20[16:17 + 1]) + "") + v3_1[21:len(v3_1)]) + "")
+    v4_1: str = str(v0_1)
+    v9: str = int64_to_string(v1_1)
+    v23: str = method5(18 - len(v9), "0", 0)("") + v9
+    return parse(((((((((("" + v23[0:7 + 1]) + "-") + v23[8:11 + 1]) + "-") + v23[12:15 + 1]) + "-") + v23[16:17 + 1]) + "") + v4_1[21:len(v4_1)]) + "")
 
 
 def closure5(unit_var: None, v0_1: str) -> Callable[[int64], str]:
@@ -170,8 +170,8 @@ def closure5(unit_var: None, v0_1: str) -> Callable[[int64], str]:
 
 
 def closure8(unit_var: None, v0_1: str) -> int64:
-    v2_1: str = str(v0_1)
-    return parse_1(concat(v2_1[0:7 + 1], v2_1[9:12 + 1], v2_1[14:17 + 1], *v2_1[19:20 + 1]), 511, False, 64)
+    v3_1: str = str(v0_1)
+    return parse_1(concat(v3_1[0:7 + 1], v3_1[9:12 + 1], v3_1[14:17 + 1], *v3_1[19:20 + 1]), 511, False, 64)
 
 
 def closure9(unit_var: None, v0_1: Any) -> str:
@@ -179,10 +179,10 @@ def closure9(unit_var: None, v0_1: Any) -> str:
 
 
 def closure10(unit_var: None, v0_1: int64) -> str:
-    v6_1: str = str(new_guid())
-    v10: str = int64_to_string(v0_1)
-    v23: str = method5(18 - len(v10), "0", 0)("") + v10
-    return parse(((((((((("" + v23[0:7 + 1]) + "-") + v23[8:11 + 1]) + "-") + v23[12:15 + 1]) + "-") + v23[16:17 + 1]) + "") + v6_1[21:len(v6_1)]) + "")
+    v8: str = str(new_guid())
+    v13: str = int64_to_string(v0_1)
+    v27: str = method5(18 - len(v13), "0", 0)("") + v13
+    return parse(((((((((("" + v27[0:7 + 1]) + "-") + v27[8:11 + 1]) + "-") + v27[12:15 + 1]) + "-") + v27[16:17 + 1]) + "") + v8[21:len(v8)]) + "")
 
 
 def closure12(v0_1: str, v1_1: Any) -> str:
