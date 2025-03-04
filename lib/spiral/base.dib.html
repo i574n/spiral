@@ -7716,6 +7716,7 @@ a.anchor-link {
                 <span class="p">(</span><span class="n">forall</span> <span class="n">v</span><span class="s1">'. =&gt; (x s) ())</span>
                 <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span>
         <span class="err">!!!!</span><span class="n">BackendSwitch</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">"Gleam"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Gleam"</span><span class="p">),</span>
             <span class="p">(</span><span class="s2">"Fsharp"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Fsharp"</span><span class="p">),</span>
             <span class="p">(</span><span class="s2">"Python"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Python"</span><span class="p">),</span>
             <span class="p">(</span><span class="s2">"Cuda"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Cuda"</span><span class="p">)</span>
@@ -7773,6 +7774,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">union</span> <span class="n">target</span> <span class="o">=</span>
+    <span class="o">|</span> <span class="n">Gleam</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">Cuda</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">Rust</span> <span class="p">:</span> <span class="n">target_runtime</span>
@@ -7804,6 +7806,9 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">run_target_args</span><span class="s1">' forall t u. (args : u) (fn : target -&gt; (u -&gt; t)) : t =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Gleam</span> <span class="n">Native</span>
+            <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">is_unit</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
                 <span class="n">real</span>
@@ -7913,6 +7918,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -7920,6 +7926,7 @@ a.anchor-link {
 <span class="o">///</span><span class="err">!</span> <span class="n">python</span>
 
 <span class="n">run_target</span> <span class="n">function</span>
+    <span class="o">|</span> <span class="n">Gleam</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'1'</span>
     <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'1uy'</span>
     <span class="o">|</span> <span class="n">Cuda</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'1'</span>
     <span class="o">|</span> <span class="n">Rust</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'1uy'</span>
@@ -7950,6 +7957,15 @@ __assert_eq / actual: 1 / expected: 1
 
 .py output:
 __assert_eq / actual: 1 / expected: 1
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/60cf0654bee59a601f7f5bd49ba00a6948cf7506e54fea0d15eb95854818030c/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/60cf0654bee59a601f7f5bd49ba00a6948cf7506e54fea0d15eb95854818030c/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/60cf0654bee59a601f7f5bd49ba00a6948cf7506e54fea0d15eb95854818030c/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/60cf0654bee59a601f7f5bd49ba00a6948cf7506e54fea0d15eb95854818030c/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: 1 / expected: 1
+
 
 </pre>
 </div>
@@ -8209,21 +8225,23 @@ __assert_eq / actual: 1uy / expected: 1uy
 
 <span class="n">inl</span> <span class="n">memoize</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">join</span> <span class="n">fn</span>
+    <span class="n">inl</span> <span class="n">body</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mut</span> <span class="kc">None</span>
+        <span class="n">inl</span> <span class="n">computed</span> <span class="o">=</span> <span class="n">mut</span> <span class="n">false</span>
+        <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">if</span> <span class="o">*</span><span class="n">computed</span>
+            <span class="n">then</span> <span class="o">*</span><span class="n">result</span>
+            <span class="k">else</span>
+                <span class="n">result</span> <span class="o">&lt;-</span> <span class="n">fn</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">Some</span>
+                <span class="n">computed</span> <span class="o">&lt;-</span> <span class="n">true</span>
+                <span class="o">*</span><span class="n">result</span>
+            <span class="o">|&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">body</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">result</span> <span class="p">:</span> <span class="n">lazy</span> <span class="n">t</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'lazy !fn ()'</span>
             <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!result.Value'</span> <span class="p">:</span> <span class="n">t</span>
-        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mut</span> <span class="kc">None</span>
-            <span class="n">inl</span> <span class="n">computed</span> <span class="o">=</span> <span class="n">mut</span> <span class="n">false</span>
-            <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                <span class="k">if</span> <span class="o">*</span><span class="n">computed</span>
-                <span class="n">then</span> <span class="o">*</span><span class="n">result</span>
-                <span class="k">else</span>
-                    <span class="n">result</span> <span class="o">&lt;-</span> <span class="n">fn</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">Some</span>
-                    <span class="n">computed</span> <span class="o">&lt;-</span> <span class="n">true</span>
-                    <span class="o">*</span><span class="n">result</span>
-                <span class="o">|&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">body</span> <span class="p">()</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8239,6 +8257,7 @@ __assert_eq / actual: 1uy / expected: 1uy
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">////</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -8422,6 +8441,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -8457,6 +8477,15 @@ __assert_eq / actual: 15 / expected: 15
 __assert_eq / actual: 15 / expected: 15
 
 
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9739c0697bf9119e6b1a20b99a5107f1c1ecc52e982a2f80d295d10b61a86673/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9739c0697bf9119e6b1a20b99a5107f1c1ecc52e982a2f80d295d10b61a86673/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9739c0697bf9119e6b1a20b99a5107f1c1ecc52e982a2f80d295d10b61a86673/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9739c0697bf9119e6b1a20b99a5107f1c1ecc52e982a2f80d295d10b61a86673/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: 15 / expected: 15
+
+
+
 
 </pre>
 </div>
@@ -8464,7 +8493,48 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.fsx:
+<pre>.gleam (Gleam):
+import gleam/string
+import gleam/io
+pub fn method1 () -&gt; Int {
+    3
+}
+pub fn method2 (v0 :    Bool) -&gt; Bool {
+    v0
+}
+pub fn method0 () -&gt; Nil   {
+    let v0 = method1()
+    let v1 = 9 + v0
+    let v2 = v1 + 2
+    let v3 = v2 + 1
+    let v4 = v3 == 15
+    let v6 =
+        case v4 {
+            True -&gt; {
+                True
+            }
+            False -&gt; {
+                method2(v4)
+            }
+        }
+    let v7 = "__assert_eq"
+    let v8 = string.inspect(v3)
+    let v9 = string.inspect(15)
+    let v10 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v9
+    io.println(v10)
+    let v18 = v6 == False
+    case v18 {
+        True -&gt; {
+            panic as v10
+        }
+        False -&gt; {
+        Nil
+        }
+    }
+}
+pub fn main () { method0()
+ }
+.fsx:
 let rec method1 () : int32 =
     3
 and method2 (v0 : bool) : bool =
@@ -8483,14 +8553,14 @@ and method0 () : unit =
             true
         else
             method2(v4)
-    let v7 : string = "__assert_eq"
-    let v8 : string = $"{v7} / actual: %A{v3} / expected: %A{15}"
-    let v11 : unit = ()
-    let v12 : (unit -&gt; unit) = closure0(v8)
-    let v13 : unit = (fun () -&gt; v12 (); v11) ()
-    let v15 : bool = v6 = false
-    if v15 then
-        failwith&lt;unit&gt; v8
+    let v11 : string = "__assert_eq"
+    let v12 : string = $"{v11} / actual: %A{v3} / expected: %A{15}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v12)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v19 : bool = v6 = false
+    if v19 then
+        failwith&lt;unit&gt; v12
 method0()
 
 
@@ -8526,18 +8596,18 @@ mod module_6ff740fe {
             let v3: i32 = ((9_i32 + (Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method2(v4) };
-            let v8: string = sprintf!(
+            let v12: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v3,
                 15_i32
             );
-            let v13: () = {
-                Spiral::closure0(v8.clone(), ());
+            let v17: () = {
+                Spiral::closure0(v12.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v8,);
+                panic!("{}", v12,);
             }
         }
         // on_startup!(Spiral::method0());
@@ -8569,12 +8639,12 @@ export function method0(): void {
     const v3: int32 = (((9 + method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method2(v4);
-    const v8: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
-    let v13: any;
-    closure0(v8, undefined);
-    v13 = undefined;
+    const v12: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
+    let v17: any;
+    closure0(v12, undefined);
+    v17 = undefined;
     if (v6 === false) {
-        throw new Error(v8);
+        throw new Error(v12);
     }
 }
 
@@ -8600,12 +8670,12 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = (((9 + method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method2(v4)
-    v8: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
-    v13: None
-    closure0(v8, None)
-    v13 = None
+    v12: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
+    v17: None
+    closure0(v12, None)
+    v17 = None
     if v6 == False:
-        raise Exception(v8)
+        raise Exception(v12)
 
 
 
@@ -8687,17 +8757,17 @@ def method0() -&gt; None:
     else:
         v6 = method2(v4)
     del v4
-    v9 = "__assert_eq"
-    v10 = f"{v9} / actual: {v3} / expected: {15}"
-    del v3, v9
-    print(v10)
-    v16 = v6 == False
+    v13 = "__assert_eq"
+    v14 = f"{v13} / actual: {v3} / expected: {15}"
+    del v3, v13
+    print(v14)
+    v20 = v6 == False
     del v6
-    if v16:
-        del v16
-        raise Exception(v10)
+    if v20:
+        del v20
+        raise Exception(v14)
     else:
-        del v10, v16
+        del v14, v20
         return 
 def main_body():
     return method0()
@@ -8725,6 +8795,7 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -8760,6 +8831,15 @@ __assert_eq / actual: 15 / expected: 15
 __assert_eq / actual: 15 / expected: 15
 
 
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6e144c7e2b9fe912aa0c67ed98af9fda6323d88ddd814a2d657e8dc8bb00e8c2/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6e144c7e2b9fe912aa0c67ed98af9fda6323d88ddd814a2d657e8dc8bb00e8c2/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6e144c7e2b9fe912aa0c67ed98af9fda6323d88ddd814a2d657e8dc8bb00e8c2/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6e144c7e2b9fe912aa0c67ed98af9fda6323d88ddd814a2d657e8dc8bb00e8c2/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: 15 / expected: 15
+
+
+
 
 </pre>
 </div>
@@ -8767,7 +8847,53 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.fsx:
+<pre>.gleam (Gleam):
+import gleam/string
+import gleam/io
+pub fn method1 () -&gt; Int {
+    3
+}
+pub fn method2 (v0 :    Int, v1 :    Int) -&gt; Int {
+    let v2 = v1 + v0
+    v2
+}
+pub fn method3 (v0 :    Bool) -&gt; Bool {
+    v0
+}
+pub fn method0 () -&gt; Nil   {
+    let v0 = method1()
+    let v1 = 9
+    let v2 = method2(v0, v1)
+    let v3 = v2 + 2
+    let v4 = v3 + 1
+    let v5 = v4 == 15
+    let v7 =
+        case v5 {
+            True -&gt; {
+                True
+            }
+            False -&gt; {
+                method3(v5)
+            }
+        }
+    let v8 = "__assert_eq"
+    let v9 = string.inspect(v4)
+    let v10 = string.inspect(15)
+    let v11 = v8 &lt;&gt; " / actual: " &lt;&gt; v9 &lt;&gt; " / expected: " &lt;&gt; v10
+    io.println(v11)
+    let v19 = v7 == False
+    case v19 {
+        True -&gt; {
+            panic as v11
+        }
+        False -&gt; {
+        Nil
+        }
+    }
+}
+pub fn main () { method0()
+ }
+.fsx:
 let rec method1 () : int32 =
     3
 and method2 (v0 : int32, v1 : int32) : int32 =
@@ -8790,14 +8916,14 @@ and method0 () : unit =
             true
         else
             method3(v5)
-    let v8 : string = "__assert_eq"
-    let v9 : string = $"{v8} / actual: %A{v4} / expected: %A{15}"
-    let v12 : unit = ()
-    let v13 : (unit -&gt; unit) = closure0(v9)
-    let v14 : unit = (fun () -&gt; v13 (); v12) ()
-    let v16 : bool = v7 = false
-    if v16 then
-        failwith&lt;unit&gt; v9
+    let v12 : string = "__assert_eq"
+    let v13 : string = $"{v12} / actual: %A{v4} / expected: %A{15}"
+    let v16 : unit = ()
+    let v17 : (unit -&gt; unit) = closure0(v13)
+    let v18 : unit = (fun () -&gt; v17 (); v16) ()
+    let v20 : bool = v7 = false
+    if v20 then
+        failwith&lt;unit&gt; v13
 method0()
 
 
@@ -8836,18 +8962,18 @@ mod module_6ff740fe {
             let v4: i32 = ((Spiral::method2(Spiral::method1(), 9_i32)) + 2_i32) + 1_i32;
             let v5: bool = (v4) == 15_i32;
             let v7: bool = if v5 { true } else { Spiral::method3(v5) };
-            let v9: string = sprintf!(
+            let v13: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v4,
                 15_i32
             );
-            let v14: () = {
-                Spiral::closure0(v9.clone(), ());
+            let v18: () = {
+                Spiral::closure0(v13.clone(), ());
                 ()
             };
             if (v7) == false {
-                panic!("{}", v9,);
+                panic!("{}", v13,);
             }
         }
         // on_startup!(Spiral::method0());
@@ -8883,12 +9009,12 @@ export function method0(): void {
     const v4: int32 = ((method2(method1(), 9) + 2) + 1) | 0;
     const v5: boolean = v4 === 15;
     const v7: boolean = v5 ? true : method3(v5);
-    const v9: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]));
-    let v14: any;
-    closure0(v9, undefined);
-    v14 = undefined;
+    const v13: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]));
+    let v18: any;
+    closure0(v13, undefined);
+    v18 = undefined;
     if (v7 === false) {
-        throw new Error(v9);
+        throw new Error(v13);
     }
 }
 
@@ -8918,12 +9044,12 @@ def method0(__unit: None=None) -&gt; None:
     v4: int = ((method2(method1(), 9) + 2) + 1) or 0
     v5: bool = v4 == 15
     v7: bool = True if v5 else method3(v5)
-    v9: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]))
-    v14: None
-    closure0(v9, None)
-    v14 = None
+    v13: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]))
+    v18: None
+    closure0(v13, None)
+    v18 = None
     if v7 == False:
-        raise Exception(v9)
+        raise Exception(v13)
 
 
 
@@ -9010,17 +9136,17 @@ def method0() -&gt; None:
     else:
         v7 = method3(v5)
     del v5
-    v10 = "__assert_eq"
-    v11 = f"{v10} / actual: {v4} / expected: {15}"
-    del v4, v10
-    print(v11)
-    v17 = v7 == False
+    v14 = "__assert_eq"
+    v15 = f"{v14} / actual: {v4} / expected: {15}"
+    del v4, v14
+    print(v15)
+    v21 = v7 == False
     del v7
-    if v17:
-        del v17
-        raise Exception(v11)
+    if v21:
+        del v21
+        raise Exception(v15)
     else:
-        del v11, v17
+        del v15, v21
         return 
 def main_body():
     return method0()
@@ -9078,6 +9204,7 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9113,6 +9240,15 @@ __assert_eq / actual: 15 / expected: 15
 __assert_eq / actual: 15 / expected: 15
 
 
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c2f2c8101e7eaceb92634ddbcbaed9dae72b80abe63498c91b1cf99de5a61f74/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c2f2c8101e7eaceb92634ddbcbaed9dae72b80abe63498c91b1cf99de5a61f74/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c2f2c8101e7eaceb92634ddbcbaed9dae72b80abe63498c91b1cf99de5a61f74/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c2f2c8101e7eaceb92634ddbcbaed9dae72b80abe63498c91b1cf99de5a61f74/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: 15 / expected: 15
+
+
+
 
 </pre>
 </div>
@@ -9120,7 +9256,52 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.fsx:
+<pre>.gleam (Gleam):
+import gleam/string
+import gleam/io
+pub fn method1 () -&gt; Int {
+    3
+}
+pub fn method2 (v0 :    Int) -&gt; Int {
+    let v1 = 9 + v0
+    v1
+}
+pub fn method3 (v0 :    Bool) -&gt; Bool {
+    v0
+}
+pub fn method0 () -&gt; Nil   {
+    let v0 = method1()
+    let v1 = method2(v0)
+    let v2 = v1 + 2
+    let v3 = v2 + 1
+    let v4 = v3 == 15
+    let v6 =
+        case v4 {
+            True -&gt; {
+                True
+            }
+            False -&gt; {
+                method3(v4)
+            }
+        }
+    let v7 = "__assert_eq"
+    let v8 = string.inspect(v3)
+    let v9 = string.inspect(15)
+    let v10 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v9
+    io.println(v10)
+    let v18 = v6 == False
+    case v18 {
+        True -&gt; {
+            panic as v10
+        }
+        False -&gt; {
+        Nil
+        }
+    }
+}
+pub fn main () { method0()
+ }
+.fsx:
 let rec method1 () : int32 =
     3
 and method2 (v0 : int32) : int32 =
@@ -9142,14 +9323,14 @@ and method0 () : unit =
             true
         else
             method3(v4)
-    let v7 : string = "__assert_eq"
-    let v8 : string = $"{v7} / actual: %A{v3} / expected: %A{15}"
-    let v11 : unit = ()
-    let v12 : (unit -&gt; unit) = closure0(v8)
-    let v13 : unit = (fun () -&gt; v12 (); v11) ()
-    let v15 : bool = v6 = false
-    if v15 then
-        failwith&lt;unit&gt; v8
+    let v11 : string = "__assert_eq"
+    let v12 : string = $"{v11} / actual: %A{v3} / expected: %A{15}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v12)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v19 : bool = v6 = false
+    if v19 then
+        failwith&lt;unit&gt; v12
 method0()
 
 
@@ -9188,18 +9369,18 @@ mod module_6ff740fe {
             let v3: i32 = ((Spiral::method2(Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method3(v4) };
-            let v8: string = sprintf!(
+            let v12: string = sprintf!(
                 "{} / actual: {:?} / expected: {:?}",
                 string("__assert_eq"),
                 v3,
                 15_i32
             );
-            let v13: () = {
-                Spiral::closure0(v8.clone(), ());
+            let v17: () = {
+                Spiral::closure0(v12.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v8,);
+                panic!("{}", v12,);
             }
         }
         // on_startup!(Spiral::method0());
@@ -9235,12 +9416,12 @@ export function method0(): void {
     const v3: int32 = ((method2(method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method3(v4);
-    const v8: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
-    let v13: any;
-    closure0(v8, undefined);
-    v13 = undefined;
+    const v12: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
+    let v17: any;
+    closure0(v12, undefined);
+    v17 = undefined;
     if (v6 === false) {
-        throw new Error(v8);
+        throw new Error(v12);
     }
 }
 
@@ -9270,12 +9451,12 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = ((method2(method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method3(v4)
-    v8: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
-    v13: None
-    closure0(v8, None)
-    v13 = None
+    v12: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
+    v17: None
+    closure0(v12, None)
+    v17 = None
     if v6 == False:
-        raise Exception(v8)
+        raise Exception(v12)
 
 
 
@@ -9361,17 +9542,17 @@ def method0() -&gt; None:
     else:
         v6 = method3(v4)
     del v4
-    v9 = "__assert_eq"
-    v10 = f"{v9} / actual: {v3} / expected: {15}"
-    del v3, v9
-    print(v10)
-    v16 = v6 == False
+    v13 = "__assert_eq"
+    v14 = f"{v13} / actual: {v3} / expected: {15}"
+    del v3, v13
+    print(v14)
+    v20 = v6 == False
     del v6
-    if v16:
-        del v16
-        raise Exception(v10)
+    if v20:
+        del v20
+        raise Exception(v14)
     else:
-        del v10, v16
+        del v14, v20
         return 
 def main_body():
     return method0()
@@ -9436,6 +9617,7 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9467,6 +9649,15 @@ __assert_eq / actual: -3 / expected: -3
 
 .py output:
 __assert_eq / actual: -3 / expected: -3
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d18f54133a13fcc40e63faf7b7a5be09b6fcb80b2d8406cc355d962ff389ad27/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d18f54133a13fcc40e63faf7b7a5be09b6fcb80b2d8406cc355d962ff389ad27/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d18f54133a13fcc40e63faf7b7a5be09b6fcb80b2d8406cc355d962ff389ad27/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d18f54133a13fcc40e63faf7b7a5be09b6fcb80b2d8406cc355d962ff389ad27/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9516,6 +9707,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9547,6 +9739,15 @@ __assert_eq / actual: -3 / expected: -3
 
 .py output:
 __assert_eq / actual: -3 / expected: -3
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/aa04bd57fbeca7f43fd86c2f1d31aba5e44db2a0c1624147f985b09da84d81e3/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/aa04bd57fbeca7f43fd86c2f1d31aba5e44db2a0c1624147f985b09da84d81e3/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/aa04bd57fbeca7f43fd86c2f1d31aba5e44db2a0c1624147f985b09da84d81e3/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/aa04bd57fbeca7f43fd86c2f1d31aba5e44db2a0c1624147f985b09da84d81e3/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9596,6 +9797,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9627,6 +9829,15 @@ __assert_eq / actual: -3 / expected: -3
 
 .py output:
 __assert_eq / actual: -3 / expected: -3
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/63b495b15fd6e3c3d94a52991187ba9857b6ec85c14fd3b12321ee89012f97fc/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/63b495b15fd6e3c3d94a52991187ba9857b6ec85c14fd3b12321ee89012f97fc/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/63b495b15fd6e3c3d94a52991187ba9857b6ec85c14fd3b12321ee89012f97fc/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/63b495b15fd6e3c3d94a52991187ba9857b6ec85c14fd3b12321ee89012f97fc/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9676,6 +9887,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9707,6 +9919,15 @@ __assert_eq / actual: -3 / expected: -3
 
 .py output:
 __assert_eq / actual: -3 / expected: -3
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/16d823e3d58ae85a6666ba82f9f8af4fcdd7fa9115f6b0909d7d2b4784ac2941/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/16d823e3d58ae85a6666ba82f9f8af4fcdd7fa9115f6b0909d7d2b4784ac2941/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/16d823e3d58ae85a6666ba82f9f8af4fcdd7fa9115f6b0909d7d2b4784ac2941/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/16d823e3d58ae85a6666ba82f9f8af4fcdd7fa9115f6b0909d7d2b4784ac2941/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: -3 / expected: -3
+
 
 </pre>
 </div>
@@ -9753,6 +9974,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="p">(</span><span class="o">=.</span><span class="p">)</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">(</span><span class="n">b</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a == !b '</span> <span class="p">:</span> <span class="nb">bool</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a = !b '</span> <span class="p">:</span> <span class="nb">bool</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a == !b '</span> <span class="p">:</span> <span class="nb">bool</span>
     <span class="p">}</span>
@@ -9770,6 +9992,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9801,6 +10024,15 @@ __assert_eq / actual: true / expected: true
 
 .py output:
 __assert_eq / actual: true / expected: true
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cf7cc2eb49cc37f97567ad25b8d8d8e9468f561292428bedd4b4e95390e6916b/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cf7cc2eb49cc37f97567ad25b8d8d8e9468f561292428bedd4b4e95390e6916b/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cf7cc2eb49cc37f97567ad25b8d8d8e9468f561292428bedd4b4e95390e6916b/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cf7cc2eb49cc37f97567ad25b8d8d8e9468f561292428bedd4b4e95390e6916b/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: True / expected: True
+
 
 </pre>
 </div>
@@ -9836,6 +10068,7 @@ __assert_eq / actual: true / expected: true
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="p">(</span><span class="o">&lt;&gt;.</span><span class="p">)</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">(</span><span class="n">b</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a \!= !b '</span> <span class="p">:</span> <span class="nb">bool</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a &lt;&gt; !b '</span> <span class="p">:</span> <span class="nb">bool</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a \!= !b '</span> <span class="p">:</span> <span class="nb">bool</span>
     <span class="p">}</span>
@@ -9853,6 +10086,7 @@ __assert_eq / actual: true / expected: true
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9884,6 +10118,15 @@ __assert_eq / actual: true / expected: true
 
 .py output:
 __assert_eq / actual: true / expected: true
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ae9622e2db8e75ee7d3148af62782049b59d0311a5304059384bee882f864acb/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ae9622e2db8e75ee7d3148af62782049b59d0311a5304059384bee882f864acb/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ae9622e2db8e75ee7d3148af62782049b59d0311a5304059384bee882f864acb/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ae9622e2db8e75ee7d3148af62782049b59d0311a5304059384bee882f864acb/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: True / expected: True
+
 
 </pre>
 </div>
@@ -9936,6 +10179,7 @@ __assert_eq / actual: true / expected: true
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -9967,6 +10211,15 @@ __assert_eq / actual: true / expected: true
 
 .py output:
 __assert_eq / actual: true / expected: true
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a3c68476eab528c66e2490bd40e5e2543fcfb370e97a0403edeeccd7d96b1133/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a3c68476eab528c66e2490bd40e5e2543fcfb370e97a0403edeeccd7d96b1133/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a3c68476eab528c66e2490bd40e5e2543fcfb370e97a0403edeeccd7d96b1133/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a3c68476eab528c66e2490bd40e5e2543fcfb370e97a0403edeeccd7d96b1133/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: True / expected: True
+
 
 </pre>
 </div>
@@ -10073,7 +10326,13 @@ __assert_eq / actual: true / expected: true
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'(`a * `b)'</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="nb">type</span> <span class="n">pair_switch</span> <span class="n">a</span> <span class="n">b</span> <span class="o">=</span>
+    <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'#(`a, `b  )'</span>
+        <span class="n">Fsharp</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'(`a * `b)'</span>
+        <span class="n">Python</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'(`a, `b)'</span>
+    <span class="p">}</span>
+<span class="n">nominal</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'backend_switch `(pair_switch a b)'</span>
 
 <span class="n">inl</span> <span class="n">pair</span> <span class="n">x</span> <span class="n">y</span> <span class="o">=</span>
     <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
@@ -10091,6 +10350,7 @@ __assert_eq / actual: true / expected: true
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -10122,6 +10382,15 @@ __assert_eq / actual: 1,2 / expected: 1,2
 
 .py output:
 __assert_eq / actual: (1, 2) / expected: (1, 2)
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/de25d0dca00689027a1e2ab5890bc3cf5474b395820d270deb0810b6cb3ecf06/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/de25d0dca00689027a1e2ab5890bc3cf5474b395820d270deb0810b6cb3ecf06/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/de25d0dca00689027a1e2ab5890bc3cf5474b395820d270deb0810b6cb3ecf06/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/de25d0dca00689027a1e2ab5890bc3cf5474b395820d270deb0810b6cb3ecf06/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: #(1, 2) / expected: #(1, 2)
+
 
 </pre>
 </div>
@@ -10156,7 +10425,14 @@ __assert_eq / actual: struct (1, 2) / expected: struct (1, 2)
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">new_pair</span> <span class="n">forall</span> <span class="n">a</span> <span class="n">b</span><span class="o">.</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">b</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span> <span class="o">=</span>
-    <span class="err">$</span><span class="s1">'!a, !b '</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'#(!a, !b )'</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span>
+        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'!a, !b '</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'!a, !b '</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -10183,6 +10459,9 @@ __assert_eq / actual: struct (1, 2) / expected: struct (1, 2)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">from_pair</span> <span class="n">forall</span> <span class="n">a</span> <span class="n">b</span><span class="o">.</span> <span class="p">(</span><span class="n">pair</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'let #(a, b) = !pair '</span>
+            <span class="p">(</span><span class="err">$</span><span class="s1">'a'</span> <span class="p">:</span> <span class="n">a</span><span class="p">),</span> <span class="p">(</span><span class="err">$</span><span class="s1">'b'</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'let (a, b) = !pair '</span>
             <span class="p">(</span><span class="err">$</span><span class="s1">'a'</span> <span class="p">:</span> <span class="n">a</span><span class="p">),</span> <span class="p">(</span><span class="err">$</span><span class="s1">'b'</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span>
@@ -10204,6 +10483,7 @@ __assert_eq / actual: struct (1, 2) / expected: struct (1, 2)
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -10236,6 +10516,15 @@ __assert_eq' / actual: a,1,b / expected: a,1,b
 
 .py output:
 __assert_eq' / actual: ('a', (1, 'b')) / expected: ('a', (1, 'b'))
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a813095faceb7aa07142334a872a6f24b1c45eab5df32cdd4dd10b8ae5e53130/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a813095faceb7aa07142334a872a6f24b1c45eab5df32cdd4dd10b8ae5e53130/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a813095faceb7aa07142334a872a6f24b1c45eab5df32cdd4dd10b8ae5e53130/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a813095faceb7aa07142334a872a6f24b1c45eab5df32cdd4dd10b8ae5e53130/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq' / actual: #("a", #(1, "b")) / expected: #("a", #(1, "b"))
+
 
 </pre>
 </div>
@@ -10307,6 +10596,7 @@ __assert_eq' / actual: struct ("a", (1, "b")) / expected: struct ("a", (1, "b"))
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -10340,6 +10630,15 @@ __assert_eq / actual: 1 / expected: 1
 .py output:
 __assert_eq / actual: 1 / expected: 1
 
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4bf08aa40d8c4f12d89db6ce910e7726c0d6235a92e4e64fe54be30f764c7aa8/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4bf08aa40d8c4f12d89db6ce910e7726c0d6235a92e4e64fe54be30f764c7aa8/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4bf08aa40d8c4f12d89db6ce910e7726c0d6235a92e4e64fe54be30f764c7aa8/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4bf08aa40d8c4f12d89db6ce910e7726c0d6235a92e4e64fe54be30f764c7aa8/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: 1 / expected: 1
+
+
 </pre>
 </div>
 </div>
@@ -10362,6 +10661,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -10394,6 +10694,15 @@ __assert_eq / actual: 2,1 / expected: 2,1
 
 .py output:
 __assert_eq / actual: (2, 1) / expected: (2, 1)
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ed15d0c18e437886904953e91bf8ef4bcc2b6414d2a10ed34b2bccf9565f022d/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ed15d0c18e437886904953e91bf8ef4bcc2b6414d2a10ed34b2bccf9565f022d/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ed15d0c18e437886904953e91bf8ef4bcc2b6414d2a10ed34b2bccf9565f022d/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ed15d0c18e437886904953e91bf8ef4bcc2b6414d2a10ed34b2bccf9565f022d/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: #(2, 1) / expected: #(2, 1)
+
 
 </pre>
 </div>
@@ -10546,6 +10855,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">null</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">()</span> <span class="p">:</span> <span class="n">t</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Nil'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'null |&gt; unbox&lt;`t&gt;'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">t</span>
     <span class="p">}</span>
@@ -10811,6 +11121,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">convert</span> <span class="n">forall</span> <span class="n">t</span> <span class="n">u</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">u</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'`u(!x)'</span> <span class="p">:</span> <span class="n">u</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; `u '</span> <span class="p">:</span> <span class="n">u</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'`u(!x)'</span> <span class="p">:</span> <span class="n">u</span>
     <span class="p">}</span>
@@ -10840,6 +11151,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">unbox</span> <span class="n">forall</span> <span class="n">t</span> <span class="n">u</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">u</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; unbox&lt;`u&gt;'</span> <span class="p">:</span> <span class="n">u</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u</span>
     <span class="p">}</span>
@@ -10869,6 +11181,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">u8</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">u8</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u8</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'uint8'</span> <span class="p">:</span> <span class="n">u8</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u8</span>
     <span class="p">}</span>
@@ -10898,6 +11211,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">u16</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">u16</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u16</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'uint16'</span> <span class="p">:</span> <span class="n">u16</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x &amp; 0xFFFF'</span> <span class="p">:</span> <span class="n">u16</span>
     <span class="p">}</span>
@@ -10927,6 +11241,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">u64</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">u64</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u64</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'uint64'</span> <span class="p">:</span> <span class="n">u64</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u64</span>
     <span class="p">}</span>
@@ -10956,6 +11271,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">i32</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">convert</span> <span class="p">:</span> <span class="n">i32</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">convert</span> <span class="p">:</span> <span class="n">i32</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">convert</span> <span class="p">:</span> <span class="n">i32</span>
     <span class="p">}</span>
@@ -10985,6 +11301,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">i64</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">i64</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">i64</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'int64'</span> <span class="p">:</span> <span class="n">i64</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">i64</span>
     <span class="p">}</span>
@@ -11014,6 +11331,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">f32</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">f32</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">f32</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'float32'</span> <span class="p">:</span> <span class="n">f32</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">f32</span>
     <span class="p">}</span>
@@ -11043,6 +11361,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">f64</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">f64</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">f64</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'float'</span> <span class="p">:</span> <span class="n">f64</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">f64</span>
     <span class="p">}</span>
@@ -11097,6 +11416,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">convert_i32</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">i32</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.Convert.ToInt32'</span> <span class="p">:</span> <span class="n">i32</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">i32</span>
     <span class="p">}</span>
@@ -11240,7 +11560,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">exn</span> <span class="o">=</span> <span class="err">$</span><span class="s2">"backend_switch `({ Fsharp : $'exn'; Python : $'BaseException' })"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">exn</span> <span class="o">=</span> <span class="err">$</span><span class="s2">"backend_switch `({ Gleam : $'Nil'; Fsharp : $'exn'; Python : $'BaseException' })"</span>
 
 <span class="n">inl</span> <span class="n">exn</span> <span class="n">x</span> <span class="o">=</span>
     <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'`exn '</span>
@@ -11317,6 +11637,7 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
     <span class="p">(</span><span class="n">fun</span> <span class="n">ex</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!ex '</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format_exception |&gt; Some)</span>
 <span class="o">|&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
 <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">run_target</span> <span class="n">function</span>
+    <span class="o">|</span> <span class="n">Gleam</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
     <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"System.IndexOutOfRangeException: Index was outside the bounds of the array."</span>
     <span class="o">|</span> <span class="n">Cuda</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"index 1 is out of bounds for axis 0 with size 1"</span>
     <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"Exception { message: </span><span class="se">\"</span><span class="s2">index out of bounds: the len is 1 but the index is 1</span><span class="se">\"</span><span class="s2"> }"</span>

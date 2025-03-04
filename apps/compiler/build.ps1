@@ -27,7 +27,7 @@ $builderArgs = @("$projectName.fs", $runtime, "--packages", "Fable.Core", "FShar
 
 $targetDir = GetTargetDir $projectName
 
-Write-Output "spiral/apps/compiler/build.ps1 / `$targetDir = $targetDir / `$projectName: $projectName / `$env:CI:$env:CI"
+Write-Output "spiral/apps/compiler/build.ps1 / `$targetDir = $targetDir / `$projectName: $projectName / `$env:CI:'$env:CI'"
 
 if ($env:CI) {
     Remove-Item $targetDir -Recurse -Force -ErrorAction Ignore

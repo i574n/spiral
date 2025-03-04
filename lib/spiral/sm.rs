@@ -103,9 +103,9 @@ pub mod Sm {
         })
     }
     pub fn closure6(v0_1: i32, v1_1: char, v2_1: string) -> string {
-        let v4_1: string = ofChar(v1_1);
+        let v5_1: string = ofChar(v1_1);
         append(
-            ((Sm::method0((v0_1) - (length(v2_1.clone())), v4_1, 0_i32))(string(""))),
+            ((Sm::method0((v0_1) - (length(v2_1.clone())), v5_1, 0_i32))(string(""))),
             (v2_1),
         )
     }
@@ -123,10 +123,10 @@ pub mod Sm {
         })
     }
     pub fn closure10(v0_1: i32, v1_1: char, v2_1: string) -> string {
-        let v4_1: string = ofChar(v1_1);
+        let v5_1: string = ofChar(v1_1);
         append(
             (v2_1.clone()),
-            ((Sm::method0((v0_1) - (length(v2_1)), v4_1, 0_i32))(string(""))),
+            ((Sm::method0((v0_1) - (length(v2_1)), v5_1, 0_i32))(string(""))),
         )
     }
     pub fn closure9(v0_1: i32, v1_1: char) -> Func1<string, string> {
@@ -165,12 +165,12 @@ pub mod Sm {
         string("")
     }
     pub fn method1(v0_1: string, v1_1: string, v2_1: string) -> string {
-        let v5_1: Result<regex::Regex, regex::Error> = regex::Regex::new(&v0_1);
-        let v8_1: regex::Regex = v5_1.unwrap();
-        let v20_1: string = Sm::method2(v2_1);
-        let v22_1: std::borrow::Cow<str> = v8_1.replace_all(&*v20_1, &*v1_1);
-        let v24: std::string::String = String::from(v22_1);
-        fable_library_rust::String_::fromString(v24)
+        let v6_1: Result<regex::Regex, regex::Error> = regex::Regex::new(&v0_1);
+        let v10_1: regex::Regex = v6_1.unwrap();
+        let v22_1: string = Sm::method2(v2_1);
+        let v24: std::borrow::Cow<str> = v10_1.replace_all(&*v22_1, &*v1_1);
+        let v26: std::string::String = String::from(v24);
+        fable_library_rust::String_::fromString(v26)
     }
     pub fn closure16(v0_1: string, v1_1: string, v2_1: string) -> string {
         Sm::method1(v0_1, v1_1, v2_1)
@@ -220,17 +220,17 @@ pub mod Sm {
         v0_1
     }
     pub fn closure23(v0_1: Array<string>, v1_1: string) -> Array<string> {
-        let v3_1: LrcPtr<dyn IEnumerable_1<string>> = ofArray(v0_1);
-        let v6_1: string = Sm::method4();
+        let v22_1: LrcPtr<dyn IEnumerable_1<string>> = ofArray(v0_1);
+        let v25: string = Sm::method4();
         split_1(
             v1_1,
             join(
-                if (v6_1.clone()) == string("\n") {
-                    Sm::method5(v6_1.clone())
+                if (v25.clone()) == string("\n") {
+                    Sm::method5(v25.clone())
                 } else {
-                    v6_1
+                    v25
                 },
-                toArray(v3_1),
+                toArray(v22_1),
             ),
             -1_i32,
             0_i32,
@@ -311,30 +311,30 @@ pub mod Sm {
         trimEndChars(v1_1, toArray_1(Sm::method7(v0_1, empty::<char>())))
     }
     pub fn closure32(unitVar: (), v0_1: Array<char>) -> Func1<string, string> {
-        let v1_1: List<char> = ofArray_1(v0_1);
-        let v9_1: LrcPtr<Sm::UH0> = foldBack(
+        let v2_1: List<char> = ofArray_1(v0_1);
+        let v11_1: LrcPtr<Sm::UH0> = foldBack(
             Func2::new(move |b0: char, b1: LrcPtr<Sm::UH0>| (Sm::method6())(b0)(b1)),
-            v1_1,
+            v2_1,
             LrcPtr::new(Sm::UH0::UH0_0),
         );
         Func1::new({
-            let v9_1 = v9_1.clone();
-            move |v: string| Sm::closure35(v9_1.clone(), v)
+            let v11_1 = v11_1.clone();
+            move |v: string| Sm::closure35(v11_1.clone(), v)
         })
     }
     pub fn closure37(v0_1: LrcPtr<Sm::UH0>, v1_1: string) -> string {
         trimStartChars(v1_1, toArray_1(Sm::method7(v0_1, empty::<char>())))
     }
     pub fn closure36(unitVar: (), v0_1: Array<char>) -> Func1<string, string> {
-        let v1_1: List<char> = ofArray_1(v0_1);
-        let v9_1: LrcPtr<Sm::UH0> = foldBack(
+        let v2_1: List<char> = ofArray_1(v0_1);
+        let v11_1: LrcPtr<Sm::UH0> = foldBack(
             Func2::new(move |b0: char, b1: LrcPtr<Sm::UH0>| (Sm::method6())(b0)(b1)),
-            v1_1,
+            v2_1,
             LrcPtr::new(Sm::UH0::UH0_0),
         );
         Func1::new({
-            let v9_1 = v9_1.clone();
-            move |v: string| Sm::closure37(v9_1.clone(), v)
+            let v11_1 = v11_1.clone();
+            move |v: string| Sm::closure37(v11_1.clone(), v)
         })
     }
     pub fn closure39(v0_1: i32, v1_1: string) -> string {
@@ -358,21 +358,21 @@ pub mod Sm {
         if (v2_1) <= (v0_1) {
             v1_1.clone()
         } else {
-            let v8_1: f64 = (v0_1 as f64) / 2.0_f64;
-            let v12_1: i64 = v8_1.ceil() as i64;
-            let v18_1: i64 = v8_1.floor() as i64;
+            let v9_1: f64 = (v0_1 as f64) / 2.0_f64;
+            let v14_1: i64 = v9_1.ceil() as i64;
+            let v21_1: i64 = v9_1.floor() as i64;
             join(
                 string(""),
                 toArray(ofArray(new_array(&[
                     getSlice(
                         v1_1.clone(),
                         Some(0_i64 as i32),
-                        Some(((v12_1) - 1_i64) as i32),
+                        Some(((v14_1) - 1_i64) as i32),
                     ),
                     string("..."),
                     getSlice(
                         v1_1,
-                        Some(((v2_1) - (v18_1)) as i32),
+                        Some(((v2_1) - (v21_1)) as i32),
                         Some(((v2_1) - 1_i64) as i32),
                     ),
                 ]))),

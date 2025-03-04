@@ -54,7 +54,7 @@ if ($env:CI) {
     Remove-Item $targetDir -Recurse -Force -ErrorAction Ignore
 }
 
-Write-Output "spiral/apps/wasm/build.ps1 / `$targetDir = $targetDir / `$projectName: $projectName / `$env:CI:$env:CI"
+Write-Output "spiral/apps/wasm/build.ps1 / `$targetDir = $targetDir / `$projectName: $projectName / `$env:CI:'$env:CI'"
 
 cargo fmt --
 

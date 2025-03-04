@@ -22,6 +22,7 @@ pub mod Platform {
         US1_2(Platform::US0),
         US1_3(Platform::US0),
         US1_4(Platform::US0),
+        US1_5(Platform::US0),
     }
     impl core::fmt::Display for US1 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {

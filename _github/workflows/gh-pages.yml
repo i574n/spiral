@@ -17,13 +17,18 @@ jobs:
 
       - uses: moonrepo/setup-rust@v1
         with:
-          channel: 'nightly-2024-10-07'
-          components: 'clippy,rust-src,rustfmt'
-          targets: 'wasm32-unknown-unknown'
+          channel: "nightly-2024-10-07"
+          components: "clippy,rust-src,rustfmt"
+          targets: "wasm32-unknown-unknown"
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          gleam-version: "1.7.0"
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.200'
+          dotnet-version: "9.0.200"
 
       - uses: actions/setup-node@v4
         with:
@@ -31,7 +36,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - run: pwsh scripts/workflow.ps1
 

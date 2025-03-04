@@ -30,6 +30,10 @@ inl get_args () =
         fsharp = "fsharp", {
             spi_path = "spi-path", 's'
         }
+        gleam = "gleam", {
+            gleam_path = "gleam-path", 'g'
+            deps = "deps", 'd'
+        }
         cuda = "cuda", {
             py_path = "py-path", 'p'
             env = "env", 'e'
@@ -86,6 +90,23 @@ let get_command () =
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .fsharp |> snd).spi_path) (
             runtime.arg_required true
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .gleam |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (
+            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            >> runtime.arg_num_args_range (
+                runtime.new_value_range
+                    false
+                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.End eval)
+            )
+            >> runtime.arg_action runtime.Append
         )
     )
     |> runtime.command_subcommand (
@@ -1494,6 +1515,127 @@ inl process_python { fs_path deps trace_level } =
 
 #!markdown
 
+## gleam
+
+#!markdown
+
+### process_gleam
+
+#!spiral
+
+inl process_gleam { gleam_path deps } =
+    inl extension = "gleam"
+
+    inl new_code_path = gleam_path
+    inl new_code = new_code_path |> file_system.read_all_text
+
+    inl hash_hex = { extension new_code } |> sm'.format |> crypto.hash_text
+
+    inl workspace_root_external = file_system.get_workspace_root_external ()
+    inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
+
+    inl package_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
+
+    inl package_dir = package_dir </> ".."
+
+    inl manifest_path = package_dir </> "gleam.toml"
+
+    inl deps =
+        ;[
+            "gleam_stdlib=\">=0.55.0 and <1.0.0\""
+            "gary=\">=1.1.0 and <2.0.0\""
+        ]
+        |> am'.to_vec
+        |> am'.vec_map sm'.to_std_string 
+        |> am'.vec_extend deps
+        |> am'.vec_map fun dep =>
+            inl dep = dep |> sm'.from_std_string
+            if dep |> sm'.contains "="
+            then dep
+            elif dep |> sm'.ends_with "]"
+            then dep |> sm'.replace "[" $'$"={{version=\'*\',features=["' |> fun x => $'$"{!x}}}"'
+            else $'$"{!dep}=\'*\'"'
+        |> am'.from_vec
+        |> fun x => x : _ i32 _
+        |> seq.of_array'
+        |> sm'.concat "\n"
+
+    inl exit_code, run_result =
+        inl manifest =
+            $'$"name = \\\"main\\\""'
+            +#. $'$"target = \\\"erlang\\\""'
+            +#. $'$""'
+            +#. $'$"[dependencies]"'
+            +#. $'$"{!deps}"'
+
+        manifest |> file_system.write_all_text_exists manifest_path
+
+        runtime.execution_options fun x => { x with
+            command = $'$"gleam check"'
+            working_directory = package_dir |> optionm'.some'
+        }
+        |> runtime.execute_with_options
+
+    if exit_code <>. 0 then
+        trace Critical
+            fun () => "spiral.process_gleam / format error"
+            fun () => { exit_code run_result new_code_path }
+        { extension = Some extension; code = None; code_path = None; output = None }
+    else
+        inl command = $'$"gleam run --no-print-progress \\\"{!new_code_path}\\\""'
+        inl environment_variables =
+            ;[
+                "TRACE_LEVEL", ""
+                "GLEAM_LOG", ""
+                "GLEAM_LOG_NOCOLOUR", ""
+            ]
+        inl exit_code, run_result =
+            runtime.execution_options fun x => { x with
+                command
+                environment_variables
+                working_directory = package_dir |> optionm'.some'
+            }
+            |> runtime.execute_with_options
+
+        inl external_command =
+            inl vars =
+                a environment_variables
+                |> am.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
+                |> fun x => x : _ i32 _
+                |> seq.of_array
+                |> sm'.concat ";"
+            $'$"pwsh -c \'{!vars}; {!command}\'"' : string
+        if exit_code = 0 then
+            inl output =
+                try
+                    fun () =>
+                        run_result
+                        |> sm'.split "\n"
+                        |> fun x => a x : _ i32 _
+                        |> seq.of_array
+                        |> sm'.concat "\n"
+                    fun ex =>
+                        trace Critical
+                            fun () => "spiral.process_gleam / Exception"
+                            fun () => { ex run_result new_code_path external_command }
+                        None
+                |> optionm'.box
+                |> optionm'.unwrap
+
+            {
+                extension = Some extension
+                code = Some new_code
+                code_path = Some new_code_path
+                output = Some output
+            }
+        else
+            trace Critical
+                fun () => "spiral.process_gleam / error"
+                fun () => { exit_code run_result new_code_path external_command }
+            { extension = Some extension; code = None; code_path = None; output = None }
+
+#!markdown
+
 ## cuda
 
 #!markdown
@@ -1708,6 +1850,43 @@ inl process_fsharp { spi_path } =
 let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resultm.result' string string) =
     fun () =>
         match matches |> runtime.matches_subcommand |> optionm'.unbox with
+        | Some (subcommand, arg_matches)
+                when (subcommand |> sm'.from_std_string) = (get_args () .gleam |> fst) =>
+
+            inl gleam_path =
+                arg_matches
+                |> runtime.matches_get_one ((get_args () .gleam |> snd).gleam_path |> fst)
+                |> optionm'.unbox
+                |> optionm.value
+                |> sm'.from_std_string
+
+            inl deps : am'.vec sm'.std_string =
+                arg_matches
+                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
+                |> optionm'.unbox
+                |> optionm'.default_value (;[] |> am'.to_vec)
+
+            inl command_result =
+                process_gleam { gleam_path deps }
+                |> fun { extension code output } =>
+                    ;[
+                        "extension", extension |> optionm'.default_value ""
+                        "code", code |> optionm'.default_value ""
+                        "output", output |> optionm'.default_value ""
+                    ]
+
+            ;[
+                "command_result",
+                command_result
+                |> am'.to_vec
+                |> am'.vec_map' fun k, v =>
+                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+                |> mapm.b_tree_map_from_vec_pairs
+                |> sm'.serialize
+                |> resultm.unwrap'
+                |> sm'.from_std_string
+            ]
+
         | Some (subcommand, arg_matches)
                 when (subcommand |> sm'.from_std_string) = (get_args () .cuda |> fst) =>
 

@@ -74,6 +74,7 @@ inl backend_switch forall t. x : t =
                 (forall v'. => (x s) ())
                 (fun () => $'' : t)
         !!!!BackendSwitch (
+            ("Gleam", backend "Gleam"),
             ("Fsharp", backend "Fsharp"),
             ("Python", backend "Python"),
             ("Cuda", backend "Cuda")
@@ -97,6 +98,7 @@ union target_runtime =
 #!spiral
 
 union target =
+    | Gleam : target_runtime
     | Fsharp : target_runtime
     | Cuda : target_runtime
     | Rust : target_runtime
@@ -111,6 +113,9 @@ union target =
 
 inl run_target_args' forall t u. (args : u) (fn : target -> (u -> t)) : t =
     backend_switch {
+        Gleam = fun () =>
+            inl target = Gleam Native
+            fn target args
         Fsharp = fun () =>
             inl is_unit : bool =
                 real
@@ -176,6 +181,7 @@ inl run_target forall t. (fn : target -> (() -> t)) : t =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -183,6 +189,7 @@ inl run_target forall t. (fn : target -> (() -> t)) : t =
 ///! python
 
 run_target function
+    | Gleam (Native) => fun () => $'1'
     | Fsharp (Native) => fun () => $'1uy'
     | Cuda (Native) => fun () => $'1'
     | Rust (Native) => fun () => $'1uy'
@@ -297,26 +304,29 @@ nominal lazy t = $'Lazy<`t>'
 
 inl memoize forall t. (fn : () -> t) : () -> t =
     inl fn = join fn
+    inl body () =
+        inl result = mut None
+        inl computed = mut false
+        fun () =>
+            if *computed
+            then *result
+            else
+                result <- fn () |> Some
+                computed <- true
+                *result
+            |> optionm.value
     backend_switch {
+        Gleam = fun () => body ()
         Fsharp = fun () =>
             inl result : lazy t = $'lazy !fn ()'
             fun () => $'!result.Value' : t
-        Python = fun () =>
-            inl result = mut None
-            inl computed = mut false
-            fun () =>
-                if *computed
-                then *result
-                else
-                    result <- fn () |> Some
-                    computed <- true
-                    *result
-                |> optionm.value
+        Python = fun () => body ()
     }
 
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -397,6 +407,7 @@ inl rec fold_list f s = function
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -411,6 +422,7 @@ inl rec fold_list f s = function
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -438,6 +450,7 @@ inl join_body_unit body d x =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -465,6 +478,7 @@ inl (+.) forall t. (a : t) (b : t) : t =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -486,6 +500,7 @@ inl (-.) forall t. (a : t) (b : t) : t =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -507,6 +522,7 @@ inl (*.) forall t. (a : t) (b : t) : t =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -528,6 +544,7 @@ inl (/.) forall t. (a : t) (b : t) : t =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -549,6 +566,7 @@ inl (/.) forall t. (a : t) (b : t) : t =
 
 inl (=.) forall t. (a : t) (b : t) : bool =
     backend_switch {
+        Gleam = fun () => $'!a == !b ' : bool
         Fsharp = fun () => $'!a = !b ' : bool
         Python = fun () => $'!a == !b ' : bool
     }
@@ -556,6 +574,7 @@ inl (=.) forall t. (a : t) (b : t) : bool =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -573,6 +592,7 @@ inl (=.) forall t. (a : t) (b : t) : bool =
 
 inl (<>.) forall t. (a : t) (b : t) : bool =
     backend_switch {
+        Gleam = fun () => $'!a \!= !b ' : bool
         Fsharp = fun () => $'!a <> !b ' : bool
         Python = fun () => $'!a \!= !b ' : bool
     }
@@ -580,6 +600,7 @@ inl (<>.) forall t. (a : t) (b : t) : bool =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -604,6 +625,7 @@ inl (<>..) a b =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -644,7 +666,13 @@ inl (++) a b =
 
 #!spiral
 
-nominal pair a b = $'(`a * `b)'
+type pair_switch a b =
+    {
+        Gleam : $'#(`a, `b  )'
+        Fsharp : $'(`a * `b)'
+        Python : $'(`a, `b)'
+    }
+nominal pair a b = $'backend_switch `(pair_switch a b)'
 
 inl pair x y =
     x, y
@@ -652,6 +680,7 @@ inl pair x y =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -668,7 +697,14 @@ pair 1i32 2i32
 #!spiral
 
 inl new_pair forall a b. (a : a) (b : b) : pair a b =
-    $'!a, !b '
+    backend_switch {
+        Gleam = fun () =>
+            $'#(!a, !b )' : pair a b
+        Fsharp = fun () =>
+            $'!a, !b ' : pair a b
+        Python = fun () =>
+            $'!a, !b ' : pair a b
+    }
 
 #!markdown
 
@@ -678,6 +714,9 @@ inl new_pair forall a b. (a : a) (b : b) : pair a b =
 
 inl from_pair forall a b. (pair : pair a b) : a * b =
     backend_switch {
+        Gleam = fun () =>
+            $'let #(a, b) = !pair '
+            ($'a' : a), ($'b' : b)
         Fsharp = fun () =>
             $'let (a, b) = !pair '
             ($'a' : a), ($'b' : b)
@@ -689,6 +728,7 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -719,6 +759,7 @@ inl (||>) (arg1, arg2) fn =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -732,6 +773,7 @@ inl (||>) (arg1, arg2) fn =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -792,6 +834,7 @@ nominal any = $'obj'
 
 inl null forall t. () : t =
     backend_switch {
+        Gleam = fun () => $'Nil' : t
         Fsharp = fun () => $'null |> unbox<`t>' : t
         Python = fun () => $'None' : t
     }
@@ -890,6 +933,7 @@ inl to forall t u. (x : t) : u =
 
 inl convert forall t u. (x : t) : u =
     backend_switch {
+        Gleam = fun () => $'`u(!x)' : u
         Fsharp = fun () => $'!x |> `u ' : u
         Python = fun () => $'`u(!x)' : u
     }
@@ -902,6 +946,7 @@ inl convert forall t u. (x : t) : u =
 
 inl unbox forall t u. (x : t) : u =
     backend_switch {
+        Gleam = fun () => x |> to : u
         Fsharp = fun () => $'!x |> unbox<`u>' : u
         Python = fun () => x |> to : u
     }
@@ -914,6 +959,7 @@ inl unbox forall t u. (x : t) : u =
 
 inl u8 forall t. (x : t) : u8 =
     backend_switch {
+        Gleam = fun () => x |> to : u8
         Fsharp = fun () => x |> $'uint8' : u8
         Python = fun () => x |> to : u8
     }
@@ -926,6 +972,7 @@ inl u8 forall t. (x : t) : u8 =
 
 inl u16 forall t. (x : t) : u16 =
     backend_switch {
+        Gleam = fun () => x |> to : u16
         Fsharp = fun () => x |> $'uint16' : u16
         Python = fun () => $'!x & 0xFFFF' : u16
     }
@@ -938,6 +985,7 @@ inl u16 forall t. (x : t) : u16 =
 
 inl u64 forall t. (x : t) : u64 =
     backend_switch {
+        Gleam = fun () => x |> to : u64
         Fsharp = fun () => x |> $'uint64' : u64
         Python = fun () => x |> to : u64
     }
@@ -950,6 +998,7 @@ inl u64 forall t. (x : t) : u64 =
 
 inl i32 forall t. (x : t) : i32 =
     backend_switch {
+        Gleam = fun () => x |> convert : i32
         Fsharp = fun () => x |> convert : i32
         Python = fun () => x |> convert : i32
     }
@@ -962,6 +1011,7 @@ inl i32 forall t. (x : t) : i32 =
 
 inl i64 forall t. (x : t) : i64 =
     backend_switch {
+        Gleam = fun () => x |> to : i64
         Fsharp = fun () => x |> $'int64' : i64
         Python = fun () => x |> to : i64
     }
@@ -974,6 +1024,7 @@ inl i64 forall t. (x : t) : i64 =
 
 inl f32 forall t. (x : t) : f32 =
     backend_switch {
+        Gleam = fun () => x |> to : f32
         Fsharp = fun () => x |> $'float32' : f32
         Python = fun () => x |> to : f32
     }
@@ -986,6 +1037,7 @@ inl f32 forall t. (x : t) : f32 =
 
 inl f64 forall t. (x : t) : f64 =
     backend_switch {
+        Gleam = fun () => x |> to : f64
         Fsharp = fun () => x |> $'float' : f64
         Python = fun () => x |> to : f64
     }
@@ -1006,6 +1058,7 @@ nominal unativeint = $'unativeint'
 
 inl convert_i32 forall t. (x : t) : i32 =
     backend_switch {
+        Gleam = fun () => x |> to : i32
         Fsharp = fun () => x |> $'System.Convert.ToInt32' : i32
         Python = fun () => x |> to : i32
     }
@@ -1057,7 +1110,7 @@ instance (~:>) any = to_any
 
 #!spiral
 
-nominal exn = $"backend_switch `({ Fsharp : $'exn'; Python : $'BaseException' })"
+nominal exn = $"backend_switch `({ Gleam : $'Nil'; Fsharp : $'exn'; Python : $'BaseException' })"
 
 inl exn x =
     x |> $'`exn '
@@ -1107,6 +1160,7 @@ try
     (fun ex => $'!ex ' |> sm'.format_exception |> Some)
 |> optionm.value
 |> _assert_eq (run_target function
+    | Gleam => fun () => null ()
     | Fsharp => fun () => join "System.IndexOutOfRangeException: Index was outside the bounds of the array."
     | Cuda => fun () => "index 1 is out of bounds for axis 0 with size 1"
     | Rust => fun () => "Exception { message: \"index out of bounds: the len is 1 but the index is 1\" }"
