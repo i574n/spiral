@@ -73,11 +73,11 @@ pub mod Threading {
             unbox::<(CancellationToken, LrcPtr<dyn IDisposable>)>(
                 fable_library_rust::Native_::getZero(),
             );
-        let _run_target_args__v1: (CancellationToken, LrcPtr<dyn IDisposable>) =
+        let _run_target_args__v9: (CancellationToken, LrcPtr<dyn IDisposable>) =
             (patternInput.0.clone(), patternInput.1.clone());
         (
-            _run_target_args__v1.0.clone(),
-            _run_target_args__v1.1.clone(),
+            _run_target_args__v9.0.clone(),
+            _run_target_args__v9.1.clone(),
         )
     }
     pub fn v0() -> Func1<Option<CancellationToken>, (CancellationToken, LrcPtr<dyn IDisposable>)> {

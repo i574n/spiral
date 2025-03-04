@@ -111,13 +111,15 @@ export type US3_$union =
     | US3<2>
     | US3<3>
     | US3<4>
+    | US3<5>
 
 export type US3_$cases = {
     0: ["US3_0", [US2_$union]],
     1: ["US3_1", [US2_$union]],
     2: ["US3_2", [US2_$union]],
     3: ["US3_3", [US2_$union]],
-    4: ["US3_4", [US2_$union]]
+    4: ["US3_4", [US2_$union]],
+    5: ["US3_5", [US2_$union]]
 }
 
 export function US3_US3_0(f0_0: US2_$union) {
@@ -140,17 +142,21 @@ export function US3_US3_4(f4_0: US2_$union) {
     return new US3<4>(4, [f4_0]);
 }
 
+export function US3_US3_5(f5_0: US2_$union) {
+    return new US3<5>(5, [f5_0]);
+}
+
 export class US3<Tag extends keyof US3_$cases> extends Union<Tag, US3_$cases[Tag][0]> {
     constructor(readonly tag: Tag, readonly fields: US3_$cases[Tag][1]) {
         super();
     }
     cases() {
-        return ["US3_0", "US3_1", "US3_2", "US3_3", "US3_4"];
+        return ["US3_0", "US3_1", "US3_2", "US3_3", "US3_4", "US3_5"];
     }
 }
 
 export function US3_$reflection(): TypeInfo {
-    return union_type("Date_time.US3", [], US3, () => [[["f0_0", US2_$reflection()]], [["f1_0", US2_$reflection()]], [["f2_0", US2_$reflection()]], [["f3_0", US2_$reflection()]], [["f4_0", US2_$reflection()]]]);
+    return union_type("Date_time.US3", [], US3, () => [[["f0_0", US2_$reflection()]], [["f1_0", US2_$reflection()]], [["f2_0", US2_$reflection()]], [["f3_0", US2_$reflection()]], [["f4_0", US2_$reflection()]], [["f5_0", US2_$reflection()]]]);
 }
 
 export function closure2(unitVar: void, v0_1: any): US0_$union {
@@ -174,18 +180,18 @@ export function method4(): string {
 }
 
 export function method0(v0_1: string, v1_1: Date): string {
-    const v1044: string = method3();
-    const v1049: string = toString(v1_1, (v1044 === "") ? "M-d-y hh:mm:ss tt" : v1044);
-    const v1072: any = defaultOf();
-    let v1230: number;
-    throw new Error(`date_time.get_utc_offset / target: ${US3_US3_3(US2_US2_0())}`);
-    const v1243: uint8 = (hours(v1230) > 0) ? 1 : 0;
-    const v1244: string = method4();
-    const v1394 = `${v1243}${toString_1(v1230, "c", {})}`;
-    const v1396: string = v0_1;
-    const v1406: int32 = (v1049.length + v1394.length) | 0;
-    const v1420: int32 = (v1396.length - 1) | 0;
-    return parse(concat(v1049, v1394, ...v1396.slice(v1406, v1420 + 1)));
+    const v1970: string = method3();
+    const v1976: string = toString(v1_1, (v1970 === "") ? "M-d-y hh:mm:ss tt" : v1970);
+    const v2007: any = defaultOf();
+    let v2211: number;
+    throw new Error(`date_time.get_utc_offset / target: ${US3_US3_4(US2_US2_0())}`);
+    const v2226: uint8 = (hours(v2211) > 0) ? 1 : 0;
+    const v2227: string = method4();
+    const v2451 = `${v2226}${toString_1(v2211, "c", {})}`;
+    const v2454: string = v0_1;
+    const v2470: int32 = (v1976.length + v2451.length) | 0;
+    const v2491: int32 = (v2454.length - 1) | 0;
+    return parse(concat(v1976, v2451, ...v2454.slice(v2470, v2491 + 1)));
 }
 
 export function closure1(v0_1: string, v1_1: Date): string {
@@ -218,11 +224,11 @@ export function method5(v0_1: int32, v1_1: string, v2_1: int32): ((arg0: string)
 }
 
 export function closure6(v0_1: string, v1_1: int64): string {
-    const v3_1: string = v0_1;
-    const v7_1: string = int64ToString(v1_1);
-    const v11 = "0";
-    const v20: string = method5(18 - v7_1.length, v11, 0)("") + v7_1;
-    return parse(`${v20.slice(0, 7 + 1)}-${v20.slice(8, 11 + 1)}-${v20.slice(12, 15 + 1)}-${v20.slice(16, 17 + 1)}${v3_1.slice(21, v3_1.length)}`);
+    const v4_1: string = v0_1;
+    const v9: string = int64ToString(v1_1);
+    const v14 = "0";
+    const v23: string = method5(18 - v9.length, v14, 0)("") + v9;
+    return parse(`${v23.slice(0, 7 + 1)}-${v23.slice(8, 11 + 1)}-${v23.slice(12, 15 + 1)}-${v23.slice(16, 17 + 1)}${v4_1.slice(21, v4_1.length)}`);
 }
 
 export function closure5(unitVar: void, v0_1: string): ((arg0: int64) => string) {
@@ -230,8 +236,8 @@ export function closure5(unitVar: void, v0_1: string): ((arg0: int64) => string)
 }
 
 export function closure8(unitVar: void, v0_1: string): int64 {
-    const v2_1: string = v0_1;
-    return toInt64(parse_2(concat(v2_1.slice(0, 7 + 1), v2_1.slice(9, 12 + 1), v2_1.slice(14, 17 + 1), ...v2_1.slice(19, 20 + 1)), 511, false, 64));
+    const v3_1: string = v0_1;
+    return toInt64(parse_2(concat(v3_1.slice(0, 7 + 1), v3_1.slice(9, 12 + 1), v3_1.slice(14, 17 + 1), ...v3_1.slice(19, 20 + 1)), 511, false, 64));
 }
 
 export function closure9(unitVar: void, v0_1: Date): string {
@@ -239,11 +245,11 @@ export function closure9(unitVar: void, v0_1: Date): string {
 }
 
 export function closure10(unitVar: void, v0_1: int64): string {
-    const v6_1: string = newGuid();
-    const v10: string = int64ToString(v0_1);
-    const v14 = "0";
-    const v23: string = method5(18 - v10.length, v14, 0)("") + v10;
-    return parse(`${v23.slice(0, 7 + 1)}-${v23.slice(8, 11 + 1)}-${v23.slice(12, 15 + 1)}-${v23.slice(16, 17 + 1)}${v6_1.slice(21, v6_1.length)}`);
+    const v8: string = newGuid();
+    const v13: string = int64ToString(v0_1);
+    const v18 = "0";
+    const v27: string = method5(18 - v13.length, v18, 0)("") + v13;
+    return parse(`${v27.slice(0, 7 + 1)}-${v27.slice(8, 11 + 1)}-${v27.slice(12, 15 + 1)}-${v27.slice(16, 17 + 1)}${v8.slice(21, v8.length)}`);
 }
 
 export function closure12(v0_1: string, v1_1: Date): string {

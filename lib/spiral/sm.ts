@@ -96,8 +96,8 @@ export function method0(v0_1: int32, v1_1: string, v2_1: int32): ((arg0: string)
 }
 
 export function closure6(v0_1: int32, v1_1: string, v2_1: string): string {
-    const v4_1: string = v1_1;
-    return method0(v0_1 - v2_1.length, v4_1, 0)("") + v2_1;
+    const v5_1: string = v1_1;
+    return method0(v0_1 - v2_1.length, v5_1, 0)("") + v2_1;
 }
 
 export function closure5(v0_1: int32, v1_1: string): ((arg0: string) => string) {
@@ -109,8 +109,8 @@ export function closure4(unitVar: void, v0_1: int32): ((arg0: string) => ((arg0:
 }
 
 export function closure10(v0_1: int32, v1_1: string, v2_1: string): string {
-    const v4_1: string = v1_1;
-    return v2_1 + method0(v0_1 - v2_1.length, v4_1, 0)("");
+    const v5_1: string = v1_1;
+    return v2_1 + method0(v0_1 - v2_1.length, v5_1, 0)("");
 }
 
 export function closure9(v0_1: int32, v1_1: string): ((arg0: string) => string) {
@@ -186,9 +186,9 @@ export function method5(v0_1: string): string {
 }
 
 export function closure23(v0_1: string[], v1_1: string): string[] {
-    const v48: Iterable<string> = ofArray<string>(v0_1);
-    const v51: string = method4();
-    return split_1(v1_1, [join((v51 === "\n") ? method5(v51) : v51, v48)], undefined, 0);
+    const v76: Iterable<string> = ofArray<string>(v0_1);
+    const v79: string = method4();
+    return split_1(v1_1, [join((v79 === "\n") ? method5(v79) : v79, v76)], undefined, 0);
 }
 
 export function closure22(unitVar: void, v0_1: string[]): ((arg0: string) => string[]) {
@@ -253,9 +253,9 @@ export function closure35(v0_1: UH0_$union, v1_1: string): string {
 }
 
 export function closure32(unitVar: void, v0_1: string[]): ((arg0: string) => string) {
-    const v1_1: FSharpList<string> = ofArray_1<string>(v0_1);
-    const v9_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v1_1, UH0_UH0_0());
-    return (v: string): string => closure35(v9_1, v);
+    const v2_1: FSharpList<string> = ofArray_1<string>(v0_1);
+    const v11_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v2_1, UH0_UH0_0());
+    return (v: string): string => closure35(v11_1, v);
 }
 
 export function closure37(v0_1: UH0_$union, v1_1: string): string {
@@ -263,9 +263,9 @@ export function closure37(v0_1: UH0_$union, v1_1: string): string {
 }
 
 export function closure36(unitVar: void, v0_1: string[]): ((arg0: string) => string) {
-    const v1_1: FSharpList<string> = ofArray_1<string>(v0_1);
-    const v9_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v1_1, UH0_UH0_0());
-    return (v: string): string => closure37(v9_1, v);
+    const v2_1: FSharpList<string> = ofArray_1<string>(v0_1);
+    const v11_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v2_1, UH0_UH0_0());
+    return (v: string): string => closure37(v11_1, v);
 }
 
 export function closure39(v0_1: int32, v1_1: string): string {
@@ -288,14 +288,14 @@ export function method8(v0_1: int64, v1_1: string): string {
         return v1_1;
     }
     else {
-        const v8_1: float64 = toFloat64(v0_1) / 2;
-        const v12_1: int64 = toInt64(fromFloat64(Math.ceil(v8_1)));
-        const v18_1: int64 = toInt64(fromFloat64(Math.floor(v8_1)));
-        const v21_1: int64 = toInt64(op_Subtraction(v12_1, 1n));
-        const v22_1: string = v1_1.slice(~~toInt32(0n), ~~toInt32(v21_1) + 1);
-        const v26: int64 = toInt64(op_Subtraction(v2_1, v18_1));
-        const v27: int64 = toInt64(op_Subtraction(v2_1, 1n));
-        return join("", ofArray<string>([v22_1, "...", v1_1.slice(~~toInt32(v26), ~~toInt32(v27) + 1)]));
+        const v9_1: float64 = toFloat64(v0_1) / 2;
+        const v14_1: int64 = toInt64(fromFloat64(Math.ceil(v9_1)));
+        const v21_1: int64 = toInt64(fromFloat64(Math.floor(v9_1)));
+        const v24: int64 = toInt64(op_Subtraction(v14_1, 1n));
+        const v26: string = v1_1.slice(~~toInt32(0n), ~~toInt32(v24) + 1);
+        const v30: int64 = toInt64(op_Subtraction(v2_1, v21_1));
+        const v31: int64 = toInt64(op_Subtraction(v2_1, 1n));
+        return join("", ofArray<string>([v26, "...", v1_1.slice(~~toInt32(v30), ~~toInt32(v31) + 1)]));
     }
 }
 
