@@ -1604,10 +1604,10 @@ def closure21(unit_var: None, v0_1: Callable[[tuple[int, str, bool]], Async[None
 
 
 def method46(__unit: None=None) -> Callable[[Callable[[tuple[int, str, bool]], Async[None]]], US14]:
-    def _arrow233(v: Callable[[tuple[int, str, bool]], Async[None]]) -> US14:
+    def _arrow232(v: Callable[[tuple[int, str, bool]], Async[None]]) -> US14:
         return closure21(None, v)
 
-    return _arrow233
+    return _arrow232
 
 
 def method47(v0_1: bool) -> int:
@@ -1641,49 +1641,49 @@ def closure22(v0_1: str, unit_var: None) -> None:
 
 
 def method44(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, str]], v3: Callable[[tuple[int, str, bool]], Async[None]] | None, v4: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v5: bool, v6: str | None, v7: bool, v8: Any, v9: bool, v10: bool) -> Async[None]:
-    def _arrow243(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4, v5: Any=v5, v6: Any=v6, v7: Any=v7, v8: Any=v8, v9: Any=v9, v10: Any=v10) -> Async[None]:
+    def _arrow242(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4, v5: Any=v5, v6: Any=v6, v7: Any=v7, v8: Any=v8, v9: Any=v9, v10: Any=v10) -> Async[None]:
         v724: str = method45(v10)
         v729: bool = (v724 is None) != True
-        def _arrow241(__unit: None=None) -> Async[None]:
+        def _arrow240(__unit: None=None) -> Async[None]:
             v743: US14 = default_arg(map(method46(), v3), US14(1))
-            def _arrow235(__unit: None=None) -> Async[None]:
+            def _arrow234(__unit: None=None) -> Async[None]:
                 v749: Async[None] = v743.fields[0]((method47(v7), v724, v9))
-                def _arrow234(__unit: None=None) -> Async[None]:
+                def _arrow233(__unit: None=None) -> Async[None]:
                     return singleton.Zero()
 
-                return singleton.Bind(v749, _arrow234)
+                return singleton.Bind(v749, _arrow233)
 
-            def _expr236():
+            def _expr235():
                 return singleton.Zero()
 
-            def _arrow240(__unit: None=None) -> Async[None]:
+            def _arrow239(__unit: None=None) -> Async[None]:
                 v752: str = concat("! ", *v724) if v9 else concat("> ", *v724)
-                def _arrow237(__unit: None=None) -> Async[None]:
+                def _arrow236(__unit: None=None) -> Async[None]:
                     v755: None
                     closure22(v752, None)
                     v755 = None
                     return singleton.Zero()
 
-                def _arrow238(__unit: None=None) -> Async[None]:
+                def _arrow237(__unit: None=None) -> Async[None]:
                     v800: None
                     closure10(v752, None)
                     v800 = None
                     return singleton.Zero()
 
-                def _arrow239(__unit: None=None) -> Async[None]:
+                def _arrow238(__unit: None=None) -> Async[None]:
                     v808: str = concat("\u001b[7;4m" if v9 else "", v724, *"\u001b[0m" if v9 else "")
                     return singleton.Zero()
 
-                return singleton.Combine(_arrow237() if v5 else _arrow238(), singleton.Delay(_arrow239))
+                return singleton.Combine(_arrow236() if v5 else _arrow237(), singleton.Delay(_arrow238))
 
-            return singleton.Combine(_arrow235() if (v743.tag == 0) else _expr236(), singleton.Delay(_arrow240))
+            return singleton.Combine(_arrow234() if (v743.tag == 0) else _expr235(), singleton.Delay(_arrow239))
 
-        def _arrow242(__unit: None=None) -> Async[None]:
+        def _arrow241(__unit: None=None) -> Async[None]:
             return singleton.Zero()
 
-        return singleton.Combine(_arrow241() if v729 else singleton.Zero(), singleton.Delay(_arrow242))
+        return singleton.Combine(_arrow240() if v729 else singleton.Zero(), singleton.Delay(_arrow241))
 
-    return singleton.Delay(_arrow243)
+    return singleton.Delay(_arrow242)
 
 
 def method43(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, str]], v3: Callable[[tuple[int, str, bool]], Async[None]] | None, v4: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v5: bool, v6: str | None, v7: bool, v8: Any, v9: bool, v10: bool) -> Async[None]:
@@ -1699,17 +1699,17 @@ def closure23(unit_var: None, v0_1: CancellationToken) -> US15:
 
 
 def method50(__unit: None=None) -> Callable[[CancellationToken], US15]:
-    def _arrow244(v: CancellationToken) -> US15:
+    def _arrow243(v: CancellationToken) -> US15:
         return closure23(None, v)
 
-    return _arrow244
+    return _arrow243
 
 
 def method51(v0_1: CancellationToken) -> Async[CancellationToken]:
-    def _arrow245(__unit: None=None, v0_1: Any=v0_1) -> Async[CancellationToken]:
+    def _arrow244(__unit: None=None, v0_1: Any=v0_1) -> Async[CancellationToken]:
         return singleton.Return(None)
 
-    return singleton.Delay(_arrow245)
+    return singleton.Delay(_arrow244)
 
 
 def method52(v0_1: bool) -> bool:

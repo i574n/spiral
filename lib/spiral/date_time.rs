@@ -62,6 +62,7 @@ pub mod Date_time {
         US3_2(Date_time::US2),
         US3_3(Date_time::US2),
         US3_4(Date_time::US2),
+        US3_5(Date_time::US2),
     }
     impl core::fmt::Display for US3 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -84,78 +85,78 @@ pub mod Date_time {
         string("hhmm")
     }
     pub fn method0(v0_1: Guid, v1_1: DateTime) -> Guid {
-        let v7_1: DateTime = {
+        let v570: DateTime = {
             let _arg: DateTime = DateTime::unixEpoch();
             _arg.toUniversalTime()
         };
-        let v15: DateTime = {
+        let v580: DateTime = {
             let _arg_1: DateTime = DateTime::specifyKind(v1_1, 2_i32);
             _arg_1.toUniversalTime()
         };
-        let v91: i64 = ((v15.ticks()) - (v7_1.ticks())) / 10_i64;
-        let v93: Option<chrono::DateTime<chrono::Utc>> =
-            chrono::DateTime::from_timestamp_micros(v91);
-        let v107: Date_time::US0 =
-            defaultValue(Date_time::US0::US0_1, map(Date_time::method1(), v93));
-        let v127: Date_time::US1 = match &v107 {
-            Date_time::US0::US0_0(v107_0_0) => {
-                let v113: chrono::NaiveDateTime = match &v107 {
+        let v672: i64 = ((v580.ticks()) - (v570.ticks())) / 10_i64;
+        let v674: Option<chrono::DateTime<chrono::Utc>> =
+            chrono::DateTime::from_timestamp_micros(v672);
+        let v691: Date_time::US0 =
+            defaultValue(Date_time::US0::US0_1, map(Date_time::method1(), v674));
+        let v711: Date_time::US1 = match &v691 {
+            Date_time::US0::US0_0(v691_0_0) => {
+                let v697: chrono::NaiveDateTime = match &v691 {
                     Date_time::US0::US0_0(x) => x.clone(),
                     _ => unreachable!(),
                 }
                 .clone()
                 .naive_utc();
-                let v115: chrono::DateTime<chrono::Local> =
-                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v113);
-                let v117: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
-                let v118: &str = r#"%Y%m%d-%H%M-%S%f"#;
-                let v120: std::string::String = v115.format(v118).to_string();
-                let v122: string = fable_library_rust::String_::fromString(v120);
+                let v699: chrono::DateTime<chrono::Local> =
+                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v697);
+                let v701: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
+                let v702: &str = r#"%Y%m%d-%H%M-%S%f"#;
+                let v704: std::string::String = v699.format(v702).to_string();
+                let v706: string = fable_library_rust::String_::fromString(v704);
                 Date_time::US1::US1_0(sprintf!(
                     "{}-{}-{}",
-                    getSlice(v122.clone(), Some(0_i32), Some(17_i32)),
-                    getSlice(v122.clone(), Some(18_i32), Some(21_i32)),
-                    getCharAt(v122, 22_i32)
+                    getSlice(v706.clone(), Some(0_i32), Some(17_i32)),
+                    getSlice(v706.clone(), Some(18_i32), Some(21_i32)),
+                    getCharAt(v706, 22_i32)
                 ))
             }
             _ => Date_time::US1::US1_1,
         };
-        let v131: string = match &v127 {
-            Date_time::US1::US1_0(v127_0_0) => match &v127 {
+        let v715: string = match &v711 {
+            Date_time::US1::US1_0(v711_0_0) => match &v711 {
                 Date_time::US1::US1_0(x) => x.clone(),
                 _ => unreachable!(),
             }
             .clone(),
             _ => string(""),
         };
-        let v134: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
+        let v722: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
             chrono::Local::now().offset(),
         ) as i64);
-        let v157: i64 = v15.ticks();
-        let v188: string =
+        let v760: i64 = v580.ticks();
+        let v795: string =
             string("chrono::FixedOffset::local_minus_utc(&chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(&chrono::DateTime::from_timestamp_nanos($1))))");
-        let v299: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
+        let v936: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
             &chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(
-                &chrono::DateTime::from_timestamp_nanos(v157),
+                &chrono::DateTime::from_timestamp_nanos(v760),
             )),
         ) as i64);
-        let v312: u8 = if (v299.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
-        let v313: string = Date_time::method2();
-        let v415: string = v299.toString(v313);
-        let v463: string = sprintf!(
+        let v951: u8 = if (v936.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
+        let v952: string = Date_time::method2();
+        let v1121: string = v936.toString(v952);
+        let v1176: string = sprintf!(
             "{}{}{}",
-            v312,
-            getSlice(v415.clone(), Some(0_i32), Some(1_i32)),
-            getSlice(v415, Some(3_i32), Some(4_i32))
+            v951,
+            getSlice(v1121.clone(), Some(0_i32), Some(1_i32)),
+            getSlice(v1121, Some(3_i32), Some(4_i32))
         );
-        let v465: string = toString(v0_1);
+        let v1179: string = toString(v0_1);
         parse(concat(new_array(&[
-            v131.clone(),
-            v463.clone(),
+            v715.clone(),
+            v1176.clone(),
             getSlice(
-                v465.clone(),
-                Some((length(v131)) + (length(v463))),
-                Some((length(v465)) - 1_i32),
+                v1179.clone(),
+                Some((length(v715)) + (length(v1176))),
+                Some((length(v1179)) - 1_i32),
             ),
         ])))
     }
@@ -193,20 +194,20 @@ pub mod Date_time {
         })
     }
     pub fn closure6(v0_1: Guid, v1_1: i64) -> Guid {
-        let v3_1: string = toString(v0_1);
-        let v7_1: string = toString(v1_1);
-        let v11: string = ofChar('0');
-        let v20: string = append(
-            ((Date_time::method5(18_i32 - (length(v7_1.clone())), v11, 0_i32))(string(""))),
-            (v7_1),
+        let v4_1: string = toString(v0_1);
+        let v9: string = toString(v1_1);
+        let v14: string = ofChar('0');
+        let v23: string = append(
+            ((Date_time::method5(18_i32 - (length(v9.clone())), v14, 0_i32))(string(""))),
+            (v9),
         );
         parse(sprintf!(
             "{}-{}-{}-{}{}",
-            getSlice(v20.clone(), Some(0_i32), Some(7_i32)),
-            getSlice(v20.clone(), Some(8_i32), Some(11_i32)),
-            getSlice(v20.clone(), Some(12_i32), Some(15_i32)),
-            getSlice(v20, Some(16_i32), Some(17_i32)),
-            getSlice(v3_1, Some(21_i32), None::<i32>)
+            getSlice(v23.clone(), Some(0_i32), Some(7_i32)),
+            getSlice(v23.clone(), Some(8_i32), Some(11_i32)),
+            getSlice(v23.clone(), Some(12_i32), Some(15_i32)),
+            getSlice(v23, Some(16_i32), Some(17_i32)),
+            getSlice(v4_1, Some(21_i32), None::<i32>)
         ))
     }
     pub fn closure5(unitVar: (), v0_1: Guid) -> Func1<i64, Guid> {
@@ -216,32 +217,32 @@ pub mod Date_time {
         })
     }
     pub fn closure8(unitVar: (), v0_1: Guid) -> i64 {
-        let v2_1: string = toString(v0_1);
+        let v3_1: string = toString(v0_1);
         toInt64(concat(new_array(&[
-            getSlice(v2_1.clone(), Some(0_i32), Some(7_i32)),
-            getSlice(v2_1.clone(), Some(9_i32), Some(12_i32)),
-            getSlice(v2_1.clone(), Some(14_i32), Some(17_i32)),
-            getSlice(v2_1, Some(19_i32), Some(20_i32)),
+            getSlice(v3_1.clone(), Some(0_i32), Some(7_i32)),
+            getSlice(v3_1.clone(), Some(9_i32), Some(12_i32)),
+            getSlice(v3_1.clone(), Some(14_i32), Some(17_i32)),
+            getSlice(v3_1, Some(19_i32), Some(20_i32)),
         ])))
     }
     pub fn closure9(unitVar: (), v0_1: DateTime) -> Guid {
         Date_time::method0(new_guid(), v0_1)
     }
     pub fn closure10(unitVar: (), v0_1: i64) -> Guid {
-        let v6_1: string = toString(new_guid());
-        let v10: string = toString(v0_1);
-        let v14: string = ofChar('0');
-        let v23: string = append(
-            ((Date_time::method5(18_i32 - (length(v10.clone())), v14, 0_i32))(string(""))),
-            (v10),
+        let v8: string = toString(new_guid());
+        let v13: string = toString(v0_1);
+        let v18: string = ofChar('0');
+        let v27: string = append(
+            ((Date_time::method5(18_i32 - (length(v13.clone())), v18, 0_i32))(string(""))),
+            (v13),
         );
         parse(sprintf!(
             "{}-{}-{}-{}{}",
-            getSlice(v23.clone(), Some(0_i32), Some(7_i32)),
-            getSlice(v23.clone(), Some(8_i32), Some(11_i32)),
-            getSlice(v23.clone(), Some(12_i32), Some(15_i32)),
-            getSlice(v23, Some(16_i32), Some(17_i32)),
-            getSlice(v6_1, Some(21_i32), None::<i32>)
+            getSlice(v27.clone(), Some(0_i32), Some(7_i32)),
+            getSlice(v27.clone(), Some(8_i32), Some(11_i32)),
+            getSlice(v27.clone(), Some(12_i32), Some(15_i32)),
+            getSlice(v27, Some(16_i32), Some(17_i32)),
+            getSlice(v8, Some(21_i32), None::<i32>)
         ))
     }
     pub fn closure12(v0_1: string, v1_1: DateTime) -> string {

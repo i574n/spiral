@@ -12195,11 +12195,11 @@ let litFsharp = function
 
 #!markdown
 
-### prim
+### primFsharp
 
 #!fsharp
 
-let prim = function
+let primFsharp = function
     | Int8T -> "int8"
     | Int16T -> "int16"
     | Int32T -> "int32"
@@ -12216,11 +12216,11 @@ let prim = function
 
 #!markdown
 
-### type_lit
+### type_litFsharp
 
 #!fsharp
 
-let type_lit = function
+let type_litFsharp = function
     | YLit x -> litFsharp x
     | YSymbol x -> x
     | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro." 
@@ -12333,8 +12333,8 @@ let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
             match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameFsharp then Some v else None) with
             | Some x -> tup_ty x
             | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameFsharp}' field."
-        | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_lit a) |> String.concat ""
-        | YPrim a -> prim a
+        | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litFsharp a) |> String.concat ""
+        | YPrim a -> primFsharp a
         | YArray a -> sprintf "(%s [])" (tup_ty a)
         | YFun(a,b,FT_Vanilla) -> sprintf "(%s -> %s)" (tup_ty a) (tup_ty b)
         | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
@@ -12401,7 +12401,7 @@ let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
             | _ -> raise_codegen_error "Compiler error: Expected an int in length"
             |> simple
         match a with
-        | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm x -> tup x | CMType x -> tup_ty x | CMTypeLit x -> type_lit x) |> String.concat "" |> simple
+        | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm x -> tup x | CMType x -> tup_ty x | CMTypeLit x -> type_litFsharp x) |> String.concat "" |> simple
         | TySizeOf t -> simple $"sizeof<{tup_ty t}>"
         | TyIf(cond,tr,fl) ->
             complex <| fun s ->
@@ -12655,6 +12655,592 @@ let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
     types |> Seq.iteri (fun i x -> program.Append(if i = 0 then "type " else "and ").Append(x) |> ignore)
     functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
     program.Append(main).ToString()
+
+#!markdown
+
+## CodegenGleam
+
+#!markdown
+
+### backend_nameGleam
+
+#!fsharp
+
+let backend_nameGleam = "Gleam"
+
+#!markdown
+
+### litGleam
+
+#!fsharp
+
+let litGleam = function
+    | LitInt8 x -> sprintf "%i" x
+    | LitInt16 x -> sprintf "%i" x
+    | LitInt32 x -> sprintf "%i" x
+    | LitInt64 x -> sprintf "%i" x
+    | LitUInt8 x -> sprintf "%i" x
+    | LitUInt16 x -> sprintf "%i" x
+    | LitUInt32 x -> sprintf "%i" x
+    | LitUInt64 x -> sprintf "%i" x
+    | LitFloat32 x -> 
+        if x = infinityf then "infinityf"
+        elif x = -infinityf then "-infinityf"
+        elif System.Single.IsNaN x then "nanf"
+        else x.ToString("R") |> add_dec_point |> sprintf "%s"
+    | LitFloat64 x ->
+        if x = infinity then "infinity"
+        elif x = -infinity then "-infinity"
+        elif System.Double.IsNaN x then "nan"
+        else x.ToString("R") |> add_dec_point
+    | LitString x -> 
+        let strb = System.Text.StringBuilder(x.Length+2)
+        strb.Append '"' |> ignore
+        String.iter (function
+            | '"' -> strb.Append "\\\"" 
+            | '\b' -> strb.Append @"\b"
+            | '\t' -> strb.Append @"\t"
+            | '\n' -> strb.Append @"\n"
+            | '\r' -> strb.Append @"\r"
+            | '\\' -> strb.Append @"\\"
+            | x -> strb.Append x
+            >> ignore 
+            ) x
+        strb.Append '"' |> ignore
+        strb.ToString()
+    | LitChar x -> 
+        match x with
+        | '\b' -> @"\b"
+        | '\n' -> @"\n"
+        | '\t' -> @"\t"
+        | '\r' -> @"\r"
+        | '\\' -> @"\\"
+        | x -> string x
+        |> sprintf "'%s'"
+    | LitBool x -> if x then "True" else "False"
+
+#!markdown
+
+### primGleam
+
+#!fsharp
+
+let primGleam = function
+    | Int8T -> "Int"
+    | Int16T -> "Int"
+    | Int32T -> "Int"
+    | Int64T -> "Int"
+    | UInt8T -> "Int"
+    | UInt16T -> "Int"
+    | UInt32T -> "Int"
+    | UInt64T -> "Int"
+    | Float32T -> "Float"
+    | Float64T -> "Float"
+    | BoolT -> "Bool"
+    | StringT -> "String"
+    | CharT -> "String"
+
+#!markdown
+
+### type_litGleam
+
+#!fsharp
+
+let type_litGleam = function
+    | YLit x -> litGleam x
+    | YSymbol x -> x
+    | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro." 
+
+#!markdown
+
+### UnionRecGleam
+
+#!fsharp
+
+type UnionRecGleam = {tag : int; free_vars : Map<int * string, TyV[]>}
+
+#!markdown
+
+### LayoutRecGleam
+
+#!fsharp
+
+type LayoutRecGleam = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
+
+#!markdown
+
+### MethodRecGleam
+
+#!fsharp
+
+type MethodRecGleam = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
+
+#!markdown
+
+### ClosureRecGleam
+
+#!fsharp
+
+type ClosureRecGleam = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
+
+#!markdown
+
+### codegenGleam
+
+#!fsharp
+
+let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
+    let types = ResizeArray()
+    let functions = ResizeArray()
+
+    let print is_type show r =
+        let s = {text=System.Text.StringBuilder(); indent=0}
+        show s r
+        let text = s.text.ToString()
+        if is_type then types.Add(text) else functions.Add(text)
+
+    let layout show =
+        let dict' = Dictionary(HashIdentity.Structural)
+        let dict = Dictionary(HashIdentity.Reference)
+        let f x : LayoutRecGleam = 
+            match x with
+            | YLayout(x,_) ->
+            let x = env.ty_to_data x
+            let a, b =
+                match x with
+                | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                | _ -> data_free_vars x, Map.empty
+            {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+            | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
+        fun x ->
+            let mutable dirty = false
+            let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
+            if dirty then print true show r
+            r
+
+    let union show =
+        let dict = Dictionary(HashIdentity.Reference)
+        let f (a : Map<int * string,Ty>) : UnionRecGleam = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+        fun x ->
+            let mutable dirty = false
+            let r = memoize dict (fun x -> dirty <- true; f x) x
+            if dirty then print true show r
+            r
+
+    let jp f show =
+        let dict = Dictionary(HashIdentity.Structural)
+        let f x = f (x, dict.Count)
+        fun x ->
+            let mutable dirty = false
+            let r = memoize dict (fun x -> dirty <- true; f x) x
+            if dirty then print false show r
+            r
+
+    let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+    let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litGleam a
+
+    let global' =
+        let has_added = HashSet env.globals
+        fun x -> if has_added.Add(x) then env.globals.Add x
+
+    let rec tyv x =
+        match x with
+        | YUnion a -> 
+            let a = a.Item
+            match a.layout with
+            | UHeap -> sprintf "Uh%i" (uheap a.cases).tag
+            | UStack -> sprintf "Us%i" (ustack a.cases).tag
+        | YLayout(_,lay) as a -> 
+            match lay with
+            | Heap -> sprintf "Heap%i" (heap a).tag
+            | HeapMutable -> sprintf "Mut%i" (mut a).tag
+            | StackMutable -> raise_codegen_error "Compiler error: The F# backend doesn't support stack mutable layout types."
+        | YMacro [Text "backend_switch "; Type (YRecord r)] ->
+            match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameGleam then Some v else None) with
+            | Some x -> tup_ty x
+            | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameGleam}' field."
+        | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litGleam a) |> String.concat ""
+        | YPrim a -> primGleam a
+        | YArray a ->
+            global' "import gary.{type ErlangArray}"
+            sprintf "ErlangArray(%s)" (tup_ty a)
+        | YFun(a,b,FT_Vanilla) -> sprintf "fn(%s) -> %s" (tup_ty a) (tup_ty b)
+        | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
+        | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
+        | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
+    and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i :    %s" i (tup_ty t)) |> String.concat ", "
+    and binds (s : CodegenEnv) (x : TypedBind []) =
+        Array.iter (function
+            | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+            | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+            | TyLocalReturnData(d,trace) -> try line s (tup d) with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+            ) x
+    and tup x =
+        match data_term_vars x with
+        | [||] -> "Nil "
+        | [|x|] -> show_w x
+        | x -> Array.map show_w x |> String.concat ", " |> sprintf "#(%s) "
+    and tup_ty x =
+        match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,x)) -> tyv x) with
+        | [||] -> "Nil  "
+        | [|x|] -> x
+        | x -> String.concat ", " x |> sprintf "#(%s)  "
+    and op s d a =
+        let jp (a, b) =
+            let args = args b
+            match a with
+            | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
+            | JPClosure(a,b) ->
+                sprintf
+                    "closure%i(%s)"
+                    (closure (a,b)).tag
+                    (if args = "" then "" else $")(#({args})")
+        let free_vars do_annot x =
+            let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
+            match data_free_vars x with
+            | [||] -> "Nil   "
+            | [|x|] -> f x
+            | x -> Array.map f x |> String.concat ", " |> sprintf "#(%s)   "
+        let simple x = 
+            match d with
+            | None -> x
+            | Some d ->
+                match free_vars false d |> SpiralSm.trim with
+                | "Nil" -> x
+                | d -> sprintf "let %s = %s" d x
+            |> line s
+        let complex f =
+            match d with
+            | None -> f s : unit
+            | Some d ->
+                match free_vars false d |> SpiralSm.trim with
+                | "Nil" -> f s
+                | d ->
+                    line s (sprintf "let %s =" d)
+                    f (indent s)
+        let layout_vars a =
+            let f i x =
+                match x with
+                | WV(L(i',_)) -> sprintf "l%i :  v%i" i i'
+                | WLit x -> sprintf "l%i :  %s" i (litGleam x)
+            a |> data_term_vars |> Array.mapi f |> String.concat ", "
+        let layout_index i x =
+            x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
+            |> String.concat ", "
+            |> function "" -> () | x -> simple x
+        let length (a,b) =
+            global' "import gleam/string"
+            sprintf "string.length(%s)" (tup b)
+            |> simple
+        match a with
+        | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm x -> tup x | CMType x -> tup_ty x | CMTypeLit x -> type_litGleam x) |> String.concat "" |> simple
+        | TySizeOf t -> simple $"0"
+        | TyIf(cond,tr,fl) ->
+            complex <| fun s ->
+            // line s (sprintf "if %s then" (tup cond))
+            line s (sprintf "case %s {" (tup cond))
+            line (indent s) "True -> {"
+            binds (indent (indent s)) tr
+            line (indent s) "}"
+            line (indent s) "False -> {"
+            match fl with
+            | [|TyLocalReturnData(DB,_)|] ->
+                line (indent s) "Nil"
+            | _ ->
+                binds (indent (indent s)) fl
+            line (indent s) "}"
+            line s "}"
+        | TyJoinPoint(a,args) -> simple (jp (a, args))
+        | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Gleam backend does not support nesting other backends."
+        | TyWhile(a,b) ->
+            complex <| fun s ->
+            line s (sprintf "while %s {" (jp a))
+            binds (indent s) b
+            line s "}"
+        | TyDo a ->
+            complex <| fun s ->
+            line s "{"
+            binds (indent s) a
+            line s "}"
+        | TyIndent a ->
+            complex <| fun s ->
+            binds (indent s) a
+        | TyIntSwitch(L(i,_),on_succ,on_fail) ->
+            complex <| fun s ->
+            line s (sprintf "case v%i {" i)
+            Array.iteri (fun i x ->
+                line (indent s) (sprintf "%i -> {" i)
+                binds (indent (indent s)) x
+                line (indent s) "}"
+                ) on_succ
+            line (indent s) "_ -> {"
+            binds (indent (indent s)) on_fail
+            line (indent s) "}"
+        | TyUnionUnbox(is,x,on_succs,on_fail) ->
+            complex <| fun s ->
+            let case_tags = x.Item.tags
+            line s (sprintf "case %s {" (is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "))
+            let prefix = 
+                let x = x.Item
+                match x.layout with
+                | UHeap -> sprintf "Uh%i" (uheap x.cases).tag
+                | UStack -> sprintf "Us%i" (ustack x.cases).tag
+            Map.iter (fun k (a,b) ->
+                let i = case_tags.[k]
+                let cases = 
+                    a |> List.map (fun a ->
+                        match data_free_vars a with
+                        | [||] -> ""
+                        | x -> sprintf "(%s)" (args x)
+                        |> sprintf "%si%i%s" prefix i
+                        )
+                    |> String.concat ", "
+                line (indent s) (sprintf "%s -> { // %s" cases k)
+                binds (indent (indent s)) b
+                line (indent s) "}"
+                ) on_succs
+            on_fail |> Option.iter (fun b ->
+                line (indent s) "_ -> {"
+                binds (indent (indent s)) b
+                line (indent s) "}"
+                )
+            line s "}"
+        | TyUnionBox(a,b,c) ->
+            let c = c.Item
+            let i = c.tags.[a]
+            let vars =
+                match data_term_vars b with
+                | [||] -> ""
+                | x -> Array.map show_w x |> String.concat ", " |> sprintf "(%s)"
+            match c.layout with
+            | UHeap -> sprintf "Uh%ii%i%s" (uheap c.cases).tag i vars
+            | UStack -> sprintf "Us%ii%i%s" (ustack c.cases).tag i vars
+            |> simple
+        | TyToLayout(a,b) -> 
+            let a = layout_vars a
+            match b with
+            | YLayout(_,layout) -> 
+                match layout with
+                | Heap -> if a = "" then sprintf "Heap%i()" (heap b).tag else sprintf "Heap%i(%s)" (heap b).tag a
+                | HeapMutable -> if a = "" then sprintf "Mut%i()" (mut b).tag else sprintf "Mut%i(%s)" (mut b).tag a
+                | StackMutable -> raise_codegen_error "The F# backend doesn't support stack mutable layout types."
+            | _ -> raise_codegen_error $"Compiler error: Expected a layout type (4).\nGot: %s{show_ty b}"
+            |> simple
+        | TyLayoutIndexAll(L(i,YLayout(_,lay) & a)) -> 
+            match lay with
+            | Heap -> heap a 
+            | HeapMutable -> mut a 
+            | StackMutable -> raise_codegen_error "The F# backend doesn't support indexing into stack mutable layout types."
+            |> fun x -> x.free_vars |> layout_index i
+        | TyLayoutIndexByKey(L(i,YLayout(_,lay) & a),key) -> 
+            match lay with
+            | Heap -> heap a
+            | HeapMutable -> mut a 
+            | StackMutable -> raise_codegen_error "The F# backend doesn't support indexing into stack mutable layout types."
+            |> fun x ->
+                x.free_vars_by_key
+                |> Map.tryPick (fun (_, k) v -> if k = key then Some v else None)
+                |> Option.iter (layout_index i)
+        | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
+        | TyLayoutMutableSet(L(i,t),b,c) ->
+            let a = List.fold (fun s k ->
+                match s with
+                | DRecord l -> l |> Map.pick (fun (_,k') v -> if k' = k then Some v else None)
+                | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
+            let a_vars = data_free_vars a
+            Array.iter2 (fun (L(i',_)) b ->
+                if a_vars |> Array.length > 1
+                then line s (sprintf "let v%i = %s(..v%i, l%i: %s)" i (tup_ty t) i i' (show_w b))
+                else line s (sprintf "let v%i = %s(l%i: %s)" i (tup_ty t) i' (show_w b))
+                ) a_vars (data_term_vars c)
+        | TyArrayLiteral(a,b) -> simple <| sprintf "[ %s ]" (List.map tup b |> String.concat ", ")
+        | TyArrayCreate(a,b) -> simple "[]"
+        | TyArrayLength(a,b) -> length (a,b)
+        | TyStringLength(a,b) -> length (a,b)
+        | TyFailwith(a,b) -> simple (sprintf "panic as %s" (tup b))
+        | TyConv(a,b) ->
+            let b = tup b
+            match a with
+            | YPrim Int8T -> $"{b}"
+            | YPrim Int16T -> $"{b}"
+            | YPrim Int32T -> $"{b}"
+            | YPrim Int64T -> $"{b}"
+            | YPrim UInt8T -> $"{b}"
+            | YPrim UInt16T -> $"{b}"
+            | YPrim UInt32T -> $"{b}"
+            | YPrim UInt64T -> $"{b}"
+            | YPrim Float32T -> $"{b}"
+            | YPrim Float64T -> $"{b}"
+            | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
+            |> simple
+        | TyApply(L(i,_),b) ->
+            match tup b with
+            | "Nil " -> $"v{i}"
+            | b' -> $"v{i}({b'})"
+            |> simple
+        | TyOp(Global, [DLit (LitString x)]) -> global' x
+        | TyOp(op,l) ->
+            match op, l with
+            | Dyn,[a] -> tup a
+            | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+            | StringIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
+            | StringSlice, [a;b;c] -> sprintf "%s.[int %s..int %s]" (tup a) (tup b) (tup c)
+            | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
+            | ArrayIndexSet, [a;b;c] -> sprintf "%s.[int %s] <- %s" (tup a) (tup b) (tup c) 
+
+            // Math
+            | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
+            | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
+            | Mult, [a;b] -> sprintf "%s * %s" (tup a) (tup b)
+            | Div, [a;b] -> sprintf "%s / %s" (tup a) (tup b)
+            | Mod, [a;b] -> sprintf "%s %% %s" (tup a) (tup b)
+            | Pow, [a;b] -> sprintf "%s ** %s" (tup a) (tup b)
+            | LT, [a;b] -> sprintf "%s < %s" (tup a) (tup b)
+            | LTE, [a;b] -> sprintf "%s <= %s" (tup a) (tup b)
+            | EQ, [a;b] -> sprintf "%s == %s" (tup a) (tup b)
+            | NEQ, [a;b] -> sprintf "%s != %s" (tup a) (tup b)
+            | GT, [a;b] -> sprintf "%s > %s" (tup a) (tup b)
+            | GTE, [a;b] -> sprintf "%s >= %s" (tup a) (tup b)
+            | BoolAnd, [a;b] -> sprintf "%s && %s" (tup a) (tup b)
+            | BoolOr, [a;b] -> sprintf "%s || %s" (tup a) (tup b)
+            | BitwiseAnd, [a;b] -> sprintf "%s &&& %s" (tup a) (tup b)
+            | BitwiseOr, [a;b] -> sprintf "%s ||| %s" (tup a) (tup b)
+            | BitwiseXor, [a;b] -> sprintf "%s ^^^ %s" (tup a) (tup b)
+            | BitwiseComplement, [a] -> sprintf "~~~%s" (tup a)
+
+            | ShiftLeft, [a;b] -> sprintf "%s <<< %s" (tup a) (tup b)
+            | ShiftRight, [a;b] -> sprintf "%s >>> %s" (tup a) (tup b)
+
+            | Neg, [x] -> sprintf " -%s" (tup x)
+            | Log, [x] -> sprintf "log %s" (tup x)
+            | Exp, [x] -> sprintf "exp %s" (tup x)
+            | Tanh, [x] -> sprintf "tanh %s" (tup x)
+            | Sqrt, [x] -> sprintf "sqrt %s" (tup x)
+            | Sin, [x] -> sprintf "sin %s" (tup x)
+            | Cos, [x] -> sprintf "cos %s" (tup x)
+            | NanIs, [x] -> 
+                match x with
+                | DLit(LitFloat32 _) | DV(L(_,YPrim Float32T)) -> sprintf "System.Single.IsNaN(%s)" (tup x)
+                | DLit(LitFloat64 _) | DV(L(_,YPrim Float64T)) -> sprintf "System.Double.IsNaN(%s)" (tup x)
+                | _ -> raise_codegen_error "Compiler error: Invalid type in NanIs."
+            | UnionTag, [DV(L(i,YUnion h))] -> 
+                let h = h.Item
+                let ty =
+                    match h.layout with
+                    | UHeap -> sprintf "Uh%i" (uheap h.cases).tag
+                    | UStack -> sprintf "Us%i" (ustack h.cases).tag
+                let items =
+                    h.cases
+                    |> Seq.map (fun (KeyValue ((i, _), _)) ->
+                        $"{ty}_{i}, {i}"
+                    )
+                    |> String.concat "; "
+                $"[ {items} ] |> Map |> Map.find v{i}"
+            | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
+            |> simple
+    and heap : _ -> LayoutRecGleam = layout (fun s x ->
+        let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat ", "
+        if b = "" then line s (sprintf "Heap%i { Heap%i() }" x.tag x.tag)
+        else line s (sprintf "Heap%i { Heap%i(%s) }" x.tag x.tag b)
+        )
+    and mut : _ -> LayoutRecGleam = layout (fun s x ->
+        let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat ", "
+        if b = "" then line s (sprintf "Mut%i { Mut%i() }" x.tag x.tag)
+        else line s (sprintf "Mut%i { Mut%i(%s) }" x.tag x.tag b)
+        )
+    and uheap : _ -> UnionRecGleam = union (fun s x ->
+        line s (sprintf "Uh%i {" x.tag)
+        let mutable i = 0
+        x.free_vars |> Map.iter (fun _ a ->
+            match a with
+            | [||] -> line (indent s) (sprintf "Uh%ii%i" x.tag i)
+            | a -> line (indent s) (sprintf "Uh%ii%i(%s)" x.tag i (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "))
+            i <- i+1
+            )
+        line s "}"
+        )
+    and ustack : _ -> UnionRecGleam = union (fun s x ->
+        line s (sprintf "Us%i {" x.tag)
+        let mutable i = 0
+        x.free_vars |> Map.iter (fun _ a ->
+            match a with
+            | [||] -> line (indent s) (sprintf "Us%ii%i" x.tag i)
+            | a -> line (indent s) (sprintf "Us%ii%i(%s)" x.tag i (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%ii%i : %s" i i' (tyv t)) |> String.concat ", "))
+            i <- i+1
+            )
+        line s "}"
+        )
+    and method : _ -> MethodRecGleam =
+        jp (fun ((jp_body,key & (C(args,_))),i) ->
+            match (fst env.join_point_method.[jp_body]).[key] with
+            | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+            | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+            ) (fun s x ->
+            line s (sprintf "method%i (%s) -> %s {" x.tag (args_tys x.free_vars) (tup_ty x.range))
+            binds (indent s) x.body
+            line s "}"
+            )
+    and closure : _ -> ClosureRecGleam =
+        jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
+            match fun_ty with
+            | YFun(domain,range,FT_Vanilla) ->
+                match (fst env.join_point_closure.[jp_body]).[key] with
+                | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
+                | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+            | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
+            | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
+            ) (fun s x ->
+            let domain = 
+                let domain_args =
+                    if x.domain_args |> Array.length < 1 then
+                        x.domain_args
+                        |> Array.map (fun (L(i,t)) ->
+                            sprintf "v%i :   %s" i (tyv t)
+                        )
+                    else
+                        let t =
+                            x.domain_args
+                            |> Array.map (fun (L(_,t)) -> $"{tyv t}")
+                            |> String.concat ", "
+                        [| $"x : #( {t})" |]
+                match domain_args with
+                | [||] -> ""
+                | [|x|] -> x
+                | x -> String.concat ", " x
+            let free_vars_tys =
+                if x.domain_args |> Array.length < 1 then
+                    let t =
+                        x.free_vars
+                        |> Array.map (fun (L(_,t)) -> tup_ty t)
+                        |> String.concat ", "
+                    $"x : #(  {t})"
+                else args_tys x.free_vars
+            let args =
+                [| free_vars_tys; domain |]
+                |> Array.filter ((<>) "")
+                |> String.concat ", "
+            let args' =
+                if x.domain_args |> Array.length < 0 then
+                    ""
+                else
+                    let args =
+                        (if x.domain_args |> Array.isEmpty then x.free_vars else x.domain_args)
+                        |> Array.map (fun (L(i,_)) -> $"v{i}")
+                        |> String.concat ", "
+                    $"let #({args}) = x"
+            line s (sprintf "closure%i () -> fn(_) -> %s { fn(%s) { %s" x.tag (tup_ty x.range) args args')
+            binds (indent s) x.body
+            line s "}}"
+            )
+
+    let main = System.Text.StringBuilder()
+    binds {text=main; indent=0} x
+
+    let program = System.Text.StringBuilder()
+    env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+    types |> Seq.iteri (fun i x -> program.Append("pub type ").Append(x) |> ignore)
+    functions |> Seq.iteri (fun i x -> program.Append("pub fn ").Append(x) |> ignore)
+    program.Append($"pub fn main () {{ {main} }}").ToString()
 
 #!markdown
 
@@ -18036,6 +18622,7 @@ let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorError
                                     let (a,_),b = peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend} main
                                     BuildOk [{|code = codegen b a; file_extension = file_extension|}]
                                 match backend with
+                                | "Gleam" -> build codegenGleam "Gleam" "gleam"
                                 | "Fsharp" -> build codegenFsharp "Fsharp" "fsx"
                                 | "C" -> build CodegenC.codegenC "C" "c"
                                 | "Python + Cuda" -> build (CodegenPython.codegenPython default_env) "Python" "py"
@@ -18369,6 +18956,91 @@ async {
 //    do! Async.Sleep 500
 
     let backendId = "Fsharp"
+    let buildFileArgs = {| uri = fullPathUri; backend = backendId |}
+    let! buildFileResult =
+        server.job_val (fun res -> server.supervisor *<+ SupervisorReq.BuildFile(buildFileArgs,res))
+        |> Async.AwaitTask
+        |> Async.runWithTimeoutAsync 15000
+        |> Async.map Option.get
+    trace Info (fun () -> $"spiral_compiler.run / BuildFile / buildFileResult: %A{buildFileResult}") (fun () -> "")
+    return buildFileResult
+
+
+    (*
+    let lines = code |> SpiralSm.split "\n"
+    let fileTokenRangeArgs =
+        {|
+            uri = fullPathUri
+            range =
+                {|
+                    line = 0
+                    character = 0
+                |},
+                {|
+                    line = lines.Length - 1
+                    character = lines.[lines.Length - 1].Length
+                |}
+        |}
+    let! fileTokenRangeResult =
+        job_val (fun res -> supervisor *<+ Supervisor.SupervisorReq.FileTokenRange(fileTokenRangeArgs,res))
+        |> Async.AwaitTask
+    trace Info (fun () -> $"Supervisor.FileTokenRange / fileTokenRangeResult: %A{fileTokenRangeResult.Length}") (fun () -> "")
+    *)
+}
+|> Async.runWithTimeout 10000
+|> Option.map (fun x -> x |> SpiralSm.replace "\r\n" "\n")
+|> _assertEqual (Some "2\n")
+
+#!fsharp
+
+//// test
+
+SpiralTrace.TraceLevel.US0_0 |> set_trace_level
+
+let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+async {
+(*
+    let fullPath = Supervisor.workspaceRoot </> "deps/spiral/lib/spiral/package.spiproj"
+    let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+    let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
+    let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
+    let! projectFileOpenResult =
+        job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
+        |> Async.AwaitTask
+    trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
+    do! Async.Sleep 500
+
+    let fullPath = "C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/package.spiproj"
+    let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+    let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
+    let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
+    let! projectFileOpenResult =
+        job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
+        |> Async.AwaitTask
+    trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
+    do! Async.Sleep 500
+*)
+    let code = "inl main () = join (Some (1i32 + 1))"
+    let struct (fullPath, disposable) = SpiralFileSystem.create_temp_dir ()
+    use _ = disposable
+    let fullPathSpi = fullPath </> "main.spi"
+    do! code |> SpiralFileSystem.write_all_text_async fullPathSpi
+    let fullPathSpiproj = fullPath </> "package.spiproj"
+    do! "packages:\n |core-\nmodules:\n main\n" |> SpiralFileSystem.write_all_text_async fullPathSpiproj
+    // let x = code |> Supervisor.persistCode
+    let fullPathUri = fullPathSpi |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+    // let! code = fullPath |> SpiralFileSystem.read_all_text_async
+    let fileOpenArgs = {| uri = fullPathUri; spiText = code |}
+    let! fileOpenResult =
+        server.job_null (server.supervisor *<+ SupervisorReq.FileOpen fileOpenArgs)
+        |> Async.AwaitTask
+        |> Async.runWithTimeoutAsync 20000
+        |> Async.map Option.get
+    trace Info (fun () -> $"spiral_compiler.run / FileOpen / fileOpenResult: %A{fileOpenResult}") (fun () -> "")
+
+//    do! Async.Sleep 500
+
+    let backendId = "Gleam"
     let buildFileArgs = {| uri = fullPathUri; backend = backendId |}
     let! buildFileResult =
         server.job_val (fun res -> server.supervisor *<+ SupervisorReq.BuildFile(buildFileArgs,res))

@@ -200,7 +200,7 @@ class US5(Union):
 
 US5_reflection = _expr18
 
-def _expr21() -> TypeInfo:
+def _expr20() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
 
 
@@ -216,7 +216,7 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr21
+US6_reflection = _expr20
 
 def _expr24() -> TypeInfo:
     return union_type("Common.US7", [], US7, lambda: [[("f0_0", US6_reflection())], []])
@@ -249,10 +249,10 @@ def closure1(unit_var: None, v0_1: str) -> US5:
 
 
 def method5(__unit: None=None) -> Callable[[str], US5]:
-    def _arrow28(v: str) -> US5:
+    def _arrow27(v: str) -> US5:
         return closure1(None, v)
 
-    return _arrow28
+    return _arrow27
 
 
 def method2(v0_1: str) -> str:
@@ -280,7 +280,7 @@ def method2(v0_1: str) -> str:
 def method1(__unit: None=None) -> tuple[US1, US2]:
     v1_1: str = method2("TRACE_LEVEL")
     v6: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
-    def _arrow41(__unit: None=None) -> US1:
+    def _arrow39(__unit: None=None) -> US1:
         v13: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
         if v13.tag == 0:
             return US1(0, v13.fields[0])
@@ -302,7 +302,7 @@ def method1(__unit: None=None) -> tuple[US1, US2]:
 
 
 
-    return (US1(0, v6.fields[0]) if (v6.tag == 0) else _arrow41(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
+    return (US1(0, v6.fields[0]) if (v6.tag == 0) else _arrow39(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
 
 
 def closure2(unit_var: None, v0_1: str) -> None:
@@ -337,11 +337,11 @@ def method7(v0_1: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0_1: Callable[[], None]) -> IDisposable:
     v10: Callable[[], None] = method7(v0_1)
-    class ObjectExpr46(IDisposable):
+    class ObjectExpr45(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
             v10(None)
 
-    return ObjectExpr46()
+    return ObjectExpr45()
 
 
 def closure6(unit_var: None, v0_1: US6) -> US7:
@@ -368,17 +368,17 @@ def method9(v0_1: US0) -> bool:
         return False
 
     else: 
-        class ObjectExpr63:
+        class ObjectExpr62:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        class ObjectExpr66:
+        class ObjectExpr64:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr63())) >= find(v35, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr66()))
+        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr62())) >= find(v35, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr64()))
 
 
 
@@ -387,10 +387,10 @@ def closure10(unit_var: None, v0_1: int64) -> US2:
 
 
 def method11(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow68(v: int64) -> US2:
+    def _arrow67(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow68
+    return _arrow67
 
 
 def method12(__unit: None=None) -> str:

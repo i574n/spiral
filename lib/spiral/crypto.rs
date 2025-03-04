@@ -214,6 +214,7 @@ pub mod Crypto {
         US4_2(Crypto::US3),
         US4_3(Crypto::US3),
         US4_4(Crypto::US3),
+        US4_5(Crypto::US3),
     }
     impl core::fmt::Display for US4 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -243,94 +244,94 @@ pub mod Crypto {
         string("")
     }
     pub fn method0(v0_1: string) -> string {
-        let v5: Array<u8> = {
+        let v9: Array<u8> = {
             let _arg: LrcPtr<dyn Encoding> = get_UTF8();
             _arg.getBytes(v0_1)
         };
-        let v7: Vec<u8> = v5.to_vec();
-        let v9: std::io::Cursor<Vec<u8>> = std::io::Cursor::new(v7);
-        let v11: std::io::BufReader<std::io::Cursor<Vec<u8>>> = std::io::BufReader::new(v9);
-        let v13: bool = true;
-        let mut v11 = v11;
+        let v11: Vec<u8> = v9.to_vec();
+        let v13: std::io::Cursor<Vec<u8>> = std::io::Cursor::new(v11);
+        let v15: std::io::BufReader<std::io::Cursor<Vec<u8>>> = std::io::BufReader::new(v13);
+        let v17: bool = true;
+        let mut v15 = v15;
         let result: sha2::Sha256 = sha2::Digest::new();
         {
-            let v16: sha2::Sha256 = result;
-            let v18: bool = true;
-            let mut v16 = v16;
-            let v19: usize = 0_i32 as usize;
-            let v23: _ = [0_u8; 1024];
-            let v25: bool = true;
+            let v20: sha2::Sha256 = result;
+            let v22: bool = true;
+            let mut v20 = v20;
+            let v24: usize = 0_i32 as usize;
+            let v28: _ = [0_u8; 1024];
+            let v30: bool = true;
             loop {
                 // rust.loop;
-                let v27: bool = true;
-                let mut v23 = v23;
-                let v29: Result<usize, std::io::Error> = std::io::Read::read(&mut v11, &mut v23);
-                let v41: usize = v29.unwrap();
-                if (v41) == (v19) {
-                    let v48: bool = true;
+                let v32: bool = true;
+                let mut v28 = v28;
+                let v34: Result<usize, std::io::Error> = std::io::Read::read(&mut v15, &mut v28);
+                let v47: usize = v34.unwrap();
+                if (v47) == (v24) {
+                    let v55: bool = true;
                     break;
                     ()
                 }
                 {
-                    let v49: usize = v41;
-                    let v64: &_ = if (v49) == (v23.len()) {
-                        &v23[v19..]
+                    let v57: usize = v47;
+                    let v74: &_ = if (v57) == (v28.len()) {
+                        &v28[v24..]
                     } else {
-                        &v23[v19..v49]
+                        &v28[v24..v57]
                     };
-                    sha2::Digest::update(&mut v16, v64);
+                    sha2::Digest::update(&mut v20, v74);
                     {
-                        let v67: bool = true;
+                        let v77: bool = true;
                     } // rust.loop;
-                    let v69: bool = true;
+                    let v79: bool = true;
                 } // rust.loop;
-                let v71: bool = true;
+                let v81: bool = true;
             } // rust.loop;
-            let v73: bool = true;
+            let v83: bool = true;
             {
                 // rust.loop;
-                let v75: bool = true;
+                let v85: bool = true;
                 {
                     // rust.loop;
-                    let v77: &[u8] = &sha2::Digest::finalize(v16);
-                    let v79: Vec<u8> = v77.iter().map(|x| *x).collect::<Vec<_>>();
-                    let v81: bool = true;
-                    let _vec_map: Vec<_> = v79
+                    let v87: &[u8] = &sha2::Digest::finalize(v20);
+                    let v89: Vec<u8> = v87.iter().map(|x| *x).collect::<Vec<_>>();
+                    let v91: bool = true;
+                    let _vec_map: Vec<_> = v89
                         .into_iter()
                         .map(|x| {
                             //;
-                            let v83: u8 = x;
-                            let v85: std::string::String = format!("{:02x}", v83);
-                            let v87: string = fable_library_rust::String_::fromString(v85);
-                            let v89: bool = true;
-                            v87
+                            let v93: u8 = x;
+                            let v95: std::string::String = format!("{:02x}", v93);
+                            let v97: string = fable_library_rust::String_::fromString(v95);
+                            let v99: bool = true;
+                            v97
                         })
                         .collect::<Vec<_>>();
-                    let v91: Vec<string> = _vec_map;
-                    let v93: Array<string> =
-                        fable_library_rust::NativeArray_::array_from(v91.clone());
-                    let _let__v94: LrcPtr<dyn IEnumerable_1<string>> = delay(Func0::new({
-                        let v93 = v93.clone();
+                    let v101: Vec<string> = _vec_map;
+                    let v103: Array<string> =
+                        fable_library_rust::NativeArray_::array_from(v101.clone());
+                    let _let__v107: LrcPtr<dyn IEnumerable_1<string>> = delay(Func0::new({
+                        let v103 = v103.clone();
                         move || {
                             map(
                                 Func1::new({
-                                    let v93 = v93.clone();
-                                    move |i: i32| v93[i].clone()
+                                    let v103 = v103.clone();
+                                    move |i: i32| v103[i].clone()
                                 }),
-                                rangeNumeric(0_i32, 1_i32, (get_Count(v93.clone())) - 1_i32),
+                                rangeNumeric(0_i32, 1_i32, (get_Count(v103.clone())) - 1_i32),
                             )
                         }
                     }));
-                    let v103: string = Crypto::method1();
-                    let v109: string = join(
-                        if (v103.clone()) == string("\n") {
-                            Crypto::method2(v103.clone())
+                    let v116: string = Crypto::method1();
+                    let v123: string = join(
+                        if (v116.clone()) == string("\n") {
+                            Crypto::method2(v116.clone())
                         } else {
-                            v103
+                            v116
                         },
-                        toArray(_let__v94),
+                        toArray(_let__v107),
                     );
-                    Ok::<string, std::io::Error>(v109).unwrap()
+                    Ok::<string, std::io::Error>(v123).unwrap()
                 }
             }
         }
@@ -351,19 +352,19 @@ pub mod Crypto {
         Func1::new(move |v: string| Crypto::closure4((), v))
     }
     pub fn method8(v0_1: string) -> string {
-        let v2: string = Crypto::method9(v0_1);
-        let v4: Result<std::string::String, std::env::VarError> = std::env::var(&*v2);
-        let v6: bool = true;
-        let _result_map_ = v4.map(|x| {
+        let v6: string = Crypto::method9(v0_1);
+        let v8: Result<std::string::String, std::env::VarError> = std::env::var(&*v6);
+        let v10: bool = true;
+        let _result_map_ = v8.map(|x| {
             //;
-            let v8: std::string::String = x;
-            let v10: string = fable_library_rust::String_::fromString(v8);
-            let v12: bool = true;
-            v10
+            let v12: std::string::String = x;
+            let v14: string = fable_library_rust::String_::fromString(v12);
+            let v16: bool = true;
+            v14
         });
-        let v14: Result<string, std::env::VarError> = _result_map_;
-        let v15: string = Crypto::method10();
-        v14.unwrap_or(v15)
+        let v18: Result<string, std::env::VarError> = _result_map_;
+        let v19: string = Crypto::method10();
+        v18.unwrap_or(v19)
     }
     pub fn method7() -> (Crypto::US1, Crypto::US2) {
         let v1_1: string = Crypto::method8(string("TRACE_LEVEL"));
@@ -472,10 +473,10 @@ pub mod Crypto {
         Option<i64>,
     ) {
         let patternInput: (Crypto::US1, Crypto::US2) = Crypto::method7();
-        let _run_target_args__v1: (Crypto::US1, Crypto::US2) =
+        let _run_target_args__v3: (Crypto::US1, Crypto::US2) =
             (patternInput.0.clone(), patternInput.1.clone());
-        let v132: Crypto::US2 = _run_target_args__v1.1.clone();
-        let v131: Crypto::US1 = _run_target_args__v1.0.clone();
+        let v173: Crypto::US2 = _run_target_args__v3.1.clone();
+        let v172: Crypto::US1 = _run_target_args__v3.0.clone();
         (
             LrcPtr::new(Crypto::Mut1 {
                 l0: MutCell::new(1_i64),
@@ -490,8 +491,8 @@ pub mod Crypto {
                 l0: MutCell::new(string("")),
             }),
             LrcPtr::new(Crypto::Mut5 {
-                l0: MutCell::new(match &v131 {
-                    Crypto::US1::US1_0(v131_0_0) => match &v131 {
+                l0: MutCell::new(match &v172 {
+                    Crypto::US1::US1_0(v172_0_0) => match &v172 {
                         Crypto::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
@@ -499,8 +500,8 @@ pub mod Crypto {
                     _ => v0_1.clone(),
                 }),
             }),
-            match &v132 {
-                Crypto::US2::US2_0(v132_0_0) => Some(match &v132 {
+            match &v173 {
+                Crypto::US2::US2_0(v173_0_0) => Some(match &v173 {
                     Crypto::US2::US2_0(x) => x.clone(),
                     _ => unreachable!(),
                 }),
@@ -542,7 +543,7 @@ pub mod Crypto {
             LrcPtr<Crypto::Mut5>,
             Option<i64>,
         ) = Crypto::TraceState::trace_state().get().clone().unwrap();
-        let v35: Crypto::US0 = (patternInput.4.clone()).l0.get().clone();
+        let v42: Crypto::US0 = (patternInput.4.clone()).l0.get().clone();
         if ((patternInput.2.clone()).l0.get().clone()) == false {
             false
         } else {
@@ -556,7 +557,7 @@ pub mod Crypto {
                     LrcPtr::new((Crypto::US0::US0_4, 4_i32)),
                 ])))),
             )) >= (find(
-                v35,
+                v42,
                 ofSeq(ofList(ofArray(new_array(&[
                     LrcPtr::new((Crypto::US0::US0_0, 0_i32)),
                     LrcPtr::new((Crypto::US0::US0_1, 1_i32)),
@@ -587,14 +588,14 @@ pub mod Crypto {
         v4: LrcPtr<Crypto::Mut5>,
         v5: Option<i64>,
     ) -> string {
-        let v20: Crypto::US2 = defaultValue(Crypto::US2::US2_1, map_1(Crypto::method13(), v5));
-        let v117: DateTime = match &v20 {
-            Crypto::US2::US2_0(v20_0_0) => {
-                let v77: TimeSpan = TimeSpan::new_ticks(
+        let v182: Crypto::US2 = defaultValue(Crypto::US2::US2_1, map_1(Crypto::method13(), v5));
+        let v300: DateTime = match &v182 {
+            Crypto::US2::US2_0(v182_0_0) => {
+                let v252: TimeSpan = TimeSpan::new_ticks(
                     ({
                         let _arg: DateTime = DateTime::now();
                         _arg.ticks()
-                    }) - (match &v20 {
+                    }) - (match &v182 {
                         Crypto::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     }),
@@ -603,21 +604,21 @@ pub mod Crypto {
                     1_i32,
                     1_i32,
                     1_i32,
-                    v77.hours(),
-                    v77.minutes(),
-                    v77.seconds(),
-                    v77.milliseconds(),
+                    v252.hours(),
+                    v252.minutes(),
+                    v252.seconds(),
+                    v252.milliseconds(),
                 )
             }
             _ => DateTime::now(),
         };
-        let v118: string = Crypto::method14();
-        let provider: string = if (v118.clone()) == string("") {
+        let v302: string = Crypto::method14();
+        let provider: string = if (v302.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
-            v118
+            v302
         };
-        v117.toString(provider)
+        v300.toString(provider)
     }
     pub fn method18() -> string {
         string("")
@@ -631,7 +632,7 @@ pub mod Crypto {
         let v2: LrcPtr<Crypto::Mut4> = LrcPtr::new(Crypto::Mut4 {
             l0: MutCell::new(Crypto::method18()),
         });
-        let v8: () = {
+        let v9: () = {
             Crypto::closure7(v2.clone(), sprintf!("{}", v0_1), ());
             ()
         };
@@ -641,66 +642,66 @@ pub mod Crypto {
         string("\u{001b}[0m")
     }
     pub fn method16() -> string {
-        let v6: string = Crypto::method17(getCharAt(toLower(string("Verbose")), 0_i32));
-        let v9: &str = inline_colorization::color_bright_black;
-        let v12: &str = &*v6;
-        let v35: &str = inline_colorization::color_reset;
-        let v37: std::string::String = format!("{}{}{}", v9, v12, v35);
-        fable_library_rust::String_::fromString(v37)
+        let v7: string = Crypto::method17(getCharAt(toLower(string("Verbose")), 0_i32));
+        let v14: &str = inline_colorization::color_bright_black;
+        let v21: &str = &*v7;
+        let v49: &str = inline_colorization::color_reset;
+        let v51: std::string::String = format!("{}{}{}", v14, v21, v49);
+        fable_library_rust::String_::fromString(v51)
     }
     pub fn method21(v0_1: i32, v1_1: string, v2: u16) -> string {
         let v4: LrcPtr<Crypto::Mut4> = LrcPtr::new(Crypto::Mut4 {
             l0: MutCell::new(Crypto::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             Crypto::closure7(v4.clone(), string("{ "), ());
             ()
         };
-        let v20: () = {
+        let v22: () = {
             Crypto::closure7(v4.clone(), string("first_letter_code"), ());
             ()
         };
-        let v29: () = {
+        let v32: () = {
             Crypto::closure7(v4.clone(), string(" = "), ());
             ()
         };
-        let v37: () = {
+        let v41: () = {
             Crypto::closure7(v4.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v46: () = {
+        let v51: () = {
             Crypto::closure7(v4.clone(), string("; "), ());
             ()
         };
-        let v55: () = {
+        let v61: () = {
             Crypto::closure7(v4.clone(), string("hash_part"), ());
             ()
         };
-        let v63: () = {
+        let v70: () = {
             Crypto::closure7(v4.clone(), string(" = "), ());
-            ()
-        };
-        let v71: () = {
-            Crypto::closure7(v4.clone(), v1_1, ());
             ()
         };
         let v79: () = {
-            Crypto::closure7(v4.clone(), string("; "), ());
+            Crypto::closure7(v4.clone(), v1_1, ());
             ()
         };
         let v88: () = {
+            Crypto::closure7(v4.clone(), string("; "), ());
+            ()
+        };
+        let v98: () = {
             Crypto::closure7(v4.clone(), string("combined_value"), ());
             ()
         };
-        let v96: () = {
+        let v107: () = {
             Crypto::closure7(v4.clone(), string(" = "), ());
             ()
         };
-        let v104: () = {
+        let v116: () = {
             Crypto::closure7(v4.clone(), sprintf!("{}", v2), ());
             ()
         };
-        let v113: () = {
+        let v126: () = {
             Crypto::closure7(v4.clone(), string(" }"), ());
             ()
         };
@@ -763,7 +764,7 @@ pub mod Crypto {
             LrcPtr<Crypto::Mut5>,
             Option<i64>,
         ) = Crypto::TraceState::trace_state().get().clone().unwrap();
-        let v37: () = {
+        let v44: () = {
             Crypto::closure8(patternInput.0.clone(), ());
             ()
         };
@@ -784,20 +785,20 @@ pub mod Crypto {
                 LrcPtr<Crypto::Mut5>,
                 Option<i64>,
             ) = Crypto::TraceState::trace_state().get().clone().unwrap();
-            let v26: Option<i64> = patternInput.5.clone();
-            let v25: LrcPtr<Crypto::Mut5> = patternInput.4.clone();
-            let v24: LrcPtr<Crypto::Mut4> = patternInput.3.clone();
-            let v23: LrcPtr<Crypto::Mut3> = patternInput.2.clone();
-            let v22: LrcPtr<Crypto::Mut2> = patternInput.1.clone();
-            let v21: LrcPtr<Crypto::Mut1> = patternInput.0.clone();
+            let v33: Option<i64> = patternInput.5.clone();
+            let v32: LrcPtr<Crypto::Mut5> = patternInput.4.clone();
+            let v31: LrcPtr<Crypto::Mut4> = patternInput.3.clone();
+            let v30: LrcPtr<Crypto::Mut3> = patternInput.2.clone();
+            let v29: LrcPtr<Crypto::Mut2> = patternInput.1.clone();
+            let v28: LrcPtr<Crypto::Mut1> = patternInput.0.clone();
             Crypto::method23(Crypto::method20(
-                v21.clone(),
-                v22.clone(),
-                v23.clone(),
-                v24.clone(),
-                v25.clone(),
-                v26.clone(),
-                Crypto::method12(v21, v22, v23, v24, v25, v26),
+                v28.clone(),
+                v29.clone(),
+                v30.clone(),
+                v31.clone(),
+                v32.clone(),
+                v33.clone(),
+                Crypto::method12(v28, v29, v30, v31, v32, v33),
                 Crypto::method16(),
                 v0_1,
                 v1_1,
@@ -806,14 +807,14 @@ pub mod Crypto {
         };
     }
     pub fn closure1(unitVar: (), v0_1: string) -> u16 {
-        let v46: i32 = getCharAt(v0_1.clone(), 0_i32) as u32 as i32;
-        let v57: string = getSlice(v0_1, Some(0_i32), Some(7_i32));
-        let v65: u16 = ((toInt32_radix(v57.clone(), 16_i32)) + (v46)) as u16;
-        let v70: () = {
-            Crypto::closure2(v46, v57, v65, ());
+        let v75: i32 = getCharAt(v0_1.clone(), 0_i32) as u32 as i32;
+        let v90: string = getSlice(v0_1, Some(0_i32), Some(7_i32));
+        let v100: u16 = ((toInt32_radix(v90.clone(), 16_i32)) + (v75)) as u16;
+        let v105: () = {
+            Crypto::closure2(v75, v90, v100, ());
             ()
         };
-        ((v65) % 48128_u16) + 1024_u16
+        ((v100) % 48128_u16) + 1024_u16
     }
     pub fn v0() -> Func1<string, string> {
         static v0: OnceInit<Func1<string, string>> = OnceInit::new();

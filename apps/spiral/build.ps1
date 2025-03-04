@@ -63,7 +63,7 @@ if (!$SkipPreBuild) {
     }
 }
 
-Write-Output "spiral/apps/spiral/build.ps1 / `$projectName: $projectName / `$env:CI:$env:CI"
+Write-Output "spiral/apps/spiral/build.ps1 / `$projectName: $projectName / `$env:CI:'$env:CI'"
 
 cargo fmt --
 

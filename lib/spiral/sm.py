@@ -114,10 +114,10 @@ def closure10(v0_1: int, v1_1: str, v2_1: str) -> str:
 
 
 def closure9(v0_1: int, v1_1: str) -> Callable[[str], str]:
-    def _arrow20(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+    def _arrow21(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
         return closure10(v0_1, v1_1, v)
 
-    return _arrow20
+    return _arrow21
 
 
 def closure8(unit_var: None, v0_1: int) -> Callable[[str, str], str]:
@@ -169,10 +169,10 @@ def closure15(v0_1: str, v1_1: str) -> Callable[[str], str]:
 
 
 def closure14(unit_var: None, v0_1: str) -> Callable[[str, str], str]:
-    def _arrow27(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
+    def _arrow28(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> Callable[[str], str]:
         return closure15(v0_1, v)
 
-    return _arrow27
+    return _arrow28
 
 
 def closure19(v0_1: int, v1_1: int, v2_1: str) -> str:
@@ -313,10 +313,10 @@ def closure37(v0_1: UH0, v1_1: str) -> str:
 def closure36(unit_var: None, v0_1: Array[str]) -> Callable[[str], str]:
     v1_1: FSharpList[str] = of_array_1(v0_1)
     v9_1: UH0 = fold_back(uncurry2(method6()), v1_1, UH0(0))
-    def _arrow39(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
+    def _arrow40(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
         return closure37(v9_1, v)
 
-    return _arrow39
+    return _arrow40
 
 
 def closure39(v0_1: int, v1_1: str) -> str:
@@ -330,10 +330,10 @@ def closure39(v0_1: int, v1_1: str) -> str:
 
 
 def closure38(unit_var: None, v0_1: int) -> Callable[[str], str]:
-    def _arrow40(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
+    def _arrow41(v: str, unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
         return closure39(v0_1, v)
 
-    return _arrow40
+    return _arrow41
 
 
 def method8(v0_1: int64, v1_1: str) -> str:
@@ -413,10 +413,10 @@ def closure48(v0_1: str, v1_1: Array[str]) -> str:
 
 
 def closure47(unit_var: None, v0_1: str) -> Callable[[Array[str]], str]:
-    def _arrow45(v: Array[str], unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
+    def _arrow46(v: Array[str], unit_var: Any=unit_var, v0_1: Any=v0_1) -> str:
         return closure48(v0_1, v)
 
-    return _arrow45
+    return _arrow46
 
 
 def method10(v0_1: int, v1_1: Mut1) -> bool:
@@ -586,41 +586,41 @@ def trim_end(x: Array[str]) -> Callable[[str], str]:
     return v14(x)
 
 
-def _arrow62(v: Array[str]) -> Callable[[str], str]:
+def _arrow63(v: Array[str]) -> Callable[[str], str]:
     return closure36(None, v)
 
 
-v15: Callable[[Array[str], str], str] = _arrow62
+v15: Callable[[Array[str], str], str] = _arrow63
 
 def trim_start(x: Array[str]) -> Callable[[str], str]:
     return v15(x)
 
 
-def _arrow64(v: int) -> Callable[[str], str]:
+def _arrow65(v: int) -> Callable[[str], str]:
     return closure38(None, v)
 
 
-v16: Callable[[int, str], str] = _arrow64
+v16: Callable[[int, str], str] = _arrow65
 
 def ellipsis(x: int) -> Callable[[str], str]:
     return v16(x)
 
 
-def _arrow65(v: int64) -> Callable[[str], str]:
+def _arrow66(v: int64) -> Callable[[str], str]:
     return closure40(None, v)
 
 
-v17: Callable[[int64, str], str] = _arrow65
+v17: Callable[[int64, str], str] = _arrow66
 
 def ellipsis_end(x: int64) -> Callable[[str], str]:
     return v17(x)
 
 
-def _arrow67(v: Exception) -> str:
+def _arrow68(v: Exception) -> str:
     return closure42(None, v)
 
 
-v18: Callable[[Exception], str] = _arrow67
+v18: Callable[[Exception], str] = _arrow68
 
 def format_exception(x: Exception) -> str:
     return v18(x)
