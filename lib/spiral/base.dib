@@ -326,7 +326,6 @@ inl memoize forall t. (fn : () -> t) : () -> t =
 #!spiral
 
 //// test
-////! gleam
 ///! fsharp
 ///! cuda
 ///! rust
