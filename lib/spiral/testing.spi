@@ -10,12 +10,12 @@ union testing_trace =
     | Silent
 
 /// ### __expect
-inl rec __expect forall a b.
-    (fn : a -> b -> bool)
+inl rec __expect
+    (fn : _ -> _ -> bool)
     (trace' : testing_trace)
     (name : string)
-    (b : b)
-    (a : a)
+    (b : _)
+    (a : _)
     : ()
     =
     inl result = fn a b
@@ -24,7 +24,7 @@ inl rec __expect forall a b.
     inl get_raw_text () =
         backend_switch {
             Gleam = fun () =>
-                inl to_string (x : a) : string =
+                inl to_string (x : _) : string =
                     inl float () =
                         global "import gleam/float"
                         $'float.to_string(!x)' : string
@@ -49,7 +49,7 @@ inl rec __expect forall a b.
                         | _ =>
                             global "import gleam/string"
                             $'string.inspect(!x)' : string
-                $'!name <> " / actual: " <> !(a |> to_string) <> " / expected: " <> !(b |> to |> to_string)' : string
+                $'!name <> " / actual: " <> !(a |> to_string) <> " / expected: " <> !(b |> to_string)' : string
             Fsharp = fun () => $'$"{!name} / actual: %A{!a} / expected: %A{!b}"' : string
             Python = fun () => $'f"{!name} / actual: {!a} / expected: {!b}"' : string
         }
@@ -65,7 +65,7 @@ inl rec __expect forall a b.
         inl text = get_raw_text ()
         trace_raw Info fun () => text
         text
-    | Silent => real reflection.nameof { __expect }
+    | Silent => reflection.nameof { __expect }
     |> assert result
 
 /// ### __assert_approx_eq
