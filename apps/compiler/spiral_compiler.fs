@@ -10338,10 +10338,15 @@ module spiral_compiler =
                 match a with
                 | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
                 | JPClosure(a,b) ->
-                    sprintf
-                        "closure%i(%s)"
-                        (closure (a,b)).tag
-                        (if args = "" then "" else $")(#({args})")
+                    [
+                        "closure"
+                        (closure (a,b)).tag |> string
+                        "("
+                        if args = "" then "" else $")(#({args})"
+                        ")"
+                        if args |> SpiralSm.contains ", " then "" else "(Nil)"
+                    ]
+                    |> SpiralSm.concat ""
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
@@ -10520,9 +10525,10 @@ module spiral_compiler =
                 | YPrim Float64T -> $"{b}"
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
                 |> simple
-            | TyApply(L(i,_),b) ->
+            | TyApply(L(i,t),b) ->
                 match tup b with
-                | "Nil " -> $"v{i}"
+                | "Nil " when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"v{i}(Nil     ) "
+                | "Nil " -> $"v{i} "
                 | b' -> $"v{i}({b'})"
                 |> simple
             | TyOp(Global, [DLit (LitString x)]) -> global' x
@@ -10623,9 +10629,17 @@ module spiral_compiler =
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
-                line s (sprintf "method%i (%s) -> %s {" x.tag (args_tys x.free_vars) (tup_ty x.range))
+                let range_ty = tup_ty x.range
+                let is_fn = range_ty |> SpiralSm.starts_with "fn(Nil  ) -> "
+                let ret =
+                    if is_fn
+                    then $"{range_ty} {{ fn(_)"
+                    else range_ty
+                line s (sprintf "method%i (%s) -> %s {" x.tag (args_tys x.free_vars) ret)
                 binds (indent s) x.body
-                line s "}"
+                if is_fn
+                then line s "}}"
+                else line s "}"
                 )
         and closure : _ -> ClosureRecGleam =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
@@ -10675,9 +10689,10 @@ module spiral_compiler =
                             |> Array.map (fun (L(i,_)) -> $"v{i}")
                             |> String.concat ", "
                         $"let #({args}) = x"
-                line s (sprintf "closure%i () -> fn(_) -> %s { fn(%s) { %s" x.tag (tup_ty x.range) args args')
+                // line s (sprintf "closure%i () -> fn(_) -> %s { fn(%s) { %s" x.tag (tup_ty x.range) args args')
+                line s (sprintf "closure%i () -> fn(_) -> fn(Nil) -> %s { fn(%s) { %s\nfn (_) {" x.tag (tup_ty x.range) args args')
                 binds (indent s) x.body
-                line s "}}"
+                line s "}}}"
                 )
 
         let main = System.Text.StringBuilder()
