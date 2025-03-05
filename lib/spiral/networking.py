@@ -287,9 +287,9 @@ def method2(v0_1: str) -> str:
     else: 
         v47 = value_3(_v41)
 
-    v66: US5 = default_arg(map(method5(), v47), US5(1))
-    if v66.tag == 0:
-        return v66.fields[0]
+    v68: US5 = default_arg(map(method5(), v47), US5(1))
+    if v68.tag == 0:
+        return v68.fields[0]
 
     else: 
         return ""
@@ -390,17 +390,17 @@ def method12(__unit: None=None) -> str:
 
 
 def method9(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v700: US2 = default_arg(map(method10(), v5), US2(1))
-    v818: Any
-    if v700.tag == 0:
-        v770: Any = create(op_subtraction(from_value(ticks_1(now()), False), v700.fields[0]))
-        v818 = create_1(1, 1, 1, hours(v770), minutes(v770), seconds(v770), milliseconds(v770))
+    v712: US2 = default_arg(map(method10(), v5), US2(1))
+    v830: Any
+    if v712.tag == 0:
+        v782: Any = create(op_subtraction(from_value(ticks_1(now()), False), v712.fields[0]))
+        v830 = create_1(1, 1, 1, hours(v782), minutes(v782), seconds(v782), milliseconds(v782))
 
     else: 
-        v818 = now()
+        v830 = now()
 
-    v820: str = method12()
-    return to_string(v818, "M-d-y hh:mm:ss tt" if (v820 == "") else v820)
+    v832: str = method12()
+    return to_string(v830, "M-d-y hh:mm:ss tt" if (v832 == "") else v832)
 
 
 def method15(__unit: None=None) -> str:
@@ -870,32 +870,32 @@ def closure23(v0_1: int | None, v1_1: bool, v2_1: int, v3: int64, unit_var: None
 
 def method37(v0_1: int | None, v1_1: bool, v2_1: str, v3: int, v4: int64) -> Async[int64]:
     def _arrow176(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> Async[int64]:
-        v863: US9 = default_arg(map(method38(), v0_1), US9(1))
-        v871: Async[bool] = method21(v863.fields[0], v2_1, v3) if (v863.tag == 0) else method6(v2_1, v3)
+        v881: US9 = default_arg(map(method38(), v0_1), US9(1))
+        v889: Async[bool] = method21(v881.fields[0], v2_1, v3) if (v881.tag == 0) else method6(v2_1, v3)
         def _arrow175(_arg: bool) -> Async[int64]:
             if _arg == v1_1:
                 return singleton.Return(v4)
 
             else: 
-                v875: bool = op_modulus(v4, int64(100)) == int64(0)
+                v893: bool = op_modulus(v4, int64(100)) == int64(0)
                 def _arrow172(__unit: None=None) -> Async[None]:
-                    v878: None
+                    v896: None
                     closure23(v0_1, v1_1, v3, v4, None)
-                    v878 = None
+                    v896 = None
                     return singleton.Zero()
 
                 def _arrow174(__unit: None=None) -> Async[int64]:
-                    v939: Async[None] = sleep(10)
+                    v957: Async[None] = sleep(10)
                     def _arrow173(__unit: None=None) -> Async[int64]:
-                        v948: Async[int64] = method36(v0_1, v1_1, v2_1, v3, op_addition(v4, int64(1)))
-                        return singleton.ReturnFrom(v948)
+                        v966: Async[int64] = method36(v0_1, v1_1, v2_1, v3, op_addition(v4, int64(1)))
+                        return singleton.ReturnFrom(v966)
 
-                    return singleton.Bind(v939, _arrow173)
+                    return singleton.Bind(v957, _arrow173)
 
-                return singleton.Combine(_arrow172() if v875 else singleton.Zero(), singleton.Delay(_arrow174))
+                return singleton.Combine(_arrow172() if v893 else singleton.Zero(), singleton.Delay(_arrow174))
 
 
-        return singleton.Bind(v871, _arrow175)
+        return singleton.Bind(v889, _arrow175)
 
     return singleton.Delay(_arrow176)
 
@@ -935,18 +935,18 @@ def closure18(unit_var: None, v0_1: int | None=None) -> Callable[[bool, str, int
 
 def method43(v0_1: int | None, v1_1: str, v2_1: int) -> Async[int]:
     def _arrow181(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> Async[int]:
-        v277: US9 = default_arg(map(method38(), v0_1), US9(1))
-        v285: Async[bool] = method21(v277.fields[0], v1_1, v2_1) if (v277.tag == 0) else method6(v1_1, v2_1)
+        v295: US9 = default_arg(map(method38(), v0_1), US9(1))
+        v303: Async[bool] = method21(v295.fields[0], v1_1, v2_1) if (v295.tag == 0) else method6(v1_1, v2_1)
         def _arrow180(_arg: bool) -> Async[int]:
             if _arg == False:
                 return singleton.Return(v2_1)
 
             else: 
-                v289: Async[int] = method42(v0_1, v1_1, v2_1 + 1)
-                return singleton.ReturnFrom(v289)
+                v307: Async[int] = method42(v0_1, v1_1, v2_1 + 1)
+                return singleton.ReturnFrom(v307)
 
 
-        return singleton.Bind(v285, _arrow180)
+        return singleton.Bind(v303, _arrow180)
 
     return singleton.Delay(_arrow181)
 

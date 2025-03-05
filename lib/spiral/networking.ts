@@ -508,18 +508,18 @@ export function method12(): string {
 }
 
 export function method9(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>): string {
-    const v541: US2_$union = defaultArg(map<int64, US2_$union>(method10(), v5), US2_US2_1());
-    let v659: Date;
-    if ((v541.tag as int32) === /* US2_0 */ 0) {
-        const v545 = v541.fields[0] as any;
-        const v611: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v545)));
-        v659 = create(1, 1, 1, hours(v611), minutes(v611), seconds(v611), milliseconds(v611));
+    const v551: US2_$union = defaultArg(map<int64, US2_$union>(method10(), v5), US2_US2_1());
+    let v669: Date;
+    if ((v551.tag as int32) === /* US2_0 */ 0) {
+        const v555 = v551.fields[0] as any;
+        const v621: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v555)));
+        v669 = create(1, 1, 1, hours(v621), minutes(v621), seconds(v621), milliseconds(v621));
     }
     else {
-        v659 = now();
+        v669 = now();
     }
-    const v661: string = method12();
-    return toString(v659, (v661 === "") ? "M-d-y hh:mm:ss tt" : v661);
+    const v671: string = method12();
+    return toString(v669, (v671 === "") ? "M-d-y hh:mm:ss tt" : v671);
 }
 
 export function method15(): string {
@@ -948,20 +948,20 @@ export function closure23(v0_1: Option<int32>, v1_1: boolean, v2_1: int32, v3: i
 
 export function method37(v0_1: Option<int32>, v1_1: boolean, v2_1: string, v3: int32, v4: int64): Async<int64> {
     return singleton.Delay<int64>((): Async<int64> => {
-        const v42: US9_$union = defaultArg(map<int32, US9_$union>(method38(), v0_1), US9_US9_1());
-        const v50: Async<boolean> = ((v42.tag as int32) === /* US9_0 */ 0) ? method21(v42.fields[0] as any, v2_1, v3) : method6(v2_1, v3);
-        return singleton.Bind<boolean, int64>(v50, (_arg: boolean): Async<int64> => {
-            let v57: any;
+        const v44: US9_$union = defaultArg(map<int32, US9_$union>(method38(), v0_1), US9_US9_1());
+        const v52: Async<boolean> = ((v44.tag as int32) === /* US9_0 */ 0) ? method21(v44.fields[0] as any, v2_1, v3) : method6(v2_1, v3);
+        return singleton.Bind<boolean, int64>(v52, (_arg: boolean): Async<int64> => {
+            let v59: any;
             if (_arg === v1_1) {
                 return singleton.Return<int64>(v4);
             }
             else {
-                const v54: boolean = equals(toInt64(op_Modulus(v4, 100n)), 0n);
-                return singleton.Combine<int64>(v54 ? ((v57 = ((closure23(v0_1, v1_1, v3, v4, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
-                    const v116: Async<void> = sleep(10);
-                    return singleton.Bind<void, int64>(v116, (): Async<int64> => {
-                        const v127: Async<int64> = method36(v0_1, v1_1, v2_1, v3, toInt64(op_Addition(v4, 1n)));
-                        return singleton.ReturnFrom<int64>(v127);
+                const v56: boolean = equals(toInt64(op_Modulus(v4, 100n)), 0n);
+                return singleton.Combine<int64>(v56 ? ((v59 = ((closure23(v0_1, v1_1, v3, v4, undefined), undefined)), singleton.Zero())) : singleton.Zero(), singleton.Delay<int64>((): Async<int64> => {
+                    const v118: Async<void> = sleep(10);
+                    return singleton.Bind<void, int64>(v118, (): Async<int64> => {
+                        const v129: Async<int64> = method36(v0_1, v1_1, v2_1, v3, toInt64(op_Addition(v4, 1n)));
+                        return singleton.ReturnFrom<int64>(v129);
                     });
                 }));
             }
@@ -995,15 +995,15 @@ export function closure18(unitVar: void, v0_1: Option<int32>): ((arg0: boolean) 
 
 export function method43(v0_1: Option<int32>, v1_1: string, v2_1: int32): Async<int32> {
     return singleton.Delay<int32>((): Async<int32> => {
-        const v40: US9_$union = defaultArg(map<int32, US9_$union>(method38(), v0_1), US9_US9_1());
-        const v48: Async<boolean> = ((v40.tag as int32) === /* US9_0 */ 0) ? method21(v40.fields[0] as any, v1_1, v2_1) : method6(v1_1, v2_1);
-        return singleton.Bind<boolean, int32>(v48, (_arg: boolean): Async<int32> => {
+        const v42: US9_$union = defaultArg(map<int32, US9_$union>(method38(), v0_1), US9_US9_1());
+        const v50: Async<boolean> = ((v42.tag as int32) === /* US9_0 */ 0) ? method21(v42.fields[0] as any, v1_1, v2_1) : method6(v1_1, v2_1);
+        return singleton.Bind<boolean, int32>(v50, (_arg: boolean): Async<int32> => {
             if (_arg === false) {
                 return singleton.Return<int32>(v2_1);
             }
             else {
-                const v52: Async<int32> = method42(v0_1, v1_1, v2_1 + 1);
-                return singleton.ReturnFrom<int32>(v52);
+                const v54: Async<int32> = method42(v0_1, v1_1, v2_1 + 1);
+                return singleton.ReturnFrom<int32>(v54);
             }
         });
     });

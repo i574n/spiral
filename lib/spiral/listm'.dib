@@ -727,7 +727,6 @@ inl unbox forall t. (list : list' t) : list t =
 
 #!spiral
 
-// preserve order
 inl distinct' forall t. (list : list' t) : list' t =
     list'_types ()
     backend_switch {
@@ -744,7 +743,10 @@ inl distinct' forall t. (list : list' t) : list' t =
 //// test
 ///! gleam
 ///! fsharp
+///! rust
 ///! cuda
+///! typescript
+///! python
 
 [ "1"; "2"; "2"; "3" ]
 |> box

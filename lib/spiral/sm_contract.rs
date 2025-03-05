@@ -307,14 +307,14 @@ pub mod Sm {
     }
     pub fn closure32(unitVar: (), v0_1: Array<char>) -> Func1<string, string> {
         let v2_1: List<char> = ofArray_1(v0_1);
-        let v11_1: LrcPtr<Sm::UH0> = foldBack(
+        let v15_1: LrcPtr<Sm::UH0> = foldBack(
             Func2::new(move |b0: char, b1: LrcPtr<Sm::UH0>| (Sm::method6())(b0)(b1)),
             v2_1,
             LrcPtr::new(Sm::UH0::UH0_0),
         );
         Func1::new({
-            let v11_1 = v11_1.clone();
-            move |v: string| Sm::closure35(v11_1.clone(), v)
+            let v15_1 = v15_1.clone();
+            move |v: string| Sm::closure35(v15_1.clone(), v)
         })
     }
     pub fn closure37(v0_1: LrcPtr<Sm::UH0>, v1_1: string) -> string {
@@ -322,14 +322,14 @@ pub mod Sm {
     }
     pub fn closure36(unitVar: (), v0_1: Array<char>) -> Func1<string, string> {
         let v2_1: List<char> = ofArray_1(v0_1);
-        let v11_1: LrcPtr<Sm::UH0> = foldBack(
+        let v15_1: LrcPtr<Sm::UH0> = foldBack(
             Func2::new(move |b0: char, b1: LrcPtr<Sm::UH0>| (Sm::method6())(b0)(b1)),
             v2_1,
             LrcPtr::new(Sm::UH0::UH0_0),
         );
         Func1::new({
-            let v11_1 = v11_1.clone();
-            move |v: string| Sm::closure37(v11_1.clone(), v)
+            let v15_1 = v15_1.clone();
+            move |v: string| Sm::closure37(v15_1.clone(), v)
         })
     }
     pub fn closure39(v0_1: i32, v1_1: string) -> string {

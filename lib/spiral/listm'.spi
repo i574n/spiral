@@ -341,7 +341,6 @@ inl unbox forall t. (list : list' t) : list t =
     ||> fold_back' id
 
 /// ### distinct'
-// preserve order
 inl distinct' forall t. (list : list' t) : list' t =
     list'_types ()
     backend_switch {
