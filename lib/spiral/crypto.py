@@ -223,11 +223,11 @@ def method4(__unit: None=None) -> str:
 
 
 def method0(v0_1: str) -> str:
-    v162: IHashlibSha256 = hashlib
-    v164: Any = v162.sha256()
-    v170: str = v0_1.encode("utf-8")
-    v164.update(v170)
-    return v164.hexdigest()
+    v165: IHashlibSha256 = hashlib
+    v167: Any = v165.sha256()
+    v173: str = v0_1.encode("utf-8")
+    v167.update(v173)
+    return v167.hexdigest()
 
 
 def closure0(unit_var: None, v0_1: str) -> str:
@@ -266,9 +266,9 @@ def method8(v0_1: str) -> str:
     else: 
         v47 = value_2(_v41)
 
-    v66: US5 = default_arg(map(method11(), v47), US5(1))
-    if v66.tag == 0:
-        return v66.fields[0]
+    v68: US5 = default_arg(map(method11(), v47), US5(1))
+    if v68.tag == 0:
+        return v68.fields[0]
 
     else: 
         return ""
@@ -369,17 +369,17 @@ def method15(__unit: None=None) -> str:
 
 
 def method12(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None=None) -> str:
-    v700: US2 = default_arg(map(method13(), v5), US2(1))
-    v818: Any
-    if v700.tag == 0:
-        v770: Any = create(op_subtraction(from_value(ticks_1(now()), False), v700.fields[0]))
-        v818 = create_1(1, 1, 1, hours(v770), minutes(v770), seconds(v770), milliseconds(v770))
+    v712: US2 = default_arg(map(method13(), v5), US2(1))
+    v830: Any
+    if v712.tag == 0:
+        v782: Any = create(op_subtraction(from_value(ticks_1(now()), False), v712.fields[0]))
+        v830 = create_1(1, 1, 1, hours(v782), minutes(v782), seconds(v782), milliseconds(v782))
 
     else: 
-        v818 = now()
+        v830 = now()
 
-    v820: str = method15()
-    return to_string(v818, "M-d-y hh:mm:ss tt" if (v820 == "") else v820)
+    v832: str = method15()
+    return to_string(v830, "M-d-y hh:mm:ss tt" if (v832 == "") else v832)
 
 
 def method18(__unit: None=None) -> str:

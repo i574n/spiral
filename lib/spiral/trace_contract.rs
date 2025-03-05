@@ -444,23 +444,23 @@ pub mod Trace {
         v4: LrcPtr<Trace::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v485: u64 = near_sdk::env::block_timestamp();
-        let v502: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method8(), v5));
-        let v515: u64 = (match &v502 {
-            Trace::US2::US2_0(v502_0_0) => {
-                (v485)
-                    - (match &v502 {
+        let v491: u64 = near_sdk::env::block_timestamp();
+        let v510: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method8(), v5));
+        let v523: u64 = (match &v510 {
+            Trace::US2::US2_0(v510_0_0) => {
+                (v491)
+                    - (match &v510 {
                         Trace::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     } as u64)
             }
-            _ => v485,
+            _ => v491,
         }) / 1000000000_u64;
-        let v516: u64 = (v515) % 60_u64;
-        let v518: u64 = ((v515) / 60_u64) % 60_u64;
-        let v520: u64 = ((v515) / 3600_u64) % 24_u64;
-        let v522: std::string::String = format!("{:02}:{:02}:{:02}", v520, v518, v516);
-        fable_library_rust::String_::fromString(v522)
+        let v524: u64 = (v523) % 60_u64;
+        let v526: u64 = ((v523) / 60_u64) % 60_u64;
+        let v528: u64 = ((v523) / 3600_u64) % 24_u64;
+        let v530: std::string::String = format!("{:02}:{:02}:{:02}", v528, v526, v524);
+        fable_library_rust::String_::fromString(v530)
     }
     pub fn method13() -> string {
         string("")

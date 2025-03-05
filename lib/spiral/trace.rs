@@ -442,14 +442,14 @@ pub mod Trace {
         v4: LrcPtr<Trace::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v182: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method8(), v5));
-        let v300: DateTime = match &v182 {
-            Trace::US2::US2_0(v182_0_0) => {
-                let v252: TimeSpan = TimeSpan::new_ticks(
+        let v186: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method8(), v5));
+        let v304: DateTime = match &v186 {
+            Trace::US2::US2_0(v186_0_0) => {
+                let v256: TimeSpan = TimeSpan::new_ticks(
                     ({
                         let _arg: DateTime = DateTime::now();
                         _arg.ticks()
-                    }) - (match &v182 {
+                    }) - (match &v186 {
                         Trace::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     }),
@@ -458,21 +458,21 @@ pub mod Trace {
                     1_i32,
                     1_i32,
                     1_i32,
-                    v252.hours(),
-                    v252.minutes(),
-                    v252.seconds(),
-                    v252.milliseconds(),
+                    v256.hours(),
+                    v256.minutes(),
+                    v256.seconds(),
+                    v256.milliseconds(),
                 )
             }
             _ => DateTime::now(),
         };
-        let v302: string = Trace::method9();
-        let provider: string = if (v302.clone()) == string("") {
+        let v306: string = Trace::method9();
+        let provider: string = if (v306.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
-            v302
+            v306
         };
-        v300.toString(provider)
+        v304.toString(provider)
     }
     pub fn method13() -> string {
         string("")

@@ -291,45 +291,45 @@ mod module_e3e534c3 {
             let v58: string = string("r#\"trace_level\"#");
             let v59: &'static str = r#"trace_level"#;
             let v61: clap::Arg = v57.long(v59);
-            let v90: Array<string> = toArray(ofArray(new_array(&[
+            let v95: Array<string> = toArray(ofArray(new_array(&[
                 string("Verbose"),
                 string("Debug"),
                 string("Info"),
                 string("Warning"),
                 string("Critical"),
             ])));
-            let v94: Vec<string> = v90.to_vec();
-            let v96: bool = true;
-            let _vec_map: Vec<_> = v94
+            let v99: Vec<string> = v95.to_vec();
+            let v101: bool = true;
+            let _vec_map: Vec<_> = v99
                 .into_iter()
                 .map(|x| {
                     //;
-                    let v98: string = x;
-                    let v105: &str = &*v98;
-                    let v138: std::string::String = String::from(v105);
-                    let v166: Box<std::string::String> = Box::new(v138);
-                    let v168: &'static mut std::string::String = Box::leak(v166);
-                    let v170: clap::builder::PossibleValue =
-                        clap::builder::PossibleValue::new(&**v168);
-                    let v172: bool = true;
-                    v170
+                    let v103: string = x;
+                    let v110: &str = &*v103;
+                    let v143: std::string::String = String::from(v110);
+                    let v171: Box<std::string::String> = Box::new(v143);
+                    let v173: &'static mut std::string::String = Box::leak(v171);
+                    let v175: clap::builder::PossibleValue =
+                        clap::builder::PossibleValue::new(&**v173);
+                    let v177: bool = true;
+                    v175
                 })
                 .collect::<Vec<_>>();
-            let v174: Vec<clap::builder::PossibleValue> = _vec_map;
-            let v176: clap::builder::ValueParser = Into::<clap::builder::ValueParser>::into(
-                clap::builder::PossibleValuesParser::new(v174),
+            let v179: Vec<clap::builder::PossibleValue> = _vec_map;
+            let v181: clap::builder::ValueParser = Into::<clap::builder::ValueParser>::into(
+                clap::builder::PossibleValuesParser::new(v179),
             );
-            let v178: clap::Arg = v61.value_parser(v176);
-            let v180: clap::Command = clap::Command::arg(v50, v178);
-            let v182: string = string("r#\"wasm\"#");
-            let v183: &'static str = r#"wasm"#;
-            let v185: clap::Arg = clap::Arg::new(v183);
-            let v187: clap::Arg = v185.short('w');
-            let v188: string = string("r#\"wasm\"#");
-            let v189: &'static str = r#"wasm"#;
-            let v191: clap::Arg = v187.long(v189);
-            let v193: clap::Arg = v191.required(true);
-            clap::Command::arg(v180, v193)
+            let v183: clap::Arg = v61.value_parser(v181);
+            let v185: clap::Command = clap::Command::arg(v50, v183);
+            let v187: string = string("r#\"wasm\"#");
+            let v188: &'static str = r#"wasm"#;
+            let v190: clap::Arg = clap::Arg::new(v188);
+            let v192: clap::Arg = v190.short('w');
+            let v193: string = string("r#\"wasm\"#");
+            let v194: &'static str = r#"wasm"#;
+            let v196: clap::Arg = v192.long(v194);
+            let v198: clap::Arg = v196.required(true);
+            clap::Command::arg(v185, v198)
         }
         pub fn method1() -> string {
             string("trace_level")
@@ -629,15 +629,15 @@ mod module_e3e534c3 {
             v4: LrcPtr<Spiral_wasm::Mut4>,
             v5: Option<i64>,
         ) -> string {
-            let v182: Spiral_wasm::US4 =
+            let v186: Spiral_wasm::US4 =
                 defaultValue(Spiral_wasm::US4::US4_1, map(Spiral_wasm::method11(), v5));
-            let v300: DateTime = match &v182 {
-                Spiral_wasm::US4::US4_0(v182_0_0) => {
-                    let v252: TimeSpan = TimeSpan::new_ticks(
+            let v304: DateTime = match &v186 {
+                Spiral_wasm::US4::US4_0(v186_0_0) => {
+                    let v256: TimeSpan = TimeSpan::new_ticks(
                         ({
                             let _arg: DateTime = DateTime::now();
                             _arg.ticks()
-                        }) - (match &v182 {
+                        }) - (match &v186 {
                             Spiral_wasm::US4::US4_0(x) => x.clone(),
                             _ => unreachable!(),
                         }),
@@ -646,21 +646,21 @@ mod module_e3e534c3 {
                         1_i32,
                         1_i32,
                         1_i32,
-                        v252.hours(),
-                        v252.minutes(),
-                        v252.seconds(),
-                        v252.milliseconds(),
+                        v256.hours(),
+                        v256.minutes(),
+                        v256.seconds(),
+                        v256.milliseconds(),
                     )
                 }
                 _ => DateTime::now(),
             };
-            let v302: string = Spiral_wasm::method12();
-            let provider: string = if (v302.clone()) == string("") {
+            let v306: string = Spiral_wasm::method12();
+            let provider: string = if (v306.clone()) == string("") {
                 string("M-d-y hh:mm:ss tt")
             } else {
-                v302
+                v306
             };
-            v300.toString(provider)
+            v304.toString(provider)
         }
         pub fn method16() -> string {
             string("")
@@ -2211,35 +2211,35 @@ mod module_e3e534c3 {
                         ()
                     };
                     let v542: string = Spiral_wasm::method52(v383, v1, v306);
-                    let v567: Result<Spiral_wasm::US7, anyhow::Error> = if (v314) > 0_i32 {
+                    let v577: Result<Spiral_wasm::US7, anyhow::Error> = if (v314) > 0_i32 {
                         Ok::<Spiral_wasm::US7, anyhow::Error>(Spiral_wasm::US7::US7_0(v542.clone()))
                     } else {
                         if (v383) > 1_i32 {
                             Ok::<Spiral_wasm::US7, anyhow::Error>(Spiral_wasm::US7::US7_1)
                         } else {
-                            let v550: anyhow::Error = anyhow::anyhow!(v542);
-                            Err(v550)
+                            let v560: anyhow::Error = anyhow::anyhow!(v542);
+                            Err(v560)
                         }
                     };
-                    let v570: string = string("}");
-                    let v575: bool = true;
-                    let _fix_closure_v572 = v567;
-                    let v582: string = append(
+                    let v580: string = string("}");
+                    let v585: bool = true;
+                    let _fix_closure_v582 = v577;
+                    let v592: string = append(
                         (append(
                             (append(
-                                (append(string("true; _fix_closure_v572 "), (v570))),
+                                (append(string("true; _fix_closure_v582 "), (v580))),
                                 string("); "),
                             )),
                             string(""),
                         )),
                         string(" // rust.fix_closure\'"),
                     );
-                    let v583: bool = true;
-                    _fix_closure_v572
+                    let v593: bool = true;
+                    _fix_closure_v582
                 },
             ); // rust.fix_closure';
-            let v585 = __future_init;
-            v585
+            let v595 = __future_init;
+            v595
         }
         pub fn closure27(unitVar: (), v0_1: anyhow::Error) -> std::string::String {
             format!("{}", v0_1)
@@ -2573,42 +2573,42 @@ mod module_e3e534c3 {
                         v10.map_err(|x| v11(x));
                     let v27 = Spiral_wasm::method54();
                     let v28 = Spiral_wasm::method55();
-                    let v29: Spiral_wasm::US9 = match &v24 {
+                    let v30: Spiral_wasm::US9 = match &v24 {
                         Err(v24_1_0) => v28(v24_1_0.clone()),
                         Ok(v24_0_0) => v27(v24_0_0.clone()),
                     };
-                    let v292: Spiral_wasm::US8 = match &v29 {
-                        Spiral_wasm::US9::US9_0(v29_0_0) => {
-                            let v30: Spiral_wasm::US7 = v29_0_0.clone();
-                            match &v30 {
-                                Spiral_wasm::US7::US7_0(v30_0_0) => {
-                                    let v62: string = match &v30 {
+                    let v295: Spiral_wasm::US8 = match &v30 {
+                        Spiral_wasm::US9::US9_0(v30_0_0) => {
+                            let v33: Spiral_wasm::US7 = v30_0_0.clone();
+                            match &v33 {
+                                Spiral_wasm::US7::US7_0(v33_0_0) => {
+                                    let v65: string = match &v33 {
                                         Spiral_wasm::US7::US7_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone();
-                                    let v65: () = {
-                                        Spiral_wasm::closure34(v1, v62.clone(), ());
+                                    let v68: () = {
+                                        Spiral_wasm::closure34(v1, v65.clone(), ());
                                         ()
                                     };
-                                    let v113: bool = true;
+                                    let v116: bool = true;
                                     let __future_init = Box::pin(
                                         /*;
-                                        let v115: bool = */
+                                        let v118: bool = */
                                         async move {
                                             /*;
-                                            let v117: bool = */
+                                            let v120: bool = */
                                             ();
-                                            let v120: string = string("}");
-                                            let v126: bool = true;
-                                            let _fix_closure_v123 =
-                                                (v1, Spiral_wasm::US7::US7_0(v62));
-                                            let v133: string = append(
+                                            let v123: string = string("}");
+                                            let v129: bool = true;
+                                            let _fix_closure_v126 =
+                                                (v1, Spiral_wasm::US7::US7_0(v65));
+                                            let v136: string = append(
                                                 (append(
                                                     (append(
                                                         (append(
-                                                            string("true; _fix_closure_v123 "),
-                                                            (v120),
+                                                            string("true; _fix_closure_v126 "),
+                                                            (v123),
                                                         )),
                                                         string("); "),
                                                     )),
@@ -2616,42 +2616,42 @@ mod module_e3e534c3 {
                                                 )),
                                                 string(" // rust.fix_closure\'"),
                                             );
-                                            let v134: bool = true;
-                                            _fix_closure_v123
+                                            let v137: bool = true;
+                                            _fix_closure_v126
                                         },
                                     ); // rust.fix_closure';
-                                    let v136 = __future_init;
-                                    let v138: std::pin::Pin<
+                                    let v139 = __future_init;
+                                    let v141: std::pin::Pin<
                                         Box<
                                             dyn std::future::Future<
                                                 Output = (u8, Spiral_wasm::US7),
                                             >,
                                         >,
-                                    > = v136;
-                                    let patternInput_2: (u8, Spiral_wasm::US7) = v138.await;
+                                    > = v139;
+                                    let patternInput_2: (u8, Spiral_wasm::US7) = v141.await;
                                     Spiral_wasm::US8::US8_1(
                                         patternInput_2.0.clone(),
                                         patternInput_2.1.clone(),
                                     )
                                 }
                                 _ => {
-                                    let v32: bool = true;
+                                    let v35: bool = true;
                                     let __future_init = Box::pin(
                                         /*;
-                                        let v34: bool = */
+                                        let v37: bool = */
                                         async move {
                                             /*;
-                                            let v36: bool = */
+                                            let v39: bool = */
                                             ();
-                                            let v39: string = string("}");
-                                            let v45: bool = true;
-                                            let _fix_closure_v42 = (v1, Spiral_wasm::US7::US7_1);
-                                            let v52: string = append(
+                                            let v42: string = string("}");
+                                            let v48: bool = true;
+                                            let _fix_closure_v45 = (v1, Spiral_wasm::US7::US7_1);
+                                            let v55: string = append(
                                                 (append(
                                                     (append(
                                                         (append(
-                                                            string("true; _fix_closure_v42 "),
-                                                            (v39),
+                                                            string("true; _fix_closure_v45 "),
+                                                            (v42),
                                                         )),
                                                         string("); "),
                                                     )),
@@ -2659,19 +2659,19 @@ mod module_e3e534c3 {
                                                 )),
                                                 string(" // rust.fix_closure\'"),
                                             );
-                                            let v53: bool = true;
-                                            _fix_closure_v42
+                                            let v56: bool = true;
+                                            _fix_closure_v45
                                         },
                                     ); // rust.fix_closure';
-                                    let v55 = __future_init;
-                                    let v57: std::pin::Pin<
+                                    let v58 = __future_init;
+                                    let v60: std::pin::Pin<
                                         Box<
                                             dyn std::future::Future<
                                                 Output = (u8, Spiral_wasm::US7),
                                             >,
                                         >,
-                                    > = v55;
-                                    let patternInput_1: (u8, Spiral_wasm::US7) = v57.await;
+                                    > = v58;
+                                    let patternInput_1: (u8, Spiral_wasm::US7) = v60.await;
                                     Spiral_wasm::US8::US8_0(
                                         patternInput_1.0.clone(),
                                         patternInput_1.1.clone(),
@@ -2679,34 +2679,34 @@ mod module_e3e534c3 {
                                 }
                             }
                         }
-                        Spiral_wasm::US9::US9_1(v29_1_0) => {
-                            let v145: std::string::String = v29_1_0.clone();
+                        Spiral_wasm::US9::US9_1(v30_1_0) => {
+                            let v148: std::string::String = v30_1_0.clone();
                             if (v1) >= 15_u8 {
-                                let v149: () = {
-                                    Spiral_wasm::closure30(v1, v145.clone(), ());
+                                let v152: () = {
+                                    Spiral_wasm::closure30(v1, v148.clone(), ());
                                     ()
                                 };
-                                let v198: () = {
+                                let v201: () = {
                                     Spiral_wasm::closure31((), ());
                                     ()
                                 };
-                                let v202: bool = true;
+                                let v205: bool = true;
                                 let __future_init = Box::pin(
                                     /*;
-                                    let v204: bool = */
+                                    let v207: bool = */
                                     async move {
                                         /*;
-                                        let v206: bool = */
+                                        let v209: bool = */
                                         ();
-                                        let v209: string = string("}");
-                                        let v215: bool = true;
-                                        let _fix_closure_v212 = (v1, Spiral_wasm::US7::US7_1);
-                                        let v222: string = append(
+                                        let v212: string = string("}");
+                                        let v218: bool = true;
+                                        let _fix_closure_v215 = (v1, Spiral_wasm::US7::US7_1);
+                                        let v225: string = append(
                                             (append(
                                                 (append(
                                                     (append(
-                                                        string("true; _fix_closure_v212 "),
-                                                        (v209),
+                                                        string("true; _fix_closure_v215 "),
+                                                        (v212),
                                                     )),
                                                     string("); "),
                                                 )),
@@ -2714,54 +2714,54 @@ mod module_e3e534c3 {
                                             )),
                                             string(" // rust.fix_closure\'"),
                                         );
-                                        let v223: bool = true;
-                                        _fix_closure_v212
+                                        let v226: bool = true;
+                                        _fix_closure_v215
                                     },
                                 ); // rust.fix_closure';
-                                let v225 = __future_init;
-                                let v227: std::pin::Pin<
+                                let v228 = __future_init;
+                                let v230: std::pin::Pin<
                                     Box<dyn std::future::Future<Output = (u8, Spiral_wasm::US7)>>,
-                                > = v225;
-                                let patternInput: (u8, Spiral_wasm::US7) = v227.await;
+                                > = v228;
+                                let patternInput: (u8, Spiral_wasm::US7) = v230.await;
                                 Spiral_wasm::US8::US8_0(
                                     patternInput.0.clone(),
                                     patternInput.1.clone(),
                                 )
                             } else {
-                                let v234: () = {
-                                    Spiral_wasm::closure32(v1, v145, ());
+                                let v237: () = {
+                                    Spiral_wasm::closure32(v1, v148, ());
                                     ()
                                 };
-                                let v283: () = {
+                                let v286: () = {
                                     Spiral_wasm::closure33((), ());
                                     ()
                                 };
-                                let v287: std::pin::Pin<
+                                let v290: std::pin::Pin<
                                     Box<dyn std::future::Future<Output = Spiral_wasm::US8>>,
                                 > = Spiral_wasm::method28(v0_1.clone(), (v1) + 1_u8);
-                                v287.await
+                                v290.await
                             }
                         }
                     };
-                    let v295: string = string("}");
-                    let v300: bool = true;
-                    let _fix_closure_v297 = v292;
-                    let v307: string = append(
+                    let v298: string = string("}");
+                    let v303: bool = true;
+                    let _fix_closure_v300 = v295;
+                    let v310: string = append(
                         (append(
                             (append(
-                                (append(string("true; _fix_closure_v297 "), (v295))),
+                                (append(string("true; _fix_closure_v300 "), (v298))),
                                 string("); "),
                             )),
                             string(""),
                         )),
                         string(" // rust.fix_closure\'"),
                     );
-                    let v308: bool = true;
-                    _fix_closure_v297
+                    let v311: bool = true;
+                    _fix_closure_v300
                 },
             ); // rust.fix_closure';
-            let v310 = __future_init;
-            v310
+            let v313 = __future_init;
+            v313
         }
         pub fn method64(v0_1: Spiral_wasm::US8) -> string {
             let v2: LrcPtr<Spiral_wasm::Mut3> = LrcPtr::new(Spiral_wasm::Mut3 {
@@ -2904,60 +2904,60 @@ mod module_e3e534c3 {
                     let v14: &str = &*v7;
                     let v42: Option<std::string::String> =
                         clap::ArgMatches::get_one(&v0_1, v14).cloned();
-                    let v59: Spiral_wasm::US0 =
+                    let v61: Spiral_wasm::US0 =
                         defaultValue(Spiral_wasm::US0::US0_1, map(Spiral_wasm::method2(), v42));
-                    let v66: std::string::String = match &v59 {
-                        Spiral_wasm::US0::US0_0(v59_0_0) => match &v59 {
+                    let v68: std::string::String = match &v61 {
+                        Spiral_wasm::US0::US0_0(v61_0_0) => match &v61 {
                             Spiral_wasm::US0::US0_0(x) => x.clone(),
                             _ => unreachable!(),
                         }
                         .clone(),
                         _ => panic!("{}", string("Option does not have a value."),),
                     };
-                    let v68: string = fable_library_rust::String_::fromString(v66);
-                    let v71: () = {
-                        Spiral_wasm::closure13(v68.clone(), ());
+                    let v70: string = fable_library_rust::String_::fromString(v68);
+                    let v73: () = {
+                        Spiral_wasm::closure13(v70.clone(), ());
                         ()
                     };
-                    let v119: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v68);
-                    let v123: std::pin::Pin<
+                    let v121: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v70);
+                    let v125: std::pin::Pin<
                         Box<dyn std::future::Future<Output = Spiral_wasm::US8>>,
-                    > = Spiral_wasm::method28(v119?, 1_u8);
-                    let v125: Spiral_wasm::US8 = v123.await;
-                    let v128: () = {
-                        Spiral_wasm::closure35(v125.clone(), ());
+                    > = Spiral_wasm::method28(v121?, 1_u8);
+                    let v127: Spiral_wasm::US8 = v125.await;
+                    let v130: () = {
+                        Spiral_wasm::closure35(v127.clone(), ());
                         ()
                     };
-                    let v199: Result<u8, anyhow::Error> = match &v125 {
-                        Spiral_wasm::US8::US8_0(v125_0_0, v125_0_1) => {
-                            Ok::<u8, anyhow::Error>(v125_0_0.clone())
+                    let v204: Result<u8, anyhow::Error> = match &v127 {
+                        Spiral_wasm::US8::US8_0(v127_0_0, v127_0_1) => {
+                            Ok::<u8, anyhow::Error>(v127_0_0.clone())
                         }
-                        Spiral_wasm::US8::US8_1(v125_1_0, v125_1_1) => {
-                            let v180: string =
-                                Spiral_wasm::method65(v125.clone(), v125_1_1.clone());
-                            let v182: anyhow::Error = anyhow::anyhow!(v180);
-                            Err(v182)
+                        Spiral_wasm::US8::US8_1(v127_1_0, v127_1_1) => {
+                            let v185: string =
+                                Spiral_wasm::method65(v127.clone(), v127_1_1.clone());
+                            let v187: anyhow::Error = anyhow::anyhow!(v185);
+                            Err(v187)
                         }
                     };
-                    let v202: string = string("}");
-                    let v207: bool = true;
-                    let _fix_closure_v204 = v199;
-                    let v214: string = append(
+                    let v207: string = string("}");
+                    let v212: bool = true;
+                    let _fix_closure_v209 = v204;
+                    let v219: string = append(
                         (append(
                             (append(
-                                (append(string("true; _fix_closure_v204 "), (v202))),
+                                (append(string("true; _fix_closure_v209 "), (v207))),
                                 string("); "),
                             )),
                             string(""),
                         )),
                         string(" // rust.fix_closure\'"),
                     );
-                    let v215: bool = true;
-                    _fix_closure_v204
+                    let v220: bool = true;
+                    _fix_closure_v209
                 },
             ); // rust.fix_closure';
-            let v217 = __future_init;
-            v217
+            let v222 = __future_init;
+            v222
         }
         pub fn closure36(unitVar: (), v0_1: u8) -> Spiral_wasm::US10 {
             Spiral_wasm::US10::US10_0(v0_1)
@@ -2978,54 +2978,54 @@ mod module_e3e534c3 {
             let v11: &str = &*v4;
             let v39: Option<std::string::String> =
                 clap::ArgMatches::get_one(&v3.clone(), v11).cloned();
-            let v56: Spiral_wasm::US0 =
+            let v58: Spiral_wasm::US0 =
                 defaultValue(Spiral_wasm::US0::US0_1, map(Spiral_wasm::method2(), v39));
-            let v112: Spiral_wasm::US1 = match &v56 {
-                Spiral_wasm::US0::US0_0(v56_0_0) => {
-                    let v62: string = fable_library_rust::String_::fromString(
-                        match &v56 {
+            let v114: Spiral_wasm::US1 = match &v58 {
+                Spiral_wasm::US0::US0_0(v58_0_0) => {
+                    let v64: string = fable_library_rust::String_::fromString(
+                        match &v58 {
                             Spiral_wasm::US0::US0_0(x) => x.clone(),
                             _ => unreachable!(),
                         }
                         .clone(),
                     );
-                    let v67: Spiral_wasm::US2 = if string("Verbose") == (v62.clone()) {
+                    let v69: Spiral_wasm::US2 = if string("Verbose") == (v64.clone()) {
                         Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_0)
                     } else {
                         Spiral_wasm::US2::US2_1
                     };
-                    Spiral_wasm::US1::US1_0(match &v67 {
-                        Spiral_wasm::US2::US2_0(v67_0_0) => Spiral_wasm::US2::US2_0(
-                            match &v67 {
+                    Spiral_wasm::US1::US1_0(match &v69 {
+                        Spiral_wasm::US2::US2_0(v69_0_0) => Spiral_wasm::US2::US2_0(
+                            match &v69 {
                                 Spiral_wasm::US2::US2_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v74: Spiral_wasm::US2 = if string("Debug") == (v62.clone()) {
+                            let v76: Spiral_wasm::US2 = if string("Debug") == (v64.clone()) {
                                 Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_1)
                             } else {
                                 Spiral_wasm::US2::US2_1
                             };
-                            match &v74 {
-                                Spiral_wasm::US2::US2_0(v74_0_0) => Spiral_wasm::US2::US2_0(
-                                    match &v74 {
+                            match &v76 {
+                                Spiral_wasm::US2::US2_0(v76_0_0) => Spiral_wasm::US2::US2_0(
+                                    match &v76 {
                                         Spiral_wasm::US2::US2_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v81: Spiral_wasm::US2 = if string("Info") == (v62.clone()) {
+                                    let v83: Spiral_wasm::US2 = if string("Info") == (v64.clone()) {
                                         Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_2)
                                     } else {
                                         Spiral_wasm::US2::US2_1
                                     };
-                                    match &v81 {
-                                        Spiral_wasm::US2::US2_0(v81_0_0) => {
+                                    match &v83 {
+                                        Spiral_wasm::US2::US2_0(v83_0_0) => {
                                             Spiral_wasm::US2::US2_0(
-                                                match &v81 {
+                                                match &v83 {
                                                     Spiral_wasm::US2::US2_0(x) => x.clone(),
                                                     _ => unreachable!(),
                                                 }
@@ -3033,16 +3033,16 @@ mod module_e3e534c3 {
                                             )
                                         }
                                         _ => {
-                                            let v88: Spiral_wasm::US2 =
-                                                if string("Warning") == (v62.clone()) {
+                                            let v90: Spiral_wasm::US2 =
+                                                if string("Warning") == (v64.clone()) {
                                                     Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_3)
                                                 } else {
                                                     Spiral_wasm::US2::US2_1
                                                 };
-                                            match &v88 {
-                                                Spiral_wasm::US2::US2_0(v88_0_0) => {
+                                            match &v90 {
+                                                Spiral_wasm::US2::US2_0(v90_0_0) => {
                                                     Spiral_wasm::US2::US2_0(
-                                                        match &v88 {
+                                                        match &v90 {
                                                             Spiral_wasm::US2::US2_0(x) => x.clone(),
                                                             _ => unreachable!(),
                                                         }
@@ -3050,18 +3050,18 @@ mod module_e3e534c3 {
                                                     )
                                                 }
                                                 _ => {
-                                                    let v95: Spiral_wasm::US2 =
-                                                        if string("Critical") == (v62.clone()) {
+                                                    let v97: Spiral_wasm::US2 =
+                                                        if string("Critical") == (v64.clone()) {
                                                             Spiral_wasm::US2::US2_0(
                                                                 Spiral_wasm::US3::US3_4,
                                                             )
                                                         } else {
                                                             Spiral_wasm::US2::US2_1
                                                         };
-                                                    match &v95 {
-                                                        Spiral_wasm::US2::US2_0(v95_0_0) => {
+                                                    match &v97 {
+                                                        Spiral_wasm::US2::US2_0(v97_0_0) => {
                                                             Spiral_wasm::US2::US2_0(
-                                                                match &v95 {
+                                                                match &v97 {
                                                                     Spiral_wasm::US2::US2_0(x) => {
                                                                         x.clone()
                                                                     }
@@ -3083,20 +3083,20 @@ mod module_e3e534c3 {
                 }
                 _ => Spiral_wasm::US1::US1_1,
             };
-            let v119: Spiral_wasm::US2 = if let Spiral_wasm::US1::US1_0(v112_0_0) = &v112 {
-                let v113: Spiral_wasm::US2 = v112_0_0.clone();
-                if let Spiral_wasm::US2::US2_0(v113_0_0) = &v113 {
-                    Spiral_wasm::US2::US2_0(v113_0_0.clone())
+            let v121: Spiral_wasm::US2 = if let Spiral_wasm::US1::US1_0(v114_0_0) = &v114 {
+                let v115: Spiral_wasm::US2 = v114_0_0.clone();
+                if let Spiral_wasm::US2::US2_0(v115_0_0) = &v115 {
+                    Spiral_wasm::US2::US2_0(v115_0_0.clone())
                 } else {
                     Spiral_wasm::US2::US2_1
                 }
             } else {
                 Spiral_wasm::US2::US2_1
             };
-            let v126: () = {
+            let v128: () = {
                 Spiral_wasm::closure2(
-                    match &v119 {
-                        Spiral_wasm::US2::US2_0(v119_0_0) => match &v119 {
+                    match &v121 {
+                        Spiral_wasm::US2::US2_0(v121_0_0) => match &v121 {
                             Spiral_wasm::US2::US2_0(x) => x.clone(),
                             _ => unreachable!(),
                         }
@@ -3118,71 +3118,71 @@ mod module_e3e534c3 {
                 .get()
                 .clone()
                 .unwrap();
-            let v165: () = {
+            let v167: () = {
                 Spiral_wasm::closure5(v0_1, ());
                 ()
             };
-            let v212: string = Spiral_wasm::method22();
-            let v219: &str = &*v212;
-            let v247: Option<std::string::String> =
-                clap::ArgMatches::get_one(&v3.clone(), v219).cloned();
-            let v250: Option<string> = map(Spiral_wasm::method23(), v247);
-            let v359: Spiral_wasm::US7 =
-                defaultValue(Spiral_wasm::US7::US7_1, map(Spiral_wasm::method8(), v250));
-            let v363: std::pin::Pin<
+            let v214: string = Spiral_wasm::method22();
+            let v221: &str = &*v214;
+            let v249: Option<std::string::String> =
+                clap::ArgMatches::get_one(&v3.clone(), v221).cloned();
+            let v253: Option<string> = map(Spiral_wasm::method23(), v249);
+            let v366: Spiral_wasm::US7 =
+                defaultValue(Spiral_wasm::US7::US7_1, map(Spiral_wasm::method8(), v253));
+            let v370: std::pin::Pin<
                 Box<dyn std::future::Future<Output = Result<u8, anyhow::Error>>>,
             > = Spiral_wasm::method24(v3);
-            let v365 = tokio::runtime::Builder::new_multi_thread()
+            let v372 = tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
                 .unwrap();
-            let v367: Result<u8, anyhow::Error> = v365.handle().block_on(v363);
-            let v368 = Spiral_wasm::method53();
-            let v381: Result<u8, std::string::String> = v367.map_err(|x| v368(x));
-            let v384 = Spiral_wasm::method66();
-            let v385 = Spiral_wasm::method67();
-            let v386: Spiral_wasm::US10 = match &v381 {
-                Err(v381_1_0) => v385(v381_1_0.clone()),
-                Ok(v381_0_0) => v384(v381_0_0.clone()),
+            let v374: Result<u8, anyhow::Error> = v372.handle().block_on(v370);
+            let v375 = Spiral_wasm::method53();
+            let v388: Result<u8, std::string::String> = v374.map_err(|x| v375(x));
+            let v391 = Spiral_wasm::method66();
+            let v392 = Spiral_wasm::method67();
+            let v394: Spiral_wasm::US10 = match &v388 {
+                Err(v388_1_0) => v392(v388_1_0.clone()),
+                Ok(v388_0_0) => v391(v388_0_0.clone()),
             };
-            match &v386 {
-                Spiral_wasm::US10::US10_0(v386_0_0) => {
-                    if let Spiral_wasm::US7::US7_0(v359_0_0) = &v359 {
-                        let v389: string = sprintf!(
+            match &v394 {
+                Spiral_wasm::US10::US10_0(v394_0_0) => {
+                    if let Spiral_wasm::US7::US7_0(v366_0_0) = &v366 {
+                        let v399: string = sprintf!(
                             "spiral_wasm.main / retries: {} / exception: \'{}\'",
-                            v386_0_0.clone(),
-                            v359_0_0.clone()
+                            v394_0_0.clone(),
+                            v366_0_0.clone()
                         );
-                        let v393: Result<(), string> = Err(v389);
-                        v393.unwrap();
+                        let v403: Result<(), string> = Err(v399);
+                        v403.unwrap();
                         ()
                     }
                 }
-                Spiral_wasm::US10::US10_1(v386_1_0) => {
-                    let v409: std::string::String = v386_1_0.clone();
-                    if let Spiral_wasm::US7::US7_0(v359_0_0) = &v359 {
-                        let v410: string = v359_0_0.clone();
-                        if string("") == (v410.clone()) {
+                Spiral_wasm::US10::US10_1(v394_1_0) => {
+                    let v419: std::string::String = v394_1_0.clone();
+                    if let Spiral_wasm::US7::US7_0(v366_0_0) = &v366 {
+                        let v420: string = v366_0_0.clone();
+                        if string("") == (v420.clone()) {
                             ()
                         } else {
                             if contains(
-                                fable_library_rust::String_::fromString(v409.clone()),
-                                v410.clone(),
+                                fable_library_rust::String_::fromString(v419.clone()),
+                                v420.clone(),
                             ) {
                                 ()
                             } else {
-                                let v418: string = sprintf!(
+                                let v428: string = sprintf!(
                                     "spiral_wasm.main / exception: \'{}\' / error: {}",
-                                    v410,
-                                    v409
+                                    v420,
+                                    v419
                                 );
-                                let v422: Result<(), string> = Err(v418);
-                                v422.unwrap();
+                                let v432: Result<(), string> = Err(v428);
+                                v432.unwrap();
                                 ()
                             }
                         }
                     } else {
-                        let v441: u8 = v381.clone().unwrap();
+                        let v451: u8 = v388.clone().unwrap();
                         ()
                     }
                 }

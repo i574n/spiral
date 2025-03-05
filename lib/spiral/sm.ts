@@ -254,8 +254,8 @@ export function closure35(v0_1: UH0_$union, v1_1: string): string {
 
 export function closure32(unitVar: void, v0_1: string[]): ((arg0: string) => string) {
     const v2_1: FSharpList<string> = ofArray_1<string>(v0_1);
-    const v11_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v2_1, UH0_UH0_0());
-    return (v: string): string => closure35(v11_1, v);
+    const v15_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v2_1, UH0_UH0_0());
+    return (v: string): string => closure35(v15_1, v);
 }
 
 export function closure37(v0_1: UH0_$union, v1_1: string): string {
@@ -264,8 +264,8 @@ export function closure37(v0_1: UH0_$union, v1_1: string): string {
 
 export function closure36(unitVar: void, v0_1: string[]): ((arg0: string) => string) {
     const v2_1: FSharpList<string> = ofArray_1<string>(v0_1);
-    const v11_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v2_1, UH0_UH0_0());
-    return (v: string): string => closure37(v11_1, v);
+    const v15_1: UH0_$union = foldBack<string, UH0_$union>(uncurry2(method6()), v2_1, UH0_UH0_0());
+    return (v: string): string => closure37(v15_1, v);
 }
 
 export function closure39(v0_1: int32, v1_1: string): string {

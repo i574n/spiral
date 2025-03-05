@@ -29,7 +29,7 @@ class IOsEnviron(Protocol):
         ...
 
 
-def _expr191() -> TypeInfo:
+def _expr190() -> TypeInfo:
     return union_type("Runtime.US0", [], US0, lambda: [[], [], [], [], []])
 
 
@@ -45,9 +45,9 @@ class US0(Union):
         return ["US0_0", "US0_1", "US0_2", "US0_3", "US0_4"]
 
 
-US0_reflection = _expr191
+US0_reflection = _expr190
 
-def _expr192() -> TypeInfo:
+def _expr191() -> TypeInfo:
     return record_type("Runtime.Mut0", [], Mut0, lambda: [("l0", int64_type)])
 
 
@@ -55,9 +55,9 @@ def _expr192() -> TypeInfo:
 class Mut0(Record):
     l0: int64
 
-Mut0_reflection = _expr192
+Mut0_reflection = _expr191
 
-def _expr193() -> TypeInfo:
+def _expr192() -> TypeInfo:
     return record_type("Runtime.Mut1", [], Mut1, lambda: [("l0", lambda_type(string_type, unit_type))])
 
 
@@ -65,9 +65,9 @@ def _expr193() -> TypeInfo:
 class Mut1(Record):
     l0: Callable[[str], None]
 
-Mut1_reflection = _expr193
+Mut1_reflection = _expr192
 
-def _expr194() -> TypeInfo:
+def _expr193() -> TypeInfo:
     return record_type("Runtime.Mut2", [], Mut2, lambda: [("l0", bool_type)])
 
 
@@ -75,9 +75,9 @@ def _expr194() -> TypeInfo:
 class Mut2(Record):
     l0: bool
 
-Mut2_reflection = _expr194
+Mut2_reflection = _expr193
 
-def _expr195() -> TypeInfo:
+def _expr194() -> TypeInfo:
     return record_type("Runtime.Mut3", [], Mut3, lambda: [("l0", string_type)])
 
 
@@ -85,9 +85,9 @@ def _expr195() -> TypeInfo:
 class Mut3(Record):
     l0: str
 
-Mut3_reflection = _expr195
+Mut3_reflection = _expr194
 
-def _expr196() -> TypeInfo:
+def _expr195() -> TypeInfo:
     return record_type("Runtime.Mut4", [], Mut4, lambda: [("l0", US0_reflection())])
 
 
@@ -95,9 +95,9 @@ def _expr196() -> TypeInfo:
 class Mut4(Record):
     l0: US0
 
-Mut4_reflection = _expr196
+Mut4_reflection = _expr195
 
-def _expr197() -> TypeInfo:
+def _expr196() -> TypeInfo:
     return union_type("Runtime.US1", [], US1, lambda: [[("f0_0", US0_reflection())], []])
 
 
@@ -113,9 +113,9 @@ class US1(Union):
         return ["US1_0", "US1_1"]
 
 
-US1_reflection = _expr197
+US1_reflection = _expr196
 
-def _expr198() -> TypeInfo:
+def _expr197() -> TypeInfo:
     return union_type("Runtime.US2", [], US2, lambda: [[("f0_0", int64_type)], []])
 
 
@@ -131,9 +131,9 @@ class US2(Union):
         return ["US2_0", "US2_1"]
 
 
-US2_reflection = _expr198
+US2_reflection = _expr197
 
-def _expr199() -> TypeInfo:
+def _expr198() -> TypeInfo:
     return union_type("Runtime.US3", [], US3, lambda: [[], [], []])
 
 
@@ -149,9 +149,9 @@ class US3(Union):
         return ["US3_0", "US3_1", "US3_2"]
 
 
-US3_reflection = _expr199
+US3_reflection = _expr198
 
-def _expr200() -> TypeInfo:
+def _expr199() -> TypeInfo:
     return union_type("Runtime.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())]])
 
 
@@ -167,9 +167,9 @@ class US4(Union):
         return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"]
 
 
-US4_reflection = _expr200
+US4_reflection = _expr199
 
-def _expr201() -> TypeInfo:
+def _expr200() -> TypeInfo:
     return union_type("Runtime.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -185,9 +185,9 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr201
+US5_reflection = _expr200
 
-def _expr202() -> TypeInfo:
+def _expr201() -> TypeInfo:
     return union_type("Runtime.US6", [], US6, lambda: [[("f0_0", string_type), ("f0_1", US5_reflection())], [("f1_0", string_type)]])
 
 
@@ -203,9 +203,9 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr202
+US6_reflection = _expr201
 
-def _expr203() -> TypeInfo:
+def _expr202() -> TypeInfo:
     return union_type("Runtime.US7", [], US7, lambda: [[("f0_0", char_type), ("f0_1", string_type), ("f0_2", class_type("System.Text.StringBuilder")), ("f0_3", int32_type), ("f0_4", int32_type)], [("f1_0", string_type)]])
 
 
@@ -221,9 +221,9 @@ class US7(Union):
         return ["US7_0", "US7_1"]
 
 
-US7_reflection = _expr203
+US7_reflection = _expr202
 
-def _expr204() -> TypeInfo:
+def _expr203() -> TypeInfo:
     return record_type("Runtime.Mut5", [], Mut5, lambda: [("l0", int32_type)])
 
 
@@ -231,9 +231,9 @@ def _expr204() -> TypeInfo:
 class Mut5(Record):
     l0: int
 
-Mut5_reflection = _expr204
+Mut5_reflection = _expr203
 
-def _expr205() -> TypeInfo:
+def _expr204() -> TypeInfo:
     return union_type("Runtime.UH0", [], UH0, lambda: [[], [("Item1", char_type), ("Item2", UH0_reflection())]])
 
 
@@ -248,9 +248,9 @@ class UH0(Union):
         return ["UH0_0", "UH0_1"]
 
 
-UH0_reflection = _expr205
+UH0_reflection = _expr204
 
-def _expr206() -> TypeInfo:
+def _expr205() -> TypeInfo:
     return union_type("Runtime.UH1", [], UH1, lambda: [[], [("Item1", lambda_type(tuple_type(string_type, class_type("System.Text.StringBuilder"), int32_type, int32_type), US7_reflection())), ("Item2", UH1_reflection())]])
 
 
@@ -265,9 +265,9 @@ class UH1(Union):
         return ["UH1_0", "UH1_1"]
 
 
-UH1_reflection = _expr206
+UH1_reflection = _expr205
 
-def _expr207() -> TypeInfo:
+def _expr206() -> TypeInfo:
     return union_type("Runtime.US8", [], US8, lambda: [[("f0_0", string_type), ("f0_1", string_type), ("f0_2", class_type("System.Text.StringBuilder")), ("f0_3", int32_type), ("f0_4", int32_type)], [("f1_0", string_type)]])
 
 
@@ -283,9 +283,9 @@ class US8(Union):
         return ["US8_0", "US8_1"]
 
 
-US8_reflection = _expr207
+US8_reflection = _expr206
 
-def _expr208() -> TypeInfo:
+def _expr207() -> TypeInfo:
     return union_type("Runtime.US9", [], US9, lambda: [[("f0_0", char_type)], []])
 
 
@@ -301,9 +301,9 @@ class US9(Union):
         return ["US9_0", "US9_1"]
 
 
-US9_reflection = _expr208
+US9_reflection = _expr207
 
-def _expr209() -> TypeInfo:
+def _expr208() -> TypeInfo:
     return union_type("Runtime.US10", [], US10, lambda: [[("f0_0", string_type), ("f0_1", class_type("System.Text.StringBuilder")), ("f0_2", int32_type), ("f0_3", int32_type)], [("f1_0", string_type)]])
 
 
@@ -319,7 +319,7 @@ class US10(Union):
         return ["US10_0", "US10_1"]
 
 
-US10_reflection = _expr209
+US10_reflection = _expr208
 
 def _expr210() -> TypeInfo:
     return union_type("Runtime.US11", [], US11, lambda: [[("f0_0", string_type), ("f0_1", US5_reflection()), ("f0_2", string_type), ("f0_3", class_type("System.Text.StringBuilder")), ("f0_4", int32_type), ("f0_5", int32_type)], [("f1_0", string_type)]])
@@ -529,9 +529,9 @@ def method2(v0_1: str) -> str:
     else: 
         v47 = value_12(_v41)
 
-    v66: US5 = default_arg(map(method5(), v47), US5(1))
-    if v66.tag == 0:
-        return v66.fields[0]
+    v68: US5 = default_arg(map(method5(), v47), US5(1))
+    if v68.tag == 0:
+        return v68.fields[0]
 
     else: 
         return ""
@@ -632,17 +632,17 @@ def method11(__unit: None=None) -> str:
 
 
 def method8(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v700: US2 = default_arg(map(method9(), v5), US2(1))
-    v818: Any
-    if v700.tag == 0:
-        v770: Any = create(op_subtraction(from_value(ticks_1(now()), False), v700.fields[0]))
-        v818 = create_1(1, 1, 1, hours(v770), minutes(v770), seconds(v770), milliseconds(v770))
+    v712: US2 = default_arg(map(method9(), v5), US2(1))
+    v830: Any
+    if v712.tag == 0:
+        v782: Any = create(op_subtraction(from_value(ticks_1(now()), False), v712.fields[0]))
+        v830 = create_1(1, 1, 1, hours(v782), minutes(v782), seconds(v782), milliseconds(v782))
 
     else: 
-        v818 = now()
+        v830 = now()
 
-    v820: str = method11()
-    return to_string(v818, "M-d-y hh:mm:ss tt" if (v820 == "") else v820)
+    v832: str = method11()
+    return to_string(v830, "M-d-y hh:mm:ss tt" if (v832 == "") else v832)
 
 
 def method14(__unit: None=None) -> str:
@@ -879,9 +879,9 @@ def closure14(unit_var: None, _arg: tuple[str, Any, int, int]) -> US7:
             return US7(0, v10, v45, pattern_input[0], pattern_input[1], pattern_input[2])
 
         else: 
-            v105: int = (v0_1.find("\n") - 1) or 0
-            v141: int = (((len(v0_1) + 1) if (-2 == v105) else (v105 + 1)) - 1) or 0
-            return US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\"")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v141 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
+            v113: int = (v0_1.find("\n") - 1) or 0
+            v149: int = (((len(v0_1) + 1) if (-2 == v113) else (v113 + 1)) - 1) or 0
+            return US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\"")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v149 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
 
 
 
@@ -914,9 +914,9 @@ def closure18(unit_var: None, _arg: tuple[str, Any, int, int]) -> US7:
             return US7(0, v10, v45, pattern_input[0], pattern_input[1], pattern_input[2])
 
         else: 
-            v105: int = (v0_1.find("\n") - 1) or 0
-            v141: int = (((len(v0_1) + 1) if (-2 == v105) else (v105 + 1)) - 1) or 0
-            return US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\'")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v141 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
+            v113: int = (v0_1.find("\n") - 1) or 0
+            v149: int = (((len(v0_1) + 1) if (-2 == v113) else (v113 + 1)) - 1) or 0
+            return US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\'")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v149 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
 
 
 
@@ -981,9 +981,9 @@ def method32(v0_1_mut: str, v1_1_mut: int64) -> bool:
 def method33(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: int) -> tuple[str, str, Any, int, int]:
     while True:
         (v0_1, v1_1, v2_1, v3, v4) = (v0_1_mut, v1_1_mut, v2_1_mut, v3_mut, v4_mut)
-        v137: US7
+        v145: US7
         if "" == v1_1:
-            v137 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'"])), (v2_1, v3, v4)])))
+            v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'"])), (v2_1, v3, v4)])))
 
         else: 
             v25: str = v1_1[0]
@@ -1002,26 +1002,26 @@ def method33(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                     v73.l0 = v77 or 0
                 v79: FSharpList[str] = of_array(v72)
                 pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v79, UH0(0)), v2_1, v3, v4)
-                v137 = US7(0, v25, v62, pattern_input[0], pattern_input[1], pattern_input[2])
+                v145 = US7(0, v25, v62, pattern_input[0], pattern_input[1], pattern_input[2])
 
             else: 
-                v137 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v25, to_array(of_array(["\"", "\'"])), (v2_1, v3, v4)])))
+                v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v25, to_array(of_array(["\"", "\'"])), (v2_1, v3, v4)])))
 
 
-        v149: US7
-        if v137.tag == 0:
-            v138: str = v137.fields[0]
-            v149 = US7(0, "/" if ("\\" == v138) else v138, v137.fields[1], v137.fields[2], v137.fields[3], v137.fields[4])
+        v157: US7
+        if v145.tag == 0:
+            v146: str = v145.fields[0]
+            v157 = US7(0, "/" if ("\\" == v146) else v146, v145.fields[1], v145.fields[2], v145.fields[3], v145.fields[4])
 
         else: 
-            v149 = US7(1, v137.fields[0])
+            v157 = US7(1, v145.fields[0])
 
-        if v149.tag == 0:
-            v0_1_mut = v0_1 + v149.fields[0]
-            v1_1_mut = v149.fields[1]
-            v2_1_mut = v149.fields[2]
-            v3_mut = v149.fields[3]
-            v4_mut = v149.fields[4]
+        if v157.tag == 0:
+            v0_1_mut = v0_1 + v157.fields[0]
+            v1_1_mut = v157.fields[1]
+            v2_1_mut = v157.fields[2]
+            v3_mut = v157.fields[3]
+            v4_mut = v157.fields[4]
             continue
 
         else: 
@@ -1098,9 +1098,9 @@ def method35(v0_1_mut: str, v1_1_mut: int64) -> bool:
 def method36(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: int) -> tuple[str, str, Any, int, int]:
     while True:
         (v0_1, v1_1, v2_1, v3, v4) = (v0_1_mut, v1_1_mut, v2_1_mut, v3_mut, v4_mut)
-        v145: US7
+        v153: US7
         if "" == v1_1:
-            v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'", " "])), (v2_1, v3, v4)])))
+            v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'", " "])), (v2_1, v3, v4)])))
 
         else: 
             v29: str = v1_1[0]
@@ -1119,26 +1119,26 @@ def method36(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                     v77.l0 = v81 or 0
                 v83: FSharpList[str] = of_array(v76)
                 pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v83, UH0(0)), v2_1, v3, v4)
-                v145 = US7(0, v29, v66, pattern_input[0], pattern_input[1], pattern_input[2])
+                v153 = US7(0, v29, v66, pattern_input[0], pattern_input[1], pattern_input[2])
 
             else: 
-                v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v29, to_array(of_array(["\"", "\'", " "])), (v2_1, v3, v4)])))
+                v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v29, to_array(of_array(["\"", "\'", " "])), (v2_1, v3, v4)])))
 
 
-        v157: US7
-        if v145.tag == 0:
-            v146: str = v145.fields[0]
-            v157 = US7(0, "/" if ("\\" == v146) else v146, v145.fields[1], v145.fields[2], v145.fields[3], v145.fields[4])
+        v165: US7
+        if v153.tag == 0:
+            v154: str = v153.fields[0]
+            v165 = US7(0, "/" if ("\\" == v154) else v154, v153.fields[1], v153.fields[2], v153.fields[3], v153.fields[4])
 
         else: 
-            v157 = US7(1, v145.fields[0])
+            v165 = US7(1, v153.fields[0])
 
-        if v157.tag == 0:
-            v0_1_mut = v0_1 + v157.fields[0]
-            v1_1_mut = v157.fields[1]
-            v2_1_mut = v157.fields[2]
-            v3_mut = v157.fields[3]
-            v4_mut = v157.fields[4]
+        if v165.tag == 0:
+            v0_1_mut = v0_1 + v165.fields[0]
+            v1_1_mut = v165.fields[1]
+            v2_1_mut = v165.fields[2]
+            v3_mut = v165.fields[3]
+            v4_mut = v165.fields[4]
             continue
 
         else: 
@@ -1167,9 +1167,9 @@ def method37(v0_1_mut: str, v1_1_mut: int) -> int:
 def method38(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: int) -> tuple[str, str, Any, int, int]:
     while True:
         (v0_1, v1_1, v2_1, v3, v4) = (v0_1_mut, v1_1_mut, v2_1_mut, v3_mut, v4_mut)
-        v100: US7
+        v108: US7
         if "" == v1_1:
-            v100 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v2_1, v3, v4)])))
+            v108 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v2_1, v3, v4)])))
 
         else: 
             v11: str = v1_1[0]
@@ -1187,14 +1187,14 @@ def method38(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                 v56.l0 = v60 or 0
             v62: FSharpList[str] = of_array(v55)
             pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v62, UH0(0)), v2_1, v3, v4)
-            v100 = US7(0, v11, v45, pattern_input[0], pattern_input[1], pattern_input[2])
+            v108 = US7(0, v11, v45, pattern_input[0], pattern_input[1], pattern_input[2])
 
-        if v100.tag == 0:
-            v0_1_mut = v0_1 + v100.fields[0]
-            v1_1_mut = v100.fields[1]
-            v2_1_mut = v100.fields[2]
-            v3_mut = v100.fields[3]
-            v4_mut = v100.fields[4]
+        if v108.tag == 0:
+            v0_1_mut = v0_1 + v108.fields[0]
+            v1_1_mut = v108.fields[1]
+            v2_1_mut = v108.fields[2]
+            v3_mut = v108.fields[3]
+            v4_mut = v108.fields[4]
             continue
 
         else: 
@@ -1209,231 +1209,231 @@ def method25(v0_1: str) -> US6:
     def _arrow232(__unit: None=None, v0_1: Any=v0_1) -> str | None:
         raise Exception("optionm\'.of_obj / _v0=None")
 
-    v9: str = default_arg(_arrow232() if (_v0 is None) else value_12(_v0), "")
-    v15: Any = StringBuilder__ctor_Z721C83C5(method26())
-    def v18_1(_arg10: tuple[str, Any, int, int], v0_1: Any=v0_1) -> US7:
+    v10: str = default_arg(_arrow232() if (_v0 is None) else value_12(_v0), "")
+    v16: Any = StringBuilder__ctor_Z721C83C5(method26())
+    def v19_1(_arg10: tuple[str, Any, int, int], v0_1: Any=v0_1) -> US7:
         return closure14(None, _arg10)
 
-    def v19_1(_arg10_1: tuple[str, Any, int, int], v0_1: Any=v0_1) -> US7:
+    def v20_1(_arg10_1: tuple[str, Any, int, int], v0_1: Any=v0_1) -> US7:
         return closure18(None, _arg10_1)
 
-    v23: US7 = method31(v9, v15, UH1(1, v18_1, UH1(1, v19_1, UH1(0))))
-    v235: US8
-    if v23.tag == 0:
-        v28: int = v23.fields[4] or 0
-        v27: int = v23.fields[3] or 0
-        v26: Any = v23.fields[2]
-        v25: str = v23.fields[1]
-        v161: US7
-        if "" == v25:
-            v161 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'"])), (v26, v27, v28)])))
+    v24: US7 = method31(v10, v16, UH1(1, v19_1, UH1(1, v20_1, UH1(0))))
+    v244: US8
+    if v24.tag == 0:
+        v29: int = v24.fields[4] or 0
+        v28: int = v24.fields[3] or 0
+        v27: Any = v24.fields[2]
+        v26: str = v24.fields[1]
+        v170: US7
+        if "" == v26:
+            v170 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'"])), (v27, v28, v29)])))
 
         else: 
-            v49: str = v25[0]
-            if method32(v49, int64(0)) == False:
-                v84: int = (len(v25) - 1) or 0
-                v86: str = v25[1:v84 + 1]
-                v92: str = v49
-                v95: int = len(v92) or 0
-                v96: Array[str] = fill([0] * v95, 0, v95, "")
-                v97: Mut5 = Mut5(0)
-                while method27(v95, v97):
-                    v99: int = v97.l0 or 0
-                    v100: str = v92[v99]
-                    v96[v99] = v100
-                    v101: int = (v99 + 1) or 0
-                    v97.l0 = v101 or 0
-                v103: FSharpList[str] = of_array(v96)
-                pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v103, UH0(0)), v26, v27, v28)
-                v161 = US7(0, v49, v86, pattern_input[0], pattern_input[1], pattern_input[2])
+            v50: str = v26[0]
+            if method32(v50, int64(0)) == False:
+                v85: int = (len(v26) - 1) or 0
+                v87: str = v26[1:v85 + 1]
+                v93: str = v50
+                v96: int = len(v93) or 0
+                v97: Array[str] = fill([0] * v96, 0, v96, "")
+                v98: Mut5 = Mut5(0)
+                while method27(v96, v98):
+                    v100: int = v98.l0 or 0
+                    v101: str = v93[v100]
+                    v97[v100] = v101
+                    v102: int = (v100 + 1) or 0
+                    v98.l0 = v102 or 0
+                v104: FSharpList[str] = of_array(v97)
+                pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v104, UH0(0)), v27, v28, v29)
+                v170 = US7(0, v50, v87, pattern_input[0], pattern_input[1], pattern_input[2])
 
             else: 
-                v161 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v49, to_array(of_array(["\"", "\'"])), (v26, v27, v28)])))
+                v170 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v50, to_array(of_array(["\"", "\'"])), (v27, v28, v29)])))
 
 
-        v173: US7
-        if v161.tag == 0:
-            v162: str = v161.fields[0]
-            v173 = US7(0, "/" if ("\\" == v162) else v162, v161.fields[1], v161.fields[2], v161.fields[3], v161.fields[4])
-
-        else: 
-            v173 = US7(1, v161.fields[0])
-
-        v193: US8
-        if v173.tag == 0:
-            pattern_input_1: tuple[str, str, Any, int, int] = method33(v173.fields[0], v173.fields[1], v173.fields[2], v173.fields[3], v173.fields[4])
-            v193 = US8(0, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2], pattern_input_1[3], pattern_input_1[4])
+        v182: US7
+        if v170.tag == 0:
+            v171: str = v170.fields[0]
+            v182 = US7(0, "/" if ("\\" == v171) else v171, v170.fields[1], v170.fields[2], v170.fields[3], v170.fields[4])
 
         else: 
-            v193 = US8(1, v173.fields[0])
+            v182 = US7(1, v170.fields[0])
 
-        v203: US8 = US8(0, v193.fields[0], v193.fields[1], v193.fields[2], v193.fields[3], v193.fields[4]) if (v193.tag == 0) else US8(0, "", v25, v26, v27, v28)
-        if v203.tag == 0:
-            v208: int = v203.fields[4] or 0
-            v207: int = v203.fields[3] or 0
-            v206: Any = v203.fields[2]
-            v205: str = v203.fields[1]
-            v212: US7 = method34(v205, v206, v207, v208, UH1(1, v18_1, UH1(1, v19_1, UH1(0))))
-            v235 = US8(0, v203.fields[0], v212.fields[1], v212.fields[2], v212.fields[3], v212.fields[4]) if (v212.tag == 0) else US8(1, to_text(interpolate("parsing.between / expected closing delimiter / e: %A%P() / input: %A%P() / rest1: %A%P() / rest2: %A%P()", [v212.fields[0], (v9, v15, 1, 1), (v25, v26, v27, v28), (v205, v206, v207, v208)])))
+        v202: US8
+        if v182.tag == 0:
+            pattern_input_1: tuple[str, str, Any, int, int] = method33(v182.fields[0], v182.fields[1], v182.fields[2], v182.fields[3], v182.fields[4])
+            v202 = US8(0, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2], pattern_input_1[3], pattern_input_1[4])
 
         else: 
-            v235 = US8(1, "parsing.between / expected content")
+            v202 = US8(1, v182.fields[0])
+
+        v212: US8 = US8(0, v202.fields[0], v202.fields[1], v202.fields[2], v202.fields[3], v202.fields[4]) if (v202.tag == 0) else US8(0, "", v26, v27, v28, v29)
+        if v212.tag == 0:
+            v217: int = v212.fields[4] or 0
+            v216: int = v212.fields[3] or 0
+            v215: Any = v212.fields[2]
+            v214: str = v212.fields[1]
+            v221: US7 = method34(v214, v215, v216, v217, UH1(1, v19_1, UH1(1, v20_1, UH1(0))))
+            v244 = US8(0, v212.fields[0], v221.fields[1], v221.fields[2], v221.fields[3], v221.fields[4]) if (v221.tag == 0) else US8(1, to_text(interpolate("parsing.between / expected closing delimiter / e: %A%P() / input: %A%P() / rest1: %A%P() / rest2: %A%P()", [v221.fields[0], (v10, v16, 1, 1), (v26, v27, v28, v29), (v214, v215, v216, v217)])))
+
+        else: 
+            v244 = US8(1, "parsing.between / expected content")
 
 
     else: 
-        v235 = US8(1, v23.fields[0])
+        v244 = US8(1, v24.fields[0])
 
-    v493: US8
-    if v235.tag == 0:
-        v493 = v235
-
-    else: 
-        v384: US7
-        if "" == v9:
-            v384 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'", " "])), (v15, 1, 1)])))
-
-        else: 
-            v266: str = v9[0]
-            if method35(v266, int64(0)) == False:
-                v301: int = (len(v9) - 1) or 0
-                v303: str = v9[1:v301 + 1]
-                v309: str = v266
-                v312: int = len(v309) or 0
-                v313: Array[str] = fill([0] * v312, 0, v312, "")
-                v314: Mut5 = Mut5(0)
-                while method27(v312, v314):
-                    v316: int = v314.l0 or 0
-                    v317: str = v309[v316]
-                    v313[v316] = v317
-                    v318: int = (v316 + 1) or 0
-                    v314.l0 = v318 or 0
-                v320: FSharpList[str] = of_array(v313)
-                pattern_input_2: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v320, UH0(0)), v15, 1, 1)
-                v384 = US7(0, v266, v303, pattern_input_2[0], pattern_input_2[1], pattern_input_2[2])
-
-            else: 
-                v384 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v266, to_array(of_array(["\"", "\'", " "])), (v15, 1, 1)])))
-
-
-        v396: US7
-        if v384.tag == 0:
-            v385: str = v384.fields[0]
-            v396 = US7(0, "/" if ("\\" == v385) else v385, v384.fields[1], v384.fields[2], v384.fields[3], v384.fields[4])
-
-        else: 
-            v396 = US7(1, v384.fields[0])
-
-        v416: US8
-        if v396.tag == 0:
-            pattern_input_3: tuple[str, str, Any, int, int] = method36(v396.fields[0], v396.fields[1], v396.fields[2], v396.fields[3], v396.fields[4])
-            v416 = US8(0, pattern_input_3[0], pattern_input_3[1], pattern_input_3[2], pattern_input_3[3], pattern_input_3[4])
-
-        else: 
-            v416 = US8(1, v396.fields[0])
-
-        if v416.tag == 0:
-            v493 = v416
-
-        else: 
-            v431: US10 = US10(0, v9, v15, 1, 1) if (len(v9) == 0) else US10(1, to_text(interpolate("parsing.eof / expected end of input / input: %A%P()", [v9])))
-            v440: US8 = US8(0, "", v431.fields[0], v431.fields[1], v431.fields[2], v431.fields[3]) if (v431.tag == 0) else US8(1, v431.fields[0])
-            if v440.tag == 0:
-                v442: str = v440.fields[1]
-                v447: int = method37(v442, 0) or 0
-                v479: int = (len(v442) - 1) or 0
-                v493 = US8(0, v440.fields[0], v442[v447:v479 + 1], v440.fields[2], v440.fields[3], v440.fields[4])
-
-            else: 
-                v493 = US8(1, v440.fields[0])
-
-
-
-    v821: US11
-    if v493.tag == 0:
-        v498: int = v493.fields[4] or 0
-        v497: int = v493.fields[3] or 0
-        v496: Any = v493.fields[2]
-        v495: str = v493.fields[1]
-        v658: US7
-        if "" == v495:
-            v658 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", [" ", (v496, v497, v498)])))
-
-        else: 
-            v505: str = v495[0]
-            if v505 == " ":
-                v538: int = (len(v495) - 1) or 0
-                v540: str = v495[1:v538 + 1]
-                v546: str = v505
-                v549: int = len(v546) or 0
-                v550: Array[str] = fill([0] * v549, 0, v549, "")
-                v551: Mut5 = Mut5(0)
-                while method27(v549, v551):
-                    v553: int = v551.l0 or 0
-                    v554: str = v546[v553]
-                    v550[v553] = v554
-                    v555: int = (v553 + 1) or 0
-                    v551.l0 = v555 or 0
-                v557: FSharpList[str] = of_array(v550)
-                pattern_input_4: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v557, UH0(0)), v496, v497, v498)
-                v658 = US7(0, v505, v540, pattern_input_4[0], pattern_input_4[1], pattern_input_4[2])
-
-            else: 
-                v600: int = (v495.find("\n") - 1) or 0
-                v636: int = (((len(v495) + 1) if (-2 == v600) else (v600 + 1)) - 1) or 0
-                v658 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str(" ")) + "\' / line: ") + str(v497)) + " / col: ") + str(v498)) + "\n") + str(v496)) + "") + v495[0:v636 + 1]) + "", "\n", method30(v498 - 1, 0)("") + "^", *"\n"))
-
-
-        v670: US12 = US12(0, US9(0, v658.fields[0]), v658.fields[1], v658.fields[2], v658.fields[3], v658.fields[4]) if (v658.tag == 0) else US12(0, US9(1), v495, v496, v497, v498)
-        v795: US8
-        if v670.tag == 0:
-            v675: int = v670.fields[4] or 0
-            v674: int = v670.fields[3] or 0
-            v673: Any = v670.fields[2]
-            v672: str = v670.fields[1]
-            v771: US7
-            if "" == v672:
-                v771 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v673, v674, v675)])))
-
-            else: 
-                v682: str = v672[0]
-                v714: int = (len(v672) - 1) or 0
-                v716: str = v672[1:v714 + 1]
-                v722: str = v682
-                v725: int = len(v722) or 0
-                v726: Array[str] = fill([0] * v725, 0, v725, "")
-                v727: Mut5 = Mut5(0)
-                while method27(v725, v727):
-                    v729: int = v727.l0 or 0
-                    v730: str = v722[v729]
-                    v726[v729] = v730
-                    v731: int = (v729 + 1) or 0
-                    v727.l0 = v731 or 0
-                v733: FSharpList[str] = of_array(v726)
-                pattern_input_5: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v733, UH0(0)), v673, v674, v675)
-                v771 = US7(0, v682, v716, pattern_input_5[0], pattern_input_5[1], pattern_input_5[2])
-
-            if v771.tag == 0:
-                pattern_input_6: tuple[str, str, Any, int, int] = method38(v771.fields[0], v771.fields[1], v771.fields[2], v771.fields[3], v771.fields[4])
-                v795 = US8(0, pattern_input_6[0], pattern_input_6[1], pattern_input_6[2], pattern_input_6[3], pattern_input_6[4])
-
-            else: 
-                v795 = US8(1, v771.fields[0])
-
-
-        else: 
-            v795 = US8(1, v670.fields[0])
-
-        v807: US13 = US13(0, US5(0, v795.fields[0]), v795.fields[1], v795.fields[2], v795.fields[3], v795.fields[4]) if (v795.tag == 0) else US13(0, US5(1), v495, v496, v497, v498)
-        v821 = US11(0, v493.fields[0], v807.fields[0], v807.fields[1], v807.fields[2], v807.fields[3], v807.fields[4]) if (v807.tag == 0) else US11(1, v807.fields[0])
+    v510: US8
+    if v244.tag == 0:
+        v510 = v244
 
     else: 
-        v821 = US11(1, v493.fields[0])
+        v401: US7
+        if "" == v10:
+            v401 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\"", "\'", " "])), (v16, 1, 1)])))
 
-    if v821.tag == 0:
-        return US6(0, v821.fields[0], v821.fields[1])
+        else: 
+            v275: str = v10[0]
+            if method35(v275, int64(0)) == False:
+                v310: int = (len(v10) - 1) or 0
+                v312: str = v10[1:v310 + 1]
+                v318: str = v275
+                v321: int = len(v318) or 0
+                v322: Array[str] = fill([0] * v321, 0, v321, "")
+                v323: Mut5 = Mut5(0)
+                while method27(v321, v323):
+                    v325: int = v323.l0 or 0
+                    v326: str = v318[v325]
+                    v322[v325] = v326
+                    v327: int = (v325 + 1) or 0
+                    v323.l0 = v327 or 0
+                v329: FSharpList[str] = of_array(v322)
+                pattern_input_2: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v329, UH0(0)), v16, 1, 1)
+                v401 = US7(0, v275, v312, pattern_input_2[0], pattern_input_2[1], pattern_input_2[2])
+
+            else: 
+                v401 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v275, to_array(of_array(["\"", "\'", " "])), (v16, 1, 1)])))
+
+
+        v413: US7
+        if v401.tag == 0:
+            v402: str = v401.fields[0]
+            v413 = US7(0, "/" if ("\\" == v402) else v402, v401.fields[1], v401.fields[2], v401.fields[3], v401.fields[4])
+
+        else: 
+            v413 = US7(1, v401.fields[0])
+
+        v433: US8
+        if v413.tag == 0:
+            pattern_input_3: tuple[str, str, Any, int, int] = method36(v413.fields[0], v413.fields[1], v413.fields[2], v413.fields[3], v413.fields[4])
+            v433 = US8(0, pattern_input_3[0], pattern_input_3[1], pattern_input_3[2], pattern_input_3[3], pattern_input_3[4])
+
+        else: 
+            v433 = US8(1, v413.fields[0])
+
+        if v433.tag == 0:
+            v510 = v433
+
+        else: 
+            v448: US10 = US10(0, v10, v16, 1, 1) if (len(v10) == 0) else US10(1, to_text(interpolate("parsing.eof / expected end of input / input: %A%P()", [v10])))
+            v457: US8 = US8(0, "", v448.fields[0], v448.fields[1], v448.fields[2], v448.fields[3]) if (v448.tag == 0) else US8(1, v448.fields[0])
+            if v457.tag == 0:
+                v459: str = v457.fields[1]
+                v464: int = method37(v459, 0) or 0
+                v496: int = (len(v459) - 1) or 0
+                v510 = US8(0, v457.fields[0], v459[v464:v496 + 1], v457.fields[2], v457.fields[3], v457.fields[4])
+
+            else: 
+                v510 = US8(1, v457.fields[0])
+
+
+
+    v854: US11
+    if v510.tag == 0:
+        v515: int = v510.fields[4] or 0
+        v514: int = v510.fields[3] or 0
+        v513: Any = v510.fields[2]
+        v512: str = v510.fields[1]
+        v683: US7
+        if "" == v512:
+            v683 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", [" ", (v513, v514, v515)])))
+
+        else: 
+            v522: str = v512[0]
+            if v522 == " ":
+                v555: int = (len(v512) - 1) or 0
+                v557: str = v512[1:v555 + 1]
+                v563: str = v522
+                v566: int = len(v563) or 0
+                v567: Array[str] = fill([0] * v566, 0, v566, "")
+                v568: Mut5 = Mut5(0)
+                while method27(v566, v568):
+                    v570: int = v568.l0 or 0
+                    v571: str = v563[v570]
+                    v567[v570] = v571
+                    v572: int = (v570 + 1) or 0
+                    v568.l0 = v572 or 0
+                v574: FSharpList[str] = of_array(v567)
+                pattern_input_4: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v574, UH0(0)), v513, v514, v515)
+                v683 = US7(0, v522, v557, pattern_input_4[0], pattern_input_4[1], pattern_input_4[2])
+
+            else: 
+                v625: int = (v512.find("\n") - 1) or 0
+                v661: int = (((len(v512) + 1) if (-2 == v625) else (v625 + 1)) - 1) or 0
+                v683 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str(" ")) + "\' / line: ") + str(v514)) + " / col: ") + str(v515)) + "\n") + str(v513)) + "") + v512[0:v661 + 1]) + "", "\n", method30(v515 - 1, 0)("") + "^", *"\n"))
+
+
+        v695: US12 = US12(0, US9(0, v683.fields[0]), v683.fields[1], v683.fields[2], v683.fields[3], v683.fields[4]) if (v683.tag == 0) else US12(0, US9(1), v512, v513, v514, v515)
+        v828: US8
+        if v695.tag == 0:
+            v700: int = v695.fields[4] or 0
+            v699: int = v695.fields[3] or 0
+            v698: Any = v695.fields[2]
+            v697: str = v695.fields[1]
+            v804: US7
+            if "" == v697:
+                v804 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v698, v699, v700)])))
+
+            else: 
+                v707: str = v697[0]
+                v739: int = (len(v697) - 1) or 0
+                v741: str = v697[1:v739 + 1]
+                v747: str = v707
+                v750: int = len(v747) or 0
+                v751: Array[str] = fill([0] * v750, 0, v750, "")
+                v752: Mut5 = Mut5(0)
+                while method27(v750, v752):
+                    v754: int = v752.l0 or 0
+                    v755: str = v747[v754]
+                    v751[v754] = v755
+                    v756: int = (v754 + 1) or 0
+                    v752.l0 = v756 or 0
+                v758: FSharpList[str] = of_array(v751)
+                pattern_input_5: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v758, UH0(0)), v698, v699, v700)
+                v804 = US7(0, v707, v741, pattern_input_5[0], pattern_input_5[1], pattern_input_5[2])
+
+            if v804.tag == 0:
+                pattern_input_6: tuple[str, str, Any, int, int] = method38(v804.fields[0], v804.fields[1], v804.fields[2], v804.fields[3], v804.fields[4])
+                v828 = US8(0, pattern_input_6[0], pattern_input_6[1], pattern_input_6[2], pattern_input_6[3], pattern_input_6[4])
+
+            else: 
+                v828 = US8(1, v804.fields[0])
+
+
+        else: 
+            v828 = US8(1, v695.fields[0])
+
+        v840: US13 = US13(0, US5(0, v828.fields[0]), v828.fields[1], v828.fields[2], v828.fields[3], v828.fields[4]) if (v828.tag == 0) else US13(0, US5(1), v512, v513, v514, v515)
+        v854 = US11(0, v510.fields[0], v840.fields[0], v840.fields[1], v840.fields[2], v840.fields[3], v840.fields[4]) if (v840.tag == 0) else US11(1, v840.fields[0])
 
     else: 
-        return US6(1, v821.fields[0])
+        v854 = US11(1, v510.fields[0])
+
+    if v854.tag == 0:
+        return US6(0, v854.fields[0], v854.fields[1])
+
+    else: 
+        return US6(1, v854.fields[0])
 
 
 
@@ -1604,10 +1604,10 @@ def closure21(unit_var: None, v0_1: Callable[[tuple[int, str, bool]], Async[None
 
 
 def method46(__unit: None=None) -> Callable[[Callable[[tuple[int, str, bool]], Async[None]]], US14]:
-    def _arrow246(v: Callable[[tuple[int, str, bool]], Async[None]]) -> US14:
+    def _arrow233(v: Callable[[tuple[int, str, bool]], Async[None]]) -> US14:
         return closure21(None, v)
 
-    return _arrow246
+    return _arrow233
 
 
 def method47(v0_1: bool) -> int:
@@ -1641,49 +1641,49 @@ def closure22(v0_1: str, unit_var: None) -> None:
 
 
 def method44(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, str]], v3: Callable[[tuple[int, str, bool]], Async[None]] | None, v4: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v5: bool, v6: str | None, v7: bool, v8: Any, v9: bool, v10: bool) -> Async[None]:
-    def _arrow259(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4, v5: Any=v5, v6: Any=v6, v7: Any=v7, v8: Any=v8, v9: Any=v9, v10: Any=v10) -> Async[None]:
-        v821: str = method45(v10)
-        v827: bool = (v821 is None) != True
-        def _arrow257(__unit: None=None) -> Async[None]:
-            v844: US14 = default_arg(map(method46(), v3), US14(1))
-            def _arrow251(__unit: None=None) -> Async[None]:
-                v850: Async[None] = v844.fields[0]((method47(v7), v821, v9))
-                def _arrow250(__unit: None=None) -> Async[None]:
+    def _arrow243(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4, v5: Any=v5, v6: Any=v6, v7: Any=v7, v8: Any=v8, v9: Any=v9, v10: Any=v10) -> Async[None]:
+        v837: str = method45(v10)
+        v843: bool = (v837 is None) != True
+        def _arrow241(__unit: None=None) -> Async[None]:
+            v862: US14 = default_arg(map(method46(), v3), US14(1))
+            def _arrow235(__unit: None=None) -> Async[None]:
+                v868: Async[None] = v862.fields[0]((method47(v7), v837, v9))
+                def _arrow234(__unit: None=None) -> Async[None]:
                     return singleton.Zero()
 
-                return singleton.Bind(v850, _arrow250)
+                return singleton.Bind(v868, _arrow234)
 
-            def _expr252():
+            def _expr236():
                 return singleton.Zero()
 
-            def _arrow256(__unit: None=None) -> Async[None]:
-                v853: str = concat("! ", *v821) if v9 else concat("> ", *v821)
-                def _arrow253(__unit: None=None) -> Async[None]:
-                    v856: None
-                    closure22(v853, None)
-                    v856 = None
+            def _arrow240(__unit: None=None) -> Async[None]:
+                v871: str = concat("! ", *v837) if v9 else concat("> ", *v837)
+                def _arrow237(__unit: None=None) -> Async[None]:
+                    v874: None
+                    closure22(v871, None)
+                    v874 = None
                     return singleton.Zero()
 
-                def _arrow254(__unit: None=None) -> Async[None]:
-                    v908: None
-                    closure10(v853, None)
-                    v908 = None
+                def _arrow238(__unit: None=None) -> Async[None]:
+                    v926: None
+                    closure10(v871, None)
+                    v926 = None
                     return singleton.Zero()
 
-                def _arrow255(__unit: None=None) -> Async[None]:
-                    v916: str = concat("\u001b[7;4m" if v9 else "", v821, *"\u001b[0m" if v9 else "")
+                def _arrow239(__unit: None=None) -> Async[None]:
+                    v934: str = concat("\u001b[7;4m" if v9 else "", v837, *"\u001b[0m" if v9 else "")
                     return singleton.Zero()
 
-                return singleton.Combine(_arrow253() if v5 else _arrow254(), singleton.Delay(_arrow255))
+                return singleton.Combine(_arrow237() if v5 else _arrow238(), singleton.Delay(_arrow239))
 
-            return singleton.Combine(_arrow251() if (v844.tag == 0) else _expr252(), singleton.Delay(_arrow256))
+            return singleton.Combine(_arrow235() if (v862.tag == 0) else _expr236(), singleton.Delay(_arrow240))
 
-        def _arrow258(__unit: None=None) -> Async[None]:
+        def _arrow242(__unit: None=None) -> Async[None]:
             return singleton.Zero()
 
-        return singleton.Combine(_arrow257() if v827 else singleton.Zero(), singleton.Delay(_arrow258))
+        return singleton.Combine(_arrow241() if v843 else singleton.Zero(), singleton.Delay(_arrow242))
 
-    return singleton.Delay(_arrow259)
+    return singleton.Delay(_arrow243)
 
 
 def method43(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, str]], v3: Callable[[tuple[int, str, bool]], Async[None]] | None, v4: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v5: bool, v6: str | None, v7: bool, v8: Any, v9: bool, v10: bool) -> Async[None]:
@@ -1699,17 +1699,17 @@ def closure23(unit_var: None, v0_1: CancellationToken) -> US15:
 
 
 def method50(__unit: None=None) -> Callable[[CancellationToken], US15]:
-    def _arrow260(v: CancellationToken) -> US15:
+    def _arrow244(v: CancellationToken) -> US15:
         return closure23(None, v)
 
-    return _arrow260
+    return _arrow244
 
 
 def method51(v0_1: CancellationToken) -> Async[CancellationToken]:
-    def _arrow261(__unit: None=None, v0_1: Any=v0_1) -> Async[CancellationToken]:
+    def _arrow245(__unit: None=None, v0_1: Any=v0_1) -> Async[CancellationToken]:
         return singleton.Return(None)
 
-    return singleton.Delay(_arrow261)
+    return singleton.Delay(_arrow245)
 
 
 def method52(v0_1: bool) -> bool:
@@ -1768,15 +1768,15 @@ def closure25(v0_1: Any, unit_var: None) -> None:
 
 
 def method54(v0_1: bool, v1_1: Any, v2_1: CancellationToken) -> Async[int]:
-    def _arrow270(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> Async[int]:
-        def _arrow268(__unit: None=None) -> Async[int]:
+    def _arrow249(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> Async[int]:
+        def _arrow247(__unit: None=None) -> Async[int]:
             v3205: Async[None] = await_task(None)
-            def _arrow267(__unit: None=None) -> Async[int]:
+            def _arrow246(__unit: None=None) -> Async[int]:
                 return singleton.Return(None)
 
-            return singleton.Bind(v3205, _arrow267)
+            return singleton.Bind(v3205, _arrow246)
 
-        def _arrow269(_arg_1: Exception) -> Async[int]:
+        def _arrow248(_arg_1: Exception) -> Async[int]:
             v3355: Exception = _arg_1
             v3378: str = to_text(interpolate("%A%P()", [v3355]))
             v3400: None
@@ -1784,9 +1784,9 @@ def method54(v0_1: bool, v1_1: Any, v2_1: CancellationToken) -> Async[int]:
             v3400 = None
             return singleton.Return(-2147483648)
 
-        return singleton.TryWith(singleton.Delay(_arrow268), _arrow269)
+        return singleton.TryWith(singleton.Delay(_arrow247), _arrow248)
 
-    return singleton.Delay(_arrow270)
+    return singleton.Delay(_arrow249)
 
 
 def method57(__unit: None=None) -> str:
@@ -1943,11 +1943,11 @@ def closure26(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, 
 
 
 def method24(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, str]], v3: Callable[[tuple[int, str, bool]], Async[None]] | None, v4: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v5: bool, v6: str | None=None) -> Async[tuple[int, str]]:
-    def _arrow271(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4, v5: Any=v5, v6: Any=v6) -> Async[tuple[int, str]]:
+    def _arrow262(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4, v5: Any=v5, v6: Any=v6) -> Async[tuple[int, str]]:
         pattern_input: tuple[int, str] = None
         return singleton.Return((pattern_input[0], pattern_input[1]))
 
-    return singleton.Delay(_arrow271)
+    return singleton.Delay(_arrow262)
 
 
 def method23(v0_1: str, v1_1: CancellationToken | None, v2_1: Array[tuple[str, str]], v3: Callable[[tuple[int, str, bool]], Async[None]] | None, v4: Callable[[std_sync_arc_1[std_sync_mutex_1[std_process_child_stdin]]], None] | None, v5: bool, v6: str | None=None) -> Async[tuple[int, str]]:
@@ -2004,10 +2004,10 @@ def method62(v0_1_mut: str, v1_1_mut: int64) -> bool:
 
 
 
-            def _arrow272(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+            def _arrow267(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0_1 == (v19_1.fields[0] if (v19_1.tag == 0) else _arrow272()):
+            if v0_1 == (v19_1.fields[0] if (v19_1.tag == 0) else _arrow267()):
                 return True
 
             else: 
@@ -2022,9 +2022,9 @@ def method62(v0_1_mut: str, v1_1_mut: int64) -> bool:
 def method63(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: int) -> tuple[str, str, Any, int, int]:
     while True:
         (v0_1, v1_1, v2_1, v3, v4) = (v0_1_mut, v1_1_mut, v2_1_mut, v3_mut, v4_mut)
-        v153: US7
+        v161: US7
         if "" == v1_1:
-            v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
+            v161 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
 
         else: 
             v33: str = v1_1[0]
@@ -2043,18 +2043,18 @@ def method63(v0_1_mut: str, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                     v81.l0 = v85 or 0
                 v87: FSharpList[str] = of_array(v80)
                 pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v87, UH0(0)), v2_1, v3, v4)
-                v153 = US7(0, v33, v70, pattern_input[0], pattern_input[1], pattern_input[2])
+                v161 = US7(0, v33, v70, pattern_input[0], pattern_input[1], pattern_input[2])
 
             else: 
-                v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v33, to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
+                v161 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v33, to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
 
 
-        if v153.tag == 0:
-            v0_1_mut = v0_1 + v153.fields[0]
-            v1_1_mut = v153.fields[1]
-            v2_1_mut = v153.fields[2]
-            v3_mut = v153.fields[3]
-            v4_mut = v153.fields[4]
+        if v161.tag == 0:
+            v0_1_mut = v0_1 + v161.fields[0]
+            v1_1_mut = v161.fields[1]
+            v2_1_mut = v161.fields[2]
+            v3_mut = v161.fields[3]
+            v4_mut = v161.fields[4]
             continue
 
         else: 
@@ -2090,10 +2090,10 @@ def method65(v0_1_mut: str, v1_1_mut: int64) -> bool:
 
 
 
-            def _arrow273(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
+            def _arrow268(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0_1 == (v15.fields[0] if (v15.tag == 0) else _arrow273()):
+            if v0_1 == (v15.fields[0] if (v15.tag == 0) else _arrow268()):
                 return True
 
             else: 
@@ -2110,9 +2110,9 @@ def closure30(unit_var: None, _arg: tuple[str, Any, int, int]) -> US8:
     v2_1: int = _arg[2] or 0
     v1_1: Any = _arg[1]
     v0_1: str = _arg[0]
-    v164: US7
+    v172: US7
     if "" == v0_1:
-        v164 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["\\", (v1_1, v2_1, v3)])))
+        v172 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["\\", (v1_1, v2_1, v3)])))
 
     else: 
         v10: str = v0_1[0]
@@ -2131,50 +2131,50 @@ def closure30(unit_var: None, _arg: tuple[str, Any, int, int]) -> US8:
                 v56.l0 = v60 or 0
             v62: FSharpList[str] = of_array(v55)
             pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v62, UH0(0)), v1_1, v2_1, v3)
-            v164 = US7(0, v10, v45, pattern_input[0], pattern_input[1], pattern_input[2])
+            v172 = US7(0, v10, v45, pattern_input[0], pattern_input[1], pattern_input[2])
 
         else: 
-            v105: int = (v0_1.find("\n") - 1) or 0
-            v141: int = (((len(v0_1) + 1) if (-2 == v105) else (v105 + 1)) - 1) or 0
-            v164 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\\")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v141 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
+            v113: int = (v0_1.find("\n") - 1) or 0
+            v149: int = (((len(v0_1) + 1) if (-2 == v113) else (v113 + 1)) - 1) or 0
+            v172 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\\")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v149 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
 
 
-    v269: US7
-    if v164.tag == 0:
-        v169: int = v164.fields[4] or 0
-        v168: int = v164.fields[3] or 0
-        v167: Any = v164.fields[2]
-        v166: str = v164.fields[1]
-        if "" == v166:
-            v269 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v167, v168, v169)])))
+    v285: US7
+    if v172.tag == 0:
+        v177: int = v172.fields[4] or 0
+        v176: int = v172.fields[3] or 0
+        v175: Any = v172.fields[2]
+        v174: str = v172.fields[1]
+        if "" == v174:
+            v285 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v175, v176, v177)])))
 
         else: 
-            v176: str = v166[0]
-            v208: int = (len(v166) - 1) or 0
-            v210: str = v166[1:v208 + 1]
-            v216: str = v176
-            v219: int = len(v216) or 0
-            v220: Array[str] = fill([0] * v219, 0, v219, "")
-            v221: Mut5 = Mut5(0)
-            while method27(v219, v221):
-                v223: int = v221.l0 or 0
-                v224: str = v216[v223]
-                v220[v223] = v224
-                v225: int = (v223 + 1) or 0
-                v221.l0 = v225 or 0
-            v227: FSharpList[str] = of_array(v220)
-            pattern_input_1: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v227, UH0(0)), v167, v168, v169)
-            v269 = US7(0, v176, v210, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2])
+            v184: str = v174[0]
+            v216: int = (len(v174) - 1) or 0
+            v218: str = v174[1:v216 + 1]
+            v224: str = v184
+            v227: int = len(v224) or 0
+            v228: Array[str] = fill([0] * v227, 0, v227, "")
+            v229: Mut5 = Mut5(0)
+            while method27(v227, v229):
+                v231: int = v229.l0 or 0
+                v232: str = v224[v231]
+                v228[v231] = v232
+                v233: int = (v231 + 1) or 0
+                v229.l0 = v233 or 0
+            v235: FSharpList[str] = of_array(v228)
+            pattern_input_1: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v235, UH0(0)), v175, v176, v177)
+            v285 = US7(0, v184, v218, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2])
 
 
     else: 
-        v269 = US7(1, v164.fields[0])
+        v285 = US7(1, v172.fields[0])
 
-    if v269.tag == 0:
-        return US8(0, "\\" + v269.fields[0], v269.fields[1], v269.fields[2], v269.fields[3], v269.fields[4])
+    if v285.tag == 0:
+        return US8(0, "\\" + v285.fields[0], v285.fields[1], v285.fields[2], v285.fields[3], v285.fields[4])
 
     else: 
-        return US8(1, v269.fields[0])
+        return US8(1, v285.fields[0])
 
 
 
@@ -2183,9 +2183,9 @@ def closure31(unit_var: None, _arg: tuple[str, Any, int, int]) -> US8:
     v2_1: int = _arg[2] or 0
     v1_1: Any = _arg[1]
     v0_1: str = _arg[0]
-    v164: US7
+    v172: US7
     if "" == v0_1:
-        v164 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["`", (v1_1, v2_1, v3)])))
+        v172 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["`", (v1_1, v2_1, v3)])))
 
     else: 
         v10: str = v0_1[0]
@@ -2204,50 +2204,50 @@ def closure31(unit_var: None, _arg: tuple[str, Any, int, int]) -> US8:
                 v56.l0 = v60 or 0
             v62: FSharpList[str] = of_array(v55)
             pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v62, UH0(0)), v1_1, v2_1, v3)
-            v164 = US7(0, v10, v45, pattern_input[0], pattern_input[1], pattern_input[2])
+            v172 = US7(0, v10, v45, pattern_input[0], pattern_input[1], pattern_input[2])
 
         else: 
-            v105: int = (v0_1.find("\n") - 1) or 0
-            v141: int = (((len(v0_1) + 1) if (-2 == v105) else (v105 + 1)) - 1) or 0
-            v164 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("`")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v141 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
+            v113: int = (v0_1.find("\n") - 1) or 0
+            v149: int = (((len(v0_1) + 1) if (-2 == v113) else (v113 + 1)) - 1) or 0
+            v172 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("`")) + "\' / line: ") + str(v2_1)) + " / col: ") + str(v3)) + "\n") + str(v1_1)) + "") + v0_1[0:v149 + 1]) + "", "\n", method30(v3 - 1, 0)("") + "^", *"\n"))
 
 
-    v269: US7
-    if v164.tag == 0:
-        v169: int = v164.fields[4] or 0
-        v168: int = v164.fields[3] or 0
-        v167: Any = v164.fields[2]
-        v166: str = v164.fields[1]
-        if "" == v166:
-            v269 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v167, v168, v169)])))
+    v285: US7
+    if v172.tag == 0:
+        v177: int = v172.fields[4] or 0
+        v176: int = v172.fields[3] or 0
+        v175: Any = v172.fields[2]
+        v174: str = v172.fields[1]
+        if "" == v174:
+            v285 = US7(1, to_text(interpolate("parsing.any_char / unexpected end of input / s: %A%P()", [(v175, v176, v177)])))
 
         else: 
-            v176: str = v166[0]
-            v208: int = (len(v166) - 1) or 0
-            v210: str = v166[1:v208 + 1]
-            v216: str = v176
-            v219: int = len(v216) or 0
-            v220: Array[str] = fill([0] * v219, 0, v219, "")
-            v221: Mut5 = Mut5(0)
-            while method27(v219, v221):
-                v223: int = v221.l0 or 0
-                v224: str = v216[v223]
-                v220[v223] = v224
-                v225: int = (v223 + 1) or 0
-                v221.l0 = v225 or 0
-            v227: FSharpList[str] = of_array(v220)
-            pattern_input_1: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v227, UH0(0)), v167, v168, v169)
-            v269 = US7(0, v176, v210, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2])
+            v184: str = v174[0]
+            v216: int = (len(v174) - 1) or 0
+            v218: str = v174[1:v216 + 1]
+            v224: str = v184
+            v227: int = len(v224) or 0
+            v228: Array[str] = fill([0] * v227, 0, v227, "")
+            v229: Mut5 = Mut5(0)
+            while method27(v227, v229):
+                v231: int = v229.l0 or 0
+                v232: str = v224[v231]
+                v228[v231] = v232
+                v233: int = (v231 + 1) or 0
+                v229.l0 = v233 or 0
+            v235: FSharpList[str] = of_array(v228)
+            pattern_input_1: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v235, UH0(0)), v175, v176, v177)
+            v285 = US7(0, v184, v218, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2])
 
 
     else: 
-        v269 = US7(1, v164.fields[0])
+        v285 = US7(1, v172.fields[0])
 
-    if v269.tag == 0:
-        return US8(0, "`" + v269.fields[0], v269.fields[1], v269.fields[2], v269.fields[3], v269.fields[4])
+    if v285.tag == 0:
+        return US8(0, "`" + v285.fields[0], v285.fields[1], v285.fields[2], v285.fields[3], v285.fields[4])
 
     else: 
-        return US8(1, v269.fields[0])
+        return US8(1, v285.fields[0])
 
 
 
@@ -2291,9 +2291,9 @@ def method67(v0_1_mut: UH2, v1_1_mut: UH2) -> UH2:
 def method64(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: int) -> US17:
     while True:
         (v0_1, v1_1, v2_1, v3, v4) = (v0_1_mut, v1_1_mut, v2_1_mut, v3_mut, v4_mut)
-        v145: US7
+        v153: US7
         if "" == v1_1:
-            v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
+            v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
 
         else: 
             v29: str = v1_1[0]
@@ -2312,26 +2312,26 @@ def method64(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                     v77.l0 = v81 or 0
                 v83: FSharpList[str] = of_array(v76)
                 pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v83, UH0(0)), v2_1, v3, v4)
-                v145 = US7(0, v29, v66, pattern_input[0], pattern_input[1], pattern_input[2])
+                v153 = US7(0, v29, v66, pattern_input[0], pattern_input[1], pattern_input[2])
 
             else: 
-                v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v29, to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
+                v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v29, to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
 
 
-        v160: US8 = US8(0, v145.fields[0], v145.fields[1], v145.fields[2], v145.fields[3], v145.fields[4]) if (v145.tag == 0) else US8(1, v145.fields[0])
-        def v167(_arg10: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
+        v168: US8 = US8(0, v153.fields[0], v153.fields[1], v153.fields[2], v153.fields[3], v153.fields[4]) if (v153.tag == 0) else US8(1, v153.fields[0])
+        def v175(_arg10: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
             return closure30(None, _arg10)
 
-        def v168(_arg10_1: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
+        def v176(_arg10_1: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
             return closure31(None, _arg10_1)
 
-        v174: US8 = v160 if (v160.tag == 0) else method66(v1_1, v2_1, v3, v4, UH3(1, v167, UH3(1, v168, UH3(0))))
-        if v174.tag == 0:
-            v0_1_mut = UH2(1, v174.fields[0], v0_1)
-            v1_1_mut = v174.fields[1]
-            v2_1_mut = v174.fields[2]
-            v3_mut = v174.fields[3]
-            v4_mut = v174.fields[4]
+        v182: US8 = v168 if (v168.tag == 0) else method66(v1_1, v2_1, v3, v4, UH3(1, v175, UH3(1, v176, UH3(0))))
+        if v182.tag == 0:
+            v0_1_mut = UH2(1, v182.fields[0], v0_1)
+            v1_1_mut = v182.fields[1]
+            v2_1_mut = v182.fields[2]
+            v3_mut = v182.fields[3]
+            v4_mut = v182.fields[4]
             continue
 
         else: 
@@ -2352,9 +2352,9 @@ def method68(v0_1: UH2, v1_1: FSharpList[str]) -> FSharpList[str]:
 def method69(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: int) -> US17:
     while True:
         (v0_1, v1_1, v2_1, v3, v4) = (v0_1_mut, v1_1_mut, v2_1_mut, v3_mut, v4_mut)
-        v145: US7
+        v153: US7
         if "" == v1_1:
-            v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
+            v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
 
         else: 
             v29: str = v1_1[0]
@@ -2373,19 +2373,19 @@ def method69(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                     v77.l0 = v81 or 0
                 v83: FSharpList[str] = of_array(v76)
                 pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v83, UH0(0)), v2_1, v3, v4)
-                v145 = US7(0, v29, v66, pattern_input[0], pattern_input[1], pattern_input[2])
+                v153 = US7(0, v29, v66, pattern_input[0], pattern_input[1], pattern_input[2])
 
             else: 
-                v145 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v29, to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
+                v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v29, to_array(of_array(["\\", "`", "\""])), (v2_1, v3, v4)])))
 
 
-        v160: US8 = US8(0, v145.fields[0], v145.fields[1], v145.fields[2], v145.fields[3], v145.fields[4]) if (v145.tag == 0) else US8(1, v145.fields[0])
-        if v160.tag == 0:
-            v0_1_mut = UH2(1, v160.fields[0], v0_1)
-            v1_1_mut = v160.fields[1]
-            v2_1_mut = v160.fields[2]
-            v3_mut = v160.fields[3]
-            v4_mut = v160.fields[4]
+        v168: US8 = US8(0, v153.fields[0], v153.fields[1], v153.fields[2], v153.fields[3], v153.fields[4]) if (v153.tag == 0) else US8(1, v153.fields[0])
+        if v168.tag == 0:
+            v0_1_mut = UH2(1, v168.fields[0], v0_1)
+            v1_1_mut = v168.fields[1]
+            v2_1_mut = v168.fields[2]
+            v3_mut = v168.fields[3]
+            v4_mut = v168.fields[4]
             continue
 
         else: 
@@ -2398,9 +2398,9 @@ def method61(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
     while True:
         (v0_1, v1_1, v2_1, v3, v4) = (v0_1_mut, v1_1_mut, v2_1_mut, v3_mut, v4_mut)
         v5: bool = "" == v1_1
-        v153: US7
+        v161: US7
         if v5:
-            v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
+            v161 = US7(1, to_text(interpolate("parsing.none_of / unexpected end of input / chars: %A%P() / s: %A%P()", [to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
 
         else: 
             v33: str = v1_1[0]
@@ -2419,165 +2419,165 @@ def method61(v0_1_mut: UH2, v1_1_mut: str, v2_1_mut: Any, v3_mut: int, v4_mut: i
                     v81.l0 = v85 or 0
                 v87: FSharpList[str] = of_array(v80)
                 pattern_input: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v87, UH0(0)), v2_1, v3, v4)
-                v153 = US7(0, v33, v70, pattern_input[0], pattern_input[1], pattern_input[2])
+                v161 = US7(0, v33, v70, pattern_input[0], pattern_input[1], pattern_input[2])
 
             else: 
-                v153 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v33, to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
+                v161 = US7(1, to_text(interpolate("parsing.none_of / unexpected char: \'%P()\' / chars: %A%P() / s: %A%P()", [v33, to_array(of_array(["\\", "`", "\"", " "])), (v2_1, v3, v4)])))
 
 
-        v173: US8
-        if v153.tag == 0:
-            pattern_input_1: tuple[str, str, Any, int, int] = method63(v153.fields[0], v153.fields[1], v153.fields[2], v153.fields[3], v153.fields[4])
-            v173 = US8(0, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2], pattern_input_1[3], pattern_input_1[4])
-
-        else: 
-            v173 = US8(1, v153.fields[0])
-
-        v635: US8
-        if v173.tag == 0:
-            v635 = v173
+        v181: US8
+        if v161.tag == 0:
+            pattern_input_1: tuple[str, str, Any, int, int] = method63(v161.fields[0], v161.fields[1], v161.fields[2], v161.fields[3], v161.fields[4])
+            v181 = US8(0, pattern_input_1[0], pattern_input_1[1], pattern_input_1[2], pattern_input_1[3], pattern_input_1[4])
 
         else: 
-            v339: US7
+            v181 = US8(1, v161.fields[0])
+
+        v659: US8
+        if v181.tag == 0:
+            v659 = v181
+
+        else: 
+            v355: US7
             if v5:
-                v339 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["\"", (v2_1, v3, v4)])))
+                v355 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["\"", (v2_1, v3, v4)])))
 
             else: 
-                v185: str = v1_1[0]
-                if v185 == "\"":
-                    v218: int = (len(v1_1) - 1) or 0
-                    v220: str = v1_1[1:v218 + 1]
-                    v226: str = v185
-                    v229: int = len(v226) or 0
-                    v230: Array[str] = fill([0] * v229, 0, v229, "")
-                    v231: Mut5 = Mut5(0)
-                    while method27(v229, v231):
-                        v233: int = v231.l0 or 0
-                        v234: str = v226[v233]
-                        v230[v233] = v234
-                        v235: int = (v233 + 1) or 0
-                        v231.l0 = v235 or 0
-                    v237: FSharpList[str] = of_array(v230)
-                    pattern_input_2: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v237, UH0(0)), v2_1, v3, v4)
-                    v339 = US7(0, v185, v220, pattern_input_2[0], pattern_input_2[1], pattern_input_2[2])
+                v193: str = v1_1[0]
+                if v193 == "\"":
+                    v226: int = (len(v1_1) - 1) or 0
+                    v228: str = v1_1[1:v226 + 1]
+                    v234: str = v193
+                    v237: int = len(v234) or 0
+                    v238: Array[str] = fill([0] * v237, 0, v237, "")
+                    v239: Mut5 = Mut5(0)
+                    while method27(v237, v239):
+                        v241: int = v239.l0 or 0
+                        v242: str = v234[v241]
+                        v238[v241] = v242
+                        v243: int = (v241 + 1) or 0
+                        v239.l0 = v243 or 0
+                    v245: FSharpList[str] = of_array(v238)
+                    pattern_input_2: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v245, UH0(0)), v2_1, v3, v4)
+                    v355 = US7(0, v193, v228, pattern_input_2[0], pattern_input_2[1], pattern_input_2[2])
 
                 else: 
-                    v280: int = (v1_1.find("\n") - 1) or 0
-                    v316: int = (((len(v1_1) + 1) if (-2 == v280) else (v280 + 1)) - 1) or 0
-                    v339 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\"")) + "\' / line: ") + str(v3)) + " / col: ") + str(v4)) + "\n") + str(v2_1)) + "") + v1_1[0:v316 + 1]) + "", "\n", method30(v4 - 1, 0)("") + "^", *"\n"))
+                    v296: int = (v1_1.find("\n") - 1) or 0
+                    v332: int = (((len(v1_1) + 1) if (-2 == v296) else (v296 + 1)) - 1) or 0
+                    v355 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\"")) + "\' / line: ") + str(v3)) + " / col: ") + str(v4)) + "\n") + str(v2_1)) + "") + v1_1[0:v332 + 1]) + "", "\n", method30(v4 - 1, 0)("") + "^", *"\n"))
 
 
-            v566: US8
-            if v339.tag == 0:
-                v344: int = v339.fields[4] or 0
-                v343: int = v339.fields[3] or 0
-                v342: Any = v339.fields[2]
-                v341: str = v339.fields[1]
-                v346: US17 = method64(UH2(0), v341, v342, v343, v344)
-                v377: US8
-                if v346.tag == 0:
-                    v353: FSharpList[str] = method68(v346.fields[0], empty())
+            v590: US8
+            if v355.tag == 0:
+                v360: int = v355.fields[4] or 0
+                v359: int = v355.fields[3] or 0
+                v358: Any = v355.fields[2]
+                v357: str = v355.fields[1]
+                v362: US17 = method64(UH2(0), v357, v358, v359, v360)
+                v393: US8
+                if v362.tag == 0:
+                    v369: FSharpList[str] = method68(v362.fields[0], empty())
                     def _arrow274(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> IEnumerable_1[str]:
-                        return v353
+                        return v369
 
-                    v377 = US8(0, join("", delay(_arrow274)), v346.fields[1], v346.fields[2], v346.fields[3], v346.fields[4])
+                    v393 = US8(0, join("", delay(_arrow274)), v362.fields[1], v362.fields[2], v362.fields[3], v362.fields[4])
 
                 else: 
-                    v377 = US8(1, v346.fields[0])
+                    v393 = US8(1, v362.fields[0])
 
-                if v377.tag == 0:
-                    v382: int = v377.fields[4] or 0
-                    v381: int = v377.fields[3] or 0
-                    v380: Any = v377.fields[2]
-                    v379: str = v377.fields[1]
-                    v543: US7
-                    if "" == v379:
-                        v543 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["\"", (v380, v381, v382)])))
+                if v393.tag == 0:
+                    v398: int = v393.fields[4] or 0
+                    v397: int = v393.fields[3] or 0
+                    v396: Any = v393.fields[2]
+                    v395: str = v393.fields[1]
+                    v567: US7
+                    if "" == v395:
+                        v567 = US7(1, to_text(interpolate("parsing.p_char / unexpected end of input / c: \'%P()\' / s: %A%P()", ["\"", (v396, v397, v398)])))
 
                     else: 
-                        v389: str = v379[0]
-                        if v389 == "\"":
-                            v422: int = (len(v379) - 1) or 0
-                            v424: str = v379[1:v422 + 1]
-                            v430: str = v389
-                            v433: int = len(v430) or 0
-                            v434: Array[str] = fill([0] * v433, 0, v433, "")
-                            v435: Mut5 = Mut5(0)
-                            while method27(v433, v435):
-                                v437: int = v435.l0 or 0
-                                v438: str = v430[v437]
-                                v434[v437] = v438
-                                v439: int = (v437 + 1) or 0
-                                v435.l0 = v439 or 0
-                            v441: FSharpList[str] = of_array(v434)
-                            pattern_input_3: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v441, UH0(0)), v380, v381, v382)
-                            v543 = US7(0, v389, v424, pattern_input_3[0], pattern_input_3[1], pattern_input_3[2])
+                        v405: str = v395[0]
+                        if v405 == "\"":
+                            v438: int = (len(v395) - 1) or 0
+                            v440: str = v395[1:v438 + 1]
+                            v446: str = v405
+                            v449: int = len(v446) or 0
+                            v450: Array[str] = fill([0] * v449, 0, v449, "")
+                            v451: Mut5 = Mut5(0)
+                            while method27(v449, v451):
+                                v453: int = v451.l0 or 0
+                                v454: str = v446[v453]
+                                v450[v453] = v454
+                                v455: int = (v453 + 1) or 0
+                                v451.l0 = v455 or 0
+                            v457: FSharpList[str] = of_array(v450)
+                            pattern_input_3: tuple[Any, int, int] = method29(fold_back(uncurry2(method28()), v457, UH0(0)), v396, v397, v398)
+                            v567 = US7(0, v405, v440, pattern_input_3[0], pattern_input_3[1], pattern_input_3[2])
 
                         else: 
-                            v484: int = (v379.find("\n") - 1) or 0
-                            v520: int = (((len(v379) + 1) if (-2 == v484) else (v484 + 1)) - 1) or 0
-                            v543 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\"")) + "\' / line: ") + str(v381)) + " / col: ") + str(v382)) + "\n") + str(v380)) + "") + v379[0:v520 + 1]) + "", "\n", method30(v382 - 1, 0)("") + "^", *"\n"))
+                            v508: int = (v395.find("\n") - 1) or 0
+                            v544: int = (((len(v395) + 1) if (-2 == v508) else (v508 + 1)) - 1) or 0
+                            v567 = US7(1, concat(((((((((("parsing.p_char / expected: \'" + str("\"")) + "\' / line: ") + str(v397)) + " / col: ") + str(v398)) + "\n") + str(v396)) + "") + v395[0:v544 + 1]) + "", "\n", method30(v398 - 1, 0)("") + "^", *"\n"))
 
 
-                    v566 = US8(0, v377.fields[0], v543.fields[1], v543.fields[2], v543.fields[3], v543.fields[4]) if (v543.tag == 0) else US8(1, to_text(interpolate("parsing.between / expected closing delimiter / e: %A%P() / input: %A%P() / rest1: %A%P() / rest2: %A%P()", [v543.fields[0], (v1_1, v2_1, v3, v4), (v341, v342, v343, v344), (v379, v380, v381, v382)])))
+                    v590 = US8(0, v393.fields[0], v567.fields[1], v567.fields[2], v567.fields[3], v567.fields[4]) if (v567.tag == 0) else US8(1, to_text(interpolate("parsing.between / expected closing delimiter / e: %A%P() / input: %A%P() / rest1: %A%P() / rest2: %A%P()", [v567.fields[0], (v1_1, v2_1, v3, v4), (v357, v358, v359, v360), (v395, v396, v397, v398)])))
 
                 else: 
-                    v566 = US8(1, "parsing.between / expected content")
+                    v590 = US8(1, "parsing.between / expected content")
 
 
             else: 
-                v566 = US8(1, v339.fields[0])
+                v590 = US8(1, v355.fields[0])
 
-            if v566.tag == 0:
-                v635 = v566
+            if v590.tag == 0:
+                v659 = v590
 
             else: 
-                def v573(_arg10: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
+                def v597(_arg10: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
                     return closure30(None, _arg10)
 
-                def v574(_arg10_1: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
+                def v598(_arg10_1: tuple[str, Any, int, int], v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> US8:
                     return closure31(None, _arg10_1)
 
-                v578: US8 = method66(v1_1, v2_1, v3, v4, UH3(1, v573, UH3(1, v574, UH3(0))))
-                v589: US8 = US8(0, "", v578.fields[1], v578.fields[2], v578.fields[3], v578.fields[4]) if (v578.tag == 0) else US8(1, v578.fields[0])
-                v600: US17 = method69(UH2(0), v589.fields[1], v589.fields[2], v589.fields[3], v589.fields[4]) if (v589.tag == 0) else US17(1, v589.fields[0])
-                if v600.tag == 0:
-                    v607: FSharpList[str] = method68(v600.fields[0], empty())
+                v602: US8 = method66(v1_1, v2_1, v3, v4, UH3(1, v597, UH3(1, v598, UH3(0))))
+                v613: US8 = US8(0, "", v602.fields[1], v602.fields[2], v602.fields[3], v602.fields[4]) if (v602.tag == 0) else US8(1, v602.fields[0])
+                v624: US17 = method69(UH2(0), v613.fields[1], v613.fields[2], v613.fields[3], v613.fields[4]) if (v613.tag == 0) else US17(1, v613.fields[0])
+                if v624.tag == 0:
+                    v631: FSharpList[str] = method68(v624.fields[0], empty())
                     def _arrow275(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1, v3: Any=v3, v4: Any=v4) -> IEnumerable_1[str]:
-                        return v607
+                        return v631
 
-                    v635 = US8(0, join("", delay(_arrow275)), v600.fields[1], v600.fields[2], v600.fields[3], v600.fields[4])
+                    v659 = US8(0, join("", delay(_arrow275)), v624.fields[1], v624.fields[2], v624.fields[3], v624.fields[4])
 
                 else: 
-                    v635 = US8(1, v600.fields[0])
+                    v659 = US8(1, v624.fields[0])
 
 
 
-        if v635.tag == 0:
-            v640: int = v635.fields[4] or 0
-            v639: int = v635.fields[3] or 0
-            v638: Any = v635.fields[2]
-            v637: str = v635.fields[1]
-            v636: str = v635.fields[0]
-            v642: int = method37(v637, 0) or 0
-            v684: US10
-            if 0 == v642:
-                v684 = US10(1, "parsing.spaces1 / expected at least one space")
+        if v659.tag == 0:
+            v664: int = v659.fields[4] or 0
+            v663: int = v659.fields[3] or 0
+            v662: Any = v659.fields[2]
+            v661: str = v659.fields[1]
+            v660: str = v659.fields[0]
+            v666: int = method37(v661, 0) or 0
+            v708: US10
+            if 0 == v666:
+                v708 = US10(1, "parsing.spaces1 / expected at least one space")
 
             else: 
-                v677: int = (len(v637) - 1) or 0
-                v684 = US10(0, v637[v642:v677 + 1], v638, v639, v640)
+                v701: int = (len(v661) - 1) or 0
+                v708 = US10(0, v661[v666:v701 + 1], v662, v663, v664)
 
-            if v684.tag == 0:
-                v0_1_mut = UH2(1, v636, v0_1)
-                v1_1_mut = v684.fields[0]
-                v2_1_mut = v684.fields[1]
-                v3_mut = v684.fields[2]
-                v4_mut = v684.fields[3]
+            if v708.tag == 0:
+                v0_1_mut = UH2(1, v660, v0_1)
+                v1_1_mut = v708.fields[0]
+                v2_1_mut = v708.fields[1]
+                v3_mut = v708.fields[2]
+                v4_mut = v708.fields[3]
                 continue
 
             else: 
-                return US17(0, method67(v0_1, UH2(1, v636, UH2(0))), v637, v638, v639, v640)
+                return US17(0, method67(v0_1, UH2(1, v660, UH2(0))), v661, v662, v663, v664)
 
 
         else: 
@@ -2592,12 +2592,12 @@ def method60(v0_1: str) -> US16:
     def _arrow276(__unit: None=None, v0_1: Any=v0_1) -> str | None:
         raise Exception("optionm\'.of_obj / _v0=None")
 
-    v21_1: US17 = method61(UH2(0), default_arg(_arrow276() if (_v0 is None) else value_12(_v0), ""), StringBuilder__ctor_Z721C83C5(method26()), 1, 1)
-    if v21_1.tag == 0:
-        return US16(0, to_array(method68(v21_1.fields[0], empty())))
+    v22: US17 = method61(UH2(0), default_arg(_arrow276() if (_v0 is None) else value_12(_v0), ""), StringBuilder__ctor_Z721C83C5(method26()), 1, 1)
+    if v22.tag == 0:
+        return US16(0, to_array(method68(v22.fields[0], empty())))
 
     else: 
-        return US16(1, v21_1.fields[0])
+        return US16(1, v22.fields[0])
 
 
 
