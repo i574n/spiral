@@ -135,7 +135,22 @@ inl flatten x =
 
 #!spiral
 
-nominal option' t = $"backend_switch `({ Fsharp : $"`t option"; Python : t })"
+inl option'_types () =
+    backend_switch {
+        Gleam = fun () => global "import gleam/option.{type Option, None, Some}"
+    }
+nominal option'_gleam t =
+    `(
+        option'_types ()
+        $'' : $'Option(`t)'
+    )
+type option'_switch t =
+    {
+        Gleam : option'_gleam t
+        Fsharp : $"`t option"
+        Python : t
+    }
+nominal option' t = $'backend_switch `(option'_switch t)'
 
 #!markdown
 
@@ -154,6 +169,7 @@ inl none' forall t. () : option' t =
 
 inl some' forall t. (x : t) : option' t =
     backend_switch {
+        Gleam = fun () => $'!x |> Some' : option' t
         Fsharp = fun () => $'Some !x ' : option' t
         Python = fun () => $'!x # some\' ' : option' t
     }
@@ -166,6 +182,7 @@ inl some' forall t. (x : t) : option' t =
 
 inl default_value' forall t. (value : t) (x : option' t) : t =
     backend_switch {
+        Gleam = fun () => $'!x |> option.unwrap(!value)' : t
         Fsharp = fun () => $'!x |> Option.defaultValue !value ' : t
         Python = fun () => $'!x or !value ' : t
     }
@@ -178,6 +195,7 @@ inl default_value' forall t. (value : t) (x : option' t) : t =
 
 inl get' forall t. (x : option' t) : t =
     backend_switch {
+        Gleam = fun () => $'!x |> option.unwrap' : t
         Fsharp = fun () => $'!x |> Option.get' : t
         Python = fun () => $'!x ' : t
     }
@@ -203,32 +221,11 @@ inl box forall t. (x : option t) : option' t =
 #!spiral
 
 inl map forall t u. (fn : t -> u) (x : option' t) : option' u =
-    inl x_ () =
-        backend_switch {
-            Fsharp = fun () =>
-                inl result : mut (option' u) = none' () |> mut
-                inl set_result x =
-                    result <- x
-                inl get_result () =
-                    *result
-                $'match !x with'
-                $'| Some x -> ('
-                $'(fun () ->'
-                $'(fun () ->'
-                inl x = dyn $'x'
-                x |> fn |> emit_unit
-                $')'
-                $'|> fun x -> x () |> Some'
-                $') () ) | None -> None'
-                $'|> fun x -> !set_result x'
-                $'!get_result ()' : option' u
-            Python = fun () =>
-                if x =. none' ()
-                then none' ()
-                else fn $'!x ' |> fun x => $'!x ' : option' u
-        }
-
     backend_switch {
+        Gleam = fun () =>
+            option'_types ()
+            // inl fn = join fn
+            $'!x |> option.map(!fn)' : option' u
         Fsharp = fun () =>
             inl fn = join fn
             $'!x |> Option.map !fn ' : option' u
@@ -263,6 +260,7 @@ inl unbox forall t. (x : option' t) : option t =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -283,6 +281,8 @@ inl y' = y |> box |> map id |> unbox
 
 inl of_obj forall t. (x : t) : option' t =
     backend_switch {
+        Gleam = fun () =>
+            $'Some(!x)' : option' t
         Fsharp = fun () =>
             $'let mutable _!x = None'
             $'#if \!FABLE_COMPILER && \!WASM && \!CONTRACT'
@@ -299,6 +299,7 @@ inl of_obj forall t. (x : t) : option' t =
 #!spiral
 
 //// test
+////! gleam // Expected type: #(String) Found type: #(Nil)
 ///! fsharp
 ///! cuda
 ////! rust // attempted to zero-initialize type `alloc::sync::Arc<dyn core::any::Any>`, which is invalid
@@ -313,6 +314,7 @@ null ()
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust

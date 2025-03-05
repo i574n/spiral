@@ -347,13 +347,13 @@ and closure35 (v0 : UH0) (v1 : string) : string =
     v10
 and closure32 () (v0 : (char [])) : (string -> string) =
     let v2 : char list = v0 |> Array.toList
-    let v6 : ((char -> (UH0 -> UH0)) -> (char list -> (UH0 -> UH0))) = List.foldBack
-    let v7 : (char -> (UH0 -> UH0)) = method6()
-    let v8 : (char list -> (UH0 -> UH0)) = v6 v7
-    let v9 : (UH0 -> UH0) = v8 v2
-    let v10 : UH0 = UH0_0
-    let v11 : UH0 = v9 v10
-    closure35(v11)
+    let v10 : ((char -> (UH0 -> UH0)) -> (char list -> (UH0 -> UH0))) = List.foldBack
+    let v11 : (char -> (UH0 -> UH0)) = method6()
+    let v12 : (char list -> (UH0 -> UH0)) = v10 v11
+    let v13 : (UH0 -> UH0) = v12 v2
+    let v14 : UH0 = UH0_0
+    let v15 : UH0 = v13 v14
+    closure35(v15)
 and closure37 (v0 : UH0) (v1 : string) : string =
     let v2 : char list = []
     let v3 : char list = method7(v0, v2)
@@ -363,13 +363,13 @@ and closure37 (v0 : UH0) (v1 : string) : string =
     v10
 and closure36 () (v0 : (char [])) : (string -> string) =
     let v2 : char list = v0 |> Array.toList
-    let v6 : ((char -> (UH0 -> UH0)) -> (char list -> (UH0 -> UH0))) = List.foldBack
-    let v7 : (char -> (UH0 -> UH0)) = method6()
-    let v8 : (char list -> (UH0 -> UH0)) = v6 v7
-    let v9 : (UH0 -> UH0) = v8 v2
-    let v10 : UH0 = UH0_0
-    let v11 : UH0 = v9 v10
-    closure37(v11)
+    let v10 : ((char -> (UH0 -> UH0)) -> (char list -> (UH0 -> UH0))) = List.foldBack
+    let v11 : (char -> (UH0 -> UH0)) = method6()
+    let v12 : (char list -> (UH0 -> UH0)) = v10 v11
+    let v13 : (UH0 -> UH0) = v12 v2
+    let v14 : UH0 = UH0_0
+    let v15 : UH0 = v13 v14
+    closure37(v15)
 and closure39 (v0 : int32) (v1 : string) : string =
     let v2 : int32 = v1.Length
     let v3 : bool = v2 <= v0

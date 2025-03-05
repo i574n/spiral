@@ -28,6 +28,13 @@ instance append list t =
 #!spiral
 
 //// test
+///! gleam
+///! fsharp
+///! cuda
+///! rust
+///! typescript
+///! python
+//// print_code
 
 [ "a"; "b" ] ++ [ "c"; "d" ]
 |> _assert_eq [ "a"; "b"; "c"; "d" ]
@@ -535,6 +542,13 @@ inl exists' f x =
 #!spiral
 
 //// test
+///! gleam
+///! fsharp
+///! cuda
+////! rust // can't compare `()` with `char`
+///! typescript
+///! python
+//// print_code
 
 [ 'a'; 'b'; 'c' ]
 |> exists' fun x => x = 'b'
@@ -558,7 +572,17 @@ inl exists' f x =
 
 #!spiral
 
-nominal list' t = $"backend_switch `({ Fsharp : $'`t list'; Python : $'list' })"
+inl list'_types () =
+    backend_switch {
+        Gleam = fun () => global "import gleam/list"
+    }
+type list'_switch t =
+    {
+        Gleam : $'List(`t)'
+        Fsharp : $'`t list'
+        Python : $'list'
+    }
+nominal list' t = $'backend_switch `(list'_switch t)'
 
 #!markdown
 
@@ -577,6 +601,7 @@ inl empty' forall t. () : list' t =
 
 inl cons' forall t. (head : t) (tail : list' t) : list' t =
     backend_switch {
+        Gleam = fun () => $'[ !head, ..!tail ]' : list' t
         Fsharp = fun () => $'!head :: !tail ' : list' t
         Python = fun () =>
             $'!tail.insert(0, !head)'
@@ -591,6 +616,7 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
 
 inl rev' forall t. (items : list' t) : list' t =
     backend_switch {
+        Gleam = fun () => $'!items |> list.reverse' : list' t
         Fsharp = fun () => items |> $'List.rev' : list' t
         Python = fun () => $'list(reversed(!items))' : list' t
     }
@@ -614,6 +640,11 @@ inl box forall t. (list : list t) : list' t =
 
 inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
     backend_switch {
+        Gleam = fun () =>
+            $'let listm_fold = !list |> list.fold (!init, fn (acc, x) {'
+            $'!(Cons (fn $'x', $'acc'))' : ()
+            $'})' : ()
+            $'listm_fold' : list u
         Fsharp = fun () =>
             (init, list)
             ||> $'List.fold' join fun acc x => Cons (fn x, acc)
@@ -638,6 +669,11 @@ inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
 
 inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list u =
     backend_switch {
+        Gleam = fun () =>
+            $'let listm_fold_back = !list |> list.fold_right (!init, fn (acc, x) {'
+            $'!(Cons (fn $'x', $'acc'))' : ()
+            $'})' : ()
+            $'listm_fold_back' : list u
         Fsharp = fun () =>
             (list, init)
             ||> $'List.foldBack' join fun x acc => Cons (fn x, acc)
@@ -656,6 +692,7 @@ inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list
 
 inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
     backend_switch {
+        Gleam = fun () => $'!list |> list.filter(!fn)' : list' t
         Fsharp = fun () => list |> $'"List.filter !fn"' : list' t
         Python = fun () => $'list(filter(!fn, !list))' : list' t
     }
@@ -667,7 +704,9 @@ inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
 #!spiral
 
 inl map forall t u. (fn : t -> u) (list : list' t) : list' u =
+    list'_types ()
     backend_switch {
+        Gleam = fun () => $'!list |> list.map(!fn)' : list' u
         Fsharp = fun () => list |> $'List.map' fn : list' u
         Python = fun () => $'list(map(!fn, !list))' : list' u
     }
@@ -690,7 +729,9 @@ inl unbox forall t. (list : list' t) : list t =
 
 // preserve order
 inl distinct' forall t. (list : list' t) : list' t =
+    list'_types ()
     backend_switch {
+        Gleam = fun () => $'!list |> list.unique' : list' t
         Fsharp = fun () => list |> $'List.distinct' : list' t
         Python = fun () =>
             $'x = list(set(!list))'
@@ -701,6 +742,7 @@ inl distinct' forall t. (list : list' t) : list' t =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 
