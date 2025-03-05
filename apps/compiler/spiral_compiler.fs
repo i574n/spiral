@@ -10340,7 +10340,7 @@ module spiral_compiler =
                 | JPClosure(a,b) ->
                     [
                         "closure"
-                        (closure (a,b)).tag |> string
+                        (a, b) |> closure |> _.tag |> string
                         "("
                         if args = "" then "" else $")(#({args})"
                         ")"
