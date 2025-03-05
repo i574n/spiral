@@ -75,6 +75,7 @@ inl get forall t e. (source : result t e) : t =
     | Ok x => x
     | Error x =>
         backend_switch {
+            Gleam = fun () => $'$"resultm.get / Result value was Error: {!x}"' : string
             Fsharp = fun () => $'$"resultm.get / Result value was Error: {!x}"' : string
             Python = fun () => $'f"resultm.get / Result value was Error: {!x}"' : string
         }
@@ -112,6 +113,7 @@ inl unwrap_err forall t u. (x : result t u) : u =
     match x with
     | Ok x =>
         backend_switch {
+            Gleam = fun () => $'$"resultm.unwrap_err / x: {!x}"' : string
             Fsharp = fun () => $'$"resultm.unwrap_err / x: {!x}"' : string
             Python = fun () => $'f"resultm.unwrap_err / x: {!x}"' : string
         }
@@ -139,7 +141,17 @@ inl ok forall t. (x : result t _) : option t =
 
 #!spiral
 
-nominal result' t u = $'Result<`t, `u>'
+inl result'_types () =
+    backend_switch {
+        Gleam = fun () => global "import gleam/result"
+    }
+type result'_switch t u =
+    {
+        Gleam : $'Result(`t, `u)'
+        Fsharp : $'Result<`t, `u>'
+        Python : $'Result<`t, `u>'
+    }
+nominal result' t u = $'backend_switch `(result'_switch t u)'
 
 #!markdown
 
@@ -152,10 +164,16 @@ inl unbox forall t u. (x : result' t u) : result t u =
     inl error x : result t u = Error x
     inl ok = join ok
     inl error = join error
-    real
-        typecase t with
-        | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
-        | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
+    backend_switch {
+        Gleam = fun () =>
+            $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
+        Fsharp = fun () =>
+            real
+                typecase t with
+                | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
+                | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
+            : result t u
+    }
 
 #!markdown
 
@@ -165,8 +183,55 @@ inl unbox forall t u. (x : result' t u) : result t u =
 
 inl box forall t u. (x : result t u) : result' t u =
     match x with
-    | Ok x => $'Ok !x '
-    | Error err => $'Error !err '
+    | Ok x =>
+        backend_switch {
+            Gleam = fun () => $'Ok(!x)' : result' t u
+            Fsharp = fun () => $'Ok !x ' : result' t u
+            Python = fun () => $'!x ' : result' t u
+        }
+    | Error err =>
+        backend_switch {
+            Gleam = fun () => $'Error(!err)' : result' t u
+            Fsharp = fun () => $'Error !err ' : result' t u
+            Python = fun () => $'!err ' : result' t u
+        }
+
+#!markdown
+
+### map'
+
+#!spiral
+
+inl map' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
+    backend_switch {
+        Gleam = fun () =>
+            result'_types ()
+            // inl fn = join fn
+            $'!x |> result.map(!fn)' : result' u e
+        Fsharp = fun () =>
+            inl fn = join fn
+            $'!x |> Result.map !fn ' : result' u e
+        Python = fun () =>
+            if x =. $'None'
+            then $'!x '
+            else fn $'!x ' |> fun x => $'!x ' : result' u e
+    }
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+////! cuda
+///! rust
+///! typescript
+///! python
+
+inl x : _ _ string = Ok 3i32
+inl y : _ i32 _ = Error "error1"
+inl x' = x |> box |> unbox
+inl y' = y |> box |> map' id |> unbox
+(x', y') |> _assert_eq' (x, y)
 
 #!markdown
 

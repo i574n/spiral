@@ -7597,6 +7597,13 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">typescript</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">python</span>
+<span class="o">////</span> <span class="n">print_code</span>
 
 <span class="p">[</span> <span class="s2">"a"</span><span class="p">;</span> <span class="s2">"b"</span> <span class="p">]</span> <span class="o">++</span> <span class="p">[</span> <span class="s2">"c"</span><span class="p">;</span> <span class="s2">"d"</span> <span class="p">]</span>
 <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">[</span> <span class="s2">"a"</span><span class="p">;</span> <span class="s2">"b"</span><span class="p">;</span> <span class="s2">"c"</span><span class="p">;</span> <span class="s2">"d"</span> <span class="p">]</span>
@@ -7612,7 +7619,367 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) / expected: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0))))
+<pre>.py output (Cuda):
+__assert_eq / actual: UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0())))) / expected: UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0()))))
+
+.rs output:
+__assert_eq / actual: UH0_1("a", UH0_1("b", UH0_1("c", UH0_1("d", UH0_0)))) / expected: UH0_1("a", UH0_1("b", UH0_1("c", UH0_1("d", UH0_0))))
+
+.ts output:
+__assert_eq / actual: UH0_1 (a, UH0_1 (b, UH0_1 (c, UH0_1 (d, UH0_0)))) / expected: UH0_1 (a, UH0_1 (b, UH0_1 (c, UH0_1 (d, UH0_0))))
+
+.py output:
+__assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) / expected: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0))))
+
+.gleam output (Gleam):
+__assert_eq / actual: Uh0i1("a", Uh0i1("b", Uh0i1("c", Uh0i1("d", Uh0i0)))) / expected: Uh0i1("a", Uh0i1("b", Uh0i1("c", Uh0i1("d", Uh0i0))))
+
+
+
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>.gleam (Gleam):
+import gleam/string
+import gleam/io
+pub type Uh0 {
+    Uh0i0
+    Uh0i1(String, Uh0)
+}
+pub fn method0 () -&gt; Nil   {
+    let v0 = "__assert_eq"
+    let v1 = "a"
+    let v2 = "b"
+    let v3 = "c"
+    let v4 = "d"
+    let v5 = Uh0i0
+    let v6 = Uh0i1(v4, v5)
+    let v7 = Uh0i1(v3, v6)
+    let v8 = Uh0i1(v2, v7)
+    let v9 = Uh0i1(v1, v8)
+    let v10 = string.inspect(v9)
+    let v11 = Uh0i0
+    let v12 = Uh0i1(v4, v11)
+    let v13 = Uh0i1(v3, v12)
+    let v14 = Uh0i1(v2, v13)
+    let v15 = Uh0i1(v1, v14)
+    let v16 = string.inspect(v15)
+    let v17 = v0 &lt;&gt; " / actual: " &lt;&gt; v10 &lt;&gt; " / expected: " &lt;&gt; v16
+    io.println(v17)
+    Nil 
+}
+pub fn main () { method0()
+ }
+.fsx:
+type UH0 =
+    | UH0_0
+    | UH0_1 of string * UH0
+let rec closure0 (v0 : string) () : unit =
+    let v1 : (string -&gt; unit) = System.Console.WriteLine
+    v1 v0
+and method0 () : unit =
+    let v18 : string = "__assert_eq"
+    let v19 : string = "a"
+    let v20 : string = "b"
+    let v21 : string = "c"
+    let v22 : string = "d"
+    let v23 : UH0 = UH0_0
+    let v24 : UH0 = UH0_1(v22, v23)
+    let v25 : UH0 = UH0_1(v21, v24)
+    let v26 : UH0 = UH0_1(v20, v25)
+    let v27 : UH0 = UH0_1(v19, v26)
+    let v28 : UH0 = UH0_0
+    let v29 : UH0 = UH0_1(v22, v28)
+    let v30 : UH0 = UH0_1(v21, v29)
+    let v31 : UH0 = UH0_1(v20, v30)
+    let v32 : UH0 = UH0_1(v19, v31)
+    let v33 : string = $"{v18} / actual: %A{v27} / expected: %A{v32}"
+    let v46 : unit = ()
+    let v47 : (unit -&gt; unit) = closure0(v33)
+    let v48 : unit = (fun () -&gt; v47 (); v46) ()
+    ()
+method0()
+
+
+.rs:
+#![allow(dead_code)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+#![allow(non_upper_case_globals)]
+#![allow(unreachable_code)]
+#![allow(unused_attributes)]
+#![allow(unused_imports)]
+#![allow(unused_macros)]
+#![allow(unused_parens)]
+#![allow(unused_variables)]
+#![allow(unused_assignments)]
+mod module_aa7ba373 {
+    pub mod Spiral {
+        use super::*;
+        use fable_library_rust::Native_::on_startup;
+        use fable_library_rust::Native_::LrcPtr;
+        use fable_library_rust::String_::printfn;
+        use fable_library_rust::String_::sprintf;
+        use fable_library_rust::String_::string;
+        #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
+        pub enum UH0 {
+            UH0_0,
+            UH0_1(string, LrcPtr&lt;Spiral::UH0&gt;),
+        }
+        impl core::fmt::Display for UH0 {
+            fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+                write!(f, "{}", core::any::type_name::&lt;Self&gt;())
+            }
+        }
+        pub fn closure0(v0: string, unitVar: ()) {
+            printfn!("{0}", v0);
+        }
+        pub fn method0() {
+            let v48: () = {
+                Spiral::closure0(
+                    sprintf!(
+                        "{} / actual: {:?} / expected: {:?}",
+                        string("__assert_eq"),
+                        LrcPtr::new(Spiral::UH0::UH0_1(
+                            string("a"),
+                            LrcPtr::new(Spiral::UH0::UH0_1(
+                                string("b"),
+                                LrcPtr::new(Spiral::UH0::UH0_1(
+                                    string("c"),
+                                    LrcPtr::new(Spiral::UH0::UH0_1(
+                                        string("d"),
+                                        LrcPtr::new(Spiral::UH0::UH0_0)
+                                    ))
+                                ))
+                            ))
+                        )),
+                        LrcPtr::new(Spiral::UH0::UH0_1(
+                            string("a"),
+                            LrcPtr::new(Spiral::UH0::UH0_1(
+                                string("b"),
+                                LrcPtr::new(Spiral::UH0::UH0_1(
+                                    string("c"),
+                                    LrcPtr::new(Spiral::UH0::UH0_1(
+                                        string("d"),
+                                        LrcPtr::new(Spiral::UH0::UH0_0)
+                                    ))
+                                ))
+                            ))
+                        ))
+                    ),
+                    (),
+                );
+                ()
+            };
+            ()
+        }
+        // on_startup!(Spiral::method0());
+    }
+}
+pub use module_aa7ba373::*;
+
+pub fn main() -&gt; Result&lt;(), String&gt; {
+    Ok(Spiral::method0())
+}
+
+.ts:
+import { Union } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
+import { union_type, string_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
+import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
+
+export type UH0_$union = 
+    | UH0&lt;0&gt;
+    | UH0&lt;1&gt;
+
+export type UH0_$cases = {
+    0: ["UH0_0", []],
+    1: ["UH0_1", [string, UH0_$union]]
+}
+
+export function UH0_UH0_0() {
+    return new UH0&lt;0&gt;(0, []);
+}
+
+export function UH0_UH0_1(Item1: string, Item2: UH0_$union) {
+    return new UH0&lt;1&gt;(1, [Item1, Item2]);
+}
+
+export class UH0&lt;Tag extends keyof UH0_$cases&gt; extends Union&lt;Tag, UH0_$cases[Tag][0]&gt; {
+    constructor(readonly tag: Tag, readonly fields: UH0_$cases[Tag][1]) {
+        super();
+    }
+    cases() {
+        return ["UH0_0", "UH0_1"];
+    }
+}
+
+export function UH0_$reflection(): TypeInfo {
+    return union_type("Spiral.UH0", [], UH0, () =&gt; [[], [["Item1", string_type], ["Item2", UH0_$reflection()]]]);
+}
+
+export function closure0(v0: string, unitVar: void): void {
+    console.log(v0);
+}
+
+export function method0(): void {
+    let v48: any;
+    closure0(toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", UH0_UH0_1("a", UH0_UH0_1("b", UH0_UH0_1("c", UH0_UH0_1("d", UH0_UH0_0())))), UH0_UH0_1("a", UH0_UH0_1("b", UH0_UH0_1("c", UH0_UH0_1("d", UH0_UH0_0()))))])), undefined);
+    v48 = undefined;
+}
+
+method0();
+
+
+
+// spiral.process_typescript
+
+.py:
+from fable_modules.fable_library.reflection import (TypeInfo, string_type, union_type)
+from fable_modules.fable_library.string_ import (to_text, interpolate)
+from fable_modules.fable_library.types import (Array, Union)
+from typing import Any
+
+def _expr0() -&gt; TypeInfo:
+    return union_type("Spiral.UH0", [], UH0, lambda: [[], [("Item1", string_type), ("Item2", UH0_reflection())]])
+
+
+class UH0(Union):
+    def __init__(self, tag: int, *fields: Any) -&gt; None:
+        super().__init__()
+        self.tag: int = tag or 0
+        self.fields: Array[Any] = list(fields)
+
+    @staticmethod
+    def cases() -&gt; list[str]:
+        return ["UH0_0", "UH0_1"]
+
+
+UH0_reflection = _expr0
+
+def closure0(v0: str, unit_var: None) -&gt; None:
+    print(v0)
+
+
+def method0(__unit: None=None) -&gt; None:
+    v48: None
+    closure0(to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", UH0(1, "a", UH0(1, "b", UH0(1, "c", UH0(1, "d", UH0(0))))), UH0(1, "a", UH0(1, "b", UH0(1, "c", UH0(1, "d", UH0(0)))))])), None)
+    v48 = None
+
+
+method0()
+
+
+
+# spiral.process_python
+
+.py (Cuda):
+kernel = r"""
+"""
+class static_array():
+    def __init__(self, length):
+        self.ptr = []
+        for _ in range(length):
+            self.ptr.append(None)
+
+    def __getitem__(self, index):
+        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
+        return self.ptr[index]
+    
+    def __setitem__(self, index, value):
+        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
+        self.ptr[index] = value
+
+class static_array_list(static_array):
+    def __init__(self, length):
+        super().__init__(length)
+        self.length = 0
+
+    def __getitem__(self, index):
+        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
+        return self.ptr[index]
+    
+    def __setitem__(self, index, value):
+        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
+        self.ptr[index] = value
+
+    def push(self,value):
+        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
+        self.ptr[self.length] = value
+        self.length += 1
+
+    def pop(self):
+        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
+        self.length -= 1
+        return self.ptr[self.length]
+
+    def unsafe_set_length(self,i):
+        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
+        self.length = i
+
+class dynamic_array(static_array): 
+    pass
+
+class dynamic_array_list(static_array_list):
+    def length_(self): return self.length
+
+import cupy as cp
+import numpy as np
+from dataclasses import dataclass
+from typing import NamedTuple, Union, Callable, Tuple
+i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
+cuda = False
+
+UH0 = Union["UH0_0", "UH0_1"]
+class UH0_0(NamedTuple): # (0, Nil)
+    tag = 0
+class UH0_1(NamedTuple): # (1, Cons)
+    v0 : string
+    v1 : UH0
+    tag = 1
+def method0() -&gt; None:
+    v34 = "__assert_eq"
+    v35 = "a"
+    v36 = "b"
+    v37 = "c"
+    v38 = "d"
+    v39 = UH0_0()
+    v40 = UH0_1(v38, v39)
+    del v39
+    v41 = UH0_1(v37, v40)
+    del v40
+    v42 = UH0_1(v36, v41)
+    del v41
+    v43 = UH0_1(v35, v42)
+    del v42
+    v44 = UH0_0()
+    v45 = UH0_1(v38, v44)
+    del v38, v44
+    v46 = UH0_1(v37, v45)
+    del v37, v45
+    v47 = UH0_1(v36, v46)
+    del v36, v46
+    v48 = UH0_1(v35, v47)
+    del v35, v47
+    v49 = f"{v34} / actual: {v43} / expected: {v48}"
+    del v34, v43, v48
+    print(v49)
+    del v49
+    return 
+def main_body():
+    return method0()
+
+def main():
+    r = main_body()
+    if cuda: cp.cuda.get_current_stream().synchronize() # This line is here so the `__trap()` calls on the kernel aren't missed.
+    return r
+
+if __name__ == '__main__': result = main(); None if result is None else print(result)
+
+.fsx output:
+__assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) / expected: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0))))
 </pre>
 </div>
 </div>
@@ -8955,6 +9322,13 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
+<span class="o">////</span><span class="err">!</span> <span class="n">rust</span> <span class="o">//</span> <span class="n">can</span><span class="s1">'t compare `()` with `char`</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">typescript</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">python</span>
+<span class="o">////</span> <span class="n">print_code</span>
 
 <span class="p">[</span> <span class="s1">'a'</span><span class="p">;</span> <span class="s1">'b'</span><span class="p">;</span> <span class="s1">'c'</span> <span class="p">]</span>
 <span class="o">|&gt;</span> <span class="n">exists</span><span class="s1">' fun x =&gt; x = '</span><span class="sa">b</span><span class="s1">'</span>
@@ -8979,7 +9353,1016 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: true / expected: true
+<pre>
+.py output (Cuda):
+__assert_eq / actual: True / expected: True
+__assert_eq / actual: False / expected: False
+__assert_eq / actual: False / expected: False
+
+
+.ts output:
+__assert_eq / actual: true / expected: true
+__assert_eq / actual: false / expected: false
+__assert_eq / actual: false / expected: false
+
+
+.py output:
+__assert_eq / actual: true / expected: true
+__assert_eq / actual: false / expected: false
+__assert_eq / actual: false / expected: false
+
+
+.gleam output (Gleam):
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:35:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">35 │                                         let v10 = v7 - 1</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                             ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v10`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:89:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">89 │                                 let v7 = v4 - 1</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                     ^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v7`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable code</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:125:22</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">125 │             let v3 = v2 == "a"</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                      ^^^^^^^^^</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This code is unreachable because it comes after a `panic`.</span>
+
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:36:46: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
+%   36|                                         Us0i1
+%     |                                              ^
+
+c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:90:37: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
+%   90|                                 Us0i1
+%     |                                     ^
+
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: True / expected: True
+__assert_eq / actual: False / expected: False
+__assert_eq / actual: False / expected: False
+
+
+
+
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>.gleam (Gleam):
+import gleam/string
+import gleam/io
+pub type Us0 {
+    Us0i0(f0i0 : String)
+    Us0i1
+}
+pub fn method1 (v0 :    Int) -&gt; Bool {
+    let v1 = v0 &gt;= 3
+    case v1 {
+        True -&gt; {
+            False
+        }
+        False -&gt; {
+            let v2 = v0 == 0
+            let v14 =
+                case v2 {
+                    True -&gt; {
+                        Us0i0("a")
+                    }
+                    False -&gt; {
+                        let v4 = v0 - 1
+                        let v5 = v4 == 0
+                        case v5 {
+                            True -&gt; {
+                                Us0i0("b")
+                            }
+                            False -&gt; {
+                                let v7 = v4 - 1
+                                let v8 = v7 == 0
+                                case v8 {
+                                    True -&gt; {
+                                        Us0i0("c")
+                                    }
+                                    False -&gt; {
+                                        let v10 = v7 - 1
+                                        Us0i1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            let v18 =
+                case v14 {
+                    Us0i1 -&gt; { // None
+                        panic as "Option does not have a value."
+                    }
+                    Us0i0(v15) -&gt; { // Some
+                        v15
+                    }
+                }
+            let v19 = v18 == "b"
+            case v19 {
+                True -&gt; {
+                    True
+                }
+                False -&gt; {
+                    let v20 = v0 + 1
+                    method1(v20)
+                }
+            }
+        }
+    }
+}
+pub fn method2 (v0 :    Bool) -&gt; Bool {
+    v0
+}
+pub fn method3 (v0 :    Int) -&gt; Bool {
+    let v1 = v0 &gt;= 2
+    case v1 {
+        True -&gt; {
+            False
+        }
+        False -&gt; {
+            let v2 = v0 == 0
+            let v10 =
+                case v2 {
+                    True -&gt; {
+                        Us0i0("a")
+                    }
+                    False -&gt; {
+                        let v4 = v0 - 1
+                        let v5 = v4 == 0
+                        case v5 {
+                            True -&gt; {
+                                Us0i0("b")
+                            }
+                            False -&gt; {
+                                let v7 = v4 - 1
+                                Us0i1
+                            }
+                        }
+                    }
+                }
+            let v14 =
+                case v10 {
+                    Us0i1 -&gt; { // None
+                        panic as "Option does not have a value."
+                    }
+                    Us0i0(v11) -&gt; { // Some
+                        v11
+                    }
+                }
+            let v15 = v14 == "c"
+            case v15 {
+                True -&gt; {
+                    True
+                }
+                False -&gt; {
+                    let v16 = v0 + 1
+                    method3(v16)
+                }
+            }
+        }
+    }
+}
+pub fn method4 (v0 :    Int) -&gt; Bool {
+    let v1 = v0 &gt;= 0
+    case v1 {
+        True -&gt; {
+            False
+        }
+        False -&gt; {
+            let v2 = panic as "Option does not have a value."
+            let v3 = v2 == "a"
+            case v3 {
+                True -&gt; {
+                    True
+                }
+                False -&gt; {
+                    let v4 = v0 + 1
+                    method4(v4)
+                }
+            }
+        }
+    }
+}
+pub fn method0 () -&gt; Nil   {
+    let v0 = 0
+    let v1 = method1(v0)
+    let v3 =
+        case v1 {
+            True -&gt; {
+                True
+            }
+            False -&gt; {
+                method2(v1)
+            }
+        }
+    let v4 = "__assert_eq"
+    let v5 = string.inspect(v1)
+    let v6 = string.inspect(True)
+    let v7 = v4 &lt;&gt; " / actual: " &lt;&gt; v5 &lt;&gt; " / expected: " &lt;&gt; v6
+    io.println(v7)
+    let v15 = v3 == False
+    case v15 {
+        True -&gt; {
+            panic as v7
+        }
+        False -&gt; {
+        Nil
+        }
+    }
+    let v16 = 0
+    let v17 = method3(v16)
+    let v18 = v17 == False
+    let v20 =
+        case v18 {
+            True -&gt; {
+                True
+            }
+            False -&gt; {
+                method2(v18)
+            }
+        }
+    let v21 = string.inspect(v17)
+    let v22 = string.inspect(False)
+    let v23 = v4 &lt;&gt; " / actual: " &lt;&gt; v21 &lt;&gt; " / expected: " &lt;&gt; v22
+    io.println(v23)
+    let v31 = v20 == False
+    case v31 {
+        True -&gt; {
+            panic as v23
+        }
+        False -&gt; {
+        Nil
+        }
+    }
+    let v32 = 0
+    let v33 = method4(v32)
+    let v34 = v33 == False
+    let v36 =
+        case v34 {
+            True -&gt; {
+                True
+            }
+            False -&gt; {
+                method2(v34)
+            }
+        }
+    let v37 = string.inspect(v33)
+    let v38 = string.inspect(False)
+    let v39 = v4 &lt;&gt; " / actual: " &lt;&gt; v37 &lt;&gt; " / expected: " &lt;&gt; v38
+    io.println(v39)
+    let v47 = v36 == False
+    case v47 {
+        True -&gt; {
+            panic as v39
+        }
+        False -&gt; {
+        Nil
+        }
+    }
+}
+pub fn main () { method0()
+ }
+.fsx:
+type [&lt;Struct&gt;] US0 =
+    | US0_0 of f0_0 : char
+    | US0_1
+let rec method1 (v0 : int64) : bool =
+    let v1 : bool = v0 &gt;= 3L
+    if v1 then
+        false
+    else
+        let v2 : bool = v0 = 0L
+        let v14 : US0 =
+            if v2 then
+                US0_0('a')
+            else
+                let v4 : int64 = v0 - 1L
+                let v5 : bool = v4 = 0L
+                if v5 then
+                    US0_0('b')
+                else
+                    let v7 : int64 = v4 - 1L
+                    let v8 : bool = v7 = 0L
+                    if v8 then
+                        US0_0('c')
+                    else
+                        let v10 : int64 = v7 - 1L
+                        US0_1
+        let v18 : char =
+            match v14 with
+            | US0_1 -&gt; (* None *)
+                failwith&lt;char&gt; "Option does not have a value."
+            | US0_0(v15) -&gt; (* Some *)
+                v15
+        let v19 : bool = v18 = 'b'
+        if v19 then
+            true
+        else
+            let v20 : int64 = v0 + 1L
+            method1(v20)
+and method2 (v0 : bool) : bool =
+    v0
+and closure0 (v0 : string) () : unit =
+    let v1 : (string -&gt; unit) = System.Console.WriteLine
+    v1 v0
+and method3 (v0 : int64) : bool =
+    let v1 : bool = v0 &gt;= 2L
+    if v1 then
+        false
+    else
+        let v2 : bool = v0 = 0L
+        let v10 : US0 =
+            if v2 then
+                US0_0('a')
+            else
+                let v4 : int64 = v0 - 1L
+                let v5 : bool = v4 = 0L
+                if v5 then
+                    US0_0('b')
+                else
+                    let v7 : int64 = v4 - 1L
+                    US0_1
+        let v14 : char =
+            match v10 with
+            | US0_1 -&gt; (* None *)
+                failwith&lt;char&gt; "Option does not have a value."
+            | US0_0(v11) -&gt; (* Some *)
+                v11
+        let v15 : bool = v14 = 'c'
+        if v15 then
+            true
+        else
+            let v16 : int64 = v0 + 1L
+            method3(v16)
+and method4 (v0 : int64) : bool =
+    let v1 : bool = v0 &gt;= 0L
+    if v1 then
+        false
+    else
+        let v2 : char = failwith&lt;char&gt; "Option does not have a value."
+        let v3 : bool = v2 = 'a'
+        if v3 then
+            true
+        else
+            let v4 : int64 = v0 + 1L
+            method4(v4)
+and method0 () : unit =
+    let v0 : int64 = 0L
+    let v1 : bool = method1(v0)
+    let v3 : bool =
+        if v1 then
+            true
+        else
+            method2(v1)
+    let v8 : string = "__assert_eq"
+    let v9 : string = $"{v8} / actual: %A{v1} / expected: %A{true}"
+    let v12 : unit = ()
+    let v13 : (unit -&gt; unit) = closure0(v9)
+    let v14 : unit = (fun () -&gt; v13 (); v12) ()
+    let v16 : bool = v3 = false
+    if v16 then
+        failwith&lt;unit&gt; v9
+    let v17 : int64 = 0L
+    let v18 : bool = method3(v17)
+    let v19 : bool = v18 = false
+    let v21 : bool =
+        if v19 then
+            true
+        else
+            method2(v19)
+    let v25 : string = $"{v8} / actual: %A{v18} / expected: %A{false}"
+    let v28 : unit = ()
+    let v29 : (unit -&gt; unit) = closure0(v25)
+    let v30 : unit = (fun () -&gt; v29 (); v28) ()
+    let v32 : bool = v21 = false
+    if v32 then
+        failwith&lt;unit&gt; v25
+    let v33 : int64 = 0L
+    let v34 : bool = method4(v33)
+    let v35 : bool = v34 = false
+    let v37 : bool =
+        if v35 then
+            true
+        else
+            method2(v35)
+    let v41 : string = $"{v8} / actual: %A{v34} / expected: %A{false}"
+    let v44 : unit = ()
+    let v45 : (unit -&gt; unit) = closure0(v41)
+    let v46 : unit = (fun () -&gt; v45 (); v44) ()
+    let v48 : bool = v37 = false
+    if v48 then
+        failwith&lt;unit&gt; v41
+method0()
+
+
+.ts:
+import { Union } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
+import { union_type, char_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
+import { op_Addition, int64, op_Subtraction, toInt64, equals, compare } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/BigInt.js";
+import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
+import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
+
+export type US0_$union = 
+    | US0&lt;0&gt;
+    | US0&lt;1&gt;
+
+export type US0_$cases = {
+    0: ["US0_0", [string]],
+    1: ["US0_1", []]
+}
+
+export function US0_US0_0(f0_0: string) {
+    return new US0&lt;0&gt;(0, [f0_0]);
+}
+
+export function US0_US0_1() {
+    return new US0&lt;1&gt;(1, []);
+}
+
+export class US0&lt;Tag extends keyof US0_$cases&gt; extends Union&lt;Tag, US0_$cases[Tag][0]&gt; {
+    constructor(readonly tag: Tag, readonly fields: US0_$cases[Tag][1]) {
+        super();
+    }
+    cases() {
+        return ["US0_0", "US0_1"];
+    }
+}
+
+export function US0_$reflection(): TypeInfo {
+    return union_type("Spiral.US0", [], US0, () =&gt; [[["f0_0", char_type]], []]);
+}
+
+export function method1(v0_mut: int64): boolean {
+    method1:
+    while (true) {
+        const v0: int64 = v0_mut;
+        if (compare(v0, 3n) &gt;= 0) {
+            return false;
+        }
+        else {
+            let v14: US0_$union;
+            if (equals(v0, 0n)) {
+                v14 = US0_US0_0("a");
+            }
+            else {
+                const v4: int64 = toInt64(op_Subtraction(v0, 1n));
+                if (equals(v4, 0n)) {
+                    v14 = US0_US0_0("b");
+                }
+                else {
+                    const v7: int64 = toInt64(op_Subtraction(v4, 1n));
+                    if (equals(v7, 0n)) {
+                        v14 = US0_US0_0("c");
+                    }
+                    else {
+                        const v10: int64 = toInt64(op_Subtraction(v7, 1n));
+                        v14 = US0_US0_1();
+                    }
+                }
+            }
+            if ((((v14.tag as int32) === /* US0_0 */ 0) ? (v14.fields[0] as any) : (() =&gt; {
+                throw new Error("Option does not have a value.");
+            })()) === "b") {
+                return true;
+            }
+            else {
+                v0_mut = toInt64(op_Addition(v0, 1n));
+                continue method1;
+            }
+        }
+        break;
+    }
+}
+
+export function method2(v0: boolean): boolean {
+    return v0;
+}
+
+export function closure0(v0: string, unitVar: void): void {
+    console.log(v0);
+}
+
+export function method3(v0_mut: int64): boolean {
+    method3:
+    while (true) {
+        const v0: int64 = v0_mut;
+        if (compare(v0, 2n) &gt;= 0) {
+            return false;
+        }
+        else {
+            let v10: US0_$union;
+            if (equals(v0, 0n)) {
+                v10 = US0_US0_0("a");
+            }
+            else {
+                const v4: int64 = toInt64(op_Subtraction(v0, 1n));
+                if (equals(v4, 0n)) {
+                    v10 = US0_US0_0("b");
+                }
+                else {
+                    const v7: int64 = toInt64(op_Subtraction(v4, 1n));
+                    v10 = US0_US0_1();
+                }
+            }
+            if ((((v10.tag as int32) === /* US0_0 */ 0) ? (v10.fields[0] as any) : (() =&gt; {
+                throw new Error("Option does not have a value.");
+            })()) === "c") {
+                return true;
+            }
+            else {
+                v0_mut = toInt64(op_Addition(v0, 1n));
+                continue method3;
+            }
+        }
+        break;
+    }
+}
+
+export function method4(v0_mut: int64): boolean {
+    method4:
+    while (true) {
+        const v0: int64 = v0_mut;
+        if (compare(v0, 0n) &gt;= 0) {
+            return false;
+        }
+        else if ((() =&gt; {
+            throw new Error("Option does not have a value.");
+        })() === "a") {
+            return true;
+        }
+        else {
+            v0_mut = toInt64(op_Addition(v0, 1n));
+            continue method4;
+        }
+        break;
+    }
+}
+
+export function method0(): void {
+    const v1: boolean = method1(0n);
+    const v3: boolean = v1 ? true : method2(v1);
+    const v9: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v1, true]));
+    let v14: any;
+    closure0(v9, undefined);
+    v14 = undefined;
+    if (v3 === false) {
+        throw new Error(v9);
+    }
+    const v18: boolean = method3(0n);
+    const v19: boolean = v18 === false;
+    const v21: boolean = v19 ? true : method2(v19);
+    const v25: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, false]));
+    let v30: any;
+    closure0(v25, undefined);
+    v30 = undefined;
+    if (v21 === false) {
+        throw new Error(v25);
+    }
+    const v34: boolean = method4(0n);
+    const v35: boolean = v34 === false;
+    const v37: boolean = v35 ? true : method2(v35);
+    const v41: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v34, false]));
+    let v46: any;
+    closure0(v41, undefined);
+    v46 = undefined;
+    if (v37 === false) {
+        throw new Error(v41);
+    }
+}
+
+method0();
+
+
+
+// spiral.process_typescript
+
+.py:
+from __future__ import annotations
+from fable_modules.fable_library.long import (op_subtraction, op_addition)
+from fable_modules.fable_library.reflection import (TypeInfo, char_type, union_type)
+from fable_modules.fable_library.string_ import (to_text, interpolate)
+from fable_modules.fable_library.types import (Array, Union, int64)
+from typing import Any
+
+def _expr0() -&gt; TypeInfo:
+    return union_type("Spiral.US0", [], US0, lambda: [[("f0_0", char_type)], []])
+
+
+class US0(Union):
+    __slots__ = ["tag", "fields"]
+    def __init__(self, tag: int, *fields: Any) -&gt; None:
+        super().__init__()
+        self.tag: int = tag or 0
+        self.fields: Array[Any] = list(fields)
+
+    @staticmethod
+    def cases() -&gt; list[str]:
+        return ["US0_0", "US0_1"]
+
+
+US0_reflection = _expr0
+
+def method1(v0_mut: int64) -&gt; bool:
+    while True:
+        (v0,) = (v0_mut,)
+        if v0 &gt;= int64(3):
+            return False
+
+        else: 
+            v14: US0
+            if v0 == int64(0):
+                v14 = US0(0, "a")
+
+            else: 
+                v4: int64 = op_subtraction(v0, int64(1))
+                if v4 == int64(0):
+                    v14 = US0(0, "b")
+
+                else: 
+                    v7: int64 = op_subtraction(v4, int64(1))
+                    if v7 == int64(0):
+                        v14 = US0(0, "c")
+
+                    else: 
+                        v10: int64 = op_subtraction(v7, int64(1))
+                        v14 = US0(1)
+
+
+
+            def _arrow1(__unit: None=None, v0: Any=v0) -&gt; str:
+                raise Exception("Option does not have a value.")
+
+            if (v14.fields[0] if (v14.tag == 0) else _arrow1()) == "b":
+                return True
+
+            else: 
+                v0_mut = op_addition(v0, int64(1))
+                continue
+
+
+        break
+
+
+def method2(v0: bool) -&gt; bool:
+    return v0
+
+
+def closure0(v0: str, unit_var: None) -&gt; None:
+    print(v0)
+
+
+def method3(v0_mut: int64) -&gt; bool:
+    while True:
+        (v0,) = (v0_mut,)
+        if v0 &gt;= int64(2):
+            return False
+
+        else: 
+            v10: US0
+            if v0 == int64(0):
+                v10 = US0(0, "a")
+
+            else: 
+                v4: int64 = op_subtraction(v0, int64(1))
+                if v4 == int64(0):
+                    v10 = US0(0, "b")
+
+                else: 
+                    v7: int64 = op_subtraction(v4, int64(1))
+                    v10 = US0(1)
+
+
+            def _arrow2(__unit: None=None, v0: Any=v0) -&gt; str:
+                raise Exception("Option does not have a value.")
+
+            if (v10.fields[0] if (v10.tag == 0) else _arrow2()) == "c":
+                return True
+
+            else: 
+                v0_mut = op_addition(v0, int64(1))
+                continue
+
+
+        break
+
+
+def method4(v0_mut: int64) -&gt; bool:
+    while True:
+        (v0,) = (v0_mut,)
+        if v0 &gt;= int64(0):
+            return False
+
+        else: 
+            def _arrow3(__unit: None=None, v0: Any=v0) -&gt; str:
+                raise Exception("Option does not have a value.")
+
+            if _arrow3() == "a":
+                return True
+
+            else: 
+                v0_mut = op_addition(v0, int64(1))
+                continue
+
+
+        break
+
+
+def method0(__unit: None=None) -&gt; None:
+    v1: bool = method1(int64(0))
+    v3: bool = True if v1 else method2(v1)
+    v9: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v1, True]))
+    v14: None
+    closure0(v9, None)
+    v14 = None
+    if v3 == False:
+        raise Exception(v9)
+
+    v18: bool = method3(int64(0))
+    v19: bool = v18 == False
+    v21: bool = True if v19 else method2(v19)
+    v25: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, False]))
+    v30: None
+    closure0(v25, None)
+    v30 = None
+    if v21 == False:
+        raise Exception(v25)
+
+    v34: bool = method4(int64(0))
+    v35: bool = v34 == False
+    v37: bool = True if v35 else method2(v35)
+    v41: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v34, False]))
+    v46: None
+    closure0(v41, None)
+    v46 = None
+    if v37 == False:
+        raise Exception(v41)
+
+
+
+method0()
+
+
+
+# spiral.process_python
+
+.py (Cuda):
+kernel = r"""
+"""
+class static_array():
+    def __init__(self, length):
+        self.ptr = []
+        for _ in range(length):
+            self.ptr.append(None)
+
+    def __getitem__(self, index):
+        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
+        return self.ptr[index]
+    
+    def __setitem__(self, index, value):
+        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
+        self.ptr[index] = value
+
+class static_array_list(static_array):
+    def __init__(self, length):
+        super().__init__(length)
+        self.length = 0
+
+    def __getitem__(self, index):
+        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
+        return self.ptr[index]
+    
+    def __setitem__(self, index, value):
+        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
+        self.ptr[index] = value
+
+    def push(self,value):
+        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
+        self.ptr[self.length] = value
+        self.length += 1
+
+    def pop(self):
+        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
+        self.length -= 1
+        return self.ptr[self.length]
+
+    def unsafe_set_length(self,i):
+        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
+        self.length = i
+
+class dynamic_array(static_array): 
+    pass
+
+class dynamic_array_list(static_array_list):
+    def length_(self): return self.length
+
+import cupy as cp
+import numpy as np
+from dataclasses import dataclass
+from typing import NamedTuple, Union, Callable, Tuple
+i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
+cuda = False
+
+class US0_0(NamedTuple): # (0, Some)
+    v0 : char
+    tag = 0
+class US0_1(NamedTuple): # (1, None)
+    tag = 1
+US0 = Union[US0_0, US0_1]
+def method1(v0 : i64) -&gt; bool:
+    v1 = v0 &gt;= 3
+    if v1:
+        del v0, v1
+        return False
+    else:
+        del v1
+        v2 = v0 == 0
+        if v2:
+            v14 = US0_0('a')
+        else:
+            v4 = v0 - 1
+            v5 = v4 == 0
+            if v5:
+                del v4, v5
+                v14 = US0_0('b')
+            else:
+                del v5
+                v7 = v4 - 1
+                del v4
+                v8 = v7 == 0
+                if v8:
+                    del v7, v8
+                    v14 = US0_0('c')
+                else:
+                    del v8
+                    v10 = v7 - 1
+                    del v7, v10
+                    v14 = US0_1()
+        del v2
+        match v14:
+            case US0_1(): # None
+                raise Exception("Option does not have a value.")
+            case US0_0(v15): # Some
+                v18 = v15
+            case t:
+                raise Exception(f'Pattern matching miss. Got: {t}')
+        del v14
+        v19 = v18 == 'b'
+        del v18
+        if v19:
+            del v0, v19
+            return True
+        else:
+            del v19
+            v20 = v0 + 1
+            del v0
+            return method1(v20)
+def method2(v0 : bool) -&gt; bool:
+    return v0
+def method3(v0 : i64) -&gt; bool:
+    v1 = v0 &gt;= 2
+    if v1:
+        del v0, v1
+        return False
+    else:
+        del v1
+        v2 = v0 == 0
+        if v2:
+            v10 = US0_0('a')
+        else:
+            v4 = v0 - 1
+            v5 = v4 == 0
+            if v5:
+                del v4, v5
+                v10 = US0_0('b')
+            else:
+                del v5
+                v7 = v4 - 1
+                del v4, v7
+                v10 = US0_1()
+        del v2
+        match v10:
+            case US0_1(): # None
+                raise Exception("Option does not have a value.")
+            case US0_0(v11): # Some
+                v14 = v11
+            case t:
+                raise Exception(f'Pattern matching miss. Got: {t}')
+        del v10
+        v15 = v14 == 'c'
+        del v14
+        if v15:
+            del v0, v15
+            return True
+        else:
+            del v15
+            v16 = v0 + 1
+            del v0
+            return method3(v16)
+def method4(v0 : i64) -&gt; bool:
+    v1 = v0 &gt;= 0
+    if v1:
+        del v0, v1
+        return False
+    else:
+        del v1
+        raise Exception("Option does not have a value.")
+        v3 = v2 == 'a'
+        del v2
+        if v3:
+            del v0, v3
+            return True
+        else:
+            del v3
+            v4 = v0 + 1
+            del v0
+            return method4(v4)
+def method0() -&gt; None:
+    v0 = 0
+    v1 = method1(v0)
+    del v0
+    if v1:
+        v3 = True
+    else:
+        v3 = method2(v1)
+    v10 = "__assert_eq"
+    v11 = f"{v10} / actual: {v1} / expected: {True}"
+    del v1
+    print(v11)
+    v17 = v3 == False
+    del v3
+    if v17:
+        raise Exception(v11)
+    else:
+        pass
+    del v11, v17
+    v18 = 0
+    v19 = method3(v18)
+    del v18
+    v20 = v19 == False
+    if v20:
+        v22 = True
+    else:
+        v22 = method2(v20)
+    del v20
+    v27 = f"{v10} / actual: {v19} / expected: {False}"
+    del v19
+    print(v27)
+    v33 = v22 == False
+    del v22
+    if v33:
+        raise Exception(v27)
+    else:
+        pass
+    del v27, v33
+    v34 = 0
+    v35 = method4(v34)
+    del v34
+    v36 = v35 == False
+    if v36:
+        v38 = True
+    else:
+        v38 = method2(v36)
+    del v36
+    v43 = f"{v10} / actual: {v35} / expected: {False}"
+    del v10, v35
+    print(v43)
+    v49 = v38 == False
+    del v38
+    if v49:
+        del v49
+        raise Exception(v43)
+    else:
+        del v43, v49
+        return 
+def main_body():
+    return method0()
+
+def main():
+    r = main_body()
+    if cuda: cp.cuda.get_current_stream().synchronize() # This line is here so the `__trap()` calls on the kernel aren't missed.
+    return r
+
+if __name__ == '__main__': result = main(); None if result is None else print(result)
+
+.fsx output:
+__assert_eq / actual: true / expected: true
 __assert_eq / actual: false / expected: false
 __assert_eq / actual: false / expected: false
 </pre>
@@ -9017,7 +10400,17 @@ __assert_eq / actual: false / expected: false
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="nb">list</span><span class="s1">' t = $"backend_switch `({ Fsharp : $'</span><span class="err">`</span><span class="n">t</span> <span class="nb">list</span><span class="s1">'; Python : $'</span><span class="nb">list</span><span class="s1">' })"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="nb">list</span><span class="s1">'_types () =</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/list"</span>
+    <span class="p">}</span>
+<span class="nb">type</span> <span class="nb">list</span><span class="s1">'_switch t =</span>
+    <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'List(`t)'</span>
+        <span class="n">Fsharp</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'`t list'</span>
+        <span class="n">Python</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'list'</span>
+    <span class="p">}</span>
+<span class="n">nominal</span> <span class="nb">list</span><span class="s1">' t = $'</span><span class="n">backend_switch</span> <span class="err">`</span><span class="p">(</span><span class="nb">list</span><span class="s1">'_switch t)'</span>
 </pre></div>
 </div>
 </div>
@@ -9070,6 +10463,7 @@ __assert_eq / actual: false / expected: false
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">cons</span><span class="s1">' forall t. (head : t) (tail : list'</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'[ !head, ..!tail ]'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!head :: !tail '</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'!tail.insert(0, !head)'</span>
@@ -9101,6 +10495,7 @@ __assert_eq / actual: false / expected: false
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">rev</span><span class="s1">' forall t. (items : list'</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!items |&gt; list.reverse'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">items</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'List.rev'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'list(reversed(!items))'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
     <span class="p">}</span>
@@ -9158,6 +10553,11 @@ __assert_eq / actual: false / expected: false
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">fold</span><span class="s1">' forall t u. (fn : t -&gt; u) (init : list u) (list : list'</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">u</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'let listm_fold = !list |&gt; list.fold (!init, fn (acc, x) {'</span>
+            <span class="err">$</span><span class="s1">'!(Cons (fn $'</span><span class="n">x</span><span class="s1">', $'</span><span class="n">acc</span><span class="s1">'))'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'})'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'listm_fold'</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">u</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
             <span class="o">||&gt;</span> <span class="err">$</span><span class="s1">'List.fold'</span> <span class="n">join</span> <span class="n">fun</span> <span class="n">acc</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">Cons</span> <span class="p">(</span><span class="n">fn</span> <span class="n">x</span><span class="p">,</span> <span class="n">acc</span><span class="p">)</span>
@@ -9199,6 +10599,11 @@ __assert_eq / actual: false / expected: false
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">fold_back</span><span class="s1">' forall t u. (fn : t -&gt; u) (list : list'</span> <span class="n">t</span><span class="p">)</span> <span class="p">(</span><span class="n">init</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">u</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">u</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'let listm_fold_back = !list |&gt; list.fold_right (!init, fn (acc, x) {'</span>
+            <span class="err">$</span><span class="s1">'!(Cons (fn $'</span><span class="n">x</span><span class="s1">', $'</span><span class="n">acc</span><span class="s1">'))'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'})'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'listm_fold_back'</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">u</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
             <span class="o">||&gt;</span> <span class="err">$</span><span class="s1">'List.foldBack'</span> <span class="n">join</span> <span class="n">fun</span> <span class="n">x</span> <span class="n">acc</span> <span class="o">=&gt;</span> <span class="n">Cons</span> <span class="p">(</span><span class="n">fn</span> <span class="n">x</span><span class="p">,</span> <span class="n">acc</span><span class="p">)</span>
@@ -9234,6 +10639,7 @@ __assert_eq / actual: false / expected: false
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="nb">filter</span><span class="s1">' forall t. (fn : t -&gt; bool) (list : list'</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!list |&gt; list.filter(!fn)'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">list</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'"List.filter !fn"'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'list(filter(!fn, !list))'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
     <span class="p">}</span>
@@ -9262,7 +10668,9 @@ __assert_eq / actual: false / expected: false
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="nb">map</span> <span class="n">forall</span> <span class="n">t</span> <span class="n">u</span><span class="o">.</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="n">t</span> <span class="o">-&gt;</span> <span class="n">u</span><span class="p">)</span> <span class="p">(</span><span class="nb">list</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t) : list'</span> <span class="n">u</span> <span class="o">=</span>
+    <span class="nb">list</span><span class="s1">'_types ()</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!list |&gt; list.map(!fn)'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' u</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">list</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'List.map'</span> <span class="n">fn</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' u</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'list(map(!fn, !list))'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' u</span>
     <span class="p">}</span>
@@ -9319,7 +10727,9 @@ __assert_eq / actual: false / expected: false
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">preserve</span> <span class="n">order</span>
 <span class="n">inl</span> <span class="n">distinct</span><span class="s1">' forall t. (list : list'</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t =</span>
+    <span class="nb">list</span><span class="s1">'_types ()</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!list |&gt; list.unique'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">list</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'List.distinct'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'x = list(set(!list))'</span>
@@ -9340,6 +10750,7 @@ __assert_eq / actual: false / expected: false
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 
@@ -9362,6 +10773,15 @@ __assert_eq / actual: false / expected: false
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
 __assert_eq / actual: UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))) / expected: UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0())))
+
+
+.gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\78539cdbc53e07b542cd631bfe9d8095844cbe14a9f96d596cb52086ec5feefd\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\78539cdbc53e07b542cd631bfe9d8095844cbe14a9f96d596cb52086ec5feefd\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/78539cdbc53e07b542cd631bfe9d8095844cbe14a9f96d596cb52086ec5feefd/build/dev/erlang/main/ebin/main.beam"}
+{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/78539cdbc53e07b542cd631bfe9d8095844cbe14a9f96d596cb52086ec5feefd/build/dev/erlang/main/ebin/main@@main.beam"}
+__assert_eq / actual: Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))) / expected: Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0)))
+
 
 </pre>
 </div>

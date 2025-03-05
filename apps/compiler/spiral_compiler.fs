@@ -10198,7 +10198,7 @@ module spiral_compiler =
             | '\r' -> @"\r"
             | '\\' -> @"\\"
             | x -> string x
-            |> sprintf "'%s'"
+            |> sprintf "\"%s\""
         | LitBool x -> if x then "True" else "False"
 
     /// ### primGleam
@@ -10338,15 +10338,20 @@ module spiral_compiler =
                 match a with
                 | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
                 | JPClosure(a,b) ->
-                    [
-                        "closure"
-                        (a, b) |> closure |> _.tag |> string
-                        "("
-                        if args = "" then "" else $")(#({args})"
-                        ")"
-                        if args |> SpiralSm.contains ", " then "" else "(Nil)"
-                    ]
-                    |> SpiralSm.concat ""
+                    let code =
+                        [
+                            "closure"
+                            (a, b) |> closure |> _.tag |> string
+                            "("
+                            if args = "" then "" else $")(#({args})"
+                            ")"
+                            if args = "" || args |> SpiralSm.contains ", " then "" else "(Nil)"
+                        ]
+                        |> SpiralSm.concat ""
+                    if args = "" then
+                        // trace Verbose (fun () -> $"""CodegenGleam.codegenGleam / """) _locals
+                        $"fn (x) {{ {code}(#(x))(   Nil) }}"
+                    else code
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
