@@ -10668,7 +10668,9 @@ module spiral_compiler =
                                 x.domain_args
                                 |> Array.map (fun (L(_,t)) -> $"{tyv t}")
                                 |> String.concat ", "
-                            [| $"x : #( {t})" |]
+                            if x.domain_args |> Array.length > 1
+                            then [| $"x : #(#( {t}))" |]
+                            else [| $"x : #( {t})" |]
                     match domain_args with
                     | [||] -> ""
                     | [|x|] -> x
@@ -10693,7 +10695,9 @@ module spiral_compiler =
                             (if x.domain_args |> Array.isEmpty then x.free_vars else x.domain_args)
                             |> Array.map (fun (L(i,_)) -> $"v{i}")
                             |> String.concat ", "
-                        $"let #({args}) = x"
+                        if x.domain_args |> Array.length > 1
+                        then $"let #(#({args})) = x"
+                        else $"let #({args}) = x"
                 // line s (sprintf "closure%i () -> fn(_) -> %s { fn(%s) { %s" x.tag (tup_ty x.range) args args')
                 line s (sprintf "closure%i () -> fn(_) -> fn(Nil) -> %s { fn(%s) { %s\nfn (_) {" x.tag (tup_ty x.range) args args')
                 binds (indent s) x.body

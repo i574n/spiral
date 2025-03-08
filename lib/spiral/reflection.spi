@@ -76,6 +76,10 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
 /// ### union_try_pick
 inl union_try_pick forall t. (key : string) : option t =
     real get_union_fields_untag `t ()
+    ++ (
+        real get_union_fields_untag `t ()
+        |> listm.map fun key, x => key |> sm'.to_lower, x
+    )
     |> listm'.try_pick fun key', x =>
         if key' = key
         then Some x

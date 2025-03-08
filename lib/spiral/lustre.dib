@@ -1,0 +1,230 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+
+#!markdown
+
+# lustre
+
+#!fsharp
+
+#!import ../../../polyglot/lib/fsharp/Notebooks.dib
+
+#!markdown
+
+## lustre
+
+#!spiral
+
+// import gleam/int
+// import lustre
+// import lustre/attribute
+// import lustre/element.{type Element}
+// import lustre/element/html
+// import lustre/event
+// import lustre/ui
+
+#!markdown
+
+### model
+
+#!spiral
+
+// type Model =
+//   Int
+type model = int
+
+#!markdown
+
+### init
+
+#!spiral
+
+// fn init(initial_count: Int) -> Model {
+//   case initial_count < 0 {
+//     True -> 0
+//     False -> initial_count
+//   }
+// }
+
+inl init initial_count =
+    if initial_count < 0
+    then 0
+    else initial_count
+
+#!markdown
+
+### msg
+
+#!spiral
+
+// pub opaque type Msg {
+//   Incr
+//   Decr
+// }
+union msg =
+    | Incr
+    | Decr
+
+#!markdown
+
+### update
+
+#!spiral
+
+// fn update(model: Model, msg: Msg) -> Model {
+//   case msg {
+//     Incr -> model + 1
+//     Decr -> model - 1
+//   }
+// }
+inl update (model, msg) =
+    match msg with
+    | Incr => model + 1
+    | Decr => model - 1
+
+#!markdown
+
+### view
+
+#!markdown
+
+### main
+
+#!spiral
+
+// fn view(model: Model) -> Element(Msg) {
+//   let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
+//   let count = int.to_string(model)
+// 
+//   ui.centre(
+//     [attribute.style(styles)],
+//     ui.stack([], [
+//       ui.button([event.on_click(Incr)], [element.text("+")]),
+//       html.p([attribute.style([#("text-align", "center")])], [
+//         element.text(count),
+//       ]),
+//       ui.button([event.on_click(Decr)], [element.text("-")]),
+//     ]),
+//   )
+// }
+
+// fn(List(vdom.Attribute(Msg)), Element(Msg)) -> Element(Msg)
+
+nominal attribute t =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () => global "import lustre/internals/vdom") : () -> ()
+        }
+        $'' : $'vdom.Attribute(`t)'
+    )
+
+nominal element t =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () => global "import lustre/element.{type Element}") : () -> ()
+        }
+        $'' : $'Element(`t)'
+    )
+
+inl style forall t. (styles : list (string * string)) : attribute t =
+    global "import lustre/attribute"
+    inl styles = styles |> listm'.box
+    $'attribute.style(!styles)'
+
+inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
+    global "import lustre/ui/centre.{centre}"
+    inl attributes = attributes |> listm'.box
+    $'centre(!attributes, !children)'
+
+inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+    global "import lustre/ui/button.{button}"
+    inl attributes = attributes |> listm'.box
+    inl children = children |> listm'.box
+    $'button(!attributes, !children)'
+
+inl on_click forall t. (msg : msg) : attribute t =
+    global "import lustre/event"
+    $'event.on_click(!msg)'
+
+inl div forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+    global "import lustre/element/html"
+    inl attributes = attributes |> listm'.box
+    inl children = children |> listm'.box
+    $'html.div(!attributes, !children)'
+
+inl p forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+    global "import lustre/element/html"
+    inl attributes = attributes |> listm'.box
+    inl children = children |> listm'.box
+    $'html.p(!attributes, !children)'
+
+inl text forall t. (text : string) : element t =
+    global "import lustre/element/html"
+    $'element.text(!text)'
+
+inl view model =
+    div [
+        style [
+            "display", "flex"
+        ]
+    ] [
+        div [
+            style [
+                "display", "flex"
+                "flex-direction", "column"
+            ]
+        ] [
+            button [
+                on_click Incr
+            ] [
+                text "+"
+            ]
+            p [
+                style [
+                    "text-align", "center"
+                ]
+            ] [
+                model |> sm'.obj_to_string |> text
+            ]
+            button [
+                on_click Decr
+            ] [
+                text "-"
+            ]
+        ]
+    ]
+
+#!spiral
+
+nominal app model msg = $'lustre.App(`model, `model, `msg)'
+
+inl simple forall model msg.
+    (init : model -> model)
+    (update : model * msg -> model)
+    (view : model -> element msg)
+    : app model msg
+    =
+    global "import lustre"
+    $'lustre.simple(!init, fn (a, b) { !update(#(a, b)) }, !view)'
+
+inl main' () =
+    global "import lustre"
+    inl app : _ model _ = simple init update view
+    $'let assert Ok(_) = lustre.start(!app, "#app", 0)' : ()
+
+#!fsharp
+
+// Formatter.Register<obj>(formatter:(Func<_,string>(fun x -> if $"{x}".StartsWith "<!DOCTYPE html" then x else x)), mimeType:"text/html")
+// Formatter.Register (fun (x:obj) (writer: TextWriter) ->
+//     if $"{x}".StartsWith "<!DOCTYPE html"
+//     then fprintfn writer "1-%120A" x
+//     else fprintfn writer "2-%120A" x
+// )
+
+#!spiral
+
+//// test
+///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+main' ()

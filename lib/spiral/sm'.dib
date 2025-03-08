@@ -203,6 +203,7 @@ inl is_empty (input : string) : bool =
 
 inl slice forall t {number; int}. (from : t) (to : t) s : string =
     backend_switch {
+        Gleam = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
         Python = fun () => sm.slice s { from to = if var_is s || var_is to then to + 1 else to } : string
     }
@@ -239,6 +240,12 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
 
 inl format_debug forall t. (x : t) : string =
     backend_switch `string `({}) {
+        Gleam = (fun () =>
+            backend_switch `(()) `({}) {
+                Gleam = (fun () => global "import gleam/string") : () -> ()
+            }
+            $'string.inspect(!x)' : string
+                ) : () -> string
         Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
         Python = (fun () => $'f"{!x}"' : string) : () -> string
     }
@@ -595,6 +602,11 @@ inl replicate (n : int) (s : string) : string =
 
 inl obj_to_string x : string =
     backend_switch {
+        Gleam = fun () =>
+            backend_switch {
+                Gleam = fun () => global "import gleam/string"
+            }
+            $'string.inspect(!x)' : string
         Fsharp = fun () => x |> $'_.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }
@@ -921,6 +933,11 @@ inl trim_start (trim_chars : list char) (input : string) : string =
 
 inl length' forall dim. (input : string) : dim =
     backend_switch {
+        Gleam = fun () =>
+            backend_switch {
+                Gleam = fun () => global "import gleam/string"
+            }
+            $'string.length(!input)' : dim
         Fsharp = fun () => input |> $'String.length' : dim
         Python = fun () => $'len(!input)' : dim
     }

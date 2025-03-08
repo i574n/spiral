@@ -161,10 +161,27 @@ get_union_fields_untag ()
 
 inl union_try_pick forall t. (key : string) : option t =
     real get_union_fields_untag `t ()
+    ++ (
+        real get_union_fields_untag `t ()
+        |> listm.map fun key, x => key |> sm'.to_lower, x
+    )
     |> listm'.try_pick fun key', x =>
         if key' = key
         then Some x
         else None
+
+#!spiral
+
+//// test
+///! fsharp
+
+"wasm"
+|> union_try_pick
+|> _assert_eq (Some Wasm)
+
+"Wasm"
+|> union_try_pick
+|> _assert_eq (Some Wasm)
 
 #!markdown
 
