@@ -291,45 +291,49 @@ mod module_fb49c4a9 {
             let v58: string = string("r#\"trace_level\"#");
             let v59: &'static str = r#"trace_level"#;
             let v61: clap::Arg = v57.long(v59);
-            let v95: Array<string> = toArray(ofArray(new_array(&[
-                string("Verbose"),
-                string("Debug"),
-                string("Info"),
-                string("Warning"),
-                string("Critical"),
+            let v65: string = toLower(string("Critical"));
+            let v71: string = toLower(string("Warning"));
+            let v77: string = toLower(string("Info"));
+            let v83: string = toLower(string("Debug"));
+            let v115: Array<string> = toArray(ofArray(new_array(&[
+                toLower(string("Verbose")),
+                v83,
+                v77,
+                v71,
+                v65,
             ])));
-            let v99: Vec<string> = v95.to_vec();
-            let v101: bool = true;
-            let _vec_map: Vec<_> = v99
+            let v119: Vec<string> = v115.to_vec();
+            let v121: bool = true;
+            let _vec_map: Vec<_> = v119
                 .into_iter()
                 .map(|x| {
                     //;
-                    let v103: string = x;
-                    let v110: &str = &*v103;
-                    let v143: std::string::String = String::from(v110);
-                    let v171: Box<std::string::String> = Box::new(v143);
-                    let v173: &'static mut std::string::String = Box::leak(v171);
-                    let v175: clap::builder::PossibleValue =
-                        clap::builder::PossibleValue::new(&**v173);
-                    let v177: bool = true;
-                    v175
+                    let v123: string = x;
+                    let v130: &str = &*v123;
+                    let v163: std::string::String = String::from(v130);
+                    let v191: Box<std::string::String> = Box::new(v163);
+                    let v193: &'static mut std::string::String = Box::leak(v191);
+                    let v195: clap::builder::PossibleValue =
+                        clap::builder::PossibleValue::new(&**v193);
+                    let v197: bool = true;
+                    v195
                 })
                 .collect::<Vec<_>>();
-            let v179: Vec<clap::builder::PossibleValue> = _vec_map;
-            let v181: clap::builder::ValueParser = Into::<clap::builder::ValueParser>::into(
-                clap::builder::PossibleValuesParser::new(v179),
+            let v199: Vec<clap::builder::PossibleValue> = _vec_map;
+            let v201: clap::builder::ValueParser = Into::<clap::builder::ValueParser>::into(
+                clap::builder::PossibleValuesParser::new(v199),
             );
-            let v183: clap::Arg = v61.value_parser(v181);
-            let v185: clap::Command = clap::Command::arg(v50, v183);
-            let v187: string = string("r#\"wasm\"#");
-            let v188: &'static str = r#"wasm"#;
-            let v190: clap::Arg = clap::Arg::new(v188);
-            let v192: clap::Arg = v190.short('w');
-            let v193: string = string("r#\"wasm\"#");
-            let v194: &'static str = r#"wasm"#;
-            let v196: clap::Arg = v192.long(v194);
-            let v198: clap::Arg = v196.required(true);
-            clap::Command::arg(v185, v198)
+            let v203: clap::Arg = v61.value_parser(v201);
+            let v205: clap::Command = clap::Command::arg(v50, v203);
+            let v207: string = string("r#\"wasm\"#");
+            let v208: &'static str = r#"wasm"#;
+            let v210: clap::Arg = clap::Arg::new(v208);
+            let v212: clap::Arg = v210.short('w');
+            let v213: string = string("r#\"wasm\"#");
+            let v214: &'static str = r#"wasm"#;
+            let v216: clap::Arg = v212.long(v214);
+            let v218: clap::Arg = v216.required(true);
+            clap::Command::arg(v205, v218)
         }
         pub fn method1() -> string {
             string("trace_level")
@@ -369,59 +373,64 @@ mod module_fb49c4a9 {
         }
         pub fn method4() -> (Spiral_wasm::US2, Spiral_wasm::US4) {
             let v1: string = Spiral_wasm::method5(string("TRACE_LEVEL"));
-            let v6: Spiral_wasm::US2 = if string("Verbose") == (v1.clone()) {
+            let v5: string = toLower(string("Critical"));
+            let v11: string = toLower(string("Warning"));
+            let v17: string = toLower(string("Info"));
+            let v23: string = toLower(string("Debug"));
+            let v29: string = toLower(string("Verbose"));
+            let v36: Spiral_wasm::US2 = if string("Verbose") == (v1.clone()) {
                 Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_0)
             } else {
                 Spiral_wasm::US2::US2_1
             };
             (
-                match &v6 {
-                    Spiral_wasm::US2::US2_0(v6_0_0) => Spiral_wasm::US2::US2_0(
-                        match &v6 {
+                match &v36 {
+                    Spiral_wasm::US2::US2_0(v36_0_0) => Spiral_wasm::US2::US2_0(
+                        match &v36 {
                             Spiral_wasm::US2::US2_0(x) => x.clone(),
                             _ => unreachable!(),
                         }
                         .clone(),
                     ),
                     _ => {
-                        let v13: Spiral_wasm::US2 = if string("Debug") == (v1.clone()) {
+                        let v43: Spiral_wasm::US2 = if string("Debug") == (v1.clone()) {
                             Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_1)
                         } else {
                             Spiral_wasm::US2::US2_1
                         };
-                        match &v13 {
-                            Spiral_wasm::US2::US2_0(v13_0_0) => Spiral_wasm::US2::US2_0(
-                                match &v13 {
+                        match &v43 {
+                            Spiral_wasm::US2::US2_0(v43_0_0) => Spiral_wasm::US2::US2_0(
+                                match &v43 {
                                     Spiral_wasm::US2::US2_0(x) => x.clone(),
                                     _ => unreachable!(),
                                 }
                                 .clone(),
                             ),
                             _ => {
-                                let v20: Spiral_wasm::US2 = if string("Info") == (v1.clone()) {
+                                let v50: Spiral_wasm::US2 = if string("Info") == (v1.clone()) {
                                     Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_2)
                                 } else {
                                     Spiral_wasm::US2::US2_1
                                 };
-                                match &v20 {
-                                    Spiral_wasm::US2::US2_0(v20_0_0) => Spiral_wasm::US2::US2_0(
-                                        match &v20 {
+                                match &v50 {
+                                    Spiral_wasm::US2::US2_0(v50_0_0) => Spiral_wasm::US2::US2_0(
+                                        match &v50 {
                                             Spiral_wasm::US2::US2_0(x) => x.clone(),
                                             _ => unreachable!(),
                                         }
                                         .clone(),
                                     ),
                                     _ => {
-                                        let v27: Spiral_wasm::US2 =
+                                        let v57: Spiral_wasm::US2 =
                                             if string("Warning") == (v1.clone()) {
                                                 Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_3)
                                             } else {
                                                 Spiral_wasm::US2::US2_1
                                             };
-                                        match &v27 {
-                                            Spiral_wasm::US2::US2_0(v27_0_0) => {
+                                        match &v57 {
+                                            Spiral_wasm::US2::US2_0(v57_0_0) => {
                                                 Spiral_wasm::US2::US2_0(
-                                                    match &v27 {
+                                                    match &v57 {
                                                         Spiral_wasm::US2::US2_0(x) => x.clone(),
                                                         _ => unreachable!(),
                                                     }
@@ -429,17 +438,17 @@ mod module_fb49c4a9 {
                                                 )
                                             }
                                             _ => {
-                                                let v34: Spiral_wasm::US2 = if string("Critical")
+                                                let v64: Spiral_wasm::US2 = if string("Critical")
                                                     == (v1.clone())
                                                 {
                                                     Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_4)
                                                 } else {
                                                     Spiral_wasm::US2::US2_1
                                                 };
-                                                match &v34 {
-                                                    Spiral_wasm::US2::US2_0(v34_0_0) => {
+                                                match &v64 {
+                                                    Spiral_wasm::US2::US2_0(v64_0_0) => {
                                                         Spiral_wasm::US2::US2_0(
-                                                            match &v34 {
+                                                            match &v64 {
                                                                 Spiral_wasm::US2::US2_0(x) => {
                                                                     x.clone()
                                                                 }
@@ -448,7 +457,138 @@ mod module_fb49c4a9 {
                                                             .clone(),
                                                         )
                                                     }
-                                                    _ => Spiral_wasm::US2::US2_1,
+                                                    _ => {
+                                                        let v71: Spiral_wasm::US2 =
+                                                            if (v29.clone()) == (v1.clone()) {
+                                                                Spiral_wasm::US2::US2_0(
+                                                                    Spiral_wasm::US3::US3_0,
+                                                                )
+                                                            } else {
+                                                                Spiral_wasm::US2::US2_1
+                                                            };
+                                                        match &v71 {
+                                                            Spiral_wasm::US2::US2_0(v71_0_0) => {
+                                                                Spiral_wasm::US2::US2_0(
+                                                                    match &v71 {
+                                                                        Spiral_wasm::US2::US2_0(
+                                                                            x,
+                                                                        ) => x.clone(),
+                                                                        _ => unreachable!(),
+                                                                    }
+                                                                    .clone(),
+                                                                )
+                                                            }
+                                                            _ => {
+                                                                let v78: Spiral_wasm::US2 = if (v23
+                                                                    .clone())
+                                                                    == (v1.clone())
+                                                                {
+                                                                    Spiral_wasm::US2::US2_0(
+                                                                        Spiral_wasm::US3::US3_1,
+                                                                    )
+                                                                } else {
+                                                                    Spiral_wasm::US2::US2_1
+                                                                };
+                                                                match &v78 {
+                                                                 Spiral_wasm::US2::US2_0(v78_0_0)
+                                                                 =>
+                                                                 Spiral_wasm::US2::US2_0(match &v78
+                                                                                             {
+                                                                                             Spiral_wasm::US2::US2_0(x)
+                                                                                             =>
+                                                                                             x.clone(),
+                                                                                             _
+                                                                                             =>
+                                                                                             unreachable!(),
+                                                                                         }.clone()),
+                                                                 _ => {
+                                                                     let v85:
+                                                                             Spiral_wasm::US2 =
+                                                                         if (v17.clone())
+                                                                                ==
+                                                                                (v1.clone())
+                                                                            {
+                                                                             Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_2)
+                                                                         } else {
+                                                                             Spiral_wasm::US2::US2_1
+                                                                         };
+                                                                     match &v85
+                                                                         {
+                                                                         Spiral_wasm::US2::US2_0(v85_0_0)
+                                                                         =>
+                                                                         Spiral_wasm::US2::US2_0(match &v85
+                                                                                                     {
+                                                                                                     Spiral_wasm::US2::US2_0(x)
+                                                                                                     =>
+                                                                                                     x.clone(),
+                                                                                                     _
+                                                                                                     =>
+                                                                                                     unreachable!(),
+                                                                                                 }.clone()),
+                                                                         _ =>
+                                                                         {
+                                                                             let v92:
+                                                                                     Spiral_wasm::US2 =
+                                                                                 if (v11.clone())
+                                                                                        ==
+                                                                                        (v1.clone())
+                                                                                    {
+                                                                                     Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_3)
+                                                                                 } else {
+                                                                                     Spiral_wasm::US2::US2_1
+                                                                                 };
+                                                                             match &v92
+                                                                                 {
+                                                                                 Spiral_wasm::US2::US2_0(v92_0_0)
+                                                                                 =>
+                                                                                 Spiral_wasm::US2::US2_0(match &v92
+                                                                                                             {
+                                                                                                             Spiral_wasm::US2::US2_0(x)
+                                                                                                             =>
+                                                                                                             x.clone(),
+                                                                                                             _
+                                                                                                             =>
+                                                                                                             unreachable!(),
+                                                                                                         }.clone()),
+                                                                                 _
+                                                                                 =>
+                                                                                 {
+                                                                                     let v99:
+                                                                                             Spiral_wasm::US2 =
+                                                                                         if (v5.clone())
+                                                                                                ==
+                                                                                                (v1.clone())
+                                                                                            {
+                                                                                             Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_4)
+                                                                                         } else {
+                                                                                             Spiral_wasm::US2::US2_1
+                                                                                         };
+                                                                                     match &v99
+                                                                                         {
+                                                                                         Spiral_wasm::US2::US2_0(v99_0_0)
+                                                                                         =>
+                                                                                         Spiral_wasm::US2::US2_0(match &v99
+                                                                                                                     {
+                                                                                                                     Spiral_wasm::US2::US2_0(x)
+                                                                                                                     =>
+                                                                                                                     x.clone(),
+                                                                                                                     _
+                                                                                                                     =>
+                                                                                                                     unreachable!(),
+                                                                                                                 }.clone()),
+                                                                                         _
+                                                                                         =>
+                                                                                         Spiral_wasm::US2::US2_1,
+                                                                                     }
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                 }
+                                                             }
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -2980,7 +3120,7 @@ mod module_fb49c4a9 {
                 clap::ArgMatches::get_one(&v3.clone(), v11).cloned();
             let v58: Spiral_wasm::US0 =
                 defaultValue(Spiral_wasm::US0::US0_1, map(Spiral_wasm::method2(), v39));
-            let v114: Spiral_wasm::US1 = match &v58 {
+            let v189: Spiral_wasm::US1 = match &v58 {
                 Spiral_wasm::US0::US0_0(v58_0_0) => {
                     let v64: string = fable_library_rust::String_::fromString(
                         match &v58 {
@@ -2989,43 +3129,49 @@ mod module_fb49c4a9 {
                         }
                         .clone(),
                     );
-                    let v69: Spiral_wasm::US2 = if string("Verbose") == (v64.clone()) {
+                    let v68: string = toLower(string("Critical"));
+                    let v74: string = toLower(string("Warning"));
+                    let v80: string = toLower(string("Info"));
+                    let v86: string = toLower(string("Debug"));
+                    let v92: string = toLower(string("Verbose"));
+                    let v99: Spiral_wasm::US2 = if string("Verbose") == (v64.clone()) {
                         Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_0)
                     } else {
                         Spiral_wasm::US2::US2_1
                     };
-                    Spiral_wasm::US1::US1_0(match &v69 {
-                        Spiral_wasm::US2::US2_0(v69_0_0) => Spiral_wasm::US2::US2_0(
-                            match &v69 {
+                    Spiral_wasm::US1::US1_0(match &v99 {
+                        Spiral_wasm::US2::US2_0(v99_0_0) => Spiral_wasm::US2::US2_0(
+                            match &v99 {
                                 Spiral_wasm::US2::US2_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v76: Spiral_wasm::US2 = if string("Debug") == (v64.clone()) {
+                            let v106: Spiral_wasm::US2 = if string("Debug") == (v64.clone()) {
                                 Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_1)
                             } else {
                                 Spiral_wasm::US2::US2_1
                             };
-                            match &v76 {
-                                Spiral_wasm::US2::US2_0(v76_0_0) => Spiral_wasm::US2::US2_0(
-                                    match &v76 {
+                            match &v106 {
+                                Spiral_wasm::US2::US2_0(v106_0_0) => Spiral_wasm::US2::US2_0(
+                                    match &v106 {
                                         Spiral_wasm::US2::US2_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v83: Spiral_wasm::US2 = if string("Info") == (v64.clone()) {
+                                    let v113: Spiral_wasm::US2 = if string("Info") == (v64.clone())
+                                    {
                                         Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_2)
                                     } else {
                                         Spiral_wasm::US2::US2_1
                                     };
-                                    match &v83 {
-                                        Spiral_wasm::US2::US2_0(v83_0_0) => {
+                                    match &v113 {
+                                        Spiral_wasm::US2::US2_0(v113_0_0) => {
                                             Spiral_wasm::US2::US2_0(
-                                                match &v83 {
+                                                match &v113 {
                                                     Spiral_wasm::US2::US2_0(x) => x.clone(),
                                                     _ => unreachable!(),
                                                 }
@@ -3033,16 +3179,16 @@ mod module_fb49c4a9 {
                                             )
                                         }
                                         _ => {
-                                            let v90: Spiral_wasm::US2 =
+                                            let v120: Spiral_wasm::US2 =
                                                 if string("Warning") == (v64.clone()) {
                                                     Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_3)
                                                 } else {
                                                     Spiral_wasm::US2::US2_1
                                                 };
-                                            match &v90 {
-                                                Spiral_wasm::US2::US2_0(v90_0_0) => {
+                                            match &v120 {
+                                                Spiral_wasm::US2::US2_0(v120_0_0) => {
                                                     Spiral_wasm::US2::US2_0(
-                                                        match &v90 {
+                                                        match &v120 {
                                                             Spiral_wasm::US2::US2_0(x) => x.clone(),
                                                             _ => unreachable!(),
                                                         }
@@ -3050,7 +3196,7 @@ mod module_fb49c4a9 {
                                                     )
                                                 }
                                                 _ => {
-                                                    let v97: Spiral_wasm::US2 =
+                                                    let v127: Spiral_wasm::US2 =
                                                         if string("Critical") == (v64.clone()) {
                                                             Spiral_wasm::US2::US2_0(
                                                                 Spiral_wasm::US3::US3_4,
@@ -3058,10 +3204,10 @@ mod module_fb49c4a9 {
                                                         } else {
                                                             Spiral_wasm::US2::US2_1
                                                         };
-                                                    match &v97 {
-                                                        Spiral_wasm::US2::US2_0(v97_0_0) => {
+                                                    match &v127 {
+                                                        Spiral_wasm::US2::US2_0(v127_0_0) => {
                                                             Spiral_wasm::US2::US2_0(
-                                                                match &v97 {
+                                                                match &v127 {
                                                                     Spiral_wasm::US2::US2_0(x) => {
                                                                         x.clone()
                                                                     }
@@ -3070,7 +3216,140 @@ mod module_fb49c4a9 {
                                                                 .clone(),
                                                             )
                                                         }
-                                                        _ => Spiral_wasm::US2::US2_1,
+                                                        _ => {
+                                                            let v134: Spiral_wasm::US2 =
+                                                                if (v92.clone()) == (v64.clone()) {
+                                                                    Spiral_wasm::US2::US2_0(
+                                                                        Spiral_wasm::US3::US3_0,
+                                                                    )
+                                                                } else {
+                                                                    Spiral_wasm::US2::US2_1
+                                                                };
+                                                            match &v134 {
+                                                                Spiral_wasm::US2::US2_0(
+                                                                    v134_0_0,
+                                                                ) => Spiral_wasm::US2::US2_0(
+                                                                    match &v134 {
+                                                                        Spiral_wasm::US2::US2_0(
+                                                                            x,
+                                                                        ) => x.clone(),
+                                                                        _ => unreachable!(),
+                                                                    }
+                                                                    .clone(),
+                                                                ),
+                                                                _ => {
+                                                                    let v141: Spiral_wasm::US2 =
+                                                                        if (v86.clone())
+                                                                            == (v64.clone())
+                                                                        {
+                                                                            Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_1)
+                                                                        } else {
+                                                                            Spiral_wasm::US2::US2_1
+                                                                        };
+                                                                    match &v141
+                                                                                                    {
+                                                                                                    Spiral_wasm::US2::US2_0(v141_0_0)
+                                                                                                    =>
+                                                                                                    Spiral_wasm::US2::US2_0(match &v141
+                                                                                                                                {
+                                                                                                                                Spiral_wasm::US2::US2_0(x)
+                                                                                                                                =>
+                                                                                                                                x.clone(),
+                                                                                                                                _
+                                                                                                                                =>
+                                                                                                                                unreachable!(),
+                                                                                                                            }.clone()),
+                                                                                                    _
+                                                                                                    =>
+                                                                                                    {
+                                                                                                        let v148:
+                                                                                                                Spiral_wasm::US2 =
+                                                                                                            if (v80.clone())
+                                                                                                                   ==
+                                                                                                                   (v64.clone())
+                                                                                                               {
+                                                                                                                Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_2)
+                                                                                                            } else {
+                                                                                                                Spiral_wasm::US2::US2_1
+                                                                                                            };
+                                                                                                        match &v148
+                                                                                                            {
+                                                                                                            Spiral_wasm::US2::US2_0(v148_0_0)
+                                                                                                            =>
+                                                                                                            Spiral_wasm::US2::US2_0(match &v148
+                                                                                                                                        {
+                                                                                                                                        Spiral_wasm::US2::US2_0(x)
+                                                                                                                                        =>
+                                                                                                                                        x.clone(),
+                                                                                                                                        _
+                                                                                                                                        =>
+                                                                                                                                        unreachable!(),
+                                                                                                                                    }.clone()),
+                                                                                                            _
+                                                                                                            =>
+                                                                                                            {
+                                                                                                                let v155:
+                                                                                                                        Spiral_wasm::US2 =
+                                                                                                                    if (v74.clone())
+                                                                                                                           ==
+                                                                                                                           (v64.clone())
+                                                                                                                       {
+                                                                                                                        Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_3)
+                                                                                                                    } else {
+                                                                                                                        Spiral_wasm::US2::US2_1
+                                                                                                                    };
+                                                                                                                match &v155
+                                                                                                                    {
+                                                                                                                    Spiral_wasm::US2::US2_0(v155_0_0)
+                                                                                                                    =>
+                                                                                                                    Spiral_wasm::US2::US2_0(match &v155
+                                                                                                                                                {
+                                                                                                                                                Spiral_wasm::US2::US2_0(x)
+                                                                                                                                                =>
+                                                                                                                                                x.clone(),
+                                                                                                                                                _
+                                                                                                                                                =>
+                                                                                                                                                unreachable!(),
+                                                                                                                                            }.clone()),
+                                                                                                                    _
+                                                                                                                    =>
+                                                                                                                    {
+                                                                                                                        let v162:
+                                                                                                                                Spiral_wasm::US2 =
+                                                                                                                            if (v68.clone())
+                                                                                                                                   ==
+                                                                                                                                   (v64.clone())
+                                                                                                                               {
+                                                                                                                                Spiral_wasm::US2::US2_0(Spiral_wasm::US3::US3_4)
+                                                                                                                            } else {
+                                                                                                                                Spiral_wasm::US2::US2_1
+                                                                                                                            };
+                                                                                                                        match &v162
+                                                                                                                            {
+                                                                                                                            Spiral_wasm::US2::US2_0(v162_0_0)
+                                                                                                                            =>
+                                                                                                                            Spiral_wasm::US2::US2_0(match &v162
+                                                                                                                                                        {
+                                                                                                                                                        Spiral_wasm::US2::US2_0(x)
+                                                                                                                                                        =>
+                                                                                                                                                        x.clone(),
+                                                                                                                                                        _
+                                                                                                                                                        =>
+                                                                                                                                                        unreachable!(),
+                                                                                                                                                    }.clone()),
+                                                                                                                            _
+                                                                                                                            =>
+                                                                                                                            Spiral_wasm::US2::US2_1,
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -3083,20 +3362,20 @@ mod module_fb49c4a9 {
                 }
                 _ => Spiral_wasm::US1::US1_1,
             };
-            let v121: Spiral_wasm::US2 = if let Spiral_wasm::US1::US1_0(v114_0_0) = &v114 {
-                let v115: Spiral_wasm::US2 = v114_0_0.clone();
-                if let Spiral_wasm::US2::US2_0(v115_0_0) = &v115 {
-                    Spiral_wasm::US2::US2_0(v115_0_0.clone())
+            let v196: Spiral_wasm::US2 = if let Spiral_wasm::US1::US1_0(v189_0_0) = &v189 {
+                let v190: Spiral_wasm::US2 = v189_0_0.clone();
+                if let Spiral_wasm::US2::US2_0(v190_0_0) = &v190 {
+                    Spiral_wasm::US2::US2_0(v190_0_0.clone())
                 } else {
                     Spiral_wasm::US2::US2_1
                 }
             } else {
                 Spiral_wasm::US2::US2_1
             };
-            let v128: () = {
+            let v203: () = {
                 Spiral_wasm::closure2(
-                    match &v121 {
-                        Spiral_wasm::US2::US2_0(v121_0_0) => match &v121 {
+                    match &v196 {
+                        Spiral_wasm::US2::US2_0(v196_0_0) => match &v196 {
                             Spiral_wasm::US2::US2_0(x) => x.clone(),
                             _ => unreachable!(),
                         }
@@ -3118,71 +3397,71 @@ mod module_fb49c4a9 {
                 .get()
                 .clone()
                 .unwrap();
-            let v167: () = {
+            let v242: () = {
                 Spiral_wasm::closure5(v0_1, ());
                 ()
             };
-            let v214: string = Spiral_wasm::method22();
-            let v221: &str = &*v214;
-            let v249: Option<std::string::String> =
-                clap::ArgMatches::get_one(&v3.clone(), v221).cloned();
-            let v253: Option<string> = map(Spiral_wasm::method23(), v249);
-            let v366: Spiral_wasm::US7 =
-                defaultValue(Spiral_wasm::US7::US7_1, map(Spiral_wasm::method8(), v253));
-            let v370: std::pin::Pin<
+            let v289: string = Spiral_wasm::method22();
+            let v296: &str = &*v289;
+            let v324: Option<std::string::String> =
+                clap::ArgMatches::get_one(&v3.clone(), v296).cloned();
+            let v328: Option<string> = map(Spiral_wasm::method23(), v324);
+            let v441: Spiral_wasm::US7 =
+                defaultValue(Spiral_wasm::US7::US7_1, map(Spiral_wasm::method8(), v328));
+            let v445: std::pin::Pin<
                 Box<dyn std::future::Future<Output = Result<u8, anyhow::Error>>>,
             > = Spiral_wasm::method24(v3);
-            let v372 = tokio::runtime::Builder::new_multi_thread()
+            let v447 = tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
                 .unwrap();
-            let v374: Result<u8, anyhow::Error> = v372.handle().block_on(v370);
-            let v375 = Spiral_wasm::method53();
-            let v388: Result<u8, std::string::String> = v374.map_err(|x| v375(x));
-            let v391 = Spiral_wasm::method66();
-            let v392 = Spiral_wasm::method67();
-            let v394: Spiral_wasm::US10 = match &v388 {
-                Err(v388_1_0) => v392(v388_1_0.clone()),
-                Ok(v388_0_0) => v391(v388_0_0.clone()),
+            let v449: Result<u8, anyhow::Error> = v447.handle().block_on(v445);
+            let v450 = Spiral_wasm::method53();
+            let v463: Result<u8, std::string::String> = v449.map_err(|x| v450(x));
+            let v466 = Spiral_wasm::method66();
+            let v467 = Spiral_wasm::method67();
+            let v469: Spiral_wasm::US10 = match &v463 {
+                Err(v463_1_0) => v467(v463_1_0.clone()),
+                Ok(v463_0_0) => v466(v463_0_0.clone()),
             };
-            match &v394 {
-                Spiral_wasm::US10::US10_0(v394_0_0) => {
-                    if let Spiral_wasm::US7::US7_0(v366_0_0) = &v366 {
-                        let v399: string = sprintf!(
+            match &v469 {
+                Spiral_wasm::US10::US10_0(v469_0_0) => {
+                    if let Spiral_wasm::US7::US7_0(v441_0_0) = &v441 {
+                        let v474: string = sprintf!(
                             "spiral_wasm.main / retries: {} / exception: \'{}\'",
-                            v394_0_0.clone(),
-                            v366_0_0.clone()
+                            v469_0_0.clone(),
+                            v441_0_0.clone()
                         );
-                        let v403: Result<(), string> = Err(v399);
-                        v403.unwrap();
+                        let v478: Result<(), string> = Err(v474);
+                        v478.unwrap();
                         ()
                     }
                 }
-                Spiral_wasm::US10::US10_1(v394_1_0) => {
-                    let v419: std::string::String = v394_1_0.clone();
-                    if let Spiral_wasm::US7::US7_0(v366_0_0) = &v366 {
-                        let v420: string = v366_0_0.clone();
-                        if string("") == (v420.clone()) {
+                Spiral_wasm::US10::US10_1(v469_1_0) => {
+                    let v494: std::string::String = v469_1_0.clone();
+                    if let Spiral_wasm::US7::US7_0(v441_0_0) = &v441 {
+                        let v495: string = v441_0_0.clone();
+                        if string("") == (v495.clone()) {
                             ()
                         } else {
                             if contains(
-                                fable_library_rust::String_::fromString(v419.clone()),
-                                v420.clone(),
+                                fable_library_rust::String_::fromString(v494.clone()),
+                                v495.clone(),
                             ) {
                                 ()
                             } else {
-                                let v428: string = sprintf!(
+                                let v503: string = sprintf!(
                                     "spiral_wasm.main / exception: \'{}\' / error: {}",
-                                    v420,
-                                    v419
+                                    v495,
+                                    v494
                                 );
-                                let v432: Result<(), string> = Err(v428);
-                                v432.unwrap();
+                                let v507: Result<(), string> = Err(v503);
+                                v507.unwrap();
                                 ()
                             }
                         }
                     } else {
-                        let v451: u8 = v388.clone().unwrap();
+                        let v526: u8 = v463.clone().unwrap();
                         ()
                     }
                 }

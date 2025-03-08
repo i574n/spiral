@@ -12,6 +12,7 @@ inl get_args () =
         }
         gleam = "gleam", {
             gleam_path = "gleam-path", 'g'
+            target = "target", 't'
             deps = "deps", 'd'
         }
         cuda = "cuda", {
@@ -50,6 +51,11 @@ union cuda_env =
     | Pip
     | Poetry
 
+/// ## gleam_target
+union gleam_target =
+    | Erlang
+    | JavaScript
+
 /// ## get_command
 let get_command () =
     ##"command"
@@ -68,7 +74,10 @@ let get_command () =
         |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
             runtime.arg_required true
         )
-        |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (
+        |> runtime.command_init_arg ((get_args () .gleam |> snd).target) (
+            real runtime.arg_union `gleam_target ignore
+        )
+        |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (
             runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
@@ -1359,7 +1368,7 @@ inl process_python { fs_path deps trace_level } =
 /// ## gleam
 
 /// ### process_gleam
-inl process_gleam { gleam_path deps } =
+inl process_gleam { gleam_path target deps } =
     inl extension = "gleam"
 
     inl new_code_path = gleam_path
@@ -1368,11 +1377,12 @@ inl process_gleam { gleam_path deps } =
     inl hash_hex = { extension new_code } |> sm'.format |> crypto.hash_text
 
     inl workspace_root_external = file_system.get_workspace_root_external ()
-    inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
+    inl workspace_root =
+        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path
 
     inl package_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
 
-    inl package_dir = package_dir </> ".."
+    inl package_dir = package_dir </> ".." |> file_system.standardize_path
 
     inl manifest_path = package_dir </> "gleam.toml"
 
@@ -1382,7 +1392,7 @@ inl process_gleam { gleam_path deps } =
             "gary=\">=1.1.0 and <2.0.0\""
         ]
         |> am'.to_vec
-        |> am'.vec_map sm'.to_std_string 
+        |> am'.vec_map sm'.to_std_string
         |> am'.vec_extend deps
         |> am'.vec_map fun dep =>
             inl dep = dep |> sm'.from_std_string
@@ -1395,11 +1405,13 @@ inl process_gleam { gleam_path deps } =
         |> fun x => x : _ i32 _
         |> seq.of_array'
         |> sm'.concat "\n"
+    
+    inl target' = target |> reflection.union_to_string |> sm'.to_lower
 
     inl exit_code, run_result =
         inl manifest =
             $'$"name = \\\"main\\\""'
-            +#. $'$"target = \\\"erlang\\\""'
+            +#. $'$"target = \\\"{!target'}\\\""'
             +#. $'$""'
             +#. $'$"[dependencies]"'
             +#. $'$"{!deps}"'
@@ -1407,7 +1419,7 @@ inl process_gleam { gleam_path deps } =
         manifest |> file_system.write_all_text_exists manifest_path
 
         runtime.execution_options fun x => { x with
-            command = $'$"gleam check"'
+            command = $'$"gleam format"'
             working_directory = package_dir |> optionm'.some'
         }
         |> runtime.execute_with_options
@@ -1418,7 +1430,10 @@ inl process_gleam { gleam_path deps } =
             fun () => { exit_code run_result new_code_path }
         { extension = Some extension; code = None; code_path = None; output = None }
     else
-        inl command = $'$"gleam run --no-print-progress \\\"{!new_code_path}\\\""'
+        inl command =
+            if target = Erlang
+            then $'$"gleam run --no-print-progress \\\"{!new_code_path}\\\""' : string
+            else $'$"gleam build --no-print-progress"'
         inl environment_variables =
             ;[
                 "TRACE_LEVEL", ""
@@ -1442,6 +1457,23 @@ inl process_gleam { gleam_path deps } =
                 |> sm'.concat ";"
             $'$"pwsh -c \'{!vars}; {!command}\'"' : string
         if exit_code = 0 then
+            inl run_result =
+                if target = Erlang
+                then run_result
+                else
+                    inl root =
+                        package_dir |> sm'.replace workspace_root "http://localhost:3000"
+                    $'    $"<link"'
+                    +#. $'$"  rel=\\\"stylesheet\\\""'
+                    +#. $'$"  href=\\\"{!root}/build/dev/javascript/lustre_ui/priv/styles.css\\\""'
+                    +#. $'$"/>"'
+                    +#. $'$"<div id=\\\"app\\\"></div>"'
+                    +#. $'$"<script type=\\\"module\\\">"'
+                    +#. $'$"  import * as main from \\\"{!root}/build/dev/javascript/main/main.mjs\\\""'
+                    +#. $'$"  main.main()"'
+                    +#. $'$"</script>"'
+            inl run_result' = run_result |> sm'.to_std_string
+
             inl output =
                 try
                     fun () =>
@@ -1453,7 +1485,7 @@ inl process_gleam { gleam_path deps } =
                     fun ex =>
                         trace Critical
                             fun () => "spiral.process_gleam / Exception"
-                            fun () => { ex run_result new_code_path external_command }
+                            fun () => { ex run_result' new_code_path external_command }
                         None
                 |> optionm'.box
                 |> optionm'.unwrap
@@ -1677,14 +1709,25 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 |> optionm.value
                 |> sm'.from_std_string
 
+            inl target =
+                arg_matches
+                |> runtime.matches_get_one ((get_args () .gleam |> snd).target |> fst)
+                |> optionm'.unbox
+                |> optionm.map (
+                    sm'.from_std_string
+                    >> reflection.union_try_pick
+                )
+                |> optionm'.flatten
+                |> optionm'.default_value Erlang
+
             inl deps : am'.vec sm'.std_string =
                 arg_matches
-                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
+                |> runtime.matches_get_many ((get_args () .gleam |> snd).deps |> fst)
                 |> optionm'.unbox
                 |> optionm'.default_value (;[] |> am'.to_vec)
 
             inl command_result =
-                process_gleam { gleam_path deps }
+                process_gleam { gleam_path target deps }
                 |> fun { extension code output } =>
                     ;[
                         "extension", extension |> optionm'.default_value ""

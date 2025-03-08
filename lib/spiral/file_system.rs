@@ -466,59 +466,64 @@ pub mod File_system {
     }
     pub fn method1() -> (File_system::US1, File_system::US2) {
         let v1_1: string = File_system::method2(string("TRACE_LEVEL"));
-        let v6: File_system::US1 = if string("Verbose") == (v1_1.clone()) {
+        let v5: string = toLower(string("Critical"));
+        let v11: string = toLower(string("Warning"));
+        let v17_1: string = toLower(string("Info"));
+        let v23_1: string = toLower(string("Debug"));
+        let v29_1: string = toLower(string("Verbose"));
+        let v36_1: File_system::US1 = if string("Verbose") == (v1_1.clone()) {
             File_system::US1::US1_0(File_system::US0::US0_0)
         } else {
             File_system::US1::US1_1
         };
         (
-            match &v6 {
-                File_system::US1::US1_0(v6_0_0) => File_system::US1::US1_0(
-                    match &v6 {
+            match &v36_1 {
+                File_system::US1::US1_0(v36_1_0_0) => File_system::US1::US1_0(
+                    match &v36_1 {
                         File_system::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
                     .clone(),
                 ),
                 _ => {
-                    let v13: File_system::US1 = if string("Debug") == (v1_1.clone()) {
+                    let v43: File_system::US1 = if string("Debug") == (v1_1.clone()) {
                         File_system::US1::US1_0(File_system::US0::US0_1)
                     } else {
                         File_system::US1::US1_1
                     };
-                    match &v13 {
-                        File_system::US1::US1_0(v13_0_0) => File_system::US1::US1_0(
-                            match &v13 {
+                    match &v43 {
+                        File_system::US1::US1_0(v43_0_0) => File_system::US1::US1_0(
+                            match &v43 {
                                 File_system::US1::US1_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v20_1: File_system::US1 = if string("Info") == (v1_1.clone()) {
+                            let v50: File_system::US1 = if string("Info") == (v1_1.clone()) {
                                 File_system::US1::US1_0(File_system::US0::US0_2)
                             } else {
                                 File_system::US1::US1_1
                             };
-                            match &v20_1 {
-                                File_system::US1::US1_0(v20_1_0_0) => File_system::US1::US1_0(
-                                    match &v20_1 {
+                            match &v50 {
+                                File_system::US1::US1_0(v50_0_0) => File_system::US1::US1_0(
+                                    match &v50 {
                                         File_system::US1::US1_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v27_1: File_system::US1 =
+                                    let v57: File_system::US1 =
                                         if string("Warning") == (v1_1.clone()) {
                                             File_system::US1::US1_0(File_system::US0::US0_3)
                                         } else {
                                             File_system::US1::US1_1
                                         };
-                                    match &v27_1 {
-                                        File_system::US1::US1_0(v27_1_0_0) => {
+                                    match &v57 {
+                                        File_system::US1::US1_0(v57_0_0) => {
                                             File_system::US1::US1_0(
-                                                match &v27_1 {
+                                                match &v57 {
                                                     File_system::US1::US1_0(x) => x.clone(),
                                                     _ => unreachable!(),
                                                 }
@@ -526,23 +531,150 @@ pub mod File_system {
                                             )
                                         }
                                         _ => {
-                                            let v34_1: File_system::US1 =
+                                            let v64: File_system::US1 =
                                                 if string("Critical") == (v1_1.clone()) {
                                                     File_system::US1::US1_0(File_system::US0::US0_4)
                                                 } else {
                                                     File_system::US1::US1_1
                                                 };
-                                            match &v34_1 {
-                                                File_system::US1::US1_0(v34_1_0_0) => {
+                                            match &v64 {
+                                                File_system::US1::US1_0(v64_0_0) => {
                                                     File_system::US1::US1_0(
-                                                        match &v34_1 {
+                                                        match &v64 {
                                                             File_system::US1::US1_0(x) => x.clone(),
                                                             _ => unreachable!(),
                                                         }
                                                         .clone(),
                                                     )
                                                 }
-                                                _ => File_system::US1::US1_1,
+                                                _ => {
+                                                    let v71: File_system::US1 =
+                                                        if (v29_1.clone()) == (v1_1.clone()) {
+                                                            File_system::US1::US1_0(
+                                                                File_system::US0::US0_0,
+                                                            )
+                                                        } else {
+                                                            File_system::US1::US1_1
+                                                        };
+                                                    match &v71 {
+                                                        File_system::US1::US1_0(v71_0_0) => {
+                                                            File_system::US1::US1_0(
+                                                                match &v71 {
+                                                                    File_system::US1::US1_0(x) => {
+                                                                        x.clone()
+                                                                    }
+                                                                    _ => unreachable!(),
+                                                                }
+                                                                .clone(),
+                                                            )
+                                                        }
+                                                        _ => {
+                                                            let v78: File_system::US1 = if (v23_1
+                                                                .clone())
+                                                                == (v1_1.clone())
+                                                            {
+                                                                File_system::US1::US1_0(
+                                                                    File_system::US0::US0_1,
+                                                                )
+                                                            } else {
+                                                                File_system::US1::US1_1
+                                                            };
+                                                            match &v78 {
+                                                                File_system::US1::US1_0(
+                                                                    v78_0_0,
+                                                                ) => File_system::US1::US1_0(
+                                                                    match &v78 {
+                                                                        File_system::US1::US1_0(
+                                                                            x,
+                                                                        ) => x.clone(),
+                                                                        _ => unreachable!(),
+                                                                    }
+                                                                    .clone(),
+                                                                ),
+                                                                _ => {
+                                                                    let v85: File_system::US1 =
+                                                                        if (v17_1.clone())
+                                                                            == (v1_1.clone())
+                                                                        {
+                                                                            File_system::US1::US1_0(File_system::US0::US0_2)
+                                                                        } else {
+                                                                            File_system::US1::US1_1
+                                                                        };
+                                                                    match &v85 {
+                                                                     File_system::US1::US1_0(v85_0_0)
+                                                                     =>
+                                                                     File_system::US1::US1_0(match &v85
+                                                                                                 {
+                                                                                                 File_system::US1::US1_0(x)
+                                                                                                 =>
+                                                                                                 x.clone(),
+                                                                                                 _
+                                                                                                 =>
+                                                                                                 unreachable!(),
+                                                                                             }.clone()),
+                                                                     _ => {
+                                                                         let v92:
+                                                                                 File_system::US1 =
+                                                                             if (v11.clone())
+                                                                                    ==
+                                                                                    (v1_1.clone())
+                                                                                {
+                                                                                 File_system::US1::US1_0(File_system::US0::US0_3)
+                                                                             } else {
+                                                                                 File_system::US1::US1_1
+                                                                             };
+                                                                         match &v92
+                                                                             {
+                                                                             File_system::US1::US1_0(v92_0_0)
+                                                                             =>
+                                                                             File_system::US1::US1_0(match &v92
+                                                                                                         {
+                                                                                                         File_system::US1::US1_0(x)
+                                                                                                         =>
+                                                                                                         x.clone(),
+                                                                                                         _
+                                                                                                         =>
+                                                                                                         unreachable!(),
+                                                                                                     }.clone()),
+                                                                             _
+                                                                             =>
+                                                                             {
+                                                                                 let v99:
+                                                                                         File_system::US1 =
+                                                                                     if (v5.clone())
+                                                                                            ==
+                                                                                            (v1_1.clone())
+                                                                                        {
+                                                                                         File_system::US1::US1_0(File_system::US0::US0_4)
+                                                                                     } else {
+                                                                                         File_system::US1::US1_1
+                                                                                     };
+                                                                                 match &v99
+                                                                                     {
+                                                                                     File_system::US1::US1_0(v99_0_0)
+                                                                                     =>
+                                                                                     File_system::US1::US1_0(match &v99
+                                                                                                                 {
+                                                                                                                 File_system::US1::US1_0(x)
+                                                                                                                 =>
+                                                                                                                 x.clone(),
+                                                                                                                 _
+                                                                                                                 =>
+                                                                                                                 unreachable!(),
+                                                                                                             }.clone()),
+                                                                                     _
+                                                                                     =>
+                                                                                     File_system::US1::US1_1,
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                 }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }

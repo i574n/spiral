@@ -50,6 +50,7 @@ modules:
     benchmark
     util
     physics
+    lustre
     leptos/
         leptos
         svg/

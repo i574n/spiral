@@ -1003,7 +1003,7 @@ inl arg_union forall union_type. (fn : union_type -> ()) (arg : arg) : arg =
     |> arg_value_parser (
         real reflection.get_union_fields_untag `union_type ()
         |> fun x => x : _ (string * union_type)
-        |> listm.map fst
+        |> listm.map (fst >> sm'.to_lower)
         |> listm'.box
         |> listm'.to_array'
         |> value_parser_possible_values
@@ -1019,7 +1019,7 @@ inl arg_union forall union_type. (fn : union_type -> ()) (arg : arg) : arg =
 |> command_init_arg ("trace-level", 't') (
     real arg_union `trace_level ignore
 )
-|> command_get_matches_from ;[ "_"; "--trace-level"; "Critical" ]
+|> command_get_matches_from ;[ "_"; "--trace-level"; "critical" ]
 |> matches_get_one "trace-level"
 |> optionm'.unwrap
 |> sm'.from_std_string
