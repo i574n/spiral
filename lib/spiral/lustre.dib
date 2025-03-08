@@ -14,15 +14,143 @@
 
 ## lustre
 
+#!markdown
+
+### attribute
+
 #!spiral
 
-// import gleam/int
-// import lustre
-// import lustre/attribute
-// import lustre/element.{type Element}
-// import lustre/element/html
-// import lustre/event
-// import lustre/ui
+nominal attribute t =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () => global "import lustre/internals/vdom") : () -> ()
+        }
+        $'' : $'vdom.Attribute(`t)'
+    )
+
+#!markdown
+
+### element
+
+#!spiral
+
+nominal element t =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () => global "import lustre/element.{type Element}") : () -> ()
+        }
+        $'' : $'Element(`t)'
+    )
+
+#!markdown
+
+### text
+
+#!spiral
+
+inl text forall t. (text : string) : element t =
+    global "import lustre/element/html"
+    $'element.text(!text)'
+
+#!markdown
+
+### on_click
+
+#!spiral
+
+inl on_click forall t. (msg : t) : attribute t =
+    global "import lustre/event"
+    $'event.on_click(!msg)'
+
+#!markdown
+
+### style
+
+#!spiral
+
+inl style forall t. (styles : list (string * string)) : attribute t =
+    global "import lustre/attribute"
+    inl styles = styles |> listm'.box
+    $'attribute.style(!styles)'
+
+#!markdown
+
+### div
+
+#!spiral
+
+inl div forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+    global "import lustre/element/html"
+    inl attributes = attributes |> listm'.box
+    inl children = children |> listm'.box
+    $'html.div(!attributes, !children)'
+
+#!markdown
+
+### p
+
+#!spiral
+
+inl p forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+    global "import lustre/element/html"
+    inl attributes = attributes |> listm'.box
+    inl children = children |> listm'.box
+    $'html.p(!attributes, !children)'
+
+#!markdown
+
+### button
+
+#!spiral
+
+inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+    global "import lustre/ui/button.{button}"
+    inl attributes = attributes |> listm'.box
+    inl children = children |> listm'.box
+    $'button(!attributes, !children)'
+
+#!markdown
+
+### centre
+
+#!spiral
+
+inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
+    global "import lustre/ui/centre.{centre}"
+    inl attributes = attributes |> listm'.box
+    $'centre(!attributes, !children)'
+
+#!markdown
+
+### app
+
+#!spiral
+
+nominal app model msg = $'lustre.App(`model, `model, `msg)'
+
+#!markdown
+
+### simple
+
+#!spiral
+
+inl simple forall model msg.
+    (init : model -> model)
+    (update : model * msg -> model)
+    (view : model -> element msg)
+    : app model msg
+    =
+    global "import lustre"
+    $'lustre.simple(!init, fn (a, b) { !update(#(a, b)) }, !view)'
+
+#!markdown
+
+### start
+
+#!spiral
+
+inl start app =
+    $'let assert Ok(_) = lustre.start(!app, "#app", 0)' : ()
 
 #!markdown
 
@@ -30,8 +158,6 @@
 
 #!spiral
 
-// type Model =
-//   Int
 type model = int
 
 #!markdown
@@ -39,13 +165,6 @@ type model = int
 ### init
 
 #!spiral
-
-// fn init(initial_count: Int) -> Model {
-//   case initial_count < 0 {
-//     True -> 0
-//     False -> initial_count
-//   }
-// }
 
 inl init initial_count =
     if initial_count < 0
@@ -58,10 +177,6 @@ inl init initial_count =
 
 #!spiral
 
-// pub opaque type Msg {
-//   Incr
-//   Decr
-// }
 union msg =
     | Incr
     | Decr
@@ -72,12 +187,6 @@ union msg =
 
 #!spiral
 
-// fn update(model: Model, msg: Msg) -> Model {
-//   case msg {
-//     Incr -> model + 1
-//     Decr -> model - 1
-//   }
-// }
 inl update (model, msg) =
     match msg with
     | Incr => model + 1
@@ -87,81 +196,7 @@ inl update (model, msg) =
 
 ### view
 
-#!markdown
-
-### main
-
 #!spiral
-
-// fn view(model: Model) -> Element(Msg) {
-//   let styles = [#("width", "100vw"), #("height", "100vh"), #("padding", "1rem")]
-//   let count = int.to_string(model)
-// 
-//   ui.centre(
-//     [attribute.style(styles)],
-//     ui.stack([], [
-//       ui.button([event.on_click(Incr)], [element.text("+")]),
-//       html.p([attribute.style([#("text-align", "center")])], [
-//         element.text(count),
-//       ]),
-//       ui.button([event.on_click(Decr)], [element.text("-")]),
-//     ]),
-//   )
-// }
-
-// fn(List(vdom.Attribute(Msg)), Element(Msg)) -> Element(Msg)
-
-nominal attribute t =
-    `(
-        backend_switch `(()) `({}) {
-            Gleam = (fun () => global "import lustre/internals/vdom") : () -> ()
-        }
-        $'' : $'vdom.Attribute(`t)'
-    )
-
-nominal element t =
-    `(
-        backend_switch `(()) `({}) {
-            Gleam = (fun () => global "import lustre/element.{type Element}") : () -> ()
-        }
-        $'' : $'Element(`t)'
-    )
-
-inl style forall t. (styles : list (string * string)) : attribute t =
-    global "import lustre/attribute"
-    inl styles = styles |> listm'.box
-    $'attribute.style(!styles)'
-
-inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
-    global "import lustre/ui/centre.{centre}"
-    inl attributes = attributes |> listm'.box
-    $'centre(!attributes, !children)'
-
-inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
-    global "import lustre/ui/button.{button}"
-    inl attributes = attributes |> listm'.box
-    inl children = children |> listm'.box
-    $'button(!attributes, !children)'
-
-inl on_click forall t. (msg : msg) : attribute t =
-    global "import lustre/event"
-    $'event.on_click(!msg)'
-
-inl div forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
-    global "import lustre/element/html"
-    inl attributes = attributes |> listm'.box
-    inl children = children |> listm'.box
-    $'html.div(!attributes, !children)'
-
-inl p forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
-    global "import lustre/element/html"
-    inl attributes = attributes |> listm'.box
-    inl children = children |> listm'.box
-    $'html.p(!attributes, !children)'
-
-inl text forall t. (text : string) : element t =
-    global "import lustre/element/html"
-    $'element.text(!text)'
 
 inl view model =
     div [
@@ -195,32 +230,15 @@ inl view model =
         ]
     ]
 
+#!markdown
+
+### main'
+
 #!spiral
 
-nominal app model msg = $'lustre.App(`model, `model, `msg)'
-
-inl simple forall model msg.
-    (init : model -> model)
-    (update : model * msg -> model)
-    (view : model -> element msg)
-    : app model msg
-    =
-    global "import lustre"
-    $'lustre.simple(!init, fn (a, b) { !update(#(a, b)) }, !view)'
-
 inl main' () =
-    global "import lustre"
     inl app : _ model _ = simple init update view
-    $'let assert Ok(_) = lustre.start(!app, "#app", 0)' : ()
-
-#!fsharp
-
-// Formatter.Register<obj>(formatter:(Func<_,string>(fun x -> if $"{x}".StartsWith "<!DOCTYPE html" then x else x)), mimeType:"text/html")
-// Formatter.Register (fun (x:obj) (writer: TextWriter) ->
-//     if $"{x}".StartsWith "<!DOCTYPE html"
-//     then fprintfn writer "1-%120A" x
-//     else fprintfn writer "2-%120A" x
-// )
+    app |> start
 
 #!spiral
 
