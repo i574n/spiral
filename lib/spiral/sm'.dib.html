@@ -8127,6 +8127,7 @@ __assert_eq / actual: UH0_1 ('a', UH0_1 ('b', UH0_1 ('c', UH0_0))) / expected: U
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="nb">slice</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">;</span> <span class="nb">int</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="kn">from</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">(</span><span class="n">to</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="n">s</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">sm</span><span class="o">.</span><span class="n">slice</span> <span class="n">s</span> <span class="p">{</span> <span class="kn">from</span> <span class="nn">to</span> <span class="p">}</span> <span class="p">:</span> <span class="n">string</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">sm</span><span class="o">.</span><span class="n">slice</span> <span class="n">s</span> <span class="p">{</span> <span class="kn">from</span> <span class="nn">to</span> <span class="p">}</span> <span class="p">:</span> <span class="n">string</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">sm</span><span class="o">.</span><span class="n">slice</span> <span class="n">s</span> <span class="p">{</span> <span class="kn">from</span> <span class="nn">to</span> <span class="o">=</span> <span class="k">if</span> <span class="n">var_is</span> <span class="n">s</span> <span class="o">||</span> <span class="n">var_is</span> <span class="n">to</span> <span class="n">then</span> <span class="n">to</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">to</span> <span class="p">}</span> <span class="p">:</span> <span class="n">string</span>
     <span class="p">}</span>
@@ -8220,6 +8221,12 @@ __assert_eq / actual: "bcd" / expected: "bcd"
 
 <span class="n">inl</span> <span class="n">format_debug</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="err">`</span><span class="n">string</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+                <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/string"</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+            <span class="p">}</span>
+            <span class="err">$</span><span class="s1">'string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
+                <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"%A{!x}"'</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"{!x}"'</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
     <span class="p">}</span>
@@ -8707,7 +8714,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_2361d7e8 {
+mod module_bf953f0f {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::NativeArray_::get_Count;
@@ -8787,11 +8794,11 @@ mod module_2361d7e8 {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_2361d7e8::*;
+pub use module_bf953f0f::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -9093,7 +9100,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_ae3b5c44 {
+mod module_513dafe0 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::on_startup;
@@ -9127,11 +9134,11 @@ mod module_ae3b5c44 {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_ae3b5c44::*;
+pub use module_513dafe0::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
@@ -9459,7 +9466,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_bfca7375 {
+mod module_a248b548 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::NativeArray_::new_array;
@@ -9503,11 +9510,11 @@ mod module_bfca7375 {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_bfca7375::*;
+pub use module_a248b548::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { interpolate, toText, concat } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
@@ -10013,6 +10020,11 @@ __assert_eq / actual: "121212" / expected: "121212"
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">obj_to_string</span> <span class="n">x</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">backend_switch</span> <span class="p">{</span>
+                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/string"</span>
+            <span class="p">}</span>
+            <span class="err">$</span><span class="s1">'string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'_.ToString()'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'str(!x)'</span> <span class="p">:</span> <span class="n">string</span>
     <span class="p">}</span>
@@ -10780,6 +10792,11 @@ __assert_eq / actual: "abcdef" / expected: "abcdef"
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">length</span><span class="s1">' forall dim. (input : string) : dim =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">backend_switch</span> <span class="p">{</span>
+                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/string"</span>
+            <span class="p">}</span>
+            <span class="err">$</span><span class="s1">'string.length(!input)'</span> <span class="p">:</span> <span class="n">dim</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">input</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'String.length'</span> <span class="p">:</span> <span class="n">dim</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'len(!input)'</span> <span class="p">:</span> <span class="n">dim</span>
     <span class="p">}</span>
