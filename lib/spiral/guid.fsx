@@ -42,8 +42,8 @@ and closure2 (v0 : int32, v1 : string, v2 : int32) (v3 : string) : string =
     else
         let v5 : int32 = v2 + 1
         let v6 : (string -> string) = method1(v0, v1, v5)
-        let v7 : string = v3 + v1 
-        v6 v7
+        let v8 : string = v3 + v1 
+        v6 v8
 and method1 (v0 : int32, v1 : string, v2 : int32) : (string -> string) =
     closure2(v0, v1, v2)
 and method0 (v0 : string) : System.Guid =

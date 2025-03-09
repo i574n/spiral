@@ -10541,10 +10541,20 @@ module spiral_compiler =
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
-                | StringIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
-                | StringSlice, [a;b;c] -> sprintf "%s.[int %s..int %s]" (tup a) (tup b) (tup c)
-                | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
-                | ArrayIndexSet, [a;b;c] -> sprintf "%s.[int %s] <- %s" (tup a) (tup b) (tup c) 
+                | StringIndex, [a;b] ->
+                    global' "import gleam/string"
+                    sprintf "%s |> string.slice(%s, 1)" (tup a) (tup b)
+                | StringSlice, [a;b;c] ->
+                    global' "import gleam/string"
+                    sprintf "%s |> string.slice(%s, %s)" (tup a) (tup b) (tup c)
+                | ArrayIndex, [a;b] ->
+                    global' "import gary/array"
+                    global' "import gleam/result"
+                    sprintf "%s |> array.get(%s) |> result.unwrap" (tup a) (tup b)
+                | ArrayIndexSet, [a;b;c] ->
+                    global' "import gary/array"
+                    global' "import gleam/result"
+                    sprintf "%s |> array.set(%s, %s) |> result.unwrap" (tup a) (tup b) (tup c)
 
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)

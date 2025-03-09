@@ -192,11 +192,14 @@ inl list_find_last forall item result. (fn : item -> option result) (target : li
 /// ## fsharp
 
 /// ### seq'
-nominal seq' t = $"backend_switch `({ Fsharp : $'`t seq'; Python : $'list' })"
+nominal seq' t = $"backend_switch `({ Gleam : $'List(`t)'; Fsharp : $'`t seq'; Python : $'list' })"
 
 /// ### length'
 inl length' forall t. (items : seq' t) : int =
     backend_switch {
+        Gleam = fun () =>
+            global "import gleam/list"
+            $'!items |> list.length' : int
         Fsharp = fun () => items |> $'Seq.length' : int
         Python = fun () => $'len(!items)' : int
     }
@@ -204,6 +207,7 @@ inl length' forall t. (items : seq' t) : int =
 /// ### to_list'
 inl to_list' forall t. (items : seq' t) : listm'.list' t =
     backend_switch {
+        Gleam = fun () => $'!items ' : listm'.list' t
         Fsharp = fun () => items |> $'Seq.toList' : listm'.list' t
         Python = fun () => $'!items ' : listm'.list' t
     }
@@ -211,6 +215,8 @@ inl to_list' forall t. (items : seq' t) : listm'.list' t =
 /// ### new_seq
 inl new_seq forall t. fn : seq' t =
     backend_switch {
+        Gleam = fun () =>
+            $'!fn()' : seq' t
         Fsharp = fun () =>
             fun () =>
                 $'seq {'
@@ -225,6 +231,9 @@ inl new_seq forall t. fn : seq' t =
 /// ### of_array'
 inl of_array' forall dim t. (items : a dim t) : seq' t =
     backend_switch {
+        Gleam = fun () =>
+            global "import gary/array"
+            $'!items |> array.to_list' : seq' t
         Fsharp = fun () =>
             fun () =>
                 $'for i = 0 to !items.Length - 1 do yield !items.[i]'
@@ -236,6 +245,9 @@ inl of_array' forall dim t. (items : a dim t) : seq' t =
 /// ### of_array
 inl of_array forall dim t. (items : a dim t) : seq' t =
     backend_switch {
+        Gleam = fun () =>
+            global "import gary/array"
+            $'!items |> array.to_list' : seq' t
         Fsharp = fun () => $'!items |> Seq.ofArray' : seq' t
         Python = fun () => $'list(iter(!items))' : seq' t
     }
@@ -249,6 +261,9 @@ inl of_array_base forall t. (items : array_base t) : seq' t =
 /// ### to_array'
 inl to_array' forall dim t. (items : seq' t) : a dim t =
     backend_switch {
+        Gleam = fun () =>
+            global "import gary/array"
+            $'!items |> array.from_list' : a dim t
         Fsharp = fun () => items |> $'Seq.toArray' : a dim t
         Python = fun () => $'(cp if cuda else np).array(!items)' : a dim t
     }
@@ -256,6 +271,7 @@ inl to_array' forall dim t. (items : seq' t) : a dim t =
 /// ### of_list'
 inl of_list' forall t. (items : listm'.list' t) : seq' t =
     backend_switch {
+        Gleam = fun () => $'!items ' : seq' t
         Fsharp = fun () =>
             fun () =>
                 items |> yield_from
@@ -267,6 +283,7 @@ inl of_list' forall t. (items : listm'.list' t) : seq' t =
 /// ### cast'
 inl cast' forall t u. (items : u) : seq' t =
     backend_switch {
+        Gleam = fun () => $'!items ' : seq' t
         Fsharp = fun () => items |> $'Seq.cast' : seq' t
         Python = fun () => $'list(!items)' : seq' t
     }
@@ -274,6 +291,9 @@ inl cast' forall t u. (items : u) : seq' t =
 /// ### rev'
 inl rev'' forall t. (items : seq' t) : seq' t =
     backend_switch {
+        Gleam = fun () =>
+            global "import gleam/list"
+            $'!items |> list.reverse' : seq' t
         Fsharp = fun () => items |> $'Seq.rev' : seq' t
         Python = fun () => $'list(reversed(!items))' : seq' t
     }

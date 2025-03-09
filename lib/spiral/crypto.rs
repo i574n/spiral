@@ -310,7 +310,7 @@ pub mod Crypto {
                     let v101: Vec<string> = _vec_map;
                     let v103: Array<string> =
                         fable_library_rust::NativeArray_::array_from(v101.clone());
-                    let _let__v107: LrcPtr<dyn IEnumerable_1<string>> = delay(Func0::new({
+                    let _let__v108: LrcPtr<dyn IEnumerable_1<string>> = delay(Func0::new({
                         let v103 = v103.clone();
                         move || {
                             map(
@@ -322,16 +322,16 @@ pub mod Crypto {
                             )
                         }
                     }));
-                    let v116: string = Crypto::method1();
-                    let v123: string = join(
-                        if (v116.clone()) == string("\n") {
-                            Crypto::method2(v116.clone())
+                    let v117: string = Crypto::method1();
+                    let v124: string = join(
+                        if (v117.clone()) == string("\n") {
+                            Crypto::method2(v117.clone())
                         } else {
-                            v116
+                            v117
                         },
-                        toArray(_let__v107),
+                        toArray(_let__v108),
                     );
-                    Ok::<string, std::io::Error>(v123).unwrap()
+                    Ok::<string, std::io::Error>(v124).unwrap()
                 }
             }
         }
@@ -368,93 +368,93 @@ pub mod Crypto {
     }
     pub fn method7() -> (Crypto::US1, Crypto::US2) {
         let v1_1: string = Crypto::method8(string("TRACE_LEVEL"));
-        let v5: string = toLower(string("Critical"));
-        let v11: string = toLower(string("Warning"));
-        let v17: string = toLower(string("Info"));
-        let v23: string = toLower(string("Debug"));
-        let v29: string = toLower(string("Verbose"));
-        let v36: Crypto::US1 = if string("Verbose") == (v1_1.clone()) {
+        let v6: string = toLower(string("Critical"));
+        let v13: string = toLower(string("Warning"));
+        let v20: string = toLower(string("Info"));
+        let v27: string = toLower(string("Debug"));
+        let v34: string = toLower(string("Verbose"));
+        let v41: Crypto::US1 = if string("Verbose") == (v1_1.clone()) {
             Crypto::US1::US1_0(Crypto::US0::US0_0)
         } else {
             Crypto::US1::US1_1
         };
         (
-            match &v36 {
-                Crypto::US1::US1_0(v36_0_0) => Crypto::US1::US1_0(
-                    match &v36 {
+            match &v41 {
+                Crypto::US1::US1_0(v41_0_0) => Crypto::US1::US1_0(
+                    match &v41 {
                         Crypto::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
                     .clone(),
                 ),
                 _ => {
-                    let v43: Crypto::US1 = if string("Debug") == (v1_1.clone()) {
+                    let v48: Crypto::US1 = if string("Debug") == (v1_1.clone()) {
                         Crypto::US1::US1_0(Crypto::US0::US0_1)
                     } else {
                         Crypto::US1::US1_1
                     };
-                    match &v43 {
-                        Crypto::US1::US1_0(v43_0_0) => Crypto::US1::US1_0(
-                            match &v43 {
+                    match &v48 {
+                        Crypto::US1::US1_0(v48_0_0) => Crypto::US1::US1_0(
+                            match &v48 {
                                 Crypto::US1::US1_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v50: Crypto::US1 = if string("Info") == (v1_1.clone()) {
+                            let v55: Crypto::US1 = if string("Info") == (v1_1.clone()) {
                                 Crypto::US1::US1_0(Crypto::US0::US0_2)
                             } else {
                                 Crypto::US1::US1_1
                             };
-                            match &v50 {
-                                Crypto::US1::US1_0(v50_0_0) => Crypto::US1::US1_0(
-                                    match &v50 {
+                            match &v55 {
+                                Crypto::US1::US1_0(v55_0_0) => Crypto::US1::US1_0(
+                                    match &v55 {
                                         Crypto::US1::US1_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v57: Crypto::US1 = if string("Warning") == (v1_1.clone()) {
+                                    let v62: Crypto::US1 = if string("Warning") == (v1_1.clone()) {
                                         Crypto::US1::US1_0(Crypto::US0::US0_3)
                                     } else {
                                         Crypto::US1::US1_1
                                     };
-                                    match &v57 {
-                                        Crypto::US1::US1_0(v57_0_0) => Crypto::US1::US1_0(
-                                            match &v57 {
+                                    match &v62 {
+                                        Crypto::US1::US1_0(v62_0_0) => Crypto::US1::US1_0(
+                                            match &v62 {
                                                 Crypto::US1::US1_0(x) => x.clone(),
                                                 _ => unreachable!(),
                                             }
                                             .clone(),
                                         ),
                                         _ => {
-                                            let v64: Crypto::US1 =
+                                            let v69: Crypto::US1 =
                                                 if string("Critical") == (v1_1.clone()) {
                                                     Crypto::US1::US1_0(Crypto::US0::US0_4)
                                                 } else {
                                                     Crypto::US1::US1_1
                                                 };
-                                            match &v64 {
-                                                Crypto::US1::US1_0(v64_0_0) => Crypto::US1::US1_0(
-                                                    match &v64 {
+                                            match &v69 {
+                                                Crypto::US1::US1_0(v69_0_0) => Crypto::US1::US1_0(
+                                                    match &v69 {
                                                         Crypto::US1::US1_0(x) => x.clone(),
                                                         _ => unreachable!(),
                                                     }
                                                     .clone(),
                                                 ),
                                                 _ => {
-                                                    let v71: Crypto::US1 =
-                                                        if (v29.clone()) == (v1_1.clone()) {
+                                                    let v76: Crypto::US1 =
+                                                        if (v34.clone()) == (v1_1.clone()) {
                                                             Crypto::US1::US1_0(Crypto::US0::US0_0)
                                                         } else {
                                                             Crypto::US1::US1_1
                                                         };
-                                                    match &v71 {
-                                                        Crypto::US1::US1_0(v71_0_0) => {
+                                                    match &v76 {
+                                                        Crypto::US1::US1_0(v76_0_0) => {
                                                             Crypto::US1::US1_0(
-                                                                match &v71 {
+                                                                match &v76 {
                                                                     Crypto::US1::US1_0(x) => {
                                                                         x.clone()
                                                                     }
@@ -464,7 +464,7 @@ pub mod Crypto {
                                                             )
                                                         }
                                                         _ => {
-                                                            let v78: Crypto::US1 = if (v23.clone())
+                                                            let v83: Crypto::US1 = if (v27.clone())
                                                                 == (v1_1.clone())
                                                             {
                                                                 Crypto::US1::US1_0(
@@ -473,10 +473,10 @@ pub mod Crypto {
                                                             } else {
                                                                 Crypto::US1::US1_1
                                                             };
-                                                            match &v78 {
-                                                                Crypto::US1::US1_0(v78_0_0) => {
+                                                            match &v83 {
+                                                                Crypto::US1::US1_0(v83_0_0) => {
                                                                     Crypto::US1::US1_0(
-                                                                        match &v78 {
+                                                                        match &v83 {
                                                                             Crypto::US1::US1_0(
                                                                                 x,
                                                                             ) => x.clone(),
@@ -486,7 +486,7 @@ pub mod Crypto {
                                                                     )
                                                                 }
                                                                 _ => {
-                                                                    let v85: Crypto::US1 = if (v17
+                                                                    let v90: Crypto::US1 = if (v20
                                                                         .clone())
                                                                         == (v1_1.clone())
                                                                     {
@@ -496,10 +496,10 @@ pub mod Crypto {
                                                                     } else {
                                                                         Crypto::US1::US1_1
                                                                     };
-                                                                    match &v85 {
-                                                                     Crypto::US1::US1_0(v85_0_0)
+                                                                    match &v90 {
+                                                                     Crypto::US1::US1_0(v90_0_0)
                                                                      =>
-                                                                     Crypto::US1::US1_0(match &v85
+                                                                     Crypto::US1::US1_0(match &v90
                                                                                             {
                                                                                             Crypto::US1::US1_0(x)
                                                                                             =>
@@ -509,9 +509,9 @@ pub mod Crypto {
                                                                                             unreachable!(),
                                                                                         }.clone()),
                                                                      _ => {
-                                                                         let v92:
+                                                                         let v97:
                                                                                  Crypto::US1 =
-                                                                             if (v11.clone())
+                                                                             if (v13.clone())
                                                                                     ==
                                                                                     (v1_1.clone())
                                                                                 {
@@ -519,11 +519,11 @@ pub mod Crypto {
                                                                              } else {
                                                                                  Crypto::US1::US1_1
                                                                              };
-                                                                         match &v92
+                                                                         match &v97
                                                                              {
-                                                                             Crypto::US1::US1_0(v92_0_0)
+                                                                             Crypto::US1::US1_0(v97_0_0)
                                                                              =>
-                                                                             Crypto::US1::US1_0(match &v92
+                                                                             Crypto::US1::US1_0(match &v97
                                                                                                     {
                                                                                                     Crypto::US1::US1_0(x)
                                                                                                     =>
@@ -535,9 +535,9 @@ pub mod Crypto {
                                                                              _
                                                                              =>
                                                                              {
-                                                                                 let v99:
+                                                                                 let v104:
                                                                                          Crypto::US1 =
-                                                                                     if (v5.clone())
+                                                                                     if (v6.clone())
                                                                                             ==
                                                                                             (v1_1.clone())
                                                                                         {
@@ -545,11 +545,11 @@ pub mod Crypto {
                                                                                      } else {
                                                                                          Crypto::US1::US1_1
                                                                                      };
-                                                                                 match &v99
+                                                                                 match &v104
                                                                                      {
-                                                                                     Crypto::US1::US1_0(v99_0_0)
+                                                                                     Crypto::US1::US1_0(v104_0_0)
                                                                                      =>
-                                                                                     Crypto::US1::US1_0(match &v99
+                                                                                     Crypto::US1::US1_0(match &v104
                                                                                                             {
                                                                                                             Crypto::US1::US1_0(x)
                                                                                                             =>
@@ -773,66 +773,66 @@ pub mod Crypto {
         string("\u{001b}[0m")
     }
     pub fn method16() -> string {
-        let v7: string = Crypto::method17(getCharAt(toLower(string("Verbose")), 0_i32));
-        let v14: &str = inline_colorization::color_bright_black;
-        let v21: &str = &*v7;
-        let v49: &str = inline_colorization::color_reset;
-        let v51: std::string::String = format!("{}{}{}", v14, v21, v49);
-        fable_library_rust::String_::fromString(v51)
+        let v8: string = Crypto::method17(getCharAt(toLower(string("Verbose")), 0_i32));
+        let v15: &str = inline_colorization::color_bright_black;
+        let v22: &str = &*v8;
+        let v50: &str = inline_colorization::color_reset;
+        let v52: std::string::String = format!("{}{}{}", v15, v22, v50);
+        fable_library_rust::String_::fromString(v52)
     }
     pub fn method21(v0_1: i32, v1_1: string, v2: u16) -> string {
         let v4: LrcPtr<Crypto::Mut4> = LrcPtr::new(Crypto::Mut4 {
             l0: MutCell::new(Crypto::method18()),
         });
-        let v12: () = {
+        let v13: () = {
             Crypto::closure7(v4.clone(), string("{ "), ());
             ()
         };
-        let v22: () = {
+        let v24: () = {
             Crypto::closure7(v4.clone(), string("first_letter_code"), ());
             ()
         };
-        let v32: () = {
+        let v35: () = {
             Crypto::closure7(v4.clone(), string(" = "), ());
             ()
         };
-        let v41: () = {
+        let v44: () = {
             Crypto::closure7(v4.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v51: () = {
+        let v55: () = {
             Crypto::closure7(v4.clone(), string("; "), ());
             ()
         };
-        let v61: () = {
+        let v66: () = {
             Crypto::closure7(v4.clone(), string("hash_part"), ());
             ()
         };
-        let v70: () = {
+        let v75: () = {
             Crypto::closure7(v4.clone(), string(" = "), ());
             ()
         };
-        let v79: () = {
+        let v84: () = {
             Crypto::closure7(v4.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v93: () = {
             Crypto::closure7(v4.clone(), string("; "), ());
             ()
         };
-        let v98: () = {
+        let v104: () = {
             Crypto::closure7(v4.clone(), string("combined_value"), ());
             ()
         };
-        let v107: () = {
+        let v113: () = {
             Crypto::closure7(v4.clone(), string(" = "), ());
             ()
         };
-        let v116: () = {
+        let v122: () = {
             Crypto::closure7(v4.clone(), sprintf!("{}", v2), ());
             ()
         };
-        let v126: () = {
+        let v133: () = {
             Crypto::closure7(v4.clone(), string(" }"), ());
             ()
         };
