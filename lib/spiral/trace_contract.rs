@@ -218,78 +218,207 @@ pub mod Trace {
     }
     pub fn method1() -> (Trace::US1, Trace::US2) {
         let v1_1: string = Trace::method2(string("TRACE_LEVEL"));
-        let v6: Trace::US1 = if string("Verbose") == (v1_1.clone()) {
+        let v6: string = toLower(string("Critical"));
+        let v13: string = toLower(string("Warning"));
+        let v20: string = toLower(string("Info"));
+        let v27: string = toLower(string("Debug"));
+        let v34: string = toLower(string("Verbose"));
+        let v41: Trace::US1 = if string("Verbose") == (v1_1.clone()) {
             Trace::US1::US1_0(Trace::US0::US0_0)
         } else {
             Trace::US1::US1_1
         };
         (
-            match &v6 {
-                Trace::US1::US1_0(v6_0_0) => Trace::US1::US1_0(
-                    match &v6 {
+            match &v41 {
+                Trace::US1::US1_0(v41_0_0) => Trace::US1::US1_0(
+                    match &v41 {
                         Trace::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
                     .clone(),
                 ),
                 _ => {
-                    let v13: Trace::US1 = if string("Debug") == (v1_1.clone()) {
+                    let v48: Trace::US1 = if string("Debug") == (v1_1.clone()) {
                         Trace::US1::US1_0(Trace::US0::US0_1)
                     } else {
                         Trace::US1::US1_1
                     };
-                    match &v13 {
-                        Trace::US1::US1_0(v13_0_0) => Trace::US1::US1_0(
-                            match &v13 {
+                    match &v48 {
+                        Trace::US1::US1_0(v48_0_0) => Trace::US1::US1_0(
+                            match &v48 {
                                 Trace::US1::US1_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v20: Trace::US1 = if string("Info") == (v1_1.clone()) {
+                            let v55: Trace::US1 = if string("Info") == (v1_1.clone()) {
                                 Trace::US1::US1_0(Trace::US0::US0_2)
                             } else {
                                 Trace::US1::US1_1
                             };
-                            match &v20 {
-                                Trace::US1::US1_0(v20_0_0) => Trace::US1::US1_0(
-                                    match &v20 {
+                            match &v55 {
+                                Trace::US1::US1_0(v55_0_0) => Trace::US1::US1_0(
+                                    match &v55 {
                                         Trace::US1::US1_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v27: Trace::US1 = if string("Warning") == (v1_1.clone()) {
+                                    let v62: Trace::US1 = if string("Warning") == (v1_1.clone()) {
                                         Trace::US1::US1_0(Trace::US0::US0_3)
                                     } else {
                                         Trace::US1::US1_1
                                     };
-                                    match &v27 {
-                                        Trace::US1::US1_0(v27_0_0) => Trace::US1::US1_0(
-                                            match &v27 {
+                                    match &v62 {
+                                        Trace::US1::US1_0(v62_0_0) => Trace::US1::US1_0(
+                                            match &v62 {
                                                 Trace::US1::US1_0(x) => x.clone(),
                                                 _ => unreachable!(),
                                             }
                                             .clone(),
                                         ),
                                         _ => {
-                                            let v34: Trace::US1 =
+                                            let v69: Trace::US1 =
                                                 if string("Critical") == (v1_1.clone()) {
                                                     Trace::US1::US1_0(Trace::US0::US0_4)
                                                 } else {
                                                     Trace::US1::US1_1
                                                 };
-                                            match &v34 {
-                                                Trace::US1::US1_0(v34_0_0) => Trace::US1::US1_0(
-                                                    match &v34 {
+                                            match &v69 {
+                                                Trace::US1::US1_0(v69_0_0) => Trace::US1::US1_0(
+                                                    match &v69 {
                                                         Trace::US1::US1_0(x) => x.clone(),
                                                         _ => unreachable!(),
                                                     }
                                                     .clone(),
                                                 ),
-                                                _ => Trace::US1::US1_1,
+                                                _ => {
+                                                    let v76: Trace::US1 =
+                                                        if (v34.clone()) == (v1_1.clone()) {
+                                                            Trace::US1::US1_0(Trace::US0::US0_0)
+                                                        } else {
+                                                            Trace::US1::US1_1
+                                                        };
+                                                    match &v76 {
+                                                        Trace::US1::US1_0(v76_0_0) => {
+                                                            Trace::US1::US1_0(
+                                                                match &v76 {
+                                                                    Trace::US1::US1_0(x) => {
+                                                                        x.clone()
+                                                                    }
+                                                                    _ => unreachable!(),
+                                                                }
+                                                                .clone(),
+                                                            )
+                                                        }
+                                                        _ => {
+                                                            let v83: Trace::US1 = if (v27.clone())
+                                                                == (v1_1.clone())
+                                                            {
+                                                                Trace::US1::US1_0(Trace::US0::US0_1)
+                                                            } else {
+                                                                Trace::US1::US1_1
+                                                            };
+                                                            match &v83 {
+                                                                Trace::US1::US1_0(v83_0_0) => {
+                                                                    Trace::US1::US1_0(
+                                                                        match &v83 {
+                                                                            Trace::US1::US1_0(
+                                                                                x,
+                                                                            ) => x.clone(),
+                                                                            _ => unreachable!(),
+                                                                        }
+                                                                        .clone(),
+                                                                    )
+                                                                }
+                                                                _ => {
+                                                                    let v90: Trace::US1 = if (v20
+                                                                        .clone())
+                                                                        == (v1_1.clone())
+                                                                    {
+                                                                        Trace::US1::US1_0(
+                                                                            Trace::US0::US0_2,
+                                                                        )
+                                                                    } else {
+                                                                        Trace::US1::US1_1
+                                                                    };
+                                                                    match &v90 {
+                                                                     Trace::US1::US1_0(v90_0_0)
+                                                                     =>
+                                                                     Trace::US1::US1_0(match &v90
+                                                                                           {
+                                                                                           Trace::US1::US1_0(x)
+                                                                                           =>
+                                                                                           x.clone(),
+                                                                                           _
+                                                                                           =>
+                                                                                           unreachable!(),
+                                                                                       }.clone()),
+                                                                     _ => {
+                                                                         let v97:
+                                                                                 Trace::US1 =
+                                                                             if (v13.clone())
+                                                                                    ==
+                                                                                    (v1_1.clone())
+                                                                                {
+                                                                                 Trace::US1::US1_0(Trace::US0::US0_3)
+                                                                             } else {
+                                                                                 Trace::US1::US1_1
+                                                                             };
+                                                                         match &v97
+                                                                             {
+                                                                             Trace::US1::US1_0(v97_0_0)
+                                                                             =>
+                                                                             Trace::US1::US1_0(match &v97
+                                                                                                   {
+                                                                                                   Trace::US1::US1_0(x)
+                                                                                                   =>
+                                                                                                   x.clone(),
+                                                                                                   _
+                                                                                                   =>
+                                                                                                   unreachable!(),
+                                                                                               }.clone()),
+                                                                             _
+                                                                             =>
+                                                                             {
+                                                                                 let v104:
+                                                                                         Trace::US1 =
+                                                                                     if (v6.clone())
+                                                                                            ==
+                                                                                            (v1_1.clone())
+                                                                                        {
+                                                                                         Trace::US1::US1_0(Trace::US0::US0_4)
+                                                                                     } else {
+                                                                                         Trace::US1::US1_1
+                                                                                     };
+                                                                                 match &v104
+                                                                                     {
+                                                                                     Trace::US1::US1_0(v104_0_0)
+                                                                                     =>
+                                                                                     Trace::US1::US1_0(match &v104
+                                                                                                           {
+                                                                                                           Trace::US1::US1_0(x)
+                                                                                                           =>
+                                                                                                           x.clone(),
+                                                                                                           _
+                                                                                                           =>
+                                                                                                           unreachable!(),
+                                                                                                       }.clone()),
+                                                                                     _
+                                                                                     =>
+                                                                                     Trace::US1::US1_1,
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                 }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -302,7 +431,7 @@ pub mod Trace {
             if (Trace::method2(string("AUTOMATION"))) != string("True") {
                 Trace::US2::US2_1
             } else {
-                let v63: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
+                let v143: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
                 Trace::US2::US2_0(unbox::<i64>(fable_library_rust::Native_::getZero()))
             },
         )

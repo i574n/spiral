@@ -20,29 +20,21 @@ nominal element t =
         $'' : $'Element(`t)'
     )
 
-/// ### style
-inl style forall t. (styles : list (string * string)) : attribute t =
-    global "import lustre/attribute"
-    inl styles = styles |> listm'.box
-    $'attribute.style(!styles)'
-
-/// ### centre
-inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
-    global "import lustre/ui/centre.{centre}"
-    inl attributes = attributes |> listm'.box
-    $'centre(!attributes, !children)'
-
-/// ### button
-inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
-    global "import lustre/ui/button.{button}"
-    inl attributes = attributes |> listm'.box
-    inl children = children |> listm'.box
-    $'button(!attributes, !children)'
+/// ### text
+inl text forall t. (text : string) : element t =
+    global "import lustre/element/html"
+    $'element.text(!text)'
 
 /// ### on_click
 inl on_click forall t. (msg : t) : attribute t =
     global "import lustre/event"
     $'event.on_click(!msg)'
+
+/// ### style
+inl style forall t. (styles : list (string * string)) : attribute t =
+    global "import lustre/attribute"
+    inl styles = styles |> listm'.box
+    $'attribute.style(!styles)'
 
 /// ### div
 inl div forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
@@ -58,10 +50,18 @@ inl p forall t. (attributes : list (attribute t)) (children : list (element t)) 
     inl children = children |> listm'.box
     $'html.p(!attributes, !children)'
 
-/// ### text
-inl text forall t. (text : string) : element t =
-    global "import lustre/element/html"
-    $'element.text(!text)'
+/// ### button
+inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+    global "import lustre/ui/button.{button}"
+    inl attributes = attributes |> listm'.box
+    inl children = children |> listm'.box
+    $'button(!attributes, !children)'
+
+/// ### centre
+inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
+    global "import lustre/ui/centre.{centre}"
+    inl attributes = attributes |> listm'.box
+    $'centre(!attributes, !children)'
 
 /// ### app
 nominal app model msg = $'lustre.App(`model, `model, `msg)'

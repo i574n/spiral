@@ -267,79 +267,79 @@ pub mod Networking {
     }
     pub fn method1() -> (Networking::US1, Networking::US2) {
         let v1_1: string = Networking::method2(string("TRACE_LEVEL"));
-        let v5: string = toLower(string("Critical"));
-        let v11: string = toLower(string("Warning"));
-        let v17_1: string = toLower(string("Info"));
-        let v23: string = toLower(string("Debug"));
-        let v29: string = toLower(string("Verbose"));
-        let v36: Networking::US1 = if string("Verbose") == (v1_1.clone()) {
+        let v6: string = toLower(string("Critical"));
+        let v13: string = toLower(string("Warning"));
+        let v20_1: string = toLower(string("Info"));
+        let v27: string = toLower(string("Debug"));
+        let v34: string = toLower(string("Verbose"));
+        let v41: Networking::US1 = if string("Verbose") == (v1_1.clone()) {
             Networking::US1::US1_0(Networking::US0::US0_0)
         } else {
             Networking::US1::US1_1
         };
         (
-            match &v36 {
-                Networking::US1::US1_0(v36_0_0) => Networking::US1::US1_0(
-                    match &v36 {
+            match &v41 {
+                Networking::US1::US1_0(v41_0_0) => Networking::US1::US1_0(
+                    match &v41 {
                         Networking::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
                     .clone(),
                 ),
                 _ => {
-                    let v43: Networking::US1 = if string("Debug") == (v1_1.clone()) {
+                    let v48: Networking::US1 = if string("Debug") == (v1_1.clone()) {
                         Networking::US1::US1_0(Networking::US0::US0_1)
                     } else {
                         Networking::US1::US1_1
                     };
-                    match &v43 {
-                        Networking::US1::US1_0(v43_0_0) => Networking::US1::US1_0(
-                            match &v43 {
+                    match &v48 {
+                        Networking::US1::US1_0(v48_0_0) => Networking::US1::US1_0(
+                            match &v48 {
                                 Networking::US1::US1_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v50: Networking::US1 = if string("Info") == (v1_1.clone()) {
+                            let v55: Networking::US1 = if string("Info") == (v1_1.clone()) {
                                 Networking::US1::US1_0(Networking::US0::US0_2)
                             } else {
                                 Networking::US1::US1_1
                             };
-                            match &v50 {
-                                Networking::US1::US1_0(v50_0_0) => Networking::US1::US1_0(
-                                    match &v50 {
+                            match &v55 {
+                                Networking::US1::US1_0(v55_0_0) => Networking::US1::US1_0(
+                                    match &v55 {
                                         Networking::US1::US1_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v57: Networking::US1 =
+                                    let v62: Networking::US1 =
                                         if string("Warning") == (v1_1.clone()) {
                                             Networking::US1::US1_0(Networking::US0::US0_3)
                                         } else {
                                             Networking::US1::US1_1
                                         };
-                                    match &v57 {
-                                        Networking::US1::US1_0(v57_0_0) => Networking::US1::US1_0(
-                                            match &v57 {
+                                    match &v62 {
+                                        Networking::US1::US1_0(v62_0_0) => Networking::US1::US1_0(
+                                            match &v62 {
                                                 Networking::US1::US1_0(x) => x.clone(),
                                                 _ => unreachable!(),
                                             }
                                             .clone(),
                                         ),
                                         _ => {
-                                            let v64: Networking::US1 =
+                                            let v69: Networking::US1 =
                                                 if string("Critical") == (v1_1.clone()) {
                                                     Networking::US1::US1_0(Networking::US0::US0_4)
                                                 } else {
                                                     Networking::US1::US1_1
                                                 };
-                                            match &v64 {
-                                                Networking::US1::US1_0(v64_0_0) => {
+                                            match &v69 {
+                                                Networking::US1::US1_0(v69_0_0) => {
                                                     Networking::US1::US1_0(
-                                                        match &v64 {
+                                                        match &v69 {
                                                             Networking::US1::US1_0(x) => x.clone(),
                                                             _ => unreachable!(),
                                                         }
@@ -347,18 +347,18 @@ pub mod Networking {
                                                     )
                                                 }
                                                 _ => {
-                                                    let v71: Networking::US1 =
-                                                        if (v29.clone()) == (v1_1.clone()) {
+                                                    let v76: Networking::US1 =
+                                                        if (v34.clone()) == (v1_1.clone()) {
                                                             Networking::US1::US1_0(
                                                                 Networking::US0::US0_0,
                                                             )
                                                         } else {
                                                             Networking::US1::US1_1
                                                         };
-                                                    match &v71 {
-                                                        Networking::US1::US1_0(v71_0_0) => {
+                                                    match &v76 {
+                                                        Networking::US1::US1_0(v76_0_0) => {
                                                             Networking::US1::US1_0(
-                                                                match &v71 {
+                                                                match &v76 {
                                                                     Networking::US1::US1_0(x) => {
                                                                         x.clone()
                                                                     }
@@ -368,7 +368,7 @@ pub mod Networking {
                                                             )
                                                         }
                                                         _ => {
-                                                            let v78: Networking::US1 = if (v23
+                                                            let v83: Networking::US1 = if (v27
                                                                 .clone())
                                                                 == (v1_1.clone())
                                                             {
@@ -378,10 +378,10 @@ pub mod Networking {
                                                             } else {
                                                                 Networking::US1::US1_1
                                                             };
-                                                            match &v78 {
-                                                             Networking::US1::US1_0(v78_0_0)
+                                                            match &v83 {
+                                                             Networking::US1::US1_0(v83_0_0)
                                                              =>
-                                                             Networking::US1::US1_0(match &v78
+                                                             Networking::US1::US1_0(match &v83
                                                                                         {
                                                                                         Networking::US1::US1_0(x)
                                                                                         =>
@@ -391,9 +391,9 @@ pub mod Networking {
                                                                                         unreachable!(),
                                                                                     }.clone()),
                                                              _ => {
-                                                                 let v85:
+                                                                 let v90:
                                                                          Networking::US1 =
-                                                                     if (v17_1.clone())
+                                                                     if (v20_1.clone())
                                                                             ==
                                                                             (v1_1.clone())
                                                                         {
@@ -401,10 +401,10 @@ pub mod Networking {
                                                                      } else {
                                                                          Networking::US1::US1_1
                                                                      };
-                                                                 match &v85 {
-                                                                     Networking::US1::US1_0(v85_0_0)
+                                                                 match &v90 {
+                                                                     Networking::US1::US1_0(v90_0_0)
                                                                      =>
-                                                                     Networking::US1::US1_0(match &v85
+                                                                     Networking::US1::US1_0(match &v90
                                                                                                 {
                                                                                                 Networking::US1::US1_0(x)
                                                                                                 =>
@@ -414,9 +414,9 @@ pub mod Networking {
                                                                                                 unreachable!(),
                                                                                             }.clone()),
                                                                      _ => {
-                                                                         let v92:
+                                                                         let v97:
                                                                                  Networking::US1 =
-                                                                             if (v11.clone())
+                                                                             if (v13.clone())
                                                                                     ==
                                                                                     (v1_1.clone())
                                                                                 {
@@ -424,11 +424,11 @@ pub mod Networking {
                                                                              } else {
                                                                                  Networking::US1::US1_1
                                                                              };
-                                                                         match &v92
+                                                                         match &v97
                                                                              {
-                                                                             Networking::US1::US1_0(v92_0_0)
+                                                                             Networking::US1::US1_0(v97_0_0)
                                                                              =>
-                                                                             Networking::US1::US1_0(match &v92
+                                                                             Networking::US1::US1_0(match &v97
                                                                                                         {
                                                                                                         Networking::US1::US1_0(x)
                                                                                                         =>
@@ -440,9 +440,9 @@ pub mod Networking {
                                                                              _
                                                                              =>
                                                                              {
-                                                                                 let v99:
+                                                                                 let v104:
                                                                                          Networking::US1 =
-                                                                                     if (v5.clone())
+                                                                                     if (v6.clone())
                                                                                             ==
                                                                                             (v1_1.clone())
                                                                                         {
@@ -450,11 +450,11 @@ pub mod Networking {
                                                                                      } else {
                                                                                          Networking::US1::US1_1
                                                                                      };
-                                                                                 match &v99
+                                                                                 match &v104
                                                                                      {
-                                                                                     Networking::US1::US1_0(v99_0_0)
+                                                                                     Networking::US1::US1_0(v104_0_0)
                                                                                      =>
-                                                                                     Networking::US1::US1_0(match &v99
+                                                                                     Networking::US1::US1_0(match &v104
                                                                                                                 {
                                                                                                                 Networking::US1::US1_0(x)
                                                                                                                 =>
@@ -683,50 +683,50 @@ pub mod Networking {
         string("\u{001b}[0m")
     }
     pub fn method13() -> string {
-        let v7: string = Networking::method14(getCharAt(toLower(string("Verbose")), 0_i32));
-        let v14: &str = inline_colorization::color_bright_black;
-        let v21: &str = &*v7;
-        let v49: &str = inline_colorization::color_reset;
-        let v51: std::string::String = format!("{}{}{}", v14, v21, v49);
-        fable_library_rust::String_::fromString(v51)
+        let v8: string = Networking::method14(getCharAt(toLower(string("Verbose")), 0_i32));
+        let v15: &str = inline_colorization::color_bright_black;
+        let v22: &str = &*v8;
+        let v50: &str = inline_colorization::color_reset;
+        let v52: std::string::String = format!("{}{}{}", v15, v22, v50);
+        fable_library_rust::String_::fromString(v52)
     }
     pub fn method18(v0_1: i32, v1_1: string) -> string {
         let v3: LrcPtr<Networking::Mut3> = LrcPtr::new(Networking::Mut3 {
             l0: MutCell::new(Networking::method15()),
         });
-        let v11: () = {
+        let v12: () = {
             Networking::closure7(v3.clone(), string("{ "), ());
             ()
         };
-        let v21: () = {
+        let v23: () = {
             Networking::closure7(v3.clone(), string("port"), ());
             ()
         };
-        let v31: () = {
+        let v34: () = {
             Networking::closure7(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             Networking::closure7(v3.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             Networking::closure7(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             Networking::closure7(v3.clone(), string("ex"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             Networking::closure7(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             Networking::closure7(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             Networking::closure7(v3.clone(), string(" }"), ());
             ()
         };
@@ -868,23 +868,23 @@ pub mod Networking {
         let v2_1: LrcPtr<Networking::Mut3> = LrcPtr::new(Networking::Mut3 {
             l0: MutCell::new(Networking::method15()),
         });
-        let v10: () = {
+        let v11: () = {
             Networking::closure7(v2_1.clone(), string("{ "), ());
             ()
         };
-        let v20_1: () = {
+        let v22: () = {
             Networking::closure7(v2_1.clone(), string("timeout"), ());
             ()
         };
-        let v30: () = {
+        let v33: () = {
             Networking::closure7(v2_1.clone(), string(" = "), ());
             ()
         };
-        let v39: () = {
+        let v42: () = {
             Networking::closure7(v2_1.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v49: () = {
+        let v53: () = {
             Networking::closure7(v2_1.clone(), string(" }"), ());
             ()
         };
@@ -945,50 +945,50 @@ pub mod Networking {
         };
     }
     pub fn method32() -> string {
-        let v7: string = Networking::method14(getCharAt(toLower(string("Critical")), 0_i32));
-        let v14: &str = inline_colorization::color_bright_red;
-        let v21: &str = &*v7;
-        let v49: &str = inline_colorization::color_reset;
-        let v51: std::string::String = format!("{}{}{}", v14, v21, v49);
-        fable_library_rust::String_::fromString(v51)
+        let v8: string = Networking::method14(getCharAt(toLower(string("Critical")), 0_i32));
+        let v15: &str = inline_colorization::color_bright_red;
+        let v22: &str = &*v8;
+        let v50: &str = inline_colorization::color_reset;
+        let v52: std::string::String = format!("{}{}{}", v15, v22, v50);
+        fable_library_rust::String_::fromString(v52)
     }
     pub fn method34(v0_1: i32, v1_1: string) -> string {
         let v3: LrcPtr<Networking::Mut3> = LrcPtr::new(Networking::Mut3 {
             l0: MutCell::new(Networking::method15()),
         });
-        let v11: () = {
+        let v12: () = {
             Networking::closure7(v3.clone(), string("{ "), ());
             ()
         };
-        let v21: () = {
+        let v23: () = {
             Networking::closure7(v3.clone(), string("timeout"), ());
             ()
         };
-        let v31: () = {
+        let v34: () = {
             Networking::closure7(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             Networking::closure7(v3.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             Networking::closure7(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             Networking::closure7(v3.clone(), string("ex"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             Networking::closure7(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             Networking::closure7(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             Networking::closure7(v3.clone(), string(" }"), ());
             ()
         };
@@ -1091,72 +1091,72 @@ pub mod Networking {
         let v5: LrcPtr<Networking::Mut3> = LrcPtr::new(Networking::Mut3 {
             l0: MutCell::new(Networking::method15()),
         });
-        let v13: () = {
+        let v14: () = {
             Networking::closure7(v5.clone(), string("{ "), ());
             ()
         };
-        let v23: () = {
+        let v25: () = {
             Networking::closure7(v5.clone(), string("port"), ());
             ()
         };
-        let v33: () = {
+        let v36: () = {
             Networking::closure7(v5.clone(), string(" = "), ());
             ()
         };
-        let v42: () = {
+        let v45: () = {
             Networking::closure7(v5.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v52: () = {
+        let v56: () = {
             Networking::closure7(v5.clone(), string("; "), ());
             ()
         };
-        let v62: () = {
+        let v67: () = {
             Networking::closure7(v5.clone(), string("retry"), ());
             ()
         };
-        let v71: () = {
+        let v76: () = {
             Networking::closure7(v5.clone(), string(" = "), ());
             ()
         };
-        let v80: () = {
+        let v85: () = {
             Networking::closure7(v5.clone(), sprintf!("{}", v1_1), ());
             ()
         };
-        let v89: () = {
+        let v94: () = {
             Networking::closure7(v5.clone(), string("; "), ());
             ()
         };
-        let v99: () = {
+        let v105: () = {
             Networking::closure7(v5.clone(), string("timeout"), ());
             ()
         };
-        let v108: () = {
+        let v114: () = {
             Networking::closure7(v5.clone(), string(" = "), ());
             ()
         };
-        let v117: std::string::String = format!("{:#?}", v2_1);
-        let v156: () = {
+        let v123: std::string::String = format!("{:#?}", v2_1);
+        let v162: () = {
             Networking::closure7(
                 v5.clone(),
-                fable_library_rust::String_::fromString(v117),
+                fable_library_rust::String_::fromString(v123),
                 (),
             );
             ()
         };
-        let v165: () = {
+        let v171: () = {
             Networking::closure7(v5.clone(), string("; "), ());
             ()
         };
-        let v175: () = {
+        let v182: () = {
             Networking::closure7(v5.clone(), string("status"), ());
             ()
         };
-        let v184: () = {
+        let v191: () = {
             Networking::closure7(v5.clone(), string(" = "), ());
             ()
         };
-        let v196: () = {
+        let v203: () = {
             Networking::closure7(
                 v5.clone(),
                 if v3 { string("true") } else { string("false") },
@@ -1164,7 +1164,7 @@ pub mod Networking {
             );
             ()
         };
-        let v206: () = {
+        let v214: () = {
             Networking::closure7(v5.clone(), string(" }"), ());
             ()
         };

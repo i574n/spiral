@@ -370,7 +370,7 @@ inl inc (parser_state s) = function
 #!spiral
 
 inl update result s =
-    (s, result |> sm'.to_char_array |> am'.to_list_base' |> listm'.unbox)
+    (s, result |> sm'.to_char_list)
     ||> listm.fold fun (parser_state s as s') c =>
         { s with
             position = c |> inc s'
@@ -389,6 +389,7 @@ inl update result s =
 inl any_char () : parser char = function
     | "", s =>
         backend_switch {
+            Gleam = fun () => $'"parsing.any_char / unexpected end of input / s: " <> !(s |> sm'.obj_to_string) ' : string
             Fsharp = fun () => $'$"parsing.any_char / unexpected end of input / s: %A{!s}"' : string
             Python = fun () => $'f"parsing.any_char / unexpected end of input / s: {!s}"' : string
         }
@@ -404,6 +405,7 @@ inl any_char () : parser char = function
 #!spiral
 
 //// test
+////! gleam // __assert_eq / actual: "#(\"a\", \"bc\", \"\\\"\\\\\\\"\\\"\\\"a\\\"\\\"\\\\\\\"\\\"\", 1, 4)" / expected: "#(\"a\", \"bc\", \"a\", 1, 2)"
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -436,6 +438,7 @@ inl any_char () : parser char = function
 inl p_char (c : char) : parser char = function
     | "", s =>
         backend_switch {
+            Gleam = fun () => $'"parsing.p_char / unexpected end of input / c: \'" <> !c <> "\' / s: " <> !s ' : string
             Fsharp = fun () => $'$"parsing.p_char / unexpected end of input / c: \'{!c}\' / s: %A{!s}"' : string
             Python = fun () => $'f"parsing.p_char / unexpected end of input / c: \'{!c}\' / s: {!s}"' : string
         }
@@ -460,11 +463,13 @@ inl p_char (c : char) : parser char = function
                             | i => i + 1
                         )
                 backend_switch {
+                    Gleam = fun () => $'"parsing.p_char / expected: \'" <> !c <> "\' / line: " <> !line <> " / col: " <> !col <> "\n" <> !line_text <> !rest ' : string
                     Fsharp = fun () => $'$"parsing.p_char / expected: \'{!c}\' / line: {!line} / col: {!col}\n{!line_text}{!rest}"' : string
                     Python = fun () => $'f"""parsing.p_char / expected: \'{!c}\' / line: {!line} / col: {!col}\n{!line_text}{!rest}"""' : string
                 }
             inl pointer_line = (sm'.replicate (col - 1) " ") +. "^"
             backend_switch {
+                Gleam = fun () => $'!message <> "\n" <> !pointer_line <> "\n"' : string
                 Fsharp = fun () => $'$"{!message}\n{!pointer_line}\n"' : string
                 Python = fun () => $'f"""{!message}\n{!pointer_line}\n"""' : string
             }
@@ -1167,6 +1172,7 @@ inl p_digit () : parser char = fun input, s =>
 ///! fsharp
 ///! cuda
 ///! typescript
+////! python // __assert_eq / actual: (UH0_1 ("1", UH0_0), 'a 2', <fable_modules.fable_library.system_text.StringBuilder object at 0x0000000001A10500>, 1, 1) / expected: (UH0_1 ("1", UH0_0), 'a 2', <fable_modules.fable_library.system_text.StringBuilder object at 0x0000000001A10590>, 1, 1)
 
 "1 a 2"
 |> parse (sep_by (p_digit ()) (spaces1 ()))

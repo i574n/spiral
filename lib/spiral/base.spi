@@ -407,7 +407,7 @@ inl to forall t u. (x : t) : u =
 /// ### convert
 inl convert forall t u. (x : t) : u =
     backend_switch {
-        Gleam = fun () => $'`u(!x)' : u
+        Gleam = fun () => $'!x ' : u
         Fsharp = fun () => $'!x |> `u ' : u
         Python = fun () => $'`u(!x)' : u
     }

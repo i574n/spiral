@@ -966,7 +966,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                             | Some (Wasm cmd) => cmd
                             | Some (Contract cmd) => cmd
                             | _ => ""
-                        $'$"\'deps/spiral/workspace/target/release/spiral_wasm -w {!wasm_path} -t Debug {!runtime_cmd}\'"'
+                        $'$"\'deps/spiral/workspace/target/release/spiral_wasm -w {!wasm_path} -t debug {!runtime_cmd}\'"'
                     inl automation = "AUTOMATION" |> env.get_environment_variable
                     $'$"pwsh -c \\\"pwsh {!invoke_block_path} {!spiral_wasm_command} -Linux -EnvironmentVariables AUTOMATION={!automation}\`nNEAR_RPC_TIMEOUT_SECS=100\\\""'
 
@@ -1579,7 +1579,11 @@ inl process_gleam { gleam_path target deps } =
 
     inl exit_code, run_result =
         inl manifest =
-            $'$"name = \\\"main\\\""'
+            inl main =
+                if new_code_path |> sm'.contains "_real"
+                then "main_real"
+                else "main"
+            $'$"name = \\\"{!main}\\\""'
             +#. $'$"target = \\\"{!target'}\\\""'
             +#. $'$""'
             +#. $'$"[dependencies]"'

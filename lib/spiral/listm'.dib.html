@@ -7716,7 +7716,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_aa7ba373 {
+mod module_14ff0a02 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::on_startup;
@@ -7779,7 +7779,7 @@ mod module_aa7ba373 {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_aa7ba373::*;
+pub use module_14ff0a02::*;
 
 pub fn main() -&gt; Result&lt;(), String&gt; {
     Ok(Spiral::method0())
@@ -9374,26 +9374,26 @@ __assert_eq / actual: false / expected: false
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:35:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:36:23</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">35 │                                         let v10 = v7 - 1</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                             ^^^ This variable is never used</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">36 │                   let v10 = v7 - 1</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                       ^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v10`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:89:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:92:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">89 │                                 let v7 = v4 - 1</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                     ^^ This variable is never used</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">92 │               let v7 = v4 - 1</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                   ^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v7`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable code</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:125:22</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:130:16</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">125 │             let v3 = v2 == "a"</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                      ^^^^^^^^^</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">130 │       let v3 = v2 == "a"</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                ^^^^^^^^^</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This code is unreachable because it comes after a `panic`.</span>
 
@@ -10773,14 +10773,8 @@ __assert_eq / actual: UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0))) / expected: UH0_1 (
 .py output:
 __assert_eq / actual: UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))) / expected: UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0)))
 
-
 .gleam output (Gleam):
-{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\24777566ea11ebb154571f953d26953d6ca511dbac27f4c024c56aa42ae09a9a\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
-{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\24777566ea11ebb154571f953d26953d6ca511dbac27f4c024c56aa42ae09a9a\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
-{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/24777566ea11ebb154571f953d26953d6ca511dbac27f4c024c56aa42ae09a9a/build/dev/erlang/main/ebin/main.beam"}
-{compiled,"c:/home/git/polyglot/target/spiral_Eval/packages/24777566ea11ebb154571f953d26953d6ca511dbac27f4c024c56aa42ae09a9a/build/dev/erlang/main/ebin/main@@main.beam"}
 __assert_eq / actual: Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))) / expected: Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0)))
-
 
 </pre>
 </div>

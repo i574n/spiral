@@ -447,59 +447,64 @@ pub mod File_system {
     }
     pub fn method1() -> (File_system::US1, File_system::US2) {
         let v1_1: string = File_system::method2(string("TRACE_LEVEL"));
-        let v6: File_system::US1 = if string("Verbose") == (v1_1.clone()) {
+        let v6: string = toLower(string("Critical"));
+        let v13: string = toLower(string("Warning"));
+        let v20_1: string = toLower(string("Info"));
+        let v27_1: string = toLower(string("Debug"));
+        let v34_1: string = toLower(string("Verbose"));
+        let v41: File_system::US1 = if string("Verbose") == (v1_1.clone()) {
             File_system::US1::US1_0(File_system::US0::US0_0)
         } else {
             File_system::US1::US1_1
         };
         (
-            match &v6 {
-                File_system::US1::US1_0(v6_0_0) => File_system::US1::US1_0(
-                    match &v6 {
+            match &v41 {
+                File_system::US1::US1_0(v41_0_0) => File_system::US1::US1_0(
+                    match &v41 {
                         File_system::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
                     .clone(),
                 ),
                 _ => {
-                    let v13: File_system::US1 = if string("Debug") == (v1_1.clone()) {
+                    let v48: File_system::US1 = if string("Debug") == (v1_1.clone()) {
                         File_system::US1::US1_0(File_system::US0::US0_1)
                     } else {
                         File_system::US1::US1_1
                     };
-                    match &v13 {
-                        File_system::US1::US1_0(v13_0_0) => File_system::US1::US1_0(
-                            match &v13 {
+                    match &v48 {
+                        File_system::US1::US1_0(v48_0_0) => File_system::US1::US1_0(
+                            match &v48 {
                                 File_system::US1::US1_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v20_1: File_system::US1 = if string("Info") == (v1_1.clone()) {
+                            let v55: File_system::US1 = if string("Info") == (v1_1.clone()) {
                                 File_system::US1::US1_0(File_system::US0::US0_2)
                             } else {
                                 File_system::US1::US1_1
                             };
-                            match &v20_1 {
-                                File_system::US1::US1_0(v20_1_0_0) => File_system::US1::US1_0(
-                                    match &v20_1 {
+                            match &v55 {
+                                File_system::US1::US1_0(v55_0_0) => File_system::US1::US1_0(
+                                    match &v55 {
                                         File_system::US1::US1_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v27_1: File_system::US1 =
+                                    let v62: File_system::US1 =
                                         if string("Warning") == (v1_1.clone()) {
                                             File_system::US1::US1_0(File_system::US0::US0_3)
                                         } else {
                                             File_system::US1::US1_1
                                         };
-                                    match &v27_1 {
-                                        File_system::US1::US1_0(v27_1_0_0) => {
+                                    match &v62 {
+                                        File_system::US1::US1_0(v62_0_0) => {
                                             File_system::US1::US1_0(
-                                                match &v27_1 {
+                                                match &v62 {
                                                     File_system::US1::US1_0(x) => x.clone(),
                                                     _ => unreachable!(),
                                                 }
@@ -507,23 +512,150 @@ pub mod File_system {
                                             )
                                         }
                                         _ => {
-                                            let v34_1: File_system::US1 =
+                                            let v69: File_system::US1 =
                                                 if string("Critical") == (v1_1.clone()) {
                                                     File_system::US1::US1_0(File_system::US0::US0_4)
                                                 } else {
                                                     File_system::US1::US1_1
                                                 };
-                                            match &v34_1 {
-                                                File_system::US1::US1_0(v34_1_0_0) => {
+                                            match &v69 {
+                                                File_system::US1::US1_0(v69_0_0) => {
                                                     File_system::US1::US1_0(
-                                                        match &v34_1 {
+                                                        match &v69 {
                                                             File_system::US1::US1_0(x) => x.clone(),
                                                             _ => unreachable!(),
                                                         }
                                                         .clone(),
                                                     )
                                                 }
-                                                _ => File_system::US1::US1_1,
+                                                _ => {
+                                                    let v76: File_system::US1 =
+                                                        if (v34_1.clone()) == (v1_1.clone()) {
+                                                            File_system::US1::US1_0(
+                                                                File_system::US0::US0_0,
+                                                            )
+                                                        } else {
+                                                            File_system::US1::US1_1
+                                                        };
+                                                    match &v76 {
+                                                        File_system::US1::US1_0(v76_0_0) => {
+                                                            File_system::US1::US1_0(
+                                                                match &v76 {
+                                                                    File_system::US1::US1_0(x) => {
+                                                                        x.clone()
+                                                                    }
+                                                                    _ => unreachable!(),
+                                                                }
+                                                                .clone(),
+                                                            )
+                                                        }
+                                                        _ => {
+                                                            let v83: File_system::US1 = if (v27_1
+                                                                .clone())
+                                                                == (v1_1.clone())
+                                                            {
+                                                                File_system::US1::US1_0(
+                                                                    File_system::US0::US0_1,
+                                                                )
+                                                            } else {
+                                                                File_system::US1::US1_1
+                                                            };
+                                                            match &v83 {
+                                                                File_system::US1::US1_0(
+                                                                    v83_0_0,
+                                                                ) => File_system::US1::US1_0(
+                                                                    match &v83 {
+                                                                        File_system::US1::US1_0(
+                                                                            x,
+                                                                        ) => x.clone(),
+                                                                        _ => unreachable!(),
+                                                                    }
+                                                                    .clone(),
+                                                                ),
+                                                                _ => {
+                                                                    let v90: File_system::US1 =
+                                                                        if (v20_1.clone())
+                                                                            == (v1_1.clone())
+                                                                        {
+                                                                            File_system::US1::US1_0(File_system::US0::US0_2)
+                                                                        } else {
+                                                                            File_system::US1::US1_1
+                                                                        };
+                                                                    match &v90 {
+                                                                     File_system::US1::US1_0(v90_0_0)
+                                                                     =>
+                                                                     File_system::US1::US1_0(match &v90
+                                                                                                 {
+                                                                                                 File_system::US1::US1_0(x)
+                                                                                                 =>
+                                                                                                 x.clone(),
+                                                                                                 _
+                                                                                                 =>
+                                                                                                 unreachable!(),
+                                                                                             }.clone()),
+                                                                     _ => {
+                                                                         let v97:
+                                                                                 File_system::US1 =
+                                                                             if (v13.clone())
+                                                                                    ==
+                                                                                    (v1_1.clone())
+                                                                                {
+                                                                                 File_system::US1::US1_0(File_system::US0::US0_3)
+                                                                             } else {
+                                                                                 File_system::US1::US1_1
+                                                                             };
+                                                                         match &v97
+                                                                             {
+                                                                             File_system::US1::US1_0(v97_0_0)
+                                                                             =>
+                                                                             File_system::US1::US1_0(match &v97
+                                                                                                         {
+                                                                                                         File_system::US1::US1_0(x)
+                                                                                                         =>
+                                                                                                         x.clone(),
+                                                                                                         _
+                                                                                                         =>
+                                                                                                         unreachable!(),
+                                                                                                     }.clone()),
+                                                                             _
+                                                                             =>
+                                                                             {
+                                                                                 let v104:
+                                                                                         File_system::US1 =
+                                                                                     if (v6.clone())
+                                                                                            ==
+                                                                                            (v1_1.clone())
+                                                                                        {
+                                                                                         File_system::US1::US1_0(File_system::US0::US0_4)
+                                                                                     } else {
+                                                                                         File_system::US1::US1_1
+                                                                                     };
+                                                                                 match &v104
+                                                                                     {
+                                                                                     File_system::US1::US1_0(v104_0_0)
+                                                                                     =>
+                                                                                     File_system::US1::US1_0(match &v104
+                                                                                                                 {
+                                                                                                                 File_system::US1::US1_0(x)
+                                                                                                                 =>
+                                                                                                                 x.clone(),
+                                                                                                                 _
+                                                                                                                 =>
+                                                                                                                 unreachable!(),
+                                                                                                             }.clone()),
+                                                                                     _
+                                                                                     =>
+                                                                                     File_system::US1::US1_1,
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                 }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -536,7 +668,7 @@ pub mod File_system {
             if (File_system::method2(string("AUTOMATION"))) != string("True") {
                 File_system::US2::US2_1
             } else {
-                let v63: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
+                let v143: DateTime = unbox::<DateTime>(fable_library_rust::Native_::getZero());
                 File_system::US2::US2_0(unbox::<i64>(fable_library_rust::Native_::getZero()))
             },
         )
@@ -732,12 +864,12 @@ pub mod File_system {
         string("\u{001b}[0m")
     }
     pub fn method16() -> string {
-        let v7: string = File_system::method17(getCharAt(toLower(string("Debug")), 0_i32));
-        let v96: &str = inline_colorization::color_bright_blue;
-        let v107: &str = &*v7;
-        let v131: &str = inline_colorization::color_reset;
-        let v133: std::string::String = format!("{}{}{}", v96, v107, v131);
-        fable_library_rust::String_::fromString(v133)
+        let v8: string = File_system::method17(getCharAt(toLower(string("Debug")), 0_i32));
+        let v97: &str = inline_colorization::color_bright_blue;
+        let v108: &str = &*v8;
+        let v132: &str = inline_colorization::color_reset;
+        let v134: std::string::String = format!("{}{}{}", v97, v108, v132);
+        fable_library_rust::String_::fromString(v134)
     }
     pub fn method20(v0_1: string) -> string {
         unbox::<string>(fable_library_rust::Native_::getZero())
@@ -746,39 +878,39 @@ pub mod File_system {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             File_system::closure6(v3.clone(), string("{ "), ());
             ()
         };
-        let v21_1: () = {
+        let v23_1: () = {
             File_system::closure6(v3.clone(), string("ex"), ());
             ()
         };
-        let v31_1: () = {
+        let v34_1: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             File_system::closure6(v3.clone(), v0_1, ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             File_system::closure6(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             File_system::closure6(v3.clone(), string("path"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             File_system::closure6(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             File_system::closure6(v3.clone(), string(" }"), ());
             ()
         };
@@ -957,55 +1089,55 @@ pub mod File_system {
         let v4: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v12: () = {
+        let v13: () = {
             File_system::closure6(v4.clone(), string("{ "), ());
             ()
         };
-        let v22_1: () = {
+        let v24_1: () = {
             File_system::closure6(v4.clone(), string("path"), ());
             ()
         };
-        let v32_1: () = {
+        let v35_1: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v41: () = {
+        let v44: () = {
             File_system::closure6(v4.clone(), v0_1, ());
             ()
         };
-        let v51: () = {
+        let v55: () = {
             File_system::closure6(v4.clone(), string("; "), ());
             ()
         };
-        let v61: () = {
+        let v66: () = {
             File_system::closure6(v4.clone(), string("retry"), ());
             ()
         };
-        let v70: () = {
+        let v75: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v79: () = {
+        let v84: () = {
             File_system::closure6(v4.clone(), sprintf!("{}", v1_1), ());
             ()
         };
-        let v88: () = {
+        let v93: () = {
             File_system::closure6(v4.clone(), string("; "), ());
             ()
         };
-        let v98: () = {
+        let v104: () = {
             File_system::closure6(v4.clone(), string("ex"), ());
             ()
         };
-        let v107: () = {
+        let v113: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v116: () = {
+        let v122: () = {
             File_system::closure6(v4.clone(), v2_1, ());
             ()
         };
-        let v126: () = {
+        let v133: () = {
             File_system::closure6(v4.clone(), string(" }"), ());
             ()
         };
@@ -1106,71 +1238,71 @@ pub mod File_system {
         File_system::method30(v0_1)
     }
     pub fn method34() -> string {
-        let v7: string = File_system::method17(getCharAt(toLower(string("Verbose")), 0_i32));
-        let v96: &str = inline_colorization::color_bright_black;
-        let v107: &str = &*v7;
-        let v131: &str = inline_colorization::color_reset;
-        let v133: std::string::String = format!("{}{}{}", v96, v107, v131);
-        fable_library_rust::String_::fromString(v133)
+        let v8: string = File_system::method17(getCharAt(toLower(string("Verbose")), 0_i32));
+        let v97: &str = inline_colorization::color_bright_black;
+        let v108: &str = &*v8;
+        let v132: &str = inline_colorization::color_reset;
+        let v134: std::string::String = format!("{}{}{}", v97, v108, v132);
+        fable_library_rust::String_::fromString(v134)
     }
     pub fn method36(v0_1: i64, v1_1: string, v2_1: LrcPtr<Exception>) -> string {
         let v4: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v12: () = {
+        let v13: () = {
             File_system::closure6(v4.clone(), string("{ "), ());
             ()
         };
-        let v22_1: () = {
+        let v24_1: () = {
             File_system::closure6(v4.clone(), string("retry"), ());
             ()
         };
-        let v32_1: () = {
+        let v35_1: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v41: () = {
+        let v44: () = {
             File_system::closure6(v4.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v51: () = {
+        let v55: () = {
             File_system::closure6(v4.clone(), string("; "), ());
             ()
         };
-        let v61: () = {
+        let v66: () = {
             File_system::closure6(v4.clone(), string("path"), ());
             ()
         };
-        let v70: () = {
+        let v75: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v79: () = {
+        let v84: () = {
             File_system::closure6(v4.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v93: () = {
             File_system::closure6(v4.clone(), string("; "), ());
             ()
         };
-        let v98: () = {
+        let v104: () = {
             File_system::closure6(v4.clone(), string("ex"), ());
             ()
         };
-        let v107: () = {
+        let v113: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v124: std::string::String = format!("{:#?}", v2_1);
-        let v155: () = {
+        let v130: std::string::String = format!("{:#?}", v2_1);
+        let v161: () = {
             File_system::closure6(
                 v4.clone(),
-                fable_library_rust::String_::fromString(v124),
+                fable_library_rust::String_::fromString(v130),
                 (),
             );
             ()
         };
-        let v165: () = {
+        let v172: () = {
             File_system::closure6(v4.clone(), string(" }"), ());
             ()
         };
@@ -1334,34 +1466,34 @@ pub mod File_system {
         Func1::new(move |v: string| File_system::closure25((), v))
     }
     pub fn method52() -> string {
-        let v7: string = File_system::method17(getCharAt(toLower(string("Critical")), 0_i32));
-        let v96: &str = inline_colorization::color_bright_red;
-        let v107: &str = &*v7;
-        let v131: &str = inline_colorization::color_reset;
-        let v133: std::string::String = format!("{}{}{}", v96, v107, v131);
-        fable_library_rust::String_::fromString(v133)
+        let v8: string = File_system::method17(getCharAt(toLower(string("Critical")), 0_i32));
+        let v97: &str = inline_colorization::color_bright_red;
+        let v108: &str = &*v8;
+        let v132: &str = inline_colorization::color_reset;
+        let v134: std::string::String = format!("{}{}{}", v97, v108, v132);
+        fable_library_rust::String_::fromString(v134)
     }
     pub fn method54(v0_1: string) -> string {
         let v2_1: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v10: () = {
+        let v11: () = {
             File_system::closure6(v2_1.clone(), string("{ "), ());
             ()
         };
-        let v20_1: () = {
+        let v22_1: () = {
             File_system::closure6(v2_1.clone(), string("error\'"), ());
             ()
         };
-        let v30_1: () = {
+        let v33_1: () = {
             File_system::closure6(v2_1.clone(), string(" = "), ());
             ()
         };
-        let v39_1: () = {
+        let v42: () = {
             File_system::closure6(v2_1.clone(), v0_1, ());
             ()
         };
-        let v49: () = {
+        let v53: () = {
             File_system::closure6(v2_1.clone(), string(" }"), ());
             ()
         };
@@ -1425,50 +1557,50 @@ pub mod File_system {
         };
     }
     pub fn method55() -> string {
-        let v7: string = File_system::method17(getCharAt(toLower(string("Warning")), 0_i32));
-        let v96: &str = inline_colorization::color_yellow;
-        let v107: &str = &*v7;
-        let v131: &str = inline_colorization::color_reset;
-        let v133: std::string::String = format!("{}{}{}", v96, v107, v131);
-        fable_library_rust::String_::fromString(v133)
+        let v8: string = File_system::method17(getCharAt(toLower(string("Warning")), 0_i32));
+        let v97: &str = inline_colorization::color_yellow;
+        let v108: &str = &*v8;
+        let v132: &str = inline_colorization::color_reset;
+        let v134: std::string::String = format!("{}{}{}", v97, v108, v132);
+        fable_library_rust::String_::fromString(v134)
     }
     pub fn method57(v0_1: string, v1_1: string) -> string {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             File_system::closure6(v3.clone(), string("{ "), ());
             ()
         };
-        let v21_1: () = {
+        let v23_1: () = {
             File_system::closure6(v3.clone(), string("path"), ());
             ()
         };
-        let v31_1: () = {
+        let v34_1: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             File_system::closure6(v3.clone(), v0_1, ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             File_system::closure6(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             File_system::closure6(v3.clone(), string("ex"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             File_system::closure6(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             File_system::closure6(v3.clone(), string(" }"), ());
             ()
         };
@@ -1552,55 +1684,55 @@ pub mod File_system {
         let v4: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v12: () = {
+        let v13: () = {
             File_system::closure6(v4.clone(), string("{ "), ());
             ()
         };
-        let v22_1: () = {
+        let v24_1: () = {
             File_system::closure6(v4.clone(), string("old_path"), ());
             ()
         };
-        let v32_1: () = {
+        let v35_1: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v41: () = {
+        let v44: () = {
             File_system::closure6(v4.clone(), v0_1, ());
             ()
         };
-        let v51: () = {
+        let v55: () = {
             File_system::closure6(v4.clone(), string("; "), ());
             ()
         };
-        let v61: () = {
+        let v66: () = {
             File_system::closure6(v4.clone(), string("new_path"), ());
             ()
         };
-        let v70: () = {
+        let v75: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v79: () = {
+        let v84: () = {
             File_system::closure6(v4.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v93: () = {
             File_system::closure6(v4.clone(), string("; "), ());
             ()
         };
-        let v98: () = {
+        let v104: () = {
             File_system::closure6(v4.clone(), string("ex"), ());
             ()
         };
-        let v107: () = {
+        let v113: () = {
             File_system::closure6(v4.clone(), string(" = "), ());
             ()
         };
-        let v116: () = {
+        let v122: () = {
             File_system::closure6(v4.clone(), v2_1, ());
             ()
         };
-        let v126: () = {
+        let v133: () = {
             File_system::closure6(v4.clone(), string(" }"), ());
             ()
         };
@@ -1709,23 +1841,23 @@ pub mod File_system {
         let v2_1: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v10: () = {
+        let v11: () = {
             File_system::closure6(v2_1.clone(), string("{ "), ());
             ()
         };
-        let v20_1: () = {
+        let v22_1: () = {
             File_system::closure6(v2_1.clone(), string("timeout"), ());
             ()
         };
-        let v30_1: () = {
+        let v33_1: () = {
             File_system::closure6(v2_1.clone(), string(" = "), ());
             ()
         };
-        let v39_1: () = {
+        let v42: () = {
             File_system::closure6(v2_1.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v49: () = {
+        let v53: () = {
             File_system::closure6(v2_1.clone(), string(" }"), ());
             ()
         };
@@ -1792,39 +1924,39 @@ pub mod File_system {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             File_system::closure6(v3.clone(), string("{ "), ());
             ()
         };
-        let v21_1: () = {
+        let v23_1: () = {
             File_system::closure6(v3.clone(), string("timeout"), ());
             ()
         };
-        let v31_1: () = {
+        let v34_1: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             File_system::closure6(v3.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             File_system::closure6(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             File_system::closure6(v3.clone(), string("ex"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             File_system::closure6(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             File_system::closure6(v3.clone(), string(" }"), ());
             ()
         };
@@ -1908,39 +2040,39 @@ pub mod File_system {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             File_system::closure6(v3.clone(), string("{ "), ());
             ()
         };
-        let v21_1: () = {
+        let v23_1: () = {
             File_system::closure6(v3.clone(), string("retry"), ());
             ()
         };
-        let v31_1: () = {
+        let v34_1: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             File_system::closure6(v3.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             File_system::closure6(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             File_system::closure6(v3.clone(), string("ex"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             File_system::closure6(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             File_system::closure6(v3.clone(), string(" }"), ());
             ()
         };
@@ -2081,40 +2213,40 @@ pub mod File_system {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             File_system::closure6(v3.clone(), string("{ "), ());
             ()
         };
-        let v21_1: () = {
+        let v23_1: () = {
             File_system::closure6(v3.clone(), string("dir"), ());
             ()
         };
-        let v31_1: () = {
+        let v34_1: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             File_system::closure6(v3.clone(), v0_1, ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             File_system::closure6(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             File_system::closure6(v3.clone(), string("error"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v86: std::string::String = format!("{:#?}", v1_1);
-        let v117: () = {
-            File_system::closure6(v3.clone(), fable_library_rust::String_::fromString(v86), ());
+        let v91: std::string::String = format!("{:#?}", v1_1);
+        let v122: () = {
+            File_system::closure6(v3.clone(), fable_library_rust::String_::fromString(v91), ());
             ()
         };
-        let v127: () = {
+        let v133: () = {
             File_system::closure6(v3.clone(), string(" }"), ());
             ()
         };
@@ -2183,23 +2315,23 @@ pub mod File_system {
         let v2_1: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v10: () = {
+        let v11: () = {
             File_system::closure6(v2_1.clone(), string("{ "), ());
             ()
         };
-        let v20_1: () = {
+        let v22_1: () = {
             File_system::closure6(v2_1.clone(), string("dir"), ());
             ()
         };
-        let v30_1: () = {
+        let v33_1: () = {
             File_system::closure6(v2_1.clone(), string(" = "), ());
             ()
         };
-        let v39_1: () = {
+        let v42: () = {
             File_system::closure6(v2_1.clone(), v0_1, ());
             ()
         };
-        let v49: () = {
+        let v53: () = {
             File_system::closure6(v2_1.clone(), string(" }"), ());
             ()
         };
@@ -2284,39 +2416,39 @@ pub mod File_system {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             File_system::closure6(v3.clone(), string("{ "), ());
             ()
         };
-        let v21_1: () = {
+        let v23_1: () = {
             File_system::closure6(v3.clone(), string("dir"), ());
             ()
         };
-        let v31_1: () = {
+        let v34_1: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             File_system::closure6(v3.clone(), v0_1, ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             File_system::closure6(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             File_system::closure6(v3.clone(), string("result"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             File_system::closure6(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             File_system::closure6(v3.clone(), string(" }"), ());
             ()
         };
@@ -3193,39 +3325,39 @@ pub mod File_system {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
             l0: MutCell::new(File_system::method18()),
         });
-        let v11: () = {
+        let v12: () = {
             File_system::closure6(v3.clone(), string("{ "), ());
             ()
         };
-        let v21_1: () = {
+        let v23_1: () = {
             File_system::closure6(v3.clone(), string("dir"), ());
             ()
         };
-        let v31_1: () = {
+        let v34_1: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             File_system::closure6(v3.clone(), v0_1, ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             File_system::closure6(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             File_system::closure6(v3.clone(), string("error"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             File_system::closure6(v3.clone(), string(" = "), ());
             ()
         };
-        let v78: () = {
+        let v83: () = {
             File_system::closure6(v3.clone(), v1_1, ());
             ()
         };
-        let v88: () = {
+        let v94: () = {
             File_system::closure6(v3.clone(), string(" }"), ());
             ()
         };
