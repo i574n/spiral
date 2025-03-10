@@ -268,78 +268,209 @@ pub mod Common {
     }
     pub fn method1() -> (Common::US1, Common::US2) {
         let v1_1: string = Common::method2(string("TRACE_LEVEL"));
-        let v6: Common::US1 = if string("Verbose") == (v1_1.clone()) {
+        let v6: string = toLower(string("Critical"));
+        let v13: string = toLower(string("Warning"));
+        let v20: string = toLower(string("Info"));
+        let v27: string = toLower(string("Debug"));
+        let v34: string = toLower(string("Verbose"));
+        let v41: Common::US1 = if string("Verbose") == (v1_1.clone()) {
             Common::US1::US1_0(Common::US0::US0_0)
         } else {
             Common::US1::US1_1
         };
         (
-            match &v6 {
-                Common::US1::US1_0(v6_0_0) => Common::US1::US1_0(
-                    match &v6 {
+            match &v41 {
+                Common::US1::US1_0(v41_0_0) => Common::US1::US1_0(
+                    match &v41 {
                         Common::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
                     .clone(),
                 ),
                 _ => {
-                    let v13: Common::US1 = if string("Debug") == (v1_1.clone()) {
+                    let v48: Common::US1 = if string("Debug") == (v1_1.clone()) {
                         Common::US1::US1_0(Common::US0::US0_1)
                     } else {
                         Common::US1::US1_1
                     };
-                    match &v13 {
-                        Common::US1::US1_0(v13_0_0) => Common::US1::US1_0(
-                            match &v13 {
+                    match &v48 {
+                        Common::US1::US1_0(v48_0_0) => Common::US1::US1_0(
+                            match &v48 {
                                 Common::US1::US1_0(x) => x.clone(),
                                 _ => unreachable!(),
                             }
                             .clone(),
                         ),
                         _ => {
-                            let v20: Common::US1 = if string("Info") == (v1_1.clone()) {
+                            let v55: Common::US1 = if string("Info") == (v1_1.clone()) {
                                 Common::US1::US1_0(Common::US0::US0_2)
                             } else {
                                 Common::US1::US1_1
                             };
-                            match &v20 {
-                                Common::US1::US1_0(v20_0_0) => Common::US1::US1_0(
-                                    match &v20 {
+                            match &v55 {
+                                Common::US1::US1_0(v55_0_0) => Common::US1::US1_0(
+                                    match &v55 {
                                         Common::US1::US1_0(x) => x.clone(),
                                         _ => unreachable!(),
                                     }
                                     .clone(),
                                 ),
                                 _ => {
-                                    let v27: Common::US1 = if string("Warning") == (v1_1.clone()) {
+                                    let v62: Common::US1 = if string("Warning") == (v1_1.clone()) {
                                         Common::US1::US1_0(Common::US0::US0_3)
                                     } else {
                                         Common::US1::US1_1
                                     };
-                                    match &v27 {
-                                        Common::US1::US1_0(v27_0_0) => Common::US1::US1_0(
-                                            match &v27 {
+                                    match &v62 {
+                                        Common::US1::US1_0(v62_0_0) => Common::US1::US1_0(
+                                            match &v62 {
                                                 Common::US1::US1_0(x) => x.clone(),
                                                 _ => unreachable!(),
                                             }
                                             .clone(),
                                         ),
                                         _ => {
-                                            let v34: Common::US1 =
+                                            let v69: Common::US1 =
                                                 if string("Critical") == (v1_1.clone()) {
                                                     Common::US1::US1_0(Common::US0::US0_4)
                                                 } else {
                                                     Common::US1::US1_1
                                                 };
-                                            match &v34 {
-                                                Common::US1::US1_0(v34_0_0) => Common::US1::US1_0(
-                                                    match &v34 {
+                                            match &v69 {
+                                                Common::US1::US1_0(v69_0_0) => Common::US1::US1_0(
+                                                    match &v69 {
                                                         Common::US1::US1_0(x) => x.clone(),
                                                         _ => unreachable!(),
                                                     }
                                                     .clone(),
                                                 ),
-                                                _ => Common::US1::US1_1,
+                                                _ => {
+                                                    let v76: Common::US1 =
+                                                        if (v34.clone()) == (v1_1.clone()) {
+                                                            Common::US1::US1_0(Common::US0::US0_0)
+                                                        } else {
+                                                            Common::US1::US1_1
+                                                        };
+                                                    match &v76 {
+                                                        Common::US1::US1_0(v76_0_0) => {
+                                                            Common::US1::US1_0(
+                                                                match &v76 {
+                                                                    Common::US1::US1_0(x) => {
+                                                                        x.clone()
+                                                                    }
+                                                                    _ => unreachable!(),
+                                                                }
+                                                                .clone(),
+                                                            )
+                                                        }
+                                                        _ => {
+                                                            let v83: Common::US1 = if (v27.clone())
+                                                                == (v1_1.clone())
+                                                            {
+                                                                Common::US1::US1_0(
+                                                                    Common::US0::US0_1,
+                                                                )
+                                                            } else {
+                                                                Common::US1::US1_1
+                                                            };
+                                                            match &v83 {
+                                                                Common::US1::US1_0(v83_0_0) => {
+                                                                    Common::US1::US1_0(
+                                                                        match &v83 {
+                                                                            Common::US1::US1_0(
+                                                                                x,
+                                                                            ) => x.clone(),
+                                                                            _ => unreachable!(),
+                                                                        }
+                                                                        .clone(),
+                                                                    )
+                                                                }
+                                                                _ => {
+                                                                    let v90: Common::US1 = if (v20
+                                                                        .clone())
+                                                                        == (v1_1.clone())
+                                                                    {
+                                                                        Common::US1::US1_0(
+                                                                            Common::US0::US0_2,
+                                                                        )
+                                                                    } else {
+                                                                        Common::US1::US1_1
+                                                                    };
+                                                                    match &v90 {
+                                                                     Common::US1::US1_0(v90_0_0)
+                                                                     =>
+                                                                     Common::US1::US1_0(match &v90
+                                                                                            {
+                                                                                            Common::US1::US1_0(x)
+                                                                                            =>
+                                                                                            x.clone(),
+                                                                                            _
+                                                                                            =>
+                                                                                            unreachable!(),
+                                                                                        }.clone()),
+                                                                     _ => {
+                                                                         let v97:
+                                                                                 Common::US1 =
+                                                                             if (v13.clone())
+                                                                                    ==
+                                                                                    (v1_1.clone())
+                                                                                {
+                                                                                 Common::US1::US1_0(Common::US0::US0_3)
+                                                                             } else {
+                                                                                 Common::US1::US1_1
+                                                                             };
+                                                                         match &v97
+                                                                             {
+                                                                             Common::US1::US1_0(v97_0_0)
+                                                                             =>
+                                                                             Common::US1::US1_0(match &v97
+                                                                                                    {
+                                                                                                    Common::US1::US1_0(x)
+                                                                                                    =>
+                                                                                                    x.clone(),
+                                                                                                    _
+                                                                                                    =>
+                                                                                                    unreachable!(),
+                                                                                                }.clone()),
+                                                                             _
+                                                                             =>
+                                                                             {
+                                                                                 let v104:
+                                                                                         Common::US1 =
+                                                                                     if (v6.clone())
+                                                                                            ==
+                                                                                            (v1_1.clone())
+                                                                                        {
+                                                                                         Common::US1::US1_0(Common::US0::US0_4)
+                                                                                     } else {
+                                                                                         Common::US1::US1_1
+                                                                                     };
+                                                                                 match &v104
+                                                                                     {
+                                                                                     Common::US1::US1_0(v104_0_0)
+                                                                                     =>
+                                                                                     Common::US1::US1_0(match &v104
+                                                                                                            {
+                                                                                                            Common::US1::US1_0(x)
+                                                                                                            =>
+                                                                                                            x.clone(),
+                                                                                                            _
+                                                                                                            =>
+                                                                                                            unreachable!(),
+                                                                                                        }.clone()),
+                                                                                     _
+                                                                                     =>
+                                                                                     Common::US1::US1_1,
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                 }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -568,51 +699,51 @@ pub mod Common {
         string("\u{001b}[0m")
     }
     pub fn method14() -> string {
-        let v7: string = Common::method15(getCharAt(toLower(string("Warning")), 0_i32));
-        let v55: &str = inline_colorization::color_yellow;
-        let v64: &str = &*v7;
-        let v90: &str = inline_colorization::color_reset;
-        let v92: std::string::String = format!("{}{}{}", v55, v64, v90);
-        fable_library_rust::String_::fromString(v92)
+        let v8: string = Common::method15(getCharAt(toLower(string("Warning")), 0_i32));
+        let v56: &str = inline_colorization::color_yellow;
+        let v65: &str = &*v8;
+        let v91: &str = inline_colorization::color_reset;
+        let v93: std::string::String = format!("{}{}{}", v56, v65, v91);
+        fable_library_rust::String_::fromString(v93)
     }
     pub fn method19(v0_1: i32, v1_1: LrcPtr<Exception>) -> string {
         let v3: LrcPtr<Common::Mut3> = LrcPtr::new(Common::Mut3 {
             l0: MutCell::new(Common::method16()),
         });
-        let v11: () = {
+        let v12: () = {
             Common::closure11(v3.clone(), string("{ "), ());
             ()
         };
-        let v21: () = {
+        let v23: () = {
             Common::closure11(v3.clone(), string("retry"), ());
             ()
         };
-        let v31: () = {
+        let v34: () = {
             Common::closure11(v3.clone(), string(" = "), ());
             ()
         };
-        let v40: () = {
+        let v43: () = {
             Common::closure11(v3.clone(), sprintf!("{}", v0_1), ());
             ()
         };
-        let v50: () = {
+        let v54: () = {
             Common::closure11(v3.clone(), string("; "), ());
             ()
         };
-        let v60: () = {
+        let v65: () = {
             Common::closure11(v3.clone(), string("ex"), ());
             ()
         };
-        let v69: () = {
+        let v74: () = {
             Common::closure11(v3.clone(), string(" = "), ());
             ()
         };
-        let v82: std::string::String = format!("{:#?}", v1_1);
-        let v117: () = {
-            Common::closure11(v3.clone(), fable_library_rust::String_::fromString(v82), ());
+        let v87: std::string::String = format!("{:#?}", v1_1);
+        let v122: () = {
+            Common::closure11(v3.clone(), fable_library_rust::String_::fromString(v87), ());
             ()
         };
-        let v127: () = {
+        let v133: () = {
             Common::closure11(v3.clone(), string(" }"), ());
             ()
         };

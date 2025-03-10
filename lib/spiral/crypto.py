@@ -223,11 +223,11 @@ def method4(__unit: None=None) -> str:
 
 
 def method0(v0_1: str) -> str:
-    v165: IHashlibSha256 = hashlib
-    v167: Any = v165.sha256()
-    v173: str = v0_1.encode("utf-8")
-    v167.update(v173)
-    return v167.hexdigest()
+    v166: IHashlibSha256 = hashlib
+    v168: Any = v166.sha256()
+    v174: str = v0_1.encode("utf-8")
+    v168.update(v174)
+    return v168.hexdigest()
 
 
 def closure0(unit_var: None, v0_1: str) -> str:
@@ -277,30 +277,65 @@ def method8(v0_1: str) -> str:
 
 def method7(__unit: None=None) -> tuple[US1, US2]:
     v1_1: str = method8("TRACE_LEVEL")
-    v6: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
+    v6: str = "Critical".lower()
+    v13: str = "Warning".lower()
+    v20: str = "Info".lower()
+    v27: str = "Debug".lower()
+    v34: str = "Verbose".lower()
+    v41: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
     def _arrow94(__unit: None=None) -> US1:
-        v13: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
-        if v13.tag == 0:
-            return US1(0, v13.fields[0])
+        v48: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
+        if v48.tag == 0:
+            return US1(0, v48.fields[0])
 
         else: 
-            v20: US1 = US1(0, US0(2)) if ("Info" == v1_1) else US1(1)
-            if v20.tag == 0:
-                return US1(0, v20.fields[0])
+            v55: US1 = US1(0, US0(2)) if ("Info" == v1_1) else US1(1)
+            if v55.tag == 0:
+                return US1(0, v55.fields[0])
 
             else: 
-                v27: US1 = US1(0, US0(3)) if ("Warning" == v1_1) else US1(1)
-                if v27.tag == 0:
-                    return US1(0, v27.fields[0])
+                v62: US1 = US1(0, US0(3)) if ("Warning" == v1_1) else US1(1)
+                if v62.tag == 0:
+                    return US1(0, v62.fields[0])
 
                 else: 
-                    v34: US1 = US1(0, US0(4)) if ("Critical" == v1_1) else US1(1)
-                    return US1(0, v34.fields[0]) if (v34.tag == 0) else US1(1)
+                    v69: US1 = US1(0, US0(4)) if ("Critical" == v1_1) else US1(1)
+                    if v69.tag == 0:
+                        return US1(0, v69.fields[0])
+
+                    else: 
+                        v76: US1 = US1(0, US0(0)) if (v34 == v1_1) else US1(1)
+                        if v76.tag == 0:
+                            return US1(0, v76.fields[0])
+
+                        else: 
+                            v83: US1 = US1(0, US0(1)) if (v27 == v1_1) else US1(1)
+                            if v83.tag == 0:
+                                return US1(0, v83.fields[0])
+
+                            else: 
+                                v90: US1 = US1(0, US0(2)) if (v20 == v1_1) else US1(1)
+                                if v90.tag == 0:
+                                    return US1(0, v90.fields[0])
+
+                                else: 
+                                    v97: US1 = US1(0, US0(3)) if (v13 == v1_1) else US1(1)
+                                    if v97.tag == 0:
+                                        return US1(0, v97.fields[0])
+
+                                    else: 
+                                        v104: US1 = US1(0, US0(4)) if (v6 == v1_1) else US1(1)
+                                        return US1(0, v104.fields[0]) if (v104.tag == 0) else US1(1)
 
 
 
 
-    return (US1(0, v6.fields[0]) if (v6.tag == 0) else _arrow94(), US2(1) if (method8("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
+
+
+
+
+
+    return (US1(0, v41.fields[0]) if (v41.tag == 0) else _arrow94(), US2(1) if (method8("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
 
 
 def closure5(unit_var: None, v0_1: str) -> None:
@@ -404,51 +439,51 @@ def method19(__unit: None=None) -> str:
 
 
 def method16(__unit: None=None) -> str:
-    v3: str = "Verbose".lower()
-    return ("\u001b[90m" + method17(v3[0])) + method19()
+    v4: str = "Verbose".lower()
+    return ("\u001b[90m" + method17(v4[0])) + method19()
 
 
 def method21(v0_1: int, v1_1: str, v2: uint16) -> str:
     v4: Mut4 = Mut4(method18())
-    v12: None
+    v13: None
     closure7(v4, "{ ", None)
-    v12 = None
-    v22: None
+    v13 = None
+    v24: None
     closure7(v4, "first_letter_code", None)
-    v22 = None
-    v32: None
+    v24 = None
+    v35: None
     closure7(v4, " = ", None)
-    v32 = None
-    v41: None
+    v35 = None
+    v44: None
     closure7(v4, ("" + str(v0_1)) + "", None)
-    v41 = None
-    v51: None
+    v44 = None
+    v55: None
     closure7(v4, "; ", None)
-    v51 = None
-    v61: None
+    v55 = None
+    v66: None
     closure7(v4, "hash_part", None)
-    v61 = None
-    v70: None
+    v66 = None
+    v75: None
     closure7(v4, " = ", None)
-    v70 = None
-    v79: None
+    v75 = None
+    v84: None
     closure7(v4, v1_1, None)
-    v79 = None
-    v88: None
+    v84 = None
+    v93: None
     closure7(v4, "; ", None)
-    v88 = None
-    v98: None
+    v93 = None
+    v104: None
     closure7(v4, "combined_value", None)
-    v98 = None
-    v107: None
+    v104 = None
+    v113: None
     closure7(v4, " = ", None)
-    v107 = None
-    v116: None
+    v113 = None
+    v122: None
     closure7(v4, ("" + str(v2)) + "", None)
-    v116 = None
-    v126: None
+    v122 = None
+    v133: None
     closure7(v4, " }", None)
-    v126 = None
+    v133 = None
     return v4.l0
 
 

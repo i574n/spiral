@@ -447,10 +447,15 @@ export function method2(v0_1: string): string {
 }
 
 export function method1(): [US1_$union, US2_$union] {
-    let v13: US1_$union, v20_1: US1_$union, v27: US1_$union, v34: US1_$union;
+    let v48: US1_$union, v55: US1_$union, v62: US1_$union, v69: US1_$union, v76: US1_$union, v83: US1_$union, v90: US1_$union, v97: US1_$union, v104: US1_$union;
     const v1_1: string = method2("TRACE_LEVEL");
-    const v6: US1_$union = ("Verbose" === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1();
-    return [((v6.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v6.fields[0] as any) : ((v13 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v13.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v13.fields[0] as any) : ((v20_1 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v20_1.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v20_1.fields[0] as any) : ((v27 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v27.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v27.fields[0] as any) : ((v34 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v34.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v34.fields[0] as any) : US1_US1_1())))))))), (method2("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
+    const v6: string = "Critical".toLocaleLowerCase();
+    const v13: string = "Warning".toLocaleLowerCase();
+    const v20_1: string = "Info".toLocaleLowerCase();
+    const v27: string = "Debug".toLocaleLowerCase();
+    const v34: string = "Verbose".toLocaleLowerCase();
+    const v41: US1_$union = ("Verbose" === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1();
+    return [((v41.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v41.fields[0] as any) : ((v48 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v48.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v48.fields[0] as any) : ((v55 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v55.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v55.fields[0] as any) : ((v62 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v62.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v62.fields[0] as any) : ((v69 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v69.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v69.fields[0] as any) : ((v76 = ((v34 === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1()), ((v76.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v76.fields[0] as any) : ((v83 = ((v27 === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v83.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v83.fields[0] as any) : ((v90 = ((v20_1 === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v90.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v90.fields[0] as any) : ((v97 = ((v13 === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v97.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v97.fields[0] as any) : ((v104 = ((v6 === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v104.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v104.fields[0] as any) : US1_US1_1())))))))))))))))))), (method2("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
 }
 
 export function closure2(unitVar: void, v0_1: string): void {
@@ -544,39 +549,39 @@ export function method16(): string {
 }
 
 export function method13(): string {
-    const v3: string = "Verbose".toLocaleLowerCase();
-    return ("\u001b[90m" + method14(v3[0])) + method16();
+    const v4: string = "Verbose".toLocaleLowerCase();
+    return ("\u001b[90m" + method14(v4[0])) + method16();
 }
 
 export function method18(v0_1: int32, v1_1: string): string {
     const v3: Mut3 = new Mut3(method15());
-    let v11: any;
+    let v12: any;
     closure7(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21: any;
+    v12 = undefined;
+    let v23: any;
     closure7(v3, "port", undefined);
-    v21 = undefined;
-    let v31: any;
+    v23 = undefined;
+    let v34: any;
     closure7(v3, " = ", undefined);
-    v31 = undefined;
-    let v40: any;
+    v34 = undefined;
+    let v43: any;
     closure7(v3, `${v0_1}`, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure7(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure7(v3, "ex", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure7(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure7(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure7(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
@@ -696,21 +701,21 @@ export function method28(v0_1: Async<US7_$union>): Async<US8_$union> {
 
 export function method31(v0_1: int32): string {
     const v2_1: Mut3 = new Mut3(method15());
-    let v10: any;
+    let v11: any;
     closure7(v2_1, "{ ", undefined);
-    v10 = undefined;
-    let v20_1: any;
+    v11 = undefined;
+    let v22: any;
     closure7(v2_1, "timeout", undefined);
-    v20_1 = undefined;
-    let v30: any;
+    v22 = undefined;
+    let v33: any;
     closure7(v2_1, " = ", undefined);
-    v30 = undefined;
-    let v39: any;
+    v33 = undefined;
+    let v42: any;
     closure7(v2_1, `${v0_1}`, undefined);
-    v39 = undefined;
-    let v49: any;
+    v42 = undefined;
+    let v53: any;
     closure7(v2_1, " }", undefined);
-    v49 = undefined;
+    v53 = undefined;
     return v2_1.l0;
 }
 
@@ -736,39 +741,39 @@ export function closure16(v0_1: int32, unitVar: void): void {
 }
 
 export function method32(): string {
-    const v3: string = "Critical".toLocaleLowerCase();
-    return ("\u001b[91m" + method14(v3[0])) + method16();
+    const v4: string = "Critical".toLocaleLowerCase();
+    return ("\u001b[91m" + method14(v4[0])) + method16();
 }
 
 export function method34(v0_1: int32, v1_1: string): string {
     const v3: Mut3 = new Mut3(method15());
-    let v11: any;
+    let v12: any;
     closure7(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21: any;
+    v12 = undefined;
+    let v23: any;
     closure7(v3, "timeout", undefined);
-    v21 = undefined;
-    let v31: any;
+    v23 = undefined;
+    let v34: any;
     closure7(v3, " = ", undefined);
-    v31 = undefined;
-    let v40: any;
+    v34 = undefined;
+    let v43: any;
     closure7(v3, `${v0_1}`, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure7(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure7(v3, "ex", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure7(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure7(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure7(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
@@ -796,27 +801,27 @@ export function closure17(v0_1: int32, v1_1: Error, unitVar: void): void {
 export function method29(v0_1: int32, v1_1: Async<US8_$union>): Async<US6_$union> {
     return singleton.Delay<US6_$union>((): Async<US6_$union> => singleton.Bind<US8_$union, US6_$union>(v1_1, (_arg: US8_$union): Async<US6_$union> => {
         const v23: US8_$union = _arg;
-        let v174: US6_$union;
+        let v175: US6_$union;
         if ((v23.tag as int32) === /* US8_0 */ 0) {
-            v174 = US6_US6_0(v23.fields[0] as any);
+            v175 = US6_US6_0(v23.fields[0] as any);
         }
         else {
             const v26 = v23.fields[0] as any;
             const v28: string = toText(interpolate("%A%P()", [v26]));
             if (v28.indexOf("System.TimeoutException") >= 0) {
-                let v38: any;
+                let v39: any;
                 closure16(v0_1, undefined);
-                v38 = undefined;
-                v174 = US6_US6_1();
+                v39 = undefined;
+                v175 = US6_US6_1();
             }
             else {
-                let v88: any;
+                let v89: any;
                 closure17(v0_1, v26, undefined);
-                v88 = undefined;
-                v174 = US6_US6_1();
+                v89 = undefined;
+                v175 = US6_US6_1();
             }
         }
-        return singleton.Return<US6_$union>(v174);
+        return singleton.Return<US6_$union>(v175);
     }));
 }
 
@@ -871,57 +876,57 @@ export function method38(): ((arg0: int32) => US9_$union) {
 
 export function method40(v0_1: int32, v1_1: int64, v2_1: Option<int32>, v3: boolean): string {
     const v5: Mut3 = new Mut3(method15());
-    let v13: any;
+    let v14: any;
     closure7(v5, "{ ", undefined);
-    v13 = undefined;
-    let v23: any;
+    v14 = undefined;
+    let v25: any;
     closure7(v5, "port", undefined);
-    v23 = undefined;
-    let v33: any;
+    v25 = undefined;
+    let v36: any;
     closure7(v5, " = ", undefined);
-    v33 = undefined;
-    let v42: any;
+    v36 = undefined;
+    let v45: any;
     closure7(v5, `${v0_1}`, undefined);
-    v42 = undefined;
-    let v52: any;
+    v45 = undefined;
+    let v56: any;
     closure7(v5, "; ", undefined);
-    v52 = undefined;
-    let v62: any;
+    v56 = undefined;
+    let v67: any;
     closure7(v5, "retry", undefined);
-    v62 = undefined;
-    let v71: any;
+    v67 = undefined;
+    let v76: any;
     closure7(v5, " = ", undefined);
-    v71 = undefined;
-    let v80: any;
+    v76 = undefined;
+    let v85: any;
     closure7(v5, `${v1_1}`, undefined);
-    v80 = undefined;
-    let v89: any;
+    v85 = undefined;
+    let v94: any;
     closure7(v5, "; ", undefined);
-    v89 = undefined;
-    let v99: any;
+    v94 = undefined;
+    let v105: any;
     closure7(v5, "timeout", undefined);
-    v99 = undefined;
-    let v108: any;
+    v105 = undefined;
+    let v114: any;
     closure7(v5, " = ", undefined);
-    v108 = undefined;
-    let v156: any;
+    v114 = undefined;
+    let v162: any;
     closure7(v5, toText(interpolate("%A%P()", [v2_1])), undefined);
-    v156 = undefined;
-    let v165: any;
+    v162 = undefined;
+    let v171: any;
     closure7(v5, "; ", undefined);
-    v165 = undefined;
-    let v175: any;
+    v171 = undefined;
+    let v182: any;
     closure7(v5, "status", undefined);
-    v175 = undefined;
-    let v184: any;
+    v182 = undefined;
+    let v191: any;
     closure7(v5, " = ", undefined);
-    v184 = undefined;
-    let v196: any;
+    v191 = undefined;
+    let v203: any;
     closure7(v5, v3 ? "true" : "false", undefined);
-    v196 = undefined;
-    let v206: any;
+    v203 = undefined;
+    let v214: any;
     closure7(v5, " }", undefined);
-    v206 = undefined;
+    v214 = undefined;
     return v5.l0;
 }
 

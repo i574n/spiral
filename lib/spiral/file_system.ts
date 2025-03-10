@@ -782,10 +782,15 @@ export function method2(v0_1: string): string {
 }
 
 export function method1(): [US1_$union, US2_$union] {
-    let v13: US1_$union, v20_1: US1_$union, v27_1: US1_$union, v34_1: US1_$union;
+    let v48: US1_$union, v55: US1_$union, v62: US1_$union, v69: US1_$union, v76: US1_$union, v83: US1_$union, v90: US1_$union, v97: US1_$union, v104: US1_$union;
     const v1_1: string = method2("TRACE_LEVEL");
-    const v6: US1_$union = ("Verbose" === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1();
-    return [((v6.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v6.fields[0] as any) : ((v13 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v13.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v13.fields[0] as any) : ((v20_1 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v20_1.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v20_1.fields[0] as any) : ((v27_1 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v27_1.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v27_1.fields[0] as any) : ((v34_1 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v34_1.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v34_1.fields[0] as any) : US1_US1_1())))))))), (method2("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
+    const v6: string = "Critical".toLocaleLowerCase();
+    const v13: string = "Warning".toLocaleLowerCase();
+    const v20_1: string = "Info".toLocaleLowerCase();
+    const v27_1: string = "Debug".toLocaleLowerCase();
+    const v34_1: string = "Verbose".toLocaleLowerCase();
+    const v41: US1_$union = ("Verbose" === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1();
+    return [((v41.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v41.fields[0] as any) : ((v48 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v48.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v48.fields[0] as any) : ((v55 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v55.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v55.fields[0] as any) : ((v62 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v62.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v62.fields[0] as any) : ((v69 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v69.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v69.fields[0] as any) : ((v76 = ((v34_1 === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1()), ((v76.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v76.fields[0] as any) : ((v83 = ((v27_1 === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v83.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v83.fields[0] as any) : ((v90 = ((v20_1 === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v90.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v90.fields[0] as any) : ((v97 = ((v13 === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v97.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v97.fields[0] as any) : ((v104 = ((v6 === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v104.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v104.fields[0] as any) : US1_US1_1())))))))))))))))))), (method2("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
 }
 
 export function closure2(unitVar: void, v0_1: string): void {
@@ -887,8 +892,8 @@ export function method19(): string {
 }
 
 export function method16(): string {
-    const v3: string = "Debug".toLocaleLowerCase();
-    return ("\u001b[94m" + method17(v3[0])) + method19();
+    const v4: string = "Debug".toLocaleLowerCase();
+    return ("\u001b[94m" + method17(v4[0])) + method19();
 }
 
 export function method20(v0_1: string): string {
@@ -898,33 +903,33 @@ export function method20(v0_1: string): string {
 
 export function method22(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21_1: any;
+    v12 = undefined;
+    let v23_1: any;
     closure6(v3, "ex", undefined);
-    v21_1 = undefined;
-    let v31_1: any;
+    v23_1 = undefined;
+    let v34_1: any;
     closure6(v3, " = ", undefined);
-    v31_1 = undefined;
-    let v40: any;
+    v34_1 = undefined;
+    let v43: any;
     closure6(v3, v0_1, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure6(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure6(v3, "path", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure6(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure6(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure6(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
@@ -1011,45 +1016,45 @@ export function closure3(unitVar: void, v0_1: string): Async<int64> {
 
 export function method29(v0_1: string, v1_1: int64, v2_1: string): string {
     const v4: Mut3 = new Mut3(method18());
-    let v12: any;
+    let v13: any;
     closure6(v4, "{ ", undefined);
-    v12 = undefined;
-    let v22_1: any;
+    v13 = undefined;
+    let v24_1: any;
     closure6(v4, "path", undefined);
-    v22_1 = undefined;
-    let v32_1: any;
+    v24_1 = undefined;
+    let v35_1: any;
     closure6(v4, " = ", undefined);
-    v32_1 = undefined;
-    let v41: any;
+    v35_1 = undefined;
+    let v44: any;
     closure6(v4, v0_1, undefined);
-    v41 = undefined;
-    let v51: any;
+    v44 = undefined;
+    let v55: any;
     closure6(v4, "; ", undefined);
-    v51 = undefined;
-    let v61: any;
+    v55 = undefined;
+    let v66: any;
     closure6(v4, "retry", undefined);
-    v61 = undefined;
-    let v70: any;
+    v66 = undefined;
+    let v75: any;
     closure6(v4, " = ", undefined);
-    v70 = undefined;
-    let v79: any;
+    v75 = undefined;
+    let v84: any;
     closure6(v4, `${v1_1}`, undefined);
-    v79 = undefined;
-    let v88: any;
+    v84 = undefined;
+    let v93: any;
     closure6(v4, "; ", undefined);
-    v88 = undefined;
-    let v98: any;
+    v93 = undefined;
+    let v104: any;
     closure6(v4, "ex", undefined);
-    v98 = undefined;
-    let v107: any;
+    v104 = undefined;
+    let v113: any;
     closure6(v4, " = ", undefined);
-    v107 = undefined;
-    let v116: any;
+    v113 = undefined;
+    let v122: any;
     closure6(v4, v2_1, undefined);
-    v116 = undefined;
-    let v126: any;
+    v122 = undefined;
+    let v133: any;
     closure6(v4, " }", undefined);
-    v126 = undefined;
+    v133 = undefined;
     return v4.l0;
 }
 
@@ -1116,51 +1121,51 @@ export function closure13(unitVar: void, v0_1: string): Async<int64> {
 }
 
 export function method34(): string {
-    const v3: string = "Verbose".toLocaleLowerCase();
-    return ("\u001b[90m" + method17(v3[0])) + method19();
+    const v4: string = "Verbose".toLocaleLowerCase();
+    return ("\u001b[90m" + method17(v4[0])) + method19();
 }
 
 export function method36(v0_1: int64, v1_1: string, v2_1: Error): string {
     const v4: Mut3 = new Mut3(method18());
-    let v12: any;
+    let v13: any;
     closure6(v4, "{ ", undefined);
-    v12 = undefined;
-    let v22_1: any;
+    v13 = undefined;
+    let v24_1: any;
     closure6(v4, "retry", undefined);
-    v22_1 = undefined;
-    let v32_1: any;
+    v24_1 = undefined;
+    let v35_1: any;
     closure6(v4, " = ", undefined);
-    v32_1 = undefined;
-    let v41: any;
+    v35_1 = undefined;
+    let v44: any;
     closure6(v4, `${v0_1}`, undefined);
-    v41 = undefined;
-    let v51: any;
+    v44 = undefined;
+    let v55: any;
     closure6(v4, "; ", undefined);
-    v51 = undefined;
-    let v61: any;
+    v55 = undefined;
+    let v66: any;
     closure6(v4, "path", undefined);
-    v61 = undefined;
-    let v70: any;
+    v66 = undefined;
+    let v75: any;
     closure6(v4, " = ", undefined);
-    v70 = undefined;
-    let v79: any;
+    v75 = undefined;
+    let v84: any;
     closure6(v4, v1_1, undefined);
-    v79 = undefined;
-    let v88: any;
+    v84 = undefined;
+    let v93: any;
     closure6(v4, "; ", undefined);
-    v88 = undefined;
-    let v98: any;
+    v93 = undefined;
+    let v104: any;
     closure6(v4, "ex", undefined);
-    v98 = undefined;
-    let v107: any;
+    v104 = undefined;
+    let v113: any;
     closure6(v4, " = ", undefined);
-    v107 = undefined;
-    let v155: any;
+    v113 = undefined;
+    let v161: any;
     closure6(v4, toText(interpolate("%A%P()", [v2_1])), undefined);
-    v155 = undefined;
-    let v165: any;
+    v161 = undefined;
+    let v172: any;
     closure6(v4, " }", undefined);
-    v165 = undefined;
+    v172 = undefined;
     return v4.l0;
 }
 
@@ -1331,27 +1336,27 @@ export function method51(): ((arg0: string) => US9_$union) {
 }
 
 export function method52(): string {
-    const v3: string = "Critical".toLocaleLowerCase();
-    return ("\u001b[91m" + method17(v3[0])) + method19();
+    const v4: string = "Critical".toLocaleLowerCase();
+    return ("\u001b[91m" + method17(v4[0])) + method19();
 }
 
 export function method54(v0_1: string): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v2_1, "{ ", undefined);
-    v10 = undefined;
-    let v20_1: any;
+    v11 = undefined;
+    let v22_1: any;
     closure6(v2_1, "error\'", undefined);
-    v20_1 = undefined;
-    let v30_1: any;
+    v22_1 = undefined;
+    let v33_1: any;
     closure6(v2_1, " = ", undefined);
-    v30_1 = undefined;
-    let v39_1: any;
+    v33_1 = undefined;
+    let v42: any;
     closure6(v2_1, v0_1, undefined);
-    v39_1 = undefined;
-    let v49: any;
+    v42 = undefined;
+    let v53: any;
     closure6(v2_1, " }", undefined);
-    v49 = undefined;
+    v53 = undefined;
     return v2_1.l0;
 }
 
@@ -1377,39 +1382,39 @@ export function closure26(v0_1: string, unitVar: void): void {
 }
 
 export function method55(): string {
-    const v3: string = "Warning".toLocaleLowerCase();
-    return ("\u001b[93m" + method17(v3[0])) + method19();
+    const v4: string = "Warning".toLocaleLowerCase();
+    return ("\u001b[93m" + method17(v4[0])) + method19();
 }
 
 export function method57(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21_1: any;
+    v12 = undefined;
+    let v23_1: any;
     closure6(v3, "path", undefined);
-    v21_1 = undefined;
-    let v31_1: any;
+    v23_1 = undefined;
+    let v34_1: any;
     closure6(v3, " = ", undefined);
-    v31_1 = undefined;
-    let v40: any;
+    v34_1 = undefined;
+    let v43: any;
     closure6(v3, v0_1, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure6(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure6(v3, "ex", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure6(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure6(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure6(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
@@ -1465,45 +1470,45 @@ export function method61(v0_1: string, v1_1: string): void {
 
 export function method63(v0_1: string, v1_1: string, v2_1: string): string {
     const v4: Mut3 = new Mut3(method18());
-    let v12: any;
+    let v13: any;
     closure6(v4, "{ ", undefined);
-    v12 = undefined;
-    let v22_1: any;
+    v13 = undefined;
+    let v24_1: any;
     closure6(v4, "old_path", undefined);
-    v22_1 = undefined;
-    let v32_1: any;
+    v24_1 = undefined;
+    let v35_1: any;
     closure6(v4, " = ", undefined);
-    v32_1 = undefined;
-    let v41: any;
+    v35_1 = undefined;
+    let v44: any;
     closure6(v4, v0_1, undefined);
-    v41 = undefined;
-    let v51: any;
+    v44 = undefined;
+    let v55: any;
     closure6(v4, "; ", undefined);
-    v51 = undefined;
-    let v61: any;
+    v55 = undefined;
+    let v66: any;
     closure6(v4, "new_path", undefined);
-    v61 = undefined;
-    let v70: any;
+    v66 = undefined;
+    let v75: any;
     closure6(v4, " = ", undefined);
-    v70 = undefined;
-    let v79: any;
+    v75 = undefined;
+    let v84: any;
     closure6(v4, v1_1, undefined);
-    v79 = undefined;
-    let v88: any;
+    v84 = undefined;
+    let v93: any;
     closure6(v4, "; ", undefined);
-    v88 = undefined;
-    let v98: any;
+    v93 = undefined;
+    let v104: any;
     closure6(v4, "ex", undefined);
-    v98 = undefined;
-    let v107: any;
+    v104 = undefined;
+    let v113: any;
     closure6(v4, " = ", undefined);
-    v107 = undefined;
-    let v116: any;
+    v113 = undefined;
+    let v122: any;
     closure6(v4, v2_1, undefined);
-    v116 = undefined;
-    let v126: any;
+    v122 = undefined;
+    let v133: any;
     closure6(v4, " }", undefined);
-    v126 = undefined;
+    v133 = undefined;
     return v4.l0;
 }
 
@@ -1594,21 +1599,21 @@ export function method72(v0_1: Async<US10_$union>): Async<US11_$union> {
 
 export function method75(v0_1: int32): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v2_1, "{ ", undefined);
-    v10 = undefined;
-    let v20_1: any;
+    v11 = undefined;
+    let v22_1: any;
     closure6(v2_1, "timeout", undefined);
-    v20_1 = undefined;
-    let v30_1: any;
+    v22_1 = undefined;
+    let v33_1: any;
     closure6(v2_1, " = ", undefined);
-    v30_1 = undefined;
-    let v39_1: any;
+    v33_1 = undefined;
+    let v42: any;
     closure6(v2_1, `${v0_1}`, undefined);
-    v39_1 = undefined;
-    let v49: any;
+    v42 = undefined;
+    let v53: any;
     closure6(v2_1, " }", undefined);
-    v49 = undefined;
+    v53 = undefined;
     return v2_1.l0;
 }
 
@@ -1635,33 +1640,33 @@ export function closure34(v0_1: int32, unitVar: void): void {
 
 export function method77(v0_1: int32, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21_1: any;
+    v12 = undefined;
+    let v23_1: any;
     closure6(v3, "timeout", undefined);
-    v21_1 = undefined;
-    let v31_1: any;
+    v23_1 = undefined;
+    let v34_1: any;
     closure6(v3, " = ", undefined);
-    v31_1 = undefined;
-    let v40: any;
+    v34_1 = undefined;
+    let v43: any;
     closure6(v3, `${v0_1}`, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure6(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure6(v3, "ex", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure6(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure6(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure6(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
@@ -1689,27 +1694,27 @@ export function closure35(v0_1: int32, v1_1: Error, unitVar: void): void {
 export function method73(v0_1: int32, v1_1: Async<US11_$union>): Async<US2_$union> {
     return singleton.Delay<US2_$union>((): Async<US2_$union> => singleton.Bind<US11_$union, US2_$union>(v1_1, (_arg: US11_$union): Async<US2_$union> => {
         const v23_1: US11_$union = _arg;
-        let v174: US2_$union;
+        let v175: US2_$union;
         if ((v23_1.tag as int32) === /* US11_0 */ 0) {
-            v174 = US2_US2_0(v23_1.fields[0] as any);
+            v175 = US2_US2_0(v23_1.fields[0] as any);
         }
         else {
             const v26_1 = v23_1.fields[0] as any;
             const v28_1: string = toText(interpolate("%A%P()", [v26_1]));
             if (v28_1.indexOf("System.TimeoutException") >= 0) {
-                let v38_1: any;
+                let v39_1: any;
                 closure34(v0_1, undefined);
-                v38_1 = undefined;
-                v174 = US2_US2_1();
+                v39_1 = undefined;
+                v175 = US2_US2_1();
             }
             else {
-                let v88: any;
+                let v89: any;
                 closure35(v0_1, v26_1, undefined);
-                v88 = undefined;
-                v174 = US2_US2_1();
+                v89 = undefined;
+                v175 = US2_US2_1();
             }
         }
-        return singleton.Return<US2_$union>(v174);
+        return singleton.Return<US2_$union>(v175);
     }));
 }
 
@@ -1733,33 +1738,33 @@ export function method78(v0_1: Async<string>): Async<Option<string>> {
 
 export function method80(v0_1: int64, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21_1: any;
+    v12 = undefined;
+    let v23_1: any;
     closure6(v3, "retry", undefined);
-    v21_1 = undefined;
-    let v31_1: any;
+    v23_1 = undefined;
+    let v34_1: any;
     closure6(v3, " = ", undefined);
-    v31_1 = undefined;
-    let v40: any;
+    v34_1 = undefined;
+    let v43: any;
     closure6(v3, `${v0_1}`, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure6(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure6(v3, "ex", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure6(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure6(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure6(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
@@ -1915,33 +1920,33 @@ export function method96(): ((arg0: any) => US13_$union) {
 
 export function method98(v0_1: string, v1_1: any): string {
     const v3: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21_1: any;
+    v12 = undefined;
+    let v23_1: any;
     closure6(v3, "dir", undefined);
-    v21_1 = undefined;
-    let v31_1: any;
+    v23_1 = undefined;
+    let v34_1: any;
     closure6(v3, " = ", undefined);
-    v31_1 = undefined;
-    let v40: any;
+    v34_1 = undefined;
+    let v43: any;
     closure6(v3, v0_1, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure6(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure6(v3, "error", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure6(v3, " = ", undefined);
-    v69 = undefined;
-    let v117: any;
+    v74 = undefined;
+    let v122: any;
     closure6(v3, toText(interpolate("%A%P()", [v1_1])), undefined);
-    v117 = undefined;
-    let v127: any;
+    v122 = undefined;
+    let v133: any;
     closure6(v3, " }", undefined);
-    v127 = undefined;
+    v133 = undefined;
     return v3.l0;
 }
 
@@ -1968,21 +1973,21 @@ export function closure43(v0_1: string, v1_1: any, unitVar: void): void {
 
 export function method100(v0_1: string): string {
     const v2_1: Mut3 = new Mut3(method18());
-    let v10: any;
+    let v11: any;
     closure6(v2_1, "{ ", undefined);
-    v10 = undefined;
-    let v20_1: any;
+    v11 = undefined;
+    let v22_1: any;
     closure6(v2_1, "dir", undefined);
-    v20_1 = undefined;
-    let v30_1: any;
+    v22_1 = undefined;
+    let v33_1: any;
     closure6(v2_1, " = ", undefined);
-    v30_1 = undefined;
-    let v39_1: any;
+    v33_1 = undefined;
+    let v42: any;
     closure6(v2_1, v0_1, undefined);
-    v39_1 = undefined;
-    let v49: any;
+    v42 = undefined;
+    let v53: any;
     closure6(v2_1, " }", undefined);
-    v49 = undefined;
+    v53 = undefined;
     return v2_1.l0;
 }
 
@@ -2029,33 +2034,33 @@ export function method103(v0_1: string): boolean {
 
 export function method105(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21_1: any;
+    v12 = undefined;
+    let v23_1: any;
     closure6(v3, "dir", undefined);
-    v21_1 = undefined;
-    let v31_1: any;
+    v23_1 = undefined;
+    let v34_1: any;
     closure6(v3, " = ", undefined);
-    v31_1 = undefined;
-    let v40: any;
+    v34_1 = undefined;
+    let v43: any;
     closure6(v3, v0_1, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure6(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure6(v3, "result", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure6(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure6(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure6(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
@@ -2533,33 +2538,33 @@ export function method139(v0_1: US16_$union, v1_1: string, v2_1: string): US17_$
 
 export function method143(v0_1: string, v1_1: string): string {
     const v3: Mut3 = new Mut3(method18());
-    let v11: any;
+    let v12: any;
     closure6(v3, "{ ", undefined);
-    v11 = undefined;
-    let v21_1: any;
+    v12 = undefined;
+    let v23_1: any;
     closure6(v3, "dir", undefined);
-    v21_1 = undefined;
-    let v31_1: any;
+    v23_1 = undefined;
+    let v34_1: any;
     closure6(v3, " = ", undefined);
-    v31_1 = undefined;
-    let v40: any;
+    v34_1 = undefined;
+    let v43: any;
     closure6(v3, v0_1, undefined);
-    v40 = undefined;
-    let v50: any;
+    v43 = undefined;
+    let v54: any;
     closure6(v3, "; ", undefined);
-    v50 = undefined;
-    let v60: any;
+    v54 = undefined;
+    let v65: any;
     closure6(v3, "error", undefined);
-    v60 = undefined;
-    let v69: any;
+    v65 = undefined;
+    let v74: any;
     closure6(v3, " = ", undefined);
-    v69 = undefined;
-    let v78: any;
+    v74 = undefined;
+    let v83: any;
     closure6(v3, v1_1, undefined);
-    v78 = undefined;
-    let v88: any;
+    v83 = undefined;
+    let v94: any;
     closure6(v3, " }", undefined);
-    v88 = undefined;
+    v94 = undefined;
     return v3.l0;
 }
 
