@@ -186,9 +186,9 @@ export function method5(v0_1: string): string {
 }
 
 export function closure23(v0_1: string[], v1_1: string): string[] {
-    const v76: Iterable<string> = ofArray<string>(v0_1);
-    const v79: string = method4();
-    return split_1(v1_1, [join((v79 === "\n") ? method5(v79) : v79, v76)], undefined, 0);
+    const v96: Iterable<string> = ofArray<string>(v0_1);
+    const v99: string = method4();
+    return split_1(v1_1, [join((v99 === "\n") ? method5(v99) : v99, v96)], undefined, 0);
 }
 
 export function closure22(unitVar: void, v0_1: string[]): ((arg0: string) => string[]) {

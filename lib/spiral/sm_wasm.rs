@@ -215,17 +215,17 @@ pub mod Sm {
         v0_1
     }
     pub fn closure23(v0_1: Array<string>, v1_1: string) -> Array<string> {
-        let v40: LrcPtr<dyn IEnumerable_1<string>> = ofArray(v0_1);
-        let v43: string = Sm::method4();
+        let v50: LrcPtr<dyn IEnumerable_1<string>> = ofArray(v0_1);
+        let v53: string = Sm::method4();
         split_1(
             v1_1,
             join(
-                if (v43.clone()) == string("\n") {
-                    Sm::method5(v43.clone())
+                if (v53.clone()) == string("\n") {
+                    Sm::method5(v53.clone())
                 } else {
-                    v43
+                    v53
                 },
-                toArray(v40),
+                toArray(v50),
             ),
             -1_i32,
             0_i32,

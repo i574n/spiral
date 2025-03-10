@@ -341,10 +341,10 @@ export function method4(): string {
 }
 
 export function method0(v0_1: string): string {
-    const v154: ICryptoCreateHash = crypto;
-    const v157: any = v154.createHash("sha256");
-    const v159: any = v157.update(v0_1, 'utf8');
-    return v159.digest("hex");
+    const v155: ICryptoCreateHash = crypto;
+    const v158: any = v155.createHash("sha256");
+    const v160: any = v158.update(v0_1, 'utf8');
+    return v160.digest("hex");
 }
 
 export function closure0(unitVar: void, v0_1: string): string {
@@ -372,10 +372,15 @@ export function method8(v0_1: string): string {
 }
 
 export function method7(): [US1_$union, US2_$union] {
-    let v13: US1_$union, v20: US1_$union, v27: US1_$union, v34: US1_$union;
+    let v48: US1_$union, v55: US1_$union, v62: US1_$union, v69: US1_$union, v76: US1_$union, v83: US1_$union, v90: US1_$union, v97: US1_$union, v104: US1_$union;
     const v1_1: string = method8("TRACE_LEVEL");
-    const v6: US1_$union = ("Verbose" === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1();
-    return [((v6.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v6.fields[0] as any) : ((v13 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v13.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v13.fields[0] as any) : ((v20 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v20.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v20.fields[0] as any) : ((v27 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v27.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v27.fields[0] as any) : ((v34 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v34.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v34.fields[0] as any) : US1_US1_1())))))))), (method8("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
+    const v6: string = "Critical".toLocaleLowerCase();
+    const v13: string = "Warning".toLocaleLowerCase();
+    const v20: string = "Info".toLocaleLowerCase();
+    const v27: string = "Debug".toLocaleLowerCase();
+    const v34: string = "Verbose".toLocaleLowerCase();
+    const v41: US1_$union = ("Verbose" === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1();
+    return [((v41.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v41.fields[0] as any) : ((v48 = (("Debug" === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v48.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v48.fields[0] as any) : ((v55 = (("Info" === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v55.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v55.fields[0] as any) : ((v62 = (("Warning" === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v62.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v62.fields[0] as any) : ((v69 = (("Critical" === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v69.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v69.fields[0] as any) : ((v76 = ((v34 === v1_1) ? US1_US1_0(US0_US0_0()) : US1_US1_1()), ((v76.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v76.fields[0] as any) : ((v83 = ((v27 === v1_1) ? US1_US1_0(US0_US0_1()) : US1_US1_1()), ((v83.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v83.fields[0] as any) : ((v90 = ((v20 === v1_1) ? US1_US1_0(US0_US0_2()) : US1_US1_1()), ((v90.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v90.fields[0] as any) : ((v97 = ((v13 === v1_1) ? US1_US1_0(US0_US0_3()) : US1_US1_1()), ((v97.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v97.fields[0] as any) : ((v104 = ((v6 === v1_1) ? US1_US1_0(US0_US0_4()) : US1_US1_1()), ((v104.tag as int32) === /* US1_0 */ 0) ? US1_US1_0(v104.fields[0] as any) : US1_US1_1())))))))))))))))))), (method8("AUTOMATION") !== "True") ? US2_US2_1() : US2_US2_0(toInt64(fromInt64(getTicks(now()))))] as [US1_$union, US2_$union];
 }
 
 export function closure5(unitVar: void, v0_1: string): void {
@@ -469,51 +474,51 @@ export function method19(): string {
 }
 
 export function method16(): string {
-    const v3: string = "Verbose".toLocaleLowerCase();
-    return ("\u001b[90m" + method17(v3[0])) + method19();
+    const v4: string = "Verbose".toLocaleLowerCase();
+    return ("\u001b[90m" + method17(v4[0])) + method19();
 }
 
 export function method21(v0_1: int32, v1_1: string, v2: uint16): string {
     const v4: Mut4 = new Mut4(method18());
-    let v12: any;
+    let v13: any;
     closure7(v4, "{ ", undefined);
-    v12 = undefined;
-    let v22: any;
+    v13 = undefined;
+    let v24: any;
     closure7(v4, "first_letter_code", undefined);
-    v22 = undefined;
-    let v32: any;
+    v24 = undefined;
+    let v35: any;
     closure7(v4, " = ", undefined);
-    v32 = undefined;
-    let v41: any;
+    v35 = undefined;
+    let v44: any;
     closure7(v4, `${v0_1}`, undefined);
-    v41 = undefined;
-    let v51: any;
+    v44 = undefined;
+    let v55: any;
     closure7(v4, "; ", undefined);
-    v51 = undefined;
-    let v61: any;
+    v55 = undefined;
+    let v66: any;
     closure7(v4, "hash_part", undefined);
-    v61 = undefined;
-    let v70: any;
+    v66 = undefined;
+    let v75: any;
     closure7(v4, " = ", undefined);
-    v70 = undefined;
-    let v79: any;
+    v75 = undefined;
+    let v84: any;
     closure7(v4, v1_1, undefined);
-    v79 = undefined;
-    let v88: any;
+    v84 = undefined;
+    let v93: any;
     closure7(v4, "; ", undefined);
-    v88 = undefined;
-    let v98: any;
+    v93 = undefined;
+    let v104: any;
     closure7(v4, "combined_value", undefined);
-    v98 = undefined;
-    let v107: any;
+    v104 = undefined;
+    let v113: any;
     closure7(v4, " = ", undefined);
-    v107 = undefined;
-    let v116: any;
+    v113 = undefined;
+    let v122: any;
     closure7(v4, `${v2}`, undefined);
-    v116 = undefined;
-    let v126: any;
+    v122 = undefined;
+    let v133: any;
     closure7(v4, " }", undefined);
-    v126 = undefined;
+    v133 = undefined;
     return v4.l0;
 }
 

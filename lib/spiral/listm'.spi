@@ -262,6 +262,10 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
             $'!tail ' : list' t
     }
 
+/// ### box
+inl box forall t. (list : list t) : list' t =
+    (list, empty' ()) ||> listm.foldBack cons'
+
 /// ### rev'
 inl rev' forall t. (items : list' t) : list' t =
     backend_switch {
@@ -269,12 +273,6 @@ inl rev' forall t. (items : list' t) : list' t =
         Fsharp = fun () => items |> $'List.rev' : list' t
         Python = fun () => $'list(reversed(!items))' : list' t
     }
-
-/// ### box
-inl box forall t. (list : list t) : list' t =
-    (list, empty' ())
-    ||> listm.foldBack fun x acc =>
-        acc |> cons' x
 
 /// ### fold'
 inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =

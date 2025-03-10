@@ -298,30 +298,65 @@ def method2(v0_1: str) -> str:
 
 def method1(__unit: None=None) -> tuple[US1, US2]:
     v1_1: str = method2("TRACE_LEVEL")
-    v6: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
+    v6: str = "Critical".lower()
+    v13: str = "Warning".lower()
+    v20_1: str = "Info".lower()
+    v27: str = "Debug".lower()
+    v34: str = "Verbose".lower()
+    v41: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
     def _arrow146(__unit: None=None) -> US1:
-        v13: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
-        if v13.tag == 0:
-            return US1(0, v13.fields[0])
+        v48: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
+        if v48.tag == 0:
+            return US1(0, v48.fields[0])
 
         else: 
-            v20_1: US1 = US1(0, US0(2)) if ("Info" == v1_1) else US1(1)
-            if v20_1.tag == 0:
-                return US1(0, v20_1.fields[0])
+            v55: US1 = US1(0, US0(2)) if ("Info" == v1_1) else US1(1)
+            if v55.tag == 0:
+                return US1(0, v55.fields[0])
 
             else: 
-                v27: US1 = US1(0, US0(3)) if ("Warning" == v1_1) else US1(1)
-                if v27.tag == 0:
-                    return US1(0, v27.fields[0])
+                v62: US1 = US1(0, US0(3)) if ("Warning" == v1_1) else US1(1)
+                if v62.tag == 0:
+                    return US1(0, v62.fields[0])
 
                 else: 
-                    v34: US1 = US1(0, US0(4)) if ("Critical" == v1_1) else US1(1)
-                    return US1(0, v34.fields[0]) if (v34.tag == 0) else US1(1)
+                    v69: US1 = US1(0, US0(4)) if ("Critical" == v1_1) else US1(1)
+                    if v69.tag == 0:
+                        return US1(0, v69.fields[0])
+
+                    else: 
+                        v76: US1 = US1(0, US0(0)) if (v34 == v1_1) else US1(1)
+                        if v76.tag == 0:
+                            return US1(0, v76.fields[0])
+
+                        else: 
+                            v83: US1 = US1(0, US0(1)) if (v27 == v1_1) else US1(1)
+                            if v83.tag == 0:
+                                return US1(0, v83.fields[0])
+
+                            else: 
+                                v90: US1 = US1(0, US0(2)) if (v20_1 == v1_1) else US1(1)
+                                if v90.tag == 0:
+                                    return US1(0, v90.fields[0])
+
+                                else: 
+                                    v97: US1 = US1(0, US0(3)) if (v13 == v1_1) else US1(1)
+                                    if v97.tag == 0:
+                                        return US1(0, v97.fields[0])
+
+                                    else: 
+                                        v104: US1 = US1(0, US0(4)) if (v6 == v1_1) else US1(1)
+                                        return US1(0, v104.fields[0]) if (v104.tag == 0) else US1(1)
 
 
 
 
-    return (US1(0, v6.fields[0]) if (v6.tag == 0) else _arrow146(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
+
+
+
+
+
+    return (US1(0, v41.fields[0]) if (v41.tag == 0) else _arrow146(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
 
 
 def closure2(unit_var: None, v0_1: str) -> None:
@@ -425,39 +460,39 @@ def method16(__unit: None=None) -> str:
 
 
 def method13(__unit: None=None) -> str:
-    v3: str = "Verbose".lower()
-    return ("\u001b[90m" + method14(v3[0])) + method16()
+    v4: str = "Verbose".lower()
+    return ("\u001b[90m" + method14(v4[0])) + method16()
 
 
 def method18(v0_1: int, v1_1: str) -> str:
     v3: Mut3 = Mut3(method15())
-    v11: None
+    v12: None
     closure7(v3, "{ ", None)
-    v11 = None
-    v21: None
+    v12 = None
+    v23: None
     closure7(v3, "port", None)
-    v21 = None
-    v31: None
+    v23 = None
+    v34: None
     closure7(v3, " = ", None)
-    v31 = None
-    v40: None
+    v34 = None
+    v43: None
     closure7(v3, ("" + str(v0_1)) + "", None)
-    v40 = None
-    v50: None
+    v43 = None
+    v54: None
     closure7(v3, "; ", None)
-    v50 = None
-    v60: None
+    v54 = None
+    v65: None
     closure7(v3, "ex", None)
-    v60 = None
-    v69: None
+    v65 = None
+    v74: None
     closure7(v3, " = ", None)
-    v69 = None
-    v78: None
+    v74 = None
+    v83: None
     closure7(v3, v1_1, None)
-    v78 = None
-    v88: None
+    v83 = None
+    v94: None
     closure7(v3, " }", None)
-    v88 = None
+    v94 = None
     return v3.l0
 
 
@@ -601,21 +636,21 @@ def method28(v0_1: Async[US7]) -> Async[US8]:
 
 def method31(v0_1: int) -> str:
     v2_1: Mut3 = Mut3(method15())
-    v10: None
+    v11: None
     closure7(v2_1, "{ ", None)
-    v10 = None
-    v20_1: None
+    v11 = None
+    v22: None
     closure7(v2_1, "timeout", None)
-    v20_1 = None
-    v30: None
+    v22 = None
+    v33: None
     closure7(v2_1, " = ", None)
-    v30 = None
-    v39: None
+    v33 = None
+    v42: None
     closure7(v2_1, ("" + str(v0_1)) + "", None)
-    v39 = None
-    v49: None
+    v42 = None
+    v53: None
     closure7(v2_1, " }", None)
-    v49 = None
+    v53 = None
     return v2_1.l0
 
 
@@ -641,39 +676,39 @@ def closure16(v0_1: int, unit_var: None) -> None:
 
 
 def method32(__unit: None=None) -> str:
-    v3: str = "Critical".lower()
-    return ("\u001b[91m" + method14(v3[0])) + method16()
+    v4: str = "Critical".lower()
+    return ("\u001b[91m" + method14(v4[0])) + method16()
 
 
 def method34(v0_1: int, v1_1: str) -> str:
     v3: Mut3 = Mut3(method15())
-    v11: None
+    v12: None
     closure7(v3, "{ ", None)
-    v11 = None
-    v21: None
+    v12 = None
+    v23: None
     closure7(v3, "timeout", None)
-    v21 = None
-    v31: None
+    v23 = None
+    v34: None
     closure7(v3, " = ", None)
-    v31 = None
-    v40: None
+    v34 = None
+    v43: None
     closure7(v3, ("" + str(v0_1)) + "", None)
-    v40 = None
-    v50: None
+    v43 = None
+    v54: None
     closure7(v3, "; ", None)
-    v50 = None
-    v60: None
+    v54 = None
+    v65: None
     closure7(v3, "ex", None)
-    v60 = None
-    v69: None
+    v65 = None
+    v74: None
     closure7(v3, " = ", None)
-    v69 = None
-    v78: None
+    v74 = None
+    v83: None
     closure7(v3, v1_1, None)
-    v78 = None
-    v88: None
+    v83 = None
+    v94: None
     closure7(v3, " }", None)
-    v88 = None
+    v94 = None
     return v3.l0
 
 
@@ -701,28 +736,28 @@ def closure17(v0_1: int, v1_1: Exception, unit_var: None) -> None:
 def method29(v0_1: int, v1_1: Async[US8]) -> Async[US6]:
     def _arrow164(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[US6]:
         def _arrow163(_arg: US8) -> Async[US6]:
-            v1244: US8 = _arg
-            v1395: US6
-            if v1244.tag == 0:
-                v1395 = US6(0, v1244.fields[0])
+            v1252: US8 = _arg
+            v1404: US6
+            if v1252.tag == 0:
+                v1404 = US6(0, v1252.fields[0])
 
             else: 
-                v1247: Exception = v1244.fields[0]
-                v1249: str = to_text(interpolate("%A%P()", [v1247]))
-                if v1249.find("System.TimeoutException") >= 0:
-                    v1259: None
+                v1255: Exception = v1252.fields[0]
+                v1257: str = to_text(interpolate("%A%P()", [v1255]))
+                if v1257.find("System.TimeoutException") >= 0:
+                    v1268: None
                     closure16(v0_1, None)
-                    v1259 = None
-                    v1395 = US6(1)
+                    v1268 = None
+                    v1404 = US6(1)
 
                 else: 
-                    v1309: None
-                    closure17(v0_1, v1247, None)
-                    v1309 = None
-                    v1395 = US6(1)
+                    v1318: None
+                    closure17(v0_1, v1255, None)
+                    v1318 = None
+                    v1404 = US6(1)
 
 
-            return singleton.Return(v1395)
+            return singleton.Return(v1404)
 
         return singleton.Bind(v1_1, _arrow163)
 
@@ -793,57 +828,57 @@ def method38(__unit: None=None) -> Callable[[int], US9]:
 
 def method40(v0_1: int, v1_1: int64, v2_1: int | None, v3: bool) -> str:
     v5: Mut3 = Mut3(method15())
-    v13: None
+    v14: None
     closure7(v5, "{ ", None)
-    v13 = None
-    v23: None
+    v14 = None
+    v25: None
     closure7(v5, "port", None)
-    v23 = None
-    v33: None
+    v25 = None
+    v36: None
     closure7(v5, " = ", None)
-    v33 = None
-    v42: None
+    v36 = None
+    v45: None
     closure7(v5, ("" + str(v0_1)) + "", None)
-    v42 = None
-    v52: None
+    v45 = None
+    v56: None
     closure7(v5, "; ", None)
-    v52 = None
-    v62: None
+    v56 = None
+    v67: None
     closure7(v5, "retry", None)
-    v62 = None
-    v71: None
+    v67 = None
+    v76: None
     closure7(v5, " = ", None)
-    v71 = None
-    v80: None
+    v76 = None
+    v85: None
     closure7(v5, ("" + str(v1_1)) + "", None)
-    v80 = None
-    v89: None
+    v85 = None
+    v94: None
     closure7(v5, "; ", None)
-    v89 = None
-    v99: None
+    v94 = None
+    v105: None
     closure7(v5, "timeout", None)
-    v99 = None
-    v108: None
+    v105 = None
+    v114: None
     closure7(v5, " = ", None)
-    v108 = None
-    v156: None
+    v114 = None
+    v162: None
     closure7(v5, to_text(interpolate("%A%P()", [v2_1])), None)
-    v156 = None
-    v165: None
+    v162 = None
+    v171: None
     closure7(v5, "; ", None)
-    v165 = None
-    v175: None
+    v171 = None
+    v182: None
     closure7(v5, "status", None)
-    v175 = None
-    v184: None
+    v182 = None
+    v191: None
     closure7(v5, " = ", None)
-    v184 = None
-    v196: None
+    v191 = None
+    v203: None
     closure7(v5, "true" if v3 else "false", None)
-    v196 = None
-    v206: None
+    v203 = None
+    v214: None
     closure7(v5, " }", None)
-    v206 = None
+    v214 = None
     return v5.l0
 
 

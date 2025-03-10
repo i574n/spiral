@@ -164,7 +164,7 @@ class US3(Union):
 
 US3_reflection = _expr15
 
-def _expr16() -> TypeInfo:
+def _expr18() -> TypeInfo:
     return union_type("Common.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())]])
 
 
@@ -180,9 +180,9 @@ class US4(Union):
         return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"]
 
 
-US4_reflection = _expr16
+US4_reflection = _expr18
 
-def _expr19() -> TypeInfo:
+def _expr21() -> TypeInfo:
     return union_type("Common.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -198,9 +198,9 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr19
+US5_reflection = _expr21
 
-def _expr21() -> TypeInfo:
+def _expr24() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
 
 
@@ -216,7 +216,7 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr21
+US6_reflection = _expr24
 
 def _expr25() -> TypeInfo:
     return union_type("Common.US7", [], US7, lambda: [[("f0_0", US6_reflection())], []])
@@ -279,30 +279,65 @@ def method2(v0_1: str) -> str:
 
 def method1(__unit: None=None) -> tuple[US1, US2]:
     v1_1: str = method2("TRACE_LEVEL")
-    v6: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
-    def _arrow40(__unit: None=None) -> US1:
-        v13: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
-        if v13.tag == 0:
-            return US1(0, v13.fields[0])
+    v6: str = "Critical".lower()
+    v13: str = "Warning".lower()
+    v20: str = "Info".lower()
+    v27: str = "Debug".lower()
+    v34: str = "Verbose".lower()
+    v41: US1 = US1(0, US0(0)) if ("Verbose" == v1_1) else US1(1)
+    def _arrow42(__unit: None=None) -> US1:
+        v48: US1 = US1(0, US0(1)) if ("Debug" == v1_1) else US1(1)
+        if v48.tag == 0:
+            return US1(0, v48.fields[0])
 
         else: 
-            v20: US1 = US1(0, US0(2)) if ("Info" == v1_1) else US1(1)
-            if v20.tag == 0:
-                return US1(0, v20.fields[0])
+            v55: US1 = US1(0, US0(2)) if ("Info" == v1_1) else US1(1)
+            if v55.tag == 0:
+                return US1(0, v55.fields[0])
 
             else: 
-                v27: US1 = US1(0, US0(3)) if ("Warning" == v1_1) else US1(1)
-                if v27.tag == 0:
-                    return US1(0, v27.fields[0])
+                v62: US1 = US1(0, US0(3)) if ("Warning" == v1_1) else US1(1)
+                if v62.tag == 0:
+                    return US1(0, v62.fields[0])
 
                 else: 
-                    v34: US1 = US1(0, US0(4)) if ("Critical" == v1_1) else US1(1)
-                    return US1(0, v34.fields[0]) if (v34.tag == 0) else US1(1)
+                    v69: US1 = US1(0, US0(4)) if ("Critical" == v1_1) else US1(1)
+                    if v69.tag == 0:
+                        return US1(0, v69.fields[0])
+
+                    else: 
+                        v76: US1 = US1(0, US0(0)) if (v34 == v1_1) else US1(1)
+                        if v76.tag == 0:
+                            return US1(0, v76.fields[0])
+
+                        else: 
+                            v83: US1 = US1(0, US0(1)) if (v27 == v1_1) else US1(1)
+                            if v83.tag == 0:
+                                return US1(0, v83.fields[0])
+
+                            else: 
+                                v90: US1 = US1(0, US0(2)) if (v20 == v1_1) else US1(1)
+                                if v90.tag == 0:
+                                    return US1(0, v90.fields[0])
+
+                                else: 
+                                    v97: US1 = US1(0, US0(3)) if (v13 == v1_1) else US1(1)
+                                    if v97.tag == 0:
+                                        return US1(0, v97.fields[0])
+
+                                    else: 
+                                        v104: US1 = US1(0, US0(4)) if (v6 == v1_1) else US1(1)
+                                        return US1(0, v104.fields[0]) if (v104.tag == 0) else US1(1)
 
 
 
 
-    return (US1(0, v6.fields[0]) if (v6.tag == 0) else _arrow40(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
+
+
+
+
+
+    return (US1(0, v41.fields[0]) if (v41.tag == 0) else _arrow42(), US2(1) if (method2("AUTOMATION") != "True") else US2(0, from_value(ticks_1(now()), False)))
 
 
 def closure2(unit_var: None, v0_1: str) -> None:
@@ -337,11 +372,11 @@ def method7(v0_1: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0_1: Callable[[], None]) -> IDisposable:
     v14: Callable[[], None] = method7(v0_1)
-    class ObjectExpr45(IDisposable):
+    class ObjectExpr48(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
             v14(None)
 
-    return ObjectExpr45()
+    return ObjectExpr48()
 
 
 def closure6(unit_var: None, v0_1: US6) -> US7:
@@ -368,17 +403,17 @@ def method9(v0_1: US0) -> bool:
         return False
 
     else: 
-        class ObjectExpr63:
+        class ObjectExpr68:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        class ObjectExpr65:
+        class ObjectExpr70:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr63())) >= find(v42, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr65()))
+        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr68())) >= find(v42, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr70()))
 
 
 
@@ -387,10 +422,10 @@ def closure10(unit_var: None, v0_1: int64) -> US2:
 
 
 def method11(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow68(v: int64) -> US2:
+    def _arrow72(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow68
+    return _arrow72
 
 
 def method12(__unit: None=None) -> str:
@@ -437,39 +472,39 @@ def method17(__unit: None=None) -> str:
 
 
 def method14(__unit: None=None) -> str:
-    v3: str = "Warning".lower()
-    return ("\u001b[93m" + method15(v3[0])) + method17()
+    v4: str = "Warning".lower()
+    return ("\u001b[93m" + method15(v4[0])) + method17()
 
 
 def method19(v0_1: int, v1_1: Exception) -> str:
     v3: Mut3 = Mut3(method16())
-    v11: None
+    v12: None
     closure11(v3, "{ ", None)
-    v11 = None
-    v21: None
+    v12 = None
+    v23: None
     closure11(v3, "retry", None)
-    v21 = None
-    v31: None
+    v23 = None
+    v34: None
     closure11(v3, " = ", None)
-    v31 = None
-    v40: None
+    v34 = None
+    v43: None
     closure11(v3, ("" + str(v0_1)) + "", None)
-    v40 = None
-    v50: None
+    v43 = None
+    v54: None
     closure11(v3, "; ", None)
-    v50 = None
-    v60: None
+    v54 = None
+    v65: None
     closure11(v3, "ex", None)
-    v60 = None
-    v69: None
+    v65 = None
+    v74: None
     closure11(v3, " = ", None)
-    v69 = None
-    v117: None
+    v74 = None
+    v122: None
     closure11(v3, to_text(interpolate("%A%P()", [v1_1])), None)
-    v117 = None
-    v127: None
+    v122 = None
+    v133: None
     closure11(v3, " }", None)
-    v127 = None
+    v133 = None
     return v3.l0
 
 
