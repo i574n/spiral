@@ -80,11 +80,13 @@ inl simple forall model msg.
 inl start id app =
     $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()
 
+/// ## counter
+
 /// ### model
 type model = int
 
 /// ### init
-inl init initial_count =
+inl init initial_count : model =
     if initial_count < 0
     then 0
     else initial_count
@@ -133,11 +135,4 @@ inl view model =
         ]
     ]
 
-/// ### main'
-inl main' id =
-    inl app : _ model _ = simple init (update 1) view
-    app |> start id
-
-inl main' id =
-    inl app : _ model _ = simple init (update 2) view
-    app |> start id
+/// ## tests
