@@ -77,8 +77,8 @@ inl simple forall model msg.
     $'lustre.simple(!init, fn (a, b) { !update(#(a, b)) }, !view)'
 
 /// ### start
-inl start app =
-    $'let assert Ok(_) = lustre.start(!app, "#app", 0)' : ()
+inl start id app =
+    $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()
 
 /// ### model
 type model = int
@@ -95,10 +95,10 @@ union msg =
     | Decr
 
 /// ### update
-inl update (model, msg) =
+inl update n (model, msg) =
     match msg with
-    | Incr => model + 1
-    | Decr => model - 1
+    | Incr => model + n
+    | Decr => model - n
 
 /// ### view
 inl view model =
@@ -134,6 +134,10 @@ inl view model =
     ]
 
 /// ### main'
-inl main' () =
-    inl app : _ model _ = simple init update view
-    app |> start
+inl main' id =
+    inl app : _ model _ = simple init (update 1) view
+    app |> start id
+
+inl main' id =
+    inl app : _ model _ = simple init (update 2) view
+    app |> start id
