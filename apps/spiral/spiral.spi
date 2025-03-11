@@ -1476,8 +1476,10 @@ inl process_gleam { gleam_path target deps } =
                 else
                     inl js_path = $'$"{!package_dir}/build/dev/javascript/main/main.mjs"'
                     inl js_text = js_path |> file_system.read_all_text
-                    $'$"{!js_text}\nmain()"'
-                    |> file_system.write_all_text_exists js_path
+                    inl js_text = js_text |> sm'.replace $'$"#app_"' $'$"#app_{!hash_hex}"'
+                    if js_text |> sm'.ends_with "main()" |> not then
+                        $'$"{!js_text}\nmain()"'
+                        |> file_system.write_all_text_exists js_path
                     
                     inl exit_code, run_result =
                         runtime.execution_options fun x => { x with
@@ -1516,7 +1518,7 @@ inl process_gleam { gleam_path target deps } =
                             +#. $'$"    />"'
                             +#. $'$"  </head>"'
                             +#. $'$"  <body>"'
-                            +#. $'$"    <div id=\\\"app\\\"></div>"'
+                            +#. $'$"    <div id=\\\"app_{!hash_hex}\\\"></div>"'
                             +#. $'$"  </body>"'
                             +#. $'$"</html>"'
 

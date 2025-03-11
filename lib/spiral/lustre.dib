@@ -149,8 +149,8 @@ inl simple forall model msg.
 
 #!spiral
 
-inl start app =
-    $'let assert Ok(_) = lustre.start(!app, "#app", 0)' : ()
+inl start id app =
+    $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()
 
 #!markdown
 
@@ -187,10 +187,10 @@ union msg =
 
 #!spiral
 
-inl update (model, msg) =
+inl update n (model, msg) =
     match msg with
-    | Incr => model + 1
-    | Decr => model - 1
+    | Incr => model + n
+    | Decr => model - n
 
 #!markdown
 
@@ -236,13 +236,26 @@ inl view model =
 
 #!spiral
 
-inl main' () =
-    inl app : _ model _ = simple init update view
-    app |> start
+inl main' id =
+    inl app : _ model _ = simple init (update 1) view
+    app |> start id
 
 #!spiral
 
 //// test
 ///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 
-main' ()
+main' "#app_"
+
+#!spiral
+
+inl main' id =
+    inl app : _ model _ = simple init (update 2) view
+    app |> start id
+
+#!spiral
+
+//// test
+///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+main' "#app_"
