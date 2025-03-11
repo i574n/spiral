@@ -154,6 +154,10 @@ inl start id app =
 
 #!markdown
 
+## counter
+
+#!markdown
+
 ### model
 
 #!spiral
@@ -166,7 +170,7 @@ type model = int
 
 #!spiral
 
-inl init initial_count =
+inl init initial_count : model =
     if initial_count < 0
     then 0
     else initial_count
@@ -232,30 +236,20 @@ inl view model =
 
 #!markdown
 
-### main'
-
-#!spiral
-
-inl main' id =
-    inl app : _ model _ = simple init (update 1) view
-    app |> start id
+## tests
 
 #!spiral
 
 //// test
 ///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 
-main' "#app_"
-
-#!spiral
-
-inl main' id =
-    inl app : _ model _ = simple init (update 2) view
-    app |> start id
+simple init (update 1) view
+|> start "#app_"
 
 #!spiral
 
 //// test
 ///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 
-main' "#app_"
+simple init (update 2) view
+|> start "#app_"
