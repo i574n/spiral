@@ -1,3 +1,6 @@
 deps/
 target/
 dist/
+node_modules/
+playwright-report/
+test-results/

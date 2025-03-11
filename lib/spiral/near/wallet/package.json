@@ -1,0 +1,11 @@
+{
+  "name": "near_wallet",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "outdated-pre": "npm-check-updates --target greatest"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.44.0",
+    "npm-check-updates": "~17.1.14"
+  }
+}

@@ -1148,7 +1148,7 @@ inl process_typescript { fs_path deps trace_level } =
             $'$"{!new_code}\\n\\n{!main_code}\\n"'
             |> file_system.write_all_text_exists new_code_path
 
-        inl command = $'$"bun run \\\"{!new_code_path}\\\""'
+        inl command = $'$"bun --bun run \\\"{!new_code_path}\\\""'
         inl environment_variables =
             match "~/.bun/bin" |> env.append_path with
             | Some path => [ "PATH", path ]
@@ -1380,9 +1380,13 @@ inl process_gleam { gleam_path target deps } =
     inl workspace_root =
         workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path
 
-    inl package_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
+    inl src_dir =
+        new_code_path
+        |> file_system.directory_get_parent
+        |> optionm'.default_value' ""
+        |> file_system.standardize_path
 
-    inl package_dir = package_dir </> ".." |> file_system.standardize_path
+    inl package_dir = src_dir </> ".." |> file_system.standardize_path
 
     inl manifest_path = package_dir </> "gleam.toml"
 
@@ -1405,23 +1409,23 @@ inl process_gleam { gleam_path target deps } =
         |> fun x => x : _ i32 _
         |> seq.of_array'
         |> sm'.concat "\n"
-    
+
     inl target' = target |> reflection.union_to_string |> sm'.to_lower
 
+    inl manifest =
+        inl main =
+            if new_code_path |> sm'.contains "_real"
+            then "main_real"
+            else "main"
+        $'$"name = \\\"{!main}\\\""'
+        +#. $'$"target = \\\"{!target'}\\\""'
+        +#. $'$""'
+        +#. $'$"[dependencies]"'
+        +#. $'$"{!deps}"'
+
+    manifest |> file_system.write_all_text_exists manifest_path
+
     inl exit_code, run_result =
-        inl manifest =
-            inl main =
-                if new_code_path |> sm'.contains "_real"
-                then "main_real"
-                else "main"
-            $'$"name = \\\"{!main}\\\""'
-            +#. $'$"target = \\\"{!target'}\\\""'
-            +#. $'$""'
-            +#. $'$"[dependencies]"'
-            +#. $'$"{!deps}"'
-
-        manifest |> file_system.write_all_text_exists manifest_path
-
         runtime.execution_options fun x => { x with
             command = $'$"gleam format"'
             working_directory = package_dir |> optionm'.some'
@@ -1460,22 +1464,100 @@ inl process_gleam { gleam_path target deps } =
                 |> seq.of_array
                 |> sm'.concat ";"
             $'$"pwsh -c \'{!vars}; {!command}\'"' : string
-        if exit_code = 0 then
+        if exit_code <>. 0 then
+            trace Critical
+                fun () => "spiral.process_gleam / error"
+                fun () => { exit_code run_result new_code_path external_command }
+            { extension = Some extension; code = None; code_path = None; output = None }
+        else
             inl run_result =
                 if target = Erlang
                 then run_result
                 else
-                    inl root =
-                        package_dir |> sm'.replace workspace_root "http://localhost:3000"
-                    $'    $"<link"'
-                    +#. $'$"  rel=\\\"stylesheet\\\""'
-                    +#. $'$"  href=\\\"{!root}/build/dev/javascript/lustre_ui/priv/styles.css\\\""'
-                    +#. $'$"/>"'
-                    +#. $'$"<div id=\\\"app\\\"></div>"'
-                    +#. $'$"<script type=\\\"module\\\">"'
-                    +#. $'$"  import * as main from \\\"{!root}/build/dev/javascript/main/main.mjs\\\""'
-                    +#. $'$"  main.main()"'
-                    +#. $'$"</script>"'
+                    inl js_path = $'$"{!package_dir}/build/dev/javascript/main/main.mjs"'
+                    inl js_text = js_path |> file_system.read_all_text
+                    $'$"{!js_text}\nmain()"'
+                    |> file_system.write_all_text_exists js_path
+                    
+                    inl exit_code, run_result =
+                        runtime.execution_options fun x => { x with
+                            command =
+                                $'$"bunx --bun esbuild --bundle --minify --loader:.wasm=file --outdir={!src_dir} {!js_path}"'
+                            environment_variables =
+                                match "~/.bun/bin" |> env.append_path with
+                                | Some path => ;[ "PATH", path ]
+                                | None => ;[]
+                            working_directory = package_dir |> optionm'.some'
+                        }
+                        |> runtime.execute_with_options
+
+                    if exit_code <>. 0 then
+                        trace Critical
+                            fun () => "spiral.process_gleam / esbuild error"
+                            fun () => { exit_code run_result new_code_path }
+                        ""
+                    else
+                        inl html =
+                            $'$"<\!DOCTYPE html>"'
+                            +#. $'$"<html lang=\\\"en\\\">"'
+                            +#. $'$"  <head>"'
+                            +#. $'$"    <meta charset=\\\"UTF-8\\\" />"'
+                            +#. $'$"    <meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\" />"'
+                            +#. $'$"    <link"'
+                            +#. $'$"      data-trunk"'
+                            +#. $'$"      rel=\\\"inline\\\""'
+                            +#. $'$"      href=\\\"../build/packages/lustre_ui/priv/static/lustre_ui.css\\\""'
+                            +#. $'$"    />"'
+                            +#. $'$"    <link"'
+                            +#. $'$"      data-trunk"'
+                            +#. $'$"      rel=\\\"inline\\\""'
+                            +#. $'$"      type=\\\"module\\\""'
+                            +#. $'$"      href=\\\"main.js\\\""'
+                            +#. $'$"    />"'
+                            +#. $'$"  </head>"'
+                            +#. $'$"  <body>"'
+                            +#. $'$"    <div id=\\\"app\\\"></div>"'
+                            +#. $'$"  </body>"'
+                            +#. $'$"</html>"'
+
+                        inl html_path = $'$"{!src_dir}/index.html"'
+                        html |> file_system.write_all_text_exists html_path
+
+                        "" |> file_system.write_all_text_exists $'$"{!src_dir}/spiral_{!hash_hex}.rs"'
+
+                        inl manifest =
+                            $'$"[package]"'
+                            +#. $'$"name = \\\"spiral_{!hash_hex}\\\""'
+                            +#. $'$""'
+                            +#. $'$"[workspace]"'
+                            +#. $'$""'
+                            +#. $'$"[lib]"'
+                            +#. $'$"crate-type = [\\\"cdylib\\\", \\\"rlib\\\"]"'
+                            +#. $'$"path = \\\"spiral_{!hash_hex}.rs\\\""'
+                            +#. $'$""'
+                            +#. $'$"[dependencies]"'
+
+                        manifest |> file_system.write_all_text_exists $'$"{!src_dir}/Cargo.toml"'
+
+                        inl exit_code, run_result =
+                            runtime.execution_options fun x => { x with
+                                command = $'$"trunk build --release --minify --dist={!src_dir} --public-url=./ --no-sri"'
+                                environment_variables =
+                                    ;[
+                                        "TRUNK_TOOLS_WASM_BINDGEN", "0.2.93"
+                                    ]
+                                working_directory = src_dir |> optionm'.some'
+                            }
+                            |> runtime.execute_with_options
+
+                        if exit_code <>. 0 then
+                            trace Critical
+                                fun () => "spiral.process_gleam / trunk error"
+                                fun () => { exit_code run_result new_code_path }
+                            ""
+                        else
+                            html_path |> file_system.read_all_text
+
             inl run_result' = run_result |> sm'.to_std_string
 
             inl output =
@@ -1500,11 +1582,6 @@ inl process_gleam { gleam_path target deps } =
                 code_path = Some new_code_path
                 output = Some output
             }
-        else
-            trace Critical
-                fun () => "spiral.process_gleam / error"
-                fun () => { exit_code run_result new_code_path external_command }
-            { extension = Some extension; code = None; code_path = None; output = None }
 
 /// ## cuda
 
