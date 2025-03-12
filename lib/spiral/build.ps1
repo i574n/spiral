@@ -65,3 +65,7 @@ if (!$SkipFsx) {
 
 Remove-Item "async.fsx" -Force -ErrorAction Ignore
 Remove-Item "sm'.fsx" -Force -ErrorAction Ignore
+
+if (!$fast) {
+    { pwsh near/wallet/build.ps1 } | Invoke-Block
+}

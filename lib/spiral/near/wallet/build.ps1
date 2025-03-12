@@ -18,10 +18,18 @@ $targetDir = GetTargetDir $projectName
 
 Remove-Item ./dist -Recurse -Force -ErrorAction Ignore
 
-{ . $(Search-Command bunx) --bun esbuild --bundle --minify --loader:.wasm=file --outdir=dist "C:\home\git\singularity\playground\gleam\build\dev\javascript\app\app.mjs" } | Invoke-Block -OnError Continue
+{ gleam build } | Invoke-Block
+
+$path = "build/dev/javascript/near_wallet/main.mjs"
+$text = Get-Content $path -Raw
+if (-not $text.Trim().EndsWith("main()")) {
+    "$text`nmain()" | Set-Content $path
+}
+
+{ . $(Search-Command bunx) --bun esbuild --bundle --minify --loader:.wasm=file --outdir=dist $path } | Invoke-Block -OnError Continue
 # { . $(Search-Command bunx) --bun esbuild --bundle --minify --loader:.html=copy --loader:.wasm=file --outdir=dist "C:\home\git\singularity\playground\gleam\index.html" } | Invoke-Block -OnError Continue
 #
-# { wasm-pack build --target web --dev <# --reference-types # --weak-refs --no-typescript #> } | Invoke-Block
+# # { wasm-pack build --target web --dev <# --reference-types # --weak-refs --no-typescript #> } | Invoke-Block
 { trunk build $($fast ? $() : '--release') $($fast ? $() : '--minify') --dist="dist" --public-url="./" --no-sri } | Invoke-Block -EnvironmentVariables @{ "TRUNK_TOOLS_WASM_BINDGEN" = "0.2.93" }
 
 
@@ -53,7 +61,7 @@ $path = "dist/index.html"
 { Copy-Item ./public/* ./dist -Recurse -Force } | Invoke-Block -OnError Continue
 
 if (!$fast) {
-    # { . $(Search-Command bun) test:e2e } | Invoke-Block -OnError Continue
+    { . $(Search-Command bun) test:e2e } | Invoke-Block -OnError Continue
 }
 
 Write-Output "spiral/lib/spiral/near/wallet/build.ps1 / `$targetDir = $targetDir / `$projectName: $projectName / `$env:CI:'$env:CI'"
