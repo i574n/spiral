@@ -1603,12 +1603,16 @@ let execute_with_options (options : execution_options) : i32 * string =
                             | Error error =>
                                 trace Critical
                                     fun () => "runtime.execute_with_options / output error"
-                                    fun () => { error }
+                                    fun () => {
+                                        file_name arguments = arguments |> sm'.format_debug; options error
+                                    }
                                 -2i32, error |> Some, None
                         | Error error =>
                             trace Critical
                                 fun () => "runtime.execute_with_options / child error"
-                                fun () => { error }
+                                fun () => {
+                                    file_name arguments = arguments |> sm'.format_debug; options error
+                                }
                             -1i32, error |> Some, None
                     |> function
                         | exit_code, std_trace, channel_receiver =>
