@@ -929,14 +929,14 @@ let execute_with_options (options : execution_options) : i32 * string =
                                 trace Critical
                                     fun () => "runtime.execute_with_options / output error"
                                     fun () => {
-                                        file_name arguments = arguments |> sm'.format_debug; options error
+                                        error file_name arguments = arguments |> sm'.format_debug; options
                                     }
                                 -2i32, error |> Some, None
                         | Error error =>
                             trace Critical
                                 fun () => "runtime.execute_with_options / child error"
                                 fun () => {
-                                    file_name arguments = arguments |> sm'.format_debug; options error
+                                    error file_name arguments = arguments |> sm'.format_debug; options
                                 }
                             -1i32, error |> Some, None
                     |> function
