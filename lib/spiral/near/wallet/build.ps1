@@ -30,28 +30,29 @@ if (-not $text.Trim().EndsWith("main()")) {
 # { . $(Search-Command bunx) --bun esbuild --bundle --minify --loader:.html=copy --loader:.wasm=file --outdir=dist "C:\home\git\singularity\playground\gleam\index.html" } | Invoke-Block -OnError Continue
 #
 # # { wasm-pack build --target web --dev <# --reference-types # --weak-refs --no-typescript #> } | Invoke-Block
-{ trunk build $($fast ? $() : '--release') $($fast ? $() : '--minify') --dist="dist" --public-url="./" --no-sri } | Invoke-Block -EnvironmentVariables @{ "TRUNK_TOOLS_WASM_BINDGEN" = "0.2.93" }
+$distDir = "dist"
+{ trunk build $($fast ? $() : '--release') $($fast ? $() : '--minify') --dist="$distDir" --public-url="./" --no-sri } | Invoke-Block -EnvironmentVariables @{ "TRUNK_TOOLS_WASM_BINDGEN" = "0.2.93" }
 
 
-$path = "$targetDir/trunk/index.html"
+$path = "$distDir/index.html"
 $html = Get-Content $path -Raw
 
 # const wasm = await init({ module_or_path: './near_wallet-f737b13e62d4337_bg.wasm' });
 $wasmFile = ($html | Select-String -Pattern "init\(.*?'\./(.*?)'.*?\);").Matches[0].Groups[1].Value
 $jsFile = ($html | Select-String -Pattern "import init, \* as bindings from '\./(.*?)';").Matches[0].Groups[1].Value
 
-(Get-Content "$targetDir/trunk/$jsFile" -Raw) `
+(Get-Content "$distDir/$jsFile" -Raw) `
     -replace "\('.*', import.meta.url\);", "('$wasmFile', import.meta.url);" `
-| Set-Content "$targetDir/trunk/$jsFile"
+| Set-Content "$distDir/$jsFile"
 
 # Write-Output "rna:"
 # { . $(Search-Command bunx) --bun @chialab/rna build --bundle --assetNames "[name]" $path --output "$targetDir/rna" --target es2022 } | Invoke-Block
 
-# Copy-Item Cargo2.toml "$targetDir/trunk/Cargo.toml" -Force
+# Copy-Item Cargo2.toml "$distDir/Cargo.toml" -Force
 
-# { trunk build $($fast ? $() : '--release') $($fast ? $() : '--minify') --dist="$ScriptDir/dist" --public-url="./" --no-sri } | Invoke-Block -EnvironmentVariables @{ "TRUNK_TOOLS_WASM_BINDGEN" = "0.2.93" } -Location "$targetDir/trunk"
+# { trunk build $($fast ? $() : '--release') $($fast ? $() : '--minify') --dist="$ScriptDir/dist" --public-url="./" --no-sri } | Invoke-Block -EnvironmentVariables @{ "TRUNK_TOOLS_WASM_BINDGEN" = "0.2.93" } -Location "$distDir"
 
-$path = "dist/index.html"
+# $path = "dist/index.html"
 
 # Move-Item $path dist/popup.html -Force
 # Copy-Item dist/popup.html dist/index.html -Force
