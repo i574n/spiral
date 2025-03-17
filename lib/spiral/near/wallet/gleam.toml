@@ -1,0 +1,12 @@
+name = "near_wallet"
+target = "javascript"
+
+[dependencies]
+gleam_stdlib = ">=0.40.0"
+lustre = ">= 4.6.1 and < 5.0.0"
+lustre_ui = ">= 0.4.0 and < 1.0.0"
+modem = ">= 2.0.1 and < 3.0.0"
+# lustre_http = ">= 0.7.0 and < 1.0.0"
+gleam_json = ">= 2.0.0 and < 3.0.0"
+decipher = ">= 1.2.1 and < 2.0.0"
+gleam_javascript = "~> 0.7"

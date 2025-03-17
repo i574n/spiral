@@ -12,6 +12,11 @@ $ErrorActionPreference = "Stop"
 if (!$fast) {
     {
         $spiralPath = "../../deps/spiral/workspace/target/release/spiral$(_exe)"
+
+        if ($sequential) {
+            . $spiralPath dib --path $ScriptDir/sm`'.dib --retries 3
+        }
+
         . ../../apps/spiral/dist/Supervisor$(_exe) `
             --exit-on-error `
             $(!$sequential ? @("--parallel") : @()) `
@@ -65,3 +70,7 @@ if (!$SkipFsx) {
 
 Remove-Item "async.fsx" -Force -ErrorAction Ignore
 Remove-Item "sm'.fsx" -Force -ErrorAction Ignore
+
+if (!$fast) {
+    { pwsh near/wallet/build.ps1 } | Invoke-Block
+}
