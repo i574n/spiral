@@ -197,7 +197,7 @@ function BuildFable {
         "TargetDir: $TargetDir / ProjectName: $ProjectName / Language: $Language / Runtime: $Runtime / " + `
         "root: $root")
 
-    { dotnet fable "$TargetDir/$ProjectName.fsproj" --optimize --lang $Language --extension ".$Language" --outDir $TargetDir/target/$Language --define $($IsWindows ? "_WINDOWS" : "_LINUX") $($Runtime ? @("--define", $Runtime) : @()) } | Invoke-Block -Location $root
+    { dotnet fable "$TargetDir/$ProjectName.fsproj" --optimize --noCache --lang $Language --extension ".$Language" --outDir $TargetDir/target/$Language --define $($IsWindows ? "_WINDOWS" : "_LINUX") $($Runtime ? @("--define", $Runtime) : @()) } | Invoke-Block -Location $root
 
     CopyTarget $TargetDir $root $Language $Runtime.ToLower()
 }

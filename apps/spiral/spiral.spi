@@ -1427,14 +1427,14 @@ inl process_gleam { gleam_path target deps } =
 
     inl exit_code, run_result =
         runtime.execution_options fun x => { x with
-            command = $'$"gleam format"'
+            command = $'$"gleam check"'
             working_directory = package_dir |> optionm'.some'
         }
         |> runtime.execute_with_options
 
     if exit_code <>. 0 then
         trace Critical
-            fun () => "spiral.process_gleam / format error"
+            fun () => "spiral.process_gleam / check error"
             fun () => { exit_code run_result new_code_path }
         { extension = Some extension; code = None; code_path = None; output = None }
     else

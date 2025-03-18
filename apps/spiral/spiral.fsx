@@ -19469,7 +19469,7 @@ and method176 (v0 : int32, v1 : string, v2 : string) : string =
 and method175 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string, v10 : string) : string =
     let v11 : string = method176(v8, v9, v10)
     let v12 : int64 = v0.l0
-    let v14 : string = "spiral.process_gleam / format error"
+    let v14 : string = "spiral.process_gleam / check error"
     let v15 : string = $"{v6} {v7} #{v12} %s{v14} / {v11}"
     method18(v15)
 and closure68 (v0 : string, v1 : string, v2 : int32) () : unit =
@@ -27218,7 +27218,7 @@ and method20 (v0 : US0, v1 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_F
                 let v706 : (struct (int32 * string * bool) -> Async<unit>) option = None
                 let v710 : (std_sync_Arc<std_sync_Mutex<std_process_ChildStdin>> -> unit) option = None
                 let v714 : string option = None
-                let v717 : string = $"gleam format"
+                let v717 : string = $"gleam check"
                 let v719 : string option = Some v506 
                 let v722 : bool = true
                 let struct (v723 : int32, v724 : string) = method101(v717, v701, v704, v706, v710, v722, v719)

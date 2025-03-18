@@ -9108,7 +9108,7 @@ mod module_1216f6c3 {
                 v6,
                 v7,
                 v0_1.l0.get().clone(),
-                string("spiral.process_gleam / format error"),
+                string("spiral.process_gleam / check error"),
                 v11
             ))
         }
@@ -14399,7 +14399,7 @@ mod module_1216f6c3 {
                             );
                             {
                                 let patternInput: (i32, string) = Spiral::method101(
-                                    string("gleam format"),
+                                    string("gleam check"),
                                     None::<CancellationToken>,
                                     new_empty::<(string, string)>(),
                                     None::<Func1<(i32, string, bool), Arc<Async<()>>>>,
