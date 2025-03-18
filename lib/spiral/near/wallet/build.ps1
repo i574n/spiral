@@ -1,5 +1,8 @@
 param(
     $fast,
+    $SkipPreBuild,
+    $SkipNotebook,
+    $SkipGleam,
     $ScriptDir = $PSScriptRoot
 )
 Set-Location $ScriptDir
@@ -9,6 +12,19 @@ $ErrorActionPreference = "Stop"
 
 
 $projectName = "near_wallet"
+
+
+if (!$SkipPreBuild) {
+    if (!$SkipNotebook) {
+        { . ../../../deps/spiral/workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/src/$projectName.dib" } | Invoke-Block -Retries 3 -Location ../../../../deps/polyglot/apps/spiral/dist
+    }
+
+    { . ../../../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "src/$projectName.dib" spi } | Invoke-Block
+}
+
+if (!$SkipGleam) {
+    { . ../../../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --build-file "src/$projectName.spi" "src/$projectName.gleam" } | Invoke-Block
+}
 
 if (!$fast) {
     { . $(Search-Command bun) install --frozen-lockfile } | Invoke-Block
@@ -20,7 +36,7 @@ Remove-Item ./dist -Recurse -Force -ErrorAction Ignore
 
 { gleam build } | Invoke-Block
 
-$path = "build/dev/javascript/near_wallet/main.mjs"
+$path = "build/dev/javascript/near_wallet/near_wallet.mjs"
 $text = Get-Content $path -Raw
 if (-not $text.Trim().EndsWith("main()")) {
     "$text`nmain()" | Set-Content $path

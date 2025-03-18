@@ -51,6 +51,10 @@ modules:
     util
     physics
     lustre
+    near/
+        wallet/
+            src/
+                near_wallet
     leptos/
         leptos
         svg/

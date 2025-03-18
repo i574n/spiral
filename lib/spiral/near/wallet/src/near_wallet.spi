@@ -1,0 +1,69 @@
+/// # near_wallet
+
+/// ## near_wallet
+open lustre
+
+/// ### model
+type model = int
+
+/// ### init
+inl init initial_count : model =
+    if initial_count < 0
+    then 0
+    else initial_count
+
+/// ### msg
+union msg =
+    | Incr
+    | Decr
+
+/// ### update
+inl update n (model, msg) =
+    match msg with
+    | Incr => model + n
+    | Decr => model - n
+
+/// ### view
+inl view model =
+    div [
+        style [
+            "display", "flex"
+        ]
+    ] [
+        div [
+            style [
+                "display", "flex"
+                "flex-direction", "column"
+            ]
+        ] [
+            button [
+                on_click Incr
+            ] [
+                text "+"
+            ]
+            p [
+                style [
+                    "text-align", "center"
+                ]
+            ] [
+                model |> sm'.obj_to_string |> text
+            ]
+            button [
+                on_click Decr
+            ] [
+                text "-"
+            ]
+        ]
+    ]
+
+/// ## tests
+
+/// ## main
+///! _
+
+inl main' (n : int) =
+    simple init (update 1) view
+    |> start "#app_"
+
+inl main () =
+    $'!main' (0)' : ()

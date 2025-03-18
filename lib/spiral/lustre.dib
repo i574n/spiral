@@ -8,7 +8,7 @@
 
 #!fsharp
 
-#!import ../../../polyglot/lib/fsharp/Notebooks.dib
+#!import ../../../polyglot/lib/fsharp/NotebooksHtml.dib
 
 #!markdown
 
@@ -37,9 +37,9 @@ nominal attribute t =
 nominal element t =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () => global "import lustre/element.{type Element}") : () -> ()
+            Gleam = (fun () => global "import lustre/element") : () -> ()
         }
-        $'' : $'Element(`t)'
+        $'' : $'element.Element(`t)'
     )
 
 #!markdown
@@ -104,10 +104,10 @@ inl p forall t. (attributes : list (attribute t)) (children : list (element t)) 
 #!spiral
 
 inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
-    global "import lustre/ui/button.{button}"
+    global "import lustre/ui/button"
     inl attributes = attributes |> listm'.box
     inl children = children |> listm'.box
-    $'button(!attributes, !children)'
+    $'button.button(!attributes, !children)'
 
 #!markdown
 
@@ -116,9 +116,9 @@ inl button forall t. (attributes : list (attribute t)) (children : list (element
 #!spiral
 
 inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
-    global "import lustre/ui/centre.{centre}"
+    global "import lustre/ui/centre"
     inl attributes = attributes |> listm'.box
-    $'centre(!attributes, !children)'
+    $'centre.centre(!attributes, !children)'
 
 #!markdown
 

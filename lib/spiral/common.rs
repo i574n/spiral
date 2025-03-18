@@ -651,14 +651,14 @@ pub mod Common {
         v4: LrcPtr<Common::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v186: Common::US2 = defaultValue(Common::US2::US2_1, map(Common::method11(), v5));
-        let v304: DateTime = match &v186 {
-            Common::US2::US2_0(v186_0_0) => {
-                let v256: TimeSpan = TimeSpan::new_ticks(
+        let v198: Common::US2 = defaultValue(Common::US2::US2_1, map(Common::method11(), v5));
+        let v316: DateTime = match &v198 {
+            Common::US2::US2_0(v198_0_0) => {
+                let v268: TimeSpan = TimeSpan::new_ticks(
                     ({
                         let _arg: DateTime = DateTime::now();
                         _arg.ticks()
-                    }) - (match &v186 {
+                    }) - (match &v198 {
                         Common::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     }),
@@ -667,21 +667,21 @@ pub mod Common {
                     1_i32,
                     1_i32,
                     1_i32,
-                    v256.hours(),
-                    v256.minutes(),
-                    v256.seconds(),
-                    v256.milliseconds(),
+                    v268.hours(),
+                    v268.minutes(),
+                    v268.seconds(),
+                    v268.milliseconds(),
                 )
             }
             _ => DateTime::now(),
         };
-        let v306: string = Common::method12();
-        let provider: string = if (v306.clone()) == string("") {
+        let v318: string = Common::method12();
+        let provider: string = if (v318.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
-            v306
+            v318
         };
-        v304.toString(provider)
+        v316.toString(provider)
     }
     pub fn method16() -> string {
         string("")

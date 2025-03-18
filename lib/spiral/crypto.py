@@ -266,9 +266,9 @@ def method8(v0_1: str) -> str:
     else: 
         v47 = value_2(_v41)
 
-    v68: US5 = default_arg(map(method11(), v47), US5(1))
-    if v68.tag == 0:
-        return v68.fields[0]
+    v74: US5 = default_arg(map(method11(), v47), US5(1))
+    if v74.tag == 0:
+        return v74.fields[0]
 
     else: 
         return ""
@@ -404,17 +404,17 @@ def method15(__unit: None=None) -> str:
 
 
 def method12(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None=None) -> str:
-    v712: US2 = default_arg(map(method13(), v5), US2(1))
-    v830: Any
-    if v712.tag == 0:
-        v782: Any = create(op_subtraction(from_value(ticks_1(now()), False), v712.fields[0]))
-        v830 = create_1(1, 1, 1, hours(v782), minutes(v782), seconds(v782), milliseconds(v782))
+    v748: US2 = default_arg(map(method13(), v5), US2(1))
+    v866: Any
+    if v748.tag == 0:
+        v818: Any = create(op_subtraction(from_value(ticks_1(now()), False), v748.fields[0]))
+        v866 = create_1(1, 1, 1, hours(v818), minutes(v818), seconds(v818), milliseconds(v818))
 
     else: 
-        v830 = now()
+        v866 = now()
 
-    v832: str = method15()
-    return to_string(v830, "M-d-y hh:mm:ss tt" if (v832 == "") else v832)
+    v868: str = method15()
+    return to_string(v866, "M-d-y hh:mm:ss tt" if (v868 == "") else v868)
 
 
 def method18(__unit: None=None) -> str:

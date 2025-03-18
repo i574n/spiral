@@ -10309,8 +10309,8 @@ module spiral_compiler =
             | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litGleam a) |> String.concat ""
             | YPrim a -> primGleam a
             | YArray a ->
-                global' "import gary.{type ErlangArray}"
-                sprintf "ErlangArray(%s)" (tup_ty a)
+                global' "import gary"
+                sprintf "gary.ErlangArray(%s)" (tup_ty a)
             | YFun(a,b,FT_Vanilla) -> sprintf "fn(%s) -> %s" (tup_ty a) (tup_ty b)
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."

@@ -504,9 +504,9 @@ def method2(v0_1: str) -> str:
     else: 
         v47 = value_10(_v41)
 
-    v68: US5 = default_arg(map(method5(), v47), US5(1))
-    if v68.tag == 0:
-        return v68.fields[0]
+    v74: US5 = default_arg(map(method5(), v47), US5(1))
+    if v74.tag == 0:
+        return v74.fields[0]
 
     else: 
         return ""
@@ -650,17 +650,17 @@ def method15(__unit: None=None) -> str:
 
 
 def method12(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v712: US2 = default_arg(map(method13(), v5), US2(1))
-    v830: Any
-    if v712.tag == 0:
-        v782: Any = create(op_subtraction(from_value(ticks_1(now()), False), v712.fields[0]))
-        v830 = create_1(1, 1, 1, hours(v782), minutes(v782), seconds(v782), milliseconds(v782))
+    v748: US2 = default_arg(map(method13(), v5), US2(1))
+    v866: Any
+    if v748.tag == 0:
+        v818: Any = create(op_subtraction(from_value(ticks_1(now()), False), v748.fields[0]))
+        v866 = create_1(1, 1, 1, hours(v818), minutes(v818), seconds(v818), milliseconds(v818))
 
     else: 
-        v830 = now()
+        v866 = now()
 
-    v832: str = method15()
-    return to_string(v830, "M-d-y hh:mm:ss tt" if (v832 == "") else v832)
+    v868: str = method15()
+    return to_string(v866, "M-d-y hh:mm:ss tt" if (v868 == "") else v868)
 
 
 def method18(__unit: None=None) -> str:
@@ -1700,30 +1700,30 @@ def closure36(v0_1: int64, v1_1: Exception, unit_var: None) -> None:
 def method66(v0_1: str, v1_1: int64) -> Async[str | None]:
     def _arrow374(__unit: None=None, v0_1: Any=v0_1, v1_1: Any=v1_1) -> Async[str | None]:
         def _arrow372(__unit: None=None) -> Async[str | None]:
-            v2108: bool = v1_1 > int64(0)
+            v2156: bool = v1_1 > int64(0)
             def _arrow370(__unit: None=None) -> Async[None]:
-                v2132: Async[None] = ignore(method67(1000, method30(v0_1)))
+                v2180: Async[None] = ignore(method67(1000, method30(v0_1)))
                 def _arrow369(__unit: None=None) -> Async[None]:
                     return singleton.Zero()
 
-                return singleton.Bind(v2132, _arrow369)
+                return singleton.Bind(v2180, _arrow369)
 
             def _arrow371(__unit: None=None) -> Async[str | None]:
-                v2144: Async[str | None] = method78(method31(v0_1))
-                return singleton.ReturnFrom(v2144)
+                v2192: Async[str | None] = method78(method31(v0_1))
+                return singleton.ReturnFrom(v2192)
 
-            return singleton.Combine(_arrow370() if v2108 else singleton.Zero(), singleton.Delay(_arrow371))
+            return singleton.Combine(_arrow370() if v2156 else singleton.Zero(), singleton.Delay(_arrow371))
 
         def _arrow373(_arg_1: Exception) -> Async[str | None]:
             if (v1_1 == int64(0)) != True:
-                v2187: None
+                v2235: None
                 closure36(v1_1, _arg_1, None)
-                v2187 = None
+                v2235 = None
                 return singleton.Return(None)
 
             else: 
-                v2272: Async[str | None] = method65(v0_1, op_addition(v1_1, int64(1)))
-                return singleton.ReturnFrom(v2272)
+                v2323: Async[str | None] = method65(v0_1, op_addition(v1_1, int64(1)))
+                return singleton.ReturnFrom(v2323)
 
 
         return singleton.TryWith(singleton.Delay(_arrow372), _arrow373)
@@ -1767,17 +1767,17 @@ def method86(__unit: None=None) -> str:
 
 
 def method82(v0_1: str, v1_1: Any) -> str:
-    v2541: str = method85()
-    v2547: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v2541 == "") else v2541)
-    v2782: Any
+    v2553: str = method85()
+    v2559: str = to_string(v1_1, "M-d-y hh:mm:ss tt" if (v2553 == "") else v2553)
+    v2794: Any
     raise Exception(("date_time.get_utc_offset / target: " + str(US4(5, US3(0)))) + "")
-    v2797: uint8 = uint8(1) if (hours(v2782) > 0) else uint8(0)
-    v2798: str = method86()
-    v3022: str = ((("" + str(v2797)) + "") + to_string_1(v2782, "c", {})) + ""
-    v3025: str = str(v0_1)
-    v3030: int = (len(v2547) + len(v3022)) or 0
-    v3062: int = (len(v3025) - 1) or 0
-    return parse(concat(v2547, v3022, *v3025[v3030:v3062 + 1]))
+    v2809: uint8 = uint8(1) if (hours(v2794) > 0) else uint8(0)
+    v2810: str = method86()
+    v3034: str = ((("" + str(v2809)) + "") + to_string_1(v2794, "c", {})) + ""
+    v3037: str = str(v0_1)
+    v3042: int = (len(v2559) + len(v3034)) or 0
+    v3074: int = (len(v3037) - 1) or 0
+    return parse(concat(v2559, v3034, *v3037[v3042:v3074 + 1]))
 
 
 def method88(__unit: None=None) -> str:
@@ -2129,32 +2129,32 @@ def method118(v0_1: str) -> str:
 def method116(v0_1: str, v1_1: Callable[[uint8, str], FSharpResult_2[std_path_path_buf, std_io_error]], v2_1: uint8, v3: str, v4: str) -> FSharpResult_2[std_path_path_buf, std_io_error]:
     v5: str = method20(v4)
     v6: str | None = method117(v4)
-    v25_1: US5 = default_arg(map(method5(), v6), US5(1))
-    v29_1: str = method118(v3)
+    v31_1: US5 = default_arg(map(method5(), v6), US5(1))
+    v35_1: str = method118(v3)
     if v2_1 >= uint8(11):
         return FSharpResult_2(1, "file_system.read_link / " + (((((((("path: " + v0_1) + " / n: ") + str(v2_1)) + " / path\': ") + v4) + " / name: ") + v5) + ""))
 
-    elif v25_1.tag == 0:
+    elif v31_1.tag == 0:
         if v4 != "":
-            v91: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v25_1.fields[0])
-            v92: Callable[[std_io_error], str] = method48()
-            v105: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v92(v91.fields[0])) if (v91.tag == 1) else FSharpResult_2(0, v91.fields[0])
-            v108: Callable[[std_path_path_buf], US14] = method113()
-            v109: Callable[[str], US14] = method114()
-            v111: US14 = v109(v105.fields[0]) if (v105.tag == 1) else v108(v105.fields[0])
-            if v111.tag == 0:
-                return FSharpResult_2(0, method90(to_string_2(v111.fields[0]), v5))
+            v97: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v31_1.fields[0])
+            v98: Callable[[std_io_error], str] = method48()
+            v111: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v98(v97.fields[0])) if (v97.tag == 1) else FSharpResult_2(0, v97.fields[0])
+            v114: Callable[[std_path_path_buf], US14] = method113()
+            v115: Callable[[str], US14] = method114()
+            v117: US14 = v115(v111.fields[0]) if (v111.tag == 1) else v114(v111.fields[0])
+            if v117.tag == 0:
+                return FSharpResult_2(0, method90(to_string_2(v117.fields[0]), v5))
 
             else: 
-                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v111.fields[0]) + " / error: ") + v29_1) + " / name: ") + v5) + ""))
+                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v117.fields[0]) + " / error: ") + v35_1) + " / name: ") + v5) + ""))
 
 
         else: 
-            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v29_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
+            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v35_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
 
 
     else: 
-        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v29_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
+        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v35_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
 
 
 
@@ -2176,32 +2176,32 @@ def closure54(v0_1: str, v1_1: uint8) -> Callable[[str], FSharpResult_2[std_path
 def method119(v0_1: str, v1_1: Callable[[uint8, str], FSharpResult_2[std_path_path_buf, std_io_error]], v2_1: uint8, v3: str) -> FSharpResult_2[std_path_path_buf, std_io_error]:
     v4: str = method20(v0_1)
     v5: str | None = method117(v0_1)
-    v24_1: US5 = default_arg(map(method5(), v5), US5(1))
-    v28_1: str = method118(v3)
+    v30_1: US5 = default_arg(map(method5(), v5), US5(1))
+    v34_1: str = method118(v3)
     if v2_1 >= uint8(11):
         return FSharpResult_2(1, "file_system.read_link / " + (((((((("path: " + v0_1) + " / n: ") + str(v2_1)) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
 
-    elif v24_1.tag == 0:
+    elif v30_1.tag == 0:
         if v0_1 != "":
-            v90: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v24_1.fields[0])
-            v91: Callable[[std_io_error], str] = method48()
-            v104: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v91(v90.fields[0])) if (v90.tag == 1) else FSharpResult_2(0, v90.fields[0])
-            v107: Callable[[std_path_path_buf], US14] = method113()
-            v108: Callable[[str], US14] = method114()
-            v110: US14 = v108(v104.fields[0]) if (v104.tag == 1) else v107(v104.fields[0])
-            if v110.tag == 0:
-                return FSharpResult_2(0, method90(to_string_2(v110.fields[0]), v4))
+            v96: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v30_1.fields[0])
+            v97: Callable[[std_io_error], str] = method48()
+            v110: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v97(v96.fields[0])) if (v96.tag == 1) else FSharpResult_2(0, v96.fields[0])
+            v113: Callable[[std_path_path_buf], US14] = method113()
+            v114: Callable[[str], US14] = method114()
+            v116: US14 = v114(v110.fields[0]) if (v110.tag == 1) else v113(v110.fields[0])
+            if v116.tag == 0:
+                return FSharpResult_2(0, method90(to_string_2(v116.fields[0]), v4))
 
             else: 
-                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v110.fields[0]) + " / error: ") + v28_1) + " / name: ") + v4) + ""))
+                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v116.fields[0]) + " / error: ") + v34_1) + " / name: ") + v4) + ""))
 
 
         else: 
-            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v28_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
+            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v34_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
 
 
     else: 
-        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v28_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
+        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v34_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
 
 
 
@@ -2224,32 +2224,32 @@ def method123(v0_1: enum_type("System.IO.FileAttributes", int, [("None", 0.0), (
 def method125(v0_1: str, v1_1: Callable[[uint8, str], FSharpResult_2[std_path_path_buf, std_io_error]], v2_1: uint8, v3: std_io_error, v4: str) -> FSharpResult_2[std_path_path_buf, std_io_error]:
     v5: str = method20(v4)
     v6: str | None = method117(v4)
-    v25_1: US5 = default_arg(map(method5(), v6), US5(1))
-    v29_1: str = method49(v3)
+    v31_1: US5 = default_arg(map(method5(), v6), US5(1))
+    v35_1: str = method49(v3)
     if v2_1 >= uint8(11):
         return FSharpResult_2(1, "file_system.read_link / " + (((((((("path: " + v0_1) + " / n: ") + str(v2_1)) + " / path\': ") + v4) + " / name: ") + v5) + ""))
 
-    elif v25_1.tag == 0:
+    elif v31_1.tag == 0:
         if v4 != "":
-            v91: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v25_1.fields[0])
-            v92: Callable[[std_io_error], str] = method48()
-            v105: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v92(v91.fields[0])) if (v91.tag == 1) else FSharpResult_2(0, v91.fields[0])
-            v108: Callable[[std_path_path_buf], US14] = method113()
-            v109: Callable[[str], US14] = method114()
-            v111: US14 = v109(v105.fields[0]) if (v105.tag == 1) else v108(v105.fields[0])
-            if v111.tag == 0:
-                return FSharpResult_2(0, method90(to_string_2(v111.fields[0]), v5))
+            v97: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v31_1.fields[0])
+            v98: Callable[[std_io_error], str] = method48()
+            v111: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v98(v97.fields[0])) if (v97.tag == 1) else FSharpResult_2(0, v97.fields[0])
+            v114: Callable[[std_path_path_buf], US14] = method113()
+            v115: Callable[[str], US14] = method114()
+            v117: US14 = v115(v111.fields[0]) if (v111.tag == 1) else v114(v111.fields[0])
+            if v117.tag == 0:
+                return FSharpResult_2(0, method90(to_string_2(v117.fields[0]), v5))
 
             else: 
-                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v111.fields[0]) + " / error: ") + v29_1) + " / name: ") + v5) + ""))
+                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v117.fields[0]) + " / error: ") + v35_1) + " / name: ") + v5) + ""))
 
 
         else: 
-            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v29_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
+            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v35_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
 
 
     else: 
-        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v29_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
+        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v35_1) + " / path\': ") + v4) + " / name: ") + v5) + ""))
 
 
 
@@ -2281,32 +2281,32 @@ def closure56(v0_1: str, v1_1: uint8) -> Callable[[str], FSharpResult_2[std_path
 def method126(v0_1: str, v1_1: Callable[[uint8, str], FSharpResult_2[std_path_path_buf, std_io_error]], v2_1: uint8, v3: std_io_error) -> FSharpResult_2[std_path_path_buf, std_io_error]:
     v4: str = method20(v0_1)
     v5: str | None = method117(v0_1)
-    v24_1: US5 = default_arg(map(method5(), v5), US5(1))
-    v28_1: str = method49(v3)
+    v30_1: US5 = default_arg(map(method5(), v5), US5(1))
+    v34_1: str = method49(v3)
     if v2_1 >= uint8(11):
         return FSharpResult_2(1, "file_system.read_link / " + (((((((("path: " + v0_1) + " / n: ") + str(v2_1)) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
 
-    elif v24_1.tag == 0:
+    elif v30_1.tag == 0:
         if v0_1 != "":
-            v90: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v24_1.fields[0])
-            v91: Callable[[std_io_error], str] = method48()
-            v104: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v91(v90.fields[0])) if (v90.tag == 1) else FSharpResult_2(0, v90.fields[0])
-            v107: Callable[[std_path_path_buf], US14] = method113()
-            v108: Callable[[str], US14] = method114()
-            v110: US14 = v108(v104.fields[0]) if (v104.tag == 1) else v107(v104.fields[0])
-            if v110.tag == 0:
-                return FSharpResult_2(0, method90(to_string_2(v110.fields[0]), v4))
+            v96: FSharpResult_2[std_path_path_buf, std_io_error] = v1_1(v2_1 + uint8(1), v30_1.fields[0])
+            v97: Callable[[std_io_error], str] = method48()
+            v110: FSharpResult_2[std_path_path_buf, str] = FSharpResult_2(1, v97(v96.fields[0])) if (v96.tag == 1) else FSharpResult_2(0, v96.fields[0])
+            v113: Callable[[std_path_path_buf], US14] = method113()
+            v114: Callable[[str], US14] = method114()
+            v116: US14 = v114(v110.fields[0]) if (v110.tag == 1) else v113(v110.fields[0])
+            if v116.tag == 0:
+                return FSharpResult_2(0, method90(to_string_2(v116.fields[0]), v4))
 
             else: 
-                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v110.fields[0]) + " / error: ") + v28_1) + " / name: ") + v4) + ""))
+                return FSharpResult_2(1, "file_system.read_link / " + (((((("error\': " + v116.fields[0]) + " / error: ") + v34_1) + " / name: ") + v4) + ""))
 
 
         else: 
-            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v28_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
+            return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v34_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
 
 
     else: 
-        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v28_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
+        return FSharpResult_2(1, "file_system.read_link / run / The file or directory is not a reparse point. / " + (((((((("path: " + v0_1) + " / error: ") + v34_1) + " / path\': ") + v0_1) + " / name: ") + v4) + ""))
 
 
 
@@ -2358,18 +2358,18 @@ def method110(v0_1: str) -> str:
     else: 
         v3: FSharpResult_2[std_path_path_buf, std_io_error] = method111(v0_1)
         v13: std_path_path_buf | None = None if (v3.tag == 1) else v3.fields[0]
-        v37_1: US15 = default_arg(map(method127(), v13), US15(1))
-        v80: str = to_string_2(v37_1.fields[0]) if (v37_1.tag == 0) else v0_1
-        v85: str = method128("^\\\\\\\\\\?\\\\", "", v0_1 if (v80 == "") else v80)
-        if len(v85) < 2:
+        v43: US15 = default_arg(map(method127(), v13), US15(1))
+        v86: str = to_string_2(v43.fields[0]) if (v43.tag == 0) else v0_1
+        v91: str = method128("^\\\\\\\\\\?\\\\", "", v0_1 if (v86 == "") else v86)
+        if len(v91) < 2:
             return v0_1
 
         else: 
             def _arrow390(__unit: None=None, v0_1: Any=v0_1) -> str:
-                _arg: str = v85[0]
+                _arg: str = v91[0]
                 return _arg.lower()
 
-            return replace(concat(_arrow390(), *v85[1:len(v85)]), "\\", "/")
+            return replace(concat(_arrow390(), *v91[1:len(v91)]), "\\", "/")
 
 
 
@@ -2434,13 +2434,13 @@ def method141(v0_1_mut: str, v1_1_mut: str, v2_1_mut: bool, v3_mut: Callable[[st
 
         else: 
             v8: str | None = method117(v4)
-            v27_1: US5 = default_arg(map(method5(), v8), US5(1))
-            if v27_1.tag == 0:
+            v33_1: US5 = default_arg(map(method5(), v8), US5(1))
+            if v33_1.tag == 0:
                 v0_1_mut = v0_1
                 v1_1_mut = v1_1
                 v2_1_mut = v2_1
                 v3_mut = v3
-                v4_mut = v27_1.fields[0]
+                v4_mut = v33_1.fields[0]
                 continue
 
             else: 
@@ -2456,9 +2456,9 @@ def method140(v0_1: str, v1_1: str, v2_1: bool, v3: Callable[[str], bool]) -> US
 
     else: 
         v7: str | None = method117(v1_1)
-        v26_1: US5 = default_arg(map(method5(), v7), US5(1))
-        if v26_1.tag == 0:
-            return method141(v0_1, v1_1, v2_1, v3, v26_1.fields[0])
+        v32_1: US5 = default_arg(map(method5(), v7), US5(1))
+        if v32_1.tag == 0:
+            return method141(v0_1, v1_1, v2_1, v3, v32_1.fields[0])
 
         else: 
             return US17(1, concat("file_system.find_parent / No parent for ", *"file" if v2_1 else "dir") + ((((((" \'" + v0_1) + "\' at \'") + v1_1) + "\' (until \'") + v1_1) + "\')"))

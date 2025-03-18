@@ -7930,12 +7930,12 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">option</span><span class="s1">'_types () =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/option.{type Option, None, Some}"</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/option"</span>
     <span class="p">}</span>
 <span class="n">nominal</span> <span class="n">option</span><span class="s1">'_gleam t =</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">option</span><span class="s1">'_types ()</span>
-        <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Option(`t)'</span>
+        <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'option.Option(`t)'</span>
     <span class="p">)</span>
 <span class="nb">type</span> <span class="n">option</span><span class="s1">'_switch t =</span>
     <span class="p">{</span>
@@ -7969,7 +7969,11 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">none</span><span class="s1">' forall t. () : option'</span> <span class="n">t</span> <span class="o">=</span>
-    <span class="err">$</span><span class="s1">'None'</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'option.None'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -7996,7 +8000,7 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">some</span><span class="s1">' forall t. (x : t) : option'</span> <span class="n">t</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; option.Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Some !x '</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x # some</span><span class="se">\'</span><span class="s1"> '</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
     <span class="p">}</span>
@@ -8237,18 +8241,8 @@ __assert_eq' / actual: US0_0 3,US0_1 / expected: US0_0 3,US0_1
 .py output:
 __assert_eq' / actual: (US0_0 3, US0_1) / expected: (US0_0 3, US0_1)
 
-
 .gleam output (Gleam):
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported type</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed\src\main.gleam:2:22</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">2 │ import gleam/option.{type Option, None, Some}</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │                      ^^^^^^^^^^^ This imported type is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
 __assert_eq' / actual: #(Us0i0(3), Us0i1) / expected: #(Us0i0(3), Us0i1)
-
 
 </pre>
 </div>
@@ -8286,7 +8280,7 @@ __assert_eq' / actual: struct (US0_0 3, US0_1) / expected: struct (US0_0 3, US0_
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">option</span><span class="s1">'_types ()</span>
-            <span class="err">$</span><span class="s1">'!x |&gt; Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+            <span class="err">$</span><span class="s1">'!x |&gt; option.Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'let mutable _!x = None'</span>
             <span class="err">$</span><span class="s1">'#if \!FABLE_COMPILER &amp;&amp; \!WASM &amp;&amp; \!CONTRACT'</span>
@@ -8404,22 +8398,84 @@ __assert_eq' / actual: US0_0 "" / expected: US0_0 ""
 
 
 .gleam output (Gleam):
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported type</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab\src\main.gleam:2:22</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">2 │ import gleam/option.{type Option, None, Some}</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │                      ^^^^^^^^^^^ This imported type is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported item</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab\src\main.gleam:2:35</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">2 │ import gleam/option.{type Option, None, Some}</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │                                   ^^^^ This imported constructor is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@pair.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@list.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@dict.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@dynamic.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@function.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@bytes_tree.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@order.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@set.erl"}
+{compiled,gleam@function,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@function.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@float.erl"}
+{compiled,gleam@pair,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@pair.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@int.erl"}
+{compiled,gleam@order,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@order.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@option.erl"}
+{compiled,gleam@bytes_tree,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@bytes_tree.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@bit_array.erl"}
+{compiled,gleam@set,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@set.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@bool.erl"}
+{compiled,gleam@dict,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@dict.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@result.erl"}
+{compiled,gleam@option,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@option.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@uri.erl"}
+{compiled,gleam@bool,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@bool.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam_stdlib_decode_ffi.erl"}
+{compiled,gleam@float,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@float.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@dynamic@decode.erl"}
+{compiled,gleam@int,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@int.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@string.erl"}
+{compiled,gleam@result,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@result.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam_stdlib.erl"}
+{compiled,gleam_stdlib_decode_ffi,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam_stdlib_decode_ffi.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@string_tree.erl"}
+{compiled,gleam@bit_array,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@bit_array.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gleam_stdlib\\_gleam_artefacts\\gleam@io.erl"}
+{compiled,gleam@string_tree,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@string_tree.beam"}
+{compiled,gleam@io,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@io.beam"}
+{compiled,gleam@string,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@string.beam"}
+{compiled,gleam@dynamic@decode,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@dynamic@decode.beam"}
+{compiled,gleam@uri,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@uri.beam"}
+{compiled,gleam@dynamic,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@dynamic.beam"}
+{compiled,gleam_stdlib,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam_stdlib.beam"}
+{compiled,gleam@list,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gleam_stdlib/ebin/gleam@list.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gary\\_gleam_artefacts\\internal@array_bindings.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gary\\_gleam_artefacts\\gary.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\gary\\_gleam_artefacts\\gary@array.erl"}
+{compiled,gary,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gary/ebin/gary.beam"}
+{compiled,internal@array_bindings,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gary/ebin/internal@array_bindings.beam"}
+{compiled,gary@array,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/gary/ebin/gary@array.beam"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/main/ebin/main.beam"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/main/ebin/main@@main.beam"}
 __assert_eq' / actual: Us0i0("") / expected: Us0i0("")
 
 
