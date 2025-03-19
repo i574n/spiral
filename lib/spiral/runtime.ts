@@ -912,18 +912,18 @@ export function method11(): string {
 }
 
 export function method8(v0_1: Mut0, v1_1: Mut1, v2_1: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>): string {
-    const v551: US2_$union = defaultArg(map<int64, US2_$union>(method9(), v5), US2_US2_1());
-    let v669: Date;
-    if ((v551.tag as int32) === /* US2_0 */ 0) {
-        const v555 = v551.fields[0] as any;
-        const v621: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v555)));
-        v669 = create(1, 1, 1, hours(v621), minutes(v621), seconds(v621), milliseconds(v621));
+    const v581: US2_$union = defaultArg(map<int64, US2_$union>(method9(), v5), US2_US2_1());
+    let v699: Date;
+    if ((v581.tag as int32) === /* US2_0 */ 0) {
+        const v585 = v581.fields[0] as any;
+        const v651: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v585)));
+        v699 = create(1, 1, 1, hours(v651), minutes(v651), seconds(v651), milliseconds(v651));
     }
     else {
-        v669 = now();
+        v699 = now();
     }
-    const v671: string = method11();
-    return toString(v669, (v671 === "") ? "M-d-y hh:mm:ss tt" : v671);
+    const v701: string = method11();
+    return toString(v699, (v701 === "") ? "M-d-y hh:mm:ss tt" : v701);
 }
 
 export function method14(): string {
@@ -1904,16 +1904,16 @@ export function closure20(v0_1: string, unitVar: void): void {
 
 export function method44(v0_1: string, v1_1: Option<any>, v2_1: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: any, v9: boolean, v10: boolean): Async<void> {
     return singleton.Delay<void>((): Async<void> => {
-        let v57: US14_$union, v63: Async<void>;
+        let v63: US14_$union, v69: Async<void>;
         const v32: string = method45(v10);
         const v38: boolean = (v32 === defaultOf()) !== true;
-        return singleton.Combine<void>(v38 ? ((v57 = defaultArg(map<((arg0: [int32, string, boolean]) => Async<void>), US14_$union>(method46(), v3), US14_US14_1()), singleton.Combine<void>(((v57.tag as int32) === /* US14_0 */ 0) ? ((v63 = (v57.fields[0] as any)([method47(v7), v32, v9] as [int32, string, boolean]), singleton.Bind<void, void>(v63, (): Async<void> => {
+        return singleton.Combine<void>(v38 ? ((v63 = defaultArg(map<((arg0: [int32, string, boolean]) => Async<void>), US14_$union>(method46(), v3), US14_US14_1()), singleton.Combine<void>(((v63.tag as int32) === /* US14_0 */ 0) ? ((v69 = (v63.fields[0] as any)([method47(v7), v32, v9] as [int32, string, boolean]), singleton.Bind<void, void>(v69, (): Async<void> => {
             return singleton.Zero();
         }))) : (singleton.Zero()), singleton.Delay<void>((): Async<void> => {
-            let v69: any, v121: any;
-            const v66: string = v9 ? concat("! ", ...v32) : concat("> ", ...v32);
-            return singleton.Combine<void>(v5 ? ((v69 = ((closure20(v66, undefined), undefined)), singleton.Zero())) : ((v121 = ((closure10(v66, undefined), undefined)), singleton.Zero())), singleton.Delay<void>((): Async<void> => {
-                const v129: string = concat(v9 ? "\u001b[7;4m" : "", v32, ...(v9 ? "\u001b[0m" : ""));
+            let v75: any, v127: any;
+            const v72: string = v9 ? concat("! ", ...v32) : concat("> ", ...v32);
+            return singleton.Combine<void>(v5 ? ((v75 = ((closure20(v72, undefined), undefined)), singleton.Zero())) : ((v127 = ((closure10(v72, undefined), undefined)), singleton.Zero())), singleton.Delay<void>((): Async<void> => {
+                const v135: string = concat(v9 ? "\u001b[7;4m" : "", v32, ...(v9 ? "\u001b[0m" : ""));
                 return singleton.Zero();
             }));
         })))) : singleton.Zero(), singleton.Delay<void>((): Async<void> => {
@@ -2193,8 +2193,8 @@ export function closure25(unitVar: void, _arg: [string, Option<any>, [string, st
 }
 
 export function closure26(unitVar: void, v0_1: ((arg0: Heap0) => Heap0)): [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>] {
-    const v8: Heap0 = v0_1(new Heap0("", undefined, [], undefined, undefined, true, undefined));
-    return [v8.l0, v8.l1, v8.l2, v8.l3, v8.l4, v8.l5, v8.l6] as [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>];
+    const v20_1: Heap0 = v0_1(new Heap0("", undefined, [], undefined, undefined, true, undefined));
+    return [v20_1.l0, v20_1.l1, v20_1.l2, v20_1.l3, v20_1.l4, v20_1.l5, v20_1.l6] as [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>];
 }
 
 export function method62(v0_1_mut: string, v1_1_mut: int64): boolean {

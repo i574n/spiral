@@ -39,12 +39,12 @@ inl flatten x =
 /// ### option'
 inl option'_types () =
     backend_switch {
-        Gleam = fun () => global "import gleam/option.{type Option, None, Some}"
+        Gleam = fun () => global "import gleam/option"
     }
 nominal option'_gleam t =
     `(
         option'_types ()
-        $'' : $'Option(`t)'
+        $'' : $'option.Option(`t)'
     )
 type option'_switch t =
     {
@@ -56,12 +56,16 @@ nominal option' t = $'backend_switch `(option'_switch t)'
 
 /// ### none'
 inl none' forall t. () : option' t =
-    $'None'
+    backend_switch {
+        Gleam = fun () => $'option.None' : option' t
+        Fsharp = fun () => $'None' : option' t
+        Python = fun () => $'None' : option' t
+    }
 
 /// ### some'
 inl some' forall t. (x : t) : option' t =
     backend_switch {
-        Gleam = fun () => $'!x |> Some' : option' t
+        Gleam = fun () => $'!x |> option.Some' : option' t
         Fsharp = fun () => $'Some !x ' : option' t
         Python = fun () => $'!x # some\' ' : option' t
     }
@@ -126,7 +130,7 @@ inl of_obj forall t. (x : t) : option' t =
     backend_switch {
         Gleam = fun () =>
             option'_types ()
-            $'!x |> Some' : option' t
+            $'!x |> option.Some' : option' t
         Fsharp = fun () =>
             $'let mutable _!x = None'
             $'#if \!FABLE_COMPILER && \!WASM && \!CONTRACT'

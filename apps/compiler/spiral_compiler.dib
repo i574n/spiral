@@ -12862,8 +12862,8 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
         | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litGleam a) |> String.concat ""
         | YPrim a -> primGleam a
         | YArray a ->
-            global' "import gary.{type ErlangArray}"
-            sprintf "ErlangArray(%s)" (tup_ty a)
+            global' "import gary"
+            sprintf "gary.ErlangArray(%s)" (tup_ty a)
         | YFun(a,b,FT_Vanilla) -> sprintf "fn(%s) -> %s" (tup_ty a) (tup_ty b)
         | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
         | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
@@ -12935,7 +12935,7 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                 | WLit x -> sprintf "l%i :  %s" i (litGleam x)
             a |> data_term_vars |> Array.mapi f |> String.concat ", "
         let layout_index i x =
-            x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
+            x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
             |> String.concat ", "
             |> function "" -> () | x -> simple x
         let length (a,b) =
@@ -13259,8 +13259,8 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                         |> Array.map (fun (L(i,_)) -> $"v{i}")
                         |> String.concat ", "
                     if x.domain_args |> Array.length > 1
-                    then $"let #(#({args})) = x"
-                    else $"let #({args}) = x"
+                    then $"let #(#(   {args})) = x"
+                    else $"let #(   {args}) = x"
             // line s (sprintf "closure%i () -> fn(_) -> %s { fn(%s) { %s" x.tag (tup_ty x.range) args args')
             line s (sprintf "closure%i () -> fn(_) -> fn(Nil) -> %s { fn(%s) { %s\nfn (_) {" x.tag (tup_ty x.range) args args')
             binds (indent s) x.body
@@ -18809,57 +18809,57 @@ type Supervisor = {
 #!fsharp
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.Core.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.Core.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.Core.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.SignalR.Core.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Cors.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Cors.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Cors.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Cors.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Http.Abstractions.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Http.Abstractions.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Http.Abstractions.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Http.Abstractions.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Connections.Abstractions.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Connections.Abstractions.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Connections.Abstractions.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Connections.Abstractions.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Hosting.Abstractions.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Hosting.Abstractions.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Hosting.Abstractions.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Hosting.Abstractions.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Http.Connections.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Http.Connections.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Http.Connections.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Http.Connections.dll"
 #endif
 
 #if _LINUX
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.2/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Routing.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/9.0.3/runtimes/linux-x64/lib/net9.0/Microsoft.AspNetCore.Routing.dll"
 #else
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.2/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Routing.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.3/runtimes/win-x64/lib/net9.0/Microsoft.AspNetCore.Routing.dll"
 #endif
 
 #!fsharp

@@ -96,67 +96,67 @@ pub mod Date_time {
         let v678: i64 = ((v586.ticks()) - (v576.ticks())) / 10_i64;
         let v680: Option<chrono::DateTime<chrono::Utc>> =
             chrono::DateTime::from_timestamp_micros(v678);
-        let v699: Date_time::US0 =
+        let v705: Date_time::US0 =
             defaultValue(Date_time::US0::US0_1, map(Date_time::method1(), v680));
-        let v719: Date_time::US1 = match &v699 {
-            Date_time::US0::US0_0(v699_0_0) => {
-                let v705: chrono::NaiveDateTime = match &v699 {
+        let v725: Date_time::US1 = match &v705 {
+            Date_time::US0::US0_0(v705_0_0) => {
+                let v711: chrono::NaiveDateTime = match &v705 {
                     Date_time::US0::US0_0(x) => x.clone(),
                     _ => unreachable!(),
                 }
                 .clone()
                 .naive_utc();
-                let v707: chrono::DateTime<chrono::Local> =
-                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v705);
-                let v709: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
-                let v710: &str = r#"%Y%m%d-%H%M-%S%f"#;
-                let v712: std::string::String = v707.format(v710).to_string();
-                let v714: string = fable_library_rust::String_::fromString(v712);
+                let v713: chrono::DateTime<chrono::Local> =
+                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v711);
+                let v715: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
+                let v716: &str = r#"%Y%m%d-%H%M-%S%f"#;
+                let v718: std::string::String = v713.format(v716).to_string();
+                let v720: string = fable_library_rust::String_::fromString(v718);
                 Date_time::US1::US1_0(sprintf!(
                     "{}-{}-{}",
-                    getSlice(v714.clone(), Some(0_i32), Some(17_i32)),
-                    getSlice(v714.clone(), Some(18_i32), Some(21_i32)),
-                    getCharAt(v714, 22_i32)
+                    getSlice(v720.clone(), Some(0_i32), Some(17_i32)),
+                    getSlice(v720.clone(), Some(18_i32), Some(21_i32)),
+                    getCharAt(v720, 22_i32)
                 ))
             }
             _ => Date_time::US1::US1_1,
         };
-        let v723: string = match &v719 {
-            Date_time::US1::US1_0(v719_0_0) => match &v719 {
+        let v729: string = match &v725 {
+            Date_time::US1::US1_0(v725_0_0) => match &v725 {
                 Date_time::US1::US1_0(x) => x.clone(),
                 _ => unreachable!(),
             }
             .clone(),
             _ => string(""),
         };
-        let v730: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
+        let v736: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
             chrono::Local::now().offset(),
         ) as i64);
-        let v768: i64 = v586.ticks();
-        let v803: string =
+        let v774: i64 = v586.ticks();
+        let v809: string =
             string("chrono::FixedOffset::local_minus_utc(&chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(&chrono::DateTime::from_timestamp_nanos($1))))");
-        let v944: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
+        let v950: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
             &chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(
-                &chrono::DateTime::from_timestamp_nanos(v768),
+                &chrono::DateTime::from_timestamp_nanos(v774),
             )),
         ) as i64);
-        let v959: u8 = if (v944.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
-        let v960: string = Date_time::method2();
-        let v1129: string = v944.toString(v960);
-        let v1184: string = sprintf!(
+        let v965: u8 = if (v950.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
+        let v966: string = Date_time::method2();
+        let v1135: string = v950.toString(v966);
+        let v1190: string = sprintf!(
             "{}{}{}",
-            v959,
-            getSlice(v1129.clone(), Some(0_i32), Some(1_i32)),
-            getSlice(v1129, Some(3_i32), Some(4_i32))
+            v965,
+            getSlice(v1135.clone(), Some(0_i32), Some(1_i32)),
+            getSlice(v1135, Some(3_i32), Some(4_i32))
         );
-        let v1187: string = toString(v0_1);
+        let v1193: string = toString(v0_1);
         parse(concat(new_array(&[
-            v723.clone(),
-            v1184.clone(),
+            v729.clone(),
+            v1190.clone(),
             getSlice(
-                v1187.clone(),
-                Some((length(v723)) + (length(v1184))),
-                Some((length(v1187)) - 1_i32),
+                v1193.clone(),
+                Some((length(v729)) + (length(v1190))),
+                Some((length(v1193)) - 1_i32),
             ),
         ])))
     }

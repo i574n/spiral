@@ -7931,12 +7931,12 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">option</span><span class="s1">'_types () =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/option.{type Option, None, Some}"</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/option"</span>
     <span class="p">}</span>
 <span class="n">nominal</span> <span class="n">option</span><span class="s1">'_gleam t =</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">option</span><span class="s1">'_types ()</span>
-        <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Option(`t)'</span>
+        <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'option.Option(`t)'</span>
     <span class="p">)</span>
 <span class="nb">type</span> <span class="n">option</span><span class="s1">'_switch t =</span>
     <span class="p">{</span>
@@ -7970,7 +7970,11 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">none</span><span class="s1">' forall t. () : option'</span> <span class="n">t</span> <span class="o">=</span>
-    <span class="err">$</span><span class="s1">'None'</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'option.None'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -7997,7 +8001,7 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">some</span><span class="s1">' forall t. (x : t) : option'</span> <span class="n">t</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; option.Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Some !x '</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x # some</span><span class="se">\'</span><span class="s1"> '</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
     <span class="p">}</span>
@@ -8240,92 +8244,12 @@ __assert_eq' / actual: (US0_0 3, US0_1) / expected: (US0_0 3, US0_1)
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@io.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@string_tree.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@bit_array.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@option.erl"}
-{compiled,gleam@io,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@io.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@bytes_tree.erl"}
-{compiled,gleam@string_tree,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@string_tree.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@pair.erl"}
-{compiled,gleam@bytes_tree,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@bytes_tree.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@dict.erl"}
-{compiled,gleam@option,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@option.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam_stdlib.erl"}
-{compiled,gleam@pair,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@pair.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@dynamic.erl"}
-{compiled,gleam@dict,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@dict.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@set.erl"}
-{compiled,gleam@bit_array,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@bit_array.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam_stdlib_decode_ffi.erl"}
-{compiled,gleam@set,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@set.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@string.erl"}
-{compiled,gleam_stdlib_decode_ffi,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam_stdlib_decode_ffi.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@float.erl"}
-{compiled,gleam@float,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@float.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@result.erl"}
-{compiled,gleam@string,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@string.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@uri.erl"}
-{compiled,gleam@result,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@result.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@bool.erl"}
-{compiled,gleam@dynamic,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@dynamic.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@dynamic@decode.erl"}
-{compiled,gleam@bool,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@bool.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@function.erl"}
-{compiled,gleam@function,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@function.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@list.erl"}
-{compiled,gleam_stdlib,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam_stdlib.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@int.erl"}
-{compiled,gleam@uri,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@uri.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@order.erl"}
-{compiled,gleam@order,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@order.beam"}
-{compiled,gleam@int,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@int.beam"}
-{compiled,gleam@dynamic@decode,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@dynamic@decode.beam"}
-{compiled,gleam@list,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gleam_stdlib/ebin/gleam@list.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gary/_gleam_artefacts/gary@array.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gary/_gleam_artefacts/gary.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gary/_gleam_artefacts/internal@array_bindings.erl"}
-{compiled,gary,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gary/ebin/gary.beam"}
-{compiled,internal@array_bindings,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gary/ebin/internal@array_bindings.beam"}
-{compiled,gary@array,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/gary/ebin/gary@array.beam"}
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported type</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/src/main.gleam:2:22</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">2 │ import gleam/option.{type Option, None, Some}</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │                      ^^^^^^^^^^^ This imported type is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/17e20041529e9713b5f0d37f4b0438dba3dbb1292f92c1af8cd619e771553f4e/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/17e20041529e9713b5f0d37f4b0438dba3dbb1292f92c1af8cd619e771553f4e/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/17e20041529e9713b5f0d37f4b0438dba3dbb1292f92c1af8cd619e771553f4e/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/db87da813bfaea20ddfe461f19f3bfca552feb918ba03133453b060e518943ed/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/17e20041529e9713b5f0d37f4b0438dba3dbb1292f92c1af8cd619e771553f4e/build/dev/erlang/main/ebin/main@@main.beam"}
 __assert_eq' / actual: #(Us0i0(3), Us0i1) / expected: #(Us0i0(3), Us0i1)
 
 
@@ -8365,7 +8289,7 @@ __assert_eq' / actual: struct (US0_0 3, US0_1) / expected: struct (US0_0 3, US0_
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">option</span><span class="s1">'_types ()</span>
-            <span class="err">$</span><span class="s1">'!x |&gt; Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+            <span class="err">$</span><span class="s1">'!x |&gt; option.Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'let mutable _!x = None'</span>
             <span class="err">$</span><span class="s1">'#if \!FABLE_COMPILER &amp;&amp; \!WASM &amp;&amp; \!CONTRACT'</span>
@@ -8483,100 +8407,12 @@ __assert_eq' / actual: US0_0 "" / expected: US0_0 ""
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@dynamic.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@int.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@option.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@dict.erl"}
-{compiled,gleam@option,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@option.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@bool.erl"}
-{compiled,gleam@dict,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@dict.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@list.erl"}
-{compiled,gleam@bool,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@bool.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@pair.erl"}
-{compiled,gleam@int,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@int.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@set.erl"}
-{compiled,gleam@pair,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@pair.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@string_tree.erl"}
-{compiled,gleam@string_tree,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@string_tree.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@io.erl"}
-{compiled,gleam@io,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@io.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@dynamic@decode.erl"}
-{compiled,gleam@set,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@set.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@bit_array.erl"}
-{compiled,gleam@bit_array,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@bit_array.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@order.erl"}
-{compiled,gleam@order,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@order.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@result.erl"}
-{compiled,gleam@dynamic@decode,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@dynamic@decode.beam"}
-{compiled,gleam@result,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@result.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@string.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam_stdlib.erl"}
-{compiled,gleam@dynamic,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@dynamic.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam_stdlib_decode_ffi.erl"}
-{compiled,gleam@string,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@string.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@bytes_tree.erl"}
-{compiled,gleam_stdlib_decode_ffi,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam_stdlib_decode_ffi.beam"}
-{compiled,gleam@bytes_tree,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@bytes_tree.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@float.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@function.erl"}
-{compiled,gleam@function,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@function.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/_gleam_artefacts/gleam@uri.erl"}
-{compiled,gleam@float,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@float.beam"}
-{compiled,gleam@list,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@list.beam"}
-{compiled,gleam_stdlib,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam_stdlib.beam"}
-{compiled,gleam@uri,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gleam_stdlib/ebin/gleam@uri.beam"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gary/_gleam_artefacts/gary.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gary/_gleam_artefacts/gary@array.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gary/_gleam_artefacts/internal@array_bindings.erl"}
-{compiled,gary,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gary/ebin/gary.beam"}
-{compiled,internal@array_bindings,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gary/ebin/internal@array_bindings.beam"}
-{compiled,gary@array,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/gary/ebin/gary@array.beam"}
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported type</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/src/main.gleam:2:22</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">2 │ import gleam/option.{type Option, None, Some}</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │                      ^^^^^^^^^^^ This imported type is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported item</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/src/main.gleam:2:35</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">2 │ import gleam/option.{type Option, None, Some}</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │                                   ^^^^ This imported constructor is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2d758ec462a615d0e58fb298936fc467a0815b3fdfe30fd41ea8ae3c35021fab/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d81f2f892e564a288b731a7640282cde3c6d7163f08ef61639a3dfa6fb377b32/build/dev/erlang/main/ebin/main@@main.beam"}
 __assert_eq' / actual: Us0i0("") / expected: Us0i0("")
 
 

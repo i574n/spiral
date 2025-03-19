@@ -798,23 +798,23 @@ pub mod Runtime {
         v4: LrcPtr<Runtime::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v491: u64 = near_sdk::env::block_timestamp();
-        let v510: Runtime::US2 = defaultValue(Runtime::US2::US2_1, map(Runtime::method9(), v5));
-        let v523: u64 = (match &v510 {
-            Runtime::US2::US2_0(v510_0_0) => {
-                (v491)
-                    - (match &v510 {
+        let v509: u64 = near_sdk::env::block_timestamp();
+        let v534: Runtime::US2 = defaultValue(Runtime::US2::US2_1, map(Runtime::method9(), v5));
+        let v547: u64 = (match &v534 {
+            Runtime::US2::US2_0(v534_0_0) => {
+                (v509)
+                    - (match &v534 {
                         Runtime::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     } as u64)
             }
-            _ => v491,
+            _ => v509,
         }) / 1000000000_u64;
-        let v524: u64 = (v523) % 60_u64;
-        let v526: u64 = ((v523) / 60_u64) % 60_u64;
-        let v528: u64 = ((v523) / 3600_u64) % 24_u64;
-        let v530: std::string::String = format!("{:02}:{:02}:{:02}", v528, v526, v524);
-        fable_library_rust::String_::fromString(v530)
+        let v548: u64 = (v547) % 60_u64;
+        let v550: u64 = ((v547) / 60_u64) % 60_u64;
+        let v552: u64 = ((v547) / 3600_u64) % 24_u64;
+        let v554: std::string::String = format!("{:02}:{:02}:{:02}", v552, v550, v548);
+        fable_library_rust::String_::fromString(v554)
     }
     pub fn method14() -> string {
         string("")
@@ -3164,7 +3164,7 @@ pub mod Runtime {
         bool,
         Option<string>,
     ) {
-        let v8: LrcPtr<Runtime::Heap0> = v0_1(LrcPtr::new(Runtime::Heap0 {
+        let v20_1: LrcPtr<Runtime::Heap0> = v0_1(LrcPtr::new(Runtime::Heap0 {
             l0: string(""),
             l1: None::<CancellationToken>,
             l2: new_empty::<(string, string)>(),
@@ -3174,13 +3174,13 @@ pub mod Runtime {
             l6: None::<string>,
         }));
         (
-            v8.l0.clone(),
-            v8.l1.clone(),
-            v8.l2.clone(),
-            v8.l3.clone(),
-            v8.l4.clone(),
-            v8.l5,
-            v8.l6.clone(),
+            v20_1.l0.clone(),
+            v20_1.l1.clone(),
+            v20_1.l2.clone(),
+            v20_1.l3.clone(),
+            v20_1.l4.clone(),
+            v20_1.l5,
+            v20_1.l6.clone(),
         )
     }
     pub fn method62(v0_1: char, v1_1: i64) -> bool {

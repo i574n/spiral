@@ -1,0 +1,132 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+
+#!markdown
+
+# near_wallet
+
+#!fsharp
+
+#!import ../../../../../../polyglot/lib/fsharp/NotebooksHtml.dib
+
+#!markdown
+
+## near_wallet
+
+#!spiral
+
+open lustre
+
+#!markdown
+
+### model
+
+#!spiral
+
+type model = int
+
+#!markdown
+
+### init
+
+#!spiral
+
+inl init initial_count : model =
+    if initial_count < 0
+    then 0
+    else initial_count
+
+#!markdown
+
+### msg
+
+#!spiral
+
+union msg =
+    | Incr
+    | Decr
+
+#!markdown
+
+### update
+
+#!spiral
+
+inl update n (model, msg) =
+    match msg with
+    | Incr => model + n
+    | Decr => model - n
+
+#!markdown
+
+### view
+
+#!spiral
+
+inl view model =
+    div [
+        style [
+            "display", "flex"
+        ]
+    ] [
+        div [
+            style [
+                "display", "flex"
+                "flex-direction", "column"
+            ]
+        ] [
+            button [
+                on_click Incr
+            ] [
+                text "+"
+            ]
+            p [
+                style [
+                    "text-align", "center"
+                ]
+            ] [
+                model |> sm'.obj_to_string |> text
+            ]
+            button [
+                on_click Decr
+            ] [
+                text "-"
+            ]
+        ]
+    ]
+
+#!markdown
+
+## tests
+
+#!spiral
+
+//// test
+///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+simple init (update 1) view
+|> start "#app_"
+
+#!spiral
+
+//// test
+///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+simple init (update 2) view
+|> start "#app_"
+
+#!markdown
+
+## main
+
+#!spiral
+
+///! _
+
+inl main' (n : int) =
+    simple init (update 1) view
+    |> start "#app_"
+
+inl main () =
+    $'!main' (0)' : ()

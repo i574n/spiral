@@ -10309,8 +10309,8 @@ module spiral_compiler =
             | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litGleam a) |> String.concat ""
             | YPrim a -> primGleam a
             | YArray a ->
-                global' "import gary.{type ErlangArray}"
-                sprintf "ErlangArray(%s)" (tup_ty a)
+                global' "import gary"
+                sprintf "gary.ErlangArray(%s)" (tup_ty a)
             | YFun(a,b,FT_Vanilla) -> sprintf "fn(%s) -> %s" (tup_ty a) (tup_ty b)
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
@@ -10382,7 +10382,7 @@ module spiral_compiler =
                     | WLit x -> sprintf "l%i :  %s" i (litGleam x)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
             let layout_index i x =
-                x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
+                x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
                 |> String.concat ", "
                 |> function "" -> () | x -> simple x
             let length (a,b) =
@@ -10706,8 +10706,8 @@ module spiral_compiler =
                             |> Array.map (fun (L(i,_)) -> $"v{i}")
                             |> String.concat ", "
                         if x.domain_args |> Array.length > 1
-                        then $"let #(#({args})) = x"
-                        else $"let #({args}) = x"
+                        then $"let #(#(   {args})) = x"
+                        else $"let #(   {args}) = x"
                 // line s (sprintf "closure%i () -> fn(_) -> %s { fn(%s) { %s" x.tag (tup_ty x.range) args args')
                 line s (sprintf "closure%i () -> fn(_) -> fn(Nil) -> %s { fn(%s) { %s\nfn (_) {" x.tag (tup_ty x.range) args args')
                 binds (indent s) x.body
