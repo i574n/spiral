@@ -16,7 +16,7 @@ $projectName = "near_wallet"
 
 if (!$SkipPreBuild) {
     if (!$SkipNotebook) {
-        { . ../../../deps/spiral/workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/src/$projectName.dib" } | Invoke-Block -Retries 3 -Location ../../../../deps/polyglot/apps/spiral/dist
+        { . ../../../deps/spiral/workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/src/$projectName.dib" } | Invoke-Block -Retries 3 -Location ../../../../deps/polyglot/apps/spiral/temp
     }
 
     { . ../../../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "src/$projectName.dib" spi } | Invoke-Block
