@@ -10,7 +10,7 @@ pub type Us0 {
     Us0i0
     Us0i1
 }
-pub fn closure1 () -> fn(_) -> fn(Nil) -> Int { fn(x : #( Int)) { let #(v0) = x
+pub fn closure1 () -> fn(_) -> fn(Nil) -> Int { fn(x : #( Int)) { let #(   v0) = x
 fn (_) {
     let v1 = v0 < 0
     case v1 {
@@ -22,7 +22,7 @@ fn (_) {
         }
     }
 }}}
-pub fn closure2 () -> fn(_) -> fn(Nil) -> Int { fn(x : #(#( Int, Us0))) { let #(#(v0, v1)) = x
+pub fn closure2 () -> fn(_) -> fn(Nil) -> Int { fn(x : #(#( Int, Us0))) { let #(#(   v0, v1)) = x
 fn (_) {
     case v1 {
         Us0i1 -> { // Decr
@@ -35,7 +35,7 @@ fn (_) {
         }
     }
 }}}
-pub fn closure3 () -> fn(_) -> fn(Nil) -> element.Element(Us0) { fn(x : #( Int)) { let #(v0) = x
+pub fn closure3 () -> fn(_) -> fn(Nil) -> element.Element(Us0) { fn(x : #( Int)) { let #(   v0) = x
 fn (_) {
     let v1 = []
     let v2 = "display"
@@ -92,7 +92,7 @@ fn (_) {
     let v105 = html.div(v96, v101)
     v105
 }}}
-pub fn closure0 () -> fn(_) -> fn(Nil) -> Nil   { fn(x : #( Int)) { let #(v0) = x
+pub fn closure0 () -> fn(_) -> fn(Nil) -> Nil   { fn(x : #( Int)) { let #(   v0) = x
 fn (_) {
     let v1 = fn (x) { closure1()(#(x))(   Nil) }
     let v2 = fn (x) { closure2()(#(x))(   Nil) }

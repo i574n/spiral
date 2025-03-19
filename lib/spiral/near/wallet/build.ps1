@@ -5,18 +5,21 @@ param(
     $SkipGleam,
     $ScriptDir = $PSScriptRoot
 )
-Set-Location $ScriptDir
+$ScriptDir | Set-Location
 $ErrorActionPreference = "Stop"
 . ../../../../deps/polyglot/scripts/core.ps1
 . ../../lib.ps1
 
+$ResolvedScriptDir = ResolveLink $ScriptDir
+$ResolvedScriptDir | Set-Location
+
+Write-Output "spiral/lib/spiral/near/wallet/build.ps1 / ScriptDir: $ScriptDir / ResolvedScriptDir: $ResolvedScriptDir"
 
 $projectName = "near_wallet"
 
-
 if (!$SkipPreBuild) {
     if (!$SkipNotebook) {
-        { . ../../../deps/spiral/workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/src/$projectName.dib" } | Invoke-Block -Retries 3 -Location ../../../../deps/polyglot/apps/spiral/temp
+        { . ../../../../../deps/spiral/workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/src/$projectName.dib" } | Invoke-Block -Retries 3 -Location ../../../../deps/polyglot/apps/spiral/temp/extension/src
     }
 
     { . ../../../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "src/$projectName.dib" spi } | Invoke-Block
