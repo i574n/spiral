@@ -8046,10 +8046,10 @@ __assert_eq' / actual: (US0_0 3, US0_1 "error1") / expected: (US0_0 3, US0_1 "er
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable case clause</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db\src\main.gleam:49:5</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db\src\main.gleam:33:39</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">49 │     Error(x) -&gt; v5(x)</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │     ^^^^^^^^^^^^^^^^^</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">33 │     let v6 = case v0 { Ok(x) -&gt; v4(x) Error(x) -&gt; v5(x) }</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                       ^^^^^^^^^^^^^^^^^</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This case clause cannot be reached as it matches on a variant of a type</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">which is never present.</span>
