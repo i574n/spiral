@@ -237,16 +237,61 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
 
 #!markdown
 
+### append_real
+
+#!spiral
+
+//// real
+
+inl append_real (x : string) (s : string) : string =
+    backend_switch `string `({}) {
+        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
+        Fsharp = (fun () => (+.) `string s x) : () -> string
+        Python = (fun () => (+.) `string s x) : () -> string
+    }
+
+#!markdown
+
 ### append
 
 #!spiral
 
 inl append (x : string) (s : string) : string =
-    backend_switch {
-        Gleam = fun () => $'!s <> !x ' : string
-        Fsharp = fun () => s +. x
-        Python = fun () => s +. x
-    }
+    real append_real x s
+
+#!markdown
+
+### (++#)
+
+#!spiral
+
+//// real
+
+inl (++#) (a : string) (b : string) : string =
+    append_real b a
+
+#!spiral
+
+inl (++#) (a : string) (b : string) : string =
+    real (++#) a b
+
+#!markdown
+
+### (++\\#)
+
+#!spiral
+
+inl (++\\#) a b =
+    a ++# "\\n" ++# b
+
+#!markdown
+
+### (++\#)
+
+#!spiral
+
+inl (++\#) a b =
+    a ++# "\n" ++# b
 
 #!markdown
 
@@ -343,7 +388,7 @@ prototype printable t : t -> ()
 
 //// real
 
-let format_real forall t. (x : t) : string =
+inl format_real forall t. (x : t) : string =
     inl result = mut `string (join "")
     inl rec write x =
         inl p ((a : string), b) =
@@ -352,8 +397,9 @@ let format_real forall t. (x : t) : string =
                     Gleam =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'!b ' : string
-                            | _ => $'!b ' : string
+                            | (_ : string) => $'!b ' : string
+                            // | (_ : f32) | (_ : f64) => format_debug `(`b) b
+                            | _ => format_debug `(`b) b
                         ) : () -> string
                     Fsharp =
                         (fun () =>
@@ -368,7 +414,7 @@ let format_real forall t. (x : t) : string =
                             | _ => $'f"{!b}"' : string
                         ) : () -> string
                 }
-            exec_unit ((fun () => result <- (+.) `string ((~*) `string result) s) : () -> ())
+            exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
 
         match x with // According to Bing it shouldn't matter whether these are %d or %lld in printf.
         | () => ()
@@ -441,7 +487,7 @@ inl format forall t. (x : t) : string =
 inl concat_array (separator : string) (input : a int string) =
     (input, { acc = ""; sep = "" })
     ||> am.foldBack fun (x : string) { acc sep } =>
-            { acc = $'!x + !sep + !acc + ""' : string; sep = separator }
+            { acc = x ++# sep ++# acc; sep = separator }
     |> fun { acc } => acc
 
 #!spiral
@@ -473,7 +519,7 @@ inl concat_array (separator : string) (input : a int string) =
 inl concat_list separator input =
     (input, { acc = ""; sep = "" })
     ||> listm.foldBack fun (x : string) { acc sep } => {
-        acc = x |> append sep |> append acc
+        acc = x ++# sep ++# acc
         sep = separator
     }
     |> fun { acc } => acc
@@ -563,7 +609,7 @@ inl replicate (n : int) (s : string) : string =
     inl rec body i acc =
         if i >= n
         then acc
-        else loop (i + 1) (acc |> append s)
+        else loop (i + 1) (acc ++# s)
     and inl loop i = join_body_unit body n i
     loop 0 ""
 
@@ -616,7 +662,7 @@ inl obj_to_string x : string =
 
 inl pad_left (total_width : int) (padding_char : char) (s : string) : string =
     inl padding = padding_char |> obj_to_string |> replicate (total_width - length s)
-    padding +. s
+    padding ++# s
 
 #!markdown
 
@@ -626,7 +672,7 @@ inl pad_left (total_width : int) (padding_char : char) (s : string) : string =
 
 inl pad_right (total_width : int) (padding_char : char) (s : string) : string =
     inl padding = padding_char |> obj_to_string |> replicate (total_width - length s)
-    s +. padding
+    s ++# padding
 
 #!spiral
 

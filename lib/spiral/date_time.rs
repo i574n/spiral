@@ -2,14 +2,14 @@ pub mod Date_time {
     use super::*;
     use fable_library_rust::Convert_::toInt64;
     use fable_library_rust::DateTime_::DateTime;
+    use fable_library_rust::Guid_::Guid;
     use fable_library_rust::Guid_::new_guid;
     use fable_library_rust::Guid_::parse;
-    use fable_library_rust::Guid_::Guid;
-    use fable_library_rust::NativeArray_::new_array;
-    use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::Func1;
     use fable_library_rust::Native_::LrcPtr;
     use fable_library_rust::Native_::OnceInit;
+    use fable_library_rust::Native_::on_startup;
+    use fable_library_rust::NativeArray_::new_array;
     use fable_library_rust::Option_::defaultValue;
     use fable_library_rust::Option_::map;
     use fable_library_rust::String_::append;
@@ -85,78 +85,79 @@ pub mod Date_time {
         string("hhmm")
     }
     pub fn method0(v0_1: Guid, v1_1: DateTime) -> Guid {
-        let v576: DateTime = {
+        let v610: DateTime = {
             let _arg: DateTime = DateTime::unixEpoch();
             _arg.toUniversalTime()
         };
-        let v586: DateTime = {
+        let v620: DateTime = {
             let _arg_1: DateTime = DateTime::specifyKind(v1_1, 2_i32);
             _arg_1.toUniversalTime()
         };
-        let v678: i64 = ((v586.ticks()) - (v576.ticks())) / 10_i64;
-        let v680: Option<chrono::DateTime<chrono::Utc>> =
-            chrono::DateTime::from_timestamp_micros(v678);
-        let v705: Date_time::US0 =
-            defaultValue(Date_time::US0::US0_1, map(Date_time::method1(), v680));
-        let v725: Date_time::US1 = match &v705 {
-            Date_time::US0::US0_0(v705_0_0) => {
-                let v711: chrono::NaiveDateTime = match &v705 {
+        let v718: i64 = ((v620.ticks()) - (v610.ticks())) / 10_i64;
+        let v720: Option<chrono::DateTime<chrono::Utc>> =
+            chrono::DateTime::from_timestamp_micros(v718);
+        let v745: Date_time::US0 =
+            defaultValue(Date_time::US0::US0_1, map(Date_time::method1(), v720));
+        let v765: Date_time::US1 = match &v745 {
+            Date_time::US0::US0_0(v745_0_0) => {
+                let v751: chrono::NaiveDateTime = match &v745 {
                     Date_time::US0::US0_0(x) => x.clone(),
                     _ => unreachable!(),
                 }
                 .clone()
                 .naive_utc();
-                let v713: chrono::DateTime<chrono::Local> =
-                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v711);
-                let v715: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
-                let v716: &str = r#"%Y%m%d-%H%M-%S%f"#;
-                let v718: std::string::String = v713.format(v716).to_string();
-                let v720: string = fable_library_rust::String_::fromString(v718);
+                let v753: chrono::DateTime<chrono::Local> =
+                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v751);
+                let v755: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
+                let v756: &str = r#"%Y%m%d-%H%M-%S%f"#;
+                let v758: std::string::String = v753.format(v756).to_string();
+                let v760: string = fable_library_rust::String_::fromString(v758);
                 Date_time::US1::US1_0(sprintf!(
                     "{}-{}-{}",
-                    getSlice(v720.clone(), Some(0_i32), Some(17_i32)),
-                    getSlice(v720.clone(), Some(18_i32), Some(21_i32)),
-                    getCharAt(v720, 22_i32)
+                    getSlice(v760.clone(), Some(0_i32), Some(17_i32)),
+                    getSlice(v760.clone(), Some(18_i32), Some(21_i32)),
+                    getCharAt(v760, 22_i32)
                 ))
             }
             _ => Date_time::US1::US1_1,
         };
-        let v729: string = match &v725 {
-            Date_time::US1::US1_0(v725_0_0) => match &v725 {
+        let v769: string = match &v765 {
+            Date_time::US1::US1_0(v765_0_0) => match &v765 {
                 Date_time::US1::US1_0(x) => x.clone(),
                 _ => unreachable!(),
             }
             .clone(),
             _ => string(""),
         };
-        let v736: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
+        let v776: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
             chrono::Local::now().offset(),
         ) as i64);
-        let v774: i64 = v586.ticks();
-        let v809: string =
-            string("chrono::FixedOffset::local_minus_utc(&chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(&chrono::DateTime::from_timestamp_nanos($1))))");
-        let v950: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
+        let v817: i64 = v620.ticks();
+        let v852: string = string(
+            "chrono::FixedOffset::local_minus_utc(&chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(&chrono::DateTime::from_timestamp_nanos($1))))",
+        );
+        let v996: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
             &chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(
-                &chrono::DateTime::from_timestamp_nanos(v774),
+                &chrono::DateTime::from_timestamp_nanos(v817),
             )),
         ) as i64);
-        let v965: u8 = if (v950.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
-        let v966: string = Date_time::method2();
-        let v1135: string = v950.toString(v966);
-        let v1190: string = sprintf!(
+        let v1011: u8 = if (v996.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
+        let v1012: string = Date_time::method2();
+        let v1199: string = v996.toString(v1012);
+        let v1260: string = sprintf!(
             "{}{}{}",
-            v965,
-            getSlice(v1135.clone(), Some(0_i32), Some(1_i32)),
-            getSlice(v1135, Some(3_i32), Some(4_i32))
+            v1011,
+            getSlice(v1199.clone(), Some(0_i32), Some(1_i32)),
+            getSlice(v1199, Some(3_i32), Some(4_i32))
         );
-        let v1193: string = toString(v0_1);
+        let v1263: string = toString(v0_1);
         parse(concat(new_array(&[
-            v729.clone(),
-            v1190.clone(),
+            v769.clone(),
+            v1260.clone(),
             getSlice(
-                v1193.clone(),
-                Some((length(v729)) + (length(v1190))),
-                Some((length(v1193)) - 1_i32),
+                v1263.clone(),
+                Some((length(v769)) + (length(v1260))),
+                Some((length(v1263)) - 1_i32),
             ),
         ])))
     }
@@ -197,16 +198,16 @@ pub mod Date_time {
         let v4_1: string = toString(v0_1);
         let v9: string = toString(v1_1);
         let v14: string = ofChar('0');
-        let v23: string = append(
+        let v24: string = append(
             ((Date_time::method5(18_i32 - (length(v9.clone())), v14, 0_i32))(string(""))),
             (v9),
         );
         parse(sprintf!(
             "{}-{}-{}-{}{}",
-            getSlice(v23.clone(), Some(0_i32), Some(7_i32)),
-            getSlice(v23.clone(), Some(8_i32), Some(11_i32)),
-            getSlice(v23.clone(), Some(12_i32), Some(15_i32)),
-            getSlice(v23, Some(16_i32), Some(17_i32)),
+            getSlice(v24.clone(), Some(0_i32), Some(7_i32)),
+            getSlice(v24.clone(), Some(8_i32), Some(11_i32)),
+            getSlice(v24.clone(), Some(12_i32), Some(15_i32)),
+            getSlice(v24, Some(16_i32), Some(17_i32)),
             getSlice(v4_1, Some(21_i32), None::<i32>)
         ))
     }
@@ -232,16 +233,16 @@ pub mod Date_time {
         let v8: string = toString(new_guid());
         let v13: string = toString(v0_1);
         let v18: string = ofChar('0');
-        let v27: string = append(
+        let v28: string = append(
             ((Date_time::method5(18_i32 - (length(v13.clone())), v18, 0_i32))(string(""))),
             (v13),
         );
         parse(sprintf!(
             "{}-{}-{}-{}{}",
-            getSlice(v27.clone(), Some(0_i32), Some(7_i32)),
-            getSlice(v27.clone(), Some(8_i32), Some(11_i32)),
-            getSlice(v27.clone(), Some(12_i32), Some(15_i32)),
-            getSlice(v27, Some(16_i32), Some(17_i32)),
+            getSlice(v28.clone(), Some(0_i32), Some(7_i32)),
+            getSlice(v28.clone(), Some(8_i32), Some(11_i32)),
+            getSlice(v28.clone(), Some(12_i32), Some(15_i32)),
+            getSlice(v28, Some(16_i32), Some(17_i32)),
             getSlice(v8, Some(21_i32), None::<i32>)
         ))
     }

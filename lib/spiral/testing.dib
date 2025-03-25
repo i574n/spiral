@@ -10,6 +10,10 @@
 
 ## testing
 
+#!spiral
+
+open sm'_operators
+
 #!markdown
 
 ### testing_trace
@@ -40,37 +44,7 @@ inl rec __expect
     inl result =
         result || join result
     inl get_raw_text () =
-        backend_switch {
-            Gleam = fun () =>
-                inl to_string (x : _) : string =
-                    inl float () =
-                        global "import gleam/float"
-                        $'float.to_string(!x)' : string
-                    inl int () =
-                        global "import gleam/int"
-                        $'int.to_string(!x)' : string
-                    real
-                        typecase a with
-                        | bool =>
-                            global "import gleam/bool"
-                            $'bool.to_string(!x)' : string
-                        | f32 => float ()
-                        | f64 => float ()
-                        | i8 => int ()
-                        | i16 => int ()
-                        | i32 => int ()
-                        | i64 => int ()
-                        | u8 => int ()
-                        | u16 => int ()
-                        | u32 => int ()
-                        | u64 => int ()
-                        | _ =>
-                            global "import gleam/string"
-                            $'string.inspect(!x)' : string
-                $'!name <> " / actual: " <> !(a |> to_string) <> " / expected: " <> !(b |> to_string)' : string
-            Fsharp = fun () => $'$"{!name} / actual: %A{!a} / expected: %A{!b}"' : string
-            Python = fun () => $'f"{!name} / actual: {!a} / expected: {!b}"' : string
-        }
+        { name actual = a; expected = b } |> sm'.format
     match trace' with
     | Console =>
         inl text = get_raw_text ()
@@ -272,11 +246,7 @@ inl rec _assert_fn fn list =
                     true
                 fun ex =>
                     trace Critical
-                        fun () =>
-                            backend_switch {
-                                Fsharp = fun () => $'$"{!name} / error"' : string
-                                Python = fun () => $'f"{!name} / error"' : string
-                            }
+                        fun () => name ++# " / error"
                         fun () => { ex expected }
                     Some false
             |> optionm.value
@@ -304,7 +274,8 @@ inl _assert_in items x =
                 Some ()
     |> function
         | Some _ => ()
-        | None => failwith $'$"_assert_in / x: %A{!x} / items: %A{!items}"'
+        | None =>
+            "_assert_in / " ++# ({ x items } |> sm'.format) |> failwith
 
 #!markdown
 
@@ -380,8 +351,6 @@ inl _throws (fn : () -> ()) : option exn =
 
 inl rec print_and_return x =
     inl name = reflection.nameof { print_and_return }
-    backend_switch {
-        Fsharp = fun () => $'printfn $"{!name} / x: {!x}"' : ()
-        Python = fun () => $'print(f"{!name} / x: {!x}")' : ()
-    }
+    name ++# ({ x } |> sm'.format)
+    |> console.write_line
     x

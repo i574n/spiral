@@ -1,4 +1,5 @@
 /// # guid
+open sm'_operators
 
 /// ## guid
 
@@ -10,6 +11,7 @@ nominal guid_python =
     )
 type guid_switch =
     {
+        Gleam : string
         Fsharp : $'System.Guid'
         Python : guid_python
     }
@@ -24,6 +26,11 @@ inl new_guid (x : string) : guid =
 /// ### new_raw_guid
 inl new_raw_guid () : guid =
     backend_switch {
+        Gleam = fun () =>
+            backend_switch {
+                Gleam = fun () => global "import gleam_uuid"
+            }
+            $'gleam_uuid.v4_string ()' : guid
         Fsharp = fun () => $'System.Guid.NewGuid' () : guid
         Python = fun () => $'uuid.uuid4()' : guid
     }
@@ -33,15 +40,16 @@ type hash_guid = guid
 
 let hash_guid (hash : string) : hash_guid =
     inl hash = hash |> sm'.pad_left 32i32 '0'
-    run_target_args (fun () => hash) function
+    run_target_args (fun () => "-", hash) function
         | Rust (Contract) => fun _ => null ()
-        | _ => fun hash =>
+        | _ => fun dash, hash =>
             inl a = hash |> sm'.range (am'.Start 0i32) (am'.End fun _ => 8)
             inl b = hash |> sm'.range (am'.Start 8i32) (am'.End fun _ => 12)
             inl c = hash |> sm'.range (am'.Start 12i32) (am'.End fun _ => 16)
             inl d = hash |> sm'.range (am'.Start 16i32) (am'.End fun _ => 20)
             inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)
-            $'$"{!a}-{!b}-{!c}-{!d}-{!e}"' |> new_guid
+            a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
+            |> new_guid
 
 /// ## main
 inl main () =

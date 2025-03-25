@@ -8043,47 +8043,47 @@ a.anchor-link {
     <span class="n">inl</span> <span class="n">fsproj_path</span> <span class="o">=</span> <span class="n">package_dir</span> <span class="o">&lt;/&gt;</span> <span class="err">$</span><span class="s1">'$"{!name}.fsproj"'</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">normalize_path</span>
     <span class="n">inl</span> <span class="n">fsproj_code</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
         <span class="err">$</span><span class="s1">'$"&lt;Project Sdk=</span><span class="se">\\\"</span><span class="s1">Microsoft.NET.Sdk</span><span class="se">\\\"</span><span class="s1">&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;PropertyGroup&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;TargetFramework&gt;net9.0&lt;/TargetFramework&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;LangVersion&gt;preview&lt;/LangVersion&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;RollForward&gt;Major&lt;/RollForward&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;TargetLatestRuntimePatch&gt;true&lt;/TargetLatestRuntimePatch&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;PublishAot&gt;false&lt;/PublishAot&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;PublishTrimmed&gt;false&lt;/PublishTrimmed&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;PublishSingleFile&gt;true&lt;/PublishSingleFile&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;SelfContained&gt;true&lt;/SelfContained&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;Version&gt;0.0.1-alpha.1&lt;/Version&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;OutputType&gt;Exe&lt;/OutputType&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;ServerGarbageCollection&gt;true&lt;/ServerGarbageCollection&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;ConcurrentGarbageCollection&gt;true&lt;/ConcurrentGarbageCollection&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/PropertyGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;PropertyGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;TargetFramework&gt;net10.0&lt;/TargetFramework&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;LangVersion&gt;preview&lt;/LangVersion&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;RollForward&gt;Major&lt;/RollForward&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;TargetLatestRuntimePatch&gt;true&lt;/TargetLatestRuntimePatch&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;PublishAot&gt;false&lt;/PublishAot&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;PublishTrimmed&gt;false&lt;/PublishTrimmed&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;PublishSingleFile&gt;true&lt;/PublishSingleFile&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;SelfContained&gt;true&lt;/SelfContained&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;Version&gt;0.0.1-alpha.1&lt;/Version&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;OutputType&gt;Exe&lt;/OutputType&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;ServerGarbageCollection&gt;true&lt;/ServerGarbageCollection&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;ConcurrentGarbageCollection&gt;true&lt;/ConcurrentGarbageCollection&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/PropertyGroup&gt;"'</span>
 
-        <span class="o">+</span><span class="c1">#. $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'FreeBSD\'))\\\"&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;DefineConstants&gt;_FREEBSD&lt;/DefineConstants&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/PropertyGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'FreeBSD\'))\\\"&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;DefineConstants&gt;_FREEBSD&lt;/DefineConstants&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/PropertyGroup&gt;"'</span>
 
-        <span class="o">+</span><span class="c1">#. $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Linux\'))\\\"&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;DefineConstants&gt;_LINUX&lt;/DefineConstants&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/PropertyGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Linux\'))\\\"&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;DefineConstants&gt;_LINUX&lt;/DefineConstants&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/PropertyGroup&gt;"'</span>
 
-        <span class="o">+</span><span class="c1">#. $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'OSX\'))\\\"&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;DefineConstants&gt;_OSX&lt;/DefineConstants&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/PropertyGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'OSX\'))\\\"&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;DefineConstants&gt;_OSX&lt;/DefineConstants&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/PropertyGroup&gt;"'</span>
 
-        <span class="o">+</span><span class="c1">#. $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Windows\'))\\\"&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;DefineConstants&gt;_WINDOWS&lt;/DefineConstants&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/PropertyGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Windows\'))\\\"&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;DefineConstants&gt;_WINDOWS&lt;/DefineConstants&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/PropertyGroup&gt;"'</span>
 
-        <span class="o">+</span><span class="c1">#. $'$"&lt;ItemGroup&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    {!modules_code}"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    &lt;Compile Include=\\\"{!fs_path}\\\" /&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/ItemGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;ItemGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    {!modules_code}"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    &lt;Compile Include=\\\"{!fs_path}\\\" /&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/ItemGroup&gt;"'</span>
 
-        <span class="o">+</span><span class="c1">#. $'$"&lt;ItemGroup&gt;"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"    {!packages_code}"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/ItemGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;ItemGroup&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"    {!packages_code}"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/ItemGroup&gt;"'</span>
 
-        <span class="o">+</span><span class="c1">#. $'$"&lt;/Project&gt;"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"&lt;/Project&gt;"'</span>
 
     <span class="n">fsproj_code</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">write_all_text_exists</span> <span class="n">fsproj_path</span>
 
@@ -8217,25 +8217,25 @@ a.anchor-link {
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = c:/home/git\polyglot\target/spiral\test1 }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 publish_project / { full_path = \\?\C:\home\git\polyglot\target\spiral\test1\test1.fsproj }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test1/test1.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "win-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test1/test1.fsproj" --configuration Release --output "dist" --runtime win-x64; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test1/test1.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "win-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test1/test1.fsproj" --configuration Release --output "dist" --runtime win-x64; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "\\?\C:\home\git\polyglot\target\spiral\test1",
 ) } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt;   Determining projects to restore...
-00:00:01 <span class="ansi-black-intense-fg">v</span> #5 &gt;   Restored c:\home\git\polyglot\target\spiral\test1\test1.fsproj (in 284 ms).
-00:00:03 <span class="ansi-black-intense-fg">v</span> #6 &gt; c:\home\git\polyglot\target\spiral\test1\test1.fs(1,16): warning FS0988: Main module of program is empty: nothing will happen when it is run [c:\home\git\polyglot\target\spiral\test1\test1.fsproj]
-00:00:03 <span class="ansi-black-intense-fg">v</span> #7 &gt;   test1 -&gt; c:\home\git\polyglot\target\spiral\test1\bin\Release\net9.0\win-x64\test1.dll
-00:00:04 <span class="ansi-black-intense-fg">v</span> #8 &gt;   test1 -&gt; \\?\C:\home\git\polyglot\target\spiral\test1\dist\
-00:00:04 <span class="ansi-black-intense-fg">v</span> #9 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 462 }
-00:00:04 <span class="ansi-blue-intense-fg">d</span> #10 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test1/test1.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "linux-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test1/test1.fsproj" --configuration Release --output "dist" --runtime linux-x64; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:01 <span class="ansi-black-intense-fg">v</span> #5 &gt;   Restored c:\home\git\polyglot\target\spiral\test1\test1.fsproj (in 395 ms).
+00:00:01 <span class="ansi-black-intense-fg">v</span> #6 &gt; C:\Program Files\dotnet\sdk\10.0.100-preview.2.25164.34\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(326,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [c:\home\git\polyglot\target\spiral\test1\test1.fsproj]
+00:00:02 <span class="ansi-black-intense-fg">v</span> #7 &gt;   test1 -&gt; c:\home\git\polyglot\target\spiral\test1\bin\Release\net10.0\win-x64\test1.dll
+00:00:03 <span class="ansi-black-intense-fg">v</span> #8 &gt;   test1 -&gt; \\?\C:\home\git\polyglot\target\spiral\test1\dist\
+00:00:03 <span class="ansi-black-intense-fg">v</span> #9 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 569 }
+00:00:03 <span class="ansi-blue-intense-fg">d</span> #10 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test1/test1.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "linux-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test1/test1.fsproj" --configuration Release --output "dist" --runtime linux-x64; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "\\?\C:\home\git\polyglot\target\spiral\test1",
 ) } }
 00:00:04 <span class="ansi-black-intense-fg">v</span> #11 &gt;   Determining projects to restore...
-00:00:05 <span class="ansi-black-intense-fg">v</span> #12 &gt;   Restored c:\home\git\polyglot\target\spiral\test1\test1.fsproj (in 295 ms).
-00:00:07 <span class="ansi-black-intense-fg">v</span> #13 &gt; c:\home\git\polyglot\target\spiral\test1\test1.fs(1,16): warning FS0988: Main module of program is empty: nothing will happen when it is run [c:\home\git\polyglot\target\spiral\test1\test1.fsproj]
-00:00:07 <span class="ansi-black-intense-fg">v</span> #14 &gt;   test1 -&gt; c:\home\git\polyglot\target\spiral\test1\bin\Release\net9.0\linux-x64\test1.dll
-00:00:08 <span class="ansi-black-intense-fg">v</span> #15 &gt;   test1 -&gt; \\?\C:\home\git\polyglot\target\spiral\test1\dist\
-00:00:08 <span class="ansi-black-intense-fg">v</span> #16 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 464 }
-__assert_eq / actual: 0 / expected: 0
+00:00:04 <span class="ansi-black-intense-fg">v</span> #12 &gt;   Restored c:\home\git\polyglot\target\spiral\test1\test1.fsproj (in 340 ms).
+00:00:05 <span class="ansi-black-intense-fg">v</span> #13 &gt; C:\Program Files\dotnet\sdk\10.0.100-preview.2.25164.34\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(326,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [c:\home\git\polyglot\target\spiral\test1\test1.fsproj]
+00:00:05 <span class="ansi-black-intense-fg">v</span> #14 &gt;   test1 -&gt; c:\home\git\polyglot\target\spiral\test1\bin\Release\net10.0\linux-x64\test1.dll
+00:00:06 <span class="ansi-black-intense-fg">v</span> #15 &gt;   test1 -&gt; \\?\C:\home\git\polyglot\target\spiral\test1\dist\
+00:00:07 <span class="ansi-black-intense-fg">v</span> #16 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 571 }
+{ name = __assert_eq; actual = 0; expected = 0 }
 </pre>
 </div>
 </div>
@@ -8276,23 +8276,25 @@ __assert_eq / actual: 0 / expected: 0
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = c:/home/git\polyglot\target/spiral\test2 }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 publish_project / { full_path = \\?\C:\home\git\polyglot\target\spiral\test2\test2.fsproj }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test2/test2.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "win-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test2/test2.fsproj" --configuration Release --output "dist" --runtime win-x64; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test2/test2.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "win-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test2/test2.fsproj" --configuration Release --output "dist" --runtime win-x64; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "\\?\C:\home\git\polyglot\target\spiral\test2",
 ) } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt;   Determining projects to restore...
-00:00:01 <span class="ansi-black-intense-fg">v</span> #5 &gt;   Restored c:\home\git\polyglot\target\spiral\test2\test2.fsproj (in 284 ms).
-00:00:02 <span class="ansi-black-intense-fg">v</span> #6 &gt; c:\home\git\polyglot\target\spiral\test2\test2.fs(1,5): error FS0039: The value or constructor 'a' is not defined. [c:\home\git\polyglot\target\spiral\test2\test2.fsproj]
-00:00:02 <span class="ansi-black-intense-fg">v</span> #7 runtime.execute_with_options / result / { exit_code = 1; std_trace_length = 285 }
-00:00:02 <span class="ansi-blue-intense-fg">d</span> #8 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test2/test2.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "linux-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test2/test2.fsproj" --configuration Release --output "dist" --runtime linux-x64; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:01 <span class="ansi-black-intense-fg">v</span> #5 &gt;   Restored c:\home\git\polyglot\target\spiral\test2\test2.fsproj (in 304 ms).
+00:00:01 <span class="ansi-black-intense-fg">v</span> #6 &gt; C:\Program Files\dotnet\sdk\10.0.100-preview.2.25164.34\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(326,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [c:\home\git\polyglot\target\spiral\test2\test2.fsproj]
+00:00:02 <span class="ansi-black-intense-fg">v</span> #7 &gt; c:\home\git\polyglot\target\spiral\test2\test2.fs(1,5): error FS0039: The value or constructor 'a' is not defined. [c:\home\git\polyglot\target\spiral\test2\test2.fsproj]
+00:00:03 <span class="ansi-black-intense-fg">v</span> #8 runtime.execute_with_options / result / { exit_code = 1; std_trace_length = 588 }
+00:00:03 <span class="ansi-blue-intense-fg">d</span> #9 runtime.execute_with_options / { file_name = dotnet; arguments = ["publish", "c:/home/git/polyglot/target/spiral/test2/test2.fsproj", "--configuration", "Release", "--output", "dist", "--runtime", "linux-x64"]; options = { command = dotnet publish "c:/home/git/polyglot/target/spiral/test2/test2.fsproj" --configuration Release --output "dist" --runtime linux-x64; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "\\?\C:\home\git\polyglot\target\spiral\test2",
 ) } }
-00:00:03 <span class="ansi-black-intense-fg">v</span> #9 &gt;   Determining projects to restore...
-00:00:04 <span class="ansi-black-intense-fg">v</span> #10 &gt;   Restored c:\home\git\polyglot\target\spiral\test2\test2.fsproj (in 276 ms).
-00:00:05 <span class="ansi-black-intense-fg">v</span> #11 &gt; c:\home\git\polyglot\target\spiral\test2\test2.fs(1,5): error FS0039: The value or constructor 'a' is not defined. [c:\home\git\polyglot\target\spiral\test2\test2.fsproj]
-00:00:05 <span class="ansi-black-intense-fg">v</span> #12 runtime.execute_with_options / result / { exit_code = 1; std_trace_length = 285 }
-00:00:05 <span class="ansi-red-intense-fg">c</span> #13 publish_code / { code = 1 + a |&gt; ignore; fsproj_text = &lt;Project Sdk="Microsoft.NET.Sdk"&gt;
+00:00:04 <span class="ansi-black-intense-fg">v</span> #10 &gt;   Determining projects to restore...
+00:00:04 <span class="ansi-black-intense-fg">v</span> #11 &gt;   Restored c:\home\git\polyglot\target\spiral\test2\test2.fsproj (in 315 ms).
+00:00:04 <span class="ansi-black-intense-fg">v</span> #12 &gt; C:\Program Files\dotnet\sdk\10.0.100-preview.2.25164.34\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(326,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [c:\home\git\polyglot\target\spiral\test2\test2.fsproj]
+00:00:06 <span class="ansi-black-intense-fg">v</span> #13 &gt; c:\home\git\polyglot\target\spiral\test2\test2.fs(1,5): error FS0039: The value or constructor 'a' is not defined. [c:\home\git\polyglot\target\spiral\test2\test2.fsproj]
+00:00:07 <span class="ansi-black-intense-fg">v</span> #14 runtime.execute_with_options / result / { exit_code = 1; std_trace_length = 588 }
+00:00:07 <span class="ansi-red-intense-fg">c</span> #15 publish_code / { code = 1 + a |&gt; ignore; fsproj_text = &lt;Project Sdk="Microsoft.NET.Sdk"&gt;
 &lt;PropertyGroup&gt;
-    &lt;TargetFramework&gt;net9.0&lt;/TargetFramework&gt;
+    &lt;TargetFramework&gt;net10.0&lt;/TargetFramework&gt;
     &lt;LangVersion&gt;preview&lt;/LangVersion&gt;
     &lt;RollForward&gt;Major&lt;/RollForward&gt;
     &lt;TargetLatestRuntimePatch&gt;true&lt;/TargetLatestRuntimePatch&gt;
@@ -8325,7 +8327,7 @@ __assert_eq / actual: 0 / expected: 0
     
 &lt;/ItemGroup&gt;
 &lt;/Project&gt; }
-__assert_eq / actual: 2 / expected: 2
+{ name = __assert_eq; actual = 2; expected = 2 }
 </pre>
 </div>
 </div>
@@ -8462,27 +8464,27 @@ __assert_eq / actual: 2 / expected: 2
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_workspace_cargo_toml_content</span> <span class="p">{</span> <span class="n">workspace_root</span> <span class="p">}</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">workspace_root</span> <span class="o">=</span> <span class="n">workspace_root</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">normalize_path</span>
     <span class="err">$</span><span class="s1">'$"cargo-features = [</span><span class="se">\\\"</span><span class="s1">profile-rustflags</span><span class="se">\\\"</span><span class="s1">]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"[workspace]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"resolver = \\\"2\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"members = [\\\"packages/Rust/*\\\"]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"[workspace.dependencies.fable_library_rust]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"path = \\\"{!workspace_root}/lib/rust/fable/fable_modules/fable-library-rust\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"default-features = false"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"features = []"'</span>
-    <span class="o">+</span><span class="c1">#. $'$""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"[workspace.dependencies]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"inline_colorization = \\\"~0.1\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"[profile.release]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"codegen-units = 1"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"opt-level = \\\"z\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"lto = true"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"debug = false"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"panic = \\\"abort\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"overflow-checks = true"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"rustflags = [\\\"-C\\\", \\\"link-arg=-s\\\"]"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"[workspace]"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"resolver = \\\"2\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"members = [\\\"packages/Rust/*\\\"]"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"[workspace.dependencies.fable_library_rust]"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"path = \\\"{!workspace_root}/lib/rust/fable/fable_modules/fable-library-rust\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"default-features = false"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"features = []"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"[workspace.dependencies]"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"inline_colorization = \\\"~0.1\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"[profile.release]"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"codegen-units = 1"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"opt-level = \\\"z\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"lto = true"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"debug = false"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"panic = \\\"abort\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"overflow-checks = true"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"rustflags = [\\\"-C\\\", \\\"link-arg=-s\\\"]"'</span>
 </pre></div>
 </div>
 </div>
@@ -8509,12 +8511,12 @@ __assert_eq / actual: 2 / expected: 2
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_cargo_toml_content</span> <span class="p">{</span> <span class="n">hash_hex</span> <span class="n">runtime</span> <span class="n">deps</span> <span class="n">static_do_bindings</span> <span class="p">}</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
     <span class="err">$</span><span class="s1">'$"[package]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"name = \\\"spiral_{!hash_hex}\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"version = \\\"0.0.1\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"edition = \\\"2021\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"[dependencies]"'</span>
-    <span class="o">+</span><span class="c1">#. (</span>
+    <span class="o">++</span>\<span class="c1"># $'$"name = \\\"spiral_{!hash_hex}\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"version = \\\"0.0.1\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"edition = \\\"2021\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"[dependencies]"'</span>
+    <span class="o">++</span>\<span class="c1"># (</span>
         <span class="k">if</span> <span class="n">runtime</span> <span class="o">&lt;&gt;.</span> <span class="kc">None</span>
         <span class="n">then</span> <span class="err">$</span><span class="s1">'$"fable_library_rust = {{ workspace = true }}"'</span>
         <span class="k">else</span>
@@ -8529,18 +8531,18 @@ __assert_eq / actual: 2 / expected: 2
             <span class="o">+.</span> <span class="err">$</span><span class="s1">'$"]"'</span>
             <span class="o">+.</span> <span class="err">$</span><span class="s1">'$"}}"'</span>
     <span class="p">)</span>
-    <span class="o">+</span><span class="c1">#. $'$"inline_colorization = {{ workspace = true }}"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"{!deps}"'</span>
-    <span class="o">+</span><span class="c1">#. $'$""'</span>
-    <span class="o">+</span><span class="c1">#. (</span>
+    <span class="o">++</span>\<span class="c1"># $'$"inline_colorization = {{ workspace = true }}"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"{!deps}"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+    <span class="o">++</span>\<span class="c1"># (</span>
         <span class="k">if</span> <span class="n">runtime</span> <span class="o">=</span> <span class="kc">None</span> <span class="n">then</span>
             <span class="err">$</span><span class="s1">'$"[[bin]]"'</span>
-            <span class="o">+</span><span class="c1">#. $'$"name = \\\"spiral_{!hash_hex}\\\""'</span>
+            <span class="o">++</span>\<span class="c1"># $'$"name = \\\"spiral_{!hash_hex}\\\""'</span>
         <span class="k">else</span>
             <span class="err">$</span><span class="s1">'$"[lib]"'</span>
-            <span class="o">+</span><span class="c1">#. $'$"crate-type = [\\\"cdylib\\\"]"'</span>
+            <span class="o">++</span>\<span class="c1"># $'$"crate-type = [\\\"cdylib\\\"]"'</span>
     <span class="p">)</span>
-    <span class="o">+</span><span class="c1">#. $'$"path = \\\"spiral.rs\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"path = \\\"spiral.rs\\\""'</span>
 </pre></div>
 </div>
 </div>
@@ -8568,13 +8570,13 @@ __assert_eq / actual: 2 / expected: 2
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_empty_cargo_toml_content</span> <span class="p">()</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">guid</span> <span class="o">=</span> <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">new_guid_from_date_time</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.obj_to_string</span>
     <span class="err">$</span><span class="s1">'$"[package]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"name = \\\"spiral_{!guid}\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"version = \\\"0.0.1\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"edition = \\\"2021\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"[[bin]]"'</span>
-    <span class="o">+</span><span class="c1">#. $'$"name = \\\"spiral_{!guid}\\\""'</span>
-    <span class="o">+</span><span class="c1">#. $'$"path = \\\"spiral.rs\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"name = \\\"spiral_{!guid}\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"version = \\\"0.0.1\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"edition = \\\"2021\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"[[bin]]"'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"name = \\\"spiral_{!guid}\\\""'</span>
+    <span class="o">++</span>\<span class="c1"># $'$"path = \\\"spiral.rs\\\""'</span>
 </pre></div>
 </div>
 </div>
@@ -8691,8 +8693,8 @@ __assert_eq / actual: 2 / expected: 2
         <span class="n">inl</span> <span class="n">new_code_path</span> <span class="o">=</span> <span class="n">package_dir</span> <span class="o">&lt;/&gt;</span> <span class="err">$</span><span class="s1">'$"{!workspace_name}.{!extension}"'</span>
         <span class="n">inl</span> <span class="n">new_code</span> <span class="o">=</span> <span class="n">new_code_path</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">read_all_text</span>
 
-        <span class="n">inl</span> <span class="n">on_startup_text</span> <span class="o">=</span> <span class="s2">"on_startup!"</span> <span class="o">+.</span> <span class="p">(</span><span class="n">join</span> <span class="s2">"("</span><span class="p">)</span>
-        <span class="n">inl</span> <span class="n">method0_fn_text</span> <span class="o">=</span> <span class="s2">" method0"</span> <span class="o">+.</span> <span class="p">(</span><span class="n">join</span> <span class="s2">"("</span><span class="p">)</span>
+        <span class="n">inl</span> <span class="n">on_startup_text</span> <span class="o">=</span> <span class="s2">"on_startup!"</span> <span class="o">++</span><span class="c1"># (join "(")</span>
+        <span class="n">inl</span> <span class="n">method0_fn_text</span> <span class="o">=</span> <span class="s2">" method0"</span> <span class="o">++</span><span class="c1"># (join "(")</span>
         <span class="n">inl</span> <span class="n">static_do_bindings</span> <span class="o">=</span>
             <span class="p">(</span><span class="n">new_code</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.contains on_startup_text)</span>
             <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">new_code</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.contains method0_fn_text |&gt; not)</span>
@@ -8762,25 +8764,25 @@ __assert_eq / actual: 2 / expected: 2
         <span class="n">inl</span> <span class="n">new_code</span> <span class="o">=</span> <span class="n">new_code_path</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">read_all_text</span>
 
         <span class="n">inl</span> <span class="n">main_code_header</span> <span class="o">=</span>
-            <span class="s2">"pub fn main() -&gt; Result&lt;(), String&gt; "</span> <span class="o">+.</span> <span class="p">(</span><span class="n">join</span> <span class="s2">"{"</span><span class="p">)</span>
+            <span class="s2">"pub fn main() -&gt; Result&lt;(), String&gt; "</span> <span class="o">++</span><span class="c1"># (join "{")</span>
 
         <span class="n">inl</span> <span class="n">main_code</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
             <span class="k">if</span> <span class="n">runtime</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">then</span> <span class="s2">""</span>
             <span class="k">else</span>
                 <span class="err">$</span><span class="s1">'$"#[near_sdk::near_bindgen]"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"#[derive(near_sdk::PanicOnDefault)]"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"pub struct MainState {{"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"}}"'</span>
-                <span class="o">+</span><span class="c1">#. $'$""'</span>
-                <span class="o">+</span><span class="c1">#. $'$"#[near_sdk::near_bindgen]"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"impl MainState {{"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"    pub fn state_main() {{"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"        Spiral::method0();"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"    }}"'</span>
-                <span class="o">+</span><span class="c1">#. $'$"}}"'</span>
-            <span class="o">+</span><span class="c1">#. (</span>
-                <span class="k">if</span> <span class="n">runtime</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">new_code</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.contains (on_startup_text +. "Spiral::method0()"))</span>
+                <span class="o">++</span>\<span class="c1"># $'$"#[derive(near_sdk::PanicOnDefault)]"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"pub struct MainState {{"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"}}"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$""'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"#[near_sdk::near_bindgen]"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"impl MainState {{"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"    pub fn state_main() {{"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"        Spiral::method0();"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"    }}"'</span>
+                <span class="o">++</span>\<span class="c1"># $'$"}}"'</span>
+            <span class="o">++</span>\<span class="c1"># (</span>
+                <span class="k">if</span> <span class="n">runtime</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">new_code</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.contains (on_startup_text ++# "Spiral::method0()"))</span>
                 <span class="n">then</span> <span class="err">$</span><span class="s1">'$"{!main_code_header} Ok(Spiral::method0()) }}"'</span>
                 <span class="k">else</span> <span class="err">$</span><span class="s1">'$"{!main_code_header} Ok(()) }}"'</span>
             <span class="p">)</span>
@@ -8799,10 +8801,10 @@ __assert_eq / actual: 2 / expected: 2
 
                 <span class="n">new_code</span><span class="s1">'</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"),)"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">;</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"),)"</span> <span class="o">++</span><span class="c1"># !\($'"\\\";\\\".into()"'))</span>
                     <span class="s2">"));"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"},)"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">;</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"},)"</span> <span class="o">++</span><span class="c1"># !\($'"\\\";\\\".into()"'))</span>
                     <span class="s2">"});"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
                     <span class="s2">"</span><span class="se">\\</span><span class="s2">s</span><span class="se">\\</span><span class="s2">sdefaultOf</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">);"</span>
@@ -8811,14 +8813,59 @@ __assert_eq / actual: 2 / expected: 2
                     <span class="s2">"</span><span class="se">\\</span><span class="s2">s</span><span class="se">\\</span><span class="s2">sgetZero</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">);"</span>
                     <span class="s2">" getZero::&lt;()&gt;();"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"(&amp;e.get_Curren"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">t</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"(&amp;e.get_Curren"</span> <span class="o">++</span><span class="c1"># !\($'"\\\"t\\\".into()"'))</span>
                     <span class="s2">"(e.get_Current"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"getNull"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">::&lt;()&gt;()</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"getNull"</span> <span class="o">++</span><span class="c1"># !\($'"\\\"::&lt;()&gt;()\\\".into()"'))</span>
                     <span class="s2">"fable_library_rust::Native_::getZero()"</span>
+
+
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
+                    <span class="p">(</span><span class="s2">"null::&lt;()&gt;("</span> <span class="o">++</span><span class="c1"># !\($'$"\\\")\\\".into()"'))</span>
+                    <span class="s2">"fable_library_rust::Native_::getZero()"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"null::&lt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)&gt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">"fable_library_rust::Native_::getZero()"</span>
+
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"</span><span class="se">\\</span><span class="s2">(null::&lt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)&gt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">"(null()"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">" null::&lt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)&gt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">" null()"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"unbox::&lt;bool&gt;</span><span class="se">\\</span><span class="s2">(null</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">"false"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"unbox::&lt;string&gt;</span><span class="se">\\</span><span class="s2">(null</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">"fable_library_rust::Native_::getZero()"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"unbox::&lt;i32&gt;</span><span class="se">\\</span><span class="s2">(null</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">"0"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"unbox::&lt;i32&gt;</span><span class="se">\\</span><span class="s2">(null::&lt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)&gt;</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">"0"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"null</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">)"</span>
+                    <span class="s2">"fable_library_rust::Native_::getZero()"</span>
+
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
                     <span class="s2">"</span><span class="se">\\</span><span class="s2">s</span><span class="se">\\</span><span class="s2">sfable_library_rust::Native_::getZero</span><span class="se">\\</span><span class="s2">(</span><span class="se">\\</span><span class="s2">);"</span>
                     <span class="s2">" fable_library_rust::Native_::getZero::&lt;()&gt;();"</span>
+
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
+                    <span class="s2">" gen:"</span>
+                    <span class="s2">" f:"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"</span><span class="se">\\</span><span class="s2">(gen</span><span class="se">\\</span><span class="s2">("</span>
+                    <span class="s2">"(f("</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace_regex</span>
+                    <span class="s2">"</span><span class="se">\\</span><span class="s2">(gen,"</span>
+                    <span class="s2">"(f,"</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
+                    <span class="s2">" gen "</span>
+                    <span class="s2">" f "</span>
+
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
                     <span class="s2">"::Slice'_"</span>
                     <span class="s2">"::Slice__"</span>
@@ -8826,35 +8873,35 @@ __assert_eq / actual: 2 / expected: 2
                     <span class="s2">" Slice'_"</span>
                     <span class="s2">" Slice__"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"defaultOf()"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">,</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"defaultOf()"</span> <span class="o">++</span><span class="c1"># !\($'"\\\",\\\".into()"'))</span>
                     <span class="s2">"defaultOf::&lt;std::sync::Arc&lt;dyn IDisposable&gt;&gt;(),"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"__self"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">__.</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"__self"</span> <span class="o">++</span><span class="c1"># !\($'"\\\"__.\\\".into()"'))</span>
                     <span class="s2">"self."</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"_self"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">_.</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"_self"</span> <span class="o">++</span><span class="c1"># !\($'"\\\"_.\\\".into()"'))</span>
                     <span class="s2">"self."</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"get_or_insert_wit"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">h</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"get_or_insert_wit"</span> <span class="o">++</span><span class="c1"># !\($'"\\\"h\\\".into()"'))</span>
                     <span class="s2">"get_or_init"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">;</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1"</span> <span class="o">++</span><span class="c1"># !\($'"\\\";\\\".into()"'))</span>
                     <span class="s2">"type ConcurrentStack_1&lt;T&gt; = T;"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"use fable_library_rust::System::TimeZoneInfo"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">;</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"use fable_library_rust::System::TimeZoneInfo"</span> <span class="o">++</span><span class="c1"># !\($'"\\\";\\\".into()"'))</span>
                     <span class="s2">"type TimeZoneInfo = i64;"</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                    <span class="p">(</span><span class="s2">"use fable_library_rust::System::Threading::Tasks::TaskCanceledException"</span> <span class="o">+.</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"</span><span class="se">\\\"</span><span class="s1">;</span><span class="se">\\\"</span><span class="s1">.into()"'</span><span class="p">))</span>
+                    <span class="p">(</span><span class="s2">"use fable_library_rust::System::Threading::Tasks::TaskCanceledException"</span> <span class="o">++</span><span class="c1"># !\($'"\\\";\\\".into()"'))</span>
                     <span class="s2">"type TaskCanceledException = ();"</span>
                 <span class="o">|&gt;</span> <span class="k">if</span> <span class="n">static_do_bindings</span>
                     <span class="n">then</span> <span class="nb">id</span>
                     <span class="k">else</span> <span class="n">sm</span><span class="s1">'.replace</span>
                             <span class="n">on_startup_text</span>
-                            <span class="p">(</span><span class="s2">"// "</span> <span class="o">+.</span> <span class="n">on_startup_text</span><span class="p">)</span>
+                            <span class="p">(</span><span class="s2">"// "</span> <span class="o">++</span><span class="c1"># on_startup_text)</span>
                 <span class="o">|&gt;</span> <span class="k">if</span> <span class="n">runtime_contract</span> <span class="o">|&gt;</span> <span class="ow">not</span>
                     <span class="n">then</span> <span class="nb">id</span>
                     <span class="k">else</span> <span class="n">sm</span><span class="s1">'.replace</span>
-                            <span class="p">(</span><span class="s2">"use fable_library_rust::DateTime_::DateTime"</span> <span class="o">+.</span> <span class="s2">";"</span><span class="p">)</span>
+                            <span class="p">(</span><span class="s2">"use fable_library_rust::DateTime_::DateTime"</span> <span class="o">++</span><span class="c1"># ";")</span>
                             <span class="s2">"type DateTime = ();"</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">cached</span> <span class="n">then</span>
@@ -9640,6 +9687,9 @@ __assert_eq / actual: 2 / expected: 2
     <span class="n">inl</span> <span class="n">deps</span> <span class="o">=</span>
         <span class="p">;[</span>
             <span class="s2">"gleam_stdlib=</span><span class="se">\"</span><span class="s2">&gt;=0.55.0 and &lt;1.0.0</span><span class="se">\"</span><span class="s2">"</span>
+            <span class="s2">"gleam_time=</span><span class="se">\"</span><span class="s2">&gt;=1.0.0 and &lt;2.0.0</span><span class="se">\"</span><span class="s2">"</span>
+            <span class="s2">"gleam_erlang=</span><span class="se">\"</span><span class="s2">&gt;=0.34.0 and &lt;1.0.0</span><span class="se">\"</span><span class="s2">"</span>
+            <span class="s2">"envoy=</span><span class="se">\"</span><span class="s2">&gt;=1.0.0 and &lt;2.0.0</span><span class="se">\"</span><span class="s2">"</span>
             <span class="s2">"gary=</span><span class="se">\"</span><span class="s2">&gt;=1.1.0 and &lt;2.0.0</span><span class="se">\"</span><span class="s2">"</span>
         <span class="p">]</span>
         <span class="o">|&gt;</span> <span class="n">am</span><span class="s1">'.to_vec</span>
@@ -9665,10 +9715,10 @@ __assert_eq / actual: 2 / expected: 2
             <span class="n">then</span> <span class="s2">"main_real"</span>
             <span class="k">else</span> <span class="s2">"main"</span>
         <span class="err">$</span><span class="s1">'$"name = </span><span class="se">\\\"</span><span class="s1">{!main}</span><span class="se">\\\"</span><span class="s1">"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"target = \\\"{!target'}\\\""'</span>
-        <span class="o">+</span><span class="c1">#. $'$""'</span>
-        <span class="o">+</span><span class="c1">#. $'$"[dependencies]"'</span>
-        <span class="o">+</span><span class="c1">#. $'$"{!deps}"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"target = \\\"{!target'}\\\""'</span>
+        <span class="o">++</span>\<span class="c1"># $'$""'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"[dependencies]"'</span>
+        <span class="o">++</span>\<span class="c1"># $'$"{!deps}"'</span>
 
     <span class="n">manifest</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">write_all_text_exists</span> <span class="n">manifest_path</span>
 
@@ -9727,7 +9777,7 @@ __assert_eq / actual: 2 / expected: 2
                     <span class="k">if</span> <span class="n">js_text</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.ends_with "main()" |&gt; not then</span>
                         <span class="err">$</span><span class="s1">'$"{!js_text}</span><span class="se">\n</span><span class="s1">main()"'</span>
                         <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">write_all_text_exists</span> <span class="n">js_path</span>
-                    
+
                     <span class="n">inl</span> <span class="n">exit_code</span><span class="p">,</span> <span class="n">run_result</span> <span class="o">=</span>
                         <span class="n">runtime</span><span class="o">.</span><span class="n">execution_options</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="n">x</span> <span class="k">with</span>
                             <span class="n">command</span> <span class="o">=</span>
@@ -9748,26 +9798,26 @@ __assert_eq / actual: 2 / expected: 2
                     <span class="k">else</span>
                         <span class="n">inl</span> <span class="n">html</span> <span class="o">=</span>
                             <span class="err">$</span><span class="s1">'$"&lt;\!DOCTYPE html&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"&lt;html lang=\\\"en\\\"&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"  &lt;head&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"    &lt;meta charset=\\\"UTF-8\\\" /&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"    &lt;meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\" /&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"    &lt;link"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"      data-trunk"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"      rel=\\\"inline\\\""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"      href=\\\"../build/packages/lustre_ui/priv/static/lustre_ui.css\\\""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"    /&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"    &lt;link"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"      data-trunk"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"      rel=\\\"inline\\\""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"      type=\\\"module\\\""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"      href=\\\"main.js\\\""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"    /&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"  &lt;/head&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"  &lt;body&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"    &lt;div id=\\\"app_{!hash_hex}\\\"&gt;&lt;/div&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"  &lt;/body&gt;"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"&lt;/html&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"&lt;html lang=\\\"en\\\"&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"  &lt;head&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"    &lt;meta charset=\\\"UTF-8\\\" /&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"    &lt;meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\" /&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"    &lt;link"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"      data-trunk"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"      rel=\\\"inline\\\""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"      href=\\\"../build/packages/lustre_ui/priv/static/lustre_ui.css\\\""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"    /&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"    &lt;link"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"      data-trunk"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"      rel=\\\"inline\\\""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"      type=\\\"module\\\""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"      href=\\\"main.js\\\""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"    /&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"  &lt;/head&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"  &lt;body&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"    &lt;div id=\\\"app_{!hash_hex}\\\"&gt;&lt;/div&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"  &lt;/body&gt;"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"&lt;/html&gt;"'</span>
 
                         <span class="n">inl</span> <span class="n">html_path</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'$"{!src_dir}/index.html"'</span>
                         <span class="n">html</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">write_all_text_exists</span> <span class="n">html_path</span>
@@ -9776,15 +9826,15 @@ __assert_eq / actual: 2 / expected: 2
 
                         <span class="n">inl</span> <span class="n">manifest</span> <span class="o">=</span>
                             <span class="err">$</span><span class="s1">'$"[package]"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"name = \\\"spiral_{!hash_hex}\\\""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"[workspace]"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"[lib]"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"crate-type = [\\\"cdylib\\\", \\\"rlib\\\"]"'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"path = \\\"spiral_{!hash_hex}.rs\\\""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$""'</span>
-                            <span class="o">+</span><span class="c1">#. $'$"[dependencies]"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"name = \\\"spiral_{!hash_hex}\\\""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"[workspace]"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"[lib]"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"crate-type = [\\\"cdylib\\\", \\\"rlib\\\"]"'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"path = \\\"spiral_{!hash_hex}.rs\\\""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$""'</span>
+                            <span class="o">++</span>\<span class="c1"># $'$"[dependencies]"'</span>
 
                         <span class="n">manifest</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">write_all_text_exists</span> <span class="err">$</span><span class="s1">'$"{!src_dir}/Cargo.toml"'</span>
 
@@ -9906,18 +9956,18 @@ __assert_eq / actual: 2 / expected: 2
                     <span class="n">deps</span>
                 <span class="o">|</span> <span class="n">Poetry</span> <span class="o">=&gt;</span>
                     <span class="err">$</span><span class="s1">'$"[tool.poetry]"'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"name = \\\"test\\\""'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"version = \\\"0.0.1\\\""'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"description = \\\"\\\""'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"authors = []"'</span>
-                    <span class="o">+</span><span class="c1">#. $'$""'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"[tool.poetry.dependencies]"'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"python=\\\"~3.12\\\""'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"{!deps}"'</span>
-                    <span class="o">+</span><span class="c1">#. $'$""'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"[build-system]"'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"requires = [\\\"poetry-core\\\"]"'</span>
-                    <span class="o">+</span><span class="c1">#. $'$"build-backend = \\\"poetry.core.masonry.api\\\""'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"name = \\\"test\\\""'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"version = \\\"0.0.1\\\""'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"description = \\\"\\\""'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"authors = []"'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"[tool.poetry.dependencies]"'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"python=\\\"~3.12\\\""'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"{!deps}"'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$""'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"[build-system]"'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"requires = [\\\"poetry-core\\\"]"'</span>
+                    <span class="o">++</span>\<span class="c1"># $'$"build-backend = \\\"poetry.core.masonry.api\\\""'</span>
 
             <span class="n">manifest</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">write_all_text_exists</span> <span class="n">manifest_path</span>
 
@@ -10431,38 +10481,49 @@ __assert_eq / actual: 2 / expected: 2
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_d64f3d5ab974f94b70b0dd3974a60a347993720c72a114b21936bb7b97d521a4\84b99b0b-d6d4-d4b8-7f79-3c480ce421da }
+<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_33c78fa0afccb35540b30ee1ef399c49680b2c23e64e89cfdf8eba04066a0b7a\84b99b0b-d6d4-d4b8-7f79-3c480ce421da }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #2 file_system.create_dir / { dir = c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["fable", "c:/home/git/polyglot/target/spiral/spiral/packages/Rust/399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29/spiral.fsproj", "--optimize", "--lang", "rs", "--extension", ".rs", "--outDir", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Rust\\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29", "--define", "_WINDOWS"]; options = { command = dotnet fable "c:/home/git/polyglot/target/spiral/spiral/packages/Rust/399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29/spiral.fsproj" --optimize --lang rs --extension .rs --outDir "c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29" --define _WINDOWS; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["fable", "c:/home/git/polyglot/target/spiral/spiral/packages/Rust/399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29/spiral.fsproj", "--optimize", "--lang", "rs", "--extension", ".rs", "--outDir", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Rust\\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29", "--define", "_WINDOWS"]; options = { command = dotnet fable "c:/home/git/polyglot/target/spiral/spiral/packages/Rust/399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29/spiral.fsproj" --optimize --lang rs --extension .rs --outDir "c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29" --define _WINDOWS; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "c:/home/git\polyglot",
 ) } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt; Fable 5.0.0-alpha.9: F# to Rust compiler (status: alpha)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt; Fable 5.0.0-alpha.12: F# to Rust compiler (status: alpha)
 00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; Thanks to the contributor! @chadunit
+00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; Thanks to the contributor! @cloudRoutine
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt; Stand with Ukraine! https://standwithukraine.com.ua
 00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt; Parsing target\spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\spiral.fsproj...
 00:00:00 <span class="ansi-black-intense-fg">v</span> #10 &gt; Retrieving project options from cache, in case of issues run `dotnet fable clean` or try `--noCache` option.
-00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; Project and references (1 source files) parsed in 154ms
+00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; Project and references (1 source files) parsed in 158ms
 00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt; Skipped compilation because all generated files are up-to-date!
-00:00:00 <span class="ansi-black-intense-fg">v</span> #14 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 503 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #15 runtime.execute_with_options / { file_name = cargo; arguments = ["fmt", "--manifest-path", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Rust\\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\\Cargo.toml", "--"]; options = { command = cargo fmt --manifest-path "c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\Cargo.toml" --; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-black-intense-fg">v</span> #14 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 508 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #15 runtime.execute_with_options / { file_name = cargo; arguments = ["fmt", "--manifest-path", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Rust\\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\\Cargo.toml", "--"]; options = { command = cargo fmt --manifest-path "c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\Cargo.toml" --; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "c:/home/git\polyglot",
 ) } }
 00:00:01 <span class="ansi-black-intense-fg">v</span> #16 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 0 }
-00:00:01 <span class="ansi-blue-intense-fg">d</span> #17 runtime.execute_with_options / { file_name = cargo; arguments = ["run", "--manifest-path", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Rust\\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\\Cargo.toml"]; options = { command = cargo run --manifest-path "c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\Cargo.toml"; cancellation_token = None; environment_variables = Array(MutCell([("TRACE_LEVEL", "Verbose"), ("RUSTC_WRAPPER", "sccache"), ("RUST_BACKTRACE", "full"), ("RUSTFLAGS", "-C prefer-dynamic")])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:01 <span class="ansi-blue-intense-fg">d</span> #17 runtime.execute_with_options / { file_name = cargo; arguments = ["run", "--manifest-path", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Rust\\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\\Cargo.toml"]; options = { command = cargo run --manifest-path "c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\Cargo.toml"; cancellation_token = None; environment_variables = Array(Some(MutCell([("TRACE_LEVEL", "Verbose"), ("RUSTC_WRAPPER", "sccache"), ("RUST_BACKTRACE", "full"), ("RUSTFLAGS", "-C prefer-dynamic")]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "c:/home/git\polyglot",
 ) } }
-00:00:02 <span class="ansi-black-intense-fg">v</span> #18 !    Compiling fable_library_rust v0.1.0 (C:\home\git\polyglot\lib\rust\fable\fable_modules\fable-library-rust)
-00:00:03 <span class="ansi-black-intense-fg">v</span> #19 !    Compiling spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29 v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29)
-00:00:03 <span class="ansi-black-intense-fg">v</span> #20 !     Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.36s
-00:00:03 <span class="ansi-black-intense-fg">v</span> #21 !      Running `target\spiral\spiral\target\debug\spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.exe`
-00:00:03 <span class="ansi-black-intense-fg">v</span> #22 &gt; -3
-00:00:03 <span class="ansi-black-intense-fg">v</span> #23 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 564 }
-00:00:03 <span class="ansi-black-intense-fg">v</span> #24 spiral.process_rust / cleanup / { new_code_path = c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\spiral.rs; cleanup = UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.d", true, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.exe", true, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.pdb", true, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.wasm", false, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29", false, UH5_0))))) }
-__assert_eq / actual: "rs" / expected: "rs"
-__assert_eq / actual: "-3" / expected: "-3"
+00:00:02 <span class="ansi-black-intense-fg">v</span> #18 !    Compiling spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29 v0.0.1 (C:\home\git\polyglot\target\spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29)
+00:00:02 <span class="ansi-black-intense-fg">v</span> #19 ! warning: unexpected `cfg` condition value: `no_std`
+00:00:02 <span class="ansi-black-intense-fg">v</span> #20 !  --&gt; packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\spiral.rs:1:13
+00:00:02 <span class="ansi-black-intense-fg">v</span> #21 !   |
+00:00:02 <span class="ansi-black-intense-fg">v</span> #22 ! 1 | #![cfg_attr(feature = "no_std", no_std)]
+00:00:02 <span class="ansi-black-intense-fg">v</span> #23 !   |             ^^^^^^^^^^^^^^^^^^ help: remove the condition
+00:00:02 <span class="ansi-black-intense-fg">v</span> #24 !   |
+00:00:02 <span class="ansi-black-intense-fg">v</span> #25 !   = note: no expected values for `feature`
+00:00:02 <span class="ansi-black-intense-fg">v</span> #26 !   = help: consider adding `no_std` as a feature in `Cargo.toml`
+00:00:02 <span class="ansi-black-intense-fg">v</span> #27 !   = note: see &lt;https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html&gt; for more information about checking conditional configuration
+00:00:02 <span class="ansi-black-intense-fg">v</span> #28 !   = note: `#[warn(unexpected_cfgs)]` on by default
+00:00:02 <span class="ansi-black-intense-fg">v</span> #29 !
+00:00:02 <span class="ansi-black-intense-fg">v</span> #30 ! warning: `spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29` (bin "spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29") generated 1 warning
+00:00:02 <span class="ansi-black-intense-fg">v</span> #31 !     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.17s
+00:00:02 <span class="ansi-black-intense-fg">v</span> #32 !      Running `target\spiral\spiral\target\debug\spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.exe`
+00:00:02 <span class="ansi-black-intense-fg">v</span> #33 &gt; -3
+00:00:02 <span class="ansi-black-intense-fg">v</span> #34 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1321 }
+00:00:02 <span class="ansi-black-intense-fg">v</span> #35 spiral.process_rust / cleanup / { new_code_path = c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\spiral.rs; cleanup = UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.d", true, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.exe", true, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.pdb", true, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29.wasm", false, UH5_1("c:/home/git\polyglot\target/spiral\spiral\packages\Rust\399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29\../../..\target/debug/spiral_399aa1f3f3139f81268d954670e64e9b347bbd6e901ea5469dbdbbb859fe2e29", false, UH5_0))))) }
+{ name = __assert_eq; actual = rs; expected = rs }
+{ name = __assert_eq; actual = -3; expected = -3 }
 </pre>
 </div>
 </div>
@@ -10527,32 +10588,32 @@ __assert_eq / actual: "-3" / expected: "-3"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_f229b3622609b6e446abbc2e9822096f08862fed9474147619f10928cdb95550\c6422374-71e4-07d4-0ba4-c3084b24fbba }
+<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_4c3fdcc54179ae9460cdcbbb09bff59b30c8d98c8a39d5dfea3a5e6ce244a965\c6422374-71e4-07d4-0ba4-c3084b24fbba }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #2 file_system.create_dir / { dir = c:/home/git\polyglot\target/spiral\spiral\packages\TypeScript\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 spiral.process_typescript / { version = US51_0("c:/home/git\polyglot\lib/typescript/fable/fable_modules\fable-library-ts.5.0.0-alpha.9", "5.0.0-alpha.9") }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #4 runtime.execute_with_options / { file_name = dotnet; arguments = ["fable", "c:/home/git/polyglot/target/spiral/spiral/packages/TypeScript/702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8/spiral.fsproj", "--optimize", "--lang", "ts", "--extension", ".ts", "--outDir", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\TypeScript\\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8", "--define", "_WINDOWS"]; options = { command = dotnet fable "c:/home/git/polyglot/target/spiral/spiral/packages/TypeScript/702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8/spiral.fsproj" --optimize --lang ts --extension .ts --outDir "c:/home/git\polyglot\target/spiral\spiral\packages\TypeScript\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8" --define _WINDOWS; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 spiral.process_typescript / { version = US51_0("c:/home/git\polyglot\lib/typescript/fable/fable_modules\fable-library-ts.5.0.0-alpha.12", "5.0.0-alpha.12") }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #4 runtime.execute_with_options / { file_name = dotnet; arguments = ["fable", "c:/home/git/polyglot/target/spiral/spiral/packages/TypeScript/702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8/spiral.fsproj", "--optimize", "--lang", "ts", "--extension", ".ts", "--outDir", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\TypeScript\\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8", "--define", "_WINDOWS"]; options = { command = dotnet fable "c:/home/git/polyglot/target/spiral/spiral/packages/TypeScript/702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8/spiral.fsproj" --optimize --lang ts --extension .ts --outDir "c:/home/git\polyglot\target/spiral\spiral\packages\TypeScript\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8" --define _WINDOWS; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "c:/home/git\polyglot",
 ) } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt; Fable 5.0.0-alpha.9: F# to TypeScript compiler
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; Minimum @fable-org/fable-library-ts version (when installed from npm): 1.10.0
+00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt; Fable 5.0.0-alpha.12: F# to TypeScript compiler
+00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; Minimum @fable-org/fable-library-ts version (when installed from npm): 2.0.0-beta.3
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt; Thanks to the contributor! @simra
+00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt; Thanks to the contributor! @iyegoroff
 00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt; Stand with Ukraine! https://standwithukraine.com.ua
 00:00:00 <span class="ansi-black-intense-fg">v</span> #10 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; Parsing target\spiral\spiral\packages\TypeScript\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8\spiral.fsproj...
 00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt; Retrieving project options from cache, in case of issues run `dotnet fable clean` or try `--noCache` option.
-00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt; Project and references (1 source files) parsed in 148ms
+00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt; Project and references (1 source files) parsed in 158ms
 00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #15 &gt; Skipped compilation because all generated files are up-to-date!
-00:00:00 <span class="ansi-black-intense-fg">v</span> #16 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 574 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #16 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 585 }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #17 spiral.process_typescript / { new_code_path = c:/home/git\polyglot\target/spiral\spiral\packages\TypeScript\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8\spiral.ts }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #18 runtime.execute_with_options / { file_name = bun; arguments = ["--bun", "run", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\TypeScript\\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8\\spiral.ts"]; options = { command = bun --bun run "c:/home/git\polyglot\target/spiral\spiral\packages\TypeScript\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8\spiral.ts"; cancellation_token = None; environment_variables = Array(MutCell([("PATH", "~/.bun/bin;c:\home\git\polyglot\target\spiral\spiral\target\debug\deps;c:\home\git\polyglot\target\spiral\spiral\target\debug;C:\Users\i574n\scoop\persist\rustup\.rustup\toolchains\nightly-2025-02-22-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\lib;C:\Users\i574n\scoop\apps\pwsh\7.5.0;C:\Program Files\NVIDIA\CUDNN\v9.1\bin;C:\ProgramData\scoop\shims;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\ProgramData\chocolatey\bin;C:\Program Files\dotnet\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Intel\WiFi\bin\;C:\Program Files\Common Files\Intel\WirelessCommon\;C:\Program Files\Perforce;C:\Program Files\Wasmtime\bin;C:\Program Files\Perforce\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\i574n\scoop\apps\vulkan\current\Bin;C:\Users\i574n\scoop\apps\vulkan\current\Tools;C:\Users\i574n\scoop\apps\openssl\current\bin;C:\Users\i574n\scoop\apps\gsudo\current\.;C:\Users\i574n\scoop\apps\elixir\current\bin;C:\Users\i574n\scoop\apps\dotnet-sdk\current\.;C:\Users\i574n\scoop\apps\vscode-insiders\current\bin;C:\Users\i574n\scoop\apps\nvm\current\.;C:\Users\i574n\scoop\apps\nvm\current\nodejs\nodejs;C:\Users\i574n\scoop\apps\python312\current\Scripts;C:\Users\i574n\scoop\apps\python312\current\.;C:\Users\i574n\scoop\apps\perl\current\perl\site\bin;C:\Users\i574n\scoop\apps\perl\current\perl\bin;C:\Users\i574n\scoop\apps\rustup\current\.cargo\bin;C:\Users\i574n\scoop\apps\latex\current\texmfs\install\miktex\bin\x64;C:\Users\i574n\scoop\apps\dotnet-sdk-preview\current;C:\Users\i574n\scoop\apps\dotnet-sdk\current;C:\Users\i574n\scoop\apps\gsudo\current;C:\Users\i574n\scoop\apps\python\current;C:\Users\i574n\scoop\apps\nircmd\current;C:\Users\i574n\AppData\Local\Microsoft\WindowsApps;C:\Users\i574n/scoop/buckets/mold/home/windows/path;C:\Users\i574n/scoop/persist/rustup/.cargo/bin;C:\Users\i574n/scoop/apps/nvm/current/nodejs/nodejs;C:\Users\i574n/scoop/apps/cygwin/current/root/bin;C:\Users\i574n\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\i574n\AppData\Local\Microsoft\WindowsApps;C:\Users\i574n\.bun\bin;C:\Users\i574n\.dotnet\tools;C:\Users\i574n\scoop\shims;C:\Users\i574n\.fly\bin;C:\Program Files\Wasmtime\bin;C:\Users\i574n\.dotnet\tools;test;C:\Users\i574n\go\bin;C:\Users\i574n\.dotnet\tools;C:\Users\i574n\.dotnet\tools;C:\Users\i574n/.cargo/bin;C:\Users\i574n/.bun/bin;C:\Users\i574n/.cargo/bin;C:\Users\i574n/.bun/bin;C:\Users\i574n/.cargo/bin;C:\Users\i574n/.bun/bin;C:\Users\i574n/.cargo/bin;C:\Users\i574n/.bun/bin;C:\Users\i574n/.cargo/bin;C:\Users\i574n/.bun/bin"), ("TRACE_LEVEL", "Verbose")])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #18 runtime.execute_with_options / { file_name = bun; arguments = ["--bun", "run", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\TypeScript\\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8\\spiral.ts"]; options = { command = bun --bun run "c:/home/git\polyglot\target/spiral\spiral\packages\TypeScript\702335b0756baa7db0d02dbbeaf9fc04cf2c3b7dbb45866c578c5109aaa8c4a8\spiral.ts"; cancellation_token = None; environment_variables = Array(Some(MutCell([("PATH", "~/.bun/bin;c:\home\git\polyglot\target\spiral\spiral\target\debug\deps;c:\home\git\polyglot\target\spiral\spiral\target\debug;C:\Users\i574n\scoop\persist\rustup\.rustup\toolchains\nightly-2025-02-22-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\lib;C:\Users\i574n\scoop\apps\pwsh\7.5.0;C:\Program Files\NVIDIA\CUDNN\v9.1\bin;C:\ProgramData\scoop\shims;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\ProgramData\chocolatey\bin;C:\Program Files\dotnet\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Intel\WiFi\bin\;C:\Program Files\Common Files\Intel\WirelessCommon\;C:\Program Files\Perforce;C:\Program Files\Wasmtime\bin;C:\Program Files\Perforce\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\i574n\scoop\apps\vulkan\current\Bin;C:\Users\i574n\scoop\apps\vulkan\current\Tools;C:\Users\i574n\scoop\apps\openssl\current\bin;C:\Users\i574n\scoop\apps\gsudo\current\.;C:\Users\i574n\scoop\apps\elixir\current\bin;C:\Users\i574n\scoop\apps\vscode-insiders\current\bin;C:\Users\i574n\scoop\apps\nvm\current\.;C:\Users\i574n\scoop\apps\nvm\current\nodejs\nodejs;C:\Users\i574n\scoop\apps\python312\current\Scripts;C:\Users\i574n\scoop\apps\python312\current\.;C:\Users\i574n\scoop\apps\perl\current\perl\site\bin;C:\Users\i574n\scoop\apps\perl\current\perl\bin;C:\Users\i574n\scoop\apps\rustup\current\.cargo\bin;C:\Users\i574n\scoop\apps\latex\current\texmfs\install\miktex\bin\x64;C:\Users\i574n\scoop\apps\dotnet-sdk-preview\current;C:\Users\i574n\scoop\apps\dotnet-sdk\current;C:\Users\i574n\scoop\apps\gsudo\current;C:\Users\i574n\scoop\apps\python\current;C:\Users\i574n\scoop\apps\nircmd\current;C:\Users\i574n\AppData\Local\Microsoft\WindowsApps;C:\Users\i574n/scoop/buckets/mold/home/windows/path;C:\Users\i574n/scoop/persist/rustup/.cargo/bin;C:\Users\i574n/scoop/apps/nvm/current/nodejs/nodejs;C:\Users\i574n/scoop/apps/cygwin/current/root/bin;C:\Users\i574n\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\i574n\AppData\Local\Microsoft\WindowsApps;C:\Users\i574n\.bun\bin;C:\Users\i574n\.dotnet\tools;C:\Users\i574n\scoop\shims;C:\Users\i574n\.fly\bin;C:\Program Files\Wasmtime\bin;C:\Users\i574n\.dotnet\tools;test;C:\Users\i574n\go\bin;C:\Users\i574n\.dotnet\tools;C:\Users\i574n\.dotnet\tools;C:\Users\i574n/.cargo/bin;C:\Users\i574n/.bun/bin"), ("TRACE_LEVEL", "Verbose")]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "c:/home/git\polyglot",
 ) } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #19 &gt; -3
-00:00:01 <span class="ansi-black-intense-fg">v</span> #20 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 2 }
-__assert_eq / actual: "ts" / expected: "ts"
-__assert_eq / actual: "-3" / expected: "-3"
+00:00:00 <span class="ansi-black-intense-fg">v</span> #20 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 2 }
+{ name = __assert_eq; actual = ts; expected = ts }
+{ name = __assert_eq; actual = -3; expected = -3 }
 </pre>
 </div>
 </div>
@@ -10617,30 +10678,30 @@ __assert_eq / actual: "-3" / expected: "-3"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_997d5cf6865626a2dc176276757880c2e1a75334b3f0974edc36d3987b9941a5\c6422374-71e4-07d4-0ba4-c3084b24fbba }
+<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_dc428e748c8acda4014ad40e6f81fa9d34cfe37831ced21954d8033ae3d2d0c4\c6422374-71e4-07d4-0ba4-c3084b24fbba }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #2 file_system.create_dir / { dir = c:/home/git\polyglot\target/spiral\spiral\packages\Python\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["fable", "c:/home/git/polyglot/target/spiral/spiral/packages/Python/cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce/spiral.fsproj", "--optimize", "--lang", "py", "--extension", ".py", "--outDir", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Python\\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce", "--define", "_WINDOWS"]; options = { command = dotnet fable "c:/home/git/polyglot/target/spiral/spiral/packages/Python/cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce/spiral.fsproj" --optimize --lang py --extension .py --outDir "c:/home/git\polyglot\target/spiral\spiral\packages\Python\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce" --define _WINDOWS; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 runtime.execute_with_options / { file_name = dotnet; arguments = ["fable", "c:/home/git/polyglot/target/spiral/spiral/packages/Python/cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce/spiral.fsproj", "--optimize", "--lang", "py", "--extension", ".py", "--outDir", "c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Python\\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce", "--define", "_WINDOWS"]; options = { command = dotnet fable "c:/home/git/polyglot/target/spiral/spiral/packages/Python/cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce/spiral.fsproj" --optimize --lang py --extension .py --outDir "c:/home/git\polyglot\target/spiral\spiral\packages\Python\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce" --define _WINDOWS; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "c:/home/git\polyglot",
 ) } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt; Fable 5.0.0-alpha.9: F# to Python compiler (status: beta)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #4 &gt; Fable 5.0.0-alpha.12: F# to Python compiler (status: beta)
 00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; Thanks to the contributor! @Alxandr
+00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; Thanks to the contributor! @rbauduin
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt; Stand with Ukraine! https://standwithukraine.com.ua
 00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt; Parsing target\spiral\spiral\packages\Python\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce\spiral.fsproj...
 00:00:00 <span class="ansi-black-intense-fg">v</span> #10 &gt; Retrieving project options from cache, in case of issues run `dotnet fable clean` or try `--noCache` option.
-00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; Project and references (1 source files) parsed in 145ms
+00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; Project and references (1 source files) parsed in 159ms
 00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt; Skipped compilation because all generated files are up-to-date!
-00:00:00 <span class="ansi-black-intense-fg">v</span> #14 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 505 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #14 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 507 }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #15 spiral.process_python / { new_code_path = c:/home/git\polyglot\target/spiral\spiral\packages\Python\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce\spiral.py }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #16 runtime.execute_with_options / { file_name = python; arguments = ["c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Python\\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce\\spiral.py"]; options = { command = python "c:/home/git\polyglot\target/spiral\spiral\packages\Python\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce\spiral.py"; cancellation_token = None; environment_variables = Array(MutCell([("TRACE_LEVEL", "Verbose")])); on_line = None; stdin = None; trace = true; working_directory = Some(
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #16 runtime.execute_with_options / { file_name = python; arguments = ["c:/home/git\\polyglot\\target/spiral\\spiral\\packages\\Python\\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce\\spiral.py"]; options = { command = python "c:/home/git\polyglot\target/spiral\spiral\packages\Python\cb8f3dd33197bb0bc95f09b3f3057a6844a0b70d75477350491883d14d8680ce\spiral.py"; cancellation_token = None; environment_variables = Array(Some(MutCell([("TRACE_LEVEL", "Verbose")]))); on_line = None; stdin = None; trace = true; working_directory = Some(
     "c:/home/git\polyglot",
 ) } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #17 &gt; -3
 00:00:00 <span class="ansi-black-intense-fg">v</span> #18 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 2 }
-__assert_eq / actual: "py" / expected: "py"
-__assert_eq / actual: "-3" / expected: "-3"
+{ name = __assert_eq; actual = py; expected = py }
+{ name = __assert_eq; actual = -3; expected = -3 }
 </pre>
 </div>
 </div>
@@ -10694,13 +10755,13 @@ __assert_eq / actual: "-3" / expected: "-3"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2\af524e22-8e9a-5d18-99ed-bd86e1b74623 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 runtime.execute_with_options / { file_name = dotnet; arguments = ["repl", "--exit-after-run", "--run", "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib", "--output-path", "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb"]; options = { command = dotnet repl --exit-after-run --run "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib" --output-path "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb"; cancellation_token = None; environment_variables = Array(MutCell([("TRACE_LEVEL", "Verbose"), ("AUTOMATION", "True")])); on_line = None; stdin = None; trace = false; working_directory = None } }
+<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13\af524e22-8e9a-5d18-99ed-bd86e1b74623 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 runtime.execute_with_options / { file_name = dotnet; arguments = ["repl", "--exit-after-run", "--run", "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib", "--output-path", "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb"]; options = { command = dotnet repl --exit-after-run --run "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib" --output-path "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb"; cancellation_token = None; environment_variables = Array(Some(MutCell([("TRACE_LEVEL", "Verbose"), ("AUTOMATION", "True")]))); on_line = None; stdin = None; trace = false; working_directory = None } }
 &gt; 
 &gt; ── fsharp ──────────────────────────────────────────────────────────────────────
 &gt; 3 - 6
 &gt; 
-&gt; ── [ 3.58s - return value ] ────────────────────────────────────────────────────
+&gt; ── [ 5.41s - return value ] ────────────────────────────────────────────────────
 &gt; <span style="color: rgb(38,140,38)">│</span> &lt;div class="dni-plaintext"&gt;&lt;pre&gt;-3
 &gt; <span style="color: rgb(38,140,38)">│</span> &lt;/pre&gt;&lt;/div&gt;&lt;style&gt;
 &gt; <span style="color: rgb(38,140,38)">│</span> .dni-code-hint {
@@ -10734,20 +10795,20 @@ __assert_eq / actual: "-3" / expected: "-3"
 &gt; <span style="color: rgb(38,140,38)">│</span>     text-align: start;
 &gt; <span style="color: rgb(38,140,38)">│</span> }
 &gt; <span style="color: rgb(38,140,38)">│</span> &lt;/style&gt;
-00:00:05 <span class="ansi-black-intense-fg">v</span> #3 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1467 }
-00:00:05 <span class="ansi-blue-intense-fg">d</span> #4 runtime.execute_with_options / { file_name = jupyter; arguments = ["nbconvert", "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb", "--to", "html", "--HTMLExporter.theme=dark"]; options = { command = jupyter nbconvert "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb" --to html --HTMLExporter.theme=dark; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = None } }
-00:00:06 <span class="ansi-black-intense-fg">v</span> #5 ! [NbConvertApp] Converting notebook c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb to html
-00:00:06 <span class="ansi-black-intense-fg">v</span> #6 ! C:\Users\i574n\scoop\apps\python312\current\Lib\site-packages\nbformat\__init__.py:96: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.
-00:00:06 <span class="ansi-black-intense-fg">v</span> #7 !   validate(nb)
-00:00:07 <span class="ansi-black-intense-fg">v</span> #8 ! C:\Users\i574n\scoop\apps\python312\current\Lib\site-packages\nbconvert\filters\highlight.py:71: UserWarning: IPython3 lexer unavailable, falling back on Python 3
-00:00:07 <span class="ansi-black-intense-fg">v</span> #9 !   return _pygments_highlight(
-00:00:07 <span class="ansi-black-intense-fg">v</span> #10 ! [NbConvertApp] Writing 271490 bytes to c:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2\af524e22-8e9a-5d18-99ed-bd86e1b74623\test.dib.html
-00:00:07 <span class="ansi-black-intense-fg">v</span> #11 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1110 }
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #12 spiral.run / dib / jupyter nbconvert / { exit_code = 0; jupyter_result_length = 1110 }
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #13 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "$counter = 1; $path = 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.html'; (Get-Content $path -Raw) -replace '(id=\\\"cell-id=)[a-fA-F0-9]{8}', { $_.Groups[1].Value + $counter++ } | Set-Content $path"]; options = { command = pwsh -c "$counter = 1; $path = 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7d29bf13e6956dedad8858aa19b2e207a4fc27fc372fd090b1e1f96e35da40e2/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.html'; (Get-Content $path -Raw) -replace '(id=\"cell-id=)[a-fA-F0-9]{8}', { $_.Groups[1].Value + $counter++ } | Set-Content $path"; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = None } }
-00:00:07 <span class="ansi-black-intense-fg">v</span> #14 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 0 }
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #15 spiral.run / dib / html cell ids / { exit_code = 0; pwsh_replace_html_result_length = 0 }
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #16 spiral.run / dib / { exit_code = 0; result_length = 2636 }
+00:00:07 <span class="ansi-black-intense-fg">v</span> #3 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1467 }
+00:00:07 <span class="ansi-blue-intense-fg">d</span> #4 runtime.execute_with_options / { file_name = jupyter; arguments = ["nbconvert", "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb", "--to", "html", "--HTMLExporter.theme=dark"]; options = { command = jupyter nbconvert "c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb" --to html --HTMLExporter.theme=dark; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = None } }
+00:00:09 <span class="ansi-black-intense-fg">v</span> #5 ! [NbConvertApp] Converting notebook c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.ipynb to html
+00:00:09 <span class="ansi-black-intense-fg">v</span> #6 ! C:\Users\i574n\scoop\apps\python312\current\Lib\site-packages\nbformat\__init__.py:96: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.
+00:00:09 <span class="ansi-black-intense-fg">v</span> #7 !   validate(nb)
+00:00:10 <span class="ansi-black-intense-fg">v</span> #8 ! C:\Users\i574n\scoop\apps\python312\current\Lib\site-packages\nbconvert\filters\highlight.py:71: UserWarning: IPython3 lexer unavailable, falling back on Python 3
+00:00:10 <span class="ansi-black-intense-fg">v</span> #9 !   return _pygments_highlight(
+00:00:10 <span class="ansi-black-intense-fg">v</span> #10 ! [NbConvertApp] Writing 271490 bytes to c:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13\af524e22-8e9a-5d18-99ed-bd86e1b74623\test.dib.html
+00:00:10 <span class="ansi-black-intense-fg">v</span> #11 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1110 }
+00:00:10 <span class="ansi-blue-intense-fg">d</span> #12 spiral.run / dib / jupyter nbconvert / { exit_code = 0; jupyter_result_length = 1110 }
+00:00:10 <span class="ansi-blue-intense-fg">d</span> #13 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "$counter = 1; $path = 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.html'; (Get-Content $path -Raw) -replace '(id=\\\"cell-id=)[a-fA-F0-9]{8}', { $_.Groups[1].Value + $counter++ } | Set-Content $path"]; options = { command = pwsh -c "$counter = 1; $path = 'c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_ae9b11cfd750aa6007a5ac29e997b7e29354ad2ca47b4442653cc5113e9e4e13/af524e22-8e9a-5d18-99ed-bd86e1b74623/test.dib.html'; (Get-Content $path -Raw) -replace '(id=\"cell-id=)[a-fA-F0-9]{8}', { $_.Groups[1].Value + $counter++ } | Set-Content $path"; cancellation_token = None; environment_variables = Array(Some(MutCell([]))); on_line = None; stdin = None; trace = true; working_directory = None } }
+00:00:11 <span class="ansi-black-intense-fg">v</span> #14 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 0 }
+00:00:11 <span class="ansi-blue-intense-fg">d</span> #15 spiral.run / dib / html cell ids / { exit_code = 0; pwsh_replace_html_result_length = 0 }
+00:00:11 <span class="ansi-blue-intense-fg">d</span> #16 spiral.run / dib / { exit_code = 0; result_length = 2636 }
 </pre>
 </div>
 </div>

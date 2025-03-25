@@ -10600,10 +10600,12 @@ module spiral_compiler =
                     let items =
                         h.cases
                         |> Seq.map (fun (KeyValue ((i, _), _)) ->
-                            $"{ty}_{i}, {i}"
+                            $"#({ty}i{i}, {i})"
                         )
-                        |> String.concat "; "
-                    $"[ {items} ] |> Map |> Map.find v{i}"
+                        |> String.concat ", "
+                    global' "import gleam/dict"
+                    global' "import gleam/result"
+                    $"[ {items} ] |> dict.from_list |> dict.get(v{i}) |> result.unwrap(0)"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecGleam = layout (fun s x ->
