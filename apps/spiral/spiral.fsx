@@ -21556,7 +21556,7 @@ and method184 (v0 : string, v1 : string, v2 : UH2, v3 : UH4, v4 : string, v5 : s
     let v65 : string = "\n"
     let v66 : string = v61 + v65 
     let v70 : string = v66 + v62 
-    let v73 : string = $"    <TargetFramework>net10.0</TargetFramework>"
+    let v73 : string = $"    <TargetFramework>net9.0</TargetFramework>"
     let v75 : string = v70 + v65 
     let v79 : string = v75 + v73 
     let v82 : string = $"    <LangVersion>preview</LangVersion>"
