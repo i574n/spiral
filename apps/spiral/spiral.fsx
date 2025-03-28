@@ -28539,7 +28539,7 @@ and method18 (v0 : US0, v1 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_F
                 let v674 : string = method63(v673)
                 let v675 : string = "gleam.toml"
                 let v676 : string = method33(v674, v675)
-                let v677 : string = "gleam_stdlib=\">=0.55.0 and <1.0.0\""
+                let v677 : string = "gleam_stdlib=\"0.57.0\""
                 let v678 : string = "gleam_time=\">=1.0.0 and <2.0.0\""
                 let v679 : string = "gleam_erlang=\">=0.34.0 and <1.0.0\""
                 let v680 : string = "envoy=\">=1.0.0 and <2.0.0\""

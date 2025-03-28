@@ -15305,7 +15305,7 @@ mod module_1216f6c3 {
                                 Spiral::method63(Spiral::method33(v671.clone(), string("..")));
                             let v676: string = Spiral::method33(v674.clone(), string("gleam.toml"));
                             let v682: Array<string> = new_array(&[
-                                string("gleam_stdlib=\">=0.55.0 and <1.0.0\""),
+                                string("gleam_stdlib=\"0.57.0\""),
                                 string("gleam_time=\">=1.0.0 and <2.0.0\""),
                                 string("gleam_erlang=\">=0.34.0 and <1.0.0\""),
                                 string("envoy=\">=1.0.0 and <2.0.0\""),
