@@ -372,11 +372,11 @@ def method7(v0_1: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0_1: Callable[[], None]) -> IDisposable:
     v14: Callable[[], None] = method7(v0_1)
-    class ObjectExpr50(IDisposable):
+    class ObjectExpr49(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0_1: Any=v0_1) -> None:
             v14(None)
 
-    return ObjectExpr50()
+    return ObjectExpr49()
 
 
 def closure6(unit_var: None, v0_1: US6) -> US7:
@@ -422,10 +422,10 @@ def closure10(unit_var: None, v0_1: int64) -> US2:
 
 
 def method11(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow70(v: int64) -> US2:
+    def _arrow69(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow70
+    return _arrow69
 
 
 def method12(__unit: None=None) -> str:

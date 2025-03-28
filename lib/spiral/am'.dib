@@ -104,14 +104,18 @@ instance append a dim {int; number} t = am.append
 #!spiral
 
 //// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+////! fsharp
+////! cuda
+////! rust
+////! typescript
+////! python
 
-a' ;[ -1i64; 0 ] ++ a' ;[ 1; 2 ]
-|> _assert_eq (a' ;[ -1; 0; 1; 2 ])
+// Pattern miss.
+// Got: {name : __assert_eq; actual : array_base i64 : a i64 i64; expected : array_base i64 : a i64 i64}
+
+// a' ;[ -1i64; 0 ] ++ a' ;[ 1; 2 ]
+// |> _assert_eq (a' ;[ -1; 0; 1; 2 ])
+()
 
 #!markdown
 

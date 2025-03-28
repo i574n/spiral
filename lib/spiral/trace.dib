@@ -8,6 +8,10 @@
 
 #!spiral
 
+open sm'_operators
+
+#!spiral
+
 //// test
 
 open testing
@@ -69,6 +73,18 @@ inl read_state () =
                             date_time.now ()
                             |> date_time.ticks
                             |> fun (date_time.timestamp x) => x |> convert
+                            |> fun (x : i64) =>
+                                backend_switch {
+                                    Gleam = fun () =>
+                                        backend_switch {
+                                            Gleam = fun () =>
+                                                global "import gleam/float"
+                                                global "import gleam/time/timestamp"
+                                        }
+                                        $'!x |> timestamp.to_unix_seconds |> float.round' : i64
+                                    Fsharp = fun () => x
+                                    Python = fun () => x
+                                }
                             |> Some
                 }
 
@@ -114,6 +130,8 @@ let new_trace_state trace_level' =
 inl init_trace_state trace_level : () =
     inl trace_level = trace_level |> optionm'.default_value Verbose
     backend_switch {
+        Gleam = fun () =>
+            $'let trace_state = !new_trace_state(!trace_level)' : ()
         Fsharp = fun () =>
             backend_switch {
                 Fsharp = fun () =>
@@ -138,6 +156,8 @@ inl init_trace_state trace_level : () =
 inl get_trace_state_or_init trace_level : trace_state =
     init_trace_state trace_level
     backend_switch {
+        Gleam = fun () =>
+            $'trace_state' : trace_state
         Fsharp = fun () =>
             $'TraceState.trace_state.Value' : trace_state
         Python = fun () =>
@@ -202,7 +222,7 @@ inl trace_raw level fn =
                             then text
                             elif text = ""
                             then *acc
-                            else *acc +. "\n" +. text
+                            else *acc ++\# text
 
                         inl chunks =
                             new_acc
@@ -274,6 +294,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         | None => date_time.now ()
                         |> date_time.format (
                             backend_switch {
+                                Gleam = fun () => "%H:%M:%S"
                                 Fsharp = fun () =>
                                     match target with
                                     | Rust _ => join "hh:mm:ss"
@@ -306,14 +327,39 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                     |> sm'.from_std_string
                 | _ => fun () =>
                     inl color =
-                        match level with
-                        | Verbose => $'"\\u001b[90m"'
-                        | Debug => $'"\\u001b[94m"'
-                        | Info => $'"\\u001b[92m"'
-                        | Warning => $'"\\u001b[93m"'
-                        | Critical => $'"\\u001b[91m"'
-                    inl color_reset = join $'"\\u001b[0m"'
-                    color +. level_str +. color_reset
+                        backend_switch {
+                            Gleam = fun () =>
+                                match level with
+                                | Verbose => $'"\\u{001b}[90m"'
+                                | Debug => $'"\\u{001b}[94m"'
+                                | Info => $'"\\u{001b}[92m"'
+                                | Warning => $'"\\u{001b}[93m"'
+                                | Critical => $'"\\u{001b}[91m"'
+                                : string
+                            Fsharp = fun () =>
+                                match level with
+                                | Verbose => $'"\\u001b[90m"'
+                                | Debug => $'"\\u001b[94m"'
+                                | Info => $'"\\u001b[92m"'
+                                | Warning => $'"\\u001b[93m"'
+                                | Critical => $'"\\u001b[91m"'
+                                : string
+                            Python = fun () =>
+                                match level with
+                                | Verbose => $'"\\u001b[90m"'
+                                | Debug => $'"\\u001b[94m"'
+                                | Info => $'"\\u001b[92m"'
+                                | Warning => $'"\\u001b[93m"'
+                                | Critical => $'"\\u001b[91m"'
+                                : string
+                        }
+                    inl color_reset =
+                        backend_switch {
+                            Gleam = fun () => $'"\\u{001b}[0m"' : string
+                            Fsharp = fun () => join $'"\\u001b[0m"' : string
+                            Python = fun () => $'"\\u001b[0m"' : string
+                        }
+                    color ++# level_str ++# color_reset
         inl text = text_fn ()
         if text = ""
         then ""
@@ -322,10 +368,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
             join
                 inl locals = locals |> sm'.format
                 inl count = *trace_state.count
-                backend_switch {
-                    Fsharp = fun () => $'$"{!time} {!level_str} #{!count} %s{!text} / {!locals}"' : string
-                    Python = fun () => $'f"{!time} {!level_str} #{!count} {!text} / {!locals}"' : string
-                }
+                time ++# " " ++# level_str ++# " #" ++# $count ++# " " ++# text ++# " / " ++# locals
                 |> fun x =>
                     join
                         x

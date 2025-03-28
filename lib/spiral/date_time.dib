@@ -27,6 +27,13 @@ open testing
 
 #!spiral
 
+nominal timestamp_gleam =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () => global "import gleam/time/timestamp") : () -> ()
+        }
+        $'' : $'timestamp.Timestamp'
+    )
 nominal timestamp_python =
     `(
         backend_switch `(()) `({}) {
@@ -36,6 +43,7 @@ nominal timestamp_python =
     )
 type timestamp_switch =
     {
+        Gleam : timestamp_gleam
         Fsharp : i64
         Python : timestamp_python
     }
@@ -78,6 +86,34 @@ inl test_guid () =
 
 #!spiral
 
+nominal date =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () =>
+                global "import gleam/time/calendar"
+                        ) : () -> ()
+        }
+        $'' : $'calendar.Date'
+    )
+nominal time_of_day =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () =>
+                global "import gleam/time/calendar"
+                        ) : () -> ()
+        }
+        $'' : $'calendar.TimeOfDay'
+    )
+nominal duration =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () =>
+                global "import gleam/time/duration"
+                        ) : () -> ()
+        }
+        $'' : $'duration.Duration'
+    )
+
 nominal date_time_python =
     `(
         backend_switch `(()) `({}) {
@@ -87,6 +123,7 @@ nominal date_time_python =
     )
 type date_time_switch =
     {
+        Gleam : date * time_of_day * duration
         Fsharp : $'System.DateTime'
         Python : date_time_python
     }
@@ -100,6 +137,7 @@ nominal date_time = $'backend_switch `(date_time_switch)'
 
 inl year (date_time : date_time) : i32 =
     backend_switch {
+        Gleam = fun () => $'0' : i32
         Fsharp = fun () => date_time |> $'_.Year' : i32
         Python = fun () => $'!date_time.year' : i32
     }
@@ -112,6 +150,8 @@ inl year (date_time : date_time) : i32 =
 
 inl format (format : string) (date_time : date_time) : string =
     backend_switch {
+        Gleam = fun () =>
+            "?" : string
         Fsharp = fun () =>
             inl format =
                 if format = ""
@@ -185,12 +225,35 @@ max_value ()
 
 #!markdown
 
+### to_calendar
+
+#!spiral
+
+inl to_calendar (timestamp : timestamp) : date_time =
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/time/duration"
+            global "import gleam/time/timestamp"
+    }
+    inl duration = $'duration.seconds(0)' : duration
+    inl (date : date), (time_of_day : time_of_day) = $'!timestamp |> timestamp.to_calendar(!duration)'
+    (date, time_of_day, duration) |> to
+
+#!markdown
+
 ### unix_epoch
 
 #!spiral
 
 inl unix_epoch () : date_time =
     backend_switch {
+        Gleam = fun () =>
+            backend_switch {
+                Gleam = fun () =>
+                    global "import gleam/time/timestamp"
+            }
+            inl timestamp = $'timestamp.from_unix_seconds (0)' : timestamp
+            timestamp |> to_calendar
         Fsharp = fun () => $'System.DateTime.UnixEpoch' : date_time
         Python = fun () => $'datetime.datetime(1970, 1, 1)' : date_time
     }
@@ -216,6 +279,8 @@ inl date_time_milliseconds
     : date_time
     =
     backend_switch {
+        Gleam = fun () =>
+            $'Nil' : date_time
         Fsharp = fun () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
         Python = fun () =>
@@ -367,6 +432,7 @@ nominal time_span = $'backend_switch `(time_span_switch)'
 
 inl time_span x : time_span =
     backend_switch {
+        Gleam = fun () => x |> convert : time_span
         Fsharp = fun () => x |> convert : time_span
         Python = fun () => $'datetime.timedelta(!x)' : time_span
     }
@@ -388,6 +454,7 @@ inl new_time_span (a : date_time) (b : date_time) : time_span =
 
 inl total_seconds (time_span : time_span) : f64 =
     backend_switch {
+        Gleam = fun () => $'0' : f64
         Fsharp = fun () => time_span |> $'_.TotalSeconds' : f64
         Python = fun () => $'!time_span.total_seconds()' : f64
     }
@@ -400,6 +467,7 @@ inl total_seconds (time_span : time_span) : f64 =
 
 inl days (time_span : time_span) : f64 =
     backend_switch {
+        Gleam = fun () => $'0' : f64
         Fsharp = fun () => time_span |> $'_.TotalDays' : f64
         Python = fun () => $'!time_span.days' : f64
     }
@@ -412,6 +480,13 @@ inl days (time_span : time_span) : f64 =
 
 inl ticks (date_time : date_time) : timestamp =
     backend_switch {
+        Gleam = fun () =>
+            backend_switch {
+                Gleam = fun () =>
+                    global "import gleam/time/timestamp"
+            }
+            inl date_time (date, time_of_day, duration) = date_time
+            $'timestamp.from_calendar(!date, !time_of_day, !duration)' : timestamp
         Fsharp = fun () =>
             run_target function
                 | Rust (Contract) => fun () => null ()
@@ -440,6 +515,7 @@ unix_epoch ()
 
 inl hours (time_span : time_span) : i32 =
     backend_switch {
+        Gleam = fun () => $'0' : i32
         Fsharp = fun () => time_span |> $'_.Hours' : i32
         Python = fun () => $'!time_span.seconds // 3600' : i32
     }
@@ -466,6 +542,7 @@ inl hours (time_span : time_span) : i32 =
 
 inl minutes (time_span : time_span) : i32 =
     backend_switch {
+        Gleam = fun () => $'0' : i32
         Fsharp = fun () => time_span |> $'_.Minutes' : i32
         Python = fun () => $'(!time_span.seconds // 60) % 60' : i32
     }
@@ -492,6 +569,7 @@ inl minutes (time_span : time_span) : i32 =
 
 inl seconds (time_span : time_span) : i32 =
     backend_switch {
+        Gleam = fun () => $'0' : i32
         Fsharp = fun () => time_span |> $'_.Seconds' : i32
         Python = fun () => $'!time_span.seconds % 60' : i32
     }
@@ -518,6 +596,7 @@ inl seconds (time_span : time_span) : i32 =
 
 inl milliseconds (time_span : time_span) : i32 =
     backend_switch {
+        Gleam = fun () => $'0' : i32
         Fsharp = fun () => time_span |> $'_.Milliseconds' : i32
         Python = fun () => $'!time_span.microseconds' : i32
     }
@@ -641,6 +720,9 @@ inl add_days (days : i32) (date_time : date_time) : date_time =
 
 inl now () : date_time =
     backend_switch {
+        Gleam = fun () =>
+            inl timestamp = $'timestamp.system_time ()' : timestamp
+            timestamp |> to_calendar
         Fsharp = fun () =>
             run_target function
                 | Rust (Contract) => fun () => null ()

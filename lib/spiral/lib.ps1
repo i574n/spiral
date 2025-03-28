@@ -16,6 +16,12 @@ function FixRust {
             -replace "([^=]\s)getZero\(\);", "`$1`getZero::<()>();" `
             -replace "getNull::", "&getNull::" `
             -replace "&getNull::<\(\)>\(\)", "fable_library_rust::Native_::getZero()" `
+            -replace "\(null::<\(\)>\(\)", "(null()" `
+            -replace " null::<\(\)>\(\)", " null()" `
+            -replace "unbox::<bool>\(null\(\)\)", "false" `
+            -replace "unbox::<string>\(null\(\)\)", "fable_library_rust::Native_::getZero()" `
+            -replace "unbox::<i32>\(null\(\)\)", "0" `
+            -replace "null\(\)", "fable_library_rust::Native_::getZero()" `
             -replace "([^=]\s)fable_library_rust::Native_::getZero\(\);", "`$1fable_library_rust::Native_::getZero::<()>();" `
             -replace "__self__.", "self." `
             -replace "use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1;", "type ConcurrentStack_1<T> = T;" `

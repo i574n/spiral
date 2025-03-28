@@ -44,7 +44,23 @@ inl symbol_to_string forall t {symbol}. : string =
 
 /// ### slice
 
+/// ### append_real
+inl append_real (x : string) (s : string) : string =
+    backend_switch `string `({}) {
+        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
+        Fsharp = (fun () => (+.) `string s x) : () -> string
+        Python = (fun () => (+.) `string s x) : () -> string
+    }
+
 /// ### append
+
+/// ### (++#)
+inl (++#) (a : string) (b : string) : string =
+    append_real b a
+
+/// ### (++\\#)
+
+/// ### (++\#)
 
 /// ### format_debug
 inl format_debug forall t. (x : t) : string =
@@ -74,7 +90,7 @@ inl format_pretty forall t. (x : t) : string =
 prototype printable t : t -> ()
 
 /// ### format_real
-let format_real forall t. (x : t) : string =
+inl format_real forall t. (x : t) : string =
     inl result = mut `string (join "")
     inl rec write x =
         inl p ((a : string), b) =
@@ -83,8 +99,9 @@ let format_real forall t. (x : t) : string =
                     Gleam =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'!b ' : string
-                            | _ => $'!b ' : string
+                            | (_ : string) => $'!b ' : string
+                            // | (_ : f32) | (_ : f64) => format_debug `(`b) b
+                            | _ => format_debug `(`b) b
                         ) : () -> string
                     Fsharp =
                         (fun () =>
@@ -99,7 +116,7 @@ let format_real forall t. (x : t) : string =
                             | _ => $'f"{!b}"' : string
                         ) : () -> string
                 }
-            exec_unit ((fun () => result <- (+.) `string ((~*) `string result) s) : () -> ())
+            exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
 
         match x with // According to Bing it shouldn't matter whether these are %d or %lld in printf.
         | () => ()

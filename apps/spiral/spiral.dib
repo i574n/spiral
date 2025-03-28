@@ -338,47 +338,47 @@ let persist_code_project { workspace_root package_dir packages modules name code
     inl fsproj_path = package_dir </> $'$"{!name}.fsproj"' |> file_system.normalize_path
     inl fsproj_code : string =
         $'$"<Project Sdk=\\\"Microsoft.NET.Sdk\\\">"'
-        +#. $'$"<PropertyGroup>"'
-        +#. $'$"    <TargetFramework>net9.0</TargetFramework>"'
-        +#. $'$"    <LangVersion>preview</LangVersion>"'
-        +#. $'$"    <RollForward>Major</RollForward>"'
-        +#. $'$"    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>"'
-        +#. $'$"    <PublishAot>false</PublishAot>"'
-        +#. $'$"    <PublishTrimmed>false</PublishTrimmed>"'
-        +#. $'$"    <PublishSingleFile>true</PublishSingleFile>"'
-        +#. $'$"    <SelfContained>true</SelfContained>"'
-        +#. $'$"    <Version>0.0.1-alpha.1</Version>"'
-        +#. $'$"    <OutputType>Exe</OutputType>"'
-        +#. $'$"    <ServerGarbageCollection>true</ServerGarbageCollection>"'
-        +#. $'$"    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>"'
-        +#. $'$"</PropertyGroup>"'
+        ++\# $'$"<PropertyGroup>"'
+        ++\# $'$"    <TargetFramework>net9.0</TargetFramework>"'
+        ++\# $'$"    <LangVersion>preview</LangVersion>"'
+        ++\# $'$"    <RollForward>Major</RollForward>"'
+        ++\# $'$"    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>"'
+        ++\# $'$"    <PublishAot>false</PublishAot>"'
+        ++\# $'$"    <PublishTrimmed>false</PublishTrimmed>"'
+        ++\# $'$"    <PublishSingleFile>true</PublishSingleFile>"'
+        ++\# $'$"    <SelfContained>true</SelfContained>"'
+        ++\# $'$"    <Version>0.0.1-alpha.1</Version>"'
+        ++\# $'$"    <OutputType>Exe</OutputType>"'
+        ++\# $'$"    <ServerGarbageCollection>true</ServerGarbageCollection>"'
+        ++\# $'$"    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>"'
+        ++\# $'$"</PropertyGroup>"'
 
-        +#. $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'FreeBSD\'))\\\">"'
-        +#. $'$"    <DefineConstants>_FREEBSD</DefineConstants>"'
-        +#. $'$"</PropertyGroup>"'
+        ++\# $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'FreeBSD\'))\\\">"'
+        ++\# $'$"    <DefineConstants>_FREEBSD</DefineConstants>"'
+        ++\# $'$"</PropertyGroup>"'
 
-        +#. $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Linux\'))\\\">"'
-        +#. $'$"    <DefineConstants>_LINUX</DefineConstants>"'
-        +#. $'$"</PropertyGroup>"'
+        ++\# $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Linux\'))\\\">"'
+        ++\# $'$"    <DefineConstants>_LINUX</DefineConstants>"'
+        ++\# $'$"</PropertyGroup>"'
 
-        +#. $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'OSX\'))\\\">"'
-        +#. $'$"    <DefineConstants>_OSX</DefineConstants>"'
-        +#. $'$"</PropertyGroup>"'
+        ++\# $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'OSX\'))\\\">"'
+        ++\# $'$"    <DefineConstants>_OSX</DefineConstants>"'
+        ++\# $'$"</PropertyGroup>"'
 
-        +#. $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Windows\'))\\\">"'
-        +#. $'$"    <DefineConstants>_WINDOWS</DefineConstants>"'
-        +#. $'$"</PropertyGroup>"'
+        ++\# $'$"<PropertyGroup Condition=\\\"$([MSBuild]::IsOSPlatform(\'Windows\'))\\\">"'
+        ++\# $'$"    <DefineConstants>_WINDOWS</DefineConstants>"'
+        ++\# $'$"</PropertyGroup>"'
 
-        +#. $'$"<ItemGroup>"'
-        +#. $'$"    {!modules_code}"'
-        +#. $'$"    <Compile Include=\\\"{!fs_path}\\\" />"'
-        +#. $'$"</ItemGroup>"'
+        ++\# $'$"<ItemGroup>"'
+        ++\# $'$"    {!modules_code}"'
+        ++\# $'$"    <Compile Include=\\\"{!fs_path}\\\" />"'
+        ++\# $'$"</ItemGroup>"'
 
-        +#. $'$"<ItemGroup>"'
-        +#. $'$"    {!packages_code}"'
-        +#. $'$"</ItemGroup>"'
+        ++\# $'$"<ItemGroup>"'
+        ++\# $'$"    {!packages_code}"'
+        ++\# $'$"</ItemGroup>"'
 
-        +#. $'$"</Project>"'
+        ++\# $'$"</Project>"'
 
     fsproj_code |> file_system.write_all_text_exists fsproj_path
 
@@ -531,27 +531,27 @@ inl publish_file { workspace_root runtime packages modules path } =
 inl get_workspace_cargo_toml_content { workspace_root } : string =
     inl workspace_root = workspace_root |> file_system.normalize_path
     $'$"cargo-features = [\\\"profile-rustflags\\\"]"'
-    +#. $'$""'
-    +#. $'$"[workspace]"'
-    +#. $'$"resolver = \\\"2\\\""'
-    +#. $'$"members = [\\\"packages/Rust/*\\\"]"'
-    +#. $'$""'
-    +#. $'$"[workspace.dependencies.fable_library_rust]"'
-    +#. $'$"path = \\\"{!workspace_root}/lib/rust/fable/fable_modules/fable-library-rust\\\""'
-    +#. $'$"default-features = false"'
-    +#. $'$"features = []"'
-    +#. $'$""'
-    +#. $'$"[workspace.dependencies]"'
-    +#. $'$"inline_colorization = \\\"~0.1\\\""'
-    +#. $'$""'
-    +#. $'$"[profile.release]"'
-    +#. $'$"codegen-units = 1"'
-    +#. $'$"opt-level = \\\"z\\\""'
-    +#. $'$"lto = true"'
-    +#. $'$"debug = false"'
-    +#. $'$"panic = \\\"abort\\\""'
-    +#. $'$"overflow-checks = true"'
-    +#. $'$"rustflags = [\\\"-C\\\", \\\"link-arg=-s\\\"]"'
+    ++\# $'$""'
+    ++\# $'$"[workspace]"'
+    ++\# $'$"resolver = \\\"2\\\""'
+    ++\# $'$"members = [\\\"packages/Rust/*\\\"]"'
+    ++\# $'$""'
+    ++\# $'$"[workspace.dependencies.fable_library_rust]"'
+    ++\# $'$"path = \\\"{!workspace_root}/lib/rust/fable/fable_modules/fable-library-rust\\\""'
+    ++\# $'$"default-features = false"'
+    ++\# $'$"features = []"'
+    ++\# $'$""'
+    ++\# $'$"[workspace.dependencies]"'
+    ++\# $'$"inline_colorization = \\\"~0.1\\\""'
+    ++\# $'$""'
+    ++\# $'$"[profile.release]"'
+    ++\# $'$"codegen-units = 1"'
+    ++\# $'$"opt-level = \\\"z\\\""'
+    ++\# $'$"lto = true"'
+    ++\# $'$"debug = false"'
+    ++\# $'$"panic = \\\"abort\\\""'
+    ++\# $'$"overflow-checks = true"'
+    ++\# $'$"rustflags = [\\\"-C\\\", \\\"link-arg=-s\\\"]"'
 
 #!markdown
 
@@ -560,13 +560,15 @@ inl get_workspace_cargo_toml_content { workspace_root } : string =
 #!spiral
 
 inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string =
-    $'$"[package]"'
-    +#. $'$"name = \\\"spiral_{!hash_hex}\\\""'
-    +#. $'$"version = \\\"0.0.1\\\""'
-    +#. $'$"edition = \\\"2021\\\""'
-    +#. $'$""'
-    +#. $'$"[dependencies]"'
-    +#. (
+    $'$"cargo-features = [\\\"edition2024\\\"]"'
+    ++\# $'$""'
+    ++\# $'$"[package]"'
+    ++\# $'$"name = \\\"spiral_{!hash_hex}\\\""'
+    ++\# $'$"version = \\\"0.0.1\\\""'
+    ++\# $'$"edition = \\\"2024\\\""'
+    ++\# $'$""'
+    ++\# $'$"[dependencies]"'
+    ++\# (
         if runtime <>. None
         then $'$"fable_library_rust = {{ workspace = true }}"'
         else
@@ -581,18 +583,18 @@ inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string
             +. $'$"]"'
             +. $'$"}}"'
     )
-    +#. $'$"inline_colorization = {{ workspace = true }}"'
-    +#. $'$"{!deps}"'
-    +#. $'$""'
-    +#. (
+    ++\# $'$"inline_colorization = {{ workspace = true }}"'
+    ++\# $'$"{!deps}"'
+    ++\# $'$""'
+    ++\# (
         if runtime = None then
             $'$"[[bin]]"'
-            +#. $'$"name = \\\"spiral_{!hash_hex}\\\""'
+            ++\# $'$"name = \\\"spiral_{!hash_hex}\\\""'
         else
             $'$"[lib]"'
-            +#. $'$"crate-type = [\\\"cdylib\\\"]"'
+            ++\# $'$"crate-type = [\\\"cdylib\\\"]"'
     )
-    +#. $'$"path = \\\"spiral.rs\\\""'
+    ++\# $'$"path = \\\"spiral.rs\\\""'
 
 #!markdown
 
@@ -603,13 +605,13 @@ inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string
 inl get_empty_cargo_toml_content () =
     inl guid = date_time.now () |> date_time.new_guid_from_date_time |> sm'.obj_to_string
     $'$"[package]"'
-    +#. $'$"name = \\\"spiral_{!guid}\\\""'
-    +#. $'$"version = \\\"0.0.1\\\""'
-    +#. $'$"edition = \\\"2021\\\""'
-    +#. $'$""'
-    +#. $'$"[[bin]]"'
-    +#. $'$"name = \\\"spiral_{!guid}\\\""'
-    +#. $'$"path = \\\"spiral.rs\\\""'
+    ++\# $'$"name = \\\"spiral_{!guid}\\\""'
+    ++\# $'$"version = \\\"0.0.1\\\""'
+    ++\# $'$"edition = \\\"2021\\\""'
+    ++\# $'$""'
+    ++\# $'$"[[bin]]"'
+    ++\# $'$"name = \\\"spiral_{!guid}\\\""'
+    ++\# $'$"path = \\\"spiral.rs\\\""'
 
 #!markdown
 
@@ -709,8 +711,8 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
         inl new_code_path = package_dir </> $'$"{!workspace_name}.{!extension}"'
         inl new_code = new_code_path |> file_system.read_all_text
 
-        inl on_startup_text = "on_startup!" +. (join "(")
-        inl method0_fn_text = " method0" +. (join "(")
+        inl on_startup_text = "on_startup!" ++# (join "(")
+        inl method0_fn_text = " method0" ++# (join "(")
         inl static_do_bindings =
             (new_code |> sm'.contains on_startup_text)
             && (new_code |> sm'.contains method0_fn_text |> not)
@@ -780,25 +782,25 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
         inl new_code = new_code_path |> file_system.read_all_text
 
         inl main_code_header =
-            "pub fn main() -> Result<(), String> " +. (join "{")
+            "pub fn main() -> Result<(), String> " ++# (join "{")
 
         inl main_code : string =
             if runtime = None
             then ""
             else
                 $'$"#[near_sdk::near_bindgen]"'
-                +#. $'$"#[derive(near_sdk::PanicOnDefault)]"'
-                +#. $'$"pub struct MainState {{"'
-                +#. $'$"}}"'
-                +#. $'$""'
-                +#. $'$"#[near_sdk::near_bindgen]"'
-                +#. $'$"impl MainState {{"'
-                +#. $'$"    pub fn state_main() {{"'
-                +#. $'$"        Spiral::method0();"'
-                +#. $'$"    }}"'
-                +#. $'$"}}"'
-            +#. (
-                if runtime = None && (new_code |> sm'.contains (on_startup_text +. "Spiral::method0()"))
+                ++\# $'$"#[derive(near_sdk::PanicOnDefault)]"'
+                ++\# $'$"pub struct MainState {{"'
+                ++\# $'$"}}"'
+                ++\# $'$""'
+                ++\# $'$"#[near_sdk::near_bindgen]"'
+                ++\# $'$"impl MainState {{"'
+                ++\# $'$"    pub fn state_main() {{"'
+                ++\# $'$"        Spiral::method0();"'
+                ++\# $'$"    }}"'
+                ++\# $'$"}}"'
+            ++\# (
+                if runtime = None && (new_code |> sm'.contains (on_startup_text ++# "Spiral::method0()"))
                 then $'$"{!main_code_header} Ok(Spiral::method0()) }}"'
                 else $'$"{!main_code_header} Ok(()) }}"'
             )
@@ -817,10 +819,10 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
 
                 new_code'
                 |> sm'.replace
-                    ("),)" +. !\($'"\\\";\\\".into()"'))
+                    ("),)" ++# !\($'"\\\";\\\".into()"'))
                     "));"
                 |> sm'.replace
-                    ("},)" +. !\($'"\\\";\\\".into()"'))
+                    ("},)" ++# !\($'"\\\";\\\".into()"'))
                     "});"
                 |> sm'.replace_regex
                     "\\s\\sdefaultOf\\(\\);"
@@ -829,14 +831,59 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                     "\\s\\sgetZero\\(\\);"
                     " getZero::<()>();"
                 |> sm'.replace
-                    ("(&e.get_Curren" +. !\($'"\\\"t\\\".into()"'))
+                    ("(&e.get_Curren" ++# !\($'"\\\"t\\\".into()"'))
                     "(e.get_Current"
                 |> sm'.replace
-                    ("getNull" +. !\($'"\\\"::<()>()\\\".into()"'))
+                    ("getNull" ++# !\($'"\\\"::<()>()\\\".into()"'))
                     "fable_library_rust::Native_::getZero()"
+
+
+                |> sm'.replace
+                    ("null::<()>(" ++# !\($'$"\\\")\\\".into()"'))
+                    "fable_library_rust::Native_::getZero()"
+                |> sm'.replace_regex
+                    "null::<\\(\\)>\\(\\)"
+                    "fable_library_rust::Native_::getZero()"
+
+                |> sm'.replace_regex
+                    "\\(null::<\\(\\)>\\(\\)"
+                    "(null()"
+                |> sm'.replace_regex
+                    " null::<\\(\\)>\\(\\)"
+                    " null()"
+                |> sm'.replace_regex
+                    "unbox::<bool>\\(null\\(\\)"
+                    "false"
+                |> sm'.replace_regex
+                    "unbox::<string>\\(null\\(\\)"
+                    "fable_library_rust::Native_::getZero()"
+                |> sm'.replace_regex
+                    "unbox::<i32>\\(null\\(\\)"
+                    "0"
+                |> sm'.replace_regex
+                    "unbox::<i32>\\(null::<\\(\\)>\\(\\)\\)"
+                    "0"
+                |> sm'.replace_regex
+                    "null\\(\\)"
+                    "fable_library_rust::Native_::getZero()"
+
                 |> sm'.replace_regex
                     "\\s\\sfable_library_rust::Native_::getZero\\(\\);"
                     " fable_library_rust::Native_::getZero::<()>();"
+
+                |> sm'.replace
+                    " gen:"
+                    " f:"
+                |> sm'.replace_regex
+                    "\\(gen\\("
+                    "(f("
+                |> sm'.replace_regex
+                    "\\(gen,"
+                    "(f,"
+                |> sm'.replace
+                    " gen "
+                    " f "
+
                 |> sm'.replace
                     "::Slice'_"
                     "::Slice__"
@@ -844,35 +891,35 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                     " Slice'_"
                     " Slice__"
                 |> sm'.replace
-                    ("defaultOf()" +. !\($'"\\\",\\\".into()"'))
+                    ("defaultOf()" ++# !\($'"\\\",\\\".into()"'))
                     "defaultOf::<std::sync::Arc<dyn IDisposable>>(),"
                 |> sm'.replace
-                    ("__self" +. !\($'"\\\"__.\\\".into()"'))
+                    ("__self" ++# !\($'"\\\"__.\\\".into()"'))
                     "self."
                 |> sm'.replace
-                    ("_self" +. !\($'"\\\"_.\\\".into()"'))
+                    ("_self" ++# !\($'"\\\"_.\\\".into()"'))
                     "self."
                 |> sm'.replace
-                    ("get_or_insert_wit" +. !\($'"\\\"h\\\".into()"'))
+                    ("get_or_insert_wit" ++# !\($'"\\\"h\\\".into()"'))
                     "get_or_init"
                 |> sm'.replace
-                    ("use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1" +. !\($'"\\\";\\\".into()"'))
+                    ("use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1" ++# !\($'"\\\";\\\".into()"'))
                     "type ConcurrentStack_1<T> = T;"
                 |> sm'.replace
-                    ("use fable_library_rust::System::TimeZoneInfo" +. !\($'"\\\";\\\".into()"'))
+                    ("use fable_library_rust::System::TimeZoneInfo" ++# !\($'"\\\";\\\".into()"'))
                     "type TimeZoneInfo = i64;"
                 |> sm'.replace
-                    ("use fable_library_rust::System::Threading::Tasks::TaskCanceledException" +. !\($'"\\\";\\\".into()"'))
+                    ("use fable_library_rust::System::Threading::Tasks::TaskCanceledException" ++# !\($'"\\\";\\\".into()"'))
                     "type TaskCanceledException = ();"
                 |> if static_do_bindings
                     then id
                     else sm'.replace
                             on_startup_text
-                            ("// " +. on_startup_text)
+                            ("// " ++# on_startup_text)
                 |> if runtime_contract |> not
                     then id
                     else sm'.replace
-                            ("use fable_library_rust::DateTime_::DateTime" +. ";")
+                            ("use fable_library_rust::DateTime_::DateTime" ++# ";")
                             "type DateTime = ();"
 
         if not cached then
@@ -1561,7 +1608,10 @@ inl process_gleam { gleam_path target deps } =
 
     inl deps =
         ;[
-            "gleam_stdlib=\">=0.55.0 and <1.0.0\""
+            "gleam_stdlib=\"0.57.0\""
+            "gleam_time=\">=1.0.0 and <2.0.0\""
+            "gleam_erlang=\">=0.34.0 and <1.0.0\""
+            "envoy=\">=1.0.0 and <2.0.0\""
             "gary=\">=1.1.0 and <2.0.0\""
         ]
         |> am'.to_vec
@@ -1587,10 +1637,10 @@ inl process_gleam { gleam_path target deps } =
             then "main_real"
             else "main"
         $'$"name = \\\"{!main}\\\""'
-        +#. $'$"target = \\\"{!target'}\\\""'
-        +#. $'$""'
-        +#. $'$"[dependencies]"'
-        +#. $'$"{!deps}"'
+        ++\# $'$"target = \\\"{!target'}\\\""'
+        ++\# $'$""'
+        ++\# $'$"[dependencies]"'
+        ++\# $'$"{!deps}"'
 
     manifest |> file_system.write_all_text_exists manifest_path
 
@@ -1649,7 +1699,7 @@ inl process_gleam { gleam_path target deps } =
                     if js_text |> sm'.ends_with "main()" |> not then
                         $'$"{!js_text}\nmain()"'
                         |> file_system.write_all_text_exists js_path
-                    
+
                     inl exit_code, run_result =
                         runtime.execution_options fun x => { x with
                             command =
@@ -1670,26 +1720,26 @@ inl process_gleam { gleam_path target deps } =
                     else
                         inl html =
                             $'$"<\!DOCTYPE html>"'
-                            +#. $'$"<html lang=\\\"en\\\">"'
-                            +#. $'$"  <head>"'
-                            +#. $'$"    <meta charset=\\\"UTF-8\\\" />"'
-                            +#. $'$"    <meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\" />"'
-                            +#. $'$"    <link"'
-                            +#. $'$"      data-trunk"'
-                            +#. $'$"      rel=\\\"inline\\\""'
-                            +#. $'$"      href=\\\"../build/packages/lustre_ui/priv/static/lustre_ui.css\\\""'
-                            +#. $'$"    />"'
-                            +#. $'$"    <link"'
-                            +#. $'$"      data-trunk"'
-                            +#. $'$"      rel=\\\"inline\\\""'
-                            +#. $'$"      type=\\\"module\\\""'
-                            +#. $'$"      href=\\\"main.js\\\""'
-                            +#. $'$"    />"'
-                            +#. $'$"  </head>"'
-                            +#. $'$"  <body>"'
-                            +#. $'$"    <div id=\\\"app_{!hash_hex}\\\"></div>"'
-                            +#. $'$"  </body>"'
-                            +#. $'$"</html>"'
+                            ++\# $'$"<html lang=\\\"en\\\">"'
+                            ++\# $'$"  <head>"'
+                            ++\# $'$"    <meta charset=\\\"UTF-8\\\" />"'
+                            ++\# $'$"    <meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\" />"'
+                            ++\# $'$"    <link"'
+                            ++\# $'$"      data-trunk"'
+                            ++\# $'$"      rel=\\\"inline\\\""'
+                            ++\# $'$"      href=\\\"../build/packages/lustre_ui/priv/static/lustre_ui.css\\\""'
+                            ++\# $'$"    />"'
+                            ++\# $'$"    <link"'
+                            ++\# $'$"      data-trunk"'
+                            ++\# $'$"      rel=\\\"inline\\\""'
+                            ++\# $'$"      type=\\\"module\\\""'
+                            ++\# $'$"      href=\\\"main.js\\\""'
+                            ++\# $'$"    />"'
+                            ++\# $'$"  </head>"'
+                            ++\# $'$"  <body>"'
+                            ++\# $'$"    <div id=\\\"app_{!hash_hex}\\\"></div>"'
+                            ++\# $'$"  </body>"'
+                            ++\# $'$"</html>"'
 
                         inl html_path = $'$"{!src_dir}/index.html"'
                         html |> file_system.write_all_text_exists html_path
@@ -1698,15 +1748,15 @@ inl process_gleam { gleam_path target deps } =
 
                         inl manifest =
                             $'$"[package]"'
-                            +#. $'$"name = \\\"spiral_{!hash_hex}\\\""'
-                            +#. $'$""'
-                            +#. $'$"[workspace]"'
-                            +#. $'$""'
-                            +#. $'$"[lib]"'
-                            +#. $'$"crate-type = [\\\"cdylib\\\", \\\"rlib\\\"]"'
-                            +#. $'$"path = \\\"spiral_{!hash_hex}.rs\\\""'
-                            +#. $'$""'
-                            +#. $'$"[dependencies]"'
+                            ++\# $'$"name = \\\"spiral_{!hash_hex}\\\""'
+                            ++\# $'$""'
+                            ++\# $'$"[workspace]"'
+                            ++\# $'$""'
+                            ++\# $'$"[lib]"'
+                            ++\# $'$"crate-type = [\\\"cdylib\\\", \\\"rlib\\\"]"'
+                            ++\# $'$"path = \\\"spiral_{!hash_hex}.rs\\\""'
+                            ++\# $'$""'
+                            ++\# $'$"[dependencies]"'
 
                         manifest |> file_system.write_all_text_exists $'$"{!src_dir}/Cargo.toml"'
 
@@ -1804,18 +1854,18 @@ inl process_cuda { py_path env deps } =
                     deps
                 | Poetry =>
                     $'$"[tool.poetry]"'
-                    +#. $'$"name = \\\"test\\\""'
-                    +#. $'$"version = \\\"0.0.1\\\""'
-                    +#. $'$"description = \\\"\\\""'
-                    +#. $'$"authors = []"'
-                    +#. $'$""'
-                    +#. $'$"[tool.poetry.dependencies]"'
-                    +#. $'$"python=\\\"~3.12\\\""'
-                    +#. $'$"{!deps}"'
-                    +#. $'$""'
-                    +#. $'$"[build-system]"'
-                    +#. $'$"requires = [\\\"poetry-core\\\"]"'
-                    +#. $'$"build-backend = \\\"poetry.core.masonry.api\\\""'
+                    ++\# $'$"name = \\\"test\\\""'
+                    ++\# $'$"version = \\\"0.0.1\\\""'
+                    ++\# $'$"description = \\\"\\\""'
+                    ++\# $'$"authors = []"'
+                    ++\# $'$""'
+                    ++\# $'$"[tool.poetry.dependencies]"'
+                    ++\# $'$"python=\\\"~3.12\\\""'
+                    ++\# $'$"{!deps}"'
+                    ++\# $'$""'
+                    ++\# $'$"[build-system]"'
+                    ++\# $'$"requires = [\\\"poetry-core\\\"]"'
+                    ++\# $'$"build-backend = \\\"poetry.core.masonry.api\\\""'
 
             manifest |> file_system.write_all_text_exists manifest_path
 

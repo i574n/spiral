@@ -7544,22 +7544,25 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-
-<span class="nb">open</span> <span class="n">testing</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="nb">open</span> <span class="n">sm</span><span class="s1">'_operators</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="trace">trace<a class="anchor-link" href="#trace">¶</a></h2>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+
+<span class="nb">open</span> <span class="n">testing</span>
+</pre></div>
+</div>
 </div>
 </div>
 </div>
@@ -7570,11 +7573,22 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="trace">trace<a class="anchor-link" href="#trace">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h3 id="trace_level">trace_level<a class="anchor-link" href="#trace_level">¶</a></h3>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7594,7 +7608,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7604,7 +7618,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7646,6 +7660,18 @@ a.anchor-link {
                             <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
                             <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">ticks</span>
                             <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">date_time</span><span class="o">.</span><span class="n">timestamp</span> <span class="n">x</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">convert</span>
+                            <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=&gt;</span>
+                                <span class="n">backend_switch</span> <span class="p">{</span>
+                                    <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                        <span class="n">backend_switch</span> <span class="p">{</span>
+                                            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                                <span class="k">global</span> <span class="s2">"import gleam/float"</span>
+                                                <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
+                                        <span class="p">}</span>
+                                        <span class="err">$</span><span class="s1">'!x |&gt; timestamp.to_unix_seconds |&gt; float.round'</span> <span class="p">:</span> <span class="n">i64</span>
+                                    <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span>
+                                    <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span>
+                                <span class="p">}</span>
                             <span class="o">|&gt;</span> <span class="n">Some</span>
                 <span class="p">}</span>
 </pre></div>
@@ -7654,7 +7680,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7664,7 +7690,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=10">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7687,7 +7713,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=10">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=11">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7697,7 +7723,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=11">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=12">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7721,7 +7747,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=12">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=13">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7731,7 +7757,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=13">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=14">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7742,6 +7768,8 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">init_trace_state</span> <span class="n">trace_level</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">trace_level</span> <span class="o">=</span> <span class="n">trace_level</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.default_value Verbose</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'let trace_state = !new_trace_state(!trace_level)'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">backend_switch</span> <span class="p">{</span>
                 <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7762,7 +7790,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=14">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7772,7 +7800,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=15">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7783,6 +7811,8 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_trace_state_or_init</span> <span class="n">trace_level</span> <span class="p">:</span> <span class="n">trace_state</span> <span class="o">=</span>
     <span class="n">init_trace_state</span> <span class="n">trace_level</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'trace_state'</span> <span class="p">:</span> <span class="n">trace_state</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'TraceState.trace_state.Value'</span> <span class="p">:</span> <span class="n">trace_state</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7794,7 +7824,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=16">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7804,7 +7834,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=17">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=18">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7826,7 +7856,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=18">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=19">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7863,31 +7893,31 @@ a.anchor-link {
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .py output (Cuda):
-__assert_eq / actual: True / expected: True
-__assert_eq / actual: True / expected: True
-__assert_eq / actual: False / expected: False
-__assert_eq / actual: True / expected: True
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = true; expected = true }
 
 
 .rs output:
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: false / expected: false
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = true; expected = true }
 
 
 .ts output:
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: false / expected: false
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = true; expected = true }
 
 
 .py output:
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: false / expected: false
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = true; expected = true }
 
 
 </pre>
@@ -7897,17 +7927,17 @@ __assert_eq / actual: true / expected: true
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: false / expected: false
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=19">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=20">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7917,7 +7947,7 @@ __assert_eq / actual: true / expected: true
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=20">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7943,7 +7973,7 @@ __assert_eq / actual: true / expected: true
                             <span class="n">then</span> <span class="n">text</span>
                             <span class="k">elif</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">""</span>
                             <span class="n">then</span> <span class="o">*</span><span class="n">acc</span>
-                            <span class="k">else</span> <span class="o">*</span><span class="n">acc</span> <span class="o">+.</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+.</span> <span class="n">text</span>
+                            <span class="k">else</span> <span class="o">*</span><span class="n">acc</span> <span class="o">++</span>\<span class="c1"># text</span>
 
                         <span class="n">inl</span> <span class="n">chunks</span> <span class="o">=</span>
                             <span class="n">new_acc</span>
@@ -7974,7 +8004,7 @@ __assert_eq / actual: true / expected: true
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=21">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=22">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7984,7 +8014,7 @@ __assert_eq / actual: true / expected: true
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=22">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=23">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8032,6 +8062,7 @@ __assert_eq / actual: true / expected: true
                         <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
                         <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">format</span> <span class="p">(</span>
                             <span class="n">backend_switch</span> <span class="p">{</span>
+                                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"%H:%M:%S"</span>
                                 <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                                     <span class="k">match</span> <span class="n">target</span> <span class="k">with</span>
                                     <span class="o">|</span> <span class="n">Rust</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"hh:mm:ss"</span>
@@ -8064,14 +8095,39 @@ __assert_eq / actual: true / expected: true
                     <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.from_std_string</span>
                 <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                     <span class="n">inl</span> <span class="n">color</span> <span class="o">=</span>
-                        <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
-                        <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[90m"'</span>
-                        <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[94m"'</span>
-                        <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[92m"'</span>
-                        <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[93m"'</span>
-                        <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[91m"'</span>
-                    <span class="n">inl</span> <span class="n">color_reset</span> <span class="o">=</span> <span class="n">join</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[0m"'</span>
-                    <span class="n">color</span> <span class="o">+.</span> <span class="n">level_str</span> <span class="o">+.</span> <span class="n">color_reset</span>
+                        <span class="n">backend_switch</span> <span class="p">{</span>
+                            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
+                                <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[90m"'</span>
+                                <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[94m"'</span>
+                                <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[92m"'</span>
+                                <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[93m"'</span>
+                                <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[91m"'</span>
+                                <span class="p">:</span> <span class="n">string</span>
+                            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
+                                <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[90m"'</span>
+                                <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[94m"'</span>
+                                <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[92m"'</span>
+                                <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[93m"'</span>
+                                <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[91m"'</span>
+                                <span class="p">:</span> <span class="n">string</span>
+                            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
+                                <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[90m"'</span>
+                                <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[94m"'</span>
+                                <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[92m"'</span>
+                                <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[93m"'</span>
+                                <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[91m"'</span>
+                                <span class="p">:</span> <span class="n">string</span>
+                        <span class="p">}</span>
+                    <span class="n">inl</span> <span class="n">color_reset</span> <span class="o">=</span>
+                        <span class="n">backend_switch</span> <span class="p">{</span>
+                            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[0m"'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[0m"'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[0m"'</span> <span class="p">:</span> <span class="n">string</span>
+                        <span class="p">}</span>
+                    <span class="n">color</span> <span class="o">++</span><span class="c1"># level_str ++# color_reset</span>
         <span class="n">inl</span> <span class="n">text</span> <span class="o">=</span> <span class="n">text_fn</span> <span class="p">()</span>
         <span class="k">if</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">""</span>
         <span class="n">then</span> <span class="s2">""</span>
@@ -8080,10 +8136,7 @@ __assert_eq / actual: true / expected: true
             <span class="n">join</span>
                 <span class="n">inl</span> <span class="nb">locals</span> <span class="o">=</span> <span class="nb">locals</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format</span>
                 <span class="n">inl</span> <span class="n">count</span> <span class="o">=</span> <span class="o">*</span><span class="n">trace_state</span><span class="o">.</span><span class="n">count</span>
-                <span class="n">backend_switch</span> <span class="p">{</span>
-                    <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"{!time} {!level_str} #{!count} </span><span class="si">%s</span><span class="s1">{!text} / {!locals}"'</span> <span class="p">:</span> <span class="n">string</span>
-                    <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"{!time} {!level_str} #{!count} {!text} / {!locals}"'</span> <span class="p">:</span> <span class="n">string</span>
-                <span class="p">}</span>
+                <span class="n">time</span> <span class="o">++</span><span class="c1"># " " ++# level_str ++# " #" ++# $count ++# " " ++# text ++# " / " ++# locals</span>
                 <span class="o">|&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
                     <span class="n">join</span>
                         <span class="n">x</span>
@@ -8095,7 +8148,7 @@ __assert_eq / actual: true / expected: true
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=23">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=24">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8131,25 +8184,25 @@ __assert_eq / actual: true / expected: true
 .py output (Cuda):
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
-__assert_eq / actual: 3 / expected: 3
+{ name = __assert_eq; actual = 3; expected = 3 }
 
 
 .rs output:
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
-__assert_eq / actual: 3 / expected: 3
+{ name = __assert_eq; actual = 3; expected = 3 }
 
 
 .ts output:
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
-__assert_eq / actual: 3 / expected: 3
+{ name = __assert_eq; actual = 3; expected = 3 }
 
 
 .py output:
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
-__assert_eq / actual: 3 / expected: 3
+{ name = __assert_eq; actual = 3; expected = 3 }
 
 
 </pre>
@@ -8161,14 +8214,14 @@ __assert_eq / actual: 3 / expected: 3
 <pre>.fsx output:
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
-__assert_eq / actual: 3L / expected: 3L
+{ name = __assert_eq; actual = 3; expected = 3 }
 </pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=24">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=25">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8178,7 +8231,7 @@ __assert_eq / actual: 3L / expected: 3L
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=25">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

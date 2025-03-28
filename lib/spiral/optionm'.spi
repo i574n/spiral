@@ -37,7 +37,7 @@ inl flatten x =
 /// ## fsharp
 
 /// ### option'
-inl option'_types () =
+inl option'_types () : () =
     backend_switch {
         Gleam = fun () => global "import gleam/option"
     }
@@ -83,7 +83,7 @@ inl get' forall t. (x : option' t) : t =
     backend_switch {
         Gleam = fun () =>
             option'_types ()
-            $'!x |> option.unwrap' : t
+            $'!x |> option.unwrap (Nil)' : t
         Fsharp = fun () => $'!x |> Option.get' : t
         Python = fun () => $'!x ' : t
     }

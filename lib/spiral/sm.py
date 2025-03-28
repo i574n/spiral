@@ -466,11 +466,11 @@ def pad_left(x: int) -> Callable[[str, str], str]:
     return v2(x)
 
 
-def _arrow49(v: int) -> Callable[[str, str], str]:
+def _arrow50(v: int) -> Callable[[str, str], str]:
     return closure8(None, v)
 
 
-v3: Callable[[int, str, str], str] = _arrow49
+v3: Callable[[int, str, str], str] = _arrow50
 
 def pad_right(x: int) -> Callable[[str, str], str]:
     return v3(x)
@@ -636,11 +636,11 @@ def concat_array(x: str) -> Callable[[Array[str]], str]:
     return v19(x)
 
 
-def _arrow69(v: str) -> Callable[[IEnumerable_1[str]], str]:
+def _arrow70(v: str) -> Callable[[IEnumerable_1[str]], str]:
     return closure45(None, v)
 
 
-v20: Callable[[str, IEnumerable_1[str]], str] = _arrow69
+v20: Callable[[str, IEnumerable_1[str]], str] = _arrow70
 
 def concat(x: str) -> Callable[[IEnumerable_1[str]], str]:
     return v20(x)

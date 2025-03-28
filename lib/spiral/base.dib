@@ -237,6 +237,9 @@ inl do (body : () -> ()) : () =
 
 inl indent (body : () -> ()) : () =
     backend_switch {
+        Gleam = fun () =>
+            !!!!Indent (body())
+            ()
         Fsharp = fun () =>
             inl body () =
                 body ()
@@ -257,12 +260,15 @@ inl indent (body : () -> ()) : () =
 inl let' fn =
     inl result : unit =
         backend_switch {
-            Fsharp = fun () =>
-                $'()' : unit
-            Python = fun () =>
-                $'None' : unit
+            Gleam = fun () => $'Nil' : unit
+            Fsharp = fun () => $'()' : unit
+            Python = fun () => $'None' : unit
         }
     backend_switch {
+        Gleam = fun () =>
+            $'let _let\'_!result = {' : ()
+            fn |> indent
+            $'}' : ()
         Fsharp = fun () =>
             $'let _let\'_!result =' : ()
             fn |> indent
@@ -280,6 +286,7 @@ inl let' fn =
 
 inl exec_unit (fn : () -> ()) : () =
     backend_switch {
+        Gleam = fun () => fn ()
         Fsharp = fun () =>
             inl unit = $'()' : $'unit'
             ($'(fun () -> !fn (); !unit) ()' : $'unit') |> ignore

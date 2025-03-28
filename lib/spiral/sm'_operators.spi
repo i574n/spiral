@@ -7,8 +7,11 @@ inl (~#) s =
 inl (~##) s =
     s |> sm'.(~##)
 
-inl (+\#.) a b =
-    a +. "\\n" +. b
+inl (++#) a b =
+    sm'.(++#) a b
 
-inl (+#.) a b =
-    a +. "\n" +. b
+inl (++\\#) a b =
+    sm'.(++\\#) a b
+
+inl (++\#) a b =
+    sm'.(++\#) a b

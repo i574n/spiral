@@ -8036,20 +8036,20 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output:
-__assert_eq' / actual: (US0_0(3), US0_1("error1")) / expected: (US0_0(3), US0_1("error1"))
+{ name = __assert_eq'; actual = US0_0(3), US0_1("error1"); expected = US0_0(3), US0_1("error1") }
 
 .ts output:
-__assert_eq' / actual: US0_0 3,US0_1 error1 / expected: US0_0 3,US0_1 error1
+{ name = __assert_eq'; actual = US0_0 3, US0_1 error1; expected = US0_0 3, US0_1 error1 }
 
 .py output:
-__assert_eq' / actual: (US0_0 3, US0_1 "error1") / expected: (US0_0 3, US0_1 "error1")
+{ name = __assert_eq'; actual = US0_0 3, US0_1 "error1"; expected = US0_0 3, US0_1 "error1" }
 
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable case clause</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/src/main.gleam:33:39</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/src/main.gleam:38:39</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">33 │     let v6 = case v0 { Ok(x) -&gt; v4(x) Error(x) -&gt; v5(x) }</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">38 │     let v6 = case v0 { Ok(x) -&gt; v4(x) Error(x) -&gt; v5(x) }</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                       ^^^^^^^^^^^^^^^^^</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This case clause cannot be reached as it matches on a variant of a type</span>
@@ -8063,7 +8063,7 @@ __assert_eq' / actual: (US0_0 3, US0_1 "error1") / expected: (US0_0 3, US0_1 "er
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/build/dev/erlang/main/ebin/main@@main.beam"}
-__assert_eq' / actual: #(Us0i0(3), Us0i1("error1")) / expected: #(Us0i0(3), Us0i1("error1"))
+{ name = __assert_eq'; actual = Us0i0(3), Us0i1("error1"); expected = Us0i0(3), Us0i1("error1") }
 
 
 </pre>
@@ -8073,7 +8073,7 @@ __assert_eq' / actual: #(Us0i0(3), Us0i1("error1")) / expected: #(Us0i0(3), Us0i
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: struct (US0_0 3, US0_1 "error1") / expected: struct (US0_0 3, US0_1 "error1")
+{ name = __assert_eq'; actual = US0_0 3, US0_1 "error1"; expected = US0_0 3, US0_1 "error1" }
 </pre>
 </div>
 </div>
@@ -8798,7 +8798,7 @@ __assert_eq' / actual: struct (US0_0 3, US0_1 "error1") / expected: struct (US0_
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US0_0(true) / expected: US0_0(true)
+<pre>{ name = __assert_eq; actual = US0_0(true); expected = US0_0(true) }
 </pre>
 </div>
 </div>

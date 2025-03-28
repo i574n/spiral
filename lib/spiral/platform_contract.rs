@@ -1,8 +1,8 @@
 pub mod Platform {
     use super::*;
-    use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::Func0;
     use fable_library_rust::Native_::OnceInit;
+    use fable_library_rust::Native_::on_startup;
     use fable_library_rust::String_::string;
     #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
     pub enum US0 {

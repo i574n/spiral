@@ -97,6 +97,11 @@ inl is_windows () : bool =
             !\($'"cfg\!(windows)"')
         | Fsharp _ => fun () =>
             Windows |> os_platform |> is_os_platform
+        | Gleam _ => fun () =>
+            backend_switch {
+                Gleam = fun () => global "import gleam/erlang/os"
+            }
+            $'os.family() == os.WindowsNt'
         | target => fun () => failwith $'$"platform.is_windows / target: {!target}"'
 
 #!markdown

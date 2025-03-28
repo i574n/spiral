@@ -1,21 +1,21 @@
 pub mod Sm {
     use super::*;
+    use fable_library_rust::List_::List;
     use fable_library_rust::List_::cons;
     use fable_library_rust::List_::empty;
     use fable_library_rust::List_::foldBack;
     use fable_library_rust::List_::ofArray as ofArray_1;
     use fable_library_rust::List_::toArray as toArray_1;
-    use fable_library_rust::List_::List;
-    use fable_library_rust::NativeArray_::get_Count;
-    use fable_library_rust::NativeArray_::new_array;
-    use fable_library_rust::NativeArray_::new_init;
-    use fable_library_rust::NativeArray_::Array;
-    use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::Func1;
     use fable_library_rust::Native_::Func2;
     use fable_library_rust::Native_::LrcPtr;
     use fable_library_rust::Native_::MutCell;
     use fable_library_rust::Native_::OnceInit;
+    use fable_library_rust::Native_::on_startup;
+    use fable_library_rust::NativeArray_::Array;
+    use fable_library_rust::NativeArray_::get_Count;
+    use fable_library_rust::NativeArray_::new_array;
+    use fable_library_rust::NativeArray_::new_init;
     use fable_library_rust::Seq_::ofArray;
     use fable_library_rust::Seq_::toArray;
     use fable_library_rust::String_::append;
@@ -406,13 +406,11 @@ pub mod Sm {
             let v9_1: i32 = ((v6_1.wrapping_neg()) + (v2_1)) - 1_i32;
             let matchValue: string = v4_1.l1.get().clone();
             let matchValue_1: string = v4_1.l2.get().clone();
-            let v13_1: string = append(
-                (append((append((v1_1[v9_1].clone()), (matchValue_1))), (matchValue))),
-                string(""),
-            );
-            let v14_1: i32 = (v6_1) + 1_i32;
-            v4_1.l0.set(v14_1);
-            v4_1.l1.set(v13_1);
+            let v18_1: string =
+                append((append((v1_1[v9_1].clone()), (matchValue_1))), (matchValue));
+            let v21_1: i32 = (v6_1) + 1_i32;
+            v4_1.l0.set(v21_1);
+            v4_1.l1.set(v18_1);
             v4_1.l2.set(v0_1.clone());
             ()
         }

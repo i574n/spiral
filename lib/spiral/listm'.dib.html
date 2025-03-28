@@ -7621,26 +7621,26 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0())))) / expected: UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0()))))
+{ name = __assert_eq; actual = UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0())))); expected = UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0())))) }
 
 .rs output:
-__assert_eq / actual: UH0_1("a", UH0_1("b", UH0_1("c", UH0_1("d", UH0_0)))) / expected: UH0_1("a", UH0_1("b", UH0_1("c", UH0_1("d", UH0_0))))
+{ name = __assert_eq; actual = UH0_1("a", UH0_1("b", UH0_1("c", UH0_1("d", UH0_0)))); expected = UH0_1("a", UH0_1("b", UH0_1("c", UH0_1("d", UH0_0)))) }
 
 .ts output:
-__assert_eq / actual: UH0_1 (a, UH0_1 (b, UH0_1 (c, UH0_1 (d, UH0_0)))) / expected: UH0_1 (a, UH0_1 (b, UH0_1 (c, UH0_1 (d, UH0_0))))
+{ name = __assert_eq; actual = UH0_1 (a, UH0_1 (b, UH0_1 (c, UH0_1 (d, UH0_0)))); expected = UH0_1 (a, UH0_1 (b, UH0_1 (c, UH0_1 (d, UH0_0)))) }
 
 .py output:
-__assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) / expected: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0))))
+{ name = __assert_eq; actual = UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))); expected = UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) }
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4701eef71d223e7baee6a79a72a7835c63064a602483bc473e55b047b1a6c3fa/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4701eef71d223e7baee6a79a72a7835c63064a602483bc473e55b047b1a6c3fa/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4701eef71d223e7baee6a79a72a7835c63064a602483bc473e55b047b1a6c3fa/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4701eef71d223e7baee6a79a72a7835c63064a602483bc473e55b047b1a6c3fa/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4701eef71d223e7baee6a79a72a7835c63064a602483bc473e55b047b1a6c3fa/build/dev/erlang/main/ebin/main@@main.beam"}
-__assert_eq / actual: Uh0i1("a", Uh0i1("b", Uh0i1("c", Uh0i1("d", Uh0i0)))) / expected: Uh0i1("a", Uh0i1("b", Uh0i1("c", Uh0i1("d", Uh0i0))))
+{ name = __assert_eq; actual = Uh0i1("a", Uh0i1("b", Uh0i1("c", Uh0i1("d", Uh0i0)))); expected = Uh0i1("a", Uh0i1("b", Uh0i1("c", Uh0i1("d", Uh0i0)))) }
 
 
 
@@ -7654,61 +7654,199 @@ __assert_eq / actual: Uh0i1("a", Uh0i1("b", Uh0i1("c", Uh0i1("d", Uh0i0)))) / ex
 <pre>.gleam (Gleam):
 import gleam/string
 import gleam/io
+pub type Mut0 { Mut0(l0 : String) }
 pub type Uh0 {
     Uh0i0
     Uh0i1(String, Uh0)
 }
+pub fn method1 () -&gt; String {
+    let v0 = ""
+    v0
+}
 pub fn method0 () -&gt; Nil   {
-    let v0 = "__assert_eq"
-    let v1 = "a"
-    let v2 = "b"
-    let v3 = "c"
-    let v4 = "d"
-    let v5 = Uh0i0
-    let v6 = Uh0i1(v4, v5)
-    let v7 = Uh0i1(v3, v6)
-    let v8 = Uh0i1(v2, v7)
-    let v9 = Uh0i1(v1, v8)
-    let v10 = string.inspect(v9)
-    let v11 = Uh0i0
-    let v12 = Uh0i1(v4, v11)
-    let v13 = Uh0i1(v3, v12)
-    let v14 = Uh0i1(v2, v13)
-    let v15 = Uh0i1(v1, v14)
-    let v16 = string.inspect(v15)
-    let v17 = v0 &lt;&gt; " / actual: " &lt;&gt; v10 &lt;&gt; " / expected: " &lt;&gt; v16
-    io.println(v17)
+    let v0 = method1()
+    let v1 = Mut0(l0 :  v0)
+    let v2 = "{ "
+    let v3 = v2 
+    let v7 = v1.l0 
+    let v8 = v7 &lt;&gt; v3 
+    let v1 = Mut0(l0: v8)
+    let v20 = "name"
+    let v21 = v20 
+    let v25 = v1.l0 
+    let v26 = v25 &lt;&gt; v21 
+    let v1 = Mut0(l0: v26)
+    let v38 = " = "
+    let v39 = v38 
+    let v43 = v1.l0 
+    let v44 = v43 &lt;&gt; v39 
+    let v1 = Mut0(l0: v44)
+    let v56 = "__assert_eq"
+    let v57 = v56 
+    let v61 = v1.l0 
+    let v62 = v61 &lt;&gt; v57 
+    let v1 = Mut0(l0: v62)
+    let v74 = "; "
+    let v75 = v74 
+    let v79 = v1.l0 
+    let v80 = v79 &lt;&gt; v75 
+    let v1 = Mut0(l0: v80)
+    let v92 = "actual"
+    let v93 = v92 
+    let v97 = v1.l0 
+    let v98 = v97 &lt;&gt; v93 
+    let v1 = Mut0(l0: v98)
+    let v110 = v38 
+    let v114 = v1.l0 
+    let v115 = v114 &lt;&gt; v110 
+    let v1 = Mut0(l0: v115)
+    let v127 = "a"
+    let v128 = "b"
+    let v129 = "c"
+    let v130 = "d"
+    let v131 = Uh0i0
+    let v132 = Uh0i1(v130, v131)
+    let v133 = Uh0i1(v129, v132)
+    let v134 = Uh0i1(v128, v133)
+    let v135 = Uh0i1(v127, v134)
+    let v136 = string.inspect(v135)
+    let v150 = v136 
+    let v154 = v1.l0 
+    let v155 = v154 &lt;&gt; v150 
+    let v1 = Mut0(l0: v155)
+    let v167 = v74 
+    let v171 = v1.l0 
+    let v172 = v171 &lt;&gt; v167 
+    let v1 = Mut0(l0: v172)
+    let v184 = "expected"
+    let v185 = v184 
+    let v189 = v1.l0 
+    let v190 = v189 &lt;&gt; v185 
+    let v1 = Mut0(l0: v190)
+    let v202 = v38 
+    let v206 = v1.l0 
+    let v207 = v206 &lt;&gt; v202 
+    let v1 = Mut0(l0: v207)
+    let v219 = Uh0i0
+    let v220 = Uh0i1(v130, v219)
+    let v221 = Uh0i1(v129, v220)
+    let v222 = Uh0i1(v128, v221)
+    let v223 = Uh0i1(v127, v222)
+    let v224 = string.inspect(v223)
+    let v238 = v224 
+    let v242 = v1.l0 
+    let v243 = v242 &lt;&gt; v238 
+    let v1 = Mut0(l0: v243)
+    let v255 = " }"
+    let v256 = v255 
+    let v260 = v1.l0 
+    let v261 = v260 &lt;&gt; v256 
+    let v1 = Mut0(l0: v261)
+    let v273 = v1.l0 
+    io.println(v273)
     Nil 
 }
 pub fn main () { method0()
  }
 .fsx:
-type UH0 =
+type Mut0 = {mutable l0 : string}
+and UH0 =
     | UH0_0
     | UH0_1 of string * UH0
-let rec closure0 (v0 : string) () : unit =
+let rec method1 () : string =
+    let v0 : string = ""
+    v0
+and closure0 (v0 : Mut0, v1 : string) () : unit =
+    let v2 : string = v0.l0
+    let v4 : string = v2 + v1 
+    v0.l0 &lt;- v4
+    ()
+and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
 and method0 () : unit =
-    let v18 : string = "__assert_eq"
-    let v19 : string = "a"
-    let v20 : string = "b"
-    let v21 : string = "c"
-    let v22 : string = "d"
-    let v23 : UH0 = UH0_0
-    let v24 : UH0 = UH0_1(v22, v23)
-    let v25 : UH0 = UH0_1(v21, v24)
-    let v26 : UH0 = UH0_1(v20, v25)
-    let v27 : UH0 = UH0_1(v19, v26)
-    let v28 : UH0 = UH0_0
-    let v29 : UH0 = UH0_1(v22, v28)
-    let v30 : UH0 = UH0_1(v21, v29)
-    let v31 : UH0 = UH0_1(v20, v30)
-    let v32 : UH0 = UH0_1(v19, v31)
-    let v33 : string = $"{v18} / actual: %A{v27} / expected: %A{v32}"
-    let v46 : unit = ()
-    let v47 : (unit -&gt; unit) = closure0(v33)
-    let v48 : unit = (fun () -&gt; v47 (); v46) ()
+    let v0 : string = method1()
+    let v1 : Mut0 = {l0 = v0} : Mut0
+    let v4 : string = "{ "
+    let v5 : string = $"{v4}"
+    let v13 : unit = ()
+    let v14 : (unit -&gt; unit) = closure0(v1, v5)
+    let v15 : unit = (fun () -&gt; v14 (); v13) ()
+    let v23 : string = "name"
+    let v24 : string = $"{v23}"
+    let v32 : unit = ()
+    let v33 : (unit -&gt; unit) = closure0(v1, v24)
+    let v34 : unit = (fun () -&gt; v33 (); v32) ()
+    let v42 : string = " = "
+    let v43 : string = $"{v42}"
+    let v51 : unit = ()
+    let v52 : (unit -&gt; unit) = closure0(v1, v43)
+    let v53 : unit = (fun () -&gt; v52 (); v51) ()
+    let v61 : string = "__assert_eq"
+    let v62 : string = $"{v61}"
+    let v70 : unit = ()
+    let v71 : (unit -&gt; unit) = closure0(v1, v62)
+    let v72 : unit = (fun () -&gt; v71 (); v70) ()
+    let v80 : string = "; "
+    let v81 : string = $"{v80}"
+    let v89 : unit = ()
+    let v90 : (unit -&gt; unit) = closure0(v1, v81)
+    let v91 : unit = (fun () -&gt; v90 (); v89) ()
+    let v99 : string = "actual"
+    let v100 : string = $"{v99}"
+    let v108 : unit = ()
+    let v109 : (unit -&gt; unit) = closure0(v1, v100)
+    let v110 : unit = (fun () -&gt; v109 (); v108) ()
+    let v117 : string = $"{v42}"
+    let v125 : unit = ()
+    let v126 : (unit -&gt; unit) = closure0(v1, v117)
+    let v127 : unit = (fun () -&gt; v126 (); v125) ()
+    let v143 : string = "a"
+    let v144 : string = "b"
+    let v145 : string = "c"
+    let v146 : string = "d"
+    let v147 : UH0 = UH0_0
+    let v148 : UH0 = UH0_1(v146, v147)
+    let v149 : UH0 = UH0_1(v145, v148)
+    let v150 : UH0 = UH0_1(v144, v149)
+    let v151 : UH0 = UH0_1(v143, v150)
+    let v152 : string = $"%A{v151}"
+    let v161 : string = $"{v152}"
+    let v169 : unit = ()
+    let v170 : (unit -&gt; unit) = closure0(v1, v161)
+    let v171 : unit = (fun () -&gt; v170 (); v169) ()
+    let v178 : string = $"{v80}"
+    let v186 : unit = ()
+    let v187 : (unit -&gt; unit) = closure0(v1, v178)
+    let v188 : unit = (fun () -&gt; v187 (); v186) ()
+    let v196 : string = "expected"
+    let v197 : string = $"{v196}"
+    let v205 : unit = ()
+    let v206 : (unit -&gt; unit) = closure0(v1, v197)
+    let v207 : unit = (fun () -&gt; v206 (); v205) ()
+    let v214 : string = $"{v42}"
+    let v222 : unit = ()
+    let v223 : (unit -&gt; unit) = closure0(v1, v214)
+    let v224 : unit = (fun () -&gt; v223 (); v222) ()
+    let v236 : UH0 = UH0_0
+    let v237 : UH0 = UH0_1(v146, v236)
+    let v238 : UH0 = UH0_1(v145, v237)
+    let v239 : UH0 = UH0_1(v144, v238)
+    let v240 : UH0 = UH0_1(v143, v239)
+    let v241 : string = $"%A{v240}"
+    let v250 : string = $"{v241}"
+    let v258 : unit = ()
+    let v259 : (unit -&gt; unit) = closure0(v1, v250)
+    let v260 : unit = (fun () -&gt; v259 (); v258) ()
+    let v268 : string = " }"
+    let v269 : string = $"{v268}"
+    let v277 : unit = ()
+    let v278 : (unit -&gt; unit) = closure0(v1, v269)
+    let v279 : unit = (fun () -&gt; v278 (); v277) ()
+    let v285 : string = v1.l0
+    let v287 : unit = ()
+    let v288 : (unit -&gt; unit) = closure1(v285)
+    let v289 : unit = (fun () -&gt; v288 (); v287) ()
     ()
 method0()
 
@@ -7728,11 +7866,22 @@ method0()
 mod module_6ff740fe {
     pub mod Spiral {
         use super::*;
-        use fable_library_rust::Native_::on_startup;
         use fable_library_rust::Native_::LrcPtr;
+        use fable_library_rust::Native_::MutCell;
+        use fable_library_rust::Native_::on_startup;
+        use fable_library_rust::String_::append;
         use fable_library_rust::String_::printfn;
         use fable_library_rust::String_::sprintf;
         use fable_library_rust::String_::string;
+        #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
+        pub struct Mut0 {
+            pub l0: MutCell&lt;string&gt;,
+        }
+        impl core::fmt::Display for Mut0 {
+            fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+                write!(f, "{}", core::any::type_name::&lt;Self&gt;())
+            }
+        }
         #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
         pub enum UH0 {
             UH0_0,
@@ -7743,28 +7892,54 @@ mod module_6ff740fe {
                 write!(f, "{}", core::any::type_name::&lt;Self&gt;())
             }
         }
-        pub fn closure0(v0: string, unitVar: ()) {
+        pub fn method1() -&gt; string {
+            string("")
+        }
+        pub fn closure0(v0: LrcPtr&lt;Spiral::Mut0&gt;, v1: string, unitVar: ()) {
+            let v4: string = append((v0.l0.get().clone()), (v1));
+            v0.l0.set(v4);
+            ()
+        }
+        pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
         }
         pub fn method0() {
-            let v48: () = {
+            let v1: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+                l0: MutCell::new(Spiral::method1()),
+            });
+            let v15: () = {
+                Spiral::closure0(v1.clone(), string("{ "), ());
+                ()
+            };
+            let v34: () = {
+                Spiral::closure0(v1.clone(), string("name"), ());
+                ()
+            };
+            let v53: () = {
+                Spiral::closure0(v1.clone(), string(" = "), ());
+                ()
+            };
+            let v72: () = {
+                Spiral::closure0(v1.clone(), string("__assert_eq"), ());
+                ()
+            };
+            let v91: () = {
+                Spiral::closure0(v1.clone(), string("; "), ());
+                ()
+            };
+            let v110: () = {
+                Spiral::closure0(v1.clone(), string("actual"), ());
+                ()
+            };
+            let v127: () = {
+                Spiral::closure0(v1.clone(), string(" = "), ());
+                ()
+            };
+            let v171: () = {
                 Spiral::closure0(
+                    v1.clone(),
                     sprintf!(
-                        "{} / actual: {:?} / expected: {:?}",
-                        string("__assert_eq"),
-                        LrcPtr::new(Spiral::UH0::UH0_1(
-                            string("a"),
-                            LrcPtr::new(Spiral::UH0::UH0_1(
-                                string("b"),
-                                LrcPtr::new(Spiral::UH0::UH0_1(
-                                    string("c"),
-                                    LrcPtr::new(Spiral::UH0::UH0_1(
-                                        string("d"),
-                                        LrcPtr::new(Spiral::UH0::UH0_0)
-                                    ))
-                                ))
-                            ))
-                        )),
+                        "{:?}",
                         LrcPtr::new(Spiral::UH0::UH0_1(
                             string("a"),
                             LrcPtr::new(Spiral::UH0::UH0_1(
@@ -7783,6 +7958,49 @@ mod module_6ff740fe {
                 );
                 ()
             };
+            let v188: () = {
+                Spiral::closure0(v1.clone(), string("; "), ());
+                ()
+            };
+            let v207: () = {
+                Spiral::closure0(v1.clone(), string("expected"), ());
+                ()
+            };
+            let v224: () = {
+                Spiral::closure0(v1.clone(), string(" = "), ());
+                ()
+            };
+            let v260: () = {
+                Spiral::closure0(
+                    v1.clone(),
+                    sprintf!(
+                        "{:?}",
+                        LrcPtr::new(Spiral::UH0::UH0_1(
+                            string("a"),
+                            LrcPtr::new(Spiral::UH0::UH0_1(
+                                string("b"),
+                                LrcPtr::new(Spiral::UH0::UH0_1(
+                                    string("c"),
+                                    LrcPtr::new(Spiral::UH0::UH0_1(
+                                        string("d"),
+                                        LrcPtr::new(Spiral::UH0::UH0_0)
+                                    ))
+                                ))
+                            ))
+                        ))
+                    ),
+                    (),
+                );
+                ()
+            };
+            let v279: () = {
+                Spiral::closure0(v1.clone(), string(" }"), ());
+                ()
+            };
+            let v289: () = {
+                Spiral::closure1(v1.l0.get().clone(), ());
+                ()
+            };
             ()
         }
         // on_startup!(Spiral::method0());
@@ -7795,9 +8013,22 @@ pub use module_6ff740fe::*;
 pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
-import { Union } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
-import { union_type, string_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
+import { Union, Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
+import { IComparable, IEquatable } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Util.js";
+import { union_type, record_type, string_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
 import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
+
+export class Mut0 extends Record implements IEquatable&lt;Mut0&gt;, IComparable&lt;Mut0&gt; {
+    l0: string;
+    constructor(l0: string) {
+        super();
+        this.l0 = l0;
+    }
+}
+
+export function Mut0_$reflection(): TypeInfo {
+    return record_type("Spiral.Mut0", [], Mut0, () =&gt; [["l0", string_type]]);
+}
 
 export type UH0_$union = 
     | UH0&lt;0&gt;
@@ -7829,26 +8060,87 @@ export function UH0_$reflection(): TypeInfo {
     return union_type("Spiral.UH0", [], UH0, () =&gt; [[], [["Item1", string_type], ["Item2", UH0_$reflection()]]]);
 }
 
-export function closure0(v0: string, unitVar: void): void {
+export function method1(): string {
+    return "";
+}
+
+export function closure0(v0: Mut0, v1: string, unitVar: void): void {
+    const v4: string = v0.l0 + v1;
+    v0.l0 = v4;
+}
+
+export function closure1(v0: string, unitVar: void): void {
     console.log(v0);
 }
 
 export function method0(): void {
-    let v48: any;
-    closure0(toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", UH0_UH0_1("a", UH0_UH0_1("b", UH0_UH0_1("c", UH0_UH0_1("d", UH0_UH0_0())))), UH0_UH0_1("a", UH0_UH0_1("b", UH0_UH0_1("c", UH0_UH0_1("d", UH0_UH0_0()))))])), undefined);
-    v48 = undefined;
+    const v1: Mut0 = new Mut0(method1());
+    let v15: any;
+    closure0(v1, "{ ", undefined);
+    v15 = undefined;
+    let v34: any;
+    closure0(v1, "name", undefined);
+    v34 = undefined;
+    let v53: any;
+    closure0(v1, " = ", undefined);
+    v53 = undefined;
+    let v72: any;
+    closure0(v1, "__assert_eq", undefined);
+    v72 = undefined;
+    let v91: any;
+    closure0(v1, "; ", undefined);
+    v91 = undefined;
+    let v110: any;
+    closure0(v1, "actual", undefined);
+    v110 = undefined;
+    let v127: any;
+    closure0(v1, " = ", undefined);
+    v127 = undefined;
+    let v171: any;
+    closure0(v1, toText(interpolate("%A%P()", [UH0_UH0_1("a", UH0_UH0_1("b", UH0_UH0_1("c", UH0_UH0_1("d", UH0_UH0_0()))))])), undefined);
+    v171 = undefined;
+    let v188: any;
+    closure0(v1, "; ", undefined);
+    v188 = undefined;
+    let v207: any;
+    closure0(v1, "expected", undefined);
+    v207 = undefined;
+    let v224: any;
+    closure0(v1, " = ", undefined);
+    v224 = undefined;
+    let v260: any;
+    closure0(v1, toText(interpolate("%A%P()", [UH0_UH0_1("a", UH0_UH0_1("b", UH0_UH0_1("c", UH0_UH0_1("d", UH0_UH0_0()))))])), undefined);
+    v260 = undefined;
+    let v279: any;
+    closure0(v1, " }", undefined);
+    v279 = undefined;
+    let v289: any;
+    closure1(v1.l0, undefined);
+    v289 = undefined;
 }
 
 method0();
 
 
 .py:
+from __future__ import annotations
+from dataclasses import dataclass
 from typing import Any
-from fable_modules.fable_library.reflection import (TypeInfo, string_type, union_type)
+from fable_modules.fable_library.reflection import (TypeInfo, string_type, record_type, union_type)
 from fable_modules.fable_library.string_ import (to_text, interpolate)
-from fable_modules.fable_library.types import (Array, Union)
+from fable_modules.fable_library.types import (Record, Array, Union)
 
 def _expr0() -&gt; TypeInfo:
+    return record_type("Spiral.Mut0", [], Mut0, lambda: [("l0", string_type)])
+
+
+@dataclass(eq = False, repr = False, slots = True)
+class Mut0(Record):
+    l0: str
+
+Mut0_reflection = _expr0
+
+def _expr1() -&gt; TypeInfo:
     return union_type("Spiral.UH0", [], UH0, lambda: [[], [("Item1", string_type), ("Item2", UH0_reflection())]])
 
 
@@ -7863,16 +8155,65 @@ class UH0(Union):
         return ["UH0_0", "UH0_1"]
 
 
-UH0_reflection = _expr0
+UH0_reflection = _expr1
 
-def closure0(v0: str, unit_var: None) -&gt; None:
+def method1(__unit: None=None) -&gt; str:
+    return ""
+
+
+def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
+    v4: str = v0.l0 + v1
+    v0.l0 = v4
+
+
+def closure1(v0: str, unit_var: None) -&gt; None:
     print(v0)
 
 
 def method0(__unit: None=None) -&gt; None:
-    v48: None
-    closure0(to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", UH0(1, "a", UH0(1, "b", UH0(1, "c", UH0(1, "d", UH0(0))))), UH0(1, "a", UH0(1, "b", UH0(1, "c", UH0(1, "d", UH0(0)))))])), None)
-    v48 = None
+    v1: Mut0 = Mut0(method1())
+    v15: None
+    closure0(v1, "{ ", None)
+    v15 = None
+    v34: None
+    closure0(v1, "name", None)
+    v34 = None
+    v53: None
+    closure0(v1, " = ", None)
+    v53 = None
+    v72: None
+    closure0(v1, "__assert_eq", None)
+    v72 = None
+    v91: None
+    closure0(v1, "; ", None)
+    v91 = None
+    v110: None
+    closure0(v1, "actual", None)
+    v110 = None
+    v127: None
+    closure0(v1, " = ", None)
+    v127 = None
+    v171: None
+    closure0(v1, to_text(interpolate("%A%P()", [UH0(1, "a", UH0(1, "b", UH0(1, "c", UH0(1, "d", UH0(0)))))])), None)
+    v171 = None
+    v188: None
+    closure0(v1, "; ", None)
+    v188 = None
+    v207: None
+    closure0(v1, "expected", None)
+    v207 = None
+    v224: None
+    closure0(v1, " = ", None)
+    v224 = None
+    v260: None
+    closure0(v1, to_text(interpolate("%A%P()", [UH0(1, "a", UH0(1, "b", UH0(1, "c", UH0(1, "d", UH0(0)))))])), None)
+    v260 = None
+    v279: None
+    closure0(v1, " }", None)
+    v279 = None
+    v289: None
+    closure1(v1.l0, None)
+    v289 = None
 
 
 method0()
@@ -7936,40 +8277,148 @@ i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 =
 cuda = False
 
 UH0 = Union["UH0_0", "UH0_1"]
+@dataclass
+class Mut0:
+    v0 : string
 class UH0_0(NamedTuple): # (0, Nil)
     tag = 0
 class UH0_1(NamedTuple): # (1, Cons)
     v0 : string
     v1 : UH0
     tag = 1
+def method1() -&gt; string:
+    v0 = ""
+    return v0
 def method0() -&gt; None:
-    v34 = "__assert_eq"
-    v35 = "a"
-    v36 = "b"
-    v37 = "c"
-    v38 = "d"
-    v39 = UH0_0()
-    v40 = UH0_1(v38, v39)
-    del v39
-    v41 = UH0_1(v37, v40)
+    v0 = method1()
+    v1 = Mut0(v0)
+    del v0
+    v6 = "{ "
+    v7 = f"{v6}"
+    del v6
+    v17 = v1.v0
+    v20 = v17 + v7 
+    del v7, v17
+    v1.v0 = v20
+    del v20
+    v26 = "name"
+    v27 = f"{v26}"
+    del v26
+    v37 = v1.v0
+    v40 = v37 + v27 
+    del v27, v37
+    v1.v0 = v40
     del v40
-    v42 = UH0_1(v36, v41)
-    del v41
-    v43 = UH0_1(v35, v42)
-    del v42
-    v44 = UH0_0()
-    v45 = UH0_1(v38, v44)
-    del v38, v44
-    v46 = UH0_1(v37, v45)
-    del v37, v45
-    v47 = UH0_1(v36, v46)
-    del v36, v46
-    v48 = UH0_1(v35, v47)
-    del v35, v47
-    v49 = f"{v34} / actual: {v43} / expected: {v48}"
-    del v34, v43, v48
-    print(v49)
-    del v49
+    v46 = " = "
+    v47 = f"{v46}"
+    v57 = v1.v0
+    v60 = v57 + v47 
+    del v47, v57
+    v1.v0 = v60
+    del v60
+    v66 = "__assert_eq"
+    v67 = f"{v66}"
+    del v66
+    v77 = v1.v0
+    v80 = v77 + v67 
+    del v67, v77
+    v1.v0 = v80
+    del v80
+    v86 = "; "
+    v87 = f"{v86}"
+    v97 = v1.v0
+    v100 = v97 + v87 
+    del v87, v97
+    v1.v0 = v100
+    del v100
+    v106 = "actual"
+    v107 = f"{v106}"
+    del v106
+    v117 = v1.v0
+    v120 = v117 + v107 
+    del v107, v117
+    v1.v0 = v120
+    del v120
+    v124 = f"{v46}"
+    v134 = v1.v0
+    v137 = v134 + v124 
+    del v124, v134
+    v1.v0 = v137
+    del v137
+    v159 = "a"
+    v160 = "b"
+    v161 = "c"
+    v162 = "d"
+    v163 = UH0_0()
+    v164 = UH0_1(v162, v163)
+    del v163
+    v165 = UH0_1(v161, v164)
+    del v164
+    v166 = UH0_1(v160, v165)
+    del v165
+    v167 = UH0_1(v159, v166)
+    del v166
+    v168 = f"{v167}"
+    del v167
+    v172 = f"{v168}"
+    del v168
+    v182 = v1.v0
+    v185 = v182 + v172 
+    del v172, v182
+    v1.v0 = v185
+    del v185
+    v189 = f"{v86}"
+    del v86
+    v199 = v1.v0
+    v202 = v199 + v189 
+    del v189, v199
+    v1.v0 = v202
+    del v202
+    v208 = "expected"
+    v209 = f"{v208}"
+    del v208
+    v219 = v1.v0
+    v222 = v219 + v209 
+    del v209, v219
+    v1.v0 = v222
+    del v222
+    v226 = f"{v46}"
+    del v46
+    v236 = v1.v0
+    v239 = v236 + v226 
+    del v226, v236
+    v1.v0 = v239
+    del v239
+    v253 = UH0_0()
+    v254 = UH0_1(v162, v253)
+    del v162, v253
+    v255 = UH0_1(v161, v254)
+    del v161, v254
+    v256 = UH0_1(v160, v255)
+    del v160, v255
+    v257 = UH0_1(v159, v256)
+    del v159, v256
+    v258 = f"{v257}"
+    del v257
+    v262 = f"{v258}"
+    del v258
+    v272 = v1.v0
+    v275 = v272 + v262 
+    del v262, v272
+    v1.v0 = v275
+    del v275
+    v281 = " }"
+    v282 = f"{v281}"
+    del v281
+    v292 = v1.v0
+    v295 = v292 + v282 
+    del v282, v292
+    v1.v0 = v295
+    del v295
+    v297 = v1.v0
+    del v1
+    print(v297)
+    del v297
     return 
 def main_body():
     return method0()
@@ -7982,7 +8431,7 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-__assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) / expected: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0))))
+{ name = __assert_eq; actual = UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))); expected = UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) }
 </pre>
 </div>
 </div>
@@ -8124,7 +8573,7 @@ __assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: UH0_1 (0.0, UH0_1 (0.5, UH0_1 (1.0, UH0_0))) / expected: UH0_1 (0.0, UH0_1 (0.5, UH0_1 (1.0, UH0_0)))
+<pre>{ name = __assert_eq; actual = UH0_1 (0.0, UH0_1 (0.5, UH0_1 (1.0, UH0_0))); expected = UH0_1 (0.0, UH0_1 (0.5, UH0_1 (1.0, UH0_0))) }
 </pre>
 </div>
 </div>
@@ -8183,7 +8632,7 @@ __assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US0_0 9 / expected: US0_0 9
+<pre>{ name = __assert_eq; actual = US0_0 9; expected = US0_0 9 }
 </pre>
 </div>
 </div>
@@ -8214,7 +8663,7 @@ __assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US0_1 / expected: US0_1
+<pre>{ name = __assert_eq; actual = US0_1; expected = US0_1 }
 </pre>
 </div>
 </div>
@@ -8271,7 +8720,7 @@ __assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 9 / expected: 9
+<pre>{ name = __assert_eq; actual = 9; expected = 9 }
 </pre>
 </div>
 </div>
@@ -8306,7 +8755,7 @@ __assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US1_0 "System.Exception: Option does not have a value." / expected: US1_0 "System.Exception: Option does not have a value."
+<pre>{ name = __assert_eq; actual = US1_0 "System.Exception: Option does not have a value."; expected = US1_0 "System.Exception: Option does not have a value." }
 </pre>
 </div>
 </div>
@@ -8417,7 +8866,7 @@ __assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 45 / expected: 45
+<pre>{ name = __assert_eq; actual = 45; expected = 45 }
 </pre>
 </div>
 </div>
@@ -8484,8 +8933,8 @@ __assert_eq / actual: UH0_1 ("a", UH0_1 ("b", UH0_1 ("c", UH0_1 ("d", UH0_0)))) 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 45 / expected: 45
-__assert_eq / actual: 45 / expected: 45
+<pre>{ name = __assert_eq; actual = 45; expected = 45 }
+{ name = __assert_eq; actual = 45; expected = 45 }
 </pre>
 </div>
 </div>
@@ -8583,7 +9032,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 5 / expected: 5
+<pre>{ name = __assert_eq; actual = 5; expected = 5 }
 </pre>
 </div>
 </div>
@@ -8614,7 +9063,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US0_1 / expected: US0_1
+<pre>{ name = __assert_eq; actual = US0_1; expected = US0_1 }
 </pre>
 </div>
 </div>
@@ -8686,7 +9135,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US0_0 5 / expected: US0_0 5
+<pre>{ name = __assert_eq; actual = US0_0 5; expected = US0_0 5 }
 </pre>
 </div>
 </div>
@@ -8735,7 +9184,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 5 / expected: 5
+<pre>{ name = __assert_eq; actual = 5; expected = 5 }
 </pre>
 </div>
 </div>
@@ -8796,7 +9245,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: UH0_1 (0, UH0_1 (2, UH0_1 (4, UH0_1 (6, UH0_1 (8, UH0_0))))) / expected: UH0_1 (0, UH0_1 (2, UH0_1 (4, UH0_1 (6, UH0_1 (8, UH0_0)))))
+<pre>{ name = __assert_eq; actual = UH0_1 (0, UH0_1 (2, UH0_1 (4, UH0_1 (6, UH0_1 (8, UH0_0))))); expected = UH0_1 (0, UH0_1 (2, UH0_1 (4, UH0_1 (6, UH0_1 (8, UH0_0))))) }
 </pre>
 </div>
 </div>
@@ -8894,7 +9343,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0))) / expected: UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0)))
+<pre>{ name = __assert_eq; actual = UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0))); expected = UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0))) }
 </pre>
 </div>
 </div>
@@ -8954,7 +9403,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: UH0_1 (1, 4, UH0_1 (2, 5, UH0_1 (3, 6, UH0_0))) / expected: UH0_1 (1, 4, UH0_1 (2, 5, UH0_1 (3, 6, UH0_0)))
+<pre>{ name = __assert_eq; actual = UH0_1 (1, 4, UH0_1 (2, 5, UH0_1 (3, 6, UH0_0))); expected = UH0_1 (1, 4, UH0_1 (2, 5, UH0_1 (3, 6, UH0_0))) }
 </pre>
 </div>
 </div>
@@ -9015,7 +9464,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: UH0_1 (0, 0, UH0_1 (1, 2, UH0_1 (2, 4, UH0_1 (3, 6, UH0_1 (4, 8, UH0_0))))) / expected: UH0_1 (0, 0, UH0_1 (1, 2, UH0_1 (2, 4, UH0_1 (3, 6, UH0_1 (4, 8, UH0_0)))))
+<pre>{ name = __assert_eq; actual = UH0_1 (0, 0, UH0_1 (1, 2, UH0_1 (2, 4, UH0_1 (3, 6, UH0_1 (4, 8, UH0_0))))); expected = UH0_1 (0, 0, UH0_1 (1, 2, UH0_1 (2, 4, UH0_1 (3, 6, UH0_1 (4, 8, UH0_0))))) }
 </pre>
 </div>
 </div>
@@ -9083,13 +9532,13 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: UH1_1
+<pre>{ name = __assert_eq; actual = UH1_1
   (true, UH0_1 (0, UH0_1 (2, UH0_1 (4, UH0_1 (6, UH0_1 (8, UH0_0))))),
    UH1_1
-     (false, UH0_1 (1, UH0_1 (3, UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0))))), UH1_0)) / expected: UH1_1
+     (false, UH0_1 (1, UH0_1 (3, UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0))))), UH1_0)); expected = UH1_1
   (true, UH0_1 (0, UH0_1 (2, UH0_1 (4, UH0_1 (6, UH0_1 (8, UH0_0))))),
    UH1_1
-     (false, UH0_1 (1, UH0_1 (3, UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0))))), UH1_0))
+     (false, UH0_1 (1, UH0_1 (3, UH0_1 (5, UH0_1 (7, UH0_1 (9, UH0_0))))), UH1_0)) }
 </pre>
 </div>
 </div>
@@ -9148,7 +9597,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: true / expected: true
+<pre>{ name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
 </div>
@@ -9207,7 +9656,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 9 / expected: 9
+<pre>{ name = __assert_eq; actual = 9; expected = 9 }
 </pre>
 </div>
 </div>
@@ -9277,7 +9726,7 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US0_0 5 / expected: US0_0 5
+<pre>{ name = __assert_eq; actual = US0_0 5; expected = US0_0 5 }
 </pre>
 </div>
 </div>
@@ -9358,21 +9807,21 @@ __assert_eq / actual: 45 / expected: 45
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .py output (Cuda):
-__assert_eq / actual: True / expected: True
-__assert_eq / actual: False / expected: False
-__assert_eq / actual: False / expected: False
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = false; expected = false }
 
 
 .ts output:
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: false / expected: false
-__assert_eq / actual: false / expected: false
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = false; expected = false }
 
 
 .py output:
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: false / expected: false
-__assert_eq / actual: false / expected: false
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = false; expected = false }
 
 
 .gleam output (Gleam):
@@ -9385,38 +9834,38 @@ __assert_eq / actual: false / expected: false
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v10`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/src/main.gleam:89:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/src/main.gleam:93:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">89 │                                 let v7 = v4 - 1</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">93 │                                 let v7 = v4 - 1</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                     ^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v7`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable code</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/src/main.gleam:125:22</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/src/main.gleam:129:22</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">125 │             let v3 = v2 == "a"</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">129 │             let v3 = v2 == "a"</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                      ^^^^^^^^^</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This code is unreachable because it comes after a `panic`.</span>
 
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,main@@main,
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/ebin/main@@main.beam"}
 src/main.gleam:36:46: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
 %   36|                                         Us0i1
 %     |                                              ^
 
-src/main.gleam:90:37: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
-%   90|                                 Us0i1
+src/main.gleam:94:37: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
+%   94|                                 Us0i1
 %     |                                     ^
 
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848/build/dev/erlang/main/ebin/main@@main.beam"}
-__assert_eq / actual: True / expected: True
-__assert_eq / actual: False / expected: False
-__assert_eq / actual: False / expected: False
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = false; expected = false }
 
 
 
@@ -9428,12 +9877,12 @@ __assert_eq / actual: False / expected: False
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (Gleam):
-import gleam/string
 import gleam/io
 pub type Us0 {
     Us0i0(f0i0 : String)
     Us0i1
 }
+pub type Mut0 { Mut0(l0 : String) }
 pub fn method1 (v0 :    Int) -&gt; Bool {
     let v1 = v0 &gt;= 3
     case v1 {
@@ -9495,7 +9944,11 @@ pub fn method1 (v0 :    Int) -&gt; Bool {
 pub fn method2 (v0 :    Bool) -&gt; Bool {
     v0
 }
-pub fn method3 (v0 :    Int) -&gt; Bool {
+pub fn method3 () -&gt; String {
+    let v0 = ""
+    v0
+}
+pub fn method4 (v0 :    Int) -&gt; Bool {
     let v1 = v0 &gt;= 2
     case v1 {
         True -&gt; {
@@ -9538,13 +9991,13 @@ pub fn method3 (v0 :    Int) -&gt; Bool {
                 }
                 False -&gt; {
                     let v16 = v0 + 1
-                    method3(v16)
+                    method4(v16)
                 }
             }
         }
     }
 }
-pub fn method4 (v0 :    Int) -&gt; Bool {
+pub fn method5 (v0 :    Int) -&gt; Bool {
     let v1 = v0 &gt;= 0
     case v1 {
         True -&gt; {
@@ -9559,7 +10012,7 @@ pub fn method4 (v0 :    Int) -&gt; Bool {
                 }
                 False -&gt; {
                     let v4 = v0 + 1
-                    method4(v4)
+                    method5(v4)
                 }
             }
         }
@@ -9577,65 +10030,260 @@ pub fn method0 () -&gt; Nil   {
                 method2(v1)
             }
         }
-    let v4 = "__assert_eq"
-    let v5 = string.inspect(v1)
-    let v6 = string.inspect(True)
-    let v7 = v4 &lt;&gt; " / actual: " &lt;&gt; v5 &lt;&gt; " / expected: " &lt;&gt; v6
-    io.println(v7)
-    let v15 = v3 == False
-    case v15 {
+    let v4 = method3()
+    let v5 = Mut0(l0 :  v4)
+    let v6 = "{ "
+    let v7 = v6 
+    let v11 = v5.l0 
+    let v12 = v11 &lt;&gt; v7 
+    let v5 = Mut0(l0: v12)
+    let v24 = "name"
+    let v25 = v24 
+    let v29 = v5.l0 
+    let v30 = v29 &lt;&gt; v25 
+    let v5 = Mut0(l0: v30)
+    let v42 = " = "
+    let v43 = v42 
+    let v47 = v5.l0 
+    let v48 = v47 &lt;&gt; v43 
+    let v5 = Mut0(l0: v48)
+    let v60 = "__assert_eq"
+    let v61 = v60 
+    let v65 = v5.l0 
+    let v66 = v65 &lt;&gt; v61 
+    let v5 = Mut0(l0: v66)
+    let v78 = "; "
+    let v79 = v78 
+    let v83 = v5.l0 
+    let v84 = v83 &lt;&gt; v79 
+    let v5 = Mut0(l0: v84)
+    let v96 = "actual"
+    let v97 = v96 
+    let v101 = v5.l0 
+    let v102 = v101 &lt;&gt; v97 
+    let v5 = Mut0(l0: v102)
+    let v114 = v42 
+    let v118 = v5.l0 
+    let v119 = v118 &lt;&gt; v114 
+    let v5 = Mut0(l0: v119)
+    let v133 =
+        case v1 {
+            True -&gt; {
+                let v131 = "true"
+                v131
+            }
+            False -&gt; {
+                let v132 = "false"
+                v132
+            }
+        }
+    let v134 = v133 
+    let v138 = v5.l0 
+    let v139 = v138 &lt;&gt; v134 
+    let v5 = Mut0(l0: v139)
+    let v151 = v78 
+    let v155 = v5.l0 
+    let v156 = v155 &lt;&gt; v151 
+    let v5 = Mut0(l0: v156)
+    let v168 = "expected"
+    let v169 = v168 
+    let v173 = v5.l0 
+    let v174 = v173 &lt;&gt; v169 
+    let v5 = Mut0(l0: v174)
+    let v186 = v42 
+    let v190 = v5.l0 
+    let v191 = v190 &lt;&gt; v186 
+    let v5 = Mut0(l0: v191)
+    let v203 = "true"
+    let v204 = v203 
+    let v208 = v5.l0 
+    let v209 = v208 &lt;&gt; v204 
+    let v5 = Mut0(l0: v209)
+    let v221 = " }"
+    let v222 = v221 
+    let v226 = v5.l0 
+    let v227 = v226 &lt;&gt; v222 
+    let v5 = Mut0(l0: v227)
+    let v239 = v5.l0 
+    io.println(v239)
+    let v245 = v3 == False
+    case v245 {
         True -&gt; {
-            panic as v7
+            panic as v239
         }
         False -&gt; {
         Nil
         }
     }
-    let v16 = 0
-    let v17 = method3(v16)
-    let v18 = v17 == False
-    let v20 =
-        case v18 {
+    let v246 = 0
+    let v247 = method4(v246)
+    let v248 = v247 == False
+    let v250 =
+        case v248 {
             True -&gt; {
                 True
             }
             False -&gt; {
-                method2(v18)
+                method2(v248)
             }
         }
-    let v21 = string.inspect(v17)
-    let v22 = string.inspect(False)
-    let v23 = v4 &lt;&gt; " / actual: " &lt;&gt; v21 &lt;&gt; " / expected: " &lt;&gt; v22
-    io.println(v23)
-    let v31 = v20 == False
-    case v31 {
+    let v251 = method3()
+    let v252 = Mut0(l0 :  v251)
+    let v253 = v6 
+    let v257 = v252.l0 
+    let v258 = v257 &lt;&gt; v253 
+    let v252 = Mut0(l0: v258)
+    let v270 = v24 
+    let v274 = v252.l0 
+    let v275 = v274 &lt;&gt; v270 
+    let v252 = Mut0(l0: v275)
+    let v287 = v42 
+    let v291 = v252.l0 
+    let v292 = v291 &lt;&gt; v287 
+    let v252 = Mut0(l0: v292)
+    let v304 = v60 
+    let v308 = v252.l0 
+    let v309 = v308 &lt;&gt; v304 
+    let v252 = Mut0(l0: v309)
+    let v321 = v78 
+    let v325 = v252.l0 
+    let v326 = v325 &lt;&gt; v321 
+    let v252 = Mut0(l0: v326)
+    let v338 = v96 
+    let v342 = v252.l0 
+    let v343 = v342 &lt;&gt; v338 
+    let v252 = Mut0(l0: v343)
+    let v355 = v42 
+    let v359 = v252.l0 
+    let v360 = v359 &lt;&gt; v355 
+    let v252 = Mut0(l0: v360)
+    let v373 =
+        case v247 {
+            True -&gt; {
+                v203
+            }
+            False -&gt; {
+                let v372 = "false"
+                v372
+            }
+        }
+    let v374 = v373 
+    let v378 = v252.l0 
+    let v379 = v378 &lt;&gt; v374 
+    let v252 = Mut0(l0: v379)
+    let v391 = v78 
+    let v395 = v252.l0 
+    let v396 = v395 &lt;&gt; v391 
+    let v252 = Mut0(l0: v396)
+    let v408 = v168 
+    let v412 = v252.l0 
+    let v413 = v412 &lt;&gt; v408 
+    let v252 = Mut0(l0: v413)
+    let v425 = v42 
+    let v429 = v252.l0 
+    let v430 = v429 &lt;&gt; v425 
+    let v252 = Mut0(l0: v430)
+    let v442 = "false"
+    let v443 = v442 
+    let v447 = v252.l0 
+    let v448 = v447 &lt;&gt; v443 
+    let v252 = Mut0(l0: v448)
+    let v460 = v221 
+    let v464 = v252.l0 
+    let v465 = v464 &lt;&gt; v460 
+    let v252 = Mut0(l0: v465)
+    let v477 = v252.l0 
+    io.println(v477)
+    let v483 = v250 == False
+    case v483 {
         True -&gt; {
-            panic as v23
+            panic as v477
         }
         False -&gt; {
         Nil
         }
     }
-    let v32 = 0
-    let v33 = method4(v32)
-    let v34 = v33 == False
-    let v36 =
-        case v34 {
+    let v484 = 0
+    let v485 = method5(v484)
+    let v486 = v485 == False
+    let v488 =
+        case v486 {
             True -&gt; {
                 True
             }
             False -&gt; {
-                method2(v34)
+                method2(v486)
             }
         }
-    let v37 = string.inspect(v33)
-    let v38 = string.inspect(False)
-    let v39 = v4 &lt;&gt; " / actual: " &lt;&gt; v37 &lt;&gt; " / expected: " &lt;&gt; v38
-    io.println(v39)
-    let v47 = v36 == False
-    case v47 {
+    let v489 = method3()
+    let v490 = Mut0(l0 :  v489)
+    let v491 = v6 
+    let v495 = v490.l0 
+    let v496 = v495 &lt;&gt; v491 
+    let v490 = Mut0(l0: v496)
+    let v508 = v24 
+    let v512 = v490.l0 
+    let v513 = v512 &lt;&gt; v508 
+    let v490 = Mut0(l0: v513)
+    let v525 = v42 
+    let v529 = v490.l0 
+    let v530 = v529 &lt;&gt; v525 
+    let v490 = Mut0(l0: v530)
+    let v542 = v60 
+    let v546 = v490.l0 
+    let v547 = v546 &lt;&gt; v542 
+    let v490 = Mut0(l0: v547)
+    let v559 = v78 
+    let v563 = v490.l0 
+    let v564 = v563 &lt;&gt; v559 
+    let v490 = Mut0(l0: v564)
+    let v576 = v96 
+    let v580 = v490.l0 
+    let v581 = v580 &lt;&gt; v576 
+    let v490 = Mut0(l0: v581)
+    let v593 = v42 
+    let v597 = v490.l0 
+    let v598 = v597 &lt;&gt; v593 
+    let v490 = Mut0(l0: v598)
+    let v610 =
+        case v485 {
+            True -&gt; {
+                v203
+            }
+            False -&gt; {
+                v442
+            }
+        }
+    let v611 = v610 
+    let v615 = v490.l0 
+    let v616 = v615 &lt;&gt; v611 
+    let v490 = Mut0(l0: v616)
+    let v628 = v78 
+    let v632 = v490.l0 
+    let v633 = v632 &lt;&gt; v628 
+    let v490 = Mut0(l0: v633)
+    let v645 = v168 
+    let v649 = v490.l0 
+    let v650 = v649 &lt;&gt; v645 
+    let v490 = Mut0(l0: v650)
+    let v662 = v42 
+    let v666 = v490.l0 
+    let v667 = v666 &lt;&gt; v662 
+    let v490 = Mut0(l0: v667)
+    let v679 = v442 
+    let v683 = v490.l0 
+    let v684 = v683 &lt;&gt; v679 
+    let v490 = Mut0(l0: v684)
+    let v696 = v221 
+    let v700 = v490.l0 
+    let v701 = v700 &lt;&gt; v696 
+    let v490 = Mut0(l0: v701)
+    let v713 = v490.l0 
+    io.println(v713)
+    let v719 = v488 == False
+    case v719 {
         True -&gt; {
-            panic as v39
+            panic as v713
         }
         False -&gt; {
         Nil
@@ -9648,6 +10296,7 @@ pub fn main () { method0()
 type [&lt;Struct&gt;] US0 =
     | US0_0 of f0_0 : char
     | US0_1
+and Mut0 = {mutable l0 : string}
 let rec method1 (v0 : int64) : bool =
     let v1 : bool = v0 &gt;= 3L
     if v1 then
@@ -9684,10 +10333,18 @@ let rec method1 (v0 : int64) : bool =
             method1(v20)
 and method2 (v0 : bool) : bool =
     v0
-and closure0 (v0 : string) () : unit =
+and method3 () : string =
+    let v0 : string = ""
+    v0
+and closure0 (v0 : Mut0, v1 : string) () : unit =
+    let v2 : string = v0.l0
+    let v4 : string = v2 + v1 
+    v0.l0 &lt;- v4
+    ()
+and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
-and method3 (v0 : int64) : bool =
+and method4 (v0 : int64) : bool =
     let v1 : bool = v0 &gt;= 2L
     if v1 then
         false
@@ -9715,8 +10372,8 @@ and method3 (v0 : int64) : bool =
             true
         else
             let v16 : int64 = v0 + 1L
-            method3(v16)
-and method4 (v0 : int64) : bool =
+            method4(v16)
+and method5 (v0 : int64) : bool =
     let v1 : bool = v0 &gt;= 0L
     if v1 then
         false
@@ -9727,7 +10384,7 @@ and method4 (v0 : int64) : bool =
             true
         else
             let v4 : int64 = v0 + 1L
-            method4(v4)
+            method5(v4)
 and method0 () : unit =
     let v0 : int64 = 0L
     let v1 : bool = method1(v0)
@@ -9736,53 +10393,242 @@ and method0 () : unit =
             true
         else
             method2(v1)
-    let v8 : string = "__assert_eq"
-    let v9 : string = $"{v8} / actual: %A{v1} / expected: %A{true}"
-    let v12 : unit = ()
-    let v13 : (unit -&gt; unit) = closure0(v9)
-    let v14 : unit = (fun () -&gt; v13 (); v12) ()
-    let v16 : bool = v3 = false
-    if v16 then
-        failwith&lt;unit&gt; v9
-    let v17 : int64 = 0L
-    let v18 : bool = method3(v17)
-    let v19 : bool = v18 = false
-    let v21 : bool =
-        if v19 then
+    let v4 : string = method3()
+    let v5 : Mut0 = {l0 = v4} : Mut0
+    let v8 : string = "{ "
+    let v9 : string = $"{v8}"
+    let v17 : unit = ()
+    let v18 : (unit -&gt; unit) = closure0(v5, v9)
+    let v19 : unit = (fun () -&gt; v18 (); v17) ()
+    let v27 : string = "name"
+    let v28 : string = $"{v27}"
+    let v36 : unit = ()
+    let v37 : (unit -&gt; unit) = closure0(v5, v28)
+    let v38 : unit = (fun () -&gt; v37 (); v36) ()
+    let v46 : string = " = "
+    let v47 : string = $"{v46}"
+    let v55 : unit = ()
+    let v56 : (unit -&gt; unit) = closure0(v5, v47)
+    let v57 : unit = (fun () -&gt; v56 (); v55) ()
+    let v65 : string = "__assert_eq"
+    let v66 : string = $"{v65}"
+    let v74 : unit = ()
+    let v75 : (unit -&gt; unit) = closure0(v5, v66)
+    let v76 : unit = (fun () -&gt; v75 (); v74) ()
+    let v84 : string = "; "
+    let v85 : string = $"{v84}"
+    let v93 : unit = ()
+    let v94 : (unit -&gt; unit) = closure0(v5, v85)
+    let v95 : unit = (fun () -&gt; v94 (); v93) ()
+    let v103 : string = "actual"
+    let v104 : string = $"{v103}"
+    let v112 : unit = ()
+    let v113 : (unit -&gt; unit) = closure0(v5, v104)
+    let v114 : unit = (fun () -&gt; v113 (); v112) ()
+    let v121 : string = $"{v46}"
+    let v129 : unit = ()
+    let v130 : (unit -&gt; unit) = closure0(v5, v121)
+    let v131 : unit = (fun () -&gt; v130 (); v129) ()
+    let v139 : string =
+        if v1 then
+            let v137 : string = "true"
+            v137
+        else
+            let v138 : string = "false"
+            v138
+    let v141 : string = $"{v139}"
+    let v149 : unit = ()
+    let v150 : (unit -&gt; unit) = closure0(v5, v141)
+    let v151 : unit = (fun () -&gt; v150 (); v149) ()
+    let v158 : string = $"{v84}"
+    let v166 : unit = ()
+    let v167 : (unit -&gt; unit) = closure0(v5, v158)
+    let v168 : unit = (fun () -&gt; v167 (); v166) ()
+    let v176 : string = "expected"
+    let v177 : string = $"{v176}"
+    let v185 : unit = ()
+    let v186 : (unit -&gt; unit) = closure0(v5, v177)
+    let v187 : unit = (fun () -&gt; v186 (); v185) ()
+    let v194 : string = $"{v46}"
+    let v202 : unit = ()
+    let v203 : (unit -&gt; unit) = closure0(v5, v194)
+    let v204 : unit = (fun () -&gt; v203 (); v202) ()
+    let v212 : string = "true"
+    let v213 : string = $"{v212}"
+    let v221 : unit = ()
+    let v222 : (unit -&gt; unit) = closure0(v5, v213)
+    let v223 : unit = (fun () -&gt; v222 (); v221) ()
+    let v231 : string = " }"
+    let v232 : string = $"{v231}"
+    let v240 : unit = ()
+    let v241 : (unit -&gt; unit) = closure0(v5, v232)
+    let v242 : unit = (fun () -&gt; v241 (); v240) ()
+    let v248 : string = v5.l0
+    let v250 : unit = ()
+    let v251 : (unit -&gt; unit) = closure1(v248)
+    let v252 : unit = (fun () -&gt; v251 (); v250) ()
+    let v254 : bool = v3 = false
+    if v254 then
+        failwith&lt;unit&gt; v248
+    let v255 : int64 = 0L
+    let v256 : bool = method4(v255)
+    let v257 : bool = v256 = false
+    let v259 : bool =
+        if v257 then
             true
         else
-            method2(v19)
-    let v25 : string = $"{v8} / actual: %A{v18} / expected: %A{false}"
-    let v28 : unit = ()
-    let v29 : (unit -&gt; unit) = closure0(v25)
-    let v30 : unit = (fun () -&gt; v29 (); v28) ()
-    let v32 : bool = v21 = false
-    if v32 then
-        failwith&lt;unit&gt; v25
-    let v33 : int64 = 0L
-    let v34 : bool = method4(v33)
-    let v35 : bool = v34 = false
-    let v37 : bool =
-        if v35 then
+            method2(v257)
+    let v260 : string = method3()
+    let v261 : Mut0 = {l0 = v260} : Mut0
+    let v263 : string = $"{v8}"
+    let v271 : unit = ()
+    let v272 : (unit -&gt; unit) = closure0(v261, v263)
+    let v273 : unit = (fun () -&gt; v272 (); v271) ()
+    let v280 : string = $"{v27}"
+    let v288 : unit = ()
+    let v289 : (unit -&gt; unit) = closure0(v261, v280)
+    let v290 : unit = (fun () -&gt; v289 (); v288) ()
+    let v297 : string = $"{v46}"
+    let v305 : unit = ()
+    let v306 : (unit -&gt; unit) = closure0(v261, v297)
+    let v307 : unit = (fun () -&gt; v306 (); v305) ()
+    let v314 : string = $"{v65}"
+    let v322 : unit = ()
+    let v323 : (unit -&gt; unit) = closure0(v261, v314)
+    let v324 : unit = (fun () -&gt; v323 (); v322) ()
+    let v331 : string = $"{v84}"
+    let v339 : unit = ()
+    let v340 : (unit -&gt; unit) = closure0(v261, v331)
+    let v341 : unit = (fun () -&gt; v340 (); v339) ()
+    let v348 : string = $"{v103}"
+    let v356 : unit = ()
+    let v357 : (unit -&gt; unit) = closure0(v261, v348)
+    let v358 : unit = (fun () -&gt; v357 (); v356) ()
+    let v365 : string = $"{v46}"
+    let v373 : unit = ()
+    let v374 : (unit -&gt; unit) = closure0(v261, v365)
+    let v375 : unit = (fun () -&gt; v374 (); v373) ()
+    let v382 : string =
+        if v256 then
+            v212
+        else
+            let v381 : string = "false"
+            v381
+    let v384 : string = $"{v382}"
+    let v392 : unit = ()
+    let v393 : (unit -&gt; unit) = closure0(v261, v384)
+    let v394 : unit = (fun () -&gt; v393 (); v392) ()
+    let v401 : string = $"{v84}"
+    let v409 : unit = ()
+    let v410 : (unit -&gt; unit) = closure0(v261, v401)
+    let v411 : unit = (fun () -&gt; v410 (); v409) ()
+    let v418 : string = $"{v176}"
+    let v426 : unit = ()
+    let v427 : (unit -&gt; unit) = closure0(v261, v418)
+    let v428 : unit = (fun () -&gt; v427 (); v426) ()
+    let v435 : string = $"{v46}"
+    let v443 : unit = ()
+    let v444 : (unit -&gt; unit) = closure0(v261, v435)
+    let v445 : unit = (fun () -&gt; v444 (); v443) ()
+    let v453 : string = "false"
+    let v454 : string = $"{v453}"
+    let v462 : unit = ()
+    let v463 : (unit -&gt; unit) = closure0(v261, v454)
+    let v464 : unit = (fun () -&gt; v463 (); v462) ()
+    let v471 : string = $"{v231}"
+    let v479 : unit = ()
+    let v480 : (unit -&gt; unit) = closure0(v261, v471)
+    let v481 : unit = (fun () -&gt; v480 (); v479) ()
+    let v487 : string = v261.l0
+    let v489 : unit = ()
+    let v490 : (unit -&gt; unit) = closure1(v487)
+    let v491 : unit = (fun () -&gt; v490 (); v489) ()
+    let v493 : bool = v259 = false
+    if v493 then
+        failwith&lt;unit&gt; v487
+    let v494 : int64 = 0L
+    let v495 : bool = method5(v494)
+    let v496 : bool = v495 = false
+    let v498 : bool =
+        if v496 then
             true
         else
-            method2(v35)
-    let v41 : string = $"{v8} / actual: %A{v34} / expected: %A{false}"
-    let v44 : unit = ()
-    let v45 : (unit -&gt; unit) = closure0(v41)
-    let v46 : unit = (fun () -&gt; v45 (); v44) ()
-    let v48 : bool = v37 = false
-    if v48 then
-        failwith&lt;unit&gt; v41
+            method2(v496)
+    let v499 : string = method3()
+    let v500 : Mut0 = {l0 = v499} : Mut0
+    let v502 : string = $"{v8}"
+    let v510 : unit = ()
+    let v511 : (unit -&gt; unit) = closure0(v500, v502)
+    let v512 : unit = (fun () -&gt; v511 (); v510) ()
+    let v519 : string = $"{v27}"
+    let v527 : unit = ()
+    let v528 : (unit -&gt; unit) = closure0(v500, v519)
+    let v529 : unit = (fun () -&gt; v528 (); v527) ()
+    let v536 : string = $"{v46}"
+    let v544 : unit = ()
+    let v545 : (unit -&gt; unit) = closure0(v500, v536)
+    let v546 : unit = (fun () -&gt; v545 (); v544) ()
+    let v553 : string = $"{v65}"
+    let v561 : unit = ()
+    let v562 : (unit -&gt; unit) = closure0(v500, v553)
+    let v563 : unit = (fun () -&gt; v562 (); v561) ()
+    let v570 : string = $"{v84}"
+    let v578 : unit = ()
+    let v579 : (unit -&gt; unit) = closure0(v500, v570)
+    let v580 : unit = (fun () -&gt; v579 (); v578) ()
+    let v587 : string = $"{v103}"
+    let v595 : unit = ()
+    let v596 : (unit -&gt; unit) = closure0(v500, v587)
+    let v597 : unit = (fun () -&gt; v596 (); v595) ()
+    let v604 : string = $"{v46}"
+    let v612 : unit = ()
+    let v613 : (unit -&gt; unit) = closure0(v500, v604)
+    let v614 : unit = (fun () -&gt; v613 (); v612) ()
+    let v620 : string =
+        if v495 then
+            v212
+        else
+            v453
+    let v622 : string = $"{v620}"
+    let v630 : unit = ()
+    let v631 : (unit -&gt; unit) = closure0(v500, v622)
+    let v632 : unit = (fun () -&gt; v631 (); v630) ()
+    let v639 : string = $"{v84}"
+    let v647 : unit = ()
+    let v648 : (unit -&gt; unit) = closure0(v500, v639)
+    let v649 : unit = (fun () -&gt; v648 (); v647) ()
+    let v656 : string = $"{v176}"
+    let v664 : unit = ()
+    let v665 : (unit -&gt; unit) = closure0(v500, v656)
+    let v666 : unit = (fun () -&gt; v665 (); v664) ()
+    let v673 : string = $"{v46}"
+    let v681 : unit = ()
+    let v682 : (unit -&gt; unit) = closure0(v500, v673)
+    let v683 : unit = (fun () -&gt; v682 (); v681) ()
+    let v690 : string = $"{v453}"
+    let v698 : unit = ()
+    let v699 : (unit -&gt; unit) = closure0(v500, v690)
+    let v700 : unit = (fun () -&gt; v699 (); v698) ()
+    let v707 : string = $"{v231}"
+    let v715 : unit = ()
+    let v716 : (unit -&gt; unit) = closure0(v500, v707)
+    let v717 : unit = (fun () -&gt; v716 (); v715) ()
+    let v723 : string = v500.l0
+    let v725 : unit = ()
+    let v726 : (unit -&gt; unit) = closure1(v723)
+    let v727 : unit = (fun () -&gt; v726 (); v725) ()
+    let v729 : bool = v498 = false
+    if v729 then
+        failwith&lt;unit&gt; v723
 method0()
 
 
 .ts:
-import { Union } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
-import { union_type, char_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
+import { Record, Union } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
+import { record_type, string_type, union_type, char_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
+import { IComparable, IEquatable } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Util.js";
 import { op_Addition, int64, op_Subtraction, toInt64, equals, compare } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/BigInt.js";
 import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
-import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
 
 export type US0_$union = 
     | US0&lt;0&gt;
@@ -9812,6 +10658,18 @@ export class US0&lt;Tag extends keyof US0_$cases&gt; extends Union&lt;Tag, US0_$
 
 export function US0_$reflection(): TypeInfo {
     return union_type("Spiral.US0", [], US0, () =&gt; [[["f0_0", char_type]], []]);
+}
+
+export class Mut0 extends Record implements IEquatable&lt;Mut0&gt;, IComparable&lt;Mut0&gt; {
+    l0: string;
+    constructor(l0: string) {
+        super();
+        this.l0 = l0;
+    }
+}
+
+export function Mut0_$reflection(): TypeInfo {
+    return record_type("Spiral.Mut0", [], Mut0, () =&gt; [["l0", string_type]]);
 }
 
 export function method1(v0_mut: int64): boolean {
@@ -9860,12 +10718,21 @@ export function method2(v0: boolean): boolean {
     return v0;
 }
 
-export function closure0(v0: string, unitVar: void): void {
+export function method3(): string {
+    return "";
+}
+
+export function closure0(v0: Mut0, v1: string, unitVar: void): void {
+    const v4: string = v0.l0 + v1;
+    v0.l0 = v4;
+}
+
+export function closure1(v0: string, unitVar: void): void {
     console.log(v0);
 }
 
-export function method3(v0_mut: int64): boolean {
-    method3:
+export function method4(v0_mut: int64): boolean {
+    method4:
     while (true) {
         const v0: int64 = v0_mut;
         if (compare(v0, 2n) &gt;= 0) {
@@ -9893,15 +10760,15 @@ export function method3(v0_mut: int64): boolean {
             }
             else {
                 v0_mut = toInt64(op_Addition(v0, 1n));
-                continue method3;
+                continue method4;
             }
         }
         break;
     }
 }
 
-export function method4(v0_mut: int64): boolean {
-    method4:
+export function method5(v0_mut: int64): boolean {
+    method5:
     while (true) {
         const v0: int64 = v0_mut;
         if (compare(v0, 0n) &gt;= 0) {
@@ -9914,7 +10781,7 @@ export function method4(v0_mut: int64): boolean {
         }
         else {
             v0_mut = toInt64(op_Addition(v0, 1n));
-            continue method4;
+            continue method5;
         }
         break;
     }
@@ -9923,32 +10790,152 @@ export function method4(v0_mut: int64): boolean {
 export function method0(): void {
     const v1: boolean = method1(0n);
     const v3: boolean = v1 ? true : method2(v1);
-    const v9: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v1, true]));
-    let v14: any;
-    closure0(v9, undefined);
-    v14 = undefined;
+    const v5: Mut0 = new Mut0(method3());
+    let v19: any;
+    closure0(v5, "{ ", undefined);
+    v19 = undefined;
+    let v38: any;
+    closure0(v5, "name", undefined);
+    v38 = undefined;
+    let v57: any;
+    closure0(v5, " = ", undefined);
+    v57 = undefined;
+    let v76: any;
+    closure0(v5, "__assert_eq", undefined);
+    v76 = undefined;
+    let v95: any;
+    closure0(v5, "; ", undefined);
+    v95 = undefined;
+    let v114: any;
+    closure0(v5, "actual", undefined);
+    v114 = undefined;
+    let v131: any;
+    closure0(v5, " = ", undefined);
+    v131 = undefined;
+    let v151: any;
+    closure0(v5, v1 ? "true" : "false", undefined);
+    v151 = undefined;
+    let v168: any;
+    closure0(v5, "; ", undefined);
+    v168 = undefined;
+    let v187: any;
+    closure0(v5, "expected", undefined);
+    v187 = undefined;
+    let v204: any;
+    closure0(v5, " = ", undefined);
+    v204 = undefined;
+    let v223: any;
+    closure0(v5, "true", undefined);
+    v223 = undefined;
+    let v242: any;
+    closure0(v5, " }", undefined);
+    v242 = undefined;
+    const v248: string = v5.l0;
+    let v252: any;
+    closure1(v248, undefined);
+    v252 = undefined;
     if (v3 === false) {
-        throw new Error(v9);
+        throw new Error(v248);
     }
-    const v18: boolean = method3(0n);
-    const v19: boolean = v18 === false;
-    const v21: boolean = v19 ? true : method2(v19);
-    const v25: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, false]));
-    let v30: any;
-    closure0(v25, undefined);
-    v30 = undefined;
-    if (v21 === false) {
-        throw new Error(v25);
+    const v256: boolean = method4(0n);
+    const v257: boolean = v256 === false;
+    const v259: boolean = v257 ? true : method2(v257);
+    const v261: Mut0 = new Mut0(method3());
+    let v273: any;
+    closure0(v261, "{ ", undefined);
+    v273 = undefined;
+    let v290: any;
+    closure0(v261, "name", undefined);
+    v290 = undefined;
+    let v307: any;
+    closure0(v261, " = ", undefined);
+    v307 = undefined;
+    let v324: any;
+    closure0(v261, "__assert_eq", undefined);
+    v324 = undefined;
+    let v341: any;
+    closure0(v261, "; ", undefined);
+    v341 = undefined;
+    let v358: any;
+    closure0(v261, "actual", undefined);
+    v358 = undefined;
+    let v375: any;
+    closure0(v261, " = ", undefined);
+    v375 = undefined;
+    let v394: any;
+    closure0(v261, v256 ? "true" : "false", undefined);
+    v394 = undefined;
+    let v411: any;
+    closure0(v261, "; ", undefined);
+    v411 = undefined;
+    let v428: any;
+    closure0(v261, "expected", undefined);
+    v428 = undefined;
+    let v445: any;
+    closure0(v261, " = ", undefined);
+    v445 = undefined;
+    let v464: any;
+    closure0(v261, "false", undefined);
+    v464 = undefined;
+    let v481: any;
+    closure0(v261, " }", undefined);
+    v481 = undefined;
+    const v487: string = v261.l0;
+    let v491: any;
+    closure1(v487, undefined);
+    v491 = undefined;
+    if (v259 === false) {
+        throw new Error(v487);
     }
-    const v34: boolean = method4(0n);
-    const v35: boolean = v34 === false;
-    const v37: boolean = v35 ? true : method2(v35);
-    const v41: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v34, false]));
-    let v46: any;
-    closure0(v41, undefined);
-    v46 = undefined;
-    if (v37 === false) {
-        throw new Error(v41);
+    const v495: boolean = method5(0n);
+    const v496: boolean = v495 === false;
+    const v498: boolean = v496 ? true : method2(v496);
+    const v500: Mut0 = new Mut0(method3());
+    let v512: any;
+    closure0(v500, "{ ", undefined);
+    v512 = undefined;
+    let v529: any;
+    closure0(v500, "name", undefined);
+    v529 = undefined;
+    let v546: any;
+    closure0(v500, " = ", undefined);
+    v546 = undefined;
+    let v563: any;
+    closure0(v500, "__assert_eq", undefined);
+    v563 = undefined;
+    let v580: any;
+    closure0(v500, "; ", undefined);
+    v580 = undefined;
+    let v597: any;
+    closure0(v500, "actual", undefined);
+    v597 = undefined;
+    let v614: any;
+    closure0(v500, " = ", undefined);
+    v614 = undefined;
+    let v632: any;
+    closure0(v500, v495 ? "true" : "false", undefined);
+    v632 = undefined;
+    let v649: any;
+    closure0(v500, "; ", undefined);
+    v649 = undefined;
+    let v666: any;
+    closure0(v500, "expected", undefined);
+    v666 = undefined;
+    let v683: any;
+    closure0(v500, " = ", undefined);
+    v683 = undefined;
+    let v700: any;
+    closure0(v500, "false", undefined);
+    v700 = undefined;
+    let v717: any;
+    closure0(v500, " }", undefined);
+    v717 = undefined;
+    const v723: string = v500.l0;
+    let v727: any;
+    closure1(v723, undefined);
+    v727 = undefined;
+    if (v498 === false) {
+        throw new Error(v723);
     }
 }
 
@@ -9957,11 +10944,11 @@ method0();
 
 .py:
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Any
 from fable_modules.fable_library.long import (op_subtraction, op_addition)
-from fable_modules.fable_library.reflection import (TypeInfo, char_type, union_type)
-from fable_modules.fable_library.string_ import (to_text, interpolate)
-from fable_modules.fable_library.types import (Array, Union, int64)
+from fable_modules.fable_library.reflection import (TypeInfo, char_type, union_type, string_type, record_type)
+from fable_modules.fable_library.types import (Array, Union, Record, int64)
 
 def _expr0() -&gt; TypeInfo:
     return union_type("Spiral.US0", [], US0, lambda: [[("f0_0", char_type)], []])
@@ -9980,6 +10967,16 @@ class US0(Union):
 
 
 US0_reflection = _expr0
+
+def _expr1() -&gt; TypeInfo:
+    return record_type("Spiral.Mut0", [], Mut0, lambda: [("l0", string_type)])
+
+
+@dataclass(eq = False, repr = False, slots = True)
+class Mut0(Record):
+    l0: str
+
+Mut0_reflection = _expr1
 
 def method1(v0_mut: int64) -&gt; bool:
     while True:
@@ -10008,10 +11005,10 @@ def method1(v0_mut: int64) -&gt; bool:
 
 
 
-            def _arrow1(__unit: None=None, v0: Any=v0) -&gt; str:
+            def _arrow2(__unit: None=None, v0: Any=v0) -&gt; str:
                 raise Exception("Option does not have a value.")
 
-            if (v14.fields[0] if (v14.tag == 0) else _arrow1()) == "b":
+            if (v14.fields[0] if (v14.tag == 0) else _arrow2()) == "b":
                 return True
 
             else: 
@@ -10026,11 +11023,20 @@ def method2(v0: bool) -&gt; bool:
     return v0
 
 
-def closure0(v0: str, unit_var: None) -&gt; None:
+def method3(__unit: None=None) -&gt; str:
+    return ""
+
+
+def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
+    v4: str = v0.l0 + v1
+    v0.l0 = v4
+
+
+def closure1(v0: str, unit_var: None) -&gt; None:
     print(v0)
 
 
-def method3(v0_mut: int64) -&gt; bool:
+def method4(v0_mut: int64) -&gt; bool:
     while True:
         (v0,) = (v0_mut,)
         if v0 &gt;= int64(2):
@@ -10051,10 +11057,10 @@ def method3(v0_mut: int64) -&gt; bool:
                     v10 = US0(1)
 
 
-            def _arrow2(__unit: None=None, v0: Any=v0) -&gt; str:
+            def _arrow3(__unit: None=None, v0: Any=v0) -&gt; str:
                 raise Exception("Option does not have a value.")
 
-            if (v10.fields[0] if (v10.tag == 0) else _arrow2()) == "c":
+            if (v10.fields[0] if (v10.tag == 0) else _arrow3()) == "c":
                 return True
 
             else: 
@@ -10065,17 +11071,17 @@ def method3(v0_mut: int64) -&gt; bool:
         break
 
 
-def method4(v0_mut: int64) -&gt; bool:
+def method5(v0_mut: int64) -&gt; bool:
     while True:
         (v0,) = (v0_mut,)
         if v0 &gt;= int64(0):
             return False
 
         else: 
-            def _arrow3(__unit: None=None, v0: Any=v0) -&gt; str:
+            def _arrow4(__unit: None=None, v0: Any=v0) -&gt; str:
                 raise Exception("Option does not have a value.")
 
-            if _arrow3() == "a":
+            if _arrow4() == "a":
                 return True
 
             else: 
@@ -10089,32 +11095,152 @@ def method4(v0_mut: int64) -&gt; bool:
 def method0(__unit: None=None) -&gt; None:
     v1: bool = method1(int64(0))
     v3: bool = True if v1 else method2(v1)
-    v9: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v1, True]))
-    v14: None
-    closure0(v9, None)
-    v14 = None
+    v5: Mut0 = Mut0(method3())
+    v19: None
+    closure0(v5, "{ ", None)
+    v19 = None
+    v38: None
+    closure0(v5, "name", None)
+    v38 = None
+    v57: None
+    closure0(v5, " = ", None)
+    v57 = None
+    v76: None
+    closure0(v5, "__assert_eq", None)
+    v76 = None
+    v95: None
+    closure0(v5, "; ", None)
+    v95 = None
+    v114: None
+    closure0(v5, "actual", None)
+    v114 = None
+    v131: None
+    closure0(v5, " = ", None)
+    v131 = None
+    v151: None
+    closure0(v5, "true" if v1 else "false", None)
+    v151 = None
+    v168: None
+    closure0(v5, "; ", None)
+    v168 = None
+    v187: None
+    closure0(v5, "expected", None)
+    v187 = None
+    v204: None
+    closure0(v5, " = ", None)
+    v204 = None
+    v223: None
+    closure0(v5, "true", None)
+    v223 = None
+    v242: None
+    closure0(v5, " }", None)
+    v242 = None
+    v248: str = v5.l0
+    v252: None
+    closure1(v248, None)
+    v252 = None
     if v3 == False:
-        raise Exception(v9)
+        raise Exception(v248)
 
-    v18: bool = method3(int64(0))
-    v19: bool = v18 == False
-    v21: bool = True if v19 else method2(v19)
-    v25: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v18, False]))
-    v30: None
-    closure0(v25, None)
-    v30 = None
-    if v21 == False:
-        raise Exception(v25)
+    v256: bool = method4(int64(0))
+    v257: bool = v256 == False
+    v259: bool = True if v257 else method2(v257)
+    v261: Mut0 = Mut0(method3())
+    v273: None
+    closure0(v261, "{ ", None)
+    v273 = None
+    v290: None
+    closure0(v261, "name", None)
+    v290 = None
+    v307: None
+    closure0(v261, " = ", None)
+    v307 = None
+    v324: None
+    closure0(v261, "__assert_eq", None)
+    v324 = None
+    v341: None
+    closure0(v261, "; ", None)
+    v341 = None
+    v358: None
+    closure0(v261, "actual", None)
+    v358 = None
+    v375: None
+    closure0(v261, " = ", None)
+    v375 = None
+    v394: None
+    closure0(v261, "true" if v256 else "false", None)
+    v394 = None
+    v411: None
+    closure0(v261, "; ", None)
+    v411 = None
+    v428: None
+    closure0(v261, "expected", None)
+    v428 = None
+    v445: None
+    closure0(v261, " = ", None)
+    v445 = None
+    v464: None
+    closure0(v261, "false", None)
+    v464 = None
+    v481: None
+    closure0(v261, " }", None)
+    v481 = None
+    v487: str = v261.l0
+    v491: None
+    closure1(v487, None)
+    v491 = None
+    if v259 == False:
+        raise Exception(v487)
 
-    v34: bool = method4(int64(0))
-    v35: bool = v34 == False
-    v37: bool = True if v35 else method2(v35)
-    v41: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v34, False]))
-    v46: None
-    closure0(v41, None)
-    v46 = None
-    if v37 == False:
-        raise Exception(v41)
+    v495: bool = method5(int64(0))
+    v496: bool = v495 == False
+    v498: bool = True if v496 else method2(v496)
+    v500: Mut0 = Mut0(method3())
+    v512: None
+    closure0(v500, "{ ", None)
+    v512 = None
+    v529: None
+    closure0(v500, "name", None)
+    v529 = None
+    v546: None
+    closure0(v500, " = ", None)
+    v546 = None
+    v563: None
+    closure0(v500, "__assert_eq", None)
+    v563 = None
+    v580: None
+    closure0(v500, "; ", None)
+    v580 = None
+    v597: None
+    closure0(v500, "actual", None)
+    v597 = None
+    v614: None
+    closure0(v500, " = ", None)
+    v614 = None
+    v632: None
+    closure0(v500, "true" if v495 else "false", None)
+    v632 = None
+    v649: None
+    closure0(v500, "; ", None)
+    v649 = None
+    v666: None
+    closure0(v500, "expected", None)
+    v666 = None
+    v683: None
+    closure0(v500, " = ", None)
+    v683 = None
+    v700: None
+    closure0(v500, "false", None)
+    v700 = None
+    v717: None
+    closure0(v500, " }", None)
+    v717 = None
+    v723: str = v500.l0
+    v727: None
+    closure1(v723, None)
+    v727 = None
+    if v498 == False:
+        raise Exception(v723)
 
 
 
@@ -10184,6 +11310,9 @@ class US0_0(NamedTuple): # (0, Some)
 class US0_1(NamedTuple): # (1, None)
     tag = 1
 US0 = Union[US0_0, US0_1]
+@dataclass
+class Mut0:
+    v0 : string
 def method1(v0 : i64) -&gt; bool:
     v1 = v0 &gt;= 3
     if v1:
@@ -10234,7 +11363,10 @@ def method1(v0 : i64) -&gt; bool:
             return method1(v20)
 def method2(v0 : bool) -&gt; bool:
     return v0
-def method3(v0 : i64) -&gt; bool:
+def method3() -&gt; string:
+    v0 = ""
+    return v0
+def method4(v0 : i64) -&gt; bool:
     v1 = v0 &gt;= 2
     if v1:
         del v0, v1
@@ -10273,8 +11405,8 @@ def method3(v0 : i64) -&gt; bool:
             del v15
             v16 = v0 + 1
             del v0
-            return method3(v16)
-def method4(v0 : i64) -&gt; bool:
+            return method4(v16)
+def method5(v0 : i64) -&gt; bool:
     v1 = v0 &gt;= 0
     if v1:
         del v0, v1
@@ -10291,7 +11423,7 @@ def method4(v0 : i64) -&gt; bool:
             del v3
             v4 = v0 + 1
             del v0
-            return method4(v4)
+            return method5(v4)
 def method0() -&gt; None:
     v0 = 0
     v1 = method1(v0)
@@ -10300,55 +11432,337 @@ def method0() -&gt; None:
         v3 = True
     else:
         v3 = method2(v1)
-    v10 = "__assert_eq"
-    v11 = f"{v10} / actual: {v1} / expected: {True}"
+    v4 = method3()
+    v5 = Mut0(v4)
+    del v4
+    v10 = "{ "
+    v11 = f"{v10}"
+    v21 = v5.v0
+    v24 = v21 + v11 
+    del v11, v21
+    v5.v0 = v24
+    del v24
+    v30 = "name"
+    v31 = f"{v30}"
+    v41 = v5.v0
+    v44 = v41 + v31 
+    del v31, v41
+    v5.v0 = v44
+    del v44
+    v50 = " = "
+    v51 = f"{v50}"
+    v61 = v5.v0
+    v64 = v61 + v51 
+    del v51, v61
+    v5.v0 = v64
+    del v64
+    v70 = "__assert_eq"
+    v71 = f"{v70}"
+    v81 = v5.v0
+    v84 = v81 + v71 
+    del v71, v81
+    v5.v0 = v84
+    del v84
+    v90 = "; "
+    v91 = f"{v90}"
+    v101 = v5.v0
+    v104 = v101 + v91 
+    del v91, v101
+    v5.v0 = v104
+    del v104
+    v110 = "actual"
+    v111 = f"{v110}"
+    v121 = v5.v0
+    v124 = v121 + v111 
+    del v111, v121
+    v5.v0 = v124
+    del v124
+    v128 = f"{v50}"
+    v138 = v5.v0
+    v141 = v138 + v128 
+    del v128, v138
+    v5.v0 = v141
+    del v141
+    if v1:
+        v143 = "true"
+        v145 = v143
+    else:
+        v144 = "false"
+        v145 = v144
     del v1
-    print(v11)
-    v17 = v3 == False
+    v148 = f"{v145}"
+    del v145
+    v158 = v5.v0
+    v161 = v158 + v148 
+    del v148, v158
+    v5.v0 = v161
+    del v161
+    v165 = f"{v90}"
+    v175 = v5.v0
+    v178 = v175 + v165 
+    del v165, v175
+    v5.v0 = v178
+    del v178
+    v184 = "expected"
+    v185 = f"{v184}"
+    v195 = v5.v0
+    v198 = v195 + v185 
+    del v185, v195
+    v5.v0 = v198
+    del v198
+    v202 = f"{v50}"
+    v212 = v5.v0
+    v215 = v212 + v202 
+    del v202, v212
+    v5.v0 = v215
+    del v215
+    v221 = "true"
+    v222 = f"{v221}"
+    v232 = v5.v0
+    v235 = v232 + v222 
+    del v222, v232
+    v5.v0 = v235
+    del v235
+    v241 = " }"
+    v242 = f"{v241}"
+    v252 = v5.v0
+    v255 = v252 + v242 
+    del v242, v252
+    v5.v0 = v255
+    del v255
+    v257 = v5.v0
+    del v5
+    print(v257)
+    v263 = v3 == False
     del v3
-    if v17:
-        raise Exception(v11)
+    if v263:
+        raise Exception(v257)
     else:
         pass
-    del v11, v17
-    v18 = 0
-    v19 = method3(v18)
-    del v18
-    v20 = v19 == False
-    if v20:
-        v22 = True
+    del v257, v263
+    v264 = 0
+    v265 = method4(v264)
+    del v264
+    v266 = v265 == False
+    if v266:
+        v268 = True
     else:
-        v22 = method2(v20)
-    del v20
-    v27 = f"{v10} / actual: {v19} / expected: {False}"
-    del v19
-    print(v27)
-    v33 = v22 == False
-    del v22
-    if v33:
-        raise Exception(v27)
+        v268 = method2(v266)
+    del v266
+    v269 = method3()
+    v270 = Mut0(v269)
+    del v269
+    v273 = f"{v10}"
+    v283 = v270.v0
+    v286 = v283 + v273 
+    del v273, v283
+    v270.v0 = v286
+    del v286
+    v290 = f"{v30}"
+    v300 = v270.v0
+    v303 = v300 + v290 
+    del v290, v300
+    v270.v0 = v303
+    del v303
+    v307 = f"{v50}"
+    v317 = v270.v0
+    v320 = v317 + v307 
+    del v307, v317
+    v270.v0 = v320
+    del v320
+    v324 = f"{v70}"
+    v334 = v270.v0
+    v337 = v334 + v324 
+    del v324, v334
+    v270.v0 = v337
+    del v337
+    v341 = f"{v90}"
+    v351 = v270.v0
+    v354 = v351 + v341 
+    del v341, v351
+    v270.v0 = v354
+    del v354
+    v358 = f"{v110}"
+    v368 = v270.v0
+    v371 = v368 + v358 
+    del v358, v368
+    v270.v0 = v371
+    del v371
+    v375 = f"{v50}"
+    v385 = v270.v0
+    v388 = v385 + v375 
+    del v375, v385
+    v270.v0 = v388
+    del v388
+    if v265:
+        v391 = v221
+    else:
+        v390 = "false"
+        v391 = v390
+    del v265
+    v394 = f"{v391}"
+    del v391
+    v404 = v270.v0
+    v407 = v404 + v394 
+    del v394, v404
+    v270.v0 = v407
+    del v407
+    v411 = f"{v90}"
+    v421 = v270.v0
+    v424 = v421 + v411 
+    del v411, v421
+    v270.v0 = v424
+    del v424
+    v428 = f"{v184}"
+    v438 = v270.v0
+    v441 = v438 + v428 
+    del v428, v438
+    v270.v0 = v441
+    del v441
+    v445 = f"{v50}"
+    v455 = v270.v0
+    v458 = v455 + v445 
+    del v445, v455
+    v270.v0 = v458
+    del v458
+    v464 = "false"
+    v465 = f"{v464}"
+    v475 = v270.v0
+    v478 = v475 + v465 
+    del v465, v475
+    v270.v0 = v478
+    del v478
+    v482 = f"{v241}"
+    v492 = v270.v0
+    v495 = v492 + v482 
+    del v482, v492
+    v270.v0 = v495
+    del v495
+    v497 = v270.v0
+    del v270
+    print(v497)
+    v503 = v268 == False
+    del v268
+    if v503:
+        raise Exception(v497)
     else:
         pass
-    del v27, v33
-    v34 = 0
-    v35 = method4(v34)
-    del v34
-    v36 = v35 == False
-    if v36:
-        v38 = True
+    del v497, v503
+    v504 = 0
+    v505 = method5(v504)
+    del v504
+    v506 = v505 == False
+    if v506:
+        v508 = True
     else:
-        v38 = method2(v36)
-    del v36
-    v43 = f"{v10} / actual: {v35} / expected: {False}"
-    del v10, v35
-    print(v43)
-    v49 = v38 == False
-    del v38
-    if v49:
-        del v49
-        raise Exception(v43)
+        v508 = method2(v506)
+    del v506
+    v509 = method3()
+    v510 = Mut0(v509)
+    del v509
+    v513 = f"{v10}"
+    del v10
+    v523 = v510.v0
+    v526 = v523 + v513 
+    del v513, v523
+    v510.v0 = v526
+    del v526
+    v530 = f"{v30}"
+    del v30
+    v540 = v510.v0
+    v543 = v540 + v530 
+    del v530, v540
+    v510.v0 = v543
+    del v543
+    v547 = f"{v50}"
+    v557 = v510.v0
+    v560 = v557 + v547 
+    del v547, v557
+    v510.v0 = v560
+    del v560
+    v564 = f"{v70}"
+    del v70
+    v574 = v510.v0
+    v577 = v574 + v564 
+    del v564, v574
+    v510.v0 = v577
+    del v577
+    v581 = f"{v90}"
+    v591 = v510.v0
+    v594 = v591 + v581 
+    del v581, v591
+    v510.v0 = v594
+    del v594
+    v598 = f"{v110}"
+    del v110
+    v608 = v510.v0
+    v611 = v608 + v598 
+    del v598, v608
+    v510.v0 = v611
+    del v611
+    v615 = f"{v50}"
+    v625 = v510.v0
+    v628 = v625 + v615 
+    del v615, v625
+    v510.v0 = v628
+    del v628
+    if v505:
+        v630 = v221
     else:
-        del v43, v49
+        v630 = v464
+    del v221, v505
+    v633 = f"{v630}"
+    del v630
+    v643 = v510.v0
+    v646 = v643 + v633 
+    del v633, v643
+    v510.v0 = v646
+    del v646
+    v650 = f"{v90}"
+    del v90
+    v660 = v510.v0
+    v663 = v660 + v650 
+    del v650, v660
+    v510.v0 = v663
+    del v663
+    v667 = f"{v184}"
+    del v184
+    v677 = v510.v0
+    v680 = v677 + v667 
+    del v667, v677
+    v510.v0 = v680
+    del v680
+    v684 = f"{v50}"
+    del v50
+    v694 = v510.v0
+    v697 = v694 + v684 
+    del v684, v694
+    v510.v0 = v697
+    del v697
+    v701 = f"{v464}"
+    del v464
+    v711 = v510.v0
+    v714 = v711 + v701 
+    del v701, v711
+    v510.v0 = v714
+    del v714
+    v718 = f"{v241}"
+    del v241
+    v728 = v510.v0
+    v731 = v728 + v718 
+    del v718, v728
+    v510.v0 = v731
+    del v731
+    v733 = v510.v0
+    del v510
+    print(v733)
+    v739 = v508 == False
+    del v508
+    if v739:
+        del v739
+        raise Exception(v733)
+    else:
+        del v733, v739
         return 
 def main_body():
     return method0()
@@ -10361,9 +11775,9 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-__assert_eq / actual: true / expected: true
-__assert_eq / actual: false / expected: false
-__assert_eq / actual: false / expected: false
+{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; actual = false; expected = false }
 </pre>
 </div>
 </div>
@@ -10771,26 +12185,26 @@ __assert_eq / actual: false / expected: false
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))) / expected: UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0())))
+{ name = __assert_eq; actual = UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))); expected = UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))) }
 
 .rs output:
-__assert_eq / actual: UH0_1("1", UH0_1("2", UH0_1("3", UH0_0))) / expected: UH0_1("1", UH0_1("2", UH0_1("3", UH0_0)))
+{ name = __assert_eq; actual = UH0_1("1", UH0_1("2", UH0_1("3", UH0_0))); expected = UH0_1("1", UH0_1("2", UH0_1("3", UH0_0))) }
 
 .ts output:
-__assert_eq / actual: UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0))) / expected: UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0)))
+{ name = __assert_eq; actual = UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0))); expected = UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0))) }
 
 .py output:
-__assert_eq / actual: UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))) / expected: UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0)))
+{ name = __assert_eq; actual = UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))); expected = UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))) }
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a033bff283bcc4e6f6f4e89ac7d05500b5922b68afb21c98225fa6585372dee9/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a033bff283bcc4e6f6f4e89ac7d05500b5922b68afb21c98225fa6585372dee9/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a033bff283bcc4e6f6f4e89ac7d05500b5922b68afb21c98225fa6585372dee9/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a033bff283bcc4e6f6f4e89ac7d05500b5922b68afb21c98225fa6585372dee9/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a033bff283bcc4e6f6f4e89ac7d05500b5922b68afb21c98225fa6585372dee9/build/dev/erlang/main/ebin/main@@main.beam"}
-__assert_eq / actual: Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))) / expected: Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0)))
+{ name = __assert_eq; actual = Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))); expected = Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))) }
 
 
 </pre>
@@ -10800,7 +12214,7 @@ __assert_eq / actual: Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))) / expected: Uh0i
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))) / expected: UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0)))
+{ name = __assert_eq; actual = UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))); expected = UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))) }
 </pre>
 </div>
 </div>
