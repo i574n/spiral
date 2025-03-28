@@ -19,8 +19,8 @@ pub mod File_system {
     use fable_library_rust::Native_::LrcPtr;
     use fable_library_rust::Native_::MutCell;
     use fable_library_rust::Native_::OnceInit;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::interface_cast;
-    use fable_library_rust::Native_::null;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::NativeArray_::Array;
@@ -755,7 +755,7 @@ pub mod File_system {
         };
     }
     pub fn method10(v0: string) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method9(v0: bool, v1: string) {
         ();
@@ -868,7 +868,7 @@ pub mod File_system {
         fable_library_rust::String_::fromString(v168)
     }
     pub fn method19(v0: string) -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn method21(v0: string) -> string {
         trimEndChars(
@@ -1401,13 +1401,13 @@ pub mod File_system {
         File_system::method28(v0)
     }
     pub fn method34(v0: string) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method35(v0: Vec<u8>) -> Vec<u8> {
         v0
     }
     pub fn method33(v0: string, v1: string) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn closure17(v0: string, v1: string) -> bool {
         File_system::method33(v0, v1)
@@ -2223,13 +2223,13 @@ pub mod File_system {
         unbox::<Guid>(fable_library_rust::Native_::getZero())
     }
     pub fn method77() -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn method78() -> string {
         string("!create_temp_path_")
     }
     pub fn method79(v0: string, v1: string) -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn method81() -> string {
         string("CARGO_PKG_NAME")
@@ -2238,10 +2238,10 @@ pub mod File_system {
         File_system::method2(File_system::method81())
     }
     pub fn method76(v0: Guid) -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn method70() -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn closure37(unitVar: (), unitVar_1: ()) -> string {
         File_system::method70()
@@ -2479,7 +2479,7 @@ pub mod File_system {
         })
     }
     pub fn method90(v0: string) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method91(
         v0: LrcPtr<File_system::Mut0>,
@@ -2942,13 +2942,13 @@ pub mod File_system {
         }
     }
     pub fn method106(v0: bool) -> i32 {
-        0
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method107() -> i32 {
-        0
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method108(v0: i32, v1: i32) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method110(
         v0: string,
@@ -3062,10 +3062,11 @@ pub mod File_system {
         }
     }
     pub fn method109(v0: string, v1: u8, v2: string) -> Result<std::path::PathBuf, std::io::Error> {
-        let v42_1: i32 = File_system::method106(false);
+        let v42_1: i32 =
+            File_system::method106(unbox::<bool>(fable_library_rust::Native_::getZero()));
         let v44_1: bool = File_system::method108(File_system::method107(), v42_1);
         if v44_1 {
-            let v59: bool = false;
+            let v59: bool = unbox::<bool>(fable_library_rust::Native_::getZero());
             let v122: std::path::PathBuf = fable_library_rust::Native_::getZero();
             Ok(v122)
         } else {
@@ -3222,10 +3223,11 @@ pub mod File_system {
         }
     }
     pub fn method105(v0: string, v1: u8) -> Result<std::path::PathBuf, std::io::Error> {
-        let v41_1: i32 = File_system::method106(false);
+        let v41_1: i32 =
+            File_system::method106(unbox::<bool>(fable_library_rust::Native_::getZero()));
         let v43_1: bool = File_system::method108(File_system::method107(), v41_1);
         if v43_1 {
-            let v58: bool = false;
+            let v58: bool = unbox::<bool>(fable_library_rust::Native_::getZero());
             let v121: std::path::PathBuf = fable_library_rust::Native_::getZero();
             Ok(v121)
         } else {
@@ -3327,7 +3329,7 @@ pub mod File_system {
         File_system::method96(v0)
     }
     pub fn method117() -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn method118(v0: i32, v1: LrcPtr<File_system::Mut5>) -> bool {
         (v1.l0.get().clone()) < (v0)
@@ -3342,7 +3344,7 @@ pub mod File_system {
         v0
     }
     pub fn method116(v0: string) -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn closure59(unitVar: (), v0: string) -> string {
         File_system::method116(v0)

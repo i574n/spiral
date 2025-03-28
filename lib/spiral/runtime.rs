@@ -16,7 +16,7 @@ pub mod Runtime {
     use fable_library_rust::Native_::LrcPtr;
     use fable_library_rust::Native_::MutCell;
     use fable_library_rust::Native_::OnceInit;
-    use fable_library_rust::Native_::null;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::NativeArray_::Array;
@@ -2548,7 +2548,7 @@ pub mod Runtime {
         (v1.l0.get().clone()) < (v0)
     }
     pub fn method42(v0: bool) -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn closure19(unitVar: (), v0: Func1<(i32, string, bool), Arc<Async<()>>>) -> Runtime::US14 {
         Runtime::US14::US14_0(v0)
@@ -2557,7 +2557,7 @@ pub mod Runtime {
         Func1::new(move |v: Func1<(i32, string, bool), Arc<Async<()>>>| Runtime::closure19((), v))
     }
     pub fn method44(v0: bool) -> i32 {
-        0
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method45() -> string {
         let v7: char = getCharAt(toLower(string("Verbose")), 0_i32);
@@ -2701,7 +2701,7 @@ pub mod Runtime {
         fable_library_rust::Native_::getZero()
     }
     pub fn method49(v0: bool) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method50(v0: bool) {
         ();

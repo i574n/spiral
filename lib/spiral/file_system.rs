@@ -21,8 +21,8 @@ pub mod File_system {
     use fable_library_rust::Native_::LrcPtr;
     use fable_library_rust::Native_::MutCell;
     use fable_library_rust::Native_::OnceInit;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::interface_cast;
-    use fable_library_rust::Native_::null;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::NativeArray_::Array;
@@ -2604,7 +2604,7 @@ pub mod File_system {
         })
     }
     pub fn method90(v0: string) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method91(
         v0: LrcPtr<File_system::Mut0>,
@@ -3144,13 +3144,13 @@ pub mod File_system {
         }
     }
     pub fn method106(v0: bool) -> i32 {
-        0
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method107() -> i32 {
-        0
+        unbox::<i32>(fable_library_rust::Native_::getZero())
     }
     pub fn method108(v0: i32, v1: i32) -> bool {
-        false
+        unbox::<bool>(fable_library_rust::Native_::getZero())
     }
     pub fn method110(
         v0: string,
@@ -3264,10 +3264,11 @@ pub mod File_system {
         }
     }
     pub fn method109(v0: string, v1: u8, v2: string) -> Result<std::path::PathBuf, std::io::Error> {
-        let v42_1: i32 = File_system::method106(false);
+        let v42_1: i32 =
+            File_system::method106(unbox::<bool>(fable_library_rust::Native_::getZero()));
         let v44_1: bool = File_system::method108(File_system::method107(), v42_1);
         if v44_1 {
-            let v51_1: bool = false;
+            let v51_1: bool = unbox::<bool>(fable_library_rust::Native_::getZero());
             let v122: std::path::PathBuf = fable_library_rust::Native_::getZero();
             Ok(v122)
         } else {
@@ -3424,10 +3425,11 @@ pub mod File_system {
         }
     }
     pub fn method105(v0: string, v1: u8) -> Result<std::path::PathBuf, std::io::Error> {
-        let v41_1: i32 = File_system::method106(false);
+        let v41_1: i32 =
+            File_system::method106(unbox::<bool>(fable_library_rust::Native_::getZero()));
         let v43_1: bool = File_system::method108(File_system::method107(), v41_1);
         if v43_1 {
-            let v50_1: bool = false;
+            let v50_1: bool = unbox::<bool>(fable_library_rust::Native_::getZero());
             let v121: std::path::PathBuf = fable_library_rust::Native_::getZero();
             Ok(v121)
         } else {
@@ -3587,7 +3589,7 @@ pub mod File_system {
                                     new_array(&[sprintf!("{}:", getCharAt(v108.clone(), 0_i32))]);
                                 let v145: i32 = get_Count(v144.clone());
                                 let v147: i32 = (v145) + (get_Count(v131.clone()));
-                                let v148: Array<string> = new_init(&null::<string>(), v147);
+                                let v148: Array<string> = new_init(&string(""), v147);
                                 let v149: LrcPtr<File_system::Mut6> =
                                     LrcPtr::new(File_system::Mut6 {
                                         l0: MutCell::new(0_i32),
@@ -3612,7 +3614,7 @@ pub mod File_system {
                                 let v158: Array<string> = new_array(&[v132]);
                                 let v159: i32 = get_Count(v158.clone());
                                 let v161: i32 = (v159) + (get_Count(v131.clone()));
-                                let v162: Array<string> = new_init(&null::<string>(), v161);
+                                let v162: Array<string> = new_init(&string(""), v161);
                                 let v163: LrcPtr<File_system::Mut6> =
                                     LrcPtr::new(File_system::Mut6 {
                                         l0: MutCell::new(0_i32),

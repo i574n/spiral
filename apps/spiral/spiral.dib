@@ -560,10 +560,12 @@ inl get_workspace_cargo_toml_content { workspace_root } : string =
 #!spiral
 
 inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string =
-    $'$"[package]"'
+    $'$"cargo-features = [\\\"edition2024\\\"]"'
+    ++\# $'$""'
+    ++\# $'$"[package]"'
     ++\# $'$"name = \\\"spiral_{!hash_hex}\\\""'
     ++\# $'$"version = \\\"0.0.1\\\""'
-    ++\# $'$"edition = \\\"2021\\\""'
+    ++\# $'$"edition = \\\"2024\\\""'
     ++\# $'$""'
     ++\# $'$"[dependencies]"'
     ++\# (

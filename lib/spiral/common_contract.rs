@@ -15,8 +15,8 @@ pub mod Common {
     use fable_library_rust::Native_::LrcPtr;
     use fable_library_rust::Native_::MutCell;
     use fable_library_rust::Native_::OnceInit;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::interface_cast;
-    use fable_library_rust::Native_::null;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::refCell;
     use fable_library_rust::Native_::unbox;

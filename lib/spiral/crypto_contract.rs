@@ -12,7 +12,7 @@ pub mod Crypto {
     use fable_library_rust::Native_::LrcPtr;
     use fable_library_rust::Native_::MutCell;
     use fable_library_rust::Native_::OnceInit;
-    use fable_library_rust::Native_::null;
+    use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::unbox;
     use fable_library_rust::NativeArray_::new_array;
@@ -236,7 +236,7 @@ pub mod Crypto {
         string("")
     }
     pub fn method0(v0_1: string) -> string {
-        fable_library_rust::Native_::getZero()
+        unbox::<string>(fable_library_rust::Native_::getZero())
     }
     pub fn closure0(unitVar: (), v0_1: string) -> string {
         Crypto::method0(v0_1)
