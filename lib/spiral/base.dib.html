@@ -7946,19 +7946,19 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .rs output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .ts output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .py output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .gleam output (Gleam):
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 </pre>
 </div>
@@ -7967,7 +7967,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: 1uy / expected: 1uy
+{ name = __assert_eq; actual = 1; expected = 1 }
 </pre>
 </div>
 </div>
@@ -8083,6 +8083,9 @@ __assert_eq / actual: 1uy / expected: 1uy
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">indent</span> <span class="p">(</span><span class="n">body</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">!!!!</span><span class="n">Indent</span> <span class="p">(</span><span class="n">body</span><span class="p">())</span>
+            <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">body</span> <span class="p">()</span> <span class="o">=</span>
                 <span class="n">body</span> <span class="p">()</span>
@@ -8120,12 +8123,15 @@ __assert_eq / actual: 1uy / expected: 1uy
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">let</span><span class="s1">' fn =</span>
     <span class="n">inl</span> <span class="n">result</span> <span class="p">:</span> <span class="n">unit</span> <span class="o">=</span>
         <span class="n">backend_switch</span> <span class="p">{</span>
-            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                <span class="err">$</span><span class="s1">'()'</span> <span class="p">:</span> <span class="n">unit</span>
-            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">unit</span>
+            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Nil'</span> <span class="p">:</span> <span class="n">unit</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'()'</span> <span class="p">:</span> <span class="n">unit</span>
+            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">unit</span>
         <span class="p">}</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'let _let</span><span class="se">\'</span><span class="s1">_!result = {'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="n">fn</span> <span class="o">|&gt;</span> <span class="n">indent</span>
+            <span class="err">$</span><span class="s1">'}'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'let _let</span><span class="se">\'</span><span class="s1">_!result ='</span> <span class="p">:</span> <span class="p">()</span>
             <span class="n">fn</span> <span class="o">|&gt;</span> <span class="n">indent</span>
@@ -8160,6 +8166,7 @@ __assert_eq / actual: 1uy / expected: 1uy
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">exec_unit</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">fn</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">unit</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'()'</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'unit'</span>
             <span class="p">(</span><span class="err">$</span><span class="s1">'(fun () -&gt; !fn (); !unit) ()'</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'unit'</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
@@ -8282,16 +8289,16 @@ __assert_eq / actual: 1uy / expected: 1uy
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .rs output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .ts output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .py output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 </pre>
 </div>
@@ -8300,7 +8307,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 </pre>
 </div>
 </div>
@@ -8457,19 +8464,19 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .rs output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .ts output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .py output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .gleam output (Gleam):
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 
 
@@ -8482,10 +8489,15 @@ __assert_eq / actual: 15 / expected: 15
 <pre>.gleam (Gleam):
 import gleam/string
 import gleam/io
+pub type Mut0 { Mut0(l0 : String) }
 pub fn method1 () -&gt; Int {
     3
 }
 pub fn method2 (v0 :    Bool) -&gt; Bool {
+    v0
+}
+pub fn method3 () -&gt; String {
+    let v0 = ""
     v0
 }
 pub fn method0 () -&gt; Nil   {
@@ -8503,15 +8515,74 @@ pub fn method0 () -&gt; Nil   {
                 method2(v4)
             }
         }
-    let v7 = "__assert_eq"
-    let v8 = string.inspect(v3)
-    let v9 = string.inspect(15)
-    let v10 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v9
-    io.println(v10)
-    let v18 = v6 == False
-    case v18 {
+    let v7 = method3()
+    let v8 = Mut0(l0 :  v7)
+    let v9 = "{ "
+    let v10 = v9 
+    let v14 = v8.l0 
+    let v15 = v14 &lt;&gt; v10 
+    let v8 = Mut0(l0: v15)
+    let v27 = "name"
+    let v28 = v27 
+    let v32 = v8.l0 
+    let v33 = v32 &lt;&gt; v28 
+    let v8 = Mut0(l0: v33)
+    let v45 = " = "
+    let v46 = v45 
+    let v50 = v8.l0 
+    let v51 = v50 &lt;&gt; v46 
+    let v8 = Mut0(l0: v51)
+    let v63 = "__assert_eq"
+    let v64 = v63 
+    let v68 = v8.l0 
+    let v69 = v68 &lt;&gt; v64 
+    let v8 = Mut0(l0: v69)
+    let v81 = "; "
+    let v82 = v81 
+    let v86 = v8.l0 
+    let v87 = v86 &lt;&gt; v82 
+    let v8 = Mut0(l0: v87)
+    let v99 = "actual"
+    let v100 = v99 
+    let v104 = v8.l0 
+    let v105 = v104 &lt;&gt; v100 
+    let v8 = Mut0(l0: v105)
+    let v117 = v45 
+    let v121 = v8.l0 
+    let v122 = v121 &lt;&gt; v117 
+    let v8 = Mut0(l0: v122)
+    let v134 = string.inspect(v3)
+    let v141 = v8.l0 
+    let v142 = v141 &lt;&gt; v134 
+    let v8 = Mut0(l0: v142)
+    let v154 = v81 
+    let v158 = v8.l0 
+    let v159 = v158 &lt;&gt; v154 
+    let v8 = Mut0(l0: v159)
+    let v171 = "expected"
+    let v172 = v171 
+    let v176 = v8.l0 
+    let v177 = v176 &lt;&gt; v172 
+    let v8 = Mut0(l0: v177)
+    let v189 = v45 
+    let v193 = v8.l0 
+    let v194 = v193 &lt;&gt; v189 
+    let v8 = Mut0(l0: v194)
+    let v206 = string.inspect(15)
+    let v213 = v8.l0 
+    let v214 = v213 &lt;&gt; v206 
+    let v8 = Mut0(l0: v214)
+    let v226 = " }"
+    let v227 = v226 
+    let v231 = v8.l0 
+    let v232 = v231 &lt;&gt; v227 
+    let v8 = Mut0(l0: v232)
+    let v244 = v8.l0 
+    io.println(v244)
+    let v250 = v6 == False
+    case v250 {
         True -&gt; {
-            panic as v10
+            panic as v244
         }
         False -&gt; {
         Nil
@@ -8521,11 +8592,20 @@ pub fn method0 () -&gt; Nil   {
 pub fn main () { method0()
  }
 .fsx:
+type Mut0 = {mutable l0 : string}
 let rec method1 () : int32 =
     3
 and method2 (v0 : bool) : bool =
     v0
-and closure0 (v0 : string) () : unit =
+and method3 () : string =
+    let v0 : string = ""
+    v0
+and closure0 (v0 : Mut0, v1 : string) () : unit =
+    let v2 : string = v0.l0
+    let v4 : string = v2 + v1 
+    v0.l0 &lt;- v4
+    ()
+and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
 and method0 () : unit =
@@ -8539,14 +8619,75 @@ and method0 () : unit =
             true
         else
             method2(v4)
-    let v11 : string = "__assert_eq"
-    let v12 : string = $"{v11} / actual: %A{v3} / expected: %A{15}"
-    let v15 : unit = ()
-    let v16 : (unit -&gt; unit) = closure0(v12)
-    let v17 : unit = (fun () -&gt; v16 (); v15) ()
-    let v19 : bool = v6 = false
-    if v19 then
-        failwith&lt;unit&gt; v12
+    let v7 : string = method3()
+    let v8 : Mut0 = {l0 = v7} : Mut0
+    let v11 : string = "{ "
+    let v12 : string = $"{v11}"
+    let v20 : unit = ()
+    let v21 : (unit -&gt; unit) = closure0(v8, v12)
+    let v22 : unit = (fun () -&gt; v21 (); v20) ()
+    let v30 : string = "name"
+    let v31 : string = $"{v30}"
+    let v39 : unit = ()
+    let v40 : (unit -&gt; unit) = closure0(v8, v31)
+    let v41 : unit = (fun () -&gt; v40 (); v39) ()
+    let v49 : string = " = "
+    let v50 : string = $"{v49}"
+    let v58 : unit = ()
+    let v59 : (unit -&gt; unit) = closure0(v8, v50)
+    let v60 : unit = (fun () -&gt; v59 (); v58) ()
+    let v68 : string = "__assert_eq"
+    let v69 : string = $"{v68}"
+    let v77 : unit = ()
+    let v78 : (unit -&gt; unit) = closure0(v8, v69)
+    let v79 : unit = (fun () -&gt; v78 (); v77) ()
+    let v87 : string = "; "
+    let v88 : string = $"{v87}"
+    let v96 : unit = ()
+    let v97 : (unit -&gt; unit) = closure0(v8, v88)
+    let v98 : unit = (fun () -&gt; v97 (); v96) ()
+    let v106 : string = "actual"
+    let v107 : string = $"{v106}"
+    let v115 : unit = ()
+    let v116 : (unit -&gt; unit) = closure0(v8, v107)
+    let v117 : unit = (fun () -&gt; v116 (); v115) ()
+    let v124 : string = $"{v49}"
+    let v132 : unit = ()
+    let v133 : (unit -&gt; unit) = closure0(v8, v124)
+    let v134 : unit = (fun () -&gt; v133 (); v132) ()
+    let v144 : string = $"{v3}"
+    let v152 : unit = ()
+    let v153 : (unit -&gt; unit) = closure0(v8, v144)
+    let v154 : unit = (fun () -&gt; v153 (); v152) ()
+    let v161 : string = $"{v87}"
+    let v169 : unit = ()
+    let v170 : (unit -&gt; unit) = closure0(v8, v161)
+    let v171 : unit = (fun () -&gt; v170 (); v169) ()
+    let v179 : string = "expected"
+    let v180 : string = $"{v179}"
+    let v188 : unit = ()
+    let v189 : (unit -&gt; unit) = closure0(v8, v180)
+    let v190 : unit = (fun () -&gt; v189 (); v188) ()
+    let v197 : string = $"{v49}"
+    let v205 : unit = ()
+    let v206 : (unit -&gt; unit) = closure0(v8, v197)
+    let v207 : unit = (fun () -&gt; v206 (); v205) ()
+    let v217 : string = $"{15}"
+    let v225 : unit = ()
+    let v226 : (unit -&gt; unit) = closure0(v8, v217)
+    let v227 : unit = (fun () -&gt; v226 (); v225) ()
+    let v235 : string = " }"
+    let v236 : string = $"{v235}"
+    let v244 : unit = ()
+    let v245 : (unit -&gt; unit) = closure0(v8, v236)
+    let v246 : unit = (fun () -&gt; v245 (); v244) ()
+    let v252 : string = v8.l0
+    let v254 : unit = ()
+    let v255 : (unit -&gt; unit) = closure1(v252)
+    let v256 : unit = (fun () -&gt; v255 (); v254) ()
+    let v258 : bool = v6 = false
+    if v258 then
+        failwith&lt;unit&gt; v252
 method0()
 
 
@@ -8562,52 +8703,136 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_c9f7c029 {
+mod module_2625422a {
     pub mod Spiral {
         use super::*;
+        use fable_library_rust::Native_::LrcPtr;
+        use fable_library_rust::Native_::MutCell;
         use fable_library_rust::Native_::on_startup;
+        use fable_library_rust::String_::append;
         use fable_library_rust::String_::printfn;
         use fable_library_rust::String_::sprintf;
         use fable_library_rust::String_::string;
+        #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
+        pub struct Mut0 {
+            pub l0: MutCell&lt;string&gt;,
+        }
+        impl core::fmt::Display for Mut0 {
+            fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+                write!(f, "{}", core::any::type_name::&lt;Self&gt;())
+            }
+        }
         pub fn method1() -&gt; i32 {
             3_i32
         }
         pub fn method2(v0: bool) -&gt; bool {
             v0
         }
-        pub fn closure0(v0: string, unitVar: ()) {
+        pub fn method3() -&gt; string {
+            string("")
+        }
+        pub fn closure0(v0: LrcPtr&lt;Spiral::Mut0&gt;, v1: string, unitVar: ()) {
+            let v4: string = append((v0.l0.get().clone()), (v1));
+            v0.l0.set(v4);
+            ()
+        }
+        pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
         }
         pub fn method0() {
             let v3: i32 = ((9_i32 + (Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method2(v4) };
-            let v12: string = sprintf!(
-                "{} / actual: {:?} / expected: {:?}",
-                string("__assert_eq"),
-                v3,
-                15_i32
-            );
-            let v17: () = {
-                Spiral::closure0(v12.clone(), ());
+            let v8: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+                l0: MutCell::new(Spiral::method3()),
+            });
+            let v22: () = {
+                Spiral::closure0(v8.clone(), string("{ "), ());
+                ()
+            };
+            let v41: () = {
+                Spiral::closure0(v8.clone(), string("name"), ());
+                ()
+            };
+            let v60: () = {
+                Spiral::closure0(v8.clone(), string(" = "), ());
+                ()
+            };
+            let v79: () = {
+                Spiral::closure0(v8.clone(), string("__assert_eq"), ());
+                ()
+            };
+            let v98: () = {
+                Spiral::closure0(v8.clone(), string("; "), ());
+                ()
+            };
+            let v117: () = {
+                Spiral::closure0(v8.clone(), string("actual"), ());
+                ()
+            };
+            let v134: () = {
+                Spiral::closure0(v8.clone(), string(" = "), ());
+                ()
+            };
+            let v154: () = {
+                Spiral::closure0(v8.clone(), sprintf!("{}", v3), ());
+                ()
+            };
+            let v171: () = {
+                Spiral::closure0(v8.clone(), string("; "), ());
+                ()
+            };
+            let v190: () = {
+                Spiral::closure0(v8.clone(), string("expected"), ());
+                ()
+            };
+            let v207: () = {
+                Spiral::closure0(v8.clone(), string(" = "), ());
+                ()
+            };
+            let v227: () = {
+                Spiral::closure0(v8.clone(), sprintf!("{}", 15_i32), ());
+                ()
+            };
+            let v246: () = {
+                Spiral::closure0(v8.clone(), string(" }"), ());
+                ()
+            };
+            let v252: string = v8.l0.get().clone();
+            let v256: () = {
+                Spiral::closure1(v252.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v12,);
+                panic!("{}", v252,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_c9f7c029::*;
+pub use module_2625422a::*;
 
 pub fn main() -&gt; Result&lt;(), String&gt; {
     Ok(Spiral::method0())
 }
 
 .ts:
+import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
+import { IComparable, IEquatable } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Util.js";
+import { record_type, string_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
 import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
-import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
+
+export class Mut0 extends Record implements IEquatable&lt;Mut0&gt;, IComparable&lt;Mut0&gt; {
+    l0: string;
+    constructor(l0: string) {
+        super();
+        this.l0 = l0;
+    }
+}
+
+export function Mut0_$reflection(): TypeInfo {
+    return record_type("Spiral.Mut0", [], Mut0, () =&gt; [["l0", string_type]]);
+}
 
 export function method1(): int32 {
     return 3;
@@ -8617,7 +8842,16 @@ export function method2(v0: boolean): boolean {
     return v0;
 }
 
-export function closure0(v0: string, unitVar: void): void {
+export function method3(): string {
+    return "";
+}
+
+export function closure0(v0: Mut0, v1: string, unitVar: void): void {
+    const v4: string = v0.l0 + v1;
+    v0.l0 = v4;
+}
+
+export function closure1(v0: string, unitVar: void): void {
     console.log(v0);
 }
 
@@ -8625,12 +8859,52 @@ export function method0(): void {
     const v3: int32 = (((9 + method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method2(v4);
-    const v12: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
-    let v17: any;
-    closure0(v12, undefined);
-    v17 = undefined;
+    const v8: Mut0 = new Mut0(method3());
+    let v22: any;
+    closure0(v8, "{ ", undefined);
+    v22 = undefined;
+    let v41: any;
+    closure0(v8, "name", undefined);
+    v41 = undefined;
+    let v60: any;
+    closure0(v8, " = ", undefined);
+    v60 = undefined;
+    let v79: any;
+    closure0(v8, "__assert_eq", undefined);
+    v79 = undefined;
+    let v98: any;
+    closure0(v8, "; ", undefined);
+    v98 = undefined;
+    let v117: any;
+    closure0(v8, "actual", undefined);
+    v117 = undefined;
+    let v134: any;
+    closure0(v8, " = ", undefined);
+    v134 = undefined;
+    let v154: any;
+    closure0(v8, `${v3}`, undefined);
+    v154 = undefined;
+    let v171: any;
+    closure0(v8, "; ", undefined);
+    v171 = undefined;
+    let v190: any;
+    closure0(v8, "expected", undefined);
+    v190 = undefined;
+    let v207: any;
+    closure0(v8, " = ", undefined);
+    v207 = undefined;
+    let v227: any;
+    closure0(v8, `${15}`, undefined);
+    v227 = undefined;
+    let v246: any;
+    closure0(v8, " }", undefined);
+    v246 = undefined;
+    const v252: string = v8.l0;
+    let v256: any;
+    closure1(v252, undefined);
+    v256 = undefined;
     if (v6 === false) {
-        throw new Error(v12);
+        throw new Error(v252);
     }
 }
 
@@ -8641,7 +8915,20 @@ method0();
 // spiral.process_typescript
 
 .py:
-from fable_modules.fable_library.string_ import (to_text, interpolate)
+from __future__ import annotations
+from fable_modules.fable_library.reflection import (TypeInfo, string_type, record_type)
+from fable_modules.fable_library.types import Record
+from dataclasses import dataclass
+
+def _expr0() -&gt; TypeInfo:
+    return record_type("Spiral.Mut0", [], Mut0, lambda: [("l0", string_type)])
+
+
+@dataclass(eq = False, repr = False, slots = True)
+class Mut0(Record):
+    l0: str
+
+Mut0_reflection = _expr0
 
 def method1(__unit: None=None) -&gt; int:
     return 3
@@ -8651,7 +8938,16 @@ def method2(v0: bool) -&gt; bool:
     return v0
 
 
-def closure0(v0: str, unit_var: None) -&gt; None:
+def method3(__unit: None=None) -&gt; str:
+    return ""
+
+
+def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
+    v4: str = v0.l0 + v1
+    v0.l0 = v4
+
+
+def closure1(v0: str, unit_var: None) -&gt; None:
     print(v0)
 
 
@@ -8659,12 +8955,52 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = (((9 + method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method2(v4)
-    v12: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
-    v17: None
-    closure0(v12, None)
-    v17 = None
+    v8: Mut0 = Mut0(method3())
+    v22: None
+    closure0(v8, "{ ", None)
+    v22 = None
+    v41: None
+    closure0(v8, "name", None)
+    v41 = None
+    v60: None
+    closure0(v8, " = ", None)
+    v60 = None
+    v79: None
+    closure0(v8, "__assert_eq", None)
+    v79 = None
+    v98: None
+    closure0(v8, "; ", None)
+    v98 = None
+    v117: None
+    closure0(v8, "actual", None)
+    v117 = None
+    v134: None
+    closure0(v8, " = ", None)
+    v134 = None
+    v154: None
+    closure0(v8, ("" + str(v3)) + "", None)
+    v154 = None
+    v171: None
+    closure0(v8, "; ", None)
+    v171 = None
+    v190: None
+    closure0(v8, "expected", None)
+    v190 = None
+    v207: None
+    closure0(v8, " = ", None)
+    v207 = None
+    v227: None
+    closure0(v8, ("" + str(15)) + "", None)
+    v227 = None
+    v246: None
+    closure0(v8, " }", None)
+    v246 = None
+    v252: str = v8.l0
+    v256: None
+    closure1(v252, None)
+    v256 = None
     if v6 == False:
-        raise Exception(v12)
+        raise Exception(v252)
 
 
 
@@ -8731,9 +9067,15 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+@dataclass
+class Mut0:
+    v0 : string
 def method1() -&gt; i32:
     return 3
 def method2(v0 : bool) -&gt; bool:
+    return v0
+def method3() -&gt; string:
+    v0 = ""
     return v0
 def method0() -&gt; None:
     v0 = method1()
@@ -8749,17 +9091,114 @@ def method0() -&gt; None:
     else:
         v6 = method2(v4)
     del v4
-    v13 = "__assert_eq"
-    v14 = f"{v13} / actual: {v3} / expected: {15}"
-    del v3, v13
-    print(v14)
-    v20 = v6 == False
+    v7 = method3()
+    v8 = Mut0(v7)
+    del v7
+    v13 = "{ "
+    v14 = f"{v13}"
+    del v13
+    v24 = v8.v0
+    v27 = v24 + v14 
+    del v14, v24
+    v8.v0 = v27
+    del v27
+    v33 = "name"
+    v34 = f"{v33}"
+    del v33
+    v44 = v8.v0
+    v47 = v44 + v34 
+    del v34, v44
+    v8.v0 = v47
+    del v47
+    v53 = " = "
+    v54 = f"{v53}"
+    v64 = v8.v0
+    v67 = v64 + v54 
+    del v54, v64
+    v8.v0 = v67
+    del v67
+    v73 = "__assert_eq"
+    v74 = f"{v73}"
+    del v73
+    v84 = v8.v0
+    v87 = v84 + v74 
+    del v74, v84
+    v8.v0 = v87
+    del v87
+    v93 = "; "
+    v94 = f"{v93}"
+    v104 = v8.v0
+    v107 = v104 + v94 
+    del v94, v104
+    v8.v0 = v107
+    del v107
+    v113 = "actual"
+    v114 = f"{v113}"
+    del v113
+    v124 = v8.v0
+    v127 = v124 + v114 
+    del v114, v124
+    v8.v0 = v127
+    del v127
+    v131 = f"{v53}"
+    v141 = v8.v0
+    v144 = v141 + v131 
+    del v131, v141
+    v8.v0 = v144
+    del v144
+    v151 = f"{v3}"
+    del v3
+    v161 = v8.v0
+    v164 = v161 + v151 
+    del v151, v161
+    v8.v0 = v164
+    del v164
+    v168 = f"{v93}"
+    del v93
+    v178 = v8.v0
+    v181 = v178 + v168 
+    del v168, v178
+    v8.v0 = v181
+    del v181
+    v187 = "expected"
+    v188 = f"{v187}"
+    del v187
+    v198 = v8.v0
+    v201 = v198 + v188 
+    del v188, v198
+    v8.v0 = v201
+    del v201
+    v205 = f"{v53}"
+    del v53
+    v215 = v8.v0
+    v218 = v215 + v205 
+    del v205, v215
+    v8.v0 = v218
+    del v218
+    v225 = f"{15}"
+    v235 = v8.v0
+    v238 = v235 + v225 
+    del v225, v235
+    v8.v0 = v238
+    del v238
+    v244 = " }"
+    v245 = f"{v244}"
+    del v244
+    v255 = v8.v0
+    v258 = v255 + v245 
+    del v245, v255
+    v8.v0 = v258
+    del v258
+    v260 = v8.v0
+    del v8
+    print(v260)
+    v266 = v6 == False
     del v6
-    if v20:
-        del v20
-        raise Exception(v14)
+    if v266:
+        del v266
+        raise Exception(v260)
     else:
-        del v14, v20
+        del v260, v266
         return 
 def main_body():
     return method0()
@@ -8772,7 +9211,7 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 </pre>
 </div>
 </div>
@@ -8811,19 +9250,19 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .rs output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .ts output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .py output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .gleam output (Gleam):
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 
 
@@ -8836,6 +9275,7 @@ __assert_eq / actual: 15 / expected: 15
 <pre>.gleam (Gleam):
 import gleam/string
 import gleam/io
+pub type Mut0 { Mut0(l0 : String) }
 pub fn method1 () -&gt; Int {
     3
 }
@@ -8844,6 +9284,10 @@ pub fn method2 (v0 :    Int, v1 :    Int) -&gt; Int {
     v2
 }
 pub fn method3 (v0 :    Bool) -&gt; Bool {
+    v0
+}
+pub fn method4 () -&gt; String {
+    let v0 = ""
     v0
 }
 pub fn method0 () -&gt; Nil   {
@@ -8862,15 +9306,74 @@ pub fn method0 () -&gt; Nil   {
                 method3(v5)
             }
         }
-    let v8 = "__assert_eq"
-    let v9 = string.inspect(v4)
-    let v10 = string.inspect(15)
-    let v11 = v8 &lt;&gt; " / actual: " &lt;&gt; v9 &lt;&gt; " / expected: " &lt;&gt; v10
-    io.println(v11)
-    let v19 = v7 == False
-    case v19 {
+    let v8 = method4()
+    let v9 = Mut0(l0 :  v8)
+    let v10 = "{ "
+    let v11 = v10 
+    let v15 = v9.l0 
+    let v16 = v15 &lt;&gt; v11 
+    let v9 = Mut0(l0: v16)
+    let v28 = "name"
+    let v29 = v28 
+    let v33 = v9.l0 
+    let v34 = v33 &lt;&gt; v29 
+    let v9 = Mut0(l0: v34)
+    let v46 = " = "
+    let v47 = v46 
+    let v51 = v9.l0 
+    let v52 = v51 &lt;&gt; v47 
+    let v9 = Mut0(l0: v52)
+    let v64 = "__assert_eq"
+    let v65 = v64 
+    let v69 = v9.l0 
+    let v70 = v69 &lt;&gt; v65 
+    let v9 = Mut0(l0: v70)
+    let v82 = "; "
+    let v83 = v82 
+    let v87 = v9.l0 
+    let v88 = v87 &lt;&gt; v83 
+    let v9 = Mut0(l0: v88)
+    let v100 = "actual"
+    let v101 = v100 
+    let v105 = v9.l0 
+    let v106 = v105 &lt;&gt; v101 
+    let v9 = Mut0(l0: v106)
+    let v118 = v46 
+    let v122 = v9.l0 
+    let v123 = v122 &lt;&gt; v118 
+    let v9 = Mut0(l0: v123)
+    let v135 = string.inspect(v4)
+    let v142 = v9.l0 
+    let v143 = v142 &lt;&gt; v135 
+    let v9 = Mut0(l0: v143)
+    let v155 = v82 
+    let v159 = v9.l0 
+    let v160 = v159 &lt;&gt; v155 
+    let v9 = Mut0(l0: v160)
+    let v172 = "expected"
+    let v173 = v172 
+    let v177 = v9.l0 
+    let v178 = v177 &lt;&gt; v173 
+    let v9 = Mut0(l0: v178)
+    let v190 = v46 
+    let v194 = v9.l0 
+    let v195 = v194 &lt;&gt; v190 
+    let v9 = Mut0(l0: v195)
+    let v207 = string.inspect(15)
+    let v214 = v9.l0 
+    let v215 = v214 &lt;&gt; v207 
+    let v9 = Mut0(l0: v215)
+    let v227 = " }"
+    let v228 = v227 
+    let v232 = v9.l0 
+    let v233 = v232 &lt;&gt; v228 
+    let v9 = Mut0(l0: v233)
+    let v245 = v9.l0 
+    io.println(v245)
+    let v251 = v7 == False
+    case v251 {
         True -&gt; {
-            panic as v11
+            panic as v245
         }
         False -&gt; {
         Nil
@@ -8880,6 +9383,7 @@ pub fn method0 () -&gt; Nil   {
 pub fn main () { method0()
  }
 .fsx:
+type Mut0 = {mutable l0 : string}
 let rec method1 () : int32 =
     3
 and method2 (v0 : int32, v1 : int32) : int32 =
@@ -8887,7 +9391,15 @@ and method2 (v0 : int32, v1 : int32) : int32 =
     v2
 and method3 (v0 : bool) : bool =
     v0
-and closure0 (v0 : string) () : unit =
+and method4 () : string =
+    let v0 : string = ""
+    v0
+and closure0 (v0 : Mut0, v1 : string) () : unit =
+    let v2 : string = v0.l0
+    let v4 : string = v2 + v1 
+    v0.l0 &lt;- v4
+    ()
+and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
 and method0 () : unit =
@@ -8902,14 +9414,75 @@ and method0 () : unit =
             true
         else
             method3(v5)
-    let v12 : string = "__assert_eq"
-    let v13 : string = $"{v12} / actual: %A{v4} / expected: %A{15}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v13)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v20 : bool = v7 = false
-    if v20 then
-        failwith&lt;unit&gt; v13
+    let v8 : string = method4()
+    let v9 : Mut0 = {l0 = v8} : Mut0
+    let v12 : string = "{ "
+    let v13 : string = $"{v12}"
+    let v21 : unit = ()
+    let v22 : (unit -&gt; unit) = closure0(v9, v13)
+    let v23 : unit = (fun () -&gt; v22 (); v21) ()
+    let v31 : string = "name"
+    let v32 : string = $"{v31}"
+    let v40 : unit = ()
+    let v41 : (unit -&gt; unit) = closure0(v9, v32)
+    let v42 : unit = (fun () -&gt; v41 (); v40) ()
+    let v50 : string = " = "
+    let v51 : string = $"{v50}"
+    let v59 : unit = ()
+    let v60 : (unit -&gt; unit) = closure0(v9, v51)
+    let v61 : unit = (fun () -&gt; v60 (); v59) ()
+    let v69 : string = "__assert_eq"
+    let v70 : string = $"{v69}"
+    let v78 : unit = ()
+    let v79 : (unit -&gt; unit) = closure0(v9, v70)
+    let v80 : unit = (fun () -&gt; v79 (); v78) ()
+    let v88 : string = "; "
+    let v89 : string = $"{v88}"
+    let v97 : unit = ()
+    let v98 : (unit -&gt; unit) = closure0(v9, v89)
+    let v99 : unit = (fun () -&gt; v98 (); v97) ()
+    let v107 : string = "actual"
+    let v108 : string = $"{v107}"
+    let v116 : unit = ()
+    let v117 : (unit -&gt; unit) = closure0(v9, v108)
+    let v118 : unit = (fun () -&gt; v117 (); v116) ()
+    let v125 : string = $"{v50}"
+    let v133 : unit = ()
+    let v134 : (unit -&gt; unit) = closure0(v9, v125)
+    let v135 : unit = (fun () -&gt; v134 (); v133) ()
+    let v145 : string = $"{v4}"
+    let v153 : unit = ()
+    let v154 : (unit -&gt; unit) = closure0(v9, v145)
+    let v155 : unit = (fun () -&gt; v154 (); v153) ()
+    let v162 : string = $"{v88}"
+    let v170 : unit = ()
+    let v171 : (unit -&gt; unit) = closure0(v9, v162)
+    let v172 : unit = (fun () -&gt; v171 (); v170) ()
+    let v180 : string = "expected"
+    let v181 : string = $"{v180}"
+    let v189 : unit = ()
+    let v190 : (unit -&gt; unit) = closure0(v9, v181)
+    let v191 : unit = (fun () -&gt; v190 (); v189) ()
+    let v198 : string = $"{v50}"
+    let v206 : unit = ()
+    let v207 : (unit -&gt; unit) = closure0(v9, v198)
+    let v208 : unit = (fun () -&gt; v207 (); v206) ()
+    let v218 : string = $"{15}"
+    let v226 : unit = ()
+    let v227 : (unit -&gt; unit) = closure0(v9, v218)
+    let v228 : unit = (fun () -&gt; v227 (); v226) ()
+    let v236 : string = " }"
+    let v237 : string = $"{v236}"
+    let v245 : unit = ()
+    let v246 : (unit -&gt; unit) = closure0(v9, v237)
+    let v247 : unit = (fun () -&gt; v246 (); v245) ()
+    let v253 : string = v9.l0
+    let v255 : unit = ()
+    let v256 : (unit -&gt; unit) = closure1(v253)
+    let v257 : unit = (fun () -&gt; v256 (); v255) ()
+    let v259 : bool = v7 = false
+    if v259 then
+        failwith&lt;unit&gt; v253
 method0()
 
 
@@ -8925,13 +9498,25 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_8f201bac {
+mod module_d0de88ee {
     pub mod Spiral {
         use super::*;
+        use fable_library_rust::Native_::LrcPtr;
+        use fable_library_rust::Native_::MutCell;
         use fable_library_rust::Native_::on_startup;
+        use fable_library_rust::String_::append;
         use fable_library_rust::String_::printfn;
         use fable_library_rust::String_::sprintf;
         use fable_library_rust::String_::string;
+        #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
+        pub struct Mut0 {
+            pub l0: MutCell&lt;string&gt;,
+        }
+        impl core::fmt::Display for Mut0 {
+            fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+                write!(f, "{}", core::any::type_name::&lt;Self&gt;())
+            }
+        }
         pub fn method1() -&gt; i32 {
             3_i32
         }
@@ -8941,39 +9526,111 @@ mod module_8f201bac {
         pub fn method3(v0: bool) -&gt; bool {
             v0
         }
-        pub fn closure0(v0: string, unitVar: ()) {
+        pub fn method4() -&gt; string {
+            string("")
+        }
+        pub fn closure0(v0: LrcPtr&lt;Spiral::Mut0&gt;, v1: string, unitVar: ()) {
+            let v4: string = append((v0.l0.get().clone()), (v1));
+            v0.l0.set(v4);
+            ()
+        }
+        pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
         }
         pub fn method0() {
             let v4: i32 = ((Spiral::method2(Spiral::method1(), 9_i32)) + 2_i32) + 1_i32;
             let v5: bool = (v4) == 15_i32;
             let v7: bool = if v5 { true } else { Spiral::method3(v5) };
-            let v13: string = sprintf!(
-                "{} / actual: {:?} / expected: {:?}",
-                string("__assert_eq"),
-                v4,
-                15_i32
-            );
-            let v18: () = {
-                Spiral::closure0(v13.clone(), ());
+            let v9: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+                l0: MutCell::new(Spiral::method4()),
+            });
+            let v23: () = {
+                Spiral::closure0(v9.clone(), string("{ "), ());
+                ()
+            };
+            let v42: () = {
+                Spiral::closure0(v9.clone(), string("name"), ());
+                ()
+            };
+            let v61: () = {
+                Spiral::closure0(v9.clone(), string(" = "), ());
+                ()
+            };
+            let v80: () = {
+                Spiral::closure0(v9.clone(), string("__assert_eq"), ());
+                ()
+            };
+            let v99: () = {
+                Spiral::closure0(v9.clone(), string("; "), ());
+                ()
+            };
+            let v118: () = {
+                Spiral::closure0(v9.clone(), string("actual"), ());
+                ()
+            };
+            let v135: () = {
+                Spiral::closure0(v9.clone(), string(" = "), ());
+                ()
+            };
+            let v155: () = {
+                Spiral::closure0(v9.clone(), sprintf!("{}", v4), ());
+                ()
+            };
+            let v172: () = {
+                Spiral::closure0(v9.clone(), string("; "), ());
+                ()
+            };
+            let v191: () = {
+                Spiral::closure0(v9.clone(), string("expected"), ());
+                ()
+            };
+            let v208: () = {
+                Spiral::closure0(v9.clone(), string(" = "), ());
+                ()
+            };
+            let v228: () = {
+                Spiral::closure0(v9.clone(), sprintf!("{}", 15_i32), ());
+                ()
+            };
+            let v247: () = {
+                Spiral::closure0(v9.clone(), string(" }"), ());
+                ()
+            };
+            let v253: string = v9.l0.get().clone();
+            let v257: () = {
+                Spiral::closure1(v253.clone(), ());
                 ()
             };
             if (v7) == false {
-                panic!("{}", v13,);
+                panic!("{}", v253,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_8f201bac::*;
+pub use module_d0de88ee::*;
 
 pub fn main() -&gt; Result&lt;(), String&gt; {
     Ok(Spiral::method0())
 }
 
 .ts:
+import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
+import { IComparable, IEquatable } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Util.js";
+import { record_type, string_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
 import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
-import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
+
+export class Mut0 extends Record implements IEquatable&lt;Mut0&gt;, IComparable&lt;Mut0&gt; {
+    l0: string;
+    constructor(l0: string) {
+        super();
+        this.l0 = l0;
+    }
+}
+
+export function Mut0_$reflection(): TypeInfo {
+    return record_type("Spiral.Mut0", [], Mut0, () =&gt; [["l0", string_type]]);
+}
 
 export function method1(): int32 {
     return 3;
@@ -8987,7 +9644,16 @@ export function method3(v0: boolean): boolean {
     return v0;
 }
 
-export function closure0(v0: string, unitVar: void): void {
+export function method4(): string {
+    return "";
+}
+
+export function closure0(v0: Mut0, v1: string, unitVar: void): void {
+    const v4: string = v0.l0 + v1;
+    v0.l0 = v4;
+}
+
+export function closure1(v0: string, unitVar: void): void {
     console.log(v0);
 }
 
@@ -8995,12 +9661,52 @@ export function method0(): void {
     const v4: int32 = ((method2(method1(), 9) + 2) + 1) | 0;
     const v5: boolean = v4 === 15;
     const v7: boolean = v5 ? true : method3(v5);
-    const v13: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]));
-    let v18: any;
-    closure0(v13, undefined);
-    v18 = undefined;
+    const v9: Mut0 = new Mut0(method4());
+    let v23: any;
+    closure0(v9, "{ ", undefined);
+    v23 = undefined;
+    let v42: any;
+    closure0(v9, "name", undefined);
+    v42 = undefined;
+    let v61: any;
+    closure0(v9, " = ", undefined);
+    v61 = undefined;
+    let v80: any;
+    closure0(v9, "__assert_eq", undefined);
+    v80 = undefined;
+    let v99: any;
+    closure0(v9, "; ", undefined);
+    v99 = undefined;
+    let v118: any;
+    closure0(v9, "actual", undefined);
+    v118 = undefined;
+    let v135: any;
+    closure0(v9, " = ", undefined);
+    v135 = undefined;
+    let v155: any;
+    closure0(v9, `${v4}`, undefined);
+    v155 = undefined;
+    let v172: any;
+    closure0(v9, "; ", undefined);
+    v172 = undefined;
+    let v191: any;
+    closure0(v9, "expected", undefined);
+    v191 = undefined;
+    let v208: any;
+    closure0(v9, " = ", undefined);
+    v208 = undefined;
+    let v228: any;
+    closure0(v9, `${15}`, undefined);
+    v228 = undefined;
+    let v247: any;
+    closure0(v9, " }", undefined);
+    v247 = undefined;
+    const v253: string = v9.l0;
+    let v257: any;
+    closure1(v253, undefined);
+    v257 = undefined;
     if (v7 === false) {
-        throw new Error(v13);
+        throw new Error(v253);
     }
 }
 
@@ -9011,7 +9717,20 @@ method0();
 // spiral.process_typescript
 
 .py:
-from fable_modules.fable_library.string_ import (to_text, interpolate)
+from __future__ import annotations
+from fable_modules.fable_library.reflection import (TypeInfo, string_type, record_type)
+from fable_modules.fable_library.types import Record
+from dataclasses import dataclass
+
+def _expr0() -&gt; TypeInfo:
+    return record_type("Spiral.Mut0", [], Mut0, lambda: [("l0", string_type)])
+
+
+@dataclass(eq = False, repr = False, slots = True)
+class Mut0(Record):
+    l0: str
+
+Mut0_reflection = _expr0
 
 def method1(__unit: None=None) -&gt; int:
     return 3
@@ -9025,7 +9744,16 @@ def method3(v0: bool) -&gt; bool:
     return v0
 
 
-def closure0(v0: str, unit_var: None) -&gt; None:
+def method4(__unit: None=None) -&gt; str:
+    return ""
+
+
+def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
+    v4: str = v0.l0 + v1
+    v0.l0 = v4
+
+
+def closure1(v0: str, unit_var: None) -&gt; None:
     print(v0)
 
 
@@ -9033,12 +9761,52 @@ def method0(__unit: None=None) -&gt; None:
     v4: int = ((method2(method1(), 9) + 2) + 1) or 0
     v5: bool = v4 == 15
     v7: bool = True if v5 else method3(v5)
-    v13: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v4, 15]))
-    v18: None
-    closure0(v13, None)
-    v18 = None
+    v9: Mut0 = Mut0(method4())
+    v23: None
+    closure0(v9, "{ ", None)
+    v23 = None
+    v42: None
+    closure0(v9, "name", None)
+    v42 = None
+    v61: None
+    closure0(v9, " = ", None)
+    v61 = None
+    v80: None
+    closure0(v9, "__assert_eq", None)
+    v80 = None
+    v99: None
+    closure0(v9, "; ", None)
+    v99 = None
+    v118: None
+    closure0(v9, "actual", None)
+    v118 = None
+    v135: None
+    closure0(v9, " = ", None)
+    v135 = None
+    v155: None
+    closure0(v9, ("" + str(v4)) + "", None)
+    v155 = None
+    v172: None
+    closure0(v9, "; ", None)
+    v172 = None
+    v191: None
+    closure0(v9, "expected", None)
+    v191 = None
+    v208: None
+    closure0(v9, " = ", None)
+    v208 = None
+    v228: None
+    closure0(v9, ("" + str(15)) + "", None)
+    v228 = None
+    v247: None
+    closure0(v9, " }", None)
+    v247 = None
+    v253: str = v9.l0
+    v257: None
+    closure1(v253, None)
+    v257 = None
     if v7 == False:
-        raise Exception(v13)
+        raise Exception(v253)
 
 
 
@@ -9105,6 +9873,9 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+@dataclass
+class Mut0:
+    v0 : string
 def method1() -&gt; i32:
     return 3
 def method2(v0 : i32, v1 : i32) -&gt; i32:
@@ -9112,6 +9883,9 @@ def method2(v0 : i32, v1 : i32) -&gt; i32:
     del v0, v1
     return v2
 def method3(v0 : bool) -&gt; bool:
+    return v0
+def method4() -&gt; string:
+    v0 = ""
     return v0
 def method0() -&gt; None:
     v0 = method1()
@@ -9128,17 +9902,114 @@ def method0() -&gt; None:
     else:
         v7 = method3(v5)
     del v5
-    v14 = "__assert_eq"
-    v15 = f"{v14} / actual: {v4} / expected: {15}"
-    del v4, v14
-    print(v15)
-    v21 = v7 == False
+    v8 = method4()
+    v9 = Mut0(v8)
+    del v8
+    v14 = "{ "
+    v15 = f"{v14}"
+    del v14
+    v25 = v9.v0
+    v28 = v25 + v15 
+    del v15, v25
+    v9.v0 = v28
+    del v28
+    v34 = "name"
+    v35 = f"{v34}"
+    del v34
+    v45 = v9.v0
+    v48 = v45 + v35 
+    del v35, v45
+    v9.v0 = v48
+    del v48
+    v54 = " = "
+    v55 = f"{v54}"
+    v65 = v9.v0
+    v68 = v65 + v55 
+    del v55, v65
+    v9.v0 = v68
+    del v68
+    v74 = "__assert_eq"
+    v75 = f"{v74}"
+    del v74
+    v85 = v9.v0
+    v88 = v85 + v75 
+    del v75, v85
+    v9.v0 = v88
+    del v88
+    v94 = "; "
+    v95 = f"{v94}"
+    v105 = v9.v0
+    v108 = v105 + v95 
+    del v95, v105
+    v9.v0 = v108
+    del v108
+    v114 = "actual"
+    v115 = f"{v114}"
+    del v114
+    v125 = v9.v0
+    v128 = v125 + v115 
+    del v115, v125
+    v9.v0 = v128
+    del v128
+    v132 = f"{v54}"
+    v142 = v9.v0
+    v145 = v142 + v132 
+    del v132, v142
+    v9.v0 = v145
+    del v145
+    v152 = f"{v4}"
+    del v4
+    v162 = v9.v0
+    v165 = v162 + v152 
+    del v152, v162
+    v9.v0 = v165
+    del v165
+    v169 = f"{v94}"
+    del v94
+    v179 = v9.v0
+    v182 = v179 + v169 
+    del v169, v179
+    v9.v0 = v182
+    del v182
+    v188 = "expected"
+    v189 = f"{v188}"
+    del v188
+    v199 = v9.v0
+    v202 = v199 + v189 
+    del v189, v199
+    v9.v0 = v202
+    del v202
+    v206 = f"{v54}"
+    del v54
+    v216 = v9.v0
+    v219 = v216 + v206 
+    del v206, v216
+    v9.v0 = v219
+    del v219
+    v226 = f"{15}"
+    v236 = v9.v0
+    v239 = v236 + v226 
+    del v226, v236
+    v9.v0 = v239
+    del v239
+    v245 = " }"
+    v246 = f"{v245}"
+    del v245
+    v256 = v9.v0
+    v259 = v256 + v246 
+    del v246, v256
+    v9.v0 = v259
+    del v259
+    v261 = v9.v0
+    del v9
+    print(v261)
+    v267 = v7 == False
     del v7
-    if v21:
-        del v21
-        raise Exception(v15)
+    if v267:
+        del v267
+        raise Exception(v261)
     else:
-        del v15, v21
+        del v261, v267
         return 
 def main_body():
     return method0()
@@ -9151,7 +10022,7 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 </pre>
 </div>
 </div>
@@ -9220,19 +10091,19 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .rs output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .ts output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .py output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 .gleam output (Gleam):
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 
 
 
@@ -9245,6 +10116,7 @@ __assert_eq / actual: 15 / expected: 15
 <pre>.gleam (Gleam):
 import gleam/string
 import gleam/io
+pub type Mut0 { Mut0(l0 : String) }
 pub fn method1 () -&gt; Int {
     3
 }
@@ -9253,6 +10125,10 @@ pub fn method2 (v0 :    Int) -&gt; Int {
     v1
 }
 pub fn method3 (v0 :    Bool) -&gt; Bool {
+    v0
+}
+pub fn method4 () -&gt; String {
+    let v0 = ""
     v0
 }
 pub fn method0 () -&gt; Nil   {
@@ -9270,15 +10146,74 @@ pub fn method0 () -&gt; Nil   {
                 method3(v4)
             }
         }
-    let v7 = "__assert_eq"
-    let v8 = string.inspect(v3)
-    let v9 = string.inspect(15)
-    let v10 = v7 &lt;&gt; " / actual: " &lt;&gt; v8 &lt;&gt; " / expected: " &lt;&gt; v9
-    io.println(v10)
-    let v18 = v6 == False
-    case v18 {
+    let v7 = method4()
+    let v8 = Mut0(l0 :  v7)
+    let v9 = "{ "
+    let v10 = v9 
+    let v14 = v8.l0 
+    let v15 = v14 &lt;&gt; v10 
+    let v8 = Mut0(l0: v15)
+    let v27 = "name"
+    let v28 = v27 
+    let v32 = v8.l0 
+    let v33 = v32 &lt;&gt; v28 
+    let v8 = Mut0(l0: v33)
+    let v45 = " = "
+    let v46 = v45 
+    let v50 = v8.l0 
+    let v51 = v50 &lt;&gt; v46 
+    let v8 = Mut0(l0: v51)
+    let v63 = "__assert_eq"
+    let v64 = v63 
+    let v68 = v8.l0 
+    let v69 = v68 &lt;&gt; v64 
+    let v8 = Mut0(l0: v69)
+    let v81 = "; "
+    let v82 = v81 
+    let v86 = v8.l0 
+    let v87 = v86 &lt;&gt; v82 
+    let v8 = Mut0(l0: v87)
+    let v99 = "actual"
+    let v100 = v99 
+    let v104 = v8.l0 
+    let v105 = v104 &lt;&gt; v100 
+    let v8 = Mut0(l0: v105)
+    let v117 = v45 
+    let v121 = v8.l0 
+    let v122 = v121 &lt;&gt; v117 
+    let v8 = Mut0(l0: v122)
+    let v134 = string.inspect(v3)
+    let v141 = v8.l0 
+    let v142 = v141 &lt;&gt; v134 
+    let v8 = Mut0(l0: v142)
+    let v154 = v81 
+    let v158 = v8.l0 
+    let v159 = v158 &lt;&gt; v154 
+    let v8 = Mut0(l0: v159)
+    let v171 = "expected"
+    let v172 = v171 
+    let v176 = v8.l0 
+    let v177 = v176 &lt;&gt; v172 
+    let v8 = Mut0(l0: v177)
+    let v189 = v45 
+    let v193 = v8.l0 
+    let v194 = v193 &lt;&gt; v189 
+    let v8 = Mut0(l0: v194)
+    let v206 = string.inspect(15)
+    let v213 = v8.l0 
+    let v214 = v213 &lt;&gt; v206 
+    let v8 = Mut0(l0: v214)
+    let v226 = " }"
+    let v227 = v226 
+    let v231 = v8.l0 
+    let v232 = v231 &lt;&gt; v227 
+    let v8 = Mut0(l0: v232)
+    let v244 = v8.l0 
+    io.println(v244)
+    let v250 = v6 == False
+    case v250 {
         True -&gt; {
-            panic as v10
+            panic as v244
         }
         False -&gt; {
         Nil
@@ -9288,6 +10223,7 @@ pub fn method0 () -&gt; Nil   {
 pub fn main () { method0()
  }
 .fsx:
+type Mut0 = {mutable l0 : string}
 let rec method1 () : int32 =
     3
 and method2 (v0 : int32) : int32 =
@@ -9295,7 +10231,15 @@ and method2 (v0 : int32) : int32 =
     v1
 and method3 (v0 : bool) : bool =
     v0
-and closure0 (v0 : string) () : unit =
+and method4 () : string =
+    let v0 : string = ""
+    v0
+and closure0 (v0 : Mut0, v1 : string) () : unit =
+    let v2 : string = v0.l0
+    let v4 : string = v2 + v1 
+    v0.l0 &lt;- v4
+    ()
+and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
 and method0 () : unit =
@@ -9309,14 +10253,75 @@ and method0 () : unit =
             true
         else
             method3(v4)
-    let v11 : string = "__assert_eq"
-    let v12 : string = $"{v11} / actual: %A{v3} / expected: %A{15}"
-    let v15 : unit = ()
-    let v16 : (unit -&gt; unit) = closure0(v12)
-    let v17 : unit = (fun () -&gt; v16 (); v15) ()
-    let v19 : bool = v6 = false
-    if v19 then
-        failwith&lt;unit&gt; v12
+    let v7 : string = method4()
+    let v8 : Mut0 = {l0 = v7} : Mut0
+    let v11 : string = "{ "
+    let v12 : string = $"{v11}"
+    let v20 : unit = ()
+    let v21 : (unit -&gt; unit) = closure0(v8, v12)
+    let v22 : unit = (fun () -&gt; v21 (); v20) ()
+    let v30 : string = "name"
+    let v31 : string = $"{v30}"
+    let v39 : unit = ()
+    let v40 : (unit -&gt; unit) = closure0(v8, v31)
+    let v41 : unit = (fun () -&gt; v40 (); v39) ()
+    let v49 : string = " = "
+    let v50 : string = $"{v49}"
+    let v58 : unit = ()
+    let v59 : (unit -&gt; unit) = closure0(v8, v50)
+    let v60 : unit = (fun () -&gt; v59 (); v58) ()
+    let v68 : string = "__assert_eq"
+    let v69 : string = $"{v68}"
+    let v77 : unit = ()
+    let v78 : (unit -&gt; unit) = closure0(v8, v69)
+    let v79 : unit = (fun () -&gt; v78 (); v77) ()
+    let v87 : string = "; "
+    let v88 : string = $"{v87}"
+    let v96 : unit = ()
+    let v97 : (unit -&gt; unit) = closure0(v8, v88)
+    let v98 : unit = (fun () -&gt; v97 (); v96) ()
+    let v106 : string = "actual"
+    let v107 : string = $"{v106}"
+    let v115 : unit = ()
+    let v116 : (unit -&gt; unit) = closure0(v8, v107)
+    let v117 : unit = (fun () -&gt; v116 (); v115) ()
+    let v124 : string = $"{v49}"
+    let v132 : unit = ()
+    let v133 : (unit -&gt; unit) = closure0(v8, v124)
+    let v134 : unit = (fun () -&gt; v133 (); v132) ()
+    let v144 : string = $"{v3}"
+    let v152 : unit = ()
+    let v153 : (unit -&gt; unit) = closure0(v8, v144)
+    let v154 : unit = (fun () -&gt; v153 (); v152) ()
+    let v161 : string = $"{v87}"
+    let v169 : unit = ()
+    let v170 : (unit -&gt; unit) = closure0(v8, v161)
+    let v171 : unit = (fun () -&gt; v170 (); v169) ()
+    let v179 : string = "expected"
+    let v180 : string = $"{v179}"
+    let v188 : unit = ()
+    let v189 : (unit -&gt; unit) = closure0(v8, v180)
+    let v190 : unit = (fun () -&gt; v189 (); v188) ()
+    let v197 : string = $"{v49}"
+    let v205 : unit = ()
+    let v206 : (unit -&gt; unit) = closure0(v8, v197)
+    let v207 : unit = (fun () -&gt; v206 (); v205) ()
+    let v217 : string = $"{15}"
+    let v225 : unit = ()
+    let v226 : (unit -&gt; unit) = closure0(v8, v217)
+    let v227 : unit = (fun () -&gt; v226 (); v225) ()
+    let v235 : string = " }"
+    let v236 : string = $"{v235}"
+    let v244 : unit = ()
+    let v245 : (unit -&gt; unit) = closure0(v8, v236)
+    let v246 : unit = (fun () -&gt; v245 (); v244) ()
+    let v252 : string = v8.l0
+    let v254 : unit = ()
+    let v255 : (unit -&gt; unit) = closure1(v252)
+    let v256 : unit = (fun () -&gt; v255 (); v254) ()
+    let v258 : bool = v6 = false
+    if v258 then
+        failwith&lt;unit&gt; v252
 method0()
 
 
@@ -9332,13 +10337,25 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_52f99583 {
+mod module_ea158df4 {
     pub mod Spiral {
         use super::*;
+        use fable_library_rust::Native_::LrcPtr;
+        use fable_library_rust::Native_::MutCell;
         use fable_library_rust::Native_::on_startup;
+        use fable_library_rust::String_::append;
         use fable_library_rust::String_::printfn;
         use fable_library_rust::String_::sprintf;
         use fable_library_rust::String_::string;
+        #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
+        pub struct Mut0 {
+            pub l0: MutCell&lt;string&gt;,
+        }
+        impl core::fmt::Display for Mut0 {
+            fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+                write!(f, "{}", core::any::type_name::&lt;Self&gt;())
+            }
+        }
         pub fn method1() -&gt; i32 {
             3_i32
         }
@@ -9348,39 +10365,111 @@ mod module_52f99583 {
         pub fn method3(v0: bool) -&gt; bool {
             v0
         }
-        pub fn closure0(v0: string, unitVar: ()) {
+        pub fn method4() -&gt; string {
+            string("")
+        }
+        pub fn closure0(v0: LrcPtr&lt;Spiral::Mut0&gt;, v1: string, unitVar: ()) {
+            let v4: string = append((v0.l0.get().clone()), (v1));
+            v0.l0.set(v4);
+            ()
+        }
+        pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
         }
         pub fn method0() {
             let v3: i32 = ((Spiral::method2(Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method3(v4) };
-            let v12: string = sprintf!(
-                "{} / actual: {:?} / expected: {:?}",
-                string("__assert_eq"),
-                v3,
-                15_i32
-            );
-            let v17: () = {
-                Spiral::closure0(v12.clone(), ());
+            let v8: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+                l0: MutCell::new(Spiral::method4()),
+            });
+            let v22: () = {
+                Spiral::closure0(v8.clone(), string("{ "), ());
+                ()
+            };
+            let v41: () = {
+                Spiral::closure0(v8.clone(), string("name"), ());
+                ()
+            };
+            let v60: () = {
+                Spiral::closure0(v8.clone(), string(" = "), ());
+                ()
+            };
+            let v79: () = {
+                Spiral::closure0(v8.clone(), string("__assert_eq"), ());
+                ()
+            };
+            let v98: () = {
+                Spiral::closure0(v8.clone(), string("; "), ());
+                ()
+            };
+            let v117: () = {
+                Spiral::closure0(v8.clone(), string("actual"), ());
+                ()
+            };
+            let v134: () = {
+                Spiral::closure0(v8.clone(), string(" = "), ());
+                ()
+            };
+            let v154: () = {
+                Spiral::closure0(v8.clone(), sprintf!("{}", v3), ());
+                ()
+            };
+            let v171: () = {
+                Spiral::closure0(v8.clone(), string("; "), ());
+                ()
+            };
+            let v190: () = {
+                Spiral::closure0(v8.clone(), string("expected"), ());
+                ()
+            };
+            let v207: () = {
+                Spiral::closure0(v8.clone(), string(" = "), ());
+                ()
+            };
+            let v227: () = {
+                Spiral::closure0(v8.clone(), sprintf!("{}", 15_i32), ());
+                ()
+            };
+            let v246: () = {
+                Spiral::closure0(v8.clone(), string(" }"), ());
+                ()
+            };
+            let v252: string = v8.l0.get().clone();
+            let v256: () = {
+                Spiral::closure1(v252.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v12,);
+                panic!("{}", v252,);
             }
         }
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_52f99583::*;
+pub use module_ea158df4::*;
 
 pub fn main() -&gt; Result&lt;(), String&gt; {
     Ok(Spiral::method0())
 }
 
 .ts:
+import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
+import { IComparable, IEquatable } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Util.js";
+import { record_type, string_type, TypeInfo } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Reflection.js";
 import { int32 } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Int32.js";
-import { interpolate, toText } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/String.js";
+
+export class Mut0 extends Record implements IEquatable&lt;Mut0&gt;, IComparable&lt;Mut0&gt; {
+    l0: string;
+    constructor(l0: string) {
+        super();
+        this.l0 = l0;
+    }
+}
+
+export function Mut0_$reflection(): TypeInfo {
+    return record_type("Spiral.Mut0", [], Mut0, () =&gt; [["l0", string_type]]);
+}
 
 export function method1(): int32 {
     return 3;
@@ -9394,7 +10483,16 @@ export function method3(v0: boolean): boolean {
     return v0;
 }
 
-export function closure0(v0: string, unitVar: void): void {
+export function method4(): string {
+    return "";
+}
+
+export function closure0(v0: Mut0, v1: string, unitVar: void): void {
+    const v4: string = v0.l0 + v1;
+    v0.l0 = v4;
+}
+
+export function closure1(v0: string, unitVar: void): void {
     console.log(v0);
 }
 
@@ -9402,12 +10500,52 @@ export function method0(): void {
     const v3: int32 = ((method2(method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method3(v4);
-    const v12: string = toText(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]));
-    let v17: any;
-    closure0(v12, undefined);
-    v17 = undefined;
+    const v8: Mut0 = new Mut0(method4());
+    let v22: any;
+    closure0(v8, "{ ", undefined);
+    v22 = undefined;
+    let v41: any;
+    closure0(v8, "name", undefined);
+    v41 = undefined;
+    let v60: any;
+    closure0(v8, " = ", undefined);
+    v60 = undefined;
+    let v79: any;
+    closure0(v8, "__assert_eq", undefined);
+    v79 = undefined;
+    let v98: any;
+    closure0(v8, "; ", undefined);
+    v98 = undefined;
+    let v117: any;
+    closure0(v8, "actual", undefined);
+    v117 = undefined;
+    let v134: any;
+    closure0(v8, " = ", undefined);
+    v134 = undefined;
+    let v154: any;
+    closure0(v8, `${v3}`, undefined);
+    v154 = undefined;
+    let v171: any;
+    closure0(v8, "; ", undefined);
+    v171 = undefined;
+    let v190: any;
+    closure0(v8, "expected", undefined);
+    v190 = undefined;
+    let v207: any;
+    closure0(v8, " = ", undefined);
+    v207 = undefined;
+    let v227: any;
+    closure0(v8, `${15}`, undefined);
+    v227 = undefined;
+    let v246: any;
+    closure0(v8, " }", undefined);
+    v246 = undefined;
+    const v252: string = v8.l0;
+    let v256: any;
+    closure1(v252, undefined);
+    v256 = undefined;
     if (v6 === false) {
-        throw new Error(v12);
+        throw new Error(v252);
     }
 }
 
@@ -9418,7 +10556,20 @@ method0();
 // spiral.process_typescript
 
 .py:
-from fable_modules.fable_library.string_ import (to_text, interpolate)
+from __future__ import annotations
+from fable_modules.fable_library.reflection import (TypeInfo, string_type, record_type)
+from fable_modules.fable_library.types import Record
+from dataclasses import dataclass
+
+def _expr0() -&gt; TypeInfo:
+    return record_type("Spiral.Mut0", [], Mut0, lambda: [("l0", string_type)])
+
+
+@dataclass(eq = False, repr = False, slots = True)
+class Mut0(Record):
+    l0: str
+
+Mut0_reflection = _expr0
 
 def method1(__unit: None=None) -&gt; int:
     return 3
@@ -9432,7 +10583,16 @@ def method3(v0: bool) -&gt; bool:
     return v0
 
 
-def closure0(v0: str, unit_var: None) -&gt; None:
+def method4(__unit: None=None) -&gt; str:
+    return ""
+
+
+def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
+    v4: str = v0.l0 + v1
+    v0.l0 = v4
+
+
+def closure1(v0: str, unit_var: None) -&gt; None:
     print(v0)
 
 
@@ -9440,12 +10600,52 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = ((method2(method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method3(v4)
-    v12: str = to_text(interpolate("%P() / actual: %A%P() / expected: %A%P()", ["__assert_eq", v3, 15]))
-    v17: None
-    closure0(v12, None)
-    v17 = None
+    v8: Mut0 = Mut0(method4())
+    v22: None
+    closure0(v8, "{ ", None)
+    v22 = None
+    v41: None
+    closure0(v8, "name", None)
+    v41 = None
+    v60: None
+    closure0(v8, " = ", None)
+    v60 = None
+    v79: None
+    closure0(v8, "__assert_eq", None)
+    v79 = None
+    v98: None
+    closure0(v8, "; ", None)
+    v98 = None
+    v117: None
+    closure0(v8, "actual", None)
+    v117 = None
+    v134: None
+    closure0(v8, " = ", None)
+    v134 = None
+    v154: None
+    closure0(v8, ("" + str(v3)) + "", None)
+    v154 = None
+    v171: None
+    closure0(v8, "; ", None)
+    v171 = None
+    v190: None
+    closure0(v8, "expected", None)
+    v190 = None
+    v207: None
+    closure0(v8, " = ", None)
+    v207 = None
+    v227: None
+    closure0(v8, ("" + str(15)) + "", None)
+    v227 = None
+    v246: None
+    closure0(v8, " }", None)
+    v246 = None
+    v252: str = v8.l0
+    v256: None
+    closure1(v252, None)
+    v256 = None
     if v6 == False:
-        raise Exception(v12)
+        raise Exception(v252)
 
 
 
@@ -9512,6 +10712,9 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+@dataclass
+class Mut0:
+    v0 : string
 def method1() -&gt; i32:
     return 3
 def method2(v0 : i32) -&gt; i32:
@@ -9519,6 +10722,9 @@ def method2(v0 : i32) -&gt; i32:
     del v0
     return v1
 def method3(v0 : bool) -&gt; bool:
+    return v0
+def method4() -&gt; string:
+    v0 = ""
     return v0
 def method0() -&gt; None:
     v0 = method1()
@@ -9534,17 +10740,114 @@ def method0() -&gt; None:
     else:
         v6 = method3(v4)
     del v4
-    v13 = "__assert_eq"
-    v14 = f"{v13} / actual: {v3} / expected: {15}"
-    del v3, v13
-    print(v14)
-    v20 = v6 == False
+    v7 = method4()
+    v8 = Mut0(v7)
+    del v7
+    v13 = "{ "
+    v14 = f"{v13}"
+    del v13
+    v24 = v8.v0
+    v27 = v24 + v14 
+    del v14, v24
+    v8.v0 = v27
+    del v27
+    v33 = "name"
+    v34 = f"{v33}"
+    del v33
+    v44 = v8.v0
+    v47 = v44 + v34 
+    del v34, v44
+    v8.v0 = v47
+    del v47
+    v53 = " = "
+    v54 = f"{v53}"
+    v64 = v8.v0
+    v67 = v64 + v54 
+    del v54, v64
+    v8.v0 = v67
+    del v67
+    v73 = "__assert_eq"
+    v74 = f"{v73}"
+    del v73
+    v84 = v8.v0
+    v87 = v84 + v74 
+    del v74, v84
+    v8.v0 = v87
+    del v87
+    v93 = "; "
+    v94 = f"{v93}"
+    v104 = v8.v0
+    v107 = v104 + v94 
+    del v94, v104
+    v8.v0 = v107
+    del v107
+    v113 = "actual"
+    v114 = f"{v113}"
+    del v113
+    v124 = v8.v0
+    v127 = v124 + v114 
+    del v114, v124
+    v8.v0 = v127
+    del v127
+    v131 = f"{v53}"
+    v141 = v8.v0
+    v144 = v141 + v131 
+    del v131, v141
+    v8.v0 = v144
+    del v144
+    v151 = f"{v3}"
+    del v3
+    v161 = v8.v0
+    v164 = v161 + v151 
+    del v151, v161
+    v8.v0 = v164
+    del v164
+    v168 = f"{v93}"
+    del v93
+    v178 = v8.v0
+    v181 = v178 + v168 
+    del v168, v178
+    v8.v0 = v181
+    del v181
+    v187 = "expected"
+    v188 = f"{v187}"
+    del v187
+    v198 = v8.v0
+    v201 = v198 + v188 
+    del v188, v198
+    v8.v0 = v201
+    del v201
+    v205 = f"{v53}"
+    del v53
+    v215 = v8.v0
+    v218 = v215 + v205 
+    del v205, v215
+    v8.v0 = v218
+    del v218
+    v225 = f"{15}"
+    v235 = v8.v0
+    v238 = v235 + v225 
+    del v225, v235
+    v8.v0 = v238
+    del v238
+    v244 = " }"
+    v245 = f"{v244}"
+    del v244
+    v255 = v8.v0
+    v258 = v255 + v245 
+    del v245, v255
+    v8.v0 = v258
+    del v258
+    v260 = v8.v0
+    del v8
+    print(v260)
+    v266 = v6 == False
     del v6
-    if v20:
-        del v20
-        raise Exception(v14)
+    if v266:
+        del v266
+        raise Exception(v260)
     else:
-        del v14, v20
+        del v260, v266
         return 
 def main_body():
     return method0()
@@ -9557,7 +10860,7 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-__assert_eq / actual: 15 / expected: 15
+{ name = __assert_eq; actual = 15; expected = 15 }
 </pre>
 </div>
 </div>
@@ -9631,19 +10934,19 @@ __assert_eq / actual: 15 / expected: 15
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .rs output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .ts output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .py output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .gleam output (Gleam):
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 </pre>
 </div>
@@ -9652,7 +10955,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 </pre>
 </div>
 </div>
@@ -9715,19 +11018,19 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .rs output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .ts output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .py output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .gleam output (Gleam):
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 </pre>
 </div>
@@ -9736,7 +11039,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 </pre>
 </div>
 </div>
@@ -9799,19 +11102,19 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .rs output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .ts output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .py output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .gleam output (Gleam):
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 </pre>
 </div>
@@ -9820,7 +11123,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 </pre>
 </div>
 </div>
@@ -9883,19 +11186,19 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: -3.0 / expected: -3
+{ name = __assert_eq; actual = -3.0; expected = -3 }
 
 .rs output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .ts output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .py output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 .gleam output (Gleam):
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 
 </pre>
 </div>
@@ -9904,7 +11207,7 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: -3 / expected: -3
+{ name = __assert_eq; actual = -3; expected = -3 }
 </pre>
 </div>
 </div>
@@ -9982,19 +11285,19 @@ __assert_eq / actual: -3 / expected: -3
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: True / expected: True
+{ name = __assert_eq; actual = true; expected = true }
 
 .rs output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .ts output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .py output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .gleam output (Gleam):
-__assert_eq / actual: True / expected: True
+{ name = __assert_eq; actual = true; expected = true }
 
 </pre>
 </div>
@@ -10003,7 +11306,7 @@ __assert_eq / actual: True / expected: True
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
 </div>
@@ -10070,19 +11373,19 @@ __assert_eq / actual: true / expected: true
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: True / expected: True
+{ name = __assert_eq; actual = true; expected = true }
 
 .rs output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .ts output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .py output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .gleam output (Gleam):
-__assert_eq / actual: True / expected: True
+{ name = __assert_eq; actual = true; expected = true }
 
 </pre>
 </div>
@@ -10091,7 +11394,7 @@ __assert_eq / actual: True / expected: True
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
 </div>
@@ -10157,19 +11460,19 @@ __assert_eq / actual: true / expected: true
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: True / expected: True
+{ name = __assert_eq; actual = true; expected = true }
 
 .rs output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .ts output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .py output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 
 .gleam output (Gleam):
-__assert_eq / actual: True / expected: True
+{ name = __assert_eq; actual = true; expected = true }
 
 </pre>
 </div>
@@ -10178,7 +11481,7 @@ __assert_eq / actual: True / expected: True
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: true / expected: true
+{ name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
 </div>
@@ -10322,19 +11625,19 @@ __assert_eq / actual: true / expected: true
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: (1, 2) / expected: (1, 2)
+{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 
 .rs output:
-__assert_eq / actual: (1, 2) / expected: (1, 2)
+{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 
 .ts output:
-__assert_eq / actual: 1,2 / expected: 1,2
+{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 
 .py output:
-__assert_eq / actual: (1, 2) / expected: (1, 2)
+{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 
 .gleam output (Gleam):
-__assert_eq / actual: #(1, 2) / expected: #(1, 2)
+{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 
 </pre>
 </div>
@@ -10343,7 +11646,7 @@ __assert_eq / actual: #(1, 2) / expected: #(1, 2)
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: struct (1, 2) / expected: struct (1, 2)
+{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 </pre>
 </div>
 </div>
@@ -10450,19 +11753,27 @@ __assert_eq / actual: struct (1, 2) / expected: struct (1, 2)
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq' / actual: ('a', (1, 'b')) / expected: ('a', (1, 'b'))
+{ name = __assert_eq'; actual = a, (1, 'b'); expected = a, (1, 'b') }
+
 
 .rs output:
-__assert_eq' / actual: ("a", (1, "b")) / expected: ("a", (1, "b"))
+{ name = __assert_eq'; actual = a, (
+    1,
+    "b",
+); expected = a, (
+    1,
+    "b",
+) }
 
 .ts output:
-__assert_eq' / actual: a,1,b / expected: a,1,b
+{ name = __assert_eq'; actual = a, 1,b; expected = a, 1,b }
 
 .py output:
-__assert_eq' / actual: ('a', (1, 'b')) / expected: ('a', (1, 'b'))
+{ name = __assert_eq'; actual = a, (1, 'b'); expected = a, (1, 'b') }
 
 .gleam output (Gleam):
-__assert_eq' / actual: #("a", #(1, "b")) / expected: #("a", #(1, "b"))
+{ name = __assert_eq'; actual = a, #(1, "b"); expected = a, #(1, "b") }
+
 
 </pre>
 </div>
@@ -10471,7 +11782,7 @@ __assert_eq' / actual: #("a", #(1, "b")) / expected: #("a", #(1, "b"))
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: struct ("a", (1, "b")) / expected: struct ("a", (1, "b"))
+{ name = __assert_eq'; actual = a, (1, "b"); expected = a, (1, "b") }
 </pre>
 </div>
 </div>
@@ -10557,19 +11868,19 @@ __assert_eq' / actual: struct ("a", (1, "b")) / expected: struct ("a", (1, "b"))
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .rs output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .ts output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .py output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .gleam output (Gleam):
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 </pre>
 </div>
@@ -10578,7 +11889,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 </pre>
 </div>
 </div>
@@ -10616,19 +11927,19 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: (2, 1) / expected: (2, 1)
+{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 
 .rs output:
-__assert_eq / actual: (2, 1) / expected: (2, 1)
+{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 
 .ts output:
-__assert_eq / actual: 2,1 / expected: 2,1
+{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 
 .py output:
-__assert_eq / actual: (2, 1) / expected: (2, 1)
+{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 
 .gleam output (Gleam):
-__assert_eq / actual: #(2, 1) / expected: #(2, 1)
+{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 
 </pre>
 </div>
@@ -10637,7 +11948,7 @@ __assert_eq / actual: #(2, 1) / expected: #(2, 1)
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
+{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 </pre>
 </div>
 </div>
@@ -11583,16 +12894,16 @@ __assert_eq / actual: struct (2, 1) / expected: struct (2, 1)
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: index 1 is out of bounds for axis 0 with size 1 / expected: index 1 is out of bounds for axis 0 with size 1
+{ name = __assert_eq; actual = index 1 is out of bounds for axis 0 with size 1; expected = index 1 is out of bounds for axis 0 with size 1 }
 
 .rs output:
-__assert_eq / actual: "Exception { message: "index out of bounds: the len is 1 but the index is 1" }" / expected: "Exception { message: "index out of bounds: the len is 1 but the index is 1" }"
+{ name = __assert_eq; actual = Exception { message: "index out of bounds: the len is 1 but the index is 1" }; expected = Exception { message: "index out of bounds: the len is 1 but the index is 1" } }
 
 .ts output:
-__assert_eq / actual: Error: Index was outside the bounds of the array.\nParameter name: index / expected: Error: Index was outside the bounds of the array.\nParameter name: index
+{ name = __assert_eq; actual = Error: Index was outside the bounds of the array.\nParameter name: index; expected = Error: Index was outside the bounds of the array.\nParameter name: index }
 
 .py output:
-__assert_eq / actual: array index out of range / expected: array index out of range
+{ name = __assert_eq; actual = array index out of range; expected = array index out of range }
 
 </pre>
 </div>
@@ -11601,7 +12912,7 @@ __assert_eq / actual: array index out of range / expected: array index out of ra
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: "System.IndexOutOfRangeException: Index was outside the bounds of the array." / expected: "System.IndexOutOfRangeException: Index was outside the bounds of the array."
+{ name = __assert_eq; actual = System.IndexOutOfRangeException: Index was outside the bounds of the array.; expected = System.IndexOutOfRangeException: Index was outside the bounds of the array. }
 </pre>
 </div>
 </div>

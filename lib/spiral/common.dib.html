@@ -7923,16 +7923,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq' / actual: US0_0(v0=1) / expected: US0_0(v0=1)
+{ name = __assert_eq'; actual = US0_0(v0=1); expected = US0_0(v0=1) }
 
 .rs output:
-__assert_eq' / actual: US0_0(1) / expected: US0_0(1)
+{ name = __assert_eq'; actual = US0_0(1); expected = US0_0(1) }
 
 .ts output:
-__assert_eq' / actual: US0_0 1 / expected: US0_0 1
+{ name = __assert_eq'; actual = US0_0 1; expected = US0_0 1 }
 
 .py output:
-__assert_eq' / actual: US0_0 1 / expected: US0_0 1
+{ name = __assert_eq'; actual = US0_0 1; expected = US0_0 1 }
 
 </pre>
 </div>
@@ -7941,7 +7941,7 @@ __assert_eq' / actual: US0_0 1 / expected: US0_0 1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: US0_0 1 / expected: US0_0 1
+{ name = __assert_eq'; actual = US0_0 1; expected = US0_0 1 }
 </pre>
 </div>
 </div>
@@ -7991,19 +7991,19 @@ __assert_eq' / actual: US0_0 1 / expected: US0_0 1
 00:00:00 <span class="ansi-yellow-fg">w</span> #2 common.retry_fn / { retry = 1; ex = Exception {
     message: "test",
 } }
-__assert_eq' / actual: US0_0(2) / expected: US0_0(2)
+{ name = __assert_eq'; actual = US0_0(2); expected = US0_0(2) }
 
 
 .ts output:
 00:00:00 <span class="ansi-yellow-intense-fg">w</span> #1 common.retry_fn / { retry = 0; ex = Error: test }
 00:00:00 <span class="ansi-yellow-intense-fg">w</span> #2 common.retry_fn / { retry = 1; ex = Error: test }
-__assert_eq' / actual: US0_0 2 / expected: US0_0 2
+{ name = __assert_eq'; actual = US0_0 2; expected = US0_0 2 }
 
 
 .py output:
 00:00:00 <span class="ansi-yellow-intense-fg">w</span> #1 common.retry_fn / { retry = 0; ex = test }
 00:00:00 <span class="ansi-yellow-intense-fg">w</span> #2 common.retry_fn / { retry = 1; ex = test }
-__assert_eq' / actual: US0_0 2 / expected: US0_0 2
+{ name = __assert_eq'; actual = US0_0 2; expected = US0_0 2 }
 
 
 </pre>
@@ -8019,7 +8019,7 @@ __assert_eq' / actual: US0_0 2 / expected: US0_0 2
 00:00:00 <span class="ansi-yellow-intense-fg">w</span> #2 common.retry_fn / { retry = 1; ex = System.Exception: test
    at FSI_0017.closure1(Mut0 v0, Int32 v1, Unit unitVar2)
    at FSI_0017.method1(Mut0 v0, Int32 v1) }
-__assert_eq' / actual: US0_0 2 / expected: US0_0 2
+{ name = __assert_eq'; actual = US0_0 2; expected = US0_0 2 }
 </pre>
 </div>
 </div>
@@ -8144,16 +8144,16 @@ __assert_eq' / actual: US0_0 2 / expected: US0_0 2
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .rs output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .ts output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 .py output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 
 </pre>
 </div>
@@ -8162,7 +8162,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq / actual: 1 / expected: 1
+{ name = __assert_eq; actual = 1; expected = 1 }
 </pre>
 </div>
 </div>
@@ -8201,7 +8201,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 1 / expected: 1
+<pre>{ name = __assert_eq; actual = 1; expected = 1 }
 </pre>
 </div>
 </div>
@@ -8239,7 +8239,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 1 / expected: 1
+<pre>{ name = __assert_eq; actual = 1; expected = 1 }
 </pre>
 </div>
 </div>
@@ -8276,7 +8276,7 @@ __assert_eq / actual: 1 / expected: 1
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: 0 / expected: 0
+<pre>{ name = __assert_eq; actual = 0; expected = 0 }
 </pre>
 </div>
 </div>

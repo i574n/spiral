@@ -7647,13 +7647,13 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output:
-__assert_eq' / actual: Array(MutCell([("Native", US0_0), ("Wasm", US0_1), ("Contract", US0_2)])) / expected: Array(MutCell([("Native", US0_0), ("Wasm", US0_1), ("Contract", US0_2)]))
+{ name = __assert_eq'; actual = Array(MutCell([("Native", US0_0), ("Wasm", US0_1), ("Contract", US0_2)])); expected = Array(MutCell([("Native", US0_0), ("Wasm", US0_1), ("Contract", US0_2)])) }
 
 .ts output:
-__assert_eq' / actual: Native,US0_0,Wasm,US0_1,Contract,US0_2 / expected: Native,US0_0,Wasm,US0_1,Contract,US0_2
+{ name = __assert_eq'; actual = Native,US0_0,Wasm,US0_1,Contract,US0_2; expected = Native,US0_0,Wasm,US0_1,Contract,US0_2 }
 
 .py output:
-__assert_eq' / actual: [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)] / expected: [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)]
+{ name = __assert_eq'; actual = [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)]; expected = [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)] }
 
 </pre>
 </div>
@@ -7662,7 +7662,7 @@ __assert_eq' / actual: [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)]
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: [|struct ("Native", US0_0); struct ("Wasm", US0_1); struct ("Contract", US0_2)|] / expected: [|struct ("Native", US0_0); struct ("Wasm", US0_1); struct ("Contract", US0_2)|]
+{ name = __assert_eq'; actual = [|struct ("Native", US0_0); struct ("Wasm", US0_1); struct ("Contract", US0_2)|]; expected = [|struct ("Native", US0_0); struct ("Wasm", US0_1); struct ("Contract", US0_2)|] }
 </pre>
 </div>
 </div>
@@ -7702,13 +7702,13 @@ __assert_eq' / actual: [|struct ("Native", US0_0); struct ("Wasm", US0_1); struc
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output:
-__assert_eq' / actual: Array(MutCell([("Some", US0_0(0)), ("None", US0_1)])) / expected: Array(MutCell([("Some", US0_0(0)), ("None", US0_1)]))
+{ name = __assert_eq'; actual = Array(MutCell([("Some", US0_0(0)), ("None", US0_1)])); expected = Array(MutCell([("Some", US0_0(0)), ("None", US0_1)])) }
 
 .ts output:
-__assert_eq' / actual: Some,US0_0 0,None,US0_1 / expected: Some,US0_0 0,None,US0_1
+{ name = __assert_eq'; actual = Some,US0_0 0,None,US0_1; expected = Some,US0_0 0,None,US0_1 }
 
 .py output:
-__assert_eq' / actual: [('Some', US0_0 0), ('None', US0_1)] / expected: [('Some', US0_0 0), ('None', US0_1)]
+{ name = __assert_eq'; actual = [('Some', US0_0 0), ('None', US0_1)]; expected = [('Some', US0_0 0), ('None', US0_1)] }
 
 </pre>
 </div>
@@ -7717,7 +7717,7 @@ __assert_eq' / actual: [('Some', US0_0 0), ('None', US0_1)] / expected: [('Some'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: [|struct ("Some", US0_0 0); struct ("None", US0_1)|] / expected: [|struct ("Some", US0_0 0); struct ("None", US0_1)|]
+{ name = __assert_eq'; actual = [|struct ("Some", US0_0 0); struct ("None", US0_1)|]; expected = [|struct ("Some", US0_0 0); struct ("None", US0_1)|] }
 </pre>
 </div>
 </div>
@@ -7817,16 +7817,16 @@ __assert_eq' / actual: [|struct ("Some", US0_0 0); struct ("None", US0_1)|] / ex
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq' / actual: UH0_1(v0='Native', v1=US0_0(), v2=UH0_1(v0='Wasm', v1=US0_1(), v2=UH0_1(v0='Contract', v1=US0_2(), v2=UH0_0()))) / expected: UH0_1(v0='Native', v1=US0_0(), v2=UH0_1(v0='Wasm', v1=US0_1(), v2=UH0_1(v0='Contract', v1=US0_2(), v2=UH0_0())))
+{ name = __assert_eq'; actual = UH0_1(v0='Native', v1=US0_0(), v2=UH0_1(v0='Wasm', v1=US0_1(), v2=UH0_1(v0='Contract', v1=US0_2(), v2=UH0_0()))); expected = UH0_1(v0='Native', v1=US0_0(), v2=UH0_1(v0='Wasm', v1=US0_1(), v2=UH0_1(v0='Contract', v1=US0_2(), v2=UH0_0()))) }
 
 .rs output:
-__assert_eq' / actual: UH0_1("Native", US0_0, UH0_1("Wasm", US0_1, UH0_1("Contract", US0_2, UH0_0))) / expected: UH0_1("Native", US0_0, UH0_1("Wasm", US0_1, UH0_1("Contract", US0_2, UH0_0)))
+{ name = __assert_eq'; actual = UH0_1("Native", US0_0, UH0_1("Wasm", US0_1, UH0_1("Contract", US0_2, UH0_0))); expected = UH0_1("Native", US0_0, UH0_1("Wasm", US0_1, UH0_1("Contract", US0_2, UH0_0))) }
 
 .ts output:
-__assert_eq' / actual: UH0_1 (Native, US0_0, UH0_1 (Wasm, US0_1, UH0_1 (Contract, US0_2, UH0_0))) / expected: UH0_1 (Native, US0_0, UH0_1 (Wasm, US0_1, UH0_1 (Contract, US0_2, UH0_0)))
+{ name = __assert_eq'; actual = UH0_1 (Native, US0_0, UH0_1 (Wasm, US0_1, UH0_1 (Contract, US0_2, UH0_0))); expected = UH0_1 (Native, US0_0, UH0_1 (Wasm, US0_1, UH0_1 (Contract, US0_2, UH0_0))) }
 
 .py output:
-__assert_eq' / actual: UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) / expected: UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0)))
+{ name = __assert_eq'; actual = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))); expected = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) }
 
 </pre>
 </div>
@@ -7835,7 +7835,7 @@ __assert_eq' / actual: UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Con
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) / expected: UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0)))
+{ name = __assert_eq'; actual = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))); expected = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) }
 </pre>
 </div>
 </div>
@@ -7871,16 +7871,16 @@ __assert_eq' / actual: UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Con
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq' / actual: UH0_1(v0='Some', v1=US0_0(), v2=UH0_1(v0='None', v1=US0_1(), v2=UH0_0())) / expected: UH0_1(v0='Some', v1=US0_0(), v2=UH0_1(v0='None', v1=US0_1(), v2=UH0_0()))
+{ name = __assert_eq'; actual = UH0_1(v0='Some', v1=US0_0(), v2=UH0_1(v0='None', v1=US0_1(), v2=UH0_0())); expected = UH0_1(v0='Some', v1=US0_0(), v2=UH0_1(v0='None', v1=US0_1(), v2=UH0_0())) }
 
 .rs output:
-__assert_eq' / actual: UH0_1("Some", US0_0, UH0_1("None", US0_1, UH0_0)) / expected: UH0_1("Some", US0_0, UH0_1("None", US0_1, UH0_0))
+{ name = __assert_eq'; actual = UH0_1("Some", US0_0, UH0_1("None", US0_1, UH0_0)); expected = UH0_1("Some", US0_0, UH0_1("None", US0_1, UH0_0)) }
 
 .ts output:
-__assert_eq' / actual: UH0_1 (Some, US0_0, UH0_1 (None, US0_1, UH0_0)) / expected: UH0_1 (Some, US0_0, UH0_1 (None, US0_1, UH0_0))
+{ name = __assert_eq'; actual = UH0_1 (Some, US0_0, UH0_1 (None, US0_1, UH0_0)); expected = UH0_1 (Some, US0_0, UH0_1 (None, US0_1, UH0_0)) }
 
 .py output:
-__assert_eq' / actual: UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) / expected: UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0))
+{ name = __assert_eq'; actual = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)); expected = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) }
 
 </pre>
 </div>
@@ -7889,7 +7889,7 @@ __assert_eq' / actual: UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) / exp
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) / expected: UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0))
+{ name = __assert_eq'; actual = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)); expected = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) }
 </pre>
 </div>
 </div>
@@ -7959,8 +7959,8 @@ __assert_eq' / actual: UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) / exp
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq / actual: US0_0 US1_1 / expected: US0_0 US1_1
-__assert_eq / actual: US0_0 US1_1 / expected: US0_0 US1_1
+<pre>{ name = __assert_eq; actual = US0_0 US1_1; expected = US0_0 US1_1 }
+{ name = __assert_eq; actual = US0_0 US1_1; expected = US0_0 US1_1 }
 </pre>
 </div>
 </div>
@@ -8059,16 +8059,16 @@ __assert_eq / actual: US0_0 US1_1 / expected: US0_0 US1_1
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Cuda):
-__assert_eq' / actual: Some / expected: Some
+{ name = __assert_eq'; actual = Some; expected = Some }
 
 .rs output:
-__assert_eq' / actual: "Some" / expected: "Some"
+{ name = __assert_eq'; actual = Some; expected = Some }
 
 .ts output:
-__assert_eq' / actual: Some / expected: Some
+{ name = __assert_eq'; actual = Some; expected = Some }
 
 .py output:
-__assert_eq' / actual: Some / expected: Some
+{ name = __assert_eq'; actual = Some; expected = Some }
 
 </pre>
 </div>
@@ -8077,7 +8077,7 @@ __assert_eq' / actual: Some / expected: Some
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-__assert_eq' / actual: "Some" / expected: "Some"
+{ name = __assert_eq'; actual = Some; expected = Some }
 </pre>
 </div>
 </div>
@@ -8140,7 +8140,7 @@ __assert_eq' / actual: "Some" / expected: "Some"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq' / actual: "test1" / expected: "test1"
+<pre>{ name = __assert_eq'; actual = test1; expected = test1 }
 </pre>
 </div>
 </div>
@@ -8205,7 +8205,7 @@ __assert_eq' / actual: "Some" / expected: "Some"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq' / actual: UH0_1 ("a", "1", UH0_1 ("b", "2", UH0_0)) / expected: UH0_1 ("a", "1", UH0_1 ("b", "2", UH0_0))
+<pre>{ name = __assert_eq'; actual = UH0_1 ("a", "1", UH0_1 ("b", "2", UH0_0)); expected = UH0_1 ("a", "1", UH0_1 ("b", "2", UH0_0)) }
 </pre>
 </div>
 </div>
@@ -8302,9 +8302,9 @@ __assert_eq' / actual: "Some" / expected: "Some"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq' / actual: "[|struct ("one", [|struct ("a", "int32")|], "int32");
-  struct ("two", [|struct ("a", "int32"); struct ("b", "int32")|], "int32")|]" / expected: "[|struct ("one", [|struct ("a", "int32")|], "int32");
-  struct ("two", [|struct ("a", "int32"); struct ("b", "int32")|], "int32")|]"
+<pre>{ name = __assert_eq'; actual = [|struct ("one", [|struct ("a", "int32")|], "int32");
+  struct ("two", [|struct ("a", "int32"); struct ("b", "int32")|], "int32")|]; expected = [|struct ("one", [|struct ("a", "int32")|], "int32");
+  struct ("two", [|struct ("a", "int32"); struct ("b", "int32")|], "int32")|] }
 </pre>
 </div>
 </div>
