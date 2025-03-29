@@ -180,18 +180,18 @@ export function method4(): string {
 }
 
 export function method0(v0_1: string, v1_1: Date): string {
-    const v1986: string = method3();
-    const v1992: string = toString(v1_1, (v1986 === "") ? "M-d-y hh:mm:ss tt" : v1986);
-    const v2023: any = defaultOf();
-    let v2227: number;
+    const v2096: string = method3();
+    const v2102: string = toString(v1_1, (v2096 === "") ? "M-d-y hh:mm:ss tt" : v2096);
+    const v2133: any = defaultOf();
+    let v2343: number;
     throw new Error(`date_time.get_utc_offset / target: ${US3_US3_4(US2_US2_0())}`);
-    const v2242: uint8 = (hours(v2227) > 0) ? 1 : 0;
-    const v2243: string = method4();
-    const v2467 = `${v2242}${toString_1(v2227, "c", {})}`;
-    const v2470: string = v0_1;
-    const v2486: int32 = (v1992.length + v2467.length) | 0;
-    const v2507: int32 = (v2470.length - 1) | 0;
-    return parse(concat(v1992, v2467, ...v2470.slice(v2486, v2507 + 1)));
+    const v2358: uint8 = (hours(v2343) > 0) ? 1 : 0;
+    const v2359: string = method4();
+    const v2607 = `${v2358}${toString_1(v2343, "c", {})}`;
+    const v2610: string = v0_1;
+    const v2626: int32 = (v2102.length + v2607.length) | 0;
+    const v2647: int32 = (v2610.length - 1) | 0;
+    return parse(concat(v2102, v2607, ...v2610.slice(v2626, v2647 + 1)));
 }
 
 export function closure1(v0_1: string, v1_1: Date): string {
@@ -227,8 +227,8 @@ export function closure6(v0_1: string, v1_1: int64): string {
     const v4_1: string = v0_1;
     const v9: string = int64ToString(v1_1);
     const v14 = "0";
-    const v23: string = method5(18 - v9.length, v14, 0)("") + v9;
-    return parse(`${v23.slice(0, 7 + 1)}-${v23.slice(8, 11 + 1)}-${v23.slice(12, 15 + 1)}-${v23.slice(16, 17 + 1)}${v4_1.slice(21, v4_1.length)}`);
+    const v24: string = method5(18 - v9.length, v14, 0)("") + v9;
+    return parse(`${v24.slice(0, 7 + 1)}-${v24.slice(8, 11 + 1)}-${v24.slice(12, 15 + 1)}-${v24.slice(16, 17 + 1)}${v4_1.slice(21, v4_1.length)}`);
 }
 
 export function closure5(unitVar: void, v0_1: string): ((arg0: int64) => string) {
@@ -248,8 +248,8 @@ export function closure10(unitVar: void, v0_1: int64): string {
     const v8: string = newGuid();
     const v13: string = int64ToString(v0_1);
     const v18 = "0";
-    const v27: string = method5(18 - v13.length, v18, 0)("") + v13;
-    return parse(`${v27.slice(0, 7 + 1)}-${v27.slice(8, 11 + 1)}-${v27.slice(12, 15 + 1)}-${v27.slice(16, 17 + 1)}${v8.slice(21, v8.length)}`);
+    const v28: string = method5(18 - v13.length, v18, 0)("") + v13;
+    return parse(`${v28.slice(0, 7 + 1)}-${v28.slice(8, 11 + 1)}-${v28.slice(12, 15 + 1)}-${v28.slice(16, 17 + 1)}${v8.slice(21, v8.length)}`);
 }
 
 export function closure12(v0_1: string, v1_1: Date): string {

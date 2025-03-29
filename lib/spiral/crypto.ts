@@ -1,4 +1,4 @@
-import { compare, IComparable, IEquatable, createAtom } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Util.js";
+import { int64ToString, compare, IComparable, IEquatable, createAtom } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Util.js";
 import { map, defaultArg, value as value_2, Option } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Option.js";
 import { op_Addition, op_Subtraction, fromInt64, toInt64, int64 } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/BigInt.js";
 import { Union, Record } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Types.js";
@@ -404,18 +404,18 @@ export function closure3(unitVar: void, unitVar_1: void): void {
 }
 
 export function method5(v0_1: US0_$union): boolean {
-    let v3: any;
+    let v17: any;
     closure3(undefined, undefined);
-    v3 = undefined;
+    v17 = undefined;
     const patternInput: [Mut1, Mut2, Mut3, Mut4, Mut5, Option<int64>] = value_2(TraceState_trace_state());
-    const v42: US0_$union = patternInput[4].l0;
+    const v56: US0_$union = patternInput[4].l0;
     if (patternInput[2].l0 === false) {
         return false;
     }
     else {
         return find<US0_$union, int32>(v0_1, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
             Compare: compare,
-        })) >= find<US0_$union, int32>(v42, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
+        })) >= find<US0_$union, int32>(v56, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
             Compare: compare,
         }));
     }
@@ -438,97 +438,90 @@ export function method15(): string {
 }
 
 export function method12(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: Option<int64>): string {
-    const v581: US2_$union = defaultArg(map<int64, US2_$union>(method13(), v5), US2_US2_1());
-    let v699: Date;
-    if ((v581.tag as int32) === /* US2_0 */ 0) {
-        const v585 = v581.fields[0] as any;
-        const v651: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v585)));
-        v699 = create(1, 1, 1, hours(v651), minutes(v651), seconds(v651), milliseconds(v651));
+    const v623: US2_$union = defaultArg(map<int64, US2_$union>(method13(), v5), US2_US2_1());
+    let v755: Date;
+    if ((v623.tag as int32) === /* US2_0 */ 0) {
+        const v627 = v623.fields[0] as any;
+        const v703: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v627)));
+        v755 = create(1, 1, 1, hours(v703), minutes(v703), seconds(v703), milliseconds(v703));
     }
     else {
-        v699 = now();
+        v755 = now();
     }
-    const v701: string = method15();
-    return toString(v699, (v701 === "") ? "M-d-y hh:mm:ss tt" : v701);
+    const v757: string = method15();
+    return toString(v755, (v757 === "") ? "M-d-y hh:mm:ss tt" : v757);
 }
 
-export function method18(): string {
+export function method17(): string {
     return "";
 }
 
 export function closure7(v0_1: Mut4, v1_1: string, unitVar: void): void {
-    const v3: string = v0_1.l0 + v1_1;
-    v0_1.l0 = v3;
+    const v4: string = v0_1.l0 + v1_1;
+    v0_1.l0 = v4;
 }
 
-export function method17(v0_1: string): string {
-    const v2: Mut4 = new Mut4(method18());
-    let v9: any;
-    closure7(v2, `${v0_1}`, undefined);
-    v9 = undefined;
-    return v2.l0;
-}
-
-export function method19(): string {
+export function method18(): string {
     return "\u001b[0m";
 }
 
 export function method16(): string {
     const v4: string = "Verbose".toLocaleLowerCase();
-    return ("\u001b[90m" + method17(v4[0])) + method19();
-}
-
-export function method21(v0_1: int32, v1_1: string, v2: uint16): string {
-    const v4: Mut4 = new Mut4(method18());
-    let v13: any;
-    closure7(v4, "{ ", undefined);
-    v13 = undefined;
+    const v7: string = v4[0];
+    const v9: Mut4 = new Mut4(method17());
     let v24: any;
-    closure7(v4, "first_letter_code", undefined);
+    closure7(v9, `${v7}`, undefined);
     v24 = undefined;
-    let v35: any;
-    closure7(v4, " = ", undefined);
-    v35 = undefined;
-    let v44: any;
-    closure7(v4, `${v0_1}`, undefined);
-    v44 = undefined;
-    let v55: any;
-    closure7(v4, "; ", undefined);
-    v55 = undefined;
-    let v66: any;
-    closure7(v4, "hash_part", undefined);
-    v66 = undefined;
-    let v75: any;
-    closure7(v4, " = ", undefined);
-    v75 = undefined;
-    let v84: any;
-    closure7(v4, v1_1, undefined);
-    v84 = undefined;
-    let v93: any;
-    closure7(v4, "; ", undefined);
-    v93 = undefined;
-    let v104: any;
-    closure7(v4, "combined_value", undefined);
-    v104 = undefined;
-    let v113: any;
-    closure7(v4, " = ", undefined);
-    v113 = undefined;
-    let v122: any;
-    closure7(v4, `${v2}`, undefined);
-    v122 = undefined;
-    let v133: any;
-    closure7(v4, " }", undefined);
-    v133 = undefined;
-    return v4.l0;
+    return ("\u001b[90m" + v9.l0) + method18();
 }
 
-export function method22(v0_1: string): string {
+export function method20(v0_1: string): string {
     return trimEnd(trimStart(v0_1, ...[]), ...[" ", "/"]);
 }
 
-export function method20(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: string, v10: uint16): string {
-    const v11: string = method21(v8, v9, v10);
-    return method22(`${v6} ${v7} #${v0_1.l0} ${"crypto.hash_to_port"} / ${v11}`);
+export function method19(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: string, v10: uint16): string {
+    const v12: Mut4 = new Mut4(method17());
+    let v26: any;
+    closure7(v12, "{ ", undefined);
+    v26 = undefined;
+    let v45: any;
+    closure7(v12, "first_letter_code", undefined);
+    v45 = undefined;
+    let v64: any;
+    closure7(v12, " = ", undefined);
+    v64 = undefined;
+    let v84: any;
+    closure7(v12, `${v8}`, undefined);
+    v84 = undefined;
+    let v103: any;
+    closure7(v12, "; ", undefined);
+    v103 = undefined;
+    let v122: any;
+    closure7(v12, "hash_part", undefined);
+    v122 = undefined;
+    let v139: any;
+    closure7(v12, " = ", undefined);
+    v139 = undefined;
+    let v156: any;
+    closure7(v12, v9, undefined);
+    v156 = undefined;
+    let v173: any;
+    closure7(v12, "; ", undefined);
+    v173 = undefined;
+    let v192: any;
+    closure7(v12, "combined_value", undefined);
+    v192 = undefined;
+    let v209: any;
+    closure7(v12, " = ", undefined);
+    v209 = undefined;
+    let v229: any;
+    closure7(v12, `${v10}`, undefined);
+    v229 = undefined;
+    let v248: any;
+    closure7(v12, " }", undefined);
+    v248 = undefined;
+    const v254: string = v12.l0;
+    return method20((((((((v6 + " ") + v7) + " #") + int64ToString(v0_1.l0)) + " ") + "crypto.hash_to_port") + " / ") + v254);
 }
 
 export function closure8(v0_1: Mut1, unitVar: void): void {
@@ -541,36 +534,36 @@ export function closure10(v0_1: string, unitVar: void): void {
 }
 
 export function closure9(unitVar: void, v0_1: string): void {
-    let v3: any;
+    let v4: any;
     closure10(v0_1, undefined);
-    v3 = undefined;
+    v4 = undefined;
 }
 
-export function method23(v0_1: string): void {
-    let v3: any;
+export function method21(v0_1: string): void {
+    let v17: any;
     closure3(undefined, undefined);
-    v3 = undefined;
+    v17 = undefined;
     const patternInput: [Mut1, Mut2, Mut3, Mut4, Mut5, Option<int64>] = value_2(TraceState_trace_state());
-    let v44: any;
+    let v60: any;
     closure8(patternInput[0], undefined);
-    v44 = undefined;
+    v60 = undefined;
     closure9(undefined, v0_1);
     patternInput[1].l0(v0_1);
 }
 
 export function closure2(v0_1: int32, v1_1: string, v2: uint16, unitVar: void): void {
     if (method5(US0_US0_0())) {
-        let v7: any;
+        let v21: any;
         closure3(undefined, undefined);
-        v7 = undefined;
+        v21 = undefined;
         const patternInput: [Mut1, Mut2, Mut3, Mut4, Mut5, Option<int64>] = value_2(TraceState_trace_state());
-        const v33: Option<int64> = patternInput[5];
-        const v32: Mut5 = patternInput[4];
-        const v31: Mut4 = patternInput[3];
-        const v30: Mut3 = patternInput[2];
-        const v29: Mut2 = patternInput[1];
-        const v28: Mut1 = patternInput[0];
-        method23(method20(v28, v29, v30, v31, v32, v33, method12(v28, v29, v30, v31, v32, v33), method16(), v0_1, v1_1, v2));
+        const v47: Option<int64> = patternInput[5];
+        const v46: Mut5 = patternInput[4];
+        const v45: Mut4 = patternInput[3];
+        const v44: Mut3 = patternInput[2];
+        const v43: Mut2 = patternInput[1];
+        const v42: Mut1 = patternInput[0];
+        method21(method19(v42, v43, v44, v45, v46, v47, method12(v42, v43, v44, v45, v46, v47), method16(), v0_1, v1_1, v2));
     }
 }
 
@@ -582,9 +575,9 @@ export function closure1(unitVar: void, v0_1: string): uint16 {
     let v124: uint16;
     const value_1: int32 = (parse(v114, 511, false, 32, 16) + v96) | 0;
     v124 = (value_1 & 0xFFFF);
-    let v129: any;
+    let v189: any;
     closure2(v96, v114, v124, undefined);
-    v129 = undefined;
+    v189 = undefined;
     return (v124 % 48128) + 1024;
 }
 

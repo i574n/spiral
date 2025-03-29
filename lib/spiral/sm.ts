@@ -323,10 +323,10 @@ export function closure44(v0_1: string, v1_1: string[]): string {
         const v9_1: int32 = ((op_UnaryNegation_Int32(v6_1) + v2_1) - 1) | 0;
         const matchValue: string = v4_1.l1;
         const matchValue_1: string = v4_1.l2;
-        const v13_1: string = ((item(v9_1, v1_1) + matchValue_1) + matchValue) + "";
-        const v14_1: int32 = (v6_1 + 1) | 0;
-        v4_1.l0 = (v14_1 | 0);
-        v4_1.l1 = v13_1;
+        const v18_1: string = (item(v9_1, v1_1) + matchValue_1) + matchValue;
+        const v21_1: int32 = (v6_1 + 1) | 0;
+        v4_1.l0 = (v21_1 | 0);
+        v4_1.l1 = v18_1;
         v4_1.l2 = v0_1;
     }
     const matchValue_2: string = v4_1.l1;

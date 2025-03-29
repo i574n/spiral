@@ -14,7 +14,7 @@ if (!$fast) {
         $spiralPath = "../../deps/spiral/workspace/target/release/spiral$(_exe)"
 
         if ($sequential) {
-            . $spiralPath dib --path $ScriptDir/sm`'.dib --retries 3
+            . $spiralPath dib --path $ScriptDir/lustre.dib --retries 3
         }
 
         . ../../apps/spiral/dist/Supervisor$(_exe) `

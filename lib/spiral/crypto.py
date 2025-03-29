@@ -11,7 +11,7 @@ from fable_modules.fable_library.reflection import (TypeInfo, int32_type, record
 from fable_modules.fable_library.string_ import (trim_end, trim_start)
 from fable_modules.fable_library.time_span import (create, hours, minutes, seconds, milliseconds)
 from fable_modules.fable_library.types import (int64, Record, Array, Union, uint16)
-from fable_modules.fable_library.util import (create_atom, to_enumerable, compare)
+from fable_modules.fable_library.util import (create_atom, to_enumerable, compare, int64_to_string)
 from collections.abc import Callable
 from dataclasses import dataclass
 import hashlib
@@ -254,21 +254,21 @@ def method11(__unit: None=None) -> Callable[[str], US5]:
 
 
 def method8(v0_1: str) -> str:
-    v34: IOsEnviron = os
-    v36: Any = v34.environ
-    _v41: (str | None) | None = None
-    x: str | None = v36.get(v0_1)
-    _v41 = some(x)
-    v47: str | None
-    if _v41 is None:
-        raise Exception("optionm\'.of_obj / _v41=None")
+    v31: IOsEnviron = os
+    v33: Any = v31.environ
+    _v38: (str | None) | None = None
+    x: str | None = v33.get(v0_1)
+    _v38 = some(x)
+    v44: str | None
+    if _v38 is None:
+        raise Exception("optionm\'.of_obj / _v38=None")
 
     else: 
-        v47 = value_2(_v41)
+        v44 = value_2(_v38)
 
-    v74: US5 = default_arg(map(method11(), v47), US5(1))
-    if v74.tag == 0:
-        return v74.fields[0]
+    v71: US5 = default_arg(map(method11(), v44), US5(1))
+    if v71.tag == 0:
+        return v71.fields[0]
 
     else: 
         return ""
@@ -361,11 +361,11 @@ def closure3(unit_var: None, unit_var_1: None) -> None:
 
 
 def method5(v0_1: US0) -> bool:
-    v3: None
+    v17: None
     closure3(None, None)
-    v3 = None
+    v17 = None
     pattern_input: tuple[Mut1, Mut2, Mut3, Mut4, Mut5, int64 | None] = value_2(TraceState_trace_state())
-    v42: US0 = pattern_input[4].l0
+    v56: US0 = pattern_input[4].l0
     if pattern_input[2].l0 == False:
         return False
 
@@ -380,7 +380,7 @@ def method5(v0_1: US0) -> bool:
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr95())) >= find(v42, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr96()))
+        return find(v0_1, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr95())) >= find(v56, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr96()))
 
 
 
@@ -404,96 +404,89 @@ def method15(__unit: None=None) -> str:
 
 
 def method12(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None=None) -> str:
-    v748: US2 = default_arg(map(method13(), v5), US2(1))
-    v866: Any
-    if v748.tag == 0:
-        v818: Any = create(op_subtraction(from_value(ticks_1(now()), False), v748.fields[0]))
-        v866 = create_1(1, 1, 1, hours(v818), minutes(v818), seconds(v818), milliseconds(v818))
+    v804: US2 = default_arg(map(method13(), v5), US2(1))
+    v936: Any
+    if v804.tag == 0:
+        v884: Any = create(op_subtraction(from_value(ticks_1(now()), False), v804.fields[0]))
+        v936 = create_1(1, 1, 1, hours(v884), minutes(v884), seconds(v884), milliseconds(v884))
 
     else: 
-        v866 = now()
+        v936 = now()
 
-    v868: str = method15()
-    return to_string(v866, "M-d-y hh:mm:ss tt" if (v868 == "") else v868)
+    v938: str = method15()
+    return to_string(v936, "M-d-y hh:mm:ss tt" if (v938 == "") else v938)
 
 
-def method18(__unit: None=None) -> str:
+def method17(__unit: None=None) -> str:
     return ""
 
 
 def closure7(v0_1: Mut4, v1_1: str, unit_var: None) -> None:
-    v3: str = v0_1.l0 + v1_1
-    v0_1.l0 = v3
+    v4: str = v0_1.l0 + v1_1
+    v0_1.l0 = v4
 
 
-def method17(v0_1: str) -> str:
-    v2: Mut4 = Mut4(method18())
-    v9: None
-    closure7(v2, ("" + str(v0_1)) + "", None)
-    v9 = None
-    return v2.l0
-
-
-def method19(__unit: None=None) -> str:
+def method18(__unit: None=None) -> str:
     return "\u001b[0m"
 
 
 def method16(__unit: None=None) -> str:
     v4: str = "Verbose".lower()
-    return ("\u001b[90m" + method17(v4[0])) + method19()
-
-
-def method21(v0_1: int, v1_1: str, v2: uint16) -> str:
-    v4: Mut4 = Mut4(method18())
-    v13: None
-    closure7(v4, "{ ", None)
-    v13 = None
+    v7: str = v4[0]
+    v9: Mut4 = Mut4(method17())
     v24: None
-    closure7(v4, "first_letter_code", None)
+    closure7(v9, ("" + str(v7)) + "", None)
     v24 = None
-    v35: None
-    closure7(v4, " = ", None)
-    v35 = None
-    v44: None
-    closure7(v4, ("" + str(v0_1)) + "", None)
-    v44 = None
-    v55: None
-    closure7(v4, "; ", None)
-    v55 = None
-    v66: None
-    closure7(v4, "hash_part", None)
-    v66 = None
-    v75: None
-    closure7(v4, " = ", None)
-    v75 = None
-    v84: None
-    closure7(v4, v1_1, None)
-    v84 = None
-    v93: None
-    closure7(v4, "; ", None)
-    v93 = None
-    v104: None
-    closure7(v4, "combined_value", None)
-    v104 = None
-    v113: None
-    closure7(v4, " = ", None)
-    v113 = None
-    v122: None
-    closure7(v4, ("" + str(v2)) + "", None)
-    v122 = None
-    v133: None
-    closure7(v4, " }", None)
-    v133 = None
-    return v4.l0
+    return ("\u001b[90m" + v9.l0) + method18()
 
 
-def method22(v0_1: str) -> str:
+def method20(v0_1: str) -> str:
     return trim_end(trim_start(v0_1, *to_array(empty())), *to_array(of_array([" ", "/"])))
 
 
-def method20(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None, v6: str, v7: str, v8: int, v9: str, v10: uint16) -> str:
-    v11: str = method21(v8, v9, v10)
-    return method22(((((((((("" + v6) + " ") + v7) + " #") + str(v0_1.l0)) + " ") + "crypto.hash_to_port") + " / ") + v11) + "")
+def method19(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None, v6: str, v7: str, v8: int, v9: str, v10: uint16) -> str:
+    v12: Mut4 = Mut4(method17())
+    v26: None
+    closure7(v12, "{ ", None)
+    v26 = None
+    v45: None
+    closure7(v12, "first_letter_code", None)
+    v45 = None
+    v64: None
+    closure7(v12, " = ", None)
+    v64 = None
+    v84: None
+    closure7(v12, ("" + str(v8)) + "", None)
+    v84 = None
+    v103: None
+    closure7(v12, "; ", None)
+    v103 = None
+    v122: None
+    closure7(v12, "hash_part", None)
+    v122 = None
+    v139: None
+    closure7(v12, " = ", None)
+    v139 = None
+    v156: None
+    closure7(v12, v9, None)
+    v156 = None
+    v173: None
+    closure7(v12, "; ", None)
+    v173 = None
+    v192: None
+    closure7(v12, "combined_value", None)
+    v192 = None
+    v209: None
+    closure7(v12, " = ", None)
+    v209 = None
+    v229: None
+    closure7(v12, ("" + str(v10)) + "", None)
+    v229 = None
+    v248: None
+    closure7(v12, " }", None)
+    v248 = None
+    v254: str = v12.l0
+    return method20((((((((v6 + " ") + v7) + " #") + int64_to_string(v0_1.l0)) + " ") + "crypto.hash_to_port") + " / ") + v254)
 
 
 def closure8(v0_1: Mut1, unit_var: None) -> None:
@@ -506,36 +499,36 @@ def closure10(v0_1: str, unit_var: None) -> None:
 
 
 def closure9(unit_var: None, v0_1: str) -> None:
-    v3: None
+    v4: None
     closure10(v0_1, None)
-    v3 = None
+    v4 = None
 
 
-def method23(v0_1: str) -> None:
-    v3: None
+def method21(v0_1: str) -> None:
+    v17: None
     closure3(None, None)
-    v3 = None
+    v17 = None
     pattern_input: tuple[Mut1, Mut2, Mut3, Mut4, Mut5, int64 | None] = value_2(TraceState_trace_state())
-    v44: None
+    v60: None
     closure8(pattern_input[0], None)
-    v44 = None
+    v60 = None
     closure9(None, v0_1)
     pattern_input[1].l0(v0_1)
 
 
 def closure2(v0_1: int, v1_1: str, v2: uint16, unit_var: None) -> None:
     if method5(US0(0)):
-        v7: None
+        v21: None
         closure3(None, None)
-        v7 = None
+        v21 = None
         pattern_input: tuple[Mut1, Mut2, Mut3, Mut4, Mut5, int64 | None] = value_2(TraceState_trace_state())
-        v33: int64 | None = pattern_input[5]
-        v32: Mut5 = pattern_input[4]
-        v31: Mut4 = pattern_input[3]
-        v30: Mut3 = pattern_input[2]
-        v29: Mut2 = pattern_input[1]
-        v28: Mut1 = pattern_input[0]
-        method23(method20(v28, v29, v30, v31, v32, v33, method12(v28, v29, v30, v31, v32, v33), method16(), v0_1, v1_1, v2))
+        v47: int64 | None = pattern_input[5]
+        v46: Mut5 = pattern_input[4]
+        v45: Mut4 = pattern_input[3]
+        v44: Mut3 = pattern_input[2]
+        v43: Mut2 = pattern_input[1]
+        v42: Mut1 = pattern_input[0]
+        method21(method19(v42, v43, v44, v45, v46, v47, method12(v42, v43, v44, v45, v46, v47), method16(), v0_1, v1_1, v2))
 
 
 
@@ -545,9 +538,9 @@ def closure1(unit_var: None, v0_1: str) -> uint16:
     v124: uint16
     value_1: int = (parse(v114, 511, False, 32, 16) + v96) or 0
     v124 = int(value_1+0x10000 if value_1 < 0 else value_1) & 0xFFFF
-    v129: None
+    v189: None
     closure2(v96, v114, v124, None)
-    v129 = None
+    v189 = None
     return (v124 % uint16(48128)) + uint16(1024)
 
 
