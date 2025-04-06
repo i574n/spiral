@@ -7327,6 +7327,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -7709,16 +7710,19 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">backend_switch</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="n">x</span> <span class="p">:</span> <span class="n">t</span> <span class="o">=</span>
     <span class="n">real</span>
-        <span class="n">inl</span> <span class="n">backend</span> <span class="n">key</span> <span class="p">:</span> <span class="n">t</span> <span class="o">=</span>
+        <span class="n">inl</span> <span class="n">backend</span> <span class="p">(</span><span class="n">key</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">t</span> <span class="o">=</span>
             <span class="n">inl</span> <span class="n">s</span> <span class="o">=</span> <span class="n">real_core</span><span class="o">.</span><span class="n">string_lit_to_symbol</span> <span class="n">key</span>
             <span class="n">real_core</span><span class="o">.</span><span class="n">record_type_try_find</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">x</span><span class="p">)</span> <span class="n">s</span>
                 <span class="p">(</span><span class="n">forall</span> <span class="n">v</span><span class="s1">'. =&gt; (x s) ())</span>
                 <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">inl</span> <span class="n">x</span><span class="s1">' = {</span>
+            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">backend</span> <span class="s2">"Gleam"</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">backend</span> <span class="s2">"Fsharp"</span>
+            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">backend</span> <span class="s2">"Python"</span>
+            <span class="n">Cpp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">backend</span> <span class="s2">"Cpp"</span>
+        <span class="p">}</span>
         <span class="err">!!!!</span><span class="n">BackendSwitch</span> <span class="p">(</span>
-            <span class="p">(</span><span class="s2">"Gleam"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Gleam"</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">"Fsharp"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Fsharp"</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">"Python"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Python"</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">"Cuda"</span><span class="p">,</span> <span class="n">backend</span> <span class="s2">"Cuda"</span><span class="p">)</span>
+            <span class="n">x</span><span class="s1">'</span>
         <span class="p">)</span>
 </pre></div>
 </div>
@@ -7776,6 +7780,7 @@ a.anchor-link {
     <span class="o">|</span> <span class="n">Gleam</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">Cuda</span> <span class="p">:</span> <span class="n">target_runtime</span>
+    <span class="o">|</span> <span class="n">Cpp</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">Rust</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">TypeScript</span> <span class="p">:</span> <span class="n">target_runtime</span>
     <span class="o">|</span> <span class="n">Python</span> <span class="p">:</span> <span class="n">target_runtime</span>
@@ -7820,34 +7825,37 @@ a.anchor-link {
             <span class="n">inl</span> <span class="n">emit_result</span> <span class="n">x</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
                 <span class="k">if</span> <span class="n">is_unit</span> <span class="o">|&gt;</span> <span class="ow">not</span>
                 <span class="n">then</span> <span class="err">$</span><span class="s1">'let _run_target_args</span><span class="se">\'</span><span class="s1">_!result = !x '</span>
-            <span class="err">$</span><span class="s1">'</span><span class="se">\n</span><span class="s1">#if FABLE_COMPILER || WASM || CONTRACT'</span>
-            <span class="err">$</span><span class="s1">'</span><span class="se">\n</span><span class="s1">#if FABLE_COMPILER_RUST &amp;&amp; \!WASM &amp;&amp; \!CONTRACT'</span>
+            <span class="err">$</span><span class="s1">'</span><span class="se">\n</span><span class="s1">\#if FABLE_COMPILER || WASM || CONTRACT'</span>
+            <span class="err">$</span><span class="s1">'</span><span class="se">\n</span><span class="s1">\#if FABLE_COMPILER_RUST &amp;&amp; \!WASM &amp;&amp; \!CONTRACT'</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Rust</span> <span class="n">Native</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span> <span class="o">|&gt;</span> <span class="n">emit_result</span>
-            <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if FABLE_COMPILER_RUST &amp;&amp; WASM'</span>
+            <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if FABLE_COMPILER_RUST &amp;&amp; WASM'</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Rust</span> <span class="n">Wasm</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span> <span class="o">|&gt;</span> <span class="n">emit_result</span>
-            <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if FABLE_COMPILER_RUST &amp;&amp; CONTRACT'</span>
+            <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if FABLE_COMPILER_RUST &amp;&amp; CONTRACT'</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Rust</span> <span class="n">Contract</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span> <span class="o">|&gt;</span> <span class="n">emit_result</span>
-            <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if FABLE_COMPILER_TYPESCRIPT'</span>
+            <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if FABLE_COMPILER_TYPESCRIPT'</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">TypeScript</span> <span class="n">Native</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span> <span class="o">|&gt;</span> <span class="n">emit_result</span>
-            <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if FABLE_COMPILER_PYTHON'</span>
+            <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if FABLE_COMPILER_PYTHON'</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Python</span> <span class="n">Native</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span> <span class="o">|&gt;</span> <span class="n">emit_result</span>
-            <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if \!FABLE_COMPILER_RUST &amp;&amp; \!FABLE_COMPILER_TYPESCRIPT &amp;&amp; \!FABLE_COMPILER_PYTHON'</span>
+            <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if \!FABLE_COMPILER_RUST &amp;&amp; \!FABLE_COMPILER_TYPESCRIPT &amp;&amp; \!FABLE_COMPILER_PYTHON'</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Fsharp</span> <span class="n">Wasm</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span> <span class="o">|&gt;</span> <span class="n">emit_result</span>
-            <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#else'</span>
+            <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#else'</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Fsharp</span> <span class="n">Native</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span> <span class="o">|&gt;</span> <span class="n">emit_result</span>
-            <span class="err">$</span><span class="s1">'#endif'</span>
+            <span class="err">$</span><span class="s1">'\#endif'</span>
             <span class="k">if</span> <span class="n">is_unit</span>
             <span class="n">then</span> <span class="err">$</span><span class="s1">'// run_target_args</span><span class="se">\'</span><span class="s1"> is_unit'</span>
             <span class="k">else</span> <span class="err">$</span><span class="s1">'_run_target_args</span><span class="se">\'</span><span class="s1">_!result '</span> <span class="p">:</span> <span class="n">t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Cuda</span> <span class="n">Native</span>
+            <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span>
+        <span class="n">Cpp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Cpp</span> <span class="n">Native</span>
             <span class="n">fn</span> <span class="n">target</span> <span class="n">args</span>
     <span class="p">}</span>
 </pre></div>
@@ -7945,7 +7953,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 1; expected = 1 }
 
 .rs output:
@@ -8288,7 +8296,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 1; expected = 1 }
 
 .rs output:
@@ -8463,7 +8471,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 15; expected = 15 }
 
 .rs output:
@@ -9010,56 +9018,11 @@ method0()
 
 # spiral.process_python
 
-.py (Cuda):
-kernel = r"""
+.py (Python):
+kernels_main = r"""
 """
-class static_array():
-    def __init__(self, length):
-        self.ptr = []
-        for _ in range(length):
-            self.ptr.append(None)
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
-        self.ptr[index] = value
-
-class static_array_list(static_array):
-    def __init__(self, length):
-        super().__init__(length)
-        self.length = 0
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
-        self.ptr[index] = value
-
-    def push(self,value):
-        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
-        self.ptr[self.length] = value
-        self.length += 1
-
-    def pop(self):
-        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
-        self.length -= 1
-        return self.ptr[self.length]
-
-    def unsafe_set_length(self,i):
-        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
-        self.length = i
-
-class dynamic_array(static_array): 
-    pass
-
-class dynamic_array_list(static_array_list):
-    def length_(self): return self.length
-
+from main_auto import *
+kernels = kernels_aux + kernels_main
 import cupy as cp
 import numpy as np
 from dataclasses import dataclass
@@ -9067,9 +9030,13 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+
+# fwd_dcls
+# types
 @dataclass
 class Mut0:
     v0 : string
+# functions
 def method1() -&gt; i32:
     return 3
 def method2(v0 : bool) -&gt; bool:
@@ -9200,6 +9167,7 @@ def method0() -&gt; None:
     else:
         del v260, v266
         return 
+# main_defs
 def main_body():
     return method0()
 
@@ -9249,7 +9217,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 15; expected = 15 }
 
 .rs output:
@@ -9816,56 +9784,11 @@ method0()
 
 # spiral.process_python
 
-.py (Cuda):
-kernel = r"""
+.py (Python):
+kernels_main = r"""
 """
-class static_array():
-    def __init__(self, length):
-        self.ptr = []
-        for _ in range(length):
-            self.ptr.append(None)
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
-        self.ptr[index] = value
-
-class static_array_list(static_array):
-    def __init__(self, length):
-        super().__init__(length)
-        self.length = 0
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
-        self.ptr[index] = value
-
-    def push(self,value):
-        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
-        self.ptr[self.length] = value
-        self.length += 1
-
-    def pop(self):
-        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
-        self.length -= 1
-        return self.ptr[self.length]
-
-    def unsafe_set_length(self,i):
-        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
-        self.length = i
-
-class dynamic_array(static_array): 
-    pass
-
-class dynamic_array_list(static_array_list):
-    def length_(self): return self.length
-
+from main_auto import *
+kernels = kernels_aux + kernels_main
 import cupy as cp
 import numpy as np
 from dataclasses import dataclass
@@ -9873,9 +9796,13 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+
+# fwd_dcls
+# types
 @dataclass
 class Mut0:
     v0 : string
+# functions
 def method1() -&gt; i32:
     return 3
 def method2(v0 : i32, v1 : i32) -&gt; i32:
@@ -10011,6 +9938,7 @@ def method0() -&gt; None:
     else:
         del v261, v267
         return 
+# main_defs
 def main_body():
     return method0()
 
@@ -10090,7 +10018,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 15; expected = 15 }
 
 .rs output:
@@ -10655,56 +10583,11 @@ method0()
 
 # spiral.process_python
 
-.py (Cuda):
-kernel = r"""
+.py (Python):
+kernels_main = r"""
 """
-class static_array():
-    def __init__(self, length):
-        self.ptr = []
-        for _ in range(length):
-            self.ptr.append(None)
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
-        self.ptr[index] = value
-
-class static_array_list(static_array):
-    def __init__(self, length):
-        super().__init__(length)
-        self.length = 0
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
-        self.ptr[index] = value
-
-    def push(self,value):
-        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
-        self.ptr[self.length] = value
-        self.length += 1
-
-    def pop(self):
-        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
-        self.length -= 1
-        return self.ptr[self.length]
-
-    def unsafe_set_length(self,i):
-        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
-        self.length = i
-
-class dynamic_array(static_array): 
-    pass
-
-class dynamic_array_list(static_array_list):
-    def length_(self): return self.length
-
+from main_auto import *
+kernels = kernels_aux + kernels_main
 import cupy as cp
 import numpy as np
 from dataclasses import dataclass
@@ -10712,9 +10595,13 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+
+# fwd_dcls
+# types
 @dataclass
 class Mut0:
     v0 : string
+# functions
 def method1() -&gt; i32:
     return 3
 def method2(v0 : i32) -&gt; i32:
@@ -10849,6 +10736,7 @@ def method0() -&gt; None:
     else:
         del v260, v266
         return 
+# main_defs
 def main_body():
     return method0()
 
@@ -10933,7 +10821,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = -3; expected = -3 }
 
 .rs output:
@@ -11017,7 +10905,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = -3; expected = -3 }
 
 .rs output:
@@ -11101,7 +10989,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = -3; expected = -3 }
 
 .rs output:
@@ -11185,7 +11073,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = -3.0; expected = -3 }
 
 .rs output:
@@ -11284,7 +11172,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = true; expected = true }
 
 .rs output:
@@ -11372,7 +11260,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = true; expected = true }
 
 .rs output:
@@ -11459,7 +11347,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = true; expected = true }
 
 .rs output:
@@ -11581,7 +11469,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="nb">type</span> <span class="n">pair_switch</span> <span class="n">a</span> <span class="n">b</span> <span class="o">=</span>
     <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'#(`a, `b  )'</span>
+        <span class="n">Gleam</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'\#(`a, `b  )'</span>
         <span class="n">Fsharp</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'(`a * `b)'</span>
         <span class="n">Python</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'(`a, `b)'</span>
     <span class="p">}</span>
@@ -11624,7 +11512,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 
 .rs output:
@@ -11674,7 +11562,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">new_pair</span> <span class="n">forall</span> <span class="n">a</span> <span class="n">b</span><span class="o">.</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">b</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="err">$</span><span class="s1">'#(!a, !b )'</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span>
+            <span class="err">$</span><span class="s1">'\#(!a, !b )'</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'!a, !b '</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11707,7 +11595,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">from_pair</span> <span class="n">forall</span> <span class="n">a</span> <span class="n">b</span><span class="o">.</span> <span class="p">(</span><span class="n">pair</span> <span class="p">:</span> <span class="n">pair</span> <span class="n">a</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="err">$</span><span class="s1">'let #(a, b) = !pair '</span>
+            <span class="err">$</span><span class="s1">'let \#(a, b) = !pair '</span>
             <span class="p">(</span><span class="err">$</span><span class="s1">'a'</span> <span class="p">:</span> <span class="n">a</span><span class="p">),</span> <span class="p">(</span><span class="err">$</span><span class="s1">'b'</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'let (a, b) = !pair '</span>
@@ -11752,7 +11640,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq'; actual = a, (1, 'b'); expected = a, (1, 'b') }
 
 
@@ -11867,7 +11755,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 1; expected = 1 }
 
 .rs output:
@@ -11926,7 +11814,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 
 .rs output:
@@ -12797,7 +12685,13 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">exn</span> <span class="o">=</span> <span class="err">$</span><span class="s2">"backend_switch `({ Gleam : $'Nil'; Fsharp : $'exn'; Python : $'BaseException' })"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="nb">type</span> <span class="n">exn_switch</span> <span class="o">=</span>
+    <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Nil'</span>
+        <span class="n">Fsharp</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'exn'</span>
+        <span class="n">Python</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'BaseException'</span>
+    <span class="p">}</span>
+<span class="n">nominal</span> <span class="n">exn</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'backend_switch `(exn_switch)'</span>
 
 <span class="n">inl</span> <span class="n">exn</span> <span class="n">x</span> <span class="o">=</span>
     <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'`exn '</span>
@@ -12877,6 +12771,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
     <span class="o">|</span> <span class="n">Gleam</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
     <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"System.IndexOutOfRangeException: Index was outside the bounds of the array."</span>
     <span class="o">|</span> <span class="n">Cuda</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"index 1 is out of bounds for axis 0 with size 1"</span>
+    <span class="o">|</span> <span class="n">Cpp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
     <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"Exception { message: </span><span class="se">\"</span><span class="s2">index out of bounds: the len is 1 but the index is 1</span><span class="se">\"</span><span class="s2"> }"</span>
     <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"Error: Index was outside the bounds of the array.</span><span class="se">\\</span><span class="s2">nParameter name: index"</span>
     <span class="o">|</span> <span class="n">Python</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"array index out of range"</span>
@@ -12893,7 +12788,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = index 1 is out of bounds for axis 0 with size 1; expected = index 1 is out of bounds for axis 0 with size 1 }
 
 .rs output:

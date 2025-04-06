@@ -57,6 +57,15 @@ pub mod Crypto {
             (**self).sha256()
         }
     }
+    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
+        fn environ(&self) -> LrcPtr<dyn Any>;
+    }
+    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
+        #[inline]
+        fn environ(&self) -> LrcPtr<dyn Any> {
+            (**self).environ()
+        }
+    }
     pub mod TraceState {
         use super::*;
         pub fn trace_state() -> LrcPtr<
@@ -99,15 +108,6 @@ pub mod Crypto {
                     ))
                 })
                 .clone()
-        }
-    }
-    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
-        fn environ(&self) -> LrcPtr<dyn Any>;
-    }
-    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
-        #[inline]
-        fn environ(&self) -> LrcPtr<dyn Any> {
-            (**self).environ()
         }
     }
     #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
@@ -216,6 +216,7 @@ pub mod Crypto {
         US4_3(Crypto::US3),
         US4_4(Crypto::US3),
         US4_5(Crypto::US3),
+        US4_6(Crypto::US3),
     }
     impl core::fmt::Display for US4 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -607,8 +608,8 @@ pub mod Crypto {
         let patternInput: (Crypto::US1, Crypto::US2) = Crypto::method7();
         let _run_target_args__v3: (Crypto::US1, Crypto::US2) =
             (patternInput.0.clone(), patternInput.1.clone());
-        let v173: Crypto::US2 = _run_target_args__v3.1.clone();
-        let v172: Crypto::US1 = _run_target_args__v3.0.clone();
+        let v185: Crypto::US2 = _run_target_args__v3.1.clone();
+        let v184: Crypto::US1 = _run_target_args__v3.0.clone();
         (
             LrcPtr::new(Crypto::Mut1 {
                 l0: MutCell::new(1_i64),
@@ -623,8 +624,8 @@ pub mod Crypto {
                 l0: MutCell::new(string("")),
             }),
             LrcPtr::new(Crypto::Mut5 {
-                l0: MutCell::new(match &v172 {
-                    Crypto::US1::US1_0(v172_0_0) => match &v172 {
+                l0: MutCell::new(match &v184 {
+                    Crypto::US1::US1_0(v184_0_0) => match &v184 {
                         Crypto::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
@@ -632,8 +633,8 @@ pub mod Crypto {
                     _ => v0_1.clone(),
                 }),
             }),
-            match &v173 {
-                Crypto::US2::US2_0(v173_0_0) => Some(match &v173 {
+            match &v185 {
+                Crypto::US2::US2_0(v185_0_0) => Some(match &v185 {
                     Crypto::US2::US2_0(x) => x.clone(),
                     _ => unreachable!(),
                 }),
@@ -720,14 +721,14 @@ pub mod Crypto {
         v4: LrcPtr<Crypto::Mut5>,
         v5: Option<i64>,
     ) -> string {
-        let v212: Crypto::US2 = defaultValue(Crypto::US2::US2_1, map_1(Crypto::method13(), v5));
-        let v344: DateTime = match &v212 {
-            Crypto::US2::US2_0(v212_0_0) => {
-                let v292: TimeSpan = TimeSpan::new_ticks(
+        let v220: Crypto::US2 = defaultValue(Crypto::US2::US2_1, map_1(Crypto::method13(), v5));
+        let v360: DateTime = match &v220 {
+            Crypto::US2::US2_0(v220_0_0) => {
+                let v303: TimeSpan = TimeSpan::new_ticks(
                     ({
                         let _arg: DateTime = DateTime::now();
                         _arg.ticks()
-                    }) - (match &v212 {
+                    }) - (match &v220 {
                         Crypto::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     }),
@@ -736,21 +737,21 @@ pub mod Crypto {
                     1_i32,
                     1_i32,
                     1_i32,
-                    v292.hours(),
-                    v292.minutes(),
-                    v292.seconds(),
-                    v292.milliseconds(),
+                    v303.hours(),
+                    v303.minutes(),
+                    v303.seconds(),
+                    v303.milliseconds(),
                 )
             }
             _ => DateTime::now(),
         };
-        let v346: string = Crypto::method14();
-        let provider: string = if (v346.clone()) == string("") {
+        let v361: string = Crypto::method14();
+        let provider: string = if (v361.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
-            v346
+            v361
         };
-        v344.toString(provider)
+        v360.toString(provider)
     }
     pub fn method17() -> string {
         string("")
@@ -775,9 +776,9 @@ pub mod Crypto {
         let v30: string = v9.l0.get().clone();
         let v49: &str = inline_colorization::color_bright_black;
         let v56: &str = &*v30;
-        let v84: &str = inline_colorization::color_reset;
-        let v86: std::string::String = format!("{}{}{}", v49, v56, v84);
-        fable_library_rust::String_::fromString(v86)
+        let v87: &str = inline_colorization::color_reset;
+        let v89: std::string::String = format!("{}{}{}", v49, v56, v87);
+        fable_library_rust::String_::fromString(v89)
     }
     pub fn method20(v0_1: string) -> string {
         trimEndChars(
@@ -943,13 +944,13 @@ pub mod Crypto {
     }
     pub fn closure1(unitVar: (), v0_1: string) -> u16 {
         let v96: i32 = getCharAt(v0_1.clone(), 0_i32) as u32 as i32;
-        let v114: string = getSlice(v0_1, Some(0_i32), Some(7_i32));
-        let v124: u16 = ((toInt32_radix(v114.clone(), 16_i32)) + (v96)) as u16;
-        let v189: () = {
-            Crypto::closure2(v96, v114, v124, ());
+        let v126: string = getSlice(v0_1, Some(0_i32), Some(7_i32));
+        let v136: u16 = ((toInt32_radix(v126.clone(), 16_i32)) + (v96)) as u16;
+        let v201: () = {
+            Crypto::closure2(v96, v126, v136, ());
             ()
         };
-        ((v124) % 48128_u16) + 1024_u16
+        ((v136) % 48128_u16) + 1024_u16
     }
     pub fn v0() -> Func1<string, string> {
         static v0: OnceInit<Func1<string, string>> = OnceInit::new();

@@ -69,7 +69,11 @@ inl file_stream (path : string) mode access share : file_stream' =
 /// ### file_info
 nominal file_info =
     `(
-        global "#if FABLE_COMPILER\ntype System_IO_FileInfo = bool\n#else\ntype System_IO_FileInfo = System.IO.FileInfo\n#endif\n"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\ntype System_IO_FileInfo = bool\n\#else\ntype System_IO_FileInfo = System.IO.FileInfo\n#endif\n"
+                        ) : () -> ()
+        }
         $'' : $'System_IO_FileInfo'
     )
 
@@ -81,7 +85,11 @@ inl file_info (path : string) : file_info =
 /// ### directory_info
 nominal directory_info =
     `(
-        global "#if FABLE_COMPILER\ntype System_IO_DirectoryInfo = bool\n#else\ntype System_IO_DirectoryInfo = System.IO.DirectoryInfo\n#endif\n"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\ntype System_IO_DirectoryInfo = bool\n\#else\ntype System_IO_DirectoryInfo = System.IO.DirectoryInfo\n#endif\n"
+                        ) : () -> ()
+        }
         $'' : $'System_IO_DirectoryInfo'
     )
 
@@ -155,7 +163,7 @@ let file_move (new_path : string) (old_path : string) : () =
 
 /// ### read_all_text_async
 let read_all_text_async (path : string) : _ string =
-    let rec loop (retry : i64) =
+    let rec loop (retry : i64) : _ string =
         fun () =>
             try_unit
                 fun () =>
@@ -201,7 +209,11 @@ inl get_source_directory () =
 /// ### display
 nominal display =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::Display\")>]\ntype std_path_Display = class end\n#else\ntype std_path_Display = string\n#endif\n"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::Display\")>]\ntype std_path_Display = class end\n\#else\ntype std_path_Display = string\n#endif\n"
+                        ) : () -> ()
+        }
         $'' : $'std_path_Display'
     )
 
@@ -215,7 +227,11 @@ nominal path =
 /// ### path_buf
 nominal path_buf =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::PathBuf\")>]\ntype std_path_PathBuf = class end\n#else\ntype std_path_PathBuf = string\n#endif\n"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::PathBuf\")>]\ntype std_path_PathBuf = class end\n\#else\ntype std_path_PathBuf = string\n#endif\n"
+                        ) : () -> ()
+        }
         $'' : $'std_path_PathBuf'
     )
 
@@ -326,7 +342,11 @@ inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_di
 /// ### file_type
 nominal file_type =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::FileType\")>]\n#endif\ntype std_fs_FileType = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::FileType\")>]\n#endif\ntype std_fs_FileType = class end"
+                        ) : () -> ()
+        }
         $'' : $'std_fs_FileType'
     )
 
@@ -342,7 +362,11 @@ inl file_type_is_dir (file_type : file_type) : bool =
 /// ### file
 nominal file =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::File\")>]\n#endif\ntype std_fs_File = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::File\")>]\n#endif\ntype std_fs_File = class end"
+                        ) : () -> ()
+        }
         $'' : $'std_fs_File'
     )
 
@@ -646,8 +670,8 @@ inl directory_create_symbolic_link (target : string) (path : string) : () =
             ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
         | Rust (Native) => fun () =>
-            (!\\((target, path), $'"true; #[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()"') : bool) |> ignore
-            (!\\((target, path), $'"true; #[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
+            (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()"') : bool) |> ignore
+            (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
         | _ => fun () => ()
 
 /// ### file_create_symbolic_link
@@ -657,8 +681,8 @@ inl file_create_symbolic_link (target : string) (path : string) : () =
             ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
         | Rust (Native) => fun () =>
-            (!\\((target, path), $'"true; #[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()"') : bool) |> ignore
-            (!\\((target, path), $'"true; #[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
+            (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()"') : bool) |> ignore
+            (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
         | _ => fun () => ()
 
 /// ### file_type
@@ -732,7 +756,12 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
             if path |> directory_exists
             then !\\(path, $'"std::fs::read_link(&*$0)"')
             else
-                let rec loop n path' =
+                // let rec loop n path' =
+                let rec loop forall t {number}.
+                    (n : t)
+                    (path' : string)
+                    : resultm.result' path_buf stream.io_error
+                    =
                     run_target function
                         | Rust _ => fun () =>
                             inl result : _ _ stream.io_error = !\\(path', $'"std::fs::read_link(&*$0)"')
@@ -744,7 +773,12 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                 path |> loop 0u8
         | Fsharp _
         | TypeScript _ => fun () =>
-            let rec loop n path' =
+            // let rec loop n path' =
+            let rec loop forall t {number}.
+                (n : t)
+                (path' : string)
+                : resultm.result' path_buf stream.io_error
+                =
                 inl result =
                     path'
                     |> directory_info
@@ -902,7 +936,7 @@ let write_all_text_exists_async path contents =
 
 /// ### delete_directory_async
 let delete_directory_async path : _ i64 =
-    let rec loop (retry : i64) =
+    let rec loop (retry : i64) : _ i64 =
         run_target function
             | Fsharp (Native) => fun () =>
                 fun () =>
@@ -1089,7 +1123,7 @@ let wait_for_file_access_read path =
 
 /// ### read_all_text_retry_async
 let read_all_text_retry_async full_path : async.async (optionm'.option' string) =
-    let rec loop (retry : i64) =
+    let rec loop (retry : i64) : _ (optionm'.option' string) =
         fun () =>
             try_unit
                 fun () =>
@@ -1119,7 +1153,7 @@ let read_all_text_retry_async full_path : async.async (optionm'.option' string) 
 
 /// ### move_file_async
 let move_file_async new_path old_path : _ i64 =
-    let rec loop (retry : i64) =
+    let rec loop (retry : i64) : _ i64 =
         run_target function
             | Fsharp (Native) => fun () =>
                 fun () =>
@@ -1144,7 +1178,7 @@ let move_file_async new_path old_path : _ i64 =
 
 /// ### delete_file_async
 let delete_file_async path : _ i64 =
-    let rec loop (retry : i64) =
+    let rec loop (retry : i64) : _ i64 =
         run_target function
             | Fsharp (Native) => fun () =>
                 fun () =>

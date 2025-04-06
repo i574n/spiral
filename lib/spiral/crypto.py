@@ -30,13 +30,13 @@ class IHashlibSha256(Protocol):
         ...
 
 
-TraceState_trace_state: tuple[Mut1, Mut2, Mut3, Mut4, Mut5, int64 | None] | None = create_atom(None)
-
 class IOsEnviron(Protocol):
     @abstractmethod
     def environ(self) -> Any:
         ...
 
+
+TraceState_trace_state: tuple[Mut1, Mut2, Mut3, Mut4, Mut5, int64 | None] | None = create_atom(None)
 
 def _expr81() -> TypeInfo:
     return record_type("Crypto.Mut0", [], Mut0, lambda: [("l0", int32_type)])
@@ -171,7 +171,7 @@ class US3(Union):
 US3_reflection = _expr90
 
 def _expr91() -> TypeInfo:
-    return union_type("Crypto.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())]])
+    return union_type("Crypto.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())], [("f6_0", US3_reflection())]])
 
 
 class US4(Union):
@@ -183,7 +183,7 @@ class US4(Union):
 
     @staticmethod
     def cases() -> list[str]:
-        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"]
+        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"]
 
 
 US4_reflection = _expr91
@@ -345,12 +345,12 @@ def closure5(unit_var: None, v0_1: str) -> None:
 def method6(v0_1: US0) -> tuple[Mut1, Mut2, Mut3, Mut4, Mut5, int64 | None]:
     pattern_input: tuple[US1, US2] = method7()
     _run_target_args_0027_v3: tuple[US1, US2] = (pattern_input[0], pattern_input[1])
-    v173: US2 = _run_target_args_0027_v3[1]
-    v172: US1 = _run_target_args_0027_v3[0]
-    def v179(v: str, v0_1: Any=v0_1) -> None:
+    v185: US2 = _run_target_args_0027_v3[1]
+    v184: US1 = _run_target_args_0027_v3[0]
+    def v191(v: str, v0_1: Any=v0_1) -> None:
         closure5(None, v)
 
-    return (Mut1(int64(1)), Mut2(v179), Mut3(True), Mut4(""), Mut5(v172.fields[0] if (v172.tag == 0) else v0_1), v173.fields[0] if (v173.tag == 0) else None)
+    return (Mut1(int64(1)), Mut2(v191), Mut3(True), Mut4(""), Mut5(v184.fields[0] if (v184.tag == 0) else v0_1), v185.fields[0] if (v185.tag == 0) else None)
 
 
 def closure3(unit_var: None, unit_var_1: None) -> None:
@@ -404,17 +404,17 @@ def method15(__unit: None=None) -> str:
 
 
 def method12(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None=None) -> str:
-    v804: US2 = default_arg(map(method13(), v5), US2(1))
-    v936: Any
-    if v804.tag == 0:
-        v884: Any = create(op_subtraction(from_value(ticks_1(now()), False), v804.fields[0]))
-        v936 = create_1(1, 1, 1, hours(v884), minutes(v884), seconds(v884), milliseconds(v884))
+    v827: US2 = default_arg(map(method13(), v5), US2(1))
+    v967: Any
+    if v827.tag == 0:
+        v910: Any = create(op_subtraction(from_value(ticks_1(now()), False), v827.fields[0]))
+        v967 = create_1(1, 1, 1, hours(v910), minutes(v910), seconds(v910), milliseconds(v910))
 
     else: 
-        v936 = now()
+        v967 = now()
 
-    v938: str = method15()
-    return to_string(v936, "M-d-y hh:mm:ss tt" if (v938 == "") else v938)
+    v968: str = method15()
+    return to_string(v967, "M-d-y hh:mm:ss tt" if (v968 == "") else v968)
 
 
 def method17(__unit: None=None) -> str:
@@ -534,14 +534,14 @@ def closure2(v0_1: int, v1_1: str, v2: uint16, unit_var: None) -> None:
 
 def closure1(unit_var: None, v0_1: str) -> uint16:
     v96: int = int(char_code_at(v0_1[0], 0)) or 0
-    v114: str = v0_1[0:7 + 1]
-    v124: uint16
-    value_1: int = (parse(v114, 511, False, 32, 16) + v96) or 0
-    v124 = int(value_1+0x10000 if value_1 < 0 else value_1) & 0xFFFF
-    v189: None
-    closure2(v96, v114, v124, None)
-    v189 = None
-    return (v124 % uint16(48128)) + uint16(1024)
+    v126: str = v0_1[0:7 + 1]
+    v136: uint16
+    value_1: int = (parse(v126, 511, False, 32, 16) + v96) or 0
+    v136 = int(value_1+0x10000 if value_1 < 0 else value_1) & 0xFFFF
+    v201: None
+    closure2(v96, v126, v136, None)
+    v201 = None
+    return (v136 % uint16(48128)) + uint16(1024)
 
 
 def _arrow98(v: str) -> str:

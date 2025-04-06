@@ -71,6 +71,7 @@ function CopyTarget {
         [string] $Runtime
     )
     $_runtime = $Runtime -ne "" ? "_$Runtime" : ""
+    $LanguageDir = "$TargetDir/target/$Language"
 
     function CopyItem {
         param (
@@ -79,15 +80,15 @@ function CopyTarget {
         )
         $name = $Language -eq "py" -and @("threading", "platform") -contains $name ? "$($name)_" : $name
         $name = $Language -eq "py" ? $name.ToLower() : $name
-        $from = "$TargetDir/target/$Language/deps/spiral/lib/$lib/$name.$Language"
+        $from = "$LanguageDir/deps/spiral/lib/$lib/$name.$Language"
         if (!(Test-Path $from)) {
-            $from = ResolveLink "$TargetDir/target/$Language/deps/spiral/lib/$lib/$name.$Language"
+            $from = ResolveLink "$LanguageDir/deps/spiral/lib/$lib/$name.$Language"
         }
         if (!(Test-Path $from)) {
-            $from = "$TargetDir/target/$Language/lib/$lib/$name.$Language"
+            $from = "$LanguageDir/lib/$lib/$name.$Language"
         }
         if (!(Test-Path $from)) {
-            $from = ResolveLink "$TargetDir/target/$Language/polyglot/lib/$lib/$name.$Language"
+            $from = ResolveLink "$LanguageDir/polyglot/lib/$lib/$name.$Language"
         }
         if ($lib -eq "spiral") {
             $to = ResolveLink "$root/deps/spiral/lib/$lib/$name$_runtime.$Language"
@@ -173,6 +174,10 @@ function CopyTarget {
 
     if ($Language -eq "rs" -and $Runtime -eq "contract") {
         Set-Content "$root/deps/spiral/lib/spiral/date_time_contract.rs" ""
+    }
+
+    if ($Language -eq "ts") {
+        Remove-Item "$LanguageDir/fable_modules" -Recurse -Force -ErrorAction Ignore
     }
 }
 

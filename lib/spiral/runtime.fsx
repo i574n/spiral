@@ -5,6 +5,7 @@ type std_string_String = class end
 type std_string_String = string
 #endif
 
+type IOsEnviron = abstract environ: x: unit -> obj
 #if FABLE_COMPILER
 [<Fable.Core.Erase; Fable.Core.Emit("&$0")>]
 type Ref<'T> = class end
@@ -12,6 +13,7 @@ type Ref<'T> = class end
 type Ref<'T> = 'T
 #endif
 
+module TraceState = let mutable trace_state = None
 #if FABLE_COMPILER
 [<Fable.Core.Erase; Fable.Core.Emit("mut $0")>]
 #endif
@@ -20,12 +22,17 @@ type Mut<'T> = class end
 [<Fable.Core.Erase; Fable.Core.Emit("Vec<$0>")>]
 #endif
 type Vec<'T> = class end
-module TraceState = let mutable trace_state = None
+#if FABLE_COMPILER
+[<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
+module System =
+ module Diagnostics =
+  type Process = bool
+  type DataReceivedEventArgs = bool
+#endif
 #if FABLE_COMPILER
 [<Fable.Core.Erase; Fable.Core.Emit("std::env::VarError")>]
 #endif
 type std_env_VarError = class end
-type IOsEnviron = abstract environ: x: unit -> obj
 #if FABLE_COMPILER
 [<Fable.Core.Erase; Fable.Core.Emit("str")>]
 type Str = class end
@@ -45,13 +52,6 @@ type std_sync_Mutex<'T> = class end
 [<Fable.Core.Erase; Fable.Core.Emit("std::process::ChildStdin")>]
 #endif
 type std_process_ChildStdin = class end
-#if FABLE_COMPILER
-[<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
-module System =
- module Diagnostics =
-  type Process = bool
-  type DataReceivedEventArgs = bool
-#endif
 type [<Struct>] US0 =
     | US0_0
     | US0_1
@@ -80,6 +80,7 @@ and [<Struct>] US4 =
     | US4_3 of f3_0 : US3
     | US4_4 of f4_0 : US3
     | US4_5 of f5_0 : US3
+    | US4_6 of f6_0 : US3
 and [<Struct>] US5 =
     | US5_0 of f0_0 : string
     | US5_1
@@ -170,14 +171,14 @@ and method2 (v0 : string) : string =
     #endif
 #if FABLE_COMPILER_RUST && WASM
     let v19 : US3 = US3_1
-    let v20 : US4 = US4_3(v19)
+    let v20 : US4 = US4_4(v19)
     let v21 : string = $"env.get_environment_variable / target: {v20} / var: {v0}"
     let v22 : string = failwith<string> v21
     let _run_target_args'_v2 = v22 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
     let v23 : US3 = US3_2
-    let v24 : US4 = US4_3(v23)
+    let v24 : US4 = US4_4(v23)
     let v25 : string = $"env.get_environment_variable / target: {v24} / var: {v0}"
     let v26 : string = failwith<string> v25
     let _run_target_args'_v2 = v26 
@@ -396,7 +397,7 @@ and method1 () : struct (US1 * US2) =
     let v129 : string = method2(v128)
     let v132 : string = "True"
     let v133 : bool = v129 <> v132 
-    let v209 : US2 =
+    let v210 : US2 =
         if v133 then
             US2_1
         else
@@ -476,9 +477,9 @@ and method1 () : struct (US1 * US2) =
             let _run_target_args'_v165 = v181 
             #endif
             let v182 : int64 = _run_target_args'_v165 
-            let v203 : int64 = v182 |> int64 
-            US2_0(v203)
-    struct (v127, v209)
+            let v204 : int64 = v182 |> int64 
+            US2_0(v204)
+    struct (v127, v210)
 and closure2 () (v0 : string) : unit =
     ()
 and method0 (v0 : US0) : struct (Mut0 * Mut1 * Mut2 * Mut3 * Mut4 * int64 option) =
@@ -546,170 +547,170 @@ and method0 (v0 : US0) : struct (Mut0 * Mut1 * Mut2 * Mut3 * Mut4 * int64 option
     let _run_target_args'_v20 = v40 
     #endif
     let v43 : std_string_String = _run_target_args'_v20 
-    let v49 : string = "fable_library_rust::String_::fromString($0)"
-    let v50 : string = Fable.Core.RustInterop.emitRustExpr v43 v49 
-    let _run_target_args'_v13 = v50 
+    let v52 : string = "fable_library_rust::String_::fromString($0)"
+    let v53 : string = Fable.Core.RustInterop.emitRustExpr v43 v52 
+    let _run_target_args'_v13 = v53 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v51 : string = "option_env!(\"" + v8 + "\").unwrap_or(\"\")"
-    let v52 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v51 
+    let v54 : string = "option_env!(\"" + v8 + "\").unwrap_or(\"\")"
+    let v55 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v54 
     (* run_target_args'
-    let v57 : unit = ()
+    let v60 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v58 : string = "String::from($0)"
-    let v59 : std_string_String = Fable.Core.RustInterop.emitRustExpr v52 v58 
-    let _run_target_args'_v57 = v59 
+    let v61 : string = "String::from($0)"
+    let v62 : std_string_String = Fable.Core.RustInterop.emitRustExpr v55 v61 
+    let _run_target_args'_v60 = v62 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v60 : string = "String::from($0)"
-    let v61 : std_string_String = Fable.Core.RustInterop.emitRustExpr v52 v60 
-    let _run_target_args'_v57 = v61 
+    let v63 : string = "String::from($0)"
+    let v64 : std_string_String = Fable.Core.RustInterop.emitRustExpr v55 v63 
+    let _run_target_args'_v60 = v64 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v62 : string = "String::from($0)"
-    let v63 : std_string_String = Fable.Core.RustInterop.emitRustExpr v52 v62 
-    let _run_target_args'_v57 = v63 
+    let v65 : string = "String::from($0)"
+    let v66 : std_string_String = Fable.Core.RustInterop.emitRustExpr v55 v65 
+    let _run_target_args'_v60 = v66 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v65 : std_string_String = v52 |> unbox<std_string_String>
-    let _run_target_args'_v57 = v65 
+    let v68 : std_string_String = v55 |> unbox<std_string_String>
+    let _run_target_args'_v60 = v68 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v69 : std_string_String = v52 |> unbox<std_string_String>
-    let _run_target_args'_v57 = v69 
+    let v72 : std_string_String = v55 |> unbox<std_string_String>
+    let _run_target_args'_v60 = v72 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v73 : std_string_String = v52 |> unbox<std_string_String>
-    let _run_target_args'_v57 = v73 
+    let v76 : std_string_String = v55 |> unbox<std_string_String>
+    let _run_target_args'_v60 = v76 
     #endif
 #else
-    let v77 : std_string_String = v52 |> unbox<std_string_String>
-    let _run_target_args'_v57 = v77 
+    let v80 : std_string_String = v55 |> unbox<std_string_String>
+    let _run_target_args'_v60 = v80 
     #endif
-    let v80 : std_string_String = _run_target_args'_v57 
-    let v86 : string = "fable_library_rust::String_::fromString($0)"
-    let v87 : string = Fable.Core.RustInterop.emitRustExpr v80 v86 
-    let _run_target_args'_v13 = v87 
+    let v83 : std_string_String = _run_target_args'_v60 
+    let v92 : string = "fable_library_rust::String_::fromString($0)"
+    let v93 : string = Fable.Core.RustInterop.emitRustExpr v83 v92 
+    let _run_target_args'_v13 = v93 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v88 : string = "option_env!(\"" + v8 + "\").unwrap_or(\"\")"
-    let v89 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v88 
+    let v94 : string = "option_env!(\"" + v8 + "\").unwrap_or(\"\")"
+    let v95 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v94 
     (* run_target_args'
-    let v94 : unit = ()
+    let v100 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v95 : string = "String::from($0)"
-    let v96 : std_string_String = Fable.Core.RustInterop.emitRustExpr v89 v95 
-    let _run_target_args'_v94 = v96 
+    let v101 : string = "String::from($0)"
+    let v102 : std_string_String = Fable.Core.RustInterop.emitRustExpr v95 v101 
+    let _run_target_args'_v100 = v102 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v97 : string = "String::from($0)"
-    let v98 : std_string_String = Fable.Core.RustInterop.emitRustExpr v89 v97 
-    let _run_target_args'_v94 = v98 
+    let v103 : string = "String::from($0)"
+    let v104 : std_string_String = Fable.Core.RustInterop.emitRustExpr v95 v103 
+    let _run_target_args'_v100 = v104 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v99 : string = "String::from($0)"
-    let v100 : std_string_String = Fable.Core.RustInterop.emitRustExpr v89 v99 
-    let _run_target_args'_v94 = v100 
+    let v105 : string = "String::from($0)"
+    let v106 : std_string_String = Fable.Core.RustInterop.emitRustExpr v95 v105 
+    let _run_target_args'_v100 = v106 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v102 : std_string_String = v89 |> unbox<std_string_String>
-    let _run_target_args'_v94 = v102 
+    let v108 : std_string_String = v95 |> unbox<std_string_String>
+    let _run_target_args'_v100 = v108 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v106 : std_string_String = v89 |> unbox<std_string_String>
-    let _run_target_args'_v94 = v106 
+    let v112 : std_string_String = v95 |> unbox<std_string_String>
+    let _run_target_args'_v100 = v112 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v110 : std_string_String = v89 |> unbox<std_string_String>
-    let _run_target_args'_v94 = v110 
+    let v116 : std_string_String = v95 |> unbox<std_string_String>
+    let _run_target_args'_v100 = v116 
     #endif
 #else
-    let v114 : std_string_String = v89 |> unbox<std_string_String>
-    let _run_target_args'_v94 = v114 
+    let v120 : std_string_String = v95 |> unbox<std_string_String>
+    let _run_target_args'_v100 = v120 
     #endif
-    let v117 : std_string_String = _run_target_args'_v94 
-    let v123 : string = "fable_library_rust::String_::fromString($0)"
-    let v124 : string = Fable.Core.RustInterop.emitRustExpr v117 v123 
-    let _run_target_args'_v13 = v124 
+    let v123 : std_string_String = _run_target_args'_v100 
+    let v132 : string = "fable_library_rust::String_::fromString($0)"
+    let v133 : string = Fable.Core.RustInterop.emitRustExpr v123 v132 
+    let _run_target_args'_v13 = v133 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v126 : string = null |> unbox<string>
-    let _run_target_args'_v13 = v126 
+    let v135 : string = null |> unbox<string>
+    let _run_target_args'_v13 = v135 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v130 : string = null |> unbox<string>
-    let _run_target_args'_v13 = v130 
+    let v139 : string = null |> unbox<string>
+    let _run_target_args'_v13 = v139 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v134 : string = null |> unbox<string>
-    let _run_target_args'_v13 = v134 
+    let v143 : string = null |> unbox<string>
+    let _run_target_args'_v13 = v143 
     #endif
 #else
-    let v138 : string = null |> unbox<string>
-    let _run_target_args'_v13 = v138 
+    let v147 : string = null |> unbox<string>
+    let _run_target_args'_v13 = v147 
     #endif
-    let v141 : string = _run_target_args'_v13 
-    let v149 : string = "True"
-    let v150 : bool = v141 <> v149 
-    let v162 : US2 =
-        if v150 then
+    let v150 : string = _run_target_args'_v13 
+    let v161 : string = "True"
+    let v162 : bool = v150 <> v161 
+    let v174 : US2 =
+        if v162 then
             US2_1
         else
-            let v154 : string = $"near_sdk::env::block_timestamp()"
-            let v155 : uint64 = Fable.Core.RustInterop.emitRustExpr () v154 
-            let v157 : (uint64 -> int64) = int64
-            let v158 : int64 = v157 v155
-            US2_0(v158)
-    let v163 : US1 = US1_1
-    let _run_target_args'_v3 = struct (v163, v162) 
+            let v166 : string = $"near_sdk::env::block_timestamp()"
+            let v167 : uint64 = Fable.Core.RustInterop.emitRustExpr () v166 
+            let v169 : (uint64 -> int64) = int64
+            let v170 : int64 = v169 v167
+            US2_0(v170)
+    let v175 : US1 = US1_1
+    let _run_target_args'_v3 = struct (v175, v174) 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let struct (v164 : US1, v165 : US2) = method1()
-    let _run_target_args'_v3 = struct (v164, v165) 
+    let struct (v176 : US1, v177 : US2) = method1()
+    let _run_target_args'_v3 = struct (v176, v177) 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let struct (v166 : US1, v167 : US2) = method1()
-    let _run_target_args'_v3 = struct (v166, v167) 
+    let struct (v178 : US1, v179 : US2) = method1()
+    let _run_target_args'_v3 = struct (v178, v179) 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let struct (v168 : US1, v169 : US2) = method1()
-    let _run_target_args'_v3 = struct (v168, v169) 
+    let struct (v180 : US1, v181 : US2) = method1()
+    let _run_target_args'_v3 = struct (v180, v181) 
     #endif
 #else
-    let struct (v170 : US1, v171 : US2) = method1()
-    let _run_target_args'_v3 = struct (v170, v171) 
+    let struct (v182 : US1, v183 : US2) = method1()
+    let _run_target_args'_v3 = struct (v182, v183) 
     #endif
-    let struct (v172 : US1, v173 : US2) = _run_target_args'_v3 
-    let v178 : Mut0 = {l0 = 1L} : Mut0
-    let v179 : (string -> unit) = closure2()
-    let v180 : Mut1 = {l0 = v179} : Mut1
-    let v181 : Mut2 = {l0 = true} : Mut2
-    let v182 : string = ""
-    let v183 : Mut3 = {l0 = v182} : Mut3
-    let v186 : US0 =
-        match v172 with
+    let struct (v184 : US1, v185 : US2) = _run_target_args'_v3 
+    let v190 : Mut0 = {l0 = 1L} : Mut0
+    let v191 : (string -> unit) = closure2()
+    let v192 : Mut1 = {l0 = v191} : Mut1
+    let v193 : Mut2 = {l0 = true} : Mut2
+    let v194 : string = ""
+    let v195 : Mut3 = {l0 = v194} : Mut3
+    let v198 : US0 =
+        match v184 with
         | US1_1 -> (* None *)
             v0
-        | US1_0(v184) -> (* Some *)
-            v184
-    let v187 : Mut4 = {l0 = v186} : Mut4
-    let v198 : int64 option =
-        match v173 with
+        | US1_0(v196) -> (* Some *)
+            v196
+    let v199 : Mut4 = {l0 = v198} : Mut4
+    let v210 : int64 option =
+        match v185 with
         | US2_1 -> (* None *)
-            let v194 : int64 option = None
-            v194
-        | US2_0(v188) -> (* Some *)
-            let v190 : int64 option = Some v188 
-            v190
-    struct (v178, v180, v181, v183, v187, v198)
+            let v206 : int64 option = None
+            v206
+        | US2_0(v200) -> (* Some *)
+            let v202 : int64 option = Some v200 
+            v202
+    struct (v190, v192, v193, v195, v199, v210)
 and closure0 () () : unit =
     let v0 : bool = TraceState.trace_state.IsNone
     if v0 then
@@ -745,917 +746,917 @@ and method11 () : string =
     v0
 and method8 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option) : string =
     (* run_target_args'
-    let v187 : unit = ()
+    let v195 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v190 : (int64 -> US2) = method9()
-    let v191 : US2 option = v5 |> Option.map v190 
-    let v211 : US2 = US2_1
-    let v212 : US2 = v191 |> Option.defaultValue v211 
-    let v344 : System.DateTime =
-        match v212 with
+    let v198 : (int64 -> US2) = method9()
+    let v199 : US2 option = v5 |> Option.map v198 
+    let v219 : US2 = US2_1
+    let v220 : US2 = v199 |> Option.defaultValue v219 
+    let v360 : System.DateTime =
+        match v220 with
         | US2_1 -> (* None *)
             (* run_target_args'
-            let v327 : unit = ()
+            let v343 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v328 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v327 = v328 
+            let v344 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v343 = v344 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v329 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v327 = v329 
+            let v345 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v343 = v345 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v331 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v327 = v331 
+            let v347 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v343 = v347 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v334 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v327 = v334 
+            let v350 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v343 = v350 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v335 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v327 = v335 
+            let v351 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v343 = v351 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v336 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v327 = v336 
+            let v352 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v343 = v352 
             #endif
 #else
-            let v337 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v327 = v337 
+            let v353 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v343 = v353 
             #endif
-            let v338 : System.DateTime = _run_target_args'_v327 
-            v338
-        | US2_0(v216) -> (* Some *)
+            let v354 : System.DateTime = _run_target_args'_v343 
+            v354
+        | US2_0(v224) -> (* Some *)
             (* run_target_args'
-            let v223 : unit = ()
+            let v231 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v224 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v223 = v224 
-            #endif
-#if FABLE_COMPILER_RUST && WASM
-            let v225 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v223 = v225 
-            #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-            let v227 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v223 = v227 
-            #endif
-#if FABLE_COMPILER_TYPESCRIPT
-            let v230 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v223 = v230 
-            #endif
-#if FABLE_COMPILER_PYTHON
-            let v231 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v223 = v231 
-            #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
             let v232 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v223 = v232 
+            let _run_target_args'_v231 = v232 
             #endif
-#else
+#if FABLE_COMPILER_RUST && WASM
             let v233 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v223 = v233 
+            let _run_target_args'_v231 = v233 
             #endif
-            let v234 : System.DateTime = _run_target_args'_v223 
+#if FABLE_COMPILER_RUST && CONTRACT
+            let v235 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v231 = v235 
+            #endif
+#if FABLE_COMPILER_TYPESCRIPT
+            let v238 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v231 = v238 
+            #endif
+#if FABLE_COMPILER_PYTHON
+            let v239 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v231 = v239 
+            #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+            let v240 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v231 = v240 
+            #endif
+#else
+            let v241 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v231 = v241 
+            #endif
+            let v242 : System.DateTime = _run_target_args'_v231 
             (* run_target_args'
-            let v245 : unit = ()
+            let v253 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v246 : (System.DateTime -> int64) = _.Ticks
-            let v247 : int64 = v246 v234
-            let _run_target_args'_v245 = v247 
-            #endif
-#if FABLE_COMPILER_RUST && WASM
-            let v248 : (System.DateTime -> int64) = _.Ticks
-            let v249 : int64 = v248 v234
-            let _run_target_args'_v245 = v249 
-            #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-            let v251 : int64 = null |> unbox<int64>
-            let _run_target_args'_v245 = v251 
-            #endif
-#if FABLE_COMPILER_TYPESCRIPT
             let v254 : (System.DateTime -> int64) = _.Ticks
-            let v255 : int64 = v254 v234
-            let _run_target_args'_v245 = v255 
+            let v255 : int64 = v254 v242
+            let _run_target_args'_v253 = v255 
             #endif
-#if FABLE_COMPILER_PYTHON
+#if FABLE_COMPILER_RUST && WASM
             let v256 : (System.DateTime -> int64) = _.Ticks
-            let v257 : int64 = v256 v234
-            let _run_target_args'_v245 = v257 
+            let v257 : int64 = v256 v242
+            let _run_target_args'_v253 = v257 
+            #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+            let v259 : int64 = null |> unbox<int64>
+            let _run_target_args'_v253 = v259 
+            #endif
+#if FABLE_COMPILER_TYPESCRIPT
+            let v262 : (System.DateTime -> int64) = _.Ticks
+            let v263 : int64 = v262 v242
+            let _run_target_args'_v253 = v263 
+            #endif
+#if FABLE_COMPILER_PYTHON
+            let v264 : (System.DateTime -> int64) = _.Ticks
+            let v265 : int64 = v264 v242
+            let _run_target_args'_v253 = v265 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v258 : (System.DateTime -> int64) = _.Ticks
-            let v259 : int64 = v258 v234
-            let _run_target_args'_v245 = v259 
+            let v266 : (System.DateTime -> int64) = _.Ticks
+            let v267 : int64 = v266 v242
+            let _run_target_args'_v253 = v267 
             #endif
 #else
-            let v260 : (System.DateTime -> int64) = _.Ticks
-            let v261 : int64 = v260 v234
-            let _run_target_args'_v245 = v261 
+            let v268 : (System.DateTime -> int64) = _.Ticks
+            let v269 : int64 = v268 v242
+            let _run_target_args'_v253 = v269 
             #endif
-            let v262 : int64 = _run_target_args'_v245 
-            let v283 : int64 = v262 |> int64 
-            let v286 : int64 = v283 - v216
-            let v292 : System.TimeSpan = v286 |> System.TimeSpan 
-            let v298 : (System.TimeSpan -> int32) = _.Hours
-            let v299 : int32 = v298 v292
-            let v303 : (System.TimeSpan -> int32) = _.Minutes
-            let v304 : int32 = v303 v292
-            let v308 : (System.TimeSpan -> int32) = _.Seconds
-            let v309 : int32 = v308 v292
-            let v313 : (System.TimeSpan -> int32) = _.Milliseconds
-            let v314 : int32 = v313 v292
-            let v318 : System.DateTime = System.DateTime (1, 1, 1, v299, v304, v309, v314)
-            v318
-    let v346 : string = method10()
-    let v350 : bool = v346 = ""
-    let v352 : string =
-        if v350 then
-            let v351 : string = "M-d-y hh:mm:ss tt"
-            v351
+            let v270 : int64 = _run_target_args'_v253 
+            let v292 : int64 = v270 |> int64 
+            let v297 : int64 = v292 - v224
+            let v303 : System.TimeSpan = v297 |> System.TimeSpan 
+            let v309 : (System.TimeSpan -> int32) = _.Hours
+            let v310 : int32 = v309 v303
+            let v314 : (System.TimeSpan -> int32) = _.Minutes
+            let v315 : int32 = v314 v303
+            let v319 : (System.TimeSpan -> int32) = _.Seconds
+            let v320 : int32 = v319 v303
+            let v324 : (System.TimeSpan -> int32) = _.Milliseconds
+            let v325 : int32 = v324 v303
+            let v334 : System.DateTime = System.DateTime (1, 1, 1, v310, v315, v320, v325)
+            v334
+    let v361 : string = method10()
+    let v363 : bool = v361 = ""
+    let v365 : string =
+        if v363 then
+            let v364 : string = "M-d-y hh:mm:ss tt"
+            v364
         else
-            v346
-    let v353 : (string -> string) = v344.ToString
-    let v354 : string = v353 v352
-    let _run_target_args'_v187 = v354 
+            v361
+    let v366 : (string -> string) = v360.ToString
+    let v367 : string = v366 v365
+    let _run_target_args'_v195 = v367 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v371 : (int64 -> US2) = method9()
-    let v372 : US2 option = v5 |> Option.map v371 
-    let v392 : US2 = US2_1
-    let v393 : US2 = v372 |> Option.defaultValue v392 
-    let v525 : System.DateTime =
-        match v393 with
+    let v384 : (int64 -> US2) = method9()
+    let v385 : US2 option = v5 |> Option.map v384 
+    let v405 : US2 = US2_1
+    let v406 : US2 = v385 |> Option.defaultValue v405 
+    let v546 : System.DateTime =
+        match v406 with
         | US2_1 -> (* None *)
             (* run_target_args'
-            let v508 : unit = ()
+            let v529 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v509 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v508 = v509 
+            let v530 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v529 = v530 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v510 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v508 = v510 
+            let v531 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v529 = v531 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v512 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v508 = v512 
+            let v533 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v529 = v533 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v515 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v508 = v515 
+            let v536 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v529 = v536 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v516 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v508 = v516 
+            let v537 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v529 = v537 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v517 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v508 = v517 
+            let v538 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v529 = v538 
             #endif
 #else
-            let v518 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v508 = v518 
+            let v539 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v529 = v539 
             #endif
-            let v519 : System.DateTime = _run_target_args'_v508 
-            v519
-        | US2_0(v397) -> (* Some *)
+            let v540 : System.DateTime = _run_target_args'_v529 
+            v540
+        | US2_0(v410) -> (* Some *)
             (* run_target_args'
-            let v404 : unit = ()
+            let v417 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v405 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v404 = v405 
+            let v418 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v417 = v418 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v406 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v404 = v406 
+            let v419 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v417 = v419 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v408 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v404 = v408 
+            let v421 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v417 = v421 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v411 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v404 = v411 
+            let v424 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v417 = v424 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v412 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v404 = v412 
+            let v425 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v417 = v425 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v413 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v404 = v413 
+            let v426 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v417 = v426 
             #endif
 #else
-            let v414 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v404 = v414 
+            let v427 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v417 = v427 
             #endif
-            let v415 : System.DateTime = _run_target_args'_v404 
+            let v428 : System.DateTime = _run_target_args'_v417 
             (* run_target_args'
-            let v426 : unit = ()
+            let v439 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v427 : (System.DateTime -> int64) = _.Ticks
-            let v428 : int64 = v427 v415
-            let _run_target_args'_v426 = v428 
+            let v440 : (System.DateTime -> int64) = _.Ticks
+            let v441 : int64 = v440 v428
+            let _run_target_args'_v439 = v441 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v429 : (System.DateTime -> int64) = _.Ticks
-            let v430 : int64 = v429 v415
-            let _run_target_args'_v426 = v430 
+            let v442 : (System.DateTime -> int64) = _.Ticks
+            let v443 : int64 = v442 v428
+            let _run_target_args'_v439 = v443 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v432 : int64 = null |> unbox<int64>
-            let _run_target_args'_v426 = v432 
+            let v445 : int64 = null |> unbox<int64>
+            let _run_target_args'_v439 = v445 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v435 : (System.DateTime -> int64) = _.Ticks
-            let v436 : int64 = v435 v415
-            let _run_target_args'_v426 = v436 
+            let v448 : (System.DateTime -> int64) = _.Ticks
+            let v449 : int64 = v448 v428
+            let _run_target_args'_v439 = v449 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v437 : (System.DateTime -> int64) = _.Ticks
-            let v438 : int64 = v437 v415
-            let _run_target_args'_v426 = v438 
+            let v450 : (System.DateTime -> int64) = _.Ticks
+            let v451 : int64 = v450 v428
+            let _run_target_args'_v439 = v451 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v439 : (System.DateTime -> int64) = _.Ticks
-            let v440 : int64 = v439 v415
-            let _run_target_args'_v426 = v440 
+            let v452 : (System.DateTime -> int64) = _.Ticks
+            let v453 : int64 = v452 v428
+            let _run_target_args'_v439 = v453 
             #endif
 #else
-            let v441 : (System.DateTime -> int64) = _.Ticks
-            let v442 : int64 = v441 v415
-            let _run_target_args'_v426 = v442 
+            let v454 : (System.DateTime -> int64) = _.Ticks
+            let v455 : int64 = v454 v428
+            let _run_target_args'_v439 = v455 
             #endif
-            let v443 : int64 = _run_target_args'_v426 
-            let v464 : int64 = v443 |> int64 
-            let v467 : int64 = v464 - v397
-            let v473 : System.TimeSpan = v467 |> System.TimeSpan 
-            let v479 : (System.TimeSpan -> int32) = _.Hours
-            let v480 : int32 = v479 v473
-            let v484 : (System.TimeSpan -> int32) = _.Minutes
-            let v485 : int32 = v484 v473
-            let v489 : (System.TimeSpan -> int32) = _.Seconds
-            let v490 : int32 = v489 v473
-            let v494 : (System.TimeSpan -> int32) = _.Milliseconds
-            let v495 : int32 = v494 v473
-            let v499 : System.DateTime = System.DateTime (1, 1, 1, v480, v485, v490, v495)
-            v499
-    let v527 : string = method10()
-    let v531 : bool = v527 = ""
-    let v533 : string =
-        if v531 then
-            let v532 : string = "M-d-y hh:mm:ss tt"
-            v532
+            let v456 : int64 = _run_target_args'_v439 
+            let v478 : int64 = v456 |> int64 
+            let v483 : int64 = v478 - v410
+            let v489 : System.TimeSpan = v483 |> System.TimeSpan 
+            let v495 : (System.TimeSpan -> int32) = _.Hours
+            let v496 : int32 = v495 v489
+            let v500 : (System.TimeSpan -> int32) = _.Minutes
+            let v501 : int32 = v500 v489
+            let v505 : (System.TimeSpan -> int32) = _.Seconds
+            let v506 : int32 = v505 v489
+            let v510 : (System.TimeSpan -> int32) = _.Milliseconds
+            let v511 : int32 = v510 v489
+            let v520 : System.DateTime = System.DateTime (1, 1, 1, v496, v501, v506, v511)
+            v520
+    let v547 : string = method10()
+    let v549 : bool = v547 = ""
+    let v551 : string =
+        if v549 then
+            let v550 : string = "M-d-y hh:mm:ss tt"
+            v550
         else
-            v527
-    let v534 : (string -> string) = v525.ToString
-    let v535 : string = v534 v533
-    let _run_target_args'_v187 = v535 
+            v547
+    let v552 : (string -> string) = v546.ToString
+    let v553 : string = v552 v551
+    let _run_target_args'_v195 = v553 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v550 : string = $"near_sdk::env::block_timestamp()"
-    let v551 : uint64 = Fable.Core.RustInterop.emitRustExpr () v550 
-    let v554 : (int64 -> US2) = method9()
-    let v555 : US2 option = v5 |> Option.map v554 
-    let v575 : US2 = US2_1
-    let v576 : US2 = v555 |> Option.defaultValue v575 
-    let v588 : uint64 =
-        match v576 with
+    let v568 : string = $"near_sdk::env::block_timestamp()"
+    let v569 : uint64 = Fable.Core.RustInterop.emitRustExpr () v568 
+    let v572 : (int64 -> US2) = method9()
+    let v573 : US2 option = v5 |> Option.map v572 
+    let v593 : US2 = US2_1
+    let v594 : US2 = v573 |> Option.defaultValue v593 
+    let v606 : uint64 =
+        match v594 with
         | US2_1 -> (* None *)
-            v551
-        | US2_0(v580) -> (* Some *)
-            let v582 : (int64 -> uint64) = uint64
-            let v583 : uint64 = v582 v580
-            let v586 : uint64 = v551 - v583
-            v586
-    let v589 : uint64 = v588 / 1000000000UL
-    let v590 : uint64 = v589 % 60UL
-    let v591 : uint64 = v589 / 60UL
-    let v592 : uint64 = v591 % 60UL
-    let v593 : uint64 = v589 / 3600UL
-    let v594 : uint64 = v593 % 24UL
-    let v595 : string = $"format!(\"{{:02}}:{{:02}}:{{:02}}\", $0, $1, $2)"
-    let v596 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v594, v592, v590) v595 
-    let v597 : string = "fable_library_rust::String_::fromString($0)"
-    let v598 : string = Fable.Core.RustInterop.emitRustExpr v596 v597 
-    let _run_target_args'_v187 = v598 
+            v569
+        | US2_0(v598) -> (* Some *)
+            let v600 : (int64 -> uint64) = uint64
+            let v601 : uint64 = v600 v598
+            let v604 : uint64 = v569 - v601
+            v604
+    let v607 : uint64 = v606 / 1000000000UL
+    let v608 : uint64 = v607 % 60UL
+    let v609 : uint64 = v607 / 60UL
+    let v610 : uint64 = v609 % 60UL
+    let v611 : uint64 = v607 / 3600UL
+    let v612 : uint64 = v611 % 24UL
+    let v613 : string = $"format!(\"{{:02}}:{{:02}}:{{:02}}\", $0, $1, $2)"
+    let v614 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v612, v610, v608) v613 
+    let v615 : string = "fable_library_rust::String_::fromString($0)"
+    let v616 : string = Fable.Core.RustInterop.emitRustExpr v614 v615 
+    let _run_target_args'_v195 = v616 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v601 : (int64 -> US2) = method9()
-    let v602 : US2 option = v5 |> Option.map v601 
-    let v622 : US2 = US2_1
-    let v623 : US2 = v602 |> Option.defaultValue v622 
-    let v755 : System.DateTime =
-        match v623 with
-        | US2_1 -> (* None *)
-            (* run_target_args'
-            let v738 : unit = ()
-            run_target_args' *)
-            
-#if FABLE_COMPILER || WASM || CONTRACT
-            
-#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v739 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v738 = v739 
-            #endif
-#if FABLE_COMPILER_RUST && WASM
-            let v740 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v738 = v740 
-            #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-            let v742 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v738 = v742 
-            #endif
-#if FABLE_COMPILER_TYPESCRIPT
-            let v745 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v738 = v745 
-            #endif
-#if FABLE_COMPILER_PYTHON
-            let v746 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v738 = v746 
-            #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v747 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v738 = v747 
-            #endif
-#else
-            let v748 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v738 = v748 
-            #endif
-            let v749 : System.DateTime = _run_target_args'_v738 
-            v749
-        | US2_0(v627) -> (* Some *)
-            (* run_target_args'
-            let v634 : unit = ()
-            run_target_args' *)
-            
-#if FABLE_COMPILER || WASM || CONTRACT
-            
-#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v635 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v634 = v635 
-            #endif
-#if FABLE_COMPILER_RUST && WASM
-            let v636 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v634 = v636 
-            #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-            let v638 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v634 = v638 
-            #endif
-#if FABLE_COMPILER_TYPESCRIPT
-            let v641 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v634 = v641 
-            #endif
-#if FABLE_COMPILER_PYTHON
-            let v642 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v634 = v642 
-            #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v643 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v634 = v643 
-            #endif
-#else
-            let v644 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v634 = v644 
-            #endif
-            let v645 : System.DateTime = _run_target_args'_v634 
-            (* run_target_args'
-            let v656 : unit = ()
-            run_target_args' *)
-            
-#if FABLE_COMPILER || WASM || CONTRACT
-            
-#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v657 : (System.DateTime -> int64) = _.Ticks
-            let v658 : int64 = v657 v645
-            let _run_target_args'_v656 = v658 
-            #endif
-#if FABLE_COMPILER_RUST && WASM
-            let v659 : (System.DateTime -> int64) = _.Ticks
-            let v660 : int64 = v659 v645
-            let _run_target_args'_v656 = v660 
-            #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-            let v662 : int64 = null |> unbox<int64>
-            let _run_target_args'_v656 = v662 
-            #endif
-#if FABLE_COMPILER_TYPESCRIPT
-            let v665 : (System.DateTime -> int64) = _.Ticks
-            let v666 : int64 = v665 v645
-            let _run_target_args'_v656 = v666 
-            #endif
-#if FABLE_COMPILER_PYTHON
-            let v667 : (System.DateTime -> int64) = _.Ticks
-            let v668 : int64 = v667 v645
-            let _run_target_args'_v656 = v668 
-            #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v669 : (System.DateTime -> int64) = _.Ticks
-            let v670 : int64 = v669 v645
-            let _run_target_args'_v656 = v670 
-            #endif
-#else
-            let v671 : (System.DateTime -> int64) = _.Ticks
-            let v672 : int64 = v671 v645
-            let _run_target_args'_v656 = v672 
-            #endif
-            let v673 : int64 = _run_target_args'_v656 
-            let v694 : int64 = v673 |> int64 
-            let v697 : int64 = v694 - v627
-            let v703 : System.TimeSpan = v697 |> System.TimeSpan 
-            let v709 : (System.TimeSpan -> int32) = _.Hours
-            let v710 : int32 = v709 v703
-            let v714 : (System.TimeSpan -> int32) = _.Minutes
-            let v715 : int32 = v714 v703
-            let v719 : (System.TimeSpan -> int32) = _.Seconds
-            let v720 : int32 = v719 v703
-            let v724 : (System.TimeSpan -> int32) = _.Milliseconds
-            let v725 : int32 = v724 v703
-            let v729 : System.DateTime = System.DateTime (1, 1, 1, v710, v715, v720, v725)
-            v729
-    let v757 : string = method11()
-    let v761 : bool = v757 = ""
-    let v763 : string =
-        if v761 then
-            let v762 : string = "M-d-y hh:mm:ss tt"
-            v762
-        else
-            v757
-    let v764 : (string -> string) = v755.ToString
-    let v765 : string = v764 v763
-    let _run_target_args'_v187 = v765 
-    #endif
-#if FABLE_COMPILER_PYTHON
-    let v782 : (int64 -> US2) = method9()
-    let v783 : US2 option = v5 |> Option.map v782 
-    let v803 : US2 = US2_1
-    let v804 : US2 = v783 |> Option.defaultValue v803 
-    let v936 : System.DateTime =
-        match v804 with
+    let v619 : (int64 -> US2) = method9()
+    let v620 : US2 option = v5 |> Option.map v619 
+    let v640 : US2 = US2_1
+    let v641 : US2 = v620 |> Option.defaultValue v640 
+    let v781 : System.DateTime =
+        match v641 with
         | US2_1 -> (* None *)
             (* run_target_args'
-            let v919 : unit = ()
+            let v764 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v920 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v919 = v920 
+            let v765 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v764 = v765 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v921 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v919 = v921 
+            let v766 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v764 = v766 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v923 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v919 = v923 
+            let v768 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v764 = v768 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v926 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v919 = v926 
+            let v771 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v764 = v771 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v927 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v919 = v927 
+            let v772 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v764 = v772 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v928 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v919 = v928 
+            let v773 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v764 = v773 
             #endif
 #else
-            let v929 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v919 = v929 
+            let v774 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v764 = v774 
             #endif
-            let v930 : System.DateTime = _run_target_args'_v919 
-            v930
-        | US2_0(v808) -> (* Some *)
+            let v775 : System.DateTime = _run_target_args'_v764 
+            v775
+        | US2_0(v645) -> (* Some *)
             (* run_target_args'
-            let v815 : unit = ()
+            let v652 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v816 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v815 = v816 
+            let v653 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v652 = v653 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v817 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v815 = v817 
+            let v654 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v652 = v654 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v819 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v815 = v819 
+            let v656 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v652 = v656 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v822 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v815 = v822 
+            let v659 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v652 = v659 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v823 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v815 = v823 
+            let v660 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v652 = v660 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v824 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v815 = v824 
+            let v661 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v652 = v661 
             #endif
 #else
-            let v825 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v815 = v825 
+            let v662 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v652 = v662 
             #endif
-            let v826 : System.DateTime = _run_target_args'_v815 
+            let v663 : System.DateTime = _run_target_args'_v652 
             (* run_target_args'
-            let v837 : unit = ()
+            let v674 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v838 : (System.DateTime -> int64) = _.Ticks
-            let v839 : int64 = v838 v826
-            let _run_target_args'_v837 = v839 
+            let v675 : (System.DateTime -> int64) = _.Ticks
+            let v676 : int64 = v675 v663
+            let _run_target_args'_v674 = v676 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v840 : (System.DateTime -> int64) = _.Ticks
-            let v841 : int64 = v840 v826
-            let _run_target_args'_v837 = v841 
+            let v677 : (System.DateTime -> int64) = _.Ticks
+            let v678 : int64 = v677 v663
+            let _run_target_args'_v674 = v678 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v843 : int64 = null |> unbox<int64>
-            let _run_target_args'_v837 = v843 
+            let v680 : int64 = null |> unbox<int64>
+            let _run_target_args'_v674 = v680 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v846 : (System.DateTime -> int64) = _.Ticks
-            let v847 : int64 = v846 v826
-            let _run_target_args'_v837 = v847 
+            let v683 : (System.DateTime -> int64) = _.Ticks
+            let v684 : int64 = v683 v663
+            let _run_target_args'_v674 = v684 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v848 : (System.DateTime -> int64) = _.Ticks
-            let v849 : int64 = v848 v826
-            let _run_target_args'_v837 = v849 
+            let v685 : (System.DateTime -> int64) = _.Ticks
+            let v686 : int64 = v685 v663
+            let _run_target_args'_v674 = v686 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v850 : (System.DateTime -> int64) = _.Ticks
-            let v851 : int64 = v850 v826
-            let _run_target_args'_v837 = v851 
+            let v687 : (System.DateTime -> int64) = _.Ticks
+            let v688 : int64 = v687 v663
+            let _run_target_args'_v674 = v688 
             #endif
 #else
-            let v852 : (System.DateTime -> int64) = _.Ticks
-            let v853 : int64 = v852 v826
-            let _run_target_args'_v837 = v853 
+            let v689 : (System.DateTime -> int64) = _.Ticks
+            let v690 : int64 = v689 v663
+            let _run_target_args'_v674 = v690 
             #endif
-            let v854 : int64 = _run_target_args'_v837 
-            let v875 : int64 = v854 |> int64 
-            let v878 : int64 = v875 - v808
-            let v884 : System.TimeSpan = v878 |> System.TimeSpan 
-            let v890 : (System.TimeSpan -> int32) = _.Hours
-            let v891 : int32 = v890 v884
-            let v895 : (System.TimeSpan -> int32) = _.Minutes
-            let v896 : int32 = v895 v884
-            let v900 : (System.TimeSpan -> int32) = _.Seconds
-            let v901 : int32 = v900 v884
-            let v905 : (System.TimeSpan -> int32) = _.Milliseconds
-            let v906 : int32 = v905 v884
-            let v910 : System.DateTime = System.DateTime (1, 1, 1, v891, v896, v901, v906)
-            v910
-    let v938 : string = method11()
-    let v942 : bool = v938 = ""
-    let v944 : string =
-        if v942 then
-            let v943 : string = "M-d-y hh:mm:ss tt"
-            v943
+            let v691 : int64 = _run_target_args'_v674 
+            let v713 : int64 = v691 |> int64 
+            let v718 : int64 = v713 - v645
+            let v724 : System.TimeSpan = v718 |> System.TimeSpan 
+            let v730 : (System.TimeSpan -> int32) = _.Hours
+            let v731 : int32 = v730 v724
+            let v735 : (System.TimeSpan -> int32) = _.Minutes
+            let v736 : int32 = v735 v724
+            let v740 : (System.TimeSpan -> int32) = _.Seconds
+            let v741 : int32 = v740 v724
+            let v745 : (System.TimeSpan -> int32) = _.Milliseconds
+            let v746 : int32 = v745 v724
+            let v755 : System.DateTime = System.DateTime (1, 1, 1, v731, v736, v741, v746)
+            v755
+    let v782 : string = method11()
+    let v784 : bool = v782 = ""
+    let v786 : string =
+        if v784 then
+            let v785 : string = "M-d-y hh:mm:ss tt"
+            v785
         else
-            v938
-    let v945 : (string -> string) = v936.ToString
-    let v946 : string = v945 v944
-    let _run_target_args'_v187 = v946 
+            v782
+    let v787 : (string -> string) = v781.ToString
+    let v788 : string = v787 v786
+    let _run_target_args'_v195 = v788 
     #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v963 : (int64 -> US2) = method9()
-    let v964 : US2 option = v5 |> Option.map v963 
-    let v984 : US2 = US2_1
-    let v985 : US2 = v964 |> Option.defaultValue v984 
-    let v1117 : System.DateTime =
-        match v985 with
+#if FABLE_COMPILER_PYTHON
+    let v805 : (int64 -> US2) = method9()
+    let v806 : US2 option = v5 |> Option.map v805 
+    let v826 : US2 = US2_1
+    let v827 : US2 = v806 |> Option.defaultValue v826 
+    let v967 : System.DateTime =
+        match v827 with
         | US2_1 -> (* None *)
             (* run_target_args'
-            let v1100 : unit = ()
+            let v950 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1101 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1100 = v1101 
+            let v951 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v950 = v951 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1102 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1100 = v1102 
+            let v952 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v950 = v952 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1104 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v1100 = v1104 
+            let v954 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v950 = v954 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1107 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1100 = v1107 
+            let v957 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v950 = v957 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1108 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1100 = v1108 
+            let v958 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v950 = v958 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1109 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1100 = v1109 
+            let v959 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v950 = v959 
             #endif
 #else
-            let v1110 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1100 = v1110 
+            let v960 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v950 = v960 
             #endif
-            let v1111 : System.DateTime = _run_target_args'_v1100 
-            v1111
-        | US2_0(v989) -> (* Some *)
+            let v961 : System.DateTime = _run_target_args'_v950 
+            v961
+        | US2_0(v831) -> (* Some *)
             (* run_target_args'
-            let v996 : unit = ()
+            let v838 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v997 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v996 = v997 
+            let v839 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v838 = v839 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v998 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v996 = v998 
+            let v840 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v838 = v840 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1000 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v996 = v1000 
+            let v842 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v838 = v842 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1003 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v996 = v1003 
+            let v845 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v838 = v845 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1004 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v996 = v1004 
+            let v846 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v838 = v846 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1005 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v996 = v1005 
+            let v847 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v838 = v847 
             #endif
 #else
-            let v1006 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v996 = v1006 
+            let v848 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v838 = v848 
             #endif
-            let v1007 : System.DateTime = _run_target_args'_v996 
+            let v849 : System.DateTime = _run_target_args'_v838 
             (* run_target_args'
-            let v1018 : unit = ()
+            let v860 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1019 : (System.DateTime -> int64) = _.Ticks
-            let v1020 : int64 = v1019 v1007
-            let _run_target_args'_v1018 = v1020 
+            let v861 : (System.DateTime -> int64) = _.Ticks
+            let v862 : int64 = v861 v849
+            let _run_target_args'_v860 = v862 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1021 : (System.DateTime -> int64) = _.Ticks
-            let v1022 : int64 = v1021 v1007
-            let _run_target_args'_v1018 = v1022 
+            let v863 : (System.DateTime -> int64) = _.Ticks
+            let v864 : int64 = v863 v849
+            let _run_target_args'_v860 = v864 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1024 : int64 = null |> unbox<int64>
-            let _run_target_args'_v1018 = v1024 
+            let v866 : int64 = null |> unbox<int64>
+            let _run_target_args'_v860 = v866 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1027 : (System.DateTime -> int64) = _.Ticks
-            let v1028 : int64 = v1027 v1007
-            let _run_target_args'_v1018 = v1028 
+            let v869 : (System.DateTime -> int64) = _.Ticks
+            let v870 : int64 = v869 v849
+            let _run_target_args'_v860 = v870 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1029 : (System.DateTime -> int64) = _.Ticks
-            let v1030 : int64 = v1029 v1007
-            let _run_target_args'_v1018 = v1030 
+            let v871 : (System.DateTime -> int64) = _.Ticks
+            let v872 : int64 = v871 v849
+            let _run_target_args'_v860 = v872 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1031 : (System.DateTime -> int64) = _.Ticks
-            let v1032 : int64 = v1031 v1007
-            let _run_target_args'_v1018 = v1032 
+            let v873 : (System.DateTime -> int64) = _.Ticks
+            let v874 : int64 = v873 v849
+            let _run_target_args'_v860 = v874 
             #endif
 #else
-            let v1033 : (System.DateTime -> int64) = _.Ticks
-            let v1034 : int64 = v1033 v1007
-            let _run_target_args'_v1018 = v1034 
+            let v875 : (System.DateTime -> int64) = _.Ticks
+            let v876 : int64 = v875 v849
+            let _run_target_args'_v860 = v876 
             #endif
-            let v1035 : int64 = _run_target_args'_v1018 
-            let v1056 : int64 = v1035 |> int64 
-            let v1059 : int64 = v1056 - v989
-            let v1065 : System.TimeSpan = v1059 |> System.TimeSpan 
-            let v1071 : (System.TimeSpan -> int32) = _.Hours
-            let v1072 : int32 = v1071 v1065
-            let v1076 : (System.TimeSpan -> int32) = _.Minutes
-            let v1077 : int32 = v1076 v1065
-            let v1081 : (System.TimeSpan -> int32) = _.Seconds
-            let v1082 : int32 = v1081 v1065
-            let v1086 : (System.TimeSpan -> int32) = _.Milliseconds
-            let v1087 : int32 = v1086 v1065
-            let v1091 : System.DateTime = System.DateTime (1, 1, 1, v1072, v1077, v1082, v1087)
-            v1091
-    let v1119 : string = method11()
-    let v1123 : bool = v1119 = ""
-    let v1125 : string =
-        if v1123 then
-            let v1124 : string = "M-d-y hh:mm:ss tt"
-            v1124
+            let v877 : int64 = _run_target_args'_v860 
+            let v899 : int64 = v877 |> int64 
+            let v904 : int64 = v899 - v831
+            let v910 : System.TimeSpan = v904 |> System.TimeSpan 
+            let v916 : (System.TimeSpan -> int32) = _.Hours
+            let v917 : int32 = v916 v910
+            let v921 : (System.TimeSpan -> int32) = _.Minutes
+            let v922 : int32 = v921 v910
+            let v926 : (System.TimeSpan -> int32) = _.Seconds
+            let v927 : int32 = v926 v910
+            let v931 : (System.TimeSpan -> int32) = _.Milliseconds
+            let v932 : int32 = v931 v910
+            let v941 : System.DateTime = System.DateTime (1, 1, 1, v917, v922, v927, v932)
+            v941
+    let v968 : string = method11()
+    let v970 : bool = v968 = ""
+    let v972 : string =
+        if v970 then
+            let v971 : string = "M-d-y hh:mm:ss tt"
+            v971
         else
-            v1119
-    let v1126 : (string -> string) = v1117.ToString
-    let v1127 : string = v1126 v1125
-    let _run_target_args'_v187 = v1127 
+            v968
+    let v973 : (string -> string) = v967.ToString
+    let v974 : string = v973 v972
+    let _run_target_args'_v195 = v974 
     #endif
-#else
-    let v1144 : (int64 -> US2) = method9()
-    let v1145 : US2 option = v5 |> Option.map v1144 
-    let v1165 : US2 = US2_1
-    let v1166 : US2 = v1145 |> Option.defaultValue v1165 
-    let v1298 : System.DateTime =
-        match v1166 with
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+    let v991 : (int64 -> US2) = method9()
+    let v992 : US2 option = v5 |> Option.map v991 
+    let v1012 : US2 = US2_1
+    let v1013 : US2 = v992 |> Option.defaultValue v1012 
+    let v1153 : System.DateTime =
+        match v1013 with
         | US2_1 -> (* None *)
             (* run_target_args'
-            let v1281 : unit = ()
+            let v1136 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1282 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1281 = v1282 
+            let v1137 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1136 = v1137 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1283 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1281 = v1283 
+            let v1138 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1136 = v1138 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1285 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v1281 = v1285 
+            let v1140 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v1136 = v1140 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1288 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1281 = v1288 
+            let v1143 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1136 = v1143 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1289 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1281 = v1289 
+            let v1144 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1136 = v1144 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1290 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1281 = v1290 
+            let v1145 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1136 = v1145 
             #endif
 #else
-            let v1291 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1281 = v1291 
+            let v1146 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1136 = v1146 
             #endif
-            let v1292 : System.DateTime = _run_target_args'_v1281 
-            v1292
-        | US2_0(v1170) -> (* Some *)
+            let v1147 : System.DateTime = _run_target_args'_v1136 
+            v1147
+        | US2_0(v1017) -> (* Some *)
             (* run_target_args'
-            let v1177 : unit = ()
+            let v1024 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1178 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1177 = v1178 
+            let v1025 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1024 = v1025 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1179 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1177 = v1179 
+            let v1026 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1024 = v1026 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1181 : System.DateTime = null |> unbox<System.DateTime>
-            let _run_target_args'_v1177 = v1181 
+            let v1028 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v1024 = v1028 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1184 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1177 = v1184 
+            let v1031 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1024 = v1031 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1185 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1177 = v1185 
+            let v1032 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1024 = v1032 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1186 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1177 = v1186 
+            let v1033 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1024 = v1033 
             #endif
 #else
-            let v1187 : System.DateTime = System.DateTime.Now
-            let _run_target_args'_v1177 = v1187 
+            let v1034 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1024 = v1034 
             #endif
-            let v1188 : System.DateTime = _run_target_args'_v1177 
+            let v1035 : System.DateTime = _run_target_args'_v1024 
             (* run_target_args'
-            let v1199 : unit = ()
+            let v1046 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1200 : (System.DateTime -> int64) = _.Ticks
-            let v1201 : int64 = v1200 v1188
-            let _run_target_args'_v1199 = v1201 
+            let v1047 : (System.DateTime -> int64) = _.Ticks
+            let v1048 : int64 = v1047 v1035
+            let _run_target_args'_v1046 = v1048 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1202 : (System.DateTime -> int64) = _.Ticks
-            let v1203 : int64 = v1202 v1188
-            let _run_target_args'_v1199 = v1203 
+            let v1049 : (System.DateTime -> int64) = _.Ticks
+            let v1050 : int64 = v1049 v1035
+            let _run_target_args'_v1046 = v1050 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1205 : int64 = null |> unbox<int64>
-            let _run_target_args'_v1199 = v1205 
+            let v1052 : int64 = null |> unbox<int64>
+            let _run_target_args'_v1046 = v1052 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1208 : (System.DateTime -> int64) = _.Ticks
-            let v1209 : int64 = v1208 v1188
-            let _run_target_args'_v1199 = v1209 
+            let v1055 : (System.DateTime -> int64) = _.Ticks
+            let v1056 : int64 = v1055 v1035
+            let _run_target_args'_v1046 = v1056 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1210 : (System.DateTime -> int64) = _.Ticks
-            let v1211 : int64 = v1210 v1188
-            let _run_target_args'_v1199 = v1211 
+            let v1057 : (System.DateTime -> int64) = _.Ticks
+            let v1058 : int64 = v1057 v1035
+            let _run_target_args'_v1046 = v1058 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1212 : (System.DateTime -> int64) = _.Ticks
-            let v1213 : int64 = v1212 v1188
-            let _run_target_args'_v1199 = v1213 
+            let v1059 : (System.DateTime -> int64) = _.Ticks
+            let v1060 : int64 = v1059 v1035
+            let _run_target_args'_v1046 = v1060 
             #endif
 #else
-            let v1214 : (System.DateTime -> int64) = _.Ticks
-            let v1215 : int64 = v1214 v1188
-            let _run_target_args'_v1199 = v1215 
+            let v1061 : (System.DateTime -> int64) = _.Ticks
+            let v1062 : int64 = v1061 v1035
+            let _run_target_args'_v1046 = v1062 
             #endif
-            let v1216 : int64 = _run_target_args'_v1199 
-            let v1237 : int64 = v1216 |> int64 
-            let v1240 : int64 = v1237 - v1170
-            let v1246 : System.TimeSpan = v1240 |> System.TimeSpan 
-            let v1252 : (System.TimeSpan -> int32) = _.Hours
-            let v1253 : int32 = v1252 v1246
-            let v1257 : (System.TimeSpan -> int32) = _.Minutes
-            let v1258 : int32 = v1257 v1246
-            let v1262 : (System.TimeSpan -> int32) = _.Seconds
-            let v1263 : int32 = v1262 v1246
-            let v1267 : (System.TimeSpan -> int32) = _.Milliseconds
-            let v1268 : int32 = v1267 v1246
-            let v1272 : System.DateTime = System.DateTime (1, 1, 1, v1253, v1258, v1263, v1268)
-            v1272
-    let v1300 : string = method11()
-    let v1304 : bool = v1300 = ""
-    let v1306 : string =
-        if v1304 then
-            let v1305 : string = "M-d-y hh:mm:ss tt"
-            v1305
+            let v1063 : int64 = _run_target_args'_v1046 
+            let v1085 : int64 = v1063 |> int64 
+            let v1090 : int64 = v1085 - v1017
+            let v1096 : System.TimeSpan = v1090 |> System.TimeSpan 
+            let v1102 : (System.TimeSpan -> int32) = _.Hours
+            let v1103 : int32 = v1102 v1096
+            let v1107 : (System.TimeSpan -> int32) = _.Minutes
+            let v1108 : int32 = v1107 v1096
+            let v1112 : (System.TimeSpan -> int32) = _.Seconds
+            let v1113 : int32 = v1112 v1096
+            let v1117 : (System.TimeSpan -> int32) = _.Milliseconds
+            let v1118 : int32 = v1117 v1096
+            let v1127 : System.DateTime = System.DateTime (1, 1, 1, v1103, v1108, v1113, v1118)
+            v1127
+    let v1154 : string = method11()
+    let v1156 : bool = v1154 = ""
+    let v1158 : string =
+        if v1156 then
+            let v1157 : string = "M-d-y hh:mm:ss tt"
+            v1157
         else
-            v1300
-    let v1307 : (string -> string) = v1298.ToString
-    let v1308 : string = v1307 v1306
-    let _run_target_args'_v187 = v1308 
+            v1154
+    let v1159 : (string -> string) = v1153.ToString
+    let v1160 : string = v1159 v1158
+    let _run_target_args'_v195 = v1160 
     #endif
-    let v1323 : string = _run_target_args'_v187 
-    v1323
+#else
+    let v1177 : (int64 -> US2) = method9()
+    let v1178 : US2 option = v5 |> Option.map v1177 
+    let v1198 : US2 = US2_1
+    let v1199 : US2 = v1178 |> Option.defaultValue v1198 
+    let v1339 : System.DateTime =
+        match v1199 with
+        | US2_1 -> (* None *)
+            (* run_target_args'
+            let v1322 : unit = ()
+            run_target_args' *)
+            
+#if FABLE_COMPILER || WASM || CONTRACT
+            
+#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
+            let v1323 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1322 = v1323 
+            #endif
+#if FABLE_COMPILER_RUST && WASM
+            let v1324 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1322 = v1324 
+            #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+            let v1326 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v1322 = v1326 
+            #endif
+#if FABLE_COMPILER_TYPESCRIPT
+            let v1329 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1322 = v1329 
+            #endif
+#if FABLE_COMPILER_PYTHON
+            let v1330 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1322 = v1330 
+            #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+            let v1331 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1322 = v1331 
+            #endif
+#else
+            let v1332 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1322 = v1332 
+            #endif
+            let v1333 : System.DateTime = _run_target_args'_v1322 
+            v1333
+        | US2_0(v1203) -> (* Some *)
+            (* run_target_args'
+            let v1210 : unit = ()
+            run_target_args' *)
+            
+#if FABLE_COMPILER || WASM || CONTRACT
+            
+#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
+            let v1211 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1210 = v1211 
+            #endif
+#if FABLE_COMPILER_RUST && WASM
+            let v1212 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1210 = v1212 
+            #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+            let v1214 : System.DateTime = null |> unbox<System.DateTime>
+            let _run_target_args'_v1210 = v1214 
+            #endif
+#if FABLE_COMPILER_TYPESCRIPT
+            let v1217 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1210 = v1217 
+            #endif
+#if FABLE_COMPILER_PYTHON
+            let v1218 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1210 = v1218 
+            #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+            let v1219 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1210 = v1219 
+            #endif
+#else
+            let v1220 : System.DateTime = System.DateTime.Now
+            let _run_target_args'_v1210 = v1220 
+            #endif
+            let v1221 : System.DateTime = _run_target_args'_v1210 
+            (* run_target_args'
+            let v1232 : unit = ()
+            run_target_args' *)
+            
+#if FABLE_COMPILER || WASM || CONTRACT
+            
+#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
+            let v1233 : (System.DateTime -> int64) = _.Ticks
+            let v1234 : int64 = v1233 v1221
+            let _run_target_args'_v1232 = v1234 
+            #endif
+#if FABLE_COMPILER_RUST && WASM
+            let v1235 : (System.DateTime -> int64) = _.Ticks
+            let v1236 : int64 = v1235 v1221
+            let _run_target_args'_v1232 = v1236 
+            #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+            let v1238 : int64 = null |> unbox<int64>
+            let _run_target_args'_v1232 = v1238 
+            #endif
+#if FABLE_COMPILER_TYPESCRIPT
+            let v1241 : (System.DateTime -> int64) = _.Ticks
+            let v1242 : int64 = v1241 v1221
+            let _run_target_args'_v1232 = v1242 
+            #endif
+#if FABLE_COMPILER_PYTHON
+            let v1243 : (System.DateTime -> int64) = _.Ticks
+            let v1244 : int64 = v1243 v1221
+            let _run_target_args'_v1232 = v1244 
+            #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+            let v1245 : (System.DateTime -> int64) = _.Ticks
+            let v1246 : int64 = v1245 v1221
+            let _run_target_args'_v1232 = v1246 
+            #endif
+#else
+            let v1247 : (System.DateTime -> int64) = _.Ticks
+            let v1248 : int64 = v1247 v1221
+            let _run_target_args'_v1232 = v1248 
+            #endif
+            let v1249 : int64 = _run_target_args'_v1232 
+            let v1271 : int64 = v1249 |> int64 
+            let v1276 : int64 = v1271 - v1203
+            let v1282 : System.TimeSpan = v1276 |> System.TimeSpan 
+            let v1288 : (System.TimeSpan -> int32) = _.Hours
+            let v1289 : int32 = v1288 v1282
+            let v1293 : (System.TimeSpan -> int32) = _.Minutes
+            let v1294 : int32 = v1293 v1282
+            let v1298 : (System.TimeSpan -> int32) = _.Seconds
+            let v1299 : int32 = v1298 v1282
+            let v1303 : (System.TimeSpan -> int32) = _.Milliseconds
+            let v1304 : int32 = v1303 v1282
+            let v1313 : System.DateTime = System.DateTime (1, 1, 1, v1289, v1294, v1299, v1304)
+            v1313
+    let v1340 : string = method11()
+    let v1342 : bool = v1340 = ""
+    let v1344 : string =
+        if v1342 then
+            let v1343 : string = "M-d-y hh:mm:ss tt"
+            v1343
+        else
+            v1340
+    let v1345 : (string -> string) = v1339.ToString
+    let v1346 : string = v1345 v1344
+    let _run_target_args'_v195 = v1346 
+    #endif
+    let v1361 : string = _run_target_args'_v195 
+    v1361
 and method13 () : string =
     let v0 : string = ""
     v0
@@ -1731,154 +1732,154 @@ and method12 () : string =
     let _run_target_args'_v54 = v74 
     #endif
     let v77 : Ref<Str> = _run_target_args'_v54 
-    let v83 : string = "inline_colorization::color_reset"
-    let v84 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v83 
-    let v85 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v86 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v49, v77, v84) v85 
-    let v87 : string = "fable_library_rust::String_::fromString($0)"
-    let v88 : string = Fable.Core.RustInterop.emitRustExpr v86 v87 
-    let _run_target_args'_v47 = v88 
+    let v86 : string = "inline_colorization::color_reset"
+    let v87 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v86 
+    let v88 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v89 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v49, v77, v87) v88 
+    let v90 : string = "fable_library_rust::String_::fromString($0)"
+    let v91 : string = Fable.Core.RustInterop.emitRustExpr v89 v90 
+    let _run_target_args'_v47 = v91 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v89 : string = "inline_colorization::color_yellow"
-    let v90 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v89 
+    let v92 : string = "inline_colorization::color_yellow"
+    let v93 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v92 
     (* run_target_args'
-    let v95 : unit = ()
+    let v98 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v96 : string = "&*$0"
-    let v97 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v96 
-    let _run_target_args'_v95 = v97 
+    let v99 : string = "&*$0"
+    let v100 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v99 
+    let _run_target_args'_v98 = v100 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v98 : string = "&*$0"
-    let v99 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v98 
-    let _run_target_args'_v95 = v99 
+    let v101 : string = "&*$0"
+    let v102 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v101 
+    let _run_target_args'_v98 = v102 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v100 : string = "&*$0"
-    let v101 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v100 
-    let _run_target_args'_v95 = v101 
+    let v103 : string = "&*$0"
+    let v104 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v103 
+    let _run_target_args'_v98 = v104 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v103 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v103 
+    let v106 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v106 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v107 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v107 
+    let v110 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v110 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v111 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v111 
+    let v114 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v114 
     #endif
 #else
-    let v115 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v115 
+    let v118 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v118 
     #endif
-    let v118 : Ref<Str> = _run_target_args'_v95 
-    let v124 : string = "inline_colorization::color_reset"
-    let v125 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v124 
-    let v126 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v127 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v90, v118, v125) v126 
-    let v128 : string = "fable_library_rust::String_::fromString($0)"
-    let v129 : string = Fable.Core.RustInterop.emitRustExpr v127 v128 
-    let _run_target_args'_v47 = v129 
-    #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-    let v130 : string = "inline_colorization::color_yellow"
+    let v121 : Ref<Str> = _run_target_args'_v98 
+    let v130 : string = "inline_colorization::color_reset"
     let v131 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v130 
+    let v132 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v133 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v93, v121, v131) v132 
+    let v134 : string = "fable_library_rust::String_::fromString($0)"
+    let v135 : string = Fable.Core.RustInterop.emitRustExpr v133 v134 
+    let _run_target_args'_v47 = v135 
+    #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+    let v136 : string = "inline_colorization::color_yellow"
+    let v137 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v136 
     (* run_target_args'
-    let v136 : unit = ()
+    let v142 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v137 : string = "&*$0"
-    let v138 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v137 
-    let _run_target_args'_v136 = v138 
+    let v143 : string = "&*$0"
+    let v144 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v143 
+    let _run_target_args'_v142 = v144 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v139 : string = "&*$0"
-    let v140 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v139 
-    let _run_target_args'_v136 = v140 
+    let v145 : string = "&*$0"
+    let v146 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v145 
+    let _run_target_args'_v142 = v146 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v141 : string = "&*$0"
-    let v142 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v141 
-    let _run_target_args'_v136 = v142 
+    let v147 : string = "&*$0"
+    let v148 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v147 
+    let _run_target_args'_v142 = v148 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v144 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v144 
+    let v150 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v150 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v148 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v148 
+    let v154 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v154 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v152 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v152 
+    let v158 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v158 
     #endif
 #else
-    let v156 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v156 
+    let v162 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v162 
     #endif
-    let v159 : Ref<Str> = _run_target_args'_v136 
-    let v165 : string = "inline_colorization::color_reset"
-    let v166 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v165 
-    let v167 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v168 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v131, v159, v166) v167 
-    let v169 : string = "fable_library_rust::String_::fromString($0)"
-    let v170 : string = Fable.Core.RustInterop.emitRustExpr v168 v169 
-    let _run_target_args'_v47 = v170 
+    let v165 : Ref<Str> = _run_target_args'_v142 
+    let v174 : string = "inline_colorization::color_reset"
+    let v175 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v174 
+    let v176 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v177 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v137, v165, v175) v176 
+    let v178 : string = "fable_library_rust::String_::fromString($0)"
+    let v179 : string = Fable.Core.RustInterop.emitRustExpr v177 v178 
+    let _run_target_args'_v47 = v179 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v172 : string = "\u001b[93m"
-    let v176 : string = method14()
-    let v180 : string = v172 + v30 
-    let v184 : string = v180 + v176 
-    let _run_target_args'_v47 = v184 
+    let v181 : string = "\u001b[93m"
+    let v185 : string = method14()
+    let v189 : string = v181 + v30 
+    let v193 : string = v189 + v185 
+    let _run_target_args'_v47 = v193 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v188 : string = "\u001b[93m"
-    let v192 : string = method14()
-    let v196 : string = v188 + v30 
-    let v200 : string = v196 + v192 
-    let _run_target_args'_v47 = v200 
+    let v197 : string = "\u001b[93m"
+    let v201 : string = method14()
+    let v205 : string = v197 + v30 
+    let v209 : string = v205 + v201 
+    let _run_target_args'_v47 = v209 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v204 : string = "\u001b[93m"
-    let v208 : string = method14()
-    let v212 : string = v204 + v30 
-    let v216 : string = v212 + v208 
-    let _run_target_args'_v47 = v216 
+    let v213 : string = "\u001b[93m"
+    let v217 : string = method14()
+    let v221 : string = v213 + v30 
+    let v225 : string = v221 + v217 
+    let _run_target_args'_v47 = v225 
     #endif
 #else
-    let v220 : string = "\u001b[93m"
-    let v224 : string = method14()
-    let v228 : string = v220 + v30 
-    let v232 : string = v228 + v224 
-    let _run_target_args'_v47 = v232 
+    let v229 : string = "\u001b[93m"
+    let v233 : string = method14()
+    let v237 : string = v229 + v30 
+    let v241 : string = v237 + v233 
+    let _run_target_args'_v47 = v241 
     #endif
-    let v235 : string = _run_target_args'_v47 
-    v235
+    let v244 : string = _run_target_args'_v47 
+    v244
 and method16 (v0 : string) : string =
     let v1 : char list = []
     let v4 : (char list -> (char [])) = List.toArray
     let v5 : (char []) = v4 v1
     let v8 : string = v0.TrimStart v5 
-    let v40 : char list = []
-    let v42 : char list = '/' :: v40 
-    let v46 : char list = ' ' :: v42 
-    let v51 : (char list -> (char [])) = List.toArray
-    let v52 : (char []) = v51 v46
-    let v55 : string = v8.TrimEnd v52 
-    v55
+    let v42 : char list = []
+    let v44 : char list = '/' :: v42 
+    let v48 : char list = ' ' :: v44 
+    let v53 : (char list -> (char [])) = List.toArray
+    let v54 : (char []) = v53 v48
+    let v57 : string = v8.TrimEnd v54 
+    v57
 and method15 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string) : string =
     let v8 : string = method13()
     let v9 : Mut3 = {l0 = v8} : Mut3
@@ -1990,50 +1991,50 @@ and method17 (v0 : string) : unit =
     let _run_target_args'_v88 = v108 
     #endif
     let v111 : Ref<Str> = _run_target_args'_v88 
-    let v117 : string = $"$0.chars()"
-    let v118 : Mut<_> = Fable.Core.RustInterop.emitRustExpr v111 v117 
-    let v119 : string = "$0"
-    let v120 : _ = Fable.Core.RustInterop.emitRustExpr v118 v119 
-    let v121 : string = "$0.collect::<Vec<_>>()"
-    let v122 : Vec<char> = Fable.Core.RustInterop.emitRustExpr v120 v121 
-    let v123 : string = "$0.chunks(15000).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"
-    let v124 : Vec<Vec<char>> = Fable.Core.RustInterop.emitRustExpr v122 v123 
-    let v125 : string = "true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"
-    let v126 : bool = Fable.Core.RustInterop.emitRustExpr v124 v125 
-    let v127 : string = "x"
-    let v128 : Vec<char> = Fable.Core.RustInterop.emitRustExpr () v127 
-    let v129 : string = "String::from_iter($0)"
-    let v130 : std_string_String = Fable.Core.RustInterop.emitRustExpr v128 v129 
-    let v131 : string = "true; $0 }).collect::<Vec<_>>()"
-    let v132 : bool = Fable.Core.RustInterop.emitRustExpr v130 v131 
-    let v133 : string = "_vec_map"
-    let v134 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v133 
-    let v135 : string = "$0.len()"
-    let v136 : unativeint = Fable.Core.RustInterop.emitRustExpr v134 v135 
-    let v142 : int32 = v136 |> int32 
-    let v152 : string = ""
-    let v153 : bool = v0 <> v152 
-    let v157 : bool =
-        if v153 then
-            let v156 : bool = v142 <= 1
-            v156
+    let v120 : string = $"$0.chars()"
+    let v121 : Mut<_> = Fable.Core.RustInterop.emitRustExpr v111 v120 
+    let v122 : string = "$0"
+    let v123 : _ = Fable.Core.RustInterop.emitRustExpr v121 v122 
+    let v124 : string = "$0.collect::<Vec<_>>()"
+    let v125 : Vec<char> = Fable.Core.RustInterop.emitRustExpr v123 v124 
+    let v126 : string = "$0.chunks(15000).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"
+    let v127 : Vec<Vec<char>> = Fable.Core.RustInterop.emitRustExpr v125 v126 
+    let v128 : string = "true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"
+    let v129 : bool = Fable.Core.RustInterop.emitRustExpr v127 v128 
+    let v130 : string = "x"
+    let v131 : Vec<char> = Fable.Core.RustInterop.emitRustExpr () v130 
+    let v132 : string = "String::from_iter($0)"
+    let v133 : std_string_String = Fable.Core.RustInterop.emitRustExpr v131 v132 
+    let v134 : string = "true; $0 }).collect::<Vec<_>>()"
+    let v135 : bool = Fable.Core.RustInterop.emitRustExpr v133 v134 
+    let v136 : string = "_vec_map"
+    let v137 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v136 
+    let v138 : string = "$0.len()"
+    let v139 : unativeint = Fable.Core.RustInterop.emitRustExpr v137 v138 
+    let v145 : int32 = v139 |> int32 
+    let v155 : string = ""
+    let v156 : bool = v0 <> v155 
+    let v160 : bool =
+        if v156 then
+            let v159 : bool = v145 <= 1
+            v159
         else
             false
-    if v157 then
+    if v160 then
         v41.l0 <- v83
         ()
     else
-        v41.l0 <- v152
-        let v158 : string = "true; $0.into_iter().for_each(|x| { //"
-        let v159 : bool = Fable.Core.RustInterop.emitRustExpr v134 v158 
-        let v160 : string = "x"
-        let v161 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v160 
-        let v162 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-        let v163 : bool = Fable.Core.RustInterop.emitRustExpr v161 v162 
-        let v164 : string = $"true"
-        let v165 : bool = Fable.Core.RustInterop.emitRustExpr () v164 
-        let v166 : string = "true; }); //"
-        let v167 : bool = Fable.Core.RustInterop.emitRustExpr () v166 
+        v41.l0 <- v155
+        let v161 : string = "true; $0.into_iter().for_each(|x| { //"
+        let v162 : bool = Fable.Core.RustInterop.emitRustExpr v137 v161 
+        let v163 : string = "x"
+        let v164 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v163 
+        let v165 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+        let v166 : bool = Fable.Core.RustInterop.emitRustExpr v164 v165 
+        let v167 : string = $"true"
+        let v168 : bool = Fable.Core.RustInterop.emitRustExpr () v167 
+        let v169 : string = "true; }); //"
+        let v170 : bool = Fable.Core.RustInterop.emitRustExpr () v169 
         ()
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -2049,8 +2050,8 @@ and method17 (v0 : string) : unit =
     v63 v0
     #endif
     // run_target_args' is_unit
-    let v168 : (string -> unit) = v39.l0
-    v168 v0
+    let v171 : (string -> unit) = v39.l0
+    v171 v0
 and closure5 () () : unit =
     let v0 : US0 = US0_3
     let v1 : bool = method7(v0)
@@ -2978,142 +2979,142 @@ and method36 () : string =
     let _run_target_args'_v54 = v74 
     #endif
     let v77 : Ref<Str> = _run_target_args'_v54 
-    let v83 : string = "inline_colorization::color_reset"
-    let v84 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v83 
-    let v85 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v86 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v49, v77, v84) v85 
-    let v87 : string = "fable_library_rust::String_::fromString($0)"
-    let v88 : string = Fable.Core.RustInterop.emitRustExpr v86 v87 
-    let _run_target_args'_v47 = v88 
+    let v86 : string = "inline_colorization::color_reset"
+    let v87 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v86 
+    let v88 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v89 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v49, v77, v87) v88 
+    let v90 : string = "fable_library_rust::String_::fromString($0)"
+    let v91 : string = Fable.Core.RustInterop.emitRustExpr v89 v90 
+    let _run_target_args'_v47 = v91 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v89 : string = "inline_colorization::color_bright_blue"
-    let v90 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v89 
+    let v92 : string = "inline_colorization::color_bright_blue"
+    let v93 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v92 
     (* run_target_args'
-    let v95 : unit = ()
+    let v98 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v96 : string = "&*$0"
-    let v97 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v96 
-    let _run_target_args'_v95 = v97 
+    let v99 : string = "&*$0"
+    let v100 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v99 
+    let _run_target_args'_v98 = v100 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v98 : string = "&*$0"
-    let v99 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v98 
-    let _run_target_args'_v95 = v99 
+    let v101 : string = "&*$0"
+    let v102 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v101 
+    let _run_target_args'_v98 = v102 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v100 : string = "&*$0"
-    let v101 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v100 
-    let _run_target_args'_v95 = v101 
+    let v103 : string = "&*$0"
+    let v104 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v103 
+    let _run_target_args'_v98 = v104 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v103 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v103 
+    let v106 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v106 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v107 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v107 
+    let v110 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v110 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v111 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v111 
+    let v114 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v114 
     #endif
 #else
-    let v115 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v115 
+    let v118 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v118 
     #endif
-    let v118 : Ref<Str> = _run_target_args'_v95 
-    let v124 : string = "inline_colorization::color_reset"
-    let v125 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v124 
-    let v126 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v127 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v90, v118, v125) v126 
-    let v128 : string = "fable_library_rust::String_::fromString($0)"
-    let v129 : string = Fable.Core.RustInterop.emitRustExpr v127 v128 
-    let _run_target_args'_v47 = v129 
-    #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-    let v130 : string = "inline_colorization::color_bright_blue"
+    let v121 : Ref<Str> = _run_target_args'_v98 
+    let v130 : string = "inline_colorization::color_reset"
     let v131 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v130 
+    let v132 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v133 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v93, v121, v131) v132 
+    let v134 : string = "fable_library_rust::String_::fromString($0)"
+    let v135 : string = Fable.Core.RustInterop.emitRustExpr v133 v134 
+    let _run_target_args'_v47 = v135 
+    #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+    let v136 : string = "inline_colorization::color_bright_blue"
+    let v137 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v136 
     (* run_target_args'
-    let v136 : unit = ()
+    let v142 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v137 : string = "&*$0"
-    let v138 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v137 
-    let _run_target_args'_v136 = v138 
+    let v143 : string = "&*$0"
+    let v144 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v143 
+    let _run_target_args'_v142 = v144 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v139 : string = "&*$0"
-    let v140 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v139 
-    let _run_target_args'_v136 = v140 
+    let v145 : string = "&*$0"
+    let v146 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v145 
+    let _run_target_args'_v142 = v146 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v141 : string = "&*$0"
-    let v142 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v141 
-    let _run_target_args'_v136 = v142 
+    let v147 : string = "&*$0"
+    let v148 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v147 
+    let _run_target_args'_v142 = v148 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v144 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v144 
+    let v150 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v150 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v148 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v148 
+    let v154 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v154 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v152 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v152 
+    let v158 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v158 
     #endif
 #else
-    let v156 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v156 
+    let v162 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v162 
     #endif
-    let v159 : Ref<Str> = _run_target_args'_v136 
-    let v165 : string = "inline_colorization::color_reset"
-    let v166 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v165 
-    let v167 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v168 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v131, v159, v166) v167 
-    let v169 : string = "fable_library_rust::String_::fromString($0)"
-    let v170 : string = Fable.Core.RustInterop.emitRustExpr v168 v169 
-    let _run_target_args'_v47 = v170 
+    let v165 : Ref<Str> = _run_target_args'_v142 
+    let v174 : string = "inline_colorization::color_reset"
+    let v175 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v174 
+    let v176 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v177 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v137, v165, v175) v176 
+    let v178 : string = "fable_library_rust::String_::fromString($0)"
+    let v179 : string = Fable.Core.RustInterop.emitRustExpr v177 v178 
+    let _run_target_args'_v47 = v179 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v172 : string = "\u001b[94m"
-    let v176 : string = method14()
-    let v180 : string = v172 + v30 
-    let v184 : string = v180 + v176 
-    let _run_target_args'_v47 = v184 
+    let v181 : string = "\u001b[94m"
+    let v185 : string = method14()
+    let v189 : string = v181 + v30 
+    let v193 : string = v189 + v185 
+    let _run_target_args'_v47 = v193 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v188 : string = "\u001b[94m"
-    let v192 : string = method14()
-    let v196 : string = v188 + v30 
-    let v200 : string = v196 + v192 
-    let _run_target_args'_v47 = v200 
+    let v197 : string = "\u001b[94m"
+    let v201 : string = method14()
+    let v205 : string = v197 + v30 
+    let v209 : string = v205 + v201 
+    let _run_target_args'_v47 = v209 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v204 : string = "\u001b[94m"
-    let v208 : string = method14()
-    let v212 : string = v204 + v30 
-    let v216 : string = v212 + v208 
-    let _run_target_args'_v47 = v216 
+    let v213 : string = "\u001b[94m"
+    let v217 : string = method14()
+    let v221 : string = v213 + v30 
+    let v225 : string = v221 + v217 
+    let _run_target_args'_v47 = v225 
     #endif
 #else
-    let v220 : string = "\u001b[94m"
-    let v224 : string = method14()
-    let v228 : string = v220 + v30 
-    let v232 : string = v228 + v224 
-    let _run_target_args'_v47 = v232 
+    let v229 : string = "\u001b[94m"
+    let v233 : string = method14()
+    let v237 : string = v229 + v30 
+    let v241 : string = v237 + v233 
+    let _run_target_args'_v47 = v241 
     #endif
-    let v235 : string = _run_target_args'_v47 
-    v235
+    let v244 : string = _run_target_args'_v47 
+    v244
 and method37 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string, v9 : US5, v10 : string, v11 : System.Threading.CancellationToken option, v12 : (struct (string * string) []), v13 : (struct (int32 * string * bool) -> Async<unit>) option, v14 : (std_sync_Arc<std_sync_Mutex<std_process_ChildStdin>> -> unit) option, v15 : bool, v16 : string option) : string =
     let v17 : string = method13()
     let v18 : Mut3 = {l0 = v17} : Mut3
@@ -3242,261 +3243,261 @@ and method37 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 
     let _run_target_args'_v349 = v375 
     #endif
     let v378 : string = _run_target_args'_v349 
-    let v385 : string = $"{v378}"
-    let v393 : unit = ()
-    let v394 : (unit -> unit) = closure7(v18, v385)
-    let v395 : unit = (fun () -> v394 (); v393) ()
-    let v402 : string = $"{v95}"
-    let v410 : unit = ()
-    let v411 : (unit -> unit) = closure7(v18, v402)
-    let v412 : unit = (fun () -> v411 (); v410) ()
-    let v420 : string = "environment_variables"
-    let v421 : string = $"{v420}"
-    let v429 : unit = ()
-    let v430 : (unit -> unit) = closure7(v18, v421)
-    let v431 : unit = (fun () -> v430 (); v429) ()
-    let v438 : string = $"{v59}"
-    let v446 : unit = ()
-    let v447 : (unit -> unit) = closure7(v18, v438)
-    let v448 : unit = (fun () -> v447 (); v446) ()
-    let v455 : string = $"%A{v12}"
-    let v459 : string = $"{v455}"
-    let v467 : unit = ()
-    let v468 : (unit -> unit) = closure7(v18, v459)
-    let v469 : unit = (fun () -> v468 (); v467) ()
-    let v476 : string = $"{v95}"
-    let v484 : unit = ()
-    let v485 : (unit -> unit) = closure7(v18, v476)
-    let v486 : unit = (fun () -> v485 (); v484) ()
-    let v494 : string = "on_line"
-    let v495 : string = $"{v494}"
-    let v503 : unit = ()
-    let v504 : (unit -> unit) = closure7(v18, v495)
-    let v505 : unit = (fun () -> v504 (); v503) ()
-    let v512 : string = $"{v59}"
-    let v520 : unit = ()
-    let v521 : (unit -> unit) = closure7(v18, v512)
-    let v522 : unit = (fun () -> v521 (); v520) ()
+    let v388 : string = $"{v378}"
+    let v396 : unit = ()
+    let v397 : (unit -> unit) = closure7(v18, v388)
+    let v398 : unit = (fun () -> v397 (); v396) ()
+    let v405 : string = $"{v95}"
+    let v413 : unit = ()
+    let v414 : (unit -> unit) = closure7(v18, v405)
+    let v415 : unit = (fun () -> v414 (); v413) ()
+    let v423 : string = "environment_variables"
+    let v424 : string = $"{v423}"
+    let v432 : unit = ()
+    let v433 : (unit -> unit) = closure7(v18, v424)
+    let v434 : unit = (fun () -> v433 (); v432) ()
+    let v441 : string = $"{v59}"
+    let v449 : unit = ()
+    let v450 : (unit -> unit) = closure7(v18, v441)
+    let v451 : unit = (fun () -> v450 (); v449) ()
+    let v458 : string = $"%A{v12}"
+    let v462 : string = $"{v458}"
+    let v470 : unit = ()
+    let v471 : (unit -> unit) = closure7(v18, v462)
+    let v472 : unit = (fun () -> v471 (); v470) ()
+    let v479 : string = $"{v95}"
+    let v487 : unit = ()
+    let v488 : (unit -> unit) = closure7(v18, v479)
+    let v489 : unit = (fun () -> v488 (); v487) ()
+    let v497 : string = "on_line"
+    let v498 : string = $"{v497}"
+    let v506 : unit = ()
+    let v507 : (unit -> unit) = closure7(v18, v498)
+    let v508 : unit = (fun () -> v507 (); v506) ()
+    let v515 : string = $"{v59}"
+    let v523 : unit = ()
+    let v524 : (unit -> unit) = closure7(v18, v515)
+    let v525 : unit = (fun () -> v524 (); v523) ()
     (* run_target_args'
-    let v532 : unit = ()
+    let v535 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v533 : string = "format!(\"{:#?}\", $0)"
-    let v534 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v533 
-    let v535 : string = "fable_library_rust::String_::fromString($0)"
-    let v536 : string = Fable.Core.RustInterop.emitRustExpr v534 v535 
-    let _run_target_args'_v532 = v536 
+    let v536 : string = "format!(\"{:#?}\", $0)"
+    let v537 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v536 
+    let v538 : string = "fable_library_rust::String_::fromString($0)"
+    let v539 : string = Fable.Core.RustInterop.emitRustExpr v537 v538 
+    let _run_target_args'_v535 = v539 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v537 : string = "format!(\"{:#?}\", $0)"
-    let v538 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v537 
-    let v539 : string = "fable_library_rust::String_::fromString($0)"
-    let v540 : string = Fable.Core.RustInterop.emitRustExpr v538 v539 
-    let _run_target_args'_v532 = v540 
+    let v540 : string = "format!(\"{:#?}\", $0)"
+    let v541 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v540 
+    let v542 : string = "fable_library_rust::String_::fromString($0)"
+    let v543 : string = Fable.Core.RustInterop.emitRustExpr v541 v542 
+    let _run_target_args'_v535 = v543 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v541 : string = "format!(\"{:#?}\", $0)"
-    let v542 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v541 
-    let v543 : string = "fable_library_rust::String_::fromString($0)"
-    let v544 : string = Fable.Core.RustInterop.emitRustExpr v542 v543 
-    let _run_target_args'_v532 = v544 
+    let v544 : string = "format!(\"{:#?}\", $0)"
+    let v545 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v544 
+    let v546 : string = "fable_library_rust::String_::fromString($0)"
+    let v547 : string = Fable.Core.RustInterop.emitRustExpr v545 v546 
+    let _run_target_args'_v535 = v547 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v546 : string = $"%A{v13}"
-    let _run_target_args'_v532 = v546 
+    let v549 : string = $"%A{v13}"
+    let _run_target_args'_v535 = v549 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v550 : string = $"%A{v13}"
-    let _run_target_args'_v532 = v550 
+    let v553 : string = $"%A{v13}"
+    let _run_target_args'_v535 = v553 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v554 : string = $"%A{v13}"
-    let _run_target_args'_v532 = v554 
+    let v557 : string = $"%A{v13}"
+    let _run_target_args'_v535 = v557 
     #endif
 #else
-    let v558 : string = $"%A{v13}"
-    let _run_target_args'_v532 = v558 
+    let v561 : string = $"%A{v13}"
+    let _run_target_args'_v535 = v561 
     #endif
-    let v561 : string = _run_target_args'_v532 
-    let v568 : string = $"{v561}"
-    let v576 : unit = ()
-    let v577 : (unit -> unit) = closure7(v18, v568)
-    let v578 : unit = (fun () -> v577 (); v576) ()
-    let v585 : string = $"{v95}"
-    let v593 : unit = ()
-    let v594 : (unit -> unit) = closure7(v18, v585)
-    let v595 : unit = (fun () -> v594 (); v593) ()
-    let v603 : string = "stdin"
-    let v604 : string = $"{v603}"
-    let v612 : unit = ()
-    let v613 : (unit -> unit) = closure7(v18, v604)
-    let v614 : unit = (fun () -> v613 (); v612) ()
-    let v621 : string = $"{v59}"
-    let v629 : unit = ()
-    let v630 : (unit -> unit) = closure7(v18, v621)
-    let v631 : unit = (fun () -> v630 (); v629) ()
+    let v564 : string = _run_target_args'_v535 
+    let v574 : string = $"{v564}"
+    let v582 : unit = ()
+    let v583 : (unit -> unit) = closure7(v18, v574)
+    let v584 : unit = (fun () -> v583 (); v582) ()
+    let v591 : string = $"{v95}"
+    let v599 : unit = ()
+    let v600 : (unit -> unit) = closure7(v18, v591)
+    let v601 : unit = (fun () -> v600 (); v599) ()
+    let v609 : string = "stdin"
+    let v610 : string = $"{v609}"
+    let v618 : unit = ()
+    let v619 : (unit -> unit) = closure7(v18, v610)
+    let v620 : unit = (fun () -> v619 (); v618) ()
+    let v627 : string = $"{v59}"
+    let v635 : unit = ()
+    let v636 : (unit -> unit) = closure7(v18, v627)
+    let v637 : unit = (fun () -> v636 (); v635) ()
     (* run_target_args'
-    let v641 : unit = ()
+    let v647 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v642 : string = "format!(\"{:#?}\", $0)"
-    let v643 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v642 
-    let v644 : string = "fable_library_rust::String_::fromString($0)"
-    let v645 : string = Fable.Core.RustInterop.emitRustExpr v643 v644 
-    let _run_target_args'_v641 = v645 
+    let v648 : string = "format!(\"{:#?}\", $0)"
+    let v649 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v648 
+    let v650 : string = "fable_library_rust::String_::fromString($0)"
+    let v651 : string = Fable.Core.RustInterop.emitRustExpr v649 v650 
+    let _run_target_args'_v647 = v651 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v646 : string = "format!(\"{:#?}\", $0)"
-    let v647 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v646 
-    let v648 : string = "fable_library_rust::String_::fromString($0)"
-    let v649 : string = Fable.Core.RustInterop.emitRustExpr v647 v648 
-    let _run_target_args'_v641 = v649 
+    let v652 : string = "format!(\"{:#?}\", $0)"
+    let v653 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v652 
+    let v654 : string = "fable_library_rust::String_::fromString($0)"
+    let v655 : string = Fable.Core.RustInterop.emitRustExpr v653 v654 
+    let _run_target_args'_v647 = v655 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v650 : string = "format!(\"{:#?}\", $0)"
-    let v651 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v650 
-    let v652 : string = "fable_library_rust::String_::fromString($0)"
-    let v653 : string = Fable.Core.RustInterop.emitRustExpr v651 v652 
-    let _run_target_args'_v641 = v653 
+    let v656 : string = "format!(\"{:#?}\", $0)"
+    let v657 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v656 
+    let v658 : string = "fable_library_rust::String_::fromString($0)"
+    let v659 : string = Fable.Core.RustInterop.emitRustExpr v657 v658 
+    let _run_target_args'_v647 = v659 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v655 : string = $"%A{v14}"
-    let _run_target_args'_v641 = v655 
+    let v661 : string = $"%A{v14}"
+    let _run_target_args'_v647 = v661 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v659 : string = $"%A{v14}"
-    let _run_target_args'_v641 = v659 
+    let v665 : string = $"%A{v14}"
+    let _run_target_args'_v647 = v665 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v663 : string = $"%A{v14}"
-    let _run_target_args'_v641 = v663 
+    let v669 : string = $"%A{v14}"
+    let _run_target_args'_v647 = v669 
     #endif
 #else
-    let v667 : string = $"%A{v14}"
-    let _run_target_args'_v641 = v667 
+    let v673 : string = $"%A{v14}"
+    let _run_target_args'_v647 = v673 
     #endif
-    let v670 : string = _run_target_args'_v641 
-    let v677 : string = $"{v670}"
-    let v685 : unit = ()
-    let v686 : (unit -> unit) = closure7(v18, v677)
-    let v687 : unit = (fun () -> v686 (); v685) ()
-    let v694 : string = $"{v95}"
-    let v702 : unit = ()
-    let v703 : (unit -> unit) = closure7(v18, v694)
-    let v704 : unit = (fun () -> v703 (); v702) ()
-    let v712 : string = "trace"
-    let v713 : string = $"{v712}"
-    let v721 : unit = ()
-    let v722 : (unit -> unit) = closure7(v18, v713)
-    let v723 : unit = (fun () -> v722 (); v721) ()
-    let v730 : string = $"{v59}"
-    let v738 : unit = ()
-    let v739 : (unit -> unit) = closure7(v18, v730)
-    let v740 : unit = (fun () -> v739 (); v738) ()
-    let v748 : string =
+    let v676 : string = _run_target_args'_v647 
+    let v686 : string = $"{v676}"
+    let v694 : unit = ()
+    let v695 : (unit -> unit) = closure7(v18, v686)
+    let v696 : unit = (fun () -> v695 (); v694) ()
+    let v703 : string = $"{v95}"
+    let v711 : unit = ()
+    let v712 : (unit -> unit) = closure7(v18, v703)
+    let v713 : unit = (fun () -> v712 (); v711) ()
+    let v721 : string = "trace"
+    let v722 : string = $"{v721}"
+    let v730 : unit = ()
+    let v731 : (unit -> unit) = closure7(v18, v722)
+    let v732 : unit = (fun () -> v731 (); v730) ()
+    let v739 : string = $"{v59}"
+    let v747 : unit = ()
+    let v748 : (unit -> unit) = closure7(v18, v739)
+    let v749 : unit = (fun () -> v748 (); v747) ()
+    let v757 : string =
         if v15 then
-            let v746 : string = "true"
-            v746
+            let v755 : string = "true"
+            v755
         else
-            let v747 : string = "false"
-            v747
-    let v750 : string = $"{v748}"
-    let v758 : unit = ()
-    let v759 : (unit -> unit) = closure7(v18, v750)
-    let v760 : unit = (fun () -> v759 (); v758) ()
-    let v767 : string = $"{v95}"
-    let v775 : unit = ()
-    let v776 : (unit -> unit) = closure7(v18, v767)
-    let v777 : unit = (fun () -> v776 (); v775) ()
-    let v785 : string = "working_directory"
-    let v786 : string = $"{v785}"
-    let v794 : unit = ()
-    let v795 : (unit -> unit) = closure7(v18, v786)
-    let v796 : unit = (fun () -> v795 (); v794) ()
-    let v803 : string = $"{v59}"
-    let v811 : unit = ()
-    let v812 : (unit -> unit) = closure7(v18, v803)
-    let v813 : unit = (fun () -> v812 (); v811) ()
+            let v756 : string = "false"
+            v756
+    let v759 : string = $"{v757}"
+    let v767 : unit = ()
+    let v768 : (unit -> unit) = closure7(v18, v759)
+    let v769 : unit = (fun () -> v768 (); v767) ()
+    let v776 : string = $"{v95}"
+    let v784 : unit = ()
+    let v785 : (unit -> unit) = closure7(v18, v776)
+    let v786 : unit = (fun () -> v785 (); v784) ()
+    let v794 : string = "working_directory"
+    let v795 : string = $"{v794}"
+    let v803 : unit = ()
+    let v804 : (unit -> unit) = closure7(v18, v795)
+    let v805 : unit = (fun () -> v804 (); v803) ()
+    let v812 : string = $"{v59}"
+    let v820 : unit = ()
+    let v821 : (unit -> unit) = closure7(v18, v812)
+    let v822 : unit = (fun () -> v821 (); v820) ()
     (* run_target_args'
-    let v823 : unit = ()
+    let v832 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v824 : string = "format!(\"{:#?}\", $0)"
-    let v825 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v824 
-    let v826 : string = "fable_library_rust::String_::fromString($0)"
-    let v827 : string = Fable.Core.RustInterop.emitRustExpr v825 v826 
-    let _run_target_args'_v823 = v827 
+    let v833 : string = "format!(\"{:#?}\", $0)"
+    let v834 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v833 
+    let v835 : string = "fable_library_rust::String_::fromString($0)"
+    let v836 : string = Fable.Core.RustInterop.emitRustExpr v834 v835 
+    let _run_target_args'_v832 = v836 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v828 : string = "format!(\"{:#?}\", $0)"
-    let v829 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v828 
-    let v830 : string = "fable_library_rust::String_::fromString($0)"
-    let v831 : string = Fable.Core.RustInterop.emitRustExpr v829 v830 
-    let _run_target_args'_v823 = v831 
+    let v837 : string = "format!(\"{:#?}\", $0)"
+    let v838 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v837 
+    let v839 : string = "fable_library_rust::String_::fromString($0)"
+    let v840 : string = Fable.Core.RustInterop.emitRustExpr v838 v839 
+    let _run_target_args'_v832 = v840 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v832 : string = "format!(\"{:#?}\", $0)"
-    let v833 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v832 
-    let v834 : string = "fable_library_rust::String_::fromString($0)"
-    let v835 : string = Fable.Core.RustInterop.emitRustExpr v833 v834 
-    let _run_target_args'_v823 = v835 
+    let v841 : string = "format!(\"{:#?}\", $0)"
+    let v842 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v841 
+    let v843 : string = "fable_library_rust::String_::fromString($0)"
+    let v844 : string = Fable.Core.RustInterop.emitRustExpr v842 v843 
+    let _run_target_args'_v832 = v844 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v837 : string = $"%A{v16}"
-    let _run_target_args'_v823 = v837 
+    let v846 : string = $"%A{v16}"
+    let _run_target_args'_v832 = v846 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v841 : string = $"%A{v16}"
-    let _run_target_args'_v823 = v841 
+    let v850 : string = $"%A{v16}"
+    let _run_target_args'_v832 = v850 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v845 : string = $"%A{v16}"
-    let _run_target_args'_v823 = v845 
+    let v854 : string = $"%A{v16}"
+    let _run_target_args'_v832 = v854 
     #endif
 #else
-    let v849 : string = $"%A{v16}"
-    let _run_target_args'_v823 = v849 
+    let v858 : string = $"%A{v16}"
+    let _run_target_args'_v832 = v858 
     #endif
-    let v852 : string = _run_target_args'_v823 
-    let v859 : string = $"{v852}"
-    let v867 : unit = ()
-    let v868 : (unit -> unit) = closure7(v18, v859)
-    let v869 : unit = (fun () -> v868 (); v867) ()
-    let v877 : string = " }"
-    let v878 : string = $"{v877}"
-    let v886 : unit = ()
-    let v887 : (unit -> unit) = closure7(v18, v878)
-    let v888 : unit = (fun () -> v887 (); v886) ()
-    let v895 : string = $"{v877}"
-    let v903 : unit = ()
-    let v904 : (unit -> unit) = closure7(v18, v895)
-    let v905 : unit = (fun () -> v904 (); v903) ()
-    let v911 : string = v18.l0
-    let v912 : int64 = v0.l0
-    let v915 : string = " "
-    let v916 : string = v6 + v915 
-    let v920 : string = v916 + v7 
-    let v925 : string = " #"
-    let v926 : string = v920 + v925 
-    let v930 : (int64 -> string) = _.ToString()
-    let v931 : string = v930 v912
-    let v935 : string = v926 + v931 
-    let v939 : string = v935 + v915 
-    let v944 : string = "runtime.execute_with_options_async"
-    let v945 : string = v939 + v944 
-    let v950 : string = " / "
-    let v951 : string = v945 + v950 
-    let v955 : string = v951 + v911 
-    method16(v955)
+    let v861 : string = _run_target_args'_v832 
+    let v871 : string = $"{v861}"
+    let v879 : unit = ()
+    let v880 : (unit -> unit) = closure7(v18, v871)
+    let v881 : unit = (fun () -> v880 (); v879) ()
+    let v889 : string = " }"
+    let v890 : string = $"{v889}"
+    let v898 : unit = ()
+    let v899 : (unit -> unit) = closure7(v18, v890)
+    let v900 : unit = (fun () -> v899 (); v898) ()
+    let v907 : string = $"{v889}"
+    let v915 : unit = ()
+    let v916 : (unit -> unit) = closure7(v18, v907)
+    let v917 : unit = (fun () -> v916 (); v915) ()
+    let v923 : string = v18.l0
+    let v924 : int64 = v0.l0
+    let v927 : string = " "
+    let v928 : string = v6 + v927 
+    let v932 : string = v928 + v7 
+    let v937 : string = " #"
+    let v938 : string = v932 + v937 
+    let v942 : (int64 -> string) = _.ToString()
+    let v943 : string = v942 v924
+    let v947 : string = v938 + v943 
+    let v951 : string = v947 + v927 
+    let v956 : string = "runtime.execute_with_options_async"
+    let v957 : string = v951 + v956 
+    let v962 : string = " / "
+    let v963 : string = v957 + v962 
+    let v967 : string = v963 + v923 
+    method16(v967)
 and closure17 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : (struct (string * string) []), v3 : (struct (int32 * string * bool) -> Async<unit>) option, v4 : (std_sync_Arc<std_sync_Mutex<std_process_ChildStdin>> -> unit) option, v5 : bool, v6 : string option, v7 : US5, v8 : string) () : unit =
     let v9 : US0 = US0_1
     let v10 : bool = method7(v9)
@@ -3659,142 +3660,142 @@ and method45 () : string =
     let _run_target_args'_v54 = v74 
     #endif
     let v77 : Ref<Str> = _run_target_args'_v54 
-    let v83 : string = "inline_colorization::color_reset"
-    let v84 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v83 
-    let v85 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v86 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v49, v77, v84) v85 
-    let v87 : string = "fable_library_rust::String_::fromString($0)"
-    let v88 : string = Fable.Core.RustInterop.emitRustExpr v86 v87 
-    let _run_target_args'_v47 = v88 
+    let v86 : string = "inline_colorization::color_reset"
+    let v87 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v86 
+    let v88 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v89 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v49, v77, v87) v88 
+    let v90 : string = "fable_library_rust::String_::fromString($0)"
+    let v91 : string = Fable.Core.RustInterop.emitRustExpr v89 v90 
+    let _run_target_args'_v47 = v91 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v89 : string = "inline_colorization::color_bright_black"
-    let v90 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v89 
+    let v92 : string = "inline_colorization::color_bright_black"
+    let v93 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v92 
     (* run_target_args'
-    let v95 : unit = ()
+    let v98 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v96 : string = "&*$0"
-    let v97 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v96 
-    let _run_target_args'_v95 = v97 
+    let v99 : string = "&*$0"
+    let v100 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v99 
+    let _run_target_args'_v98 = v100 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v98 : string = "&*$0"
-    let v99 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v98 
-    let _run_target_args'_v95 = v99 
+    let v101 : string = "&*$0"
+    let v102 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v101 
+    let _run_target_args'_v98 = v102 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v100 : string = "&*$0"
-    let v101 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v100 
-    let _run_target_args'_v95 = v101 
+    let v103 : string = "&*$0"
+    let v104 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v103 
+    let _run_target_args'_v98 = v104 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v103 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v103 
+    let v106 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v106 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v107 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v107 
+    let v110 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v110 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v111 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v111 
+    let v114 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v114 
     #endif
 #else
-    let v115 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v95 = v115 
+    let v118 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v98 = v118 
     #endif
-    let v118 : Ref<Str> = _run_target_args'_v95 
-    let v124 : string = "inline_colorization::color_reset"
-    let v125 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v124 
-    let v126 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v127 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v90, v118, v125) v126 
-    let v128 : string = "fable_library_rust::String_::fromString($0)"
-    let v129 : string = Fable.Core.RustInterop.emitRustExpr v127 v128 
-    let _run_target_args'_v47 = v129 
-    #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-    let v130 : string = "inline_colorization::color_bright_black"
+    let v121 : Ref<Str> = _run_target_args'_v98 
+    let v130 : string = "inline_colorization::color_reset"
     let v131 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v130 
+    let v132 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v133 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v93, v121, v131) v132 
+    let v134 : string = "fable_library_rust::String_::fromString($0)"
+    let v135 : string = Fable.Core.RustInterop.emitRustExpr v133 v134 
+    let _run_target_args'_v47 = v135 
+    #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+    let v136 : string = "inline_colorization::color_bright_black"
+    let v137 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v136 
     (* run_target_args'
-    let v136 : unit = ()
+    let v142 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v137 : string = "&*$0"
-    let v138 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v137 
-    let _run_target_args'_v136 = v138 
+    let v143 : string = "&*$0"
+    let v144 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v143 
+    let _run_target_args'_v142 = v144 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v139 : string = "&*$0"
-    let v140 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v139 
-    let _run_target_args'_v136 = v140 
+    let v145 : string = "&*$0"
+    let v146 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v145 
+    let _run_target_args'_v142 = v146 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v141 : string = "&*$0"
-    let v142 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v141 
-    let _run_target_args'_v136 = v142 
+    let v147 : string = "&*$0"
+    let v148 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v30 v147 
+    let _run_target_args'_v142 = v148 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v144 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v144 
+    let v150 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v150 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v148 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v148 
+    let v154 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v154 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v152 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v152 
+    let v158 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v158 
     #endif
 #else
-    let v156 : Ref<Str> = v30 |> unbox<Ref<Str>>
-    let _run_target_args'_v136 = v156 
+    let v162 : Ref<Str> = v30 |> unbox<Ref<Str>>
+    let _run_target_args'_v142 = v162 
     #endif
-    let v159 : Ref<Str> = _run_target_args'_v136 
-    let v165 : string = "inline_colorization::color_reset"
-    let v166 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v165 
-    let v167 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
-    let v168 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v131, v159, v166) v167 
-    let v169 : string = "fable_library_rust::String_::fromString($0)"
-    let v170 : string = Fable.Core.RustInterop.emitRustExpr v168 v169 
-    let _run_target_args'_v47 = v170 
+    let v165 : Ref<Str> = _run_target_args'_v142 
+    let v174 : string = "inline_colorization::color_reset"
+    let v175 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v174 
+    let v176 : string = $"format!(\"{{}}{{}}{{}}\", $0, $1, $2)"
+    let v177 : std_string_String = Fable.Core.RustInterop.emitRustExpr struct (v137, v165, v175) v176 
+    let v178 : string = "fable_library_rust::String_::fromString($0)"
+    let v179 : string = Fable.Core.RustInterop.emitRustExpr v177 v178 
+    let _run_target_args'_v47 = v179 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v172 : string = "\u001b[90m"
-    let v176 : string = method14()
-    let v180 : string = v172 + v30 
-    let v184 : string = v180 + v176 
-    let _run_target_args'_v47 = v184 
+    let v181 : string = "\u001b[90m"
+    let v185 : string = method14()
+    let v189 : string = v181 + v30 
+    let v193 : string = v189 + v185 
+    let _run_target_args'_v47 = v193 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v188 : string = "\u001b[90m"
-    let v192 : string = method14()
-    let v196 : string = v188 + v30 
-    let v200 : string = v196 + v192 
-    let _run_target_args'_v47 = v200 
+    let v197 : string = "\u001b[90m"
+    let v201 : string = method14()
+    let v205 : string = v197 + v30 
+    let v209 : string = v205 + v201 
+    let _run_target_args'_v47 = v209 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v204 : string = "\u001b[90m"
-    let v208 : string = method14()
-    let v212 : string = v204 + v30 
-    let v216 : string = v212 + v208 
-    let _run_target_args'_v47 = v216 
+    let v213 : string = "\u001b[90m"
+    let v217 : string = method14()
+    let v221 : string = v213 + v30 
+    let v225 : string = v221 + v217 
+    let _run_target_args'_v47 = v225 
     #endif
 #else
-    let v220 : string = "\u001b[90m"
-    let v224 : string = method14()
-    let v228 : string = v220 + v30 
-    let v232 : string = v228 + v224 
-    let _run_target_args'_v47 = v232 
+    let v229 : string = "\u001b[90m"
+    let v233 : string = method14()
+    let v237 : string = v229 + v30 
+    let v241 : string = v237 + v233 
+    let _run_target_args'_v47 = v241 
     #endif
-    let v235 : string = _run_target_args'_v47 
-    v235
+    let v244 : string = _run_target_args'_v47 
+    v244
 and method46 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
     let v9 : string = method13()
     let v10 : Mut3 = {l0 = v9} : Mut3
@@ -4270,45 +4271,45 @@ and method48 (v0 : System.Threading.CancellationToken) : Async<System.Threading.
     let _let'_v19 =
         async {
             (* run_target_args'
-            let v546 : unit = ()
+            let v598 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v548 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v548 
+            let v600 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v600 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v552 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v552 
+            let v604 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v604 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v556 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v556 
+            let v608 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v608 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v560 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v560 
+            let v612 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v612 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v564 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v564 
+            let v616 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v616 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v568 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v568 
+            let v620 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v620 
             #endif
 #else
-            let v571 : Async<System.Threading.CancellationToken> = Async.CancellationToken
-            let! v571 = v571 
-            let v572 : System.Threading.CancellationToken = v571 
-            let v573 : System.Threading.CancellationToken = Async.DefaultCancellationToken
-            let v574 : (System.Threading.CancellationToken []) = [|v572; v573; v0|]
-            let v575 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
-            let v576 : System.Threading.CancellationTokenSource = v575 v574
-            let v577 : System.Threading.CancellationToken = v576.Token
-            return v577 
+            let v623 : Async<System.Threading.CancellationToken> = Async.CancellationToken
+            let! v623 = v623 
+            let v624 : System.Threading.CancellationToken = v623 
+            let v625 : System.Threading.CancellationToken = Async.DefaultCancellationToken
+            let v626 : (System.Threading.CancellationToken []) = [|v624; v625; v0|]
+            let v627 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
+            let v628 : System.Threading.CancellationTokenSource = v627 v626
+            let v629 : System.Threading.CancellationToken = v628.Token
+            return v629 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -4318,53 +4319,53 @@ and method48 (v0 : System.Threading.CancellationToken) : Async<System.Threading.
         (* indent
         ()
     indent *)
-    let v1102 : Async<System.Threading.CancellationToken> = _let'_v19 
-    let _run_target_args'_v5 = v1102 
+    let v1210 : Async<System.Threading.CancellationToken> = _let'_v19 
+    let _run_target_args'_v5 = v1210 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v1104 : unit = ()
-    let _let'_v1104 =
+    let v1212 : unit = ()
+    let _let'_v1212 =
         async {
             (* run_target_args'
-            let v1631 : unit = ()
+            let v1791 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1633 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v1633 
+            let v1793 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v1793 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1637 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v1637 
+            let v1797 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v1797 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1641 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v1641 
+            let v1801 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v1801 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1645 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v1645 
+            let v1805 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v1805 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1649 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v1649 
+            let v1809 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v1809 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1653 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v1653 
+            let v1813 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v1813 
             #endif
 #else
-            let v1656 : Async<System.Threading.CancellationToken> = Async.CancellationToken
-            let! v1656 = v1656 
-            let v1657 : System.Threading.CancellationToken = v1656 
-            let v1658 : System.Threading.CancellationToken = Async.DefaultCancellationToken
-            let v1659 : (System.Threading.CancellationToken []) = [|v1657; v1658; v0|]
-            let v1660 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
-            let v1661 : System.Threading.CancellationTokenSource = v1660 v1659
-            let v1662 : System.Threading.CancellationToken = v1661.Token
-            return v1662 
+            let v1816 : Async<System.Threading.CancellationToken> = Async.CancellationToken
+            let! v1816 = v1816 
+            let v1817 : System.Threading.CancellationToken = v1816 
+            let v1818 : System.Threading.CancellationToken = Async.DefaultCancellationToken
+            let v1819 : (System.Threading.CancellationToken []) = [|v1817; v1818; v0|]
+            let v1820 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
+            let v1821 : System.Threading.CancellationTokenSource = v1820 v1819
+            let v1822 : System.Threading.CancellationToken = v1821.Token
+            return v1822 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -4374,53 +4375,53 @@ and method48 (v0 : System.Threading.CancellationToken) : Async<System.Threading.
         (* indent
         ()
     indent *)
-    let v2187 : Async<System.Threading.CancellationToken> = _let'_v1104 
-    let _run_target_args'_v5 = v2187 
+    let v2403 : Async<System.Threading.CancellationToken> = _let'_v1212 
+    let _run_target_args'_v5 = v2403 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v2189 : unit = ()
-    let _let'_v2189 =
+    let v2405 : unit = ()
+    let _let'_v2405 =
         async {
             (* run_target_args'
-            let v2716 : unit = ()
+            let v2984 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v2718 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v2718 
+            let v2986 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v2986 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v2722 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v2722 
+            let v2990 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v2990 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v2726 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v2726 
+            let v2994 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v2994 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v2730 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v2730 
+            let v2998 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v2998 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v2734 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v2734 
+            let v3002 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v3002 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v2738 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v2738 
+            let v3006 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v3006 
             #endif
 #else
-            let v2741 : Async<System.Threading.CancellationToken> = Async.CancellationToken
-            let! v2741 = v2741 
-            let v2742 : System.Threading.CancellationToken = v2741 
-            let v2743 : System.Threading.CancellationToken = Async.DefaultCancellationToken
-            let v2744 : (System.Threading.CancellationToken []) = [|v2742; v2743; v0|]
-            let v2745 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
-            let v2746 : System.Threading.CancellationTokenSource = v2745 v2744
-            let v2747 : System.Threading.CancellationToken = v2746.Token
-            return v2747 
+            let v3009 : Async<System.Threading.CancellationToken> = Async.CancellationToken
+            let! v3009 = v3009 
+            let v3010 : System.Threading.CancellationToken = v3009 
+            let v3011 : System.Threading.CancellationToken = Async.DefaultCancellationToken
+            let v3012 : (System.Threading.CancellationToken []) = [|v3010; v3011; v0|]
+            let v3013 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
+            let v3014 : System.Threading.CancellationTokenSource = v3013 v3012
+            let v3015 : System.Threading.CancellationToken = v3014.Token
+            return v3015 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -4430,53 +4431,53 @@ and method48 (v0 : System.Threading.CancellationToken) : Async<System.Threading.
         (* indent
         ()
     indent *)
-    let v3272 : Async<System.Threading.CancellationToken> = _let'_v2189 
-    let _run_target_args'_v5 = v3272 
+    let v3596 : Async<System.Threading.CancellationToken> = _let'_v2405 
+    let _run_target_args'_v5 = v3596 
     #endif
 #else
-    let v3274 : unit = ()
-    let _let'_v3274 =
+    let v3598 : unit = ()
+    let _let'_v3598 =
         async {
             (* run_target_args'
-            let v3801 : unit = ()
+            let v4177 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v3803 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v3803 
+            let v4179 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v4179 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v3807 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v3807 
+            let v4183 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v4183 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v3811 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v3811 
+            let v4187 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v4187 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v3815 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v3815 
+            let v4191 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v4191 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v3819 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v3819 
+            let v4195 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v4195 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v3823 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
-            return v3823 
+            let v4199 : System.Threading.CancellationToken = null |> unbox<System.Threading.CancellationToken>
+            return v4199 
             #endif
 #else
-            let v3826 : Async<System.Threading.CancellationToken> = Async.CancellationToken
-            let! v3826 = v3826 
-            let v3827 : System.Threading.CancellationToken = v3826 
-            let v3828 : System.Threading.CancellationToken = Async.DefaultCancellationToken
-            let v3829 : (System.Threading.CancellationToken []) = [|v3827; v3828; v0|]
-            let v3830 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
-            let v3831 : System.Threading.CancellationTokenSource = v3830 v3829
-            let v3832 : System.Threading.CancellationToken = v3831.Token
-            return v3832 
+            let v4202 : Async<System.Threading.CancellationToken> = Async.CancellationToken
+            let! v4202 = v4202 
+            let v4203 : System.Threading.CancellationToken = v4202 
+            let v4204 : System.Threading.CancellationToken = Async.DefaultCancellationToken
+            let v4205 : (System.Threading.CancellationToken []) = [|v4203; v4204; v0|]
+            let v4206 : ((System.Threading.CancellationToken []) -> System.Threading.CancellationTokenSource) = System.Threading.CancellationTokenSource.CreateLinkedTokenSource
+            let v4207 : System.Threading.CancellationTokenSource = v4206 v4205
+            let v4208 : System.Threading.CancellationToken = v4207.Token
+            return v4208 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -4486,11 +4487,11 @@ and method48 (v0 : System.Threading.CancellationToken) : Async<System.Threading.
         (* indent
         ()
     indent *)
-    let v4357 : Async<System.Threading.CancellationToken> = _let'_v3274 
-    let _run_target_args'_v5 = v4357 
+    let v4789 : Async<System.Threading.CancellationToken> = _let'_v3598 
+    let _run_target_args'_v5 = v4789 
     #endif
-    let v4358 : Async<System.Threading.CancellationToken> = _run_target_args'_v5 
-    v4358
+    let v4790 : Async<System.Threading.CancellationToken> = _run_target_args'_v5 
+    v4790
 and method49 (v0 : System.Diagnostics.Process) : bool =
     (* run_target_args'
     let v5 : unit = ()
@@ -4621,32 +4622,32 @@ and method52 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 
     let _run_target_args'_v72 = v98 
     #endif
     let v101 : string = _run_target_args'_v72 
-    let v108 : string = $"{v101}"
-    let v116 : unit = ()
-    let v117 : (unit -> unit) = closure7(v10, v108)
-    let v118 : unit = (fun () -> v117 (); v116) ()
-    let v126 : string = " }"
-    let v127 : string = $"{v126}"
-    let v135 : unit = ()
-    let v136 : (unit -> unit) = closure7(v10, v127)
-    let v137 : unit = (fun () -> v136 (); v135) ()
-    let v143 : string = v10.l0
-    let v144 : int64 = v0.l0
-    let v147 : string = " "
-    let v148 : string = v6 + v147 
-    let v152 : string = v148 + v7 
-    let v157 : string = " #"
-    let v158 : string = v152 + v157 
-    let v162 : (int64 -> string) = _.ToString()
-    let v163 : string = v162 v144
-    let v167 : string = v158 + v163 
-    let v171 : string = v167 + v147 
-    let v176 : string = "runtime.execute_with_options_async / WaitForExitAsync"
-    let v177 : string = v171 + v176 
-    let v182 : string = " / "
-    let v183 : string = v177 + v182 
-    let v187 : string = v183 + v143 
-    method16(v187)
+    let v111 : string = $"{v101}"
+    let v119 : unit = ()
+    let v120 : (unit -> unit) = closure7(v10, v111)
+    let v121 : unit = (fun () -> v120 (); v119) ()
+    let v129 : string = " }"
+    let v130 : string = $"{v129}"
+    let v138 : unit = ()
+    let v139 : (unit -> unit) = closure7(v10, v130)
+    let v140 : unit = (fun () -> v139 (); v138) ()
+    let v146 : string = v10.l0
+    let v147 : int64 = v0.l0
+    let v150 : string = " "
+    let v151 : string = v6 + v150 
+    let v155 : string = v151 + v7 
+    let v160 : string = " #"
+    let v161 : string = v155 + v160 
+    let v165 : (int64 -> string) = _.ToString()
+    let v166 : string = v165 v147
+    let v170 : string = v161 + v166 
+    let v174 : string = v170 + v150 
+    let v179 : string = "runtime.execute_with_options_async / WaitForExitAsync"
+    let v180 : string = v174 + v179 
+    let v185 : string = " / "
+    let v186 : string = v180 + v185 
+    let v190 : string = v186 + v146 
+    method16(v190)
 and closure23 (v0 : System.Threading.Tasks.TaskCanceledException) () : unit =
     let v1 : US0 = US0_3
     let v2 : bool = method7(v1)
@@ -4684,158 +4685,158 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
         async {
             try
                 (* run_target_args'
-                let v10622 : unit = ()
+                let v11099 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v10624 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v10622 = v10624 
+                let v11101 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v11099 = v11101 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v10628 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v10622 = v10628 
+                let v11105 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v11099 = v11105 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v10632 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v10622 = v10632 
+                let v11109 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v11099 = v11109 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v10636 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v10622 = v10636 
+                let v11113 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v11099 = v11113 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v10640 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v10622 = v10640 
+                let v11117 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v11099 = v11117 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v10644 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v10622 = v10644 
+                let v11121 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v11099 = v11121 
                 #endif
 #else
-                let v10647 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
-                let _run_target_args'_v10622 = v10647 
+                let v11124 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
+                let _run_target_args'_v11099 = v11124 
                 #endif
-                let v10648 : System.Threading.Tasks.Task = _run_target_args'_v10622 
+                let v11125 : System.Threading.Tasks.Task = _run_target_args'_v11099 
                 (* run_target_args'
-                let v10658 : unit = ()
+                let v11138 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v10660 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v10658 = v10660 
+                let v11140 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v11138 = v11140 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v10664 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v10658 = v10664 
+                let v11144 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v11138 = v11144 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v10668 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v10658 = v10668 
+                let v11148 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v11138 = v11148 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v10671 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v10672 : Async<unit> = v10671 v10648
-                let _run_target_args'_v10658 = v10672 
+                let v11151 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v11152 : Async<unit> = v11151 v11125
+                let _run_target_args'_v11138 = v11152 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v10673 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v10674 : Async<unit> = v10673 v10648
-                let _run_target_args'_v10658 = v10674 
+                let v11153 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v11154 : Async<unit> = v11153 v11125
+                let _run_target_args'_v11138 = v11154 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v10675 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v10676 : Async<unit> = v10675 v10648
-                let _run_target_args'_v10658 = v10676 
+                let v11155 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v11156 : Async<unit> = v11155 v11125
+                let _run_target_args'_v11138 = v11156 
                 #endif
 #else
-                let v10677 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v10678 : Async<unit> = v10677 v10648
-                let _run_target_args'_v10658 = v10678 
+                let v11157 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v11158 : Async<unit> = v11157 v11125
+                let _run_target_args'_v11138 = v11158 
                 #endif
-                let v10679 : Async<unit> = _run_target_args'_v10658 
-                do! v10679 
+                let v11159 : Async<unit> = _run_target_args'_v11138 
+                do! v11159 
                 (* run_target_args'
-                let v10689 : unit = ()
+                let v11172 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v10691 : int32 = null |> unbox<int32>
-                let _run_target_args'_v10689 = v10691 
+                let v11174 : int32 = null |> unbox<int32>
+                let _run_target_args'_v11172 = v11174 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v10695 : int32 = null |> unbox<int32>
-                let _run_target_args'_v10689 = v10695 
+                let v11178 : int32 = null |> unbox<int32>
+                let _run_target_args'_v11172 = v11178 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v10699 : int32 = null |> unbox<int32>
-                let _run_target_args'_v10689 = v10699 
+                let v11182 : int32 = null |> unbox<int32>
+                let _run_target_args'_v11172 = v11182 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v10703 : int32 = null |> unbox<int32>
-                let _run_target_args'_v10689 = v10703 
+                let v11186 : int32 = null |> unbox<int32>
+                let _run_target_args'_v11172 = v11186 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v10707 : int32 = null |> unbox<int32>
-                let _run_target_args'_v10689 = v10707 
+                let v11190 : int32 = null |> unbox<int32>
+                let _run_target_args'_v11172 = v11190 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v10711 : int32 = null |> unbox<int32>
-                let _run_target_args'_v10689 = v10711 
+                let v11194 : int32 = null |> unbox<int32>
+                let _run_target_args'_v11172 = v11194 
                 #endif
 #else
-                let v10714 : int32 = v0.ExitCode
-                let _run_target_args'_v10689 = v10714 
+                let v11197 : int32 = v0.ExitCode
+                let _run_target_args'_v11172 = v11197 
                 #endif
-                let v10715 : int32 = _run_target_args'_v10689 
-                return v10715 
+                let v11198 : int32 = _run_target_args'_v11172 
+                return v11198 
                 (* indent
                 ()
             indent *)
             with ex ->
-                let v10990 : exn = ex
+                let v11488 : exn = ex
                 (* run_target_args'
-                let v10995 : unit = ()
+                let v11493 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v10997 : string = $"%A{v10990}"
-                let _run_target_args'_v10995 = v10997 
+                let v11495 : string = $"%A{v11488}"
+                let _run_target_args'_v11493 = v11495 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v11001 : string = $"%A{v10990}"
-                let _run_target_args'_v10995 = v11001 
+                let v11499 : string = $"%A{v11488}"
+                let _run_target_args'_v11493 = v11499 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v11005 : string = $"%A{v10990}"
-                let _run_target_args'_v10995 = v11005 
+                let v11503 : string = $"%A{v11488}"
+                let _run_target_args'_v11493 = v11503 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v11009 : string = $"%A{v10990}"
-                let _run_target_args'_v10995 = v11009 
+                let v11507 : string = $"%A{v11488}"
+                let _run_target_args'_v11493 = v11507 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v11013 : string = $"%A{v10990}"
-                let _run_target_args'_v10995 = v11013 
+                let v11511 : string = $"%A{v11488}"
+                let _run_target_args'_v11493 = v11511 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v11017 : string = $"%A{v10990}"
-                let _run_target_args'_v10995 = v11017 
+                let v11515 : string = $"%A{v11488}"
+                let _run_target_args'_v11493 = v11515 
                 #endif
 #else
-                let v11020 : string = $"{v10990.GetType ()}: {v10990.Message}"
-                let _run_target_args'_v10995 = v11020 
+                let v11518 : string = $"{v11488.GetType ()}: {v11488.Message}"
+                let _run_target_args'_v11493 = v11518 
                 #endif
-                let v11021 : string = _run_target_args'_v10995 
+                let v11519 : string = _run_target_args'_v11493 
                 (* run_target_args'
-                let v11027 : unit = ()
+                let v11528 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -4853,14 +4854,14 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
                 #endif
 #else
-                let v11028 : (string -> unit) = v1.Push
-                v11028 v11021
+                let v11529 : (string -> unit) = v1.Push
+                v11529 v11519
                 #endif
                 // run_target_args' is_unit
-                let v11030 : System.Threading.Tasks.TaskCanceledException = v10990 |> unbox<System.Threading.Tasks.TaskCanceledException>
-                let v11093 : unit = ()
-                let v11094 : (unit -> unit) = closure23(v11030)
-                let v11095 : unit = (fun () -> v11094 (); v11093) ()
+                let v11531 : System.Threading.Tasks.TaskCanceledException = v11488 |> unbox<System.Threading.Tasks.TaskCanceledException>
+                let v11594 : unit = ()
+                let v11595 : (unit -> unit) = closure23(v11531)
+                let v11596 : unit = (fun () -> v11595 (); v11594) ()
                 return -2147483648 
                 (* indent
                 ()
@@ -4874,167 +4875,167 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
         (* indent
         ()
     indent *)
-    let v21813 : Async<int32> = _let'_v21 
-    let _run_target_args'_v7 = v21813 
+    let v22785 : Async<int32> = _let'_v21 
+    let _run_target_args'_v7 = v22785 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v21815 : unit = ()
-    let _let'_v21815 =
+    let v22787 : unit = ()
+    let _let'_v22787 =
         async {
             try
                 (* run_target_args'
-                let v32416 : unit = ()
+                let v33865 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v32418 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v32416 = v32418 
+                let v33867 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v33865 = v33867 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v32422 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v32416 = v32422 
+                let v33871 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v33865 = v33871 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v32426 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v32416 = v32426 
+                let v33875 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v33865 = v33875 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v32430 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v32416 = v32430 
+                let v33879 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v33865 = v33879 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v32434 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v32416 = v32434 
+                let v33883 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v33865 = v33883 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v32438 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v32416 = v32438 
+                let v33887 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v33865 = v33887 
                 #endif
 #else
-                let v32441 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
-                let _run_target_args'_v32416 = v32441 
+                let v33890 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
+                let _run_target_args'_v33865 = v33890 
                 #endif
-                let v32442 : System.Threading.Tasks.Task = _run_target_args'_v32416 
+                let v33891 : System.Threading.Tasks.Task = _run_target_args'_v33865 
                 (* run_target_args'
-                let v32452 : unit = ()
+                let v33904 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v32454 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v32452 = v32454 
+                let v33906 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v33904 = v33906 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v32458 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v32452 = v32458 
+                let v33910 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v33904 = v33910 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v32462 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v32452 = v32462 
+                let v33914 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v33904 = v33914 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v32465 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v32466 : Async<unit> = v32465 v32442
-                let _run_target_args'_v32452 = v32466 
+                let v33917 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v33918 : Async<unit> = v33917 v33891
+                let _run_target_args'_v33904 = v33918 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v32467 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v32468 : Async<unit> = v32467 v32442
-                let _run_target_args'_v32452 = v32468 
+                let v33919 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v33920 : Async<unit> = v33919 v33891
+                let _run_target_args'_v33904 = v33920 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v32469 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v32470 : Async<unit> = v32469 v32442
-                let _run_target_args'_v32452 = v32470 
+                let v33921 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v33922 : Async<unit> = v33921 v33891
+                let _run_target_args'_v33904 = v33922 
                 #endif
 #else
-                let v32471 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v32472 : Async<unit> = v32471 v32442
-                let _run_target_args'_v32452 = v32472 
+                let v33923 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v33924 : Async<unit> = v33923 v33891
+                let _run_target_args'_v33904 = v33924 
                 #endif
-                let v32473 : Async<unit> = _run_target_args'_v32452 
-                do! v32473 
+                let v33925 : Async<unit> = _run_target_args'_v33904 
+                do! v33925 
                 (* run_target_args'
-                let v32483 : unit = ()
+                let v33938 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v32485 : int32 = null |> unbox<int32>
-                let _run_target_args'_v32483 = v32485 
+                let v33940 : int32 = null |> unbox<int32>
+                let _run_target_args'_v33938 = v33940 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v32489 : int32 = null |> unbox<int32>
-                let _run_target_args'_v32483 = v32489 
+                let v33944 : int32 = null |> unbox<int32>
+                let _run_target_args'_v33938 = v33944 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v32493 : int32 = null |> unbox<int32>
-                let _run_target_args'_v32483 = v32493 
+                let v33948 : int32 = null |> unbox<int32>
+                let _run_target_args'_v33938 = v33948 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v32497 : int32 = null |> unbox<int32>
-                let _run_target_args'_v32483 = v32497 
+                let v33952 : int32 = null |> unbox<int32>
+                let _run_target_args'_v33938 = v33952 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v32501 : int32 = null |> unbox<int32>
-                let _run_target_args'_v32483 = v32501 
+                let v33956 : int32 = null |> unbox<int32>
+                let _run_target_args'_v33938 = v33956 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v32505 : int32 = null |> unbox<int32>
-                let _run_target_args'_v32483 = v32505 
+                let v33960 : int32 = null |> unbox<int32>
+                let _run_target_args'_v33938 = v33960 
                 #endif
 #else
-                let v32508 : int32 = v0.ExitCode
-                let _run_target_args'_v32483 = v32508 
+                let v33963 : int32 = v0.ExitCode
+                let _run_target_args'_v33938 = v33963 
                 #endif
-                let v32509 : int32 = _run_target_args'_v32483 
-                return v32509 
+                let v33964 : int32 = _run_target_args'_v33938 
+                return v33964 
                 (* indent
                 ()
             indent *)
             with ex ->
-                let v32784 : exn = ex
+                let v34254 : exn = ex
                 (* run_target_args'
-                let v32789 : unit = ()
+                let v34259 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v32791 : string = $"%A{v32784}"
-                let _run_target_args'_v32789 = v32791 
+                let v34261 : string = $"%A{v34254}"
+                let _run_target_args'_v34259 = v34261 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v32795 : string = $"%A{v32784}"
-                let _run_target_args'_v32789 = v32795 
+                let v34265 : string = $"%A{v34254}"
+                let _run_target_args'_v34259 = v34265 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v32799 : string = $"%A{v32784}"
-                let _run_target_args'_v32789 = v32799 
+                let v34269 : string = $"%A{v34254}"
+                let _run_target_args'_v34259 = v34269 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v32803 : string = $"%A{v32784}"
-                let _run_target_args'_v32789 = v32803 
+                let v34273 : string = $"%A{v34254}"
+                let _run_target_args'_v34259 = v34273 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v32807 : string = $"%A{v32784}"
-                let _run_target_args'_v32789 = v32807 
+                let v34277 : string = $"%A{v34254}"
+                let _run_target_args'_v34259 = v34277 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v32811 : string = $"%A{v32784}"
-                let _run_target_args'_v32789 = v32811 
+                let v34281 : string = $"%A{v34254}"
+                let _run_target_args'_v34259 = v34281 
                 #endif
 #else
-                let v32814 : string = $"{v32784.GetType ()}: {v32784.Message}"
-                let _run_target_args'_v32789 = v32814 
+                let v34284 : string = $"{v34254.GetType ()}: {v34254.Message}"
+                let _run_target_args'_v34259 = v34284 
                 #endif
-                let v32815 : string = _run_target_args'_v32789 
+                let v34285 : string = _run_target_args'_v34259 
                 (* run_target_args'
-                let v32821 : unit = ()
+                let v34294 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -5052,14 +5053,14 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
                 #endif
 #else
-                let v32822 : (string -> unit) = v1.Push
-                v32822 v32815
+                let v34295 : (string -> unit) = v1.Push
+                v34295 v34285
                 #endif
                 // run_target_args' is_unit
-                let v32824 : System.Threading.Tasks.TaskCanceledException = v32784 |> unbox<System.Threading.Tasks.TaskCanceledException>
-                let v32887 : unit = ()
-                let v32888 : (unit -> unit) = closure23(v32824)
-                let v32889 : unit = (fun () -> v32888 (); v32887) ()
+                let v34297 : System.Threading.Tasks.TaskCanceledException = v34254 |> unbox<System.Threading.Tasks.TaskCanceledException>
+                let v34360 : unit = ()
+                let v34361 : (unit -> unit) = closure23(v34297)
+                let v34362 : unit = (fun () -> v34361 (); v34360) ()
                 return -2147483648 
                 (* indent
                 ()
@@ -5073,167 +5074,167 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
         (* indent
         ()
     indent *)
-    let v43607 : Async<int32> = _let'_v21815 
-    let _run_target_args'_v7 = v43607 
+    let v45551 : Async<int32> = _let'_v22787 
+    let _run_target_args'_v7 = v45551 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v43609 : unit = ()
-    let _let'_v43609 =
+    let v45553 : unit = ()
+    let _let'_v45553 =
         async {
             try
                 (* run_target_args'
-                let v54210 : unit = ()
+                let v56631 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v54212 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v54210 = v54212 
+                let v56633 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v56631 = v56633 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v54216 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v54210 = v54216 
+                let v56637 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v56631 = v56637 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v54220 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v54210 = v54220 
+                let v56641 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v56631 = v56641 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v54224 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v54210 = v54224 
+                let v56645 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v56631 = v56645 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v54228 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v54210 = v54228 
+                let v56649 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v56631 = v56649 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v54232 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v54210 = v54232 
+                let v56653 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v56631 = v56653 
                 #endif
 #else
-                let v54235 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
-                let _run_target_args'_v54210 = v54235 
+                let v56656 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
+                let _run_target_args'_v56631 = v56656 
                 #endif
-                let v54236 : System.Threading.Tasks.Task = _run_target_args'_v54210 
+                let v56657 : System.Threading.Tasks.Task = _run_target_args'_v56631 
                 (* run_target_args'
-                let v54246 : unit = ()
+                let v56670 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v54248 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v54246 = v54248 
+                let v56672 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v56670 = v56672 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v54252 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v54246 = v54252 
+                let v56676 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v56670 = v56676 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v54256 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v54246 = v54256 
+                let v56680 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v56670 = v56680 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v54259 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v54260 : Async<unit> = v54259 v54236
-                let _run_target_args'_v54246 = v54260 
+                let v56683 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v56684 : Async<unit> = v56683 v56657
+                let _run_target_args'_v56670 = v56684 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v54261 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v54262 : Async<unit> = v54261 v54236
-                let _run_target_args'_v54246 = v54262 
+                let v56685 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v56686 : Async<unit> = v56685 v56657
+                let _run_target_args'_v56670 = v56686 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v54263 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v54264 : Async<unit> = v54263 v54236
-                let _run_target_args'_v54246 = v54264 
+                let v56687 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v56688 : Async<unit> = v56687 v56657
+                let _run_target_args'_v56670 = v56688 
                 #endif
 #else
-                let v54265 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v54266 : Async<unit> = v54265 v54236
-                let _run_target_args'_v54246 = v54266 
+                let v56689 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v56690 : Async<unit> = v56689 v56657
+                let _run_target_args'_v56670 = v56690 
                 #endif
-                let v54267 : Async<unit> = _run_target_args'_v54246 
-                do! v54267 
+                let v56691 : Async<unit> = _run_target_args'_v56670 
+                do! v56691 
                 (* run_target_args'
-                let v54277 : unit = ()
+                let v56704 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v54279 : int32 = null |> unbox<int32>
-                let _run_target_args'_v54277 = v54279 
+                let v56706 : int32 = null |> unbox<int32>
+                let _run_target_args'_v56704 = v56706 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v54283 : int32 = null |> unbox<int32>
-                let _run_target_args'_v54277 = v54283 
+                let v56710 : int32 = null |> unbox<int32>
+                let _run_target_args'_v56704 = v56710 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v54287 : int32 = null |> unbox<int32>
-                let _run_target_args'_v54277 = v54287 
+                let v56714 : int32 = null |> unbox<int32>
+                let _run_target_args'_v56704 = v56714 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v54291 : int32 = null |> unbox<int32>
-                let _run_target_args'_v54277 = v54291 
+                let v56718 : int32 = null |> unbox<int32>
+                let _run_target_args'_v56704 = v56718 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v54295 : int32 = null |> unbox<int32>
-                let _run_target_args'_v54277 = v54295 
+                let v56722 : int32 = null |> unbox<int32>
+                let _run_target_args'_v56704 = v56722 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v54299 : int32 = null |> unbox<int32>
-                let _run_target_args'_v54277 = v54299 
+                let v56726 : int32 = null |> unbox<int32>
+                let _run_target_args'_v56704 = v56726 
                 #endif
 #else
-                let v54302 : int32 = v0.ExitCode
-                let _run_target_args'_v54277 = v54302 
+                let v56729 : int32 = v0.ExitCode
+                let _run_target_args'_v56704 = v56729 
                 #endif
-                let v54303 : int32 = _run_target_args'_v54277 
-                return v54303 
+                let v56730 : int32 = _run_target_args'_v56704 
+                return v56730 
                 (* indent
                 ()
             indent *)
             with ex ->
-                let v54578 : exn = ex
+                let v57020 : exn = ex
                 (* run_target_args'
-                let v54583 : unit = ()
+                let v57025 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v54585 : string = $"%A{v54578}"
-                let _run_target_args'_v54583 = v54585 
+                let v57027 : string = $"%A{v57020}"
+                let _run_target_args'_v57025 = v57027 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v54589 : string = $"%A{v54578}"
-                let _run_target_args'_v54583 = v54589 
+                let v57031 : string = $"%A{v57020}"
+                let _run_target_args'_v57025 = v57031 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v54593 : string = $"%A{v54578}"
-                let _run_target_args'_v54583 = v54593 
+                let v57035 : string = $"%A{v57020}"
+                let _run_target_args'_v57025 = v57035 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v54597 : string = $"%A{v54578}"
-                let _run_target_args'_v54583 = v54597 
+                let v57039 : string = $"%A{v57020}"
+                let _run_target_args'_v57025 = v57039 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v54601 : string = $"%A{v54578}"
-                let _run_target_args'_v54583 = v54601 
+                let v57043 : string = $"%A{v57020}"
+                let _run_target_args'_v57025 = v57043 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v54605 : string = $"%A{v54578}"
-                let _run_target_args'_v54583 = v54605 
+                let v57047 : string = $"%A{v57020}"
+                let _run_target_args'_v57025 = v57047 
                 #endif
 #else
-                let v54608 : string = $"{v54578.GetType ()}: {v54578.Message}"
-                let _run_target_args'_v54583 = v54608 
+                let v57050 : string = $"{v57020.GetType ()}: {v57020.Message}"
+                let _run_target_args'_v57025 = v57050 
                 #endif
-                let v54609 : string = _run_target_args'_v54583 
+                let v57051 : string = _run_target_args'_v57025 
                 (* run_target_args'
-                let v54615 : unit = ()
+                let v57060 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -5251,14 +5252,14 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
                 #endif
 #else
-                let v54616 : (string -> unit) = v1.Push
-                v54616 v54609
+                let v57061 : (string -> unit) = v1.Push
+                v57061 v57051
                 #endif
                 // run_target_args' is_unit
-                let v54618 : System.Threading.Tasks.TaskCanceledException = v54578 |> unbox<System.Threading.Tasks.TaskCanceledException>
-                let v54681 : unit = ()
-                let v54682 : (unit -> unit) = closure23(v54618)
-                let v54683 : unit = (fun () -> v54682 (); v54681) ()
+                let v57063 : System.Threading.Tasks.TaskCanceledException = v57020 |> unbox<System.Threading.Tasks.TaskCanceledException>
+                let v57126 : unit = ()
+                let v57127 : (unit -> unit) = closure23(v57063)
+                let v57128 : unit = (fun () -> v57127 (); v57126) ()
                 return -2147483648 
                 (* indent
                 ()
@@ -5272,167 +5273,167 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
         (* indent
         ()
     indent *)
-    let v65401 : Async<int32> = _let'_v43609 
-    let _run_target_args'_v7 = v65401 
+    let v68317 : Async<int32> = _let'_v45553 
+    let _run_target_args'_v7 = v68317 
     #endif
 #else
-    let v65403 : unit = ()
-    let _let'_v65403 =
+    let v68319 : unit = ()
+    let _let'_v68319 =
         async {
             try
                 (* run_target_args'
-                let v76004 : unit = ()
+                let v79397 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v76006 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v76004 = v76006 
+                let v79399 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v79397 = v79399 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v76010 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v76004 = v76010 
+                let v79403 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v79397 = v79403 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v76014 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v76004 = v76014 
+                let v79407 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v79397 = v79407 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v76018 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v76004 = v76018 
+                let v79411 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v79397 = v79411 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v76022 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v76004 = v76022 
+                let v79415 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v79397 = v79415 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v76026 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
-                let _run_target_args'_v76004 = v76026 
+                let v79419 : System.Threading.Tasks.Task = null |> unbox<System.Threading.Tasks.Task>
+                let _run_target_args'_v79397 = v79419 
                 #endif
 #else
-                let v76029 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
-                let _run_target_args'_v76004 = v76029 
+                let v79422 : System.Threading.Tasks.Task = v0.WaitForExitAsync v2 
+                let _run_target_args'_v79397 = v79422 
                 #endif
-                let v76030 : System.Threading.Tasks.Task = _run_target_args'_v76004 
+                let v79423 : System.Threading.Tasks.Task = _run_target_args'_v79397 
                 (* run_target_args'
-                let v76040 : unit = ()
+                let v79436 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v76042 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v76040 = v76042 
+                let v79438 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v79436 = v79438 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v76046 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v76040 = v76046 
+                let v79442 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v79436 = v79442 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v76050 : Async<unit> = null |> unbox<Async<unit>>
-                let _run_target_args'_v76040 = v76050 
+                let v79446 : Async<unit> = null |> unbox<Async<unit>>
+                let _run_target_args'_v79436 = v79446 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v76053 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v76054 : Async<unit> = v76053 v76030
-                let _run_target_args'_v76040 = v76054 
+                let v79449 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v79450 : Async<unit> = v79449 v79423
+                let _run_target_args'_v79436 = v79450 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v76055 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v76056 : Async<unit> = v76055 v76030
-                let _run_target_args'_v76040 = v76056 
+                let v79451 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v79452 : Async<unit> = v79451 v79423
+                let _run_target_args'_v79436 = v79452 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v76057 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v76058 : Async<unit> = v76057 v76030
-                let _run_target_args'_v76040 = v76058 
+                let v79453 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v79454 : Async<unit> = v79453 v79423
+                let _run_target_args'_v79436 = v79454 
                 #endif
 #else
-                let v76059 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
-                let v76060 : Async<unit> = v76059 v76030
-                let _run_target_args'_v76040 = v76060 
+                let v79455 : (System.Threading.Tasks.Task -> Async<unit>) = Async.AwaitTask
+                let v79456 : Async<unit> = v79455 v79423
+                let _run_target_args'_v79436 = v79456 
                 #endif
-                let v76061 : Async<unit> = _run_target_args'_v76040 
-                do! v76061 
+                let v79457 : Async<unit> = _run_target_args'_v79436 
+                do! v79457 
                 (* run_target_args'
-                let v76071 : unit = ()
+                let v79470 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v76073 : int32 = null |> unbox<int32>
-                let _run_target_args'_v76071 = v76073 
+                let v79472 : int32 = null |> unbox<int32>
+                let _run_target_args'_v79470 = v79472 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v76077 : int32 = null |> unbox<int32>
-                let _run_target_args'_v76071 = v76077 
+                let v79476 : int32 = null |> unbox<int32>
+                let _run_target_args'_v79470 = v79476 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v76081 : int32 = null |> unbox<int32>
-                let _run_target_args'_v76071 = v76081 
+                let v79480 : int32 = null |> unbox<int32>
+                let _run_target_args'_v79470 = v79480 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v76085 : int32 = null |> unbox<int32>
-                let _run_target_args'_v76071 = v76085 
+                let v79484 : int32 = null |> unbox<int32>
+                let _run_target_args'_v79470 = v79484 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v76089 : int32 = null |> unbox<int32>
-                let _run_target_args'_v76071 = v76089 
+                let v79488 : int32 = null |> unbox<int32>
+                let _run_target_args'_v79470 = v79488 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v76093 : int32 = null |> unbox<int32>
-                let _run_target_args'_v76071 = v76093 
+                let v79492 : int32 = null |> unbox<int32>
+                let _run_target_args'_v79470 = v79492 
                 #endif
 #else
-                let v76096 : int32 = v0.ExitCode
-                let _run_target_args'_v76071 = v76096 
+                let v79495 : int32 = v0.ExitCode
+                let _run_target_args'_v79470 = v79495 
                 #endif
-                let v76097 : int32 = _run_target_args'_v76071 
-                return v76097 
+                let v79496 : int32 = _run_target_args'_v79470 
+                return v79496 
                 (* indent
                 ()
             indent *)
             with ex ->
-                let v76372 : exn = ex
+                let v79786 : exn = ex
                 (* run_target_args'
-                let v76377 : unit = ()
+                let v79791 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v76379 : string = $"%A{v76372}"
-                let _run_target_args'_v76377 = v76379 
+                let v79793 : string = $"%A{v79786}"
+                let _run_target_args'_v79791 = v79793 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v76383 : string = $"%A{v76372}"
-                let _run_target_args'_v76377 = v76383 
+                let v79797 : string = $"%A{v79786}"
+                let _run_target_args'_v79791 = v79797 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v76387 : string = $"%A{v76372}"
-                let _run_target_args'_v76377 = v76387 
+                let v79801 : string = $"%A{v79786}"
+                let _run_target_args'_v79791 = v79801 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v76391 : string = $"%A{v76372}"
-                let _run_target_args'_v76377 = v76391 
+                let v79805 : string = $"%A{v79786}"
+                let _run_target_args'_v79791 = v79805 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v76395 : string = $"%A{v76372}"
-                let _run_target_args'_v76377 = v76395 
+                let v79809 : string = $"%A{v79786}"
+                let _run_target_args'_v79791 = v79809 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v76399 : string = $"%A{v76372}"
-                let _run_target_args'_v76377 = v76399 
+                let v79813 : string = $"%A{v79786}"
+                let _run_target_args'_v79791 = v79813 
                 #endif
 #else
-                let v76402 : string = $"{v76372.GetType ()}: {v76372.Message}"
-                let _run_target_args'_v76377 = v76402 
+                let v79816 : string = $"{v79786.GetType ()}: {v79786.Message}"
+                let _run_target_args'_v79791 = v79816 
                 #endif
-                let v76403 : string = _run_target_args'_v76377 
+                let v79817 : string = _run_target_args'_v79791 
                 (* run_target_args'
-                let v76409 : unit = ()
+                let v79826 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
@@ -5450,14 +5451,14 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
                 #endif
 #else
-                let v76410 : (string -> unit) = v1.Push
-                v76410 v76403
+                let v79827 : (string -> unit) = v1.Push
+                v79827 v79817
                 #endif
                 // run_target_args' is_unit
-                let v76412 : System.Threading.Tasks.TaskCanceledException = v76372 |> unbox<System.Threading.Tasks.TaskCanceledException>
-                let v76475 : unit = ()
-                let v76476 : (unit -> unit) = closure23(v76412)
-                let v76477 : unit = (fun () -> v76476 (); v76475) ()
+                let v79829 : System.Threading.Tasks.TaskCanceledException = v79786 |> unbox<System.Threading.Tasks.TaskCanceledException>
+                let v79892 : unit = ()
+                let v79893 : (unit -> unit) = closure23(v79829)
+                let v79894 : unit = (fun () -> v79893 (); v79892) ()
                 return -2147483648 
                 (* indent
                 ()
@@ -5471,11 +5472,11 @@ and method51 (v0 : System.Diagnostics.Process, v1 : System.Collections.Concurren
         (* indent
         ()
     indent *)
-    let v87195 : Async<int32> = _let'_v65403 
-    let _run_target_args'_v7 = v87195 
+    let v91083 : Async<int32> = _let'_v68319 
+    let _run_target_args'_v7 = v91083 
     #endif
-    let v87196 : Async<int32> = _run_target_args'_v7 
-    v87196
+    let v91084 : Async<int32> = _run_target_args'_v7 
+    v91084
 and method53 () : string =
     let v0 : string = "\n"
     v0
@@ -5606,261 +5607,261 @@ and method54 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 
     let _run_target_args'_v351 = v377 
     #endif
     let v380 : string = _run_target_args'_v351 
-    let v387 : string = $"{v380}"
-    let v395 : unit = ()
-    let v396 : (unit -> unit) = closure7(v18, v387)
-    let v397 : unit = (fun () -> v396 (); v395) ()
-    let v404 : string = $"{v98}"
-    let v412 : unit = ()
-    let v413 : (unit -> unit) = closure7(v18, v404)
-    let v414 : unit = (fun () -> v413 (); v412) ()
-    let v422 : string = "environment_variables"
-    let v423 : string = $"{v422}"
-    let v431 : unit = ()
-    let v432 : (unit -> unit) = closure7(v18, v423)
-    let v433 : unit = (fun () -> v432 (); v431) ()
-    let v440 : string = $"{v59}"
-    let v448 : unit = ()
-    let v449 : (unit -> unit) = closure7(v18, v440)
-    let v450 : unit = (fun () -> v449 (); v448) ()
-    let v457 : string = $"%A{v12}"
-    let v461 : string = $"{v457}"
-    let v469 : unit = ()
-    let v470 : (unit -> unit) = closure7(v18, v461)
-    let v471 : unit = (fun () -> v470 (); v469) ()
-    let v478 : string = $"{v98}"
-    let v486 : unit = ()
-    let v487 : (unit -> unit) = closure7(v18, v478)
-    let v488 : unit = (fun () -> v487 (); v486) ()
-    let v496 : string = "on_line"
-    let v497 : string = $"{v496}"
-    let v505 : unit = ()
-    let v506 : (unit -> unit) = closure7(v18, v497)
-    let v507 : unit = (fun () -> v506 (); v505) ()
-    let v514 : string = $"{v59}"
-    let v522 : unit = ()
-    let v523 : (unit -> unit) = closure7(v18, v514)
-    let v524 : unit = (fun () -> v523 (); v522) ()
+    let v390 : string = $"{v380}"
+    let v398 : unit = ()
+    let v399 : (unit -> unit) = closure7(v18, v390)
+    let v400 : unit = (fun () -> v399 (); v398) ()
+    let v407 : string = $"{v98}"
+    let v415 : unit = ()
+    let v416 : (unit -> unit) = closure7(v18, v407)
+    let v417 : unit = (fun () -> v416 (); v415) ()
+    let v425 : string = "environment_variables"
+    let v426 : string = $"{v425}"
+    let v434 : unit = ()
+    let v435 : (unit -> unit) = closure7(v18, v426)
+    let v436 : unit = (fun () -> v435 (); v434) ()
+    let v443 : string = $"{v59}"
+    let v451 : unit = ()
+    let v452 : (unit -> unit) = closure7(v18, v443)
+    let v453 : unit = (fun () -> v452 (); v451) ()
+    let v460 : string = $"%A{v12}"
+    let v464 : string = $"{v460}"
+    let v472 : unit = ()
+    let v473 : (unit -> unit) = closure7(v18, v464)
+    let v474 : unit = (fun () -> v473 (); v472) ()
+    let v481 : string = $"{v98}"
+    let v489 : unit = ()
+    let v490 : (unit -> unit) = closure7(v18, v481)
+    let v491 : unit = (fun () -> v490 (); v489) ()
+    let v499 : string = "on_line"
+    let v500 : string = $"{v499}"
+    let v508 : unit = ()
+    let v509 : (unit -> unit) = closure7(v18, v500)
+    let v510 : unit = (fun () -> v509 (); v508) ()
+    let v517 : string = $"{v59}"
+    let v525 : unit = ()
+    let v526 : (unit -> unit) = closure7(v18, v517)
+    let v527 : unit = (fun () -> v526 (); v525) ()
     (* run_target_args'
-    let v534 : unit = ()
+    let v537 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v535 : string = "format!(\"{:#?}\", $0)"
-    let v536 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v535 
-    let v537 : string = "fable_library_rust::String_::fromString($0)"
-    let v538 : string = Fable.Core.RustInterop.emitRustExpr v536 v537 
-    let _run_target_args'_v534 = v538 
+    let v538 : string = "format!(\"{:#?}\", $0)"
+    let v539 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v538 
+    let v540 : string = "fable_library_rust::String_::fromString($0)"
+    let v541 : string = Fable.Core.RustInterop.emitRustExpr v539 v540 
+    let _run_target_args'_v537 = v541 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v539 : string = "format!(\"{:#?}\", $0)"
-    let v540 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v539 
-    let v541 : string = "fable_library_rust::String_::fromString($0)"
-    let v542 : string = Fable.Core.RustInterop.emitRustExpr v540 v541 
-    let _run_target_args'_v534 = v542 
+    let v542 : string = "format!(\"{:#?}\", $0)"
+    let v543 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v542 
+    let v544 : string = "fable_library_rust::String_::fromString($0)"
+    let v545 : string = Fable.Core.RustInterop.emitRustExpr v543 v544 
+    let _run_target_args'_v537 = v545 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v543 : string = "format!(\"{:#?}\", $0)"
-    let v544 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v543 
-    let v545 : string = "fable_library_rust::String_::fromString($0)"
-    let v546 : string = Fable.Core.RustInterop.emitRustExpr v544 v545 
-    let _run_target_args'_v534 = v546 
+    let v546 : string = "format!(\"{:#?}\", $0)"
+    let v547 : std_string_String = Fable.Core.RustInterop.emitRustExpr v13 v546 
+    let v548 : string = "fable_library_rust::String_::fromString($0)"
+    let v549 : string = Fable.Core.RustInterop.emitRustExpr v547 v548 
+    let _run_target_args'_v537 = v549 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v548 : string = $"%A{v13}"
-    let _run_target_args'_v534 = v548 
+    let v551 : string = $"%A{v13}"
+    let _run_target_args'_v537 = v551 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v552 : string = $"%A{v13}"
-    let _run_target_args'_v534 = v552 
+    let v555 : string = $"%A{v13}"
+    let _run_target_args'_v537 = v555 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v556 : string = $"%A{v13}"
-    let _run_target_args'_v534 = v556 
+    let v559 : string = $"%A{v13}"
+    let _run_target_args'_v537 = v559 
     #endif
 #else
-    let v560 : string = $"%A{v13}"
-    let _run_target_args'_v534 = v560 
+    let v563 : string = $"%A{v13}"
+    let _run_target_args'_v537 = v563 
     #endif
-    let v563 : string = _run_target_args'_v534 
-    let v570 : string = $"{v563}"
-    let v578 : unit = ()
-    let v579 : (unit -> unit) = closure7(v18, v570)
-    let v580 : unit = (fun () -> v579 (); v578) ()
-    let v587 : string = $"{v98}"
-    let v595 : unit = ()
-    let v596 : (unit -> unit) = closure7(v18, v587)
-    let v597 : unit = (fun () -> v596 (); v595) ()
-    let v605 : string = "stdin"
-    let v606 : string = $"{v605}"
-    let v614 : unit = ()
-    let v615 : (unit -> unit) = closure7(v18, v606)
-    let v616 : unit = (fun () -> v615 (); v614) ()
-    let v623 : string = $"{v59}"
-    let v631 : unit = ()
-    let v632 : (unit -> unit) = closure7(v18, v623)
-    let v633 : unit = (fun () -> v632 (); v631) ()
+    let v566 : string = _run_target_args'_v537 
+    let v576 : string = $"{v566}"
+    let v584 : unit = ()
+    let v585 : (unit -> unit) = closure7(v18, v576)
+    let v586 : unit = (fun () -> v585 (); v584) ()
+    let v593 : string = $"{v98}"
+    let v601 : unit = ()
+    let v602 : (unit -> unit) = closure7(v18, v593)
+    let v603 : unit = (fun () -> v602 (); v601) ()
+    let v611 : string = "stdin"
+    let v612 : string = $"{v611}"
+    let v620 : unit = ()
+    let v621 : (unit -> unit) = closure7(v18, v612)
+    let v622 : unit = (fun () -> v621 (); v620) ()
+    let v629 : string = $"{v59}"
+    let v637 : unit = ()
+    let v638 : (unit -> unit) = closure7(v18, v629)
+    let v639 : unit = (fun () -> v638 (); v637) ()
     (* run_target_args'
-    let v643 : unit = ()
+    let v649 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v644 : string = "format!(\"{:#?}\", $0)"
-    let v645 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v644 
-    let v646 : string = "fable_library_rust::String_::fromString($0)"
-    let v647 : string = Fable.Core.RustInterop.emitRustExpr v645 v646 
-    let _run_target_args'_v643 = v647 
+    let v650 : string = "format!(\"{:#?}\", $0)"
+    let v651 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v650 
+    let v652 : string = "fable_library_rust::String_::fromString($0)"
+    let v653 : string = Fable.Core.RustInterop.emitRustExpr v651 v652 
+    let _run_target_args'_v649 = v653 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v648 : string = "format!(\"{:#?}\", $0)"
-    let v649 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v648 
-    let v650 : string = "fable_library_rust::String_::fromString($0)"
-    let v651 : string = Fable.Core.RustInterop.emitRustExpr v649 v650 
-    let _run_target_args'_v643 = v651 
+    let v654 : string = "format!(\"{:#?}\", $0)"
+    let v655 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v654 
+    let v656 : string = "fable_library_rust::String_::fromString($0)"
+    let v657 : string = Fable.Core.RustInterop.emitRustExpr v655 v656 
+    let _run_target_args'_v649 = v657 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v652 : string = "format!(\"{:#?}\", $0)"
-    let v653 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v652 
-    let v654 : string = "fable_library_rust::String_::fromString($0)"
-    let v655 : string = Fable.Core.RustInterop.emitRustExpr v653 v654 
-    let _run_target_args'_v643 = v655 
+    let v658 : string = "format!(\"{:#?}\", $0)"
+    let v659 : std_string_String = Fable.Core.RustInterop.emitRustExpr v14 v658 
+    let v660 : string = "fable_library_rust::String_::fromString($0)"
+    let v661 : string = Fable.Core.RustInterop.emitRustExpr v659 v660 
+    let _run_target_args'_v649 = v661 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v657 : string = $"%A{v14}"
-    let _run_target_args'_v643 = v657 
+    let v663 : string = $"%A{v14}"
+    let _run_target_args'_v649 = v663 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v661 : string = $"%A{v14}"
-    let _run_target_args'_v643 = v661 
+    let v667 : string = $"%A{v14}"
+    let _run_target_args'_v649 = v667 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v665 : string = $"%A{v14}"
-    let _run_target_args'_v643 = v665 
+    let v671 : string = $"%A{v14}"
+    let _run_target_args'_v649 = v671 
     #endif
 #else
-    let v669 : string = $"%A{v14}"
-    let _run_target_args'_v643 = v669 
+    let v675 : string = $"%A{v14}"
+    let _run_target_args'_v649 = v675 
     #endif
-    let v672 : string = _run_target_args'_v643 
-    let v679 : string = $"{v672}"
-    let v687 : unit = ()
-    let v688 : (unit -> unit) = closure7(v18, v679)
-    let v689 : unit = (fun () -> v688 (); v687) ()
-    let v696 : string = $"{v98}"
-    let v704 : unit = ()
-    let v705 : (unit -> unit) = closure7(v18, v696)
-    let v706 : unit = (fun () -> v705 (); v704) ()
-    let v714 : string = "trace"
-    let v715 : string = $"{v714}"
-    let v723 : unit = ()
-    let v724 : (unit -> unit) = closure7(v18, v715)
-    let v725 : unit = (fun () -> v724 (); v723) ()
-    let v732 : string = $"{v59}"
-    let v740 : unit = ()
-    let v741 : (unit -> unit) = closure7(v18, v732)
-    let v742 : unit = (fun () -> v741 (); v740) ()
-    let v750 : string =
+    let v678 : string = _run_target_args'_v649 
+    let v688 : string = $"{v678}"
+    let v696 : unit = ()
+    let v697 : (unit -> unit) = closure7(v18, v688)
+    let v698 : unit = (fun () -> v697 (); v696) ()
+    let v705 : string = $"{v98}"
+    let v713 : unit = ()
+    let v714 : (unit -> unit) = closure7(v18, v705)
+    let v715 : unit = (fun () -> v714 (); v713) ()
+    let v723 : string = "trace"
+    let v724 : string = $"{v723}"
+    let v732 : unit = ()
+    let v733 : (unit -> unit) = closure7(v18, v724)
+    let v734 : unit = (fun () -> v733 (); v732) ()
+    let v741 : string = $"{v59}"
+    let v749 : unit = ()
+    let v750 : (unit -> unit) = closure7(v18, v741)
+    let v751 : unit = (fun () -> v750 (); v749) ()
+    let v759 : string =
         if v15 then
-            let v748 : string = "true"
-            v748
+            let v757 : string = "true"
+            v757
         else
-            let v749 : string = "false"
-            v749
-    let v752 : string = $"{v750}"
-    let v760 : unit = ()
-    let v761 : (unit -> unit) = closure7(v18, v752)
-    let v762 : unit = (fun () -> v761 (); v760) ()
-    let v769 : string = $"{v98}"
-    let v777 : unit = ()
-    let v778 : (unit -> unit) = closure7(v18, v769)
-    let v779 : unit = (fun () -> v778 (); v777) ()
-    let v787 : string = "working_directory"
-    let v788 : string = $"{v787}"
-    let v796 : unit = ()
-    let v797 : (unit -> unit) = closure7(v18, v788)
-    let v798 : unit = (fun () -> v797 (); v796) ()
-    let v805 : string = $"{v59}"
-    let v813 : unit = ()
-    let v814 : (unit -> unit) = closure7(v18, v805)
-    let v815 : unit = (fun () -> v814 (); v813) ()
+            let v758 : string = "false"
+            v758
+    let v761 : string = $"{v759}"
+    let v769 : unit = ()
+    let v770 : (unit -> unit) = closure7(v18, v761)
+    let v771 : unit = (fun () -> v770 (); v769) ()
+    let v778 : string = $"{v98}"
+    let v786 : unit = ()
+    let v787 : (unit -> unit) = closure7(v18, v778)
+    let v788 : unit = (fun () -> v787 (); v786) ()
+    let v796 : string = "working_directory"
+    let v797 : string = $"{v796}"
+    let v805 : unit = ()
+    let v806 : (unit -> unit) = closure7(v18, v797)
+    let v807 : unit = (fun () -> v806 (); v805) ()
+    let v814 : string = $"{v59}"
+    let v822 : unit = ()
+    let v823 : (unit -> unit) = closure7(v18, v814)
+    let v824 : unit = (fun () -> v823 (); v822) ()
     (* run_target_args'
-    let v825 : unit = ()
+    let v834 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v826 : string = "format!(\"{:#?}\", $0)"
-    let v827 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v826 
-    let v828 : string = "fable_library_rust::String_::fromString($0)"
-    let v829 : string = Fable.Core.RustInterop.emitRustExpr v827 v828 
-    let _run_target_args'_v825 = v829 
+    let v835 : string = "format!(\"{:#?}\", $0)"
+    let v836 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v835 
+    let v837 : string = "fable_library_rust::String_::fromString($0)"
+    let v838 : string = Fable.Core.RustInterop.emitRustExpr v836 v837 
+    let _run_target_args'_v834 = v838 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v830 : string = "format!(\"{:#?}\", $0)"
-    let v831 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v830 
-    let v832 : string = "fable_library_rust::String_::fromString($0)"
-    let v833 : string = Fable.Core.RustInterop.emitRustExpr v831 v832 
-    let _run_target_args'_v825 = v833 
+    let v839 : string = "format!(\"{:#?}\", $0)"
+    let v840 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v839 
+    let v841 : string = "fable_library_rust::String_::fromString($0)"
+    let v842 : string = Fable.Core.RustInterop.emitRustExpr v840 v841 
+    let _run_target_args'_v834 = v842 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v834 : string = "format!(\"{:#?}\", $0)"
-    let v835 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v834 
-    let v836 : string = "fable_library_rust::String_::fromString($0)"
-    let v837 : string = Fable.Core.RustInterop.emitRustExpr v835 v836 
-    let _run_target_args'_v825 = v837 
+    let v843 : string = "format!(\"{:#?}\", $0)"
+    let v844 : std_string_String = Fable.Core.RustInterop.emitRustExpr v16 v843 
+    let v845 : string = "fable_library_rust::String_::fromString($0)"
+    let v846 : string = Fable.Core.RustInterop.emitRustExpr v844 v845 
+    let _run_target_args'_v834 = v846 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v839 : string = $"%A{v16}"
-    let _run_target_args'_v825 = v839 
+    let v848 : string = $"%A{v16}"
+    let _run_target_args'_v834 = v848 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v843 : string = $"%A{v16}"
-    let _run_target_args'_v825 = v843 
+    let v852 : string = $"%A{v16}"
+    let _run_target_args'_v834 = v852 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v847 : string = $"%A{v16}"
-    let _run_target_args'_v825 = v847 
+    let v856 : string = $"%A{v16}"
+    let _run_target_args'_v834 = v856 
     #endif
 #else
-    let v851 : string = $"%A{v16}"
-    let _run_target_args'_v825 = v851 
+    let v860 : string = $"%A{v16}"
+    let _run_target_args'_v834 = v860 
     #endif
-    let v854 : string = _run_target_args'_v825 
-    let v861 : string = $"{v854}"
-    let v869 : unit = ()
-    let v870 : (unit -> unit) = closure7(v18, v861)
-    let v871 : unit = (fun () -> v870 (); v869) ()
-    let v879 : string = " }"
-    let v880 : string = $"{v879}"
-    let v888 : unit = ()
-    let v889 : (unit -> unit) = closure7(v18, v880)
-    let v890 : unit = (fun () -> v889 (); v888) ()
-    let v897 : string = $"{v879}"
-    let v905 : unit = ()
-    let v906 : (unit -> unit) = closure7(v18, v897)
-    let v907 : unit = (fun () -> v906 (); v905) ()
-    let v913 : string = v18.l0
-    let v914 : int64 = v0.l0
-    let v917 : string = " "
-    let v918 : string = v6 + v917 
-    let v922 : string = v918 + v7 
-    let v927 : string = " #"
-    let v928 : string = v922 + v927 
-    let v932 : (int64 -> string) = _.ToString()
-    let v933 : string = v932 v914
-    let v937 : string = v928 + v933 
-    let v941 : string = v937 + v917 
-    let v946 : string = "runtime.execute_with_options_async"
-    let v947 : string = v941 + v946 
-    let v952 : string = " / "
-    let v953 : string = v947 + v952 
-    let v957 : string = v953 + v913 
-    method16(v957)
+    let v863 : string = _run_target_args'_v834 
+    let v873 : string = $"{v863}"
+    let v881 : unit = ()
+    let v882 : (unit -> unit) = closure7(v18, v873)
+    let v883 : unit = (fun () -> v882 (); v881) ()
+    let v891 : string = " }"
+    let v892 : string = $"{v891}"
+    let v900 : unit = ()
+    let v901 : (unit -> unit) = closure7(v18, v892)
+    let v902 : unit = (fun () -> v901 (); v900) ()
+    let v909 : string = $"{v891}"
+    let v917 : unit = ()
+    let v918 : (unit -> unit) = closure7(v18, v909)
+    let v919 : unit = (fun () -> v918 (); v917) ()
+    let v925 : string = v18.l0
+    let v926 : int64 = v0.l0
+    let v929 : string = " "
+    let v930 : string = v6 + v929 
+    let v934 : string = v930 + v7 
+    let v939 : string = " #"
+    let v940 : string = v934 + v939 
+    let v944 : (int64 -> string) = _.ToString()
+    let v945 : string = v944 v926
+    let v949 : string = v940 + v945 
+    let v953 : string = v949 + v929 
+    let v958 : string = "runtime.execute_with_options_async"
+    let v959 : string = v953 + v958 
+    let v964 : string = " / "
+    let v965 : string = v959 + v964 
+    let v969 : string = v965 + v925 
+    method16(v969)
 and closure24 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : (struct (string * string) []), v3 : (struct (int32 * string * bool) -> Async<unit>) option, v4 : (std_sync_Arc<std_sync_Mutex<std_process_ChildStdin>> -> unit) option, v5 : bool, v6 : string option, v7 : int32, v8 : string) () : unit =
     let v9 : US0 = US0_1
     let v10 : bool = method7(v9)
@@ -5898,142 +5899,142 @@ and method22 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : 
     let _let'_v25 =
         async {
             (* run_target_args'
-            let v5834 : unit = ()
+            let v5938 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let struct (v5837 : int32, v5838 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v5837, v5838) 
+            let struct (v5941 : int32, v5942 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v5941, v5942) 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let struct (v5845 : int32, v5846 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v5845, v5846) 
+            let struct (v5949 : int32, v5950 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v5949, v5950) 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let struct (v5853 : int32, v5854 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v5853, v5854) 
+            let struct (v5957 : int32, v5958 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v5957, v5958) 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let struct (v5861 : int32, v5862 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v5861, v5862) 
+            let struct (v5965 : int32, v5966 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v5965, v5966) 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let struct (v5869 : int32, v5870 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v5869, v5870) 
+            let struct (v5973 : int32, v5974 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v5973, v5974) 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let struct (v5877 : int32, v5878 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v5877, v5878) 
+            let struct (v5981 : int32, v5982 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v5981, v5982) 
             #endif
 #else
-            let v5883 : US6 = method23(v0)
-            let struct (v5895 : string, v5896 : US5) =
-                match v5883 with
-                | US6_1(v5886) -> (* Error *)
-                    let v5888 : string = $"resultm.get / Result value was Error: {v5886}"
-                    failwith<struct (string * US5)> v5888
-                | US6_0(v5884, v5885) -> (* Ok *)
-                    struct (v5884, v5885)
-            let v5899 : (string -> US5) = method5()
-            let v5900 : US5 option = v6 |> Option.map v5899 
-            let v5920 : US5 = US5_1
-            let v5921 : US5 = v5900 |> Option.defaultValue v5920 
-            let v5928 : string =
-                match v5921 with
+            let v5987 : US6 = method23(v0)
+            let struct (v5999 : string, v6000 : US5) =
+                match v5987 with
+                | US6_1(v5990) -> (* Error *)
+                    let v5992 : string = $"resultm.get / Result value was Error: {v5990}"
+                    failwith<struct (string * US5)> v5992
+                | US6_0(v5988, v5989) -> (* Ok *)
+                    struct (v5988, v5989)
+            let v6003 : (string -> US5) = method5()
+            let v6004 : US5 option = v6 |> Option.map v6003 
+            let v6024 : US5 = US5_1
+            let v6025 : US5 = v6004 |> Option.defaultValue v6024 
+            let v6032 : string =
+                match v6025 with
                 | US5_1 -> (* None *)
-                    let v5926 : string = ""
-                    v5926
-                | US5_0(v5925) -> (* Some *)
-                    v5925
-            let v5989 : unit = ()
-            let v5990 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v5896, v5895)
-            let v5991 : unit = (fun () -> v5990 (); v5989) ()
-            let v6052 : System.Text.Encoding = System.Text.Encoding.UTF8
-            let v6056 : string =
-                match v5896 with
+                    let v6030 : string = ""
+                    v6030
+                | US5_0(v6029) -> (* Some *)
+                    v6029
+            let v6093 : unit = ()
+            let v6094 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v6000, v5999)
+            let v6095 : unit = (fun () -> v6094 (); v6093) ()
+            let v6156 : System.Text.Encoding = System.Text.Encoding.UTF8
+            let v6160 : string =
+                match v6000 with
                 | US5_1 -> (* None *)
-                    let v6054 : string = ""
-                    v6054
-                | US5_0(v6053) -> (* Some *)
-                    v6053
+                    let v6158 : string = ""
+                    v6158
+                | US5_0(v6157) -> (* Some *)
+                    v6157
             let start_info = System.Diagnostics.ProcessStartInfo (
-              Arguments = v6056,
-              StandardOutputEncoding = v6052,
-              WorkingDirectory = v5928,
-              FileName = v5895,
+              Arguments = v6160,
+              StandardOutputEncoding = v6156,
+              WorkingDirectory = v6032,
+              FileName = v5999,
               CreateNoWindow = true,
               RedirectStandardError = true,
               RedirectStandardOutput = true,
               UseShellExecute = false
             )
-            let v6057 : System.Diagnostics.ProcessStartInfo = start_info
-            let v6058 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
-            let v6059 : int32 = v6058.Length
-            let v6060 : Mut5 = {l0 = 0} : Mut5
-            while method39(v6059, v6060) do
-                let v6062 : int32 = v6060.l0
-                let struct (v6063 : string, v6064 : string) = v6058.[int v6062]
-                v6057.EnvironmentVariables.[v6063] <- v6064 
-                let v6065 : int32 = v6062 + 1
-                v6060.l0 <- v6065
+            let v6161 : System.Diagnostics.ProcessStartInfo = start_info
+            let v6162 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
+            let v6163 : int32 = v6162.Length
+            let v6164 : Mut5 = {l0 = 0} : Mut5
+            while method39(v6163, v6164) do
+                let v6166 : int32 = v6164.l0
+                let struct (v6167 : string, v6168 : string) = v6162.[int v6166]
+                v6161.EnvironmentVariables.[v6167] <- v6168 
+                let v6169 : int32 = v6166 + 1
+                v6164.l0 <- v6169
                 ()
-            let v6066 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v6057)
-            use v6066 = v6066 
-            let v6067 : System.Diagnostics.Process = v6066 
-            let v6068 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
-            let v6069 : System.Collections.Concurrent.ConcurrentStack<string> = v6068 ()
-            let v6070 : bool = false
-            let v6071 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v6067, v6069, v6070)
-            v6067.OutputDataReceived.Add v6071 
-            let v6072 : bool = true
-            let v6073 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v6067, v6069, v6072)
-            v6067.ErrorDataReceived.Add v6073 
-            let v6074 : (unit -> bool) = v6067.Start
-            let v6075 : bool = v6074 ()
-            let v6076 : bool = v6075 = false
-            if v6076 then
-                let v6077 : string = $"runtime.execute_with_options_async / process_start error"
-                failwith<unit> v6077
-            let v6078 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
-            v6078 v6067
-            let v6079 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
-            v6079 v6067
-            let v6082 : (System.Threading.CancellationToken -> US15) = method47()
-            let v6083 : US15 option = v1 |> Option.map v6082 
-            let v6103 : US15 = US15_1
-            let v6104 : US15 = v6083 |> Option.defaultValue v6103 
-            let v6111 : System.Threading.CancellationToken =
-                match v6104 with
+            let v6170 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v6161)
+            use v6170 = v6170 
+            let v6171 : System.Diagnostics.Process = v6170 
+            let v6172 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
+            let v6173 : System.Collections.Concurrent.ConcurrentStack<string> = v6172 ()
+            let v6174 : bool = false
+            let v6175 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v6171, v6173, v6174)
+            v6171.OutputDataReceived.Add v6175 
+            let v6176 : bool = true
+            let v6177 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v6171, v6173, v6176)
+            v6171.ErrorDataReceived.Add v6177 
+            let v6178 : (unit -> bool) = v6171.Start
+            let v6179 : bool = v6178 ()
+            let v6180 : bool = v6179 = false
+            if v6180 then
+                let v6181 : string = $"runtime.execute_with_options_async / process_start error"
+                failwith<unit> v6181
+            let v6182 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
+            v6182 v6171
+            let v6183 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
+            v6183 v6171
+            let v6186 : (System.Threading.CancellationToken -> US15) = method47()
+            let v6187 : US15 option = v1 |> Option.map v6186 
+            let v6207 : US15 = US15_1
+            let v6208 : US15 = v6187 |> Option.defaultValue v6207 
+            let v6215 : System.Threading.CancellationToken =
+                match v6208 with
                 | US15_1 -> (* None *)
-                    let v6109 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
-                    v6109
-                | US15_0(v6108) -> (* Some *)
-                    v6108
-            let v6112 : Async<System.Threading.CancellationToken> = method48(v6111)
-            let! v6112 = v6112 
-            let v6113 : System.Threading.CancellationToken = v6112 
-            let v6114 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v6113.Register
-            let v6115 : (unit -> unit) = closure22(v6067)
-            let v6116 : System.Threading.CancellationTokenRegistration = v6114 v6115
-            use v6116 = v6116 
-            let v6117 : System.Threading.CancellationTokenRegistration = v6116 
-            let v6118 : Async<int32> = method51(v6067, v6069, v6113)
-            let! v6118 = v6118 
-            let v6119 : int32 = v6118 
-            let v6121 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
-            let v6122 : string seq = v6121 v6069
-            let v6126 : (string seq -> string seq) = Seq.rev
-            let v6127 : string seq = v6126 v6122
-            let v6132 : string = method53()
-            let v6133 : (string -> (string seq -> string)) = String.concat
-            let v6134 : (string seq -> string) = v6133 v6132
-            let v6135 : string = v6134 v6127
-            let v6200 : unit = ()
-            let v6201 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v6119, v6135)
-            let v6202 : unit = (fun () -> v6201 (); v6200) ()
-            return struct (v6119, v6135) 
+                    let v6213 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
+                    v6213
+                | US15_0(v6212) -> (* Some *)
+                    v6212
+            let v6216 : Async<System.Threading.CancellationToken> = method48(v6215)
+            let! v6216 = v6216 
+            let v6217 : System.Threading.CancellationToken = v6216 
+            let v6218 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v6217.Register
+            let v6219 : (unit -> unit) = closure22(v6171)
+            let v6220 : System.Threading.CancellationTokenRegistration = v6218 v6219
+            use v6220 = v6220 
+            let v6221 : System.Threading.CancellationTokenRegistration = v6220 
+            let v6222 : Async<int32> = method51(v6171, v6173, v6217)
+            let! v6222 = v6222 
+            let v6223 : int32 = v6222 
+            let v6225 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
+            let v6226 : string seq = v6225 v6173
+            let v6230 : (string seq -> string seq) = Seq.rev
+            let v6231 : string seq = v6230 v6226
+            let v6236 : string = method53()
+            let v6237 : (string -> (string seq -> string)) = String.concat
+            let v6238 : (string seq -> string) = v6237 v6236
+            let v6239 : string = v6238 v6231
+            let v6304 : unit = ()
+            let v6305 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v6223, v6239)
+            let v6306 : unit = (fun () -> v6305 (); v6304) ()
+            return struct (v6223, v6239) 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -6043,150 +6044,150 @@ and method22 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : 
         (* indent
         ()
     indent *)
-    let v12070 : Async<struct (int32 * string)> = _let'_v25 
-    let _run_target_args'_v11 = v12070 
+    let v12286 : Async<struct (int32 * string)> = _let'_v25 
+    let _run_target_args'_v11 = v12286 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v12072 : unit = ()
-    let _let'_v12072 =
+    let v12288 : unit = ()
+    let _let'_v12288 =
         async {
             (* run_target_args'
-            let v17881 : unit = ()
+            let v18201 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let struct (v17884 : int32, v17885 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v17884, v17885) 
+            let struct (v18204 : int32, v18205 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v18204, v18205) 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let struct (v17892 : int32, v17893 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v17892, v17893) 
+            let struct (v18212 : int32, v18213 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v18212, v18213) 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let struct (v17900 : int32, v17901 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v17900, v17901) 
+            let struct (v18220 : int32, v18221 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v18220, v18221) 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let struct (v17908 : int32, v17909 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v17908, v17909) 
+            let struct (v18228 : int32, v18229 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v18228, v18229) 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let struct (v17916 : int32, v17917 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v17916, v17917) 
+            let struct (v18236 : int32, v18237 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v18236, v18237) 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let struct (v17924 : int32, v17925 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v17924, v17925) 
+            let struct (v18244 : int32, v18245 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v18244, v18245) 
             #endif
 #else
-            let v17930 : US6 = method23(v0)
-            let struct (v17942 : string, v17943 : US5) =
-                match v17930 with
-                | US6_1(v17933) -> (* Error *)
-                    let v17935 : string = $"resultm.get / Result value was Error: {v17933}"
-                    failwith<struct (string * US5)> v17935
-                | US6_0(v17931, v17932) -> (* Ok *)
-                    struct (v17931, v17932)
-            let v17946 : (string -> US5) = method5()
-            let v17947 : US5 option = v6 |> Option.map v17946 
-            let v17967 : US5 = US5_1
-            let v17968 : US5 = v17947 |> Option.defaultValue v17967 
-            let v17975 : string =
-                match v17968 with
+            let v18250 : US6 = method23(v0)
+            let struct (v18262 : string, v18263 : US5) =
+                match v18250 with
+                | US6_1(v18253) -> (* Error *)
+                    let v18255 : string = $"resultm.get / Result value was Error: {v18253}"
+                    failwith<struct (string * US5)> v18255
+                | US6_0(v18251, v18252) -> (* Ok *)
+                    struct (v18251, v18252)
+            let v18266 : (string -> US5) = method5()
+            let v18267 : US5 option = v6 |> Option.map v18266 
+            let v18287 : US5 = US5_1
+            let v18288 : US5 = v18267 |> Option.defaultValue v18287 
+            let v18295 : string =
+                match v18288 with
                 | US5_1 -> (* None *)
-                    let v17973 : string = ""
-                    v17973
-                | US5_0(v17972) -> (* Some *)
-                    v17972
-            let v18036 : unit = ()
-            let v18037 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v17943, v17942)
-            let v18038 : unit = (fun () -> v18037 (); v18036) ()
-            let v18099 : System.Text.Encoding = System.Text.Encoding.UTF8
-            let v18103 : string =
-                match v17943 with
+                    let v18293 : string = ""
+                    v18293
+                | US5_0(v18292) -> (* Some *)
+                    v18292
+            let v18356 : unit = ()
+            let v18357 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v18263, v18262)
+            let v18358 : unit = (fun () -> v18357 (); v18356) ()
+            let v18419 : System.Text.Encoding = System.Text.Encoding.UTF8
+            let v18423 : string =
+                match v18263 with
                 | US5_1 -> (* None *)
-                    let v18101 : string = ""
-                    v18101
-                | US5_0(v18100) -> (* Some *)
-                    v18100
+                    let v18421 : string = ""
+                    v18421
+                | US5_0(v18420) -> (* Some *)
+                    v18420
             let start_info = System.Diagnostics.ProcessStartInfo (
-              Arguments = v18103,
-              StandardOutputEncoding = v18099,
-              WorkingDirectory = v17975,
-              FileName = v17942,
+              Arguments = v18423,
+              StandardOutputEncoding = v18419,
+              WorkingDirectory = v18295,
+              FileName = v18262,
               CreateNoWindow = true,
               RedirectStandardError = true,
               RedirectStandardOutput = true,
               UseShellExecute = false
             )
-            let v18104 : System.Diagnostics.ProcessStartInfo = start_info
-            let v18105 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
-            let v18106 : int32 = v18105.Length
-            let v18107 : Mut5 = {l0 = 0} : Mut5
-            while method39(v18106, v18107) do
-                let v18109 : int32 = v18107.l0
-                let struct (v18110 : string, v18111 : string) = v18105.[int v18109]
-                v18104.EnvironmentVariables.[v18110] <- v18111 
-                let v18112 : int32 = v18109 + 1
-                v18107.l0 <- v18112
+            let v18424 : System.Diagnostics.ProcessStartInfo = start_info
+            let v18425 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
+            let v18426 : int32 = v18425.Length
+            let v18427 : Mut5 = {l0 = 0} : Mut5
+            while method39(v18426, v18427) do
+                let v18429 : int32 = v18427.l0
+                let struct (v18430 : string, v18431 : string) = v18425.[int v18429]
+                v18424.EnvironmentVariables.[v18430] <- v18431 
+                let v18432 : int32 = v18429 + 1
+                v18427.l0 <- v18432
                 ()
-            let v18113 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v18104)
-            use v18113 = v18113 
-            let v18114 : System.Diagnostics.Process = v18113 
-            let v18115 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
-            let v18116 : System.Collections.Concurrent.ConcurrentStack<string> = v18115 ()
-            let v18117 : bool = false
-            let v18118 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v18114, v18116, v18117)
-            v18114.OutputDataReceived.Add v18118 
-            let v18119 : bool = true
-            let v18120 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v18114, v18116, v18119)
-            v18114.ErrorDataReceived.Add v18120 
-            let v18121 : (unit -> bool) = v18114.Start
-            let v18122 : bool = v18121 ()
-            let v18123 : bool = v18122 = false
-            if v18123 then
-                let v18124 : string = $"runtime.execute_with_options_async / process_start error"
-                failwith<unit> v18124
-            let v18125 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
-            v18125 v18114
-            let v18126 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
-            v18126 v18114
-            let v18129 : (System.Threading.CancellationToken -> US15) = method47()
-            let v18130 : US15 option = v1 |> Option.map v18129 
-            let v18150 : US15 = US15_1
-            let v18151 : US15 = v18130 |> Option.defaultValue v18150 
-            let v18158 : System.Threading.CancellationToken =
-                match v18151 with
+            let v18433 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v18424)
+            use v18433 = v18433 
+            let v18434 : System.Diagnostics.Process = v18433 
+            let v18435 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
+            let v18436 : System.Collections.Concurrent.ConcurrentStack<string> = v18435 ()
+            let v18437 : bool = false
+            let v18438 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v18434, v18436, v18437)
+            v18434.OutputDataReceived.Add v18438 
+            let v18439 : bool = true
+            let v18440 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v18434, v18436, v18439)
+            v18434.ErrorDataReceived.Add v18440 
+            let v18441 : (unit -> bool) = v18434.Start
+            let v18442 : bool = v18441 ()
+            let v18443 : bool = v18442 = false
+            if v18443 then
+                let v18444 : string = $"runtime.execute_with_options_async / process_start error"
+                failwith<unit> v18444
+            let v18445 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
+            v18445 v18434
+            let v18446 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
+            v18446 v18434
+            let v18449 : (System.Threading.CancellationToken -> US15) = method47()
+            let v18450 : US15 option = v1 |> Option.map v18449 
+            let v18470 : US15 = US15_1
+            let v18471 : US15 = v18450 |> Option.defaultValue v18470 
+            let v18478 : System.Threading.CancellationToken =
+                match v18471 with
                 | US15_1 -> (* None *)
-                    let v18156 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
-                    v18156
-                | US15_0(v18155) -> (* Some *)
-                    v18155
-            let v18159 : Async<System.Threading.CancellationToken> = method48(v18158)
-            let! v18159 = v18159 
-            let v18160 : System.Threading.CancellationToken = v18159 
-            let v18161 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v18160.Register
-            let v18162 : (unit -> unit) = closure22(v18114)
-            let v18163 : System.Threading.CancellationTokenRegistration = v18161 v18162
-            use v18163 = v18163 
-            let v18164 : System.Threading.CancellationTokenRegistration = v18163 
-            let v18165 : Async<int32> = method51(v18114, v18116, v18160)
-            let! v18165 = v18165 
-            let v18166 : int32 = v18165 
-            let v18168 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
-            let v18169 : string seq = v18168 v18116
-            let v18173 : (string seq -> string seq) = Seq.rev
-            let v18174 : string seq = v18173 v18169
-            let v18179 : string = method53()
-            let v18180 : (string -> (string seq -> string)) = String.concat
-            let v18181 : (string seq -> string) = v18180 v18179
-            let v18182 : string = v18181 v18174
-            let v18247 : unit = ()
-            let v18248 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v18166, v18182)
-            let v18249 : unit = (fun () -> v18248 (); v18247) ()
-            return struct (v18166, v18182) 
+                    let v18476 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
+                    v18476
+                | US15_0(v18475) -> (* Some *)
+                    v18475
+            let v18479 : Async<System.Threading.CancellationToken> = method48(v18478)
+            let! v18479 = v18479 
+            let v18480 : System.Threading.CancellationToken = v18479 
+            let v18481 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v18480.Register
+            let v18482 : (unit -> unit) = closure22(v18434)
+            let v18483 : System.Threading.CancellationTokenRegistration = v18481 v18482
+            use v18483 = v18483 
+            let v18484 : System.Threading.CancellationTokenRegistration = v18483 
+            let v18485 : Async<int32> = method51(v18434, v18436, v18480)
+            let! v18485 = v18485 
+            let v18486 : int32 = v18485 
+            let v18488 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
+            let v18489 : string seq = v18488 v18436
+            let v18493 : (string seq -> string seq) = Seq.rev
+            let v18494 : string seq = v18493 v18489
+            let v18499 : string = method53()
+            let v18500 : (string -> (string seq -> string)) = String.concat
+            let v18501 : (string seq -> string) = v18500 v18499
+            let v18502 : string = v18501 v18494
+            let v18567 : unit = ()
+            let v18568 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v18486, v18502)
+            let v18569 : unit = (fun () -> v18568 (); v18567) ()
+            return struct (v18486, v18502) 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -6196,150 +6197,150 @@ and method22 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : 
         (* indent
         ()
     indent *)
-    let v24117 : Async<struct (int32 * string)> = _let'_v12072 
-    let _run_target_args'_v11 = v24117 
+    let v24549 : Async<struct (int32 * string)> = _let'_v12288 
+    let _run_target_args'_v11 = v24549 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v24119 : unit = ()
-    let _let'_v24119 =
+    let v24551 : unit = ()
+    let _let'_v24551 =
         async {
             (* run_target_args'
-            let v29928 : unit = ()
+            let v30464 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let struct (v29931 : int32, v29932 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v29931, v29932) 
+            let struct (v30467 : int32, v30468 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v30467, v30468) 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let struct (v29939 : int32, v29940 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v29939, v29940) 
+            let struct (v30475 : int32, v30476 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v30475, v30476) 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let struct (v29947 : int32, v29948 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v29947, v29948) 
+            let struct (v30483 : int32, v30484 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v30483, v30484) 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let struct (v29955 : int32, v29956 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v29955, v29956) 
+            let struct (v30491 : int32, v30492 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v30491, v30492) 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let struct (v29963 : int32, v29964 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v29963, v29964) 
+            let struct (v30499 : int32, v30500 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v30499, v30500) 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let struct (v29971 : int32, v29972 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v29971, v29972) 
+            let struct (v30507 : int32, v30508 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v30507, v30508) 
             #endif
 #else
-            let v29977 : US6 = method23(v0)
-            let struct (v29989 : string, v29990 : US5) =
-                match v29977 with
-                | US6_1(v29980) -> (* Error *)
-                    let v29982 : string = $"resultm.get / Result value was Error: {v29980}"
-                    failwith<struct (string * US5)> v29982
-                | US6_0(v29978, v29979) -> (* Ok *)
-                    struct (v29978, v29979)
-            let v29993 : (string -> US5) = method5()
-            let v29994 : US5 option = v6 |> Option.map v29993 
-            let v30014 : US5 = US5_1
-            let v30015 : US5 = v29994 |> Option.defaultValue v30014 
-            let v30022 : string =
-                match v30015 with
+            let v30513 : US6 = method23(v0)
+            let struct (v30525 : string, v30526 : US5) =
+                match v30513 with
+                | US6_1(v30516) -> (* Error *)
+                    let v30518 : string = $"resultm.get / Result value was Error: {v30516}"
+                    failwith<struct (string * US5)> v30518
+                | US6_0(v30514, v30515) -> (* Ok *)
+                    struct (v30514, v30515)
+            let v30529 : (string -> US5) = method5()
+            let v30530 : US5 option = v6 |> Option.map v30529 
+            let v30550 : US5 = US5_1
+            let v30551 : US5 = v30530 |> Option.defaultValue v30550 
+            let v30558 : string =
+                match v30551 with
                 | US5_1 -> (* None *)
-                    let v30020 : string = ""
-                    v30020
-                | US5_0(v30019) -> (* Some *)
-                    v30019
-            let v30083 : unit = ()
-            let v30084 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v29990, v29989)
-            let v30085 : unit = (fun () -> v30084 (); v30083) ()
-            let v30146 : System.Text.Encoding = System.Text.Encoding.UTF8
-            let v30150 : string =
-                match v29990 with
+                    let v30556 : string = ""
+                    v30556
+                | US5_0(v30555) -> (* Some *)
+                    v30555
+            let v30619 : unit = ()
+            let v30620 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v30526, v30525)
+            let v30621 : unit = (fun () -> v30620 (); v30619) ()
+            let v30682 : System.Text.Encoding = System.Text.Encoding.UTF8
+            let v30686 : string =
+                match v30526 with
                 | US5_1 -> (* None *)
-                    let v30148 : string = ""
-                    v30148
-                | US5_0(v30147) -> (* Some *)
-                    v30147
+                    let v30684 : string = ""
+                    v30684
+                | US5_0(v30683) -> (* Some *)
+                    v30683
             let start_info = System.Diagnostics.ProcessStartInfo (
-              Arguments = v30150,
-              StandardOutputEncoding = v30146,
-              WorkingDirectory = v30022,
-              FileName = v29989,
+              Arguments = v30686,
+              StandardOutputEncoding = v30682,
+              WorkingDirectory = v30558,
+              FileName = v30525,
               CreateNoWindow = true,
               RedirectStandardError = true,
               RedirectStandardOutput = true,
               UseShellExecute = false
             )
-            let v30151 : System.Diagnostics.ProcessStartInfo = start_info
-            let v30152 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
-            let v30153 : int32 = v30152.Length
-            let v30154 : Mut5 = {l0 = 0} : Mut5
-            while method39(v30153, v30154) do
-                let v30156 : int32 = v30154.l0
-                let struct (v30157 : string, v30158 : string) = v30152.[int v30156]
-                v30151.EnvironmentVariables.[v30157] <- v30158 
-                let v30159 : int32 = v30156 + 1
-                v30154.l0 <- v30159
+            let v30687 : System.Diagnostics.ProcessStartInfo = start_info
+            let v30688 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
+            let v30689 : int32 = v30688.Length
+            let v30690 : Mut5 = {l0 = 0} : Mut5
+            while method39(v30689, v30690) do
+                let v30692 : int32 = v30690.l0
+                let struct (v30693 : string, v30694 : string) = v30688.[int v30692]
+                v30687.EnvironmentVariables.[v30693] <- v30694 
+                let v30695 : int32 = v30692 + 1
+                v30690.l0 <- v30695
                 ()
-            let v30160 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v30151)
-            use v30160 = v30160 
-            let v30161 : System.Diagnostics.Process = v30160 
-            let v30162 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
-            let v30163 : System.Collections.Concurrent.ConcurrentStack<string> = v30162 ()
-            let v30164 : bool = false
-            let v30165 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v30161, v30163, v30164)
-            v30161.OutputDataReceived.Add v30165 
-            let v30166 : bool = true
-            let v30167 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v30161, v30163, v30166)
-            v30161.ErrorDataReceived.Add v30167 
-            let v30168 : (unit -> bool) = v30161.Start
-            let v30169 : bool = v30168 ()
-            let v30170 : bool = v30169 = false
-            if v30170 then
-                let v30171 : string = $"runtime.execute_with_options_async / process_start error"
-                failwith<unit> v30171
-            let v30172 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
-            v30172 v30161
-            let v30173 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
-            v30173 v30161
-            let v30176 : (System.Threading.CancellationToken -> US15) = method47()
-            let v30177 : US15 option = v1 |> Option.map v30176 
-            let v30197 : US15 = US15_1
-            let v30198 : US15 = v30177 |> Option.defaultValue v30197 
-            let v30205 : System.Threading.CancellationToken =
-                match v30198 with
+            let v30696 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v30687)
+            use v30696 = v30696 
+            let v30697 : System.Diagnostics.Process = v30696 
+            let v30698 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
+            let v30699 : System.Collections.Concurrent.ConcurrentStack<string> = v30698 ()
+            let v30700 : bool = false
+            let v30701 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v30697, v30699, v30700)
+            v30697.OutputDataReceived.Add v30701 
+            let v30702 : bool = true
+            let v30703 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v30697, v30699, v30702)
+            v30697.ErrorDataReceived.Add v30703 
+            let v30704 : (unit -> bool) = v30697.Start
+            let v30705 : bool = v30704 ()
+            let v30706 : bool = v30705 = false
+            if v30706 then
+                let v30707 : string = $"runtime.execute_with_options_async / process_start error"
+                failwith<unit> v30707
+            let v30708 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
+            v30708 v30697
+            let v30709 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
+            v30709 v30697
+            let v30712 : (System.Threading.CancellationToken -> US15) = method47()
+            let v30713 : US15 option = v1 |> Option.map v30712 
+            let v30733 : US15 = US15_1
+            let v30734 : US15 = v30713 |> Option.defaultValue v30733 
+            let v30741 : System.Threading.CancellationToken =
+                match v30734 with
                 | US15_1 -> (* None *)
-                    let v30203 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
-                    v30203
-                | US15_0(v30202) -> (* Some *)
-                    v30202
-            let v30206 : Async<System.Threading.CancellationToken> = method48(v30205)
-            let! v30206 = v30206 
-            let v30207 : System.Threading.CancellationToken = v30206 
-            let v30208 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v30207.Register
-            let v30209 : (unit -> unit) = closure22(v30161)
-            let v30210 : System.Threading.CancellationTokenRegistration = v30208 v30209
-            use v30210 = v30210 
-            let v30211 : System.Threading.CancellationTokenRegistration = v30210 
-            let v30212 : Async<int32> = method51(v30161, v30163, v30207)
-            let! v30212 = v30212 
-            let v30213 : int32 = v30212 
-            let v30215 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
-            let v30216 : string seq = v30215 v30163
-            let v30220 : (string seq -> string seq) = Seq.rev
-            let v30221 : string seq = v30220 v30216
-            let v30226 : string = method53()
-            let v30227 : (string -> (string seq -> string)) = String.concat
-            let v30228 : (string seq -> string) = v30227 v30226
-            let v30229 : string = v30228 v30221
-            let v30294 : unit = ()
-            let v30295 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v30213, v30229)
-            let v30296 : unit = (fun () -> v30295 (); v30294) ()
-            return struct (v30213, v30229) 
+                    let v30739 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
+                    v30739
+                | US15_0(v30738) -> (* Some *)
+                    v30738
+            let v30742 : Async<System.Threading.CancellationToken> = method48(v30741)
+            let! v30742 = v30742 
+            let v30743 : System.Threading.CancellationToken = v30742 
+            let v30744 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v30743.Register
+            let v30745 : (unit -> unit) = closure22(v30697)
+            let v30746 : System.Threading.CancellationTokenRegistration = v30744 v30745
+            use v30746 = v30746 
+            let v30747 : System.Threading.CancellationTokenRegistration = v30746 
+            let v30748 : Async<int32> = method51(v30697, v30699, v30743)
+            let! v30748 = v30748 
+            let v30749 : int32 = v30748 
+            let v30751 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
+            let v30752 : string seq = v30751 v30699
+            let v30756 : (string seq -> string seq) = Seq.rev
+            let v30757 : string seq = v30756 v30752
+            let v30762 : string = method53()
+            let v30763 : (string -> (string seq -> string)) = String.concat
+            let v30764 : (string seq -> string) = v30763 v30762
+            let v30765 : string = v30764 v30757
+            let v30830 : unit = ()
+            let v30831 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v30749, v30765)
+            let v30832 : unit = (fun () -> v30831 (); v30830) ()
+            return struct (v30749, v30765) 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -6349,150 +6350,150 @@ and method22 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : 
         (* indent
         ()
     indent *)
-    let v36164 : Async<struct (int32 * string)> = _let'_v24119 
-    let _run_target_args'_v11 = v36164 
+    let v36812 : Async<struct (int32 * string)> = _let'_v24551 
+    let _run_target_args'_v11 = v36812 
     #endif
 #else
-    let v36166 : unit = ()
-    let _let'_v36166 =
+    let v36814 : unit = ()
+    let _let'_v36814 =
         async {
             (* run_target_args'
-            let v41975 : unit = ()
+            let v42727 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let struct (v41978 : int32, v41979 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v41978, v41979) 
+            let struct (v42730 : int32, v42731 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v42730, v42731) 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let struct (v41986 : int32, v41987 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v41986, v41987) 
+            let struct (v42738 : int32, v42739 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v42738, v42739) 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let struct (v41994 : int32, v41995 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v41994, v41995) 
+            let struct (v42746 : int32, v42747 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v42746, v42747) 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let struct (v42002 : int32, v42003 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v42002, v42003) 
+            let struct (v42754 : int32, v42755 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v42754, v42755) 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let struct (v42010 : int32, v42011 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v42010, v42011) 
+            let struct (v42762 : int32, v42763 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v42762, v42763) 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let struct (v42018 : int32, v42019 : string) = null |> unbox<struct (int32 * string)>
-            return struct (v42018, v42019) 
+            let struct (v42770 : int32, v42771 : string) = null |> unbox<struct (int32 * string)>
+            return struct (v42770, v42771) 
             #endif
 #else
-            let v42024 : US6 = method23(v0)
-            let struct (v42036 : string, v42037 : US5) =
-                match v42024 with
-                | US6_1(v42027) -> (* Error *)
-                    let v42029 : string = $"resultm.get / Result value was Error: {v42027}"
-                    failwith<struct (string * US5)> v42029
-                | US6_0(v42025, v42026) -> (* Ok *)
-                    struct (v42025, v42026)
-            let v42040 : (string -> US5) = method5()
-            let v42041 : US5 option = v6 |> Option.map v42040 
-            let v42061 : US5 = US5_1
-            let v42062 : US5 = v42041 |> Option.defaultValue v42061 
-            let v42069 : string =
-                match v42062 with
+            let v42776 : US6 = method23(v0)
+            let struct (v42788 : string, v42789 : US5) =
+                match v42776 with
+                | US6_1(v42779) -> (* Error *)
+                    let v42781 : string = $"resultm.get / Result value was Error: {v42779}"
+                    failwith<struct (string * US5)> v42781
+                | US6_0(v42777, v42778) -> (* Ok *)
+                    struct (v42777, v42778)
+            let v42792 : (string -> US5) = method5()
+            let v42793 : US5 option = v6 |> Option.map v42792 
+            let v42813 : US5 = US5_1
+            let v42814 : US5 = v42793 |> Option.defaultValue v42813 
+            let v42821 : string =
+                match v42814 with
                 | US5_1 -> (* None *)
-                    let v42067 : string = ""
-                    v42067
-                | US5_0(v42066) -> (* Some *)
-                    v42066
-            let v42130 : unit = ()
-            let v42131 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v42037, v42036)
-            let v42132 : unit = (fun () -> v42131 (); v42130) ()
-            let v42193 : System.Text.Encoding = System.Text.Encoding.UTF8
-            let v42197 : string =
-                match v42037 with
+                    let v42819 : string = ""
+                    v42819
+                | US5_0(v42818) -> (* Some *)
+                    v42818
+            let v42882 : unit = ()
+            let v42883 : (unit -> unit) = closure17(v0, v1, v2, v3, v4, v5, v6, v42789, v42788)
+            let v42884 : unit = (fun () -> v42883 (); v42882) ()
+            let v42945 : System.Text.Encoding = System.Text.Encoding.UTF8
+            let v42949 : string =
+                match v42789 with
                 | US5_1 -> (* None *)
-                    let v42195 : string = ""
-                    v42195
-                | US5_0(v42194) -> (* Some *)
-                    v42194
+                    let v42947 : string = ""
+                    v42947
+                | US5_0(v42946) -> (* Some *)
+                    v42946
             let start_info = System.Diagnostics.ProcessStartInfo (
-              Arguments = v42197,
-              StandardOutputEncoding = v42193,
-              WorkingDirectory = v42069,
-              FileName = v42036,
+              Arguments = v42949,
+              StandardOutputEncoding = v42945,
+              WorkingDirectory = v42821,
+              FileName = v42788,
               CreateNoWindow = true,
               RedirectStandardError = true,
               RedirectStandardOutput = true,
               UseShellExecute = false
             )
-            let v42198 : System.Diagnostics.ProcessStartInfo = start_info
-            let v42199 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
-            let v42200 : int32 = v42199.Length
-            let v42201 : Mut5 = {l0 = 0} : Mut5
-            while method39(v42200, v42201) do
-                let v42203 : int32 = v42201.l0
-                let struct (v42204 : string, v42205 : string) = v42199.[int v42203]
-                v42198.EnvironmentVariables.[v42204] <- v42205 
-                let v42206 : int32 = v42203 + 1
-                v42201.l0 <- v42206
+            let v42950 : System.Diagnostics.ProcessStartInfo = start_info
+            let v42951 : (struct (string * string) []) = method38(v0, v1, v2, v3, v4, v5, v6)
+            let v42952 : int32 = v42951.Length
+            let v42953 : Mut5 = {l0 = 0} : Mut5
+            while method39(v42952, v42953) do
+                let v42955 : int32 = v42953.l0
+                let struct (v42956 : string, v42957 : string) = v42951.[int v42955]
+                v42950.EnvironmentVariables.[v42956] <- v42957 
+                let v42958 : int32 = v42955 + 1
+                v42953.l0 <- v42958
                 ()
-            let v42207 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v42198)
-            use v42207 = v42207 
-            let v42208 : System.Diagnostics.Process = v42207 
-            let v42209 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
-            let v42210 : System.Collections.Concurrent.ConcurrentStack<string> = v42209 ()
-            let v42211 : bool = false
-            let v42212 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v42208, v42210, v42211)
-            v42208.OutputDataReceived.Add v42212 
-            let v42213 : bool = true
-            let v42214 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v42208, v42210, v42213)
-            v42208.ErrorDataReceived.Add v42214 
-            let v42215 : (unit -> bool) = v42208.Start
-            let v42216 : bool = v42215 ()
-            let v42217 : bool = v42216 = false
-            if v42217 then
-                let v42218 : string = $"runtime.execute_with_options_async / process_start error"
-                failwith<unit> v42218
-            let v42219 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
-            v42219 v42208
-            let v42220 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
-            v42220 v42208
-            let v42223 : (System.Threading.CancellationToken -> US15) = method47()
-            let v42224 : US15 option = v1 |> Option.map v42223 
-            let v42244 : US15 = US15_1
-            let v42245 : US15 = v42224 |> Option.defaultValue v42244 
-            let v42252 : System.Threading.CancellationToken =
-                match v42245 with
+            let v42959 : System.Diagnostics.Process = new System.Diagnostics.Process (StartInfo = v42950)
+            use v42959 = v42959 
+            let v42960 : System.Diagnostics.Process = v42959 
+            let v42961 : (unit -> System.Collections.Concurrent.ConcurrentStack<string>) = System.Collections.Concurrent.ConcurrentStack<string>
+            let v42962 : System.Collections.Concurrent.ConcurrentStack<string> = v42961 ()
+            let v42963 : bool = false
+            let v42964 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v42960, v42962, v42963)
+            v42960.OutputDataReceived.Add v42964 
+            let v42965 : bool = true
+            let v42966 : (System.Diagnostics.DataReceivedEventArgs -> unit) = closure18(v0, v1, v2, v3, v4, v5, v6, v42960, v42962, v42965)
+            v42960.ErrorDataReceived.Add v42966 
+            let v42967 : (unit -> bool) = v42960.Start
+            let v42968 : bool = v42967 ()
+            let v42969 : bool = v42968 = false
+            if v42969 then
+                let v42970 : string = $"runtime.execute_with_options_async / process_start error"
+                failwith<unit> v42970
+            let v42971 : (System.Diagnostics.Process -> unit) = _.BeginErrorReadLine()
+            v42971 v42960
+            let v42972 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
+            v42972 v42960
+            let v42975 : (System.Threading.CancellationToken -> US15) = method47()
+            let v42976 : US15 option = v1 |> Option.map v42975 
+            let v42996 : US15 = US15_1
+            let v42997 : US15 = v42976 |> Option.defaultValue v42996 
+            let v43004 : System.Threading.CancellationToken =
+                match v42997 with
                 | US15_1 -> (* None *)
-                    let v42250 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
-                    v42250
-                | US15_0(v42249) -> (* Some *)
-                    v42249
-            let v42253 : Async<System.Threading.CancellationToken> = method48(v42252)
-            let! v42253 = v42253 
-            let v42254 : System.Threading.CancellationToken = v42253 
-            let v42255 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v42254.Register
-            let v42256 : (unit -> unit) = closure22(v42208)
-            let v42257 : System.Threading.CancellationTokenRegistration = v42255 v42256
-            use v42257 = v42257 
-            let v42258 : System.Threading.CancellationTokenRegistration = v42257 
-            let v42259 : Async<int32> = method51(v42208, v42210, v42254)
-            let! v42259 = v42259 
-            let v42260 : int32 = v42259 
-            let v42262 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
-            let v42263 : string seq = v42262 v42210
-            let v42267 : (string seq -> string seq) = Seq.rev
-            let v42268 : string seq = v42267 v42263
-            let v42273 : string = method53()
-            let v42274 : (string -> (string seq -> string)) = String.concat
-            let v42275 : (string seq -> string) = v42274 v42273
-            let v42276 : string = v42275 v42268
-            let v42341 : unit = ()
-            let v42342 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v42260, v42276)
-            let v42343 : unit = (fun () -> v42342 (); v42341) ()
-            return struct (v42260, v42276) 
+                    let v43002 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
+                    v43002
+                | US15_0(v43001) -> (* Some *)
+                    v43001
+            let v43005 : Async<System.Threading.CancellationToken> = method48(v43004)
+            let! v43005 = v43005 
+            let v43006 : System.Threading.CancellationToken = v43005 
+            let v43007 : ((unit -> unit) -> System.Threading.CancellationTokenRegistration) = v43006.Register
+            let v43008 : (unit -> unit) = closure22(v42960)
+            let v43009 : System.Threading.CancellationTokenRegistration = v43007 v43008
+            use v43009 = v43009 
+            let v43010 : System.Threading.CancellationTokenRegistration = v43009 
+            let v43011 : Async<int32> = method51(v42960, v42962, v43006)
+            let! v43011 = v43011 
+            let v43012 : int32 = v43011 
+            let v43014 : (System.Collections.Concurrent.ConcurrentStack<string> -> string seq) = Seq.cast
+            let v43015 : string seq = v43014 v42962
+            let v43019 : (string seq -> string seq) = Seq.rev
+            let v43020 : string seq = v43019 v43015
+            let v43025 : string = method53()
+            let v43026 : (string -> (string seq -> string)) = String.concat
+            let v43027 : (string seq -> string) = v43026 v43025
+            let v43028 : string = v43027 v43020
+            let v43093 : unit = ()
+            let v43094 : (unit -> unit) = closure24(v0, v1, v2, v3, v4, v5, v6, v43012, v43028)
+            let v43095 : unit = (fun () -> v43094 (); v43093) ()
+            return struct (v43012, v43028) 
             #endif
             // run_target_args' is_unit
             (* indent
@@ -6502,11 +6503,11 @@ and method22 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : 
         (* indent
         ()
     indent *)
-    let v48211 : Async<struct (int32 * string)> = _let'_v36166 
-    let _run_target_args'_v11 = v48211 
+    let v49075 : Async<struct (int32 * string)> = _let'_v36814 
+    let _run_target_args'_v11 = v49075 
     #endif
-    let v48212 : Async<struct (int32 * string)> = _run_target_args'_v11 
-    v48212
+    let v49076 : Async<struct (int32 * string)> = _run_target_args'_v11 
+    v49076
 and method21 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : (struct (string * string) []), v3 : (struct (int32 * string * bool) -> Async<unit>) option, v4 : (std_sync_Arc<std_sync_Mutex<std_process_ChildStdin>> -> unit) option, v5 : bool, v6 : string option) : Async<struct (int32 * string)> =
     method22(v0, v1, v2, v3, v4, v5, v6)
 and method20 (v0 : string) : Async<struct (int32 * string)> =

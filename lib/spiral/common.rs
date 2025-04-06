@@ -36,6 +36,15 @@ pub mod Common {
     use fable_library_rust::System::IDisposable;
     use fable_library_rust::System::Lazy_1;
     use fable_library_rust::TimeSpan_::TimeSpan;
+    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
+        fn environ(&self) -> LrcPtr<dyn Any>;
+    }
+    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
+        #[inline]
+        fn environ(&self) -> LrcPtr<dyn Any> {
+            (**self).environ()
+        }
+    }
     pub mod TraceState {
         use super::*;
         pub fn trace_state() -> LrcPtr<
@@ -78,15 +87,6 @@ pub mod Common {
                     ))
                 })
                 .clone()
-        }
-    }
-    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
-        fn environ(&self) -> LrcPtr<dyn Any>;
-    }
-    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
-        #[inline]
-        fn environ(&self) -> LrcPtr<dyn Any> {
-            (**self).environ()
         }
     }
     #[derive(Clone, Debug)]
@@ -209,6 +209,7 @@ pub mod Common {
         US4_3(Common::US3),
         US4_4(Common::US3),
         US4_5(Common::US3),
+        US4_6(Common::US3),
     }
     impl core::fmt::Display for US4 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -511,8 +512,8 @@ pub mod Common {
         let patternInput: (Common::US1, Common::US2) = Common::method1();
         let _run_target_args__v3: (Common::US1, Common::US2) =
             (patternInput.0.clone(), patternInput.1.clone());
-        let v173: Common::US2 = _run_target_args__v3.1.clone();
-        let v172: Common::US1 = _run_target_args__v3.0.clone();
+        let v185: Common::US2 = _run_target_args__v3.1.clone();
+        let v184: Common::US1 = _run_target_args__v3.0.clone();
         (
             LrcPtr::new(Common::Mut0 {
                 l0: MutCell::new(1_i64),
@@ -527,8 +528,8 @@ pub mod Common {
                 l0: MutCell::new(string("")),
             }),
             LrcPtr::new(Common::Mut4 {
-                l0: MutCell::new(match &v172 {
-                    Common::US1::US1_0(v172_0_0) => match &v172 {
+                l0: MutCell::new(match &v184 {
+                    Common::US1::US1_0(v184_0_0) => match &v184 {
                         Common::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
@@ -536,8 +537,8 @@ pub mod Common {
                     _ => v0.clone(),
                 }),
             }),
-            match &v173 {
-                Common::US2::US2_0(v173_0_0) => Some(match &v173 {
+            match &v185 {
+                Common::US2::US2_0(v185_0_0) => Some(match &v185 {
                     Common::US2::US2_0(x) => x.clone(),
                     _ => unreachable!(),
                 }),
@@ -651,14 +652,14 @@ pub mod Common {
         v4: LrcPtr<Common::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v212: Common::US2 = defaultValue(Common::US2::US2_1, map(Common::method11(), v5));
-        let v344: DateTime = match &v212 {
-            Common::US2::US2_0(v212_0_0) => {
-                let v292: TimeSpan = TimeSpan::new_ticks(
+        let v220: Common::US2 = defaultValue(Common::US2::US2_1, map(Common::method11(), v5));
+        let v360: DateTime = match &v220 {
+            Common::US2::US2_0(v220_0_0) => {
+                let v303: TimeSpan = TimeSpan::new_ticks(
                     ({
                         let _arg: DateTime = DateTime::now();
                         _arg.ticks()
-                    }) - (match &v212 {
+                    }) - (match &v220 {
                         Common::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     }),
@@ -667,21 +668,21 @@ pub mod Common {
                     1_i32,
                     1_i32,
                     1_i32,
-                    v292.hours(),
-                    v292.minutes(),
-                    v292.seconds(),
-                    v292.milliseconds(),
+                    v303.hours(),
+                    v303.minutes(),
+                    v303.seconds(),
+                    v303.milliseconds(),
                 )
             }
             _ => DateTime::now(),
         };
-        let v346: string = Common::method12();
-        let provider: string = if (v346.clone()) == string("") {
+        let v361: string = Common::method12();
+        let provider: string = if (v361.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
-            v346
+            v361
         };
-        v344.toString(provider)
+        v360.toString(provider)
     }
     pub fn method15() -> string {
         string("")
@@ -706,9 +707,9 @@ pub mod Common {
         let v30: string = v9.l0.get().clone();
         let v49: &str = inline_colorization::color_yellow;
         let v56: &str = &*v30;
-        let v84: &str = inline_colorization::color_reset;
-        let v86: std::string::String = format!("{}{}{}", v49, v56, v84);
-        fable_library_rust::String_::fromString(v86)
+        let v87: &str = inline_colorization::color_reset;
+        let v89: std::string::String = format!("{}{}{}", v49, v56, v87);
+        fable_library_rust::String_::fromString(v89)
     }
     pub fn method18(v0: string) -> string {
         trimEndChars(
@@ -760,7 +761,7 @@ pub mod Common {
             ()
         };
         let v150: std::string::String = format!("{:#?}", v9);
-        let v194: () = {
+        let v197: () = {
             Common::closure11(
                 v11.clone(),
                 fable_library_rust::String_::fromString(v150),
@@ -768,11 +769,11 @@ pub mod Common {
             );
             ()
         };
-        let v213: () = {
+        let v216: () = {
             Common::closure11(v11.clone(), string(" }"), ());
             ()
         };
-        let v219: string = v11.l0.get().clone();
+        let v222: string = v11.l0.get().clone();
         Common::method18(append(
             (append(
                 (append(
@@ -787,7 +788,7 @@ pub mod Common {
                 )),
                 string(" / "),
             )),
-            (v219),
+            (v222),
         ))
     }
     pub fn closure12(v0: LrcPtr<Common::Mut0>, unitVar: ()) {
@@ -933,13 +934,13 @@ pub mod Common {
     }
     pub fn closure15(unitVar: (), v0: Func0<()>) -> Func0<()> {
         let v1 = Common::method20(v0);
-        let v6: LrcPtr<Lazy_1<()>> = LazyExtensions::Create(Func0::new({
+        let v5: LrcPtr<Lazy_1<()>> = LazyExtensions::Create(Func0::new({
             let v1 = v1.clone();
             move || v1()
         }));
         Func0::new({
-            let v6 = v6.clone();
-            move || Common::closure16(v6.clone(), ())
+            let v5 = v5.clone();
+            move || Common::closure16(v5.clone(), ())
         })
     }
     pub fn v14() -> () {

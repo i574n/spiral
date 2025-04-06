@@ -17,13 +17,13 @@ from dataclasses import dataclass
 import os
 from typing import (Any, Protocol)
 
-TraceState_trace_state: tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None] | None = create_atom(None)
-
 class IOsEnviron(Protocol):
     @abstractmethod
     def environ(self) -> Any:
         ...
 
+
+TraceState_trace_state: tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None] | None = create_atom(None)
 
 def _expr130() -> TypeInfo:
     return union_type("Networking.US0", [], US0, lambda: [[], [], [], [], []])
@@ -148,7 +148,7 @@ class US3(Union):
 US3_reflection = _expr138
 
 def _expr139() -> TypeInfo:
-    return union_type("Networking.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())]])
+    return union_type("Networking.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())], [("f6_0", US3_reflection())]])
 
 
 class US4(Union):
@@ -160,7 +160,7 @@ class US4(Union):
 
     @staticmethod
     def cases() -> list[str]:
-        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"]
+        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"]
 
 
 US4_reflection = _expr139
@@ -366,12 +366,12 @@ def closure2(unit_var: None, v0: str) -> None:
 def method0(v0: US0) -> tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None]:
     pattern_input: tuple[US1, US2] = method1()
     _run_target_args_0027_v3: tuple[US1, US2] = (pattern_input[0], pattern_input[1])
-    v173: US2 = _run_target_args_0027_v3[1]
-    v172: US1 = _run_target_args_0027_v3[0]
-    def v179(v: str, v0: Any=v0) -> None:
+    v185: US2 = _run_target_args_0027_v3[1]
+    v184: US1 = _run_target_args_0027_v3[0]
+    def v191(v: str, v0: Any=v0) -> None:
         closure2(None, v)
 
-    return (Mut0(int64(1)), Mut1(v179), Mut2(True), Mut3(""), Mut4(v172.fields[0] if (v172.tag == 0) else v0), v173.fields[0] if (v173.tag == 0) else None)
+    return (Mut0(int64(1)), Mut1(v191), Mut2(True), Mut3(""), Mut4(v184.fields[0] if (v184.tag == 0) else v0), v185.fields[0] if (v185.tag == 0) else None)
 
 
 def closure0(unit_var: None, unit_var_1: None) -> None:
@@ -425,17 +425,17 @@ def method12(__unit: None=None) -> str:
 
 
 def method9(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v804: US2 = default_arg(map(method10(), v5), US2(1))
-    v936: Any
-    if v804.tag == 0:
-        v884: Any = create(op_subtraction(from_value(ticks_1(now()), False), v804.fields[0]))
-        v936 = create_1(1, 1, 1, hours(v884), minutes(v884), seconds(v884), milliseconds(v884))
+    v827: US2 = default_arg(map(method10(), v5), US2(1))
+    v967: Any
+    if v827.tag == 0:
+        v910: Any = create(op_subtraction(from_value(ticks_1(now()), False), v827.fields[0]))
+        v967 = create_1(1, 1, 1, hours(v910), minutes(v910), seconds(v910), milliseconds(v910))
 
     else: 
-        v936 = now()
+        v967 = now()
 
-    v938: str = method12()
-    return to_string(v936, "M-d-y hh:mm:ss tt" if (v938 == "") else v938)
+    v968: str = method12()
+    return to_string(v967, "M-d-y hh:mm:ss tt" if (v968 == "") else v968)
 
 
 def method14(__unit: None=None) -> str:
@@ -543,27 +543,27 @@ def closure5(v0: int, v1: Exception, unit_var: None) -> None:
 
 def method7(v0: str, v1: int) -> Async[bool]:
     def _arrow155(__unit: None=None, v0: Any=v0, v1: Any=v1) -> Async[bool]:
-        v37748: Async[CancellationToken] = cancellation_token()
+        v39668: Async[CancellationToken] = cancellation_token()
         def _arrow154(_arg: CancellationToken) -> Async[bool]:
             def _arrow153(_arg_1: IDisposable) -> Async[bool]:
                 def _arrow151(__unit: None=None) -> Async[bool]:
-                    v37984: Async[None] = await_task(None)
+                    v39922: Async[None] = await_task(None)
                     def _arrow150(__unit: None=None) -> Async[bool]:
                         return singleton.Return(True)
 
-                    return singleton.Bind(v37984, _arrow150)
+                    return singleton.Bind(v39922, _arrow150)
 
                 def _arrow152(_arg_3: Exception) -> Async[bool]:
-                    v38394: None
+                    v40353: None
                     closure5(v1, _arg_3, None)
-                    v38394 = None
+                    v40353 = None
                     return singleton.Return(False)
 
                 return singleton.TryWith(singleton.Delay(_arrow151), _arrow152)
 
             return singleton.Using(None, _arrow153)
 
-        return singleton.Bind(v37748, _arrow154)
+        return singleton.Bind(v39668, _arrow154)
 
     return singleton.Delay(_arrow155)
 
@@ -726,28 +726,28 @@ def closure17(v0: int, v1: Exception, unit_var: None) -> None:
 def method27(v0: int, v1: Async[US8]) -> Async[US6]:
     def _arrow164(__unit: None=None, v0: Any=v0, v1: Any=v1) -> Async[US6]:
         def _arrow163(_arg: US8) -> Async[US6]:
-            v13508: US8 = _arg
-            v13844: US6
-            if v13508.tag == 0:
-                v13844 = US6(0, v13508.fields[0])
+            v13747: US8 = _arg
+            v14089: US6
+            if v13747.tag == 0:
+                v14089 = US6(0, v13747.fields[0])
 
             else: 
-                v13511: Exception = v13508.fields[0]
-                v13513: str = to_text(interpolate("%A%P()", [v13511]))
-                if v13513.find("System.TimeoutException") >= 0:
-                    v13584: None
+                v13750: Exception = v13747.fields[0]
+                v13752: str = to_text(interpolate("%A%P()", [v13750]))
+                if v13752.find("System.TimeoutException") >= 0:
+                    v13823: None
                     closure16(v0, None)
-                    v13584 = None
-                    v13844 = US6(1)
+                    v13823 = None
+                    v14089 = US6(1)
 
                 else: 
-                    v13744: None
-                    closure17(v0, v13511, None)
-                    v13744 = None
-                    v13844 = US6(1)
+                    v13986: None
+                    closure17(v0, v13750, None)
+                    v13986 = None
+                    v14089 = US6(1)
 
 
-            return singleton.Return(v13844)
+            return singleton.Return(v14089)
 
         return singleton.Bind(v1, _arrow163)
 
@@ -756,12 +756,12 @@ def method27(v0: int, v1: Async[US8]) -> Async[US6]:
 
 def method22(v0: Async[bool], v1: int) -> Async[US6]:
     def _arrow166(__unit: None=None, v0: Any=v0, v1: Any=v1) -> Async[US6]:
-        v2526: Async[Async[bool]] = start_child(v0, v1)
+        v2766: Async[Async[bool]] = start_child(v0, v1)
         def _arrow165(_arg: Async[bool]) -> Async[US6]:
-            v2569: Async[US6] = method27(v1, method26(method23(catch_async(_arg))))
-            return singleton.ReturnFrom(v2569)
+            v2815: Async[US6] = method27(v1, method26(method23(catch_async(_arg))))
+            return singleton.ReturnFrom(v2815)
 
-        return singleton.Bind(v2526, _arrow165)
+        return singleton.Bind(v2766, _arrow165)
 
     return singleton.Delay(_arrow166)
 
@@ -851,26 +851,26 @@ def method35(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None,
     v213: None
     closure7(v13, " = ", None)
     v213 = None
-    v269: None
+    v272: None
     closure7(v13, to_text(interpolate("%A%P()", [v10])), None)
-    v269 = None
-    v286: None
+    v272 = None
+    v289: None
     closure7(v13, "; ", None)
-    v286 = None
-    v305: None
+    v289 = None
+    v308: None
     closure7(v13, "status", None)
-    v305 = None
-    v322: None
+    v308 = None
+    v325: None
     closure7(v13, " = ", None)
-    v322 = None
-    v342: None
+    v325 = None
+    v345: None
     closure7(v13, "true" if v11 else "false", None)
-    v342 = None
-    v361: None
+    v345 = None
+    v364: None
     closure7(v13, " }", None)
-    v361 = None
-    v367: str = v13.l0
-    return method17((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + "networking.wait_for_port_access") + " / ") + v367)
+    v364 = None
+    v370: str = v13.l0
+    return method17((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + "networking.wait_for_port_access") + " / ") + v370)
 
 
 def closure23(v0: int | None, v1: bool, v2: int, v3: int64, unit_var: None) -> None:
@@ -891,32 +891,32 @@ def closure23(v0: int | None, v1: bool, v2: int, v3: int64, unit_var: None) -> N
 
 def method33(v0: int | None, v1: bool, v2: str, v3: int, v4: int64) -> Async[int64]:
     def _arrow176(__unit: None=None, v0: Any=v0, v1: Any=v1, v2: Any=v2, v3: Any=v3, v4: Any=v4) -> Async[int64]:
-        v7415: US9 = default_arg(map(method34(), v0), US9(1))
-        v7423: Async[bool] = method19(v7415.fields[0], v2, v3) if (v7415.tag == 0) else method6(v2, v3)
+        v7535: US9 = default_arg(map(method34(), v0), US9(1))
+        v7543: Async[bool] = method19(v7535.fields[0], v2, v3) if (v7535.tag == 0) else method6(v2, v3)
         def _arrow175(_arg: bool) -> Async[int64]:
             if _arg == v1:
                 return singleton.Return(v4)
 
             else: 
-                v7427: bool = op_modulus(v4, int64(100)) == int64(0)
+                v7547: bool = op_modulus(v4, int64(100)) == int64(0)
                 def _arrow172(__unit: None=None) -> Async[None]:
-                    v7490: None
+                    v7610: None
                     closure23(v0, v1, v3, v4, None)
-                    v7490 = None
+                    v7610 = None
                     return singleton.Zero()
 
                 def _arrow174(__unit: None=None) -> Async[int64]:
-                    v7565: Async[None] = sleep(10)
+                    v7685: Async[None] = sleep(10)
                     def _arrow173(__unit: None=None) -> Async[int64]:
-                        v7574: Async[int64] = method32(v0, v1, v2, v3, op_addition(v4, int64(1)))
-                        return singleton.ReturnFrom(v7574)
+                        v7697: Async[int64] = method32(v0, v1, v2, v3, op_addition(v4, int64(1)))
+                        return singleton.ReturnFrom(v7697)
 
-                    return singleton.Bind(v7565, _arrow173)
+                    return singleton.Bind(v7685, _arrow173)
 
-                return singleton.Combine(_arrow172() if v7427 else singleton.Zero(), singleton.Delay(_arrow174))
+                return singleton.Combine(_arrow172() if v7547 else singleton.Zero(), singleton.Delay(_arrow174))
 
 
-        return singleton.Bind(v7423, _arrow175)
+        return singleton.Bind(v7543, _arrow175)
 
     return singleton.Delay(_arrow176)
 

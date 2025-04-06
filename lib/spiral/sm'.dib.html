@@ -7327,6 +7327,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -7604,7 +7605,7 @@ a.anchor-link {
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Fsharp</span> <span class="o">=</span>
                 <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                    <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::string::String</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type std_string_String = class end</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type std_string_String = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::string::String</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type std_string_String = class end</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type std_string_String = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
                 <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
         <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'std_string_String'</span>
@@ -7785,7 +7786,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = test; expected = test }
 
 .gleam output (Gleam):
@@ -7834,7 +7835,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = test; expected = test }
 
 .gleam output (Gleam):
@@ -7933,7 +7934,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 3; expected = 3 }
 
 .gleam output (Gleam):
@@ -8007,7 +8008,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = ['a' 'b' 'c']; expected = ['a' 'b' 'c'] }
 
 </pre>
@@ -8077,7 +8078,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_0()))); expected = UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_0()))) }
 
 .gleam output (Gleam):
@@ -8193,7 +8194,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-.py output (Cuda):
+.py output (Python):
 { name = __assert_eq; actual = bcd; expected = bcd }
 { name = __assert_eq; actual = bcd; expected = bcd }
 { name = __assert_eq; actual = bcd; expected = bcd }
@@ -8462,7 +8463,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = ('1', '2', '3'); expected = ('1', '2', '3') }
 
 .gleam output (Gleam):
@@ -8506,7 +8507,7 @@ a.anchor-link {
     <span class="n">run_target_args</span> <span class="err">`</span><span class="n">string</span> <span class="err">`</span><span class="n">t</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span><span class="p">)</span> <span class="n">function</span>
         <span class="o">|</span> <span class="n">Rust</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
             <span class="nb">open</span> <span class="n">rust</span>
-            <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">rust</span><span class="o">.</span><span class="n">emit_expr</span> <span class="err">`</span><span class="n">t</span> <span class="err">`</span><span class="n">std_string</span> <span class="n">x</span> <span class="p">(</span><span class="err">$</span><span class="s1">'"format\!(</span><span class="se">\\\"</span><span class="s1">{:#?}</span><span class="se">\\\"</span><span class="s1">, $0)"'</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span>
+            <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">rust</span><span class="o">.</span><span class="n">emit_expr</span> <span class="err">`</span><span class="n">t</span> <span class="err">`</span><span class="n">std_string</span> <span class="n">x</span> <span class="p">(</span><span class="err">$</span><span class="s1">'"format\!(</span><span class="se">\\\"</span><span class="s1">{:\#?}</span><span class="se">\\\"</span><span class="s1">, $0)"'</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span>
             <span class="n">from_std_string</span> <span class="n">result</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">format_debug</span> <span class="err">`</span><span class="n">t</span> <span class="n">x</span>
 </pre></div>
@@ -9461,7 +9462,7 @@ method0()
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-.py output (Cuda):
+.py output (Python):
 { name = __assert_eq; actual = 1
 2
 3; expected = 1
@@ -10030,56 +10031,11 @@ method0()
 
 # spiral.process_python
 
-.py (Cuda):
-kernel = r"""
+.py (Python):
+kernels_main = r"""
 """
-class static_array():
-    def __init__(self, length):
-        self.ptr = []
-        for _ in range(length):
-            self.ptr.append(None)
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
-        self.ptr[index] = value
-
-class static_array_list(static_array):
-    def __init__(self, length):
-        super().__init__(length)
-        self.length = 0
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
-        self.ptr[index] = value
-
-    def push(self,value):
-        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
-        self.ptr[self.length] = value
-        self.length += 1
-
-    def pop(self):
-        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
-        self.length -= 1
-        return self.ptr[self.length]
-
-    def unsafe_set_length(self,i):
-        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
-        self.length = i
-
-class dynamic_array(static_array): 
-    pass
-
-class dynamic_array_list(static_array_list):
-    def length_(self): return self.length
-
+from main_auto import *
+kernels = kernels_aux + kernels_main
 import cupy as cp
 import numpy as np
 from dataclasses import dataclass
@@ -10087,9 +10043,13 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+
+# fwd_dcls
+# types
 @dataclass
 class Mut0:
     v0 : string
+# functions
 def method1(v0 : bool) -&gt; bool:
     return v0
 def method2() -&gt; string:
@@ -10230,6 +10190,7 @@ def method0() -&gt; None:
     else:
         del v292, v298
         return 
+# main_defs
 def main_body():
     return method0()
 
@@ -10315,7 +10276,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-.py output (Cuda):
+.py output (Python):
 { name = __assert_eq; actual = 12...; expected = 12... }
 { name = __assert_eq; actual = 1234...; expected = 1234... }
 
@@ -10730,7 +10691,7 @@ method0()
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 121212; expected = 121212 }
 
 .rs output:
@@ -10873,7 +10834,7 @@ method0()
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 123   ; expected = 123    }
 
 .rs output:
@@ -11181,7 +11142,7 @@ method0()
         <span class="k">if</span> <span class="n">initial</span> <span class="o">=</span> <span class="s2">""</span>
         <span class="n">then</span> <span class="n">join</span> <span class="n">initial</span>
         <span class="k">else</span> <span class="n">initial</span>
-    
+
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!initial '</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">initial</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'`string_builder '</span> <span class="p">:</span> <span class="n">string_builder</span>
@@ -11263,7 +11224,7 @@ method0()
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = abcdef; expected = abcdef }
 
 .rs output:
@@ -11646,7 +11607,7 @@ method0()
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = 3; expected = 3 }
 
 </pre>
@@ -11964,7 +11925,7 @@ method0()
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="nb">str</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">str</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type Str = class end</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type Str = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">str</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type Str = class end</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type Str = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Str'</span>
     <span class="p">)</span>
 </pre></div>
@@ -12216,7 +12177,11 @@ method0()
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">json_value</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">serde_json::Value</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type serde_json_Value = class end"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">serde_json::Value</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type serde_json_Value = class end"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'serde_json_Value'</span>
     <span class="p">)</span>
 </pre></div>
@@ -12447,7 +12412,7 @@ method0()
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">raw_string_literal</span> <span class="p">(</span><span class="n">s</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">rust</span><span class="o">.</span><span class="n">ref</span> <span class="nb">str</span> <span class="o">=</span>
-    <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"r#</span><span class="se">\\</span><span class="s1">"" + !s + "</span><span class="se">\\</span><span class="s1">"#"'</span><span class="p">)</span>
+    <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"r\#</span><span class="se">\\</span><span class="s1">"" + !s + "</span><span class="se">\\</span><span class="s1">"\#"'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -12473,7 +12438,7 @@ method0()
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">raw_string_literal_static</span> <span class="p">(</span><span class="n">s</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">rust</span><span class="o">.</span><span class="n">static_ref</span> <span class="nb">str</span> <span class="o">=</span>
-    <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"r#</span><span class="se">\\</span><span class="s1">"" + !s + "</span><span class="se">\\</span><span class="s1">"#"'</span><span class="p">)</span>
+    <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"r\#</span><span class="se">\\</span><span class="s1">"" + !s + "</span><span class="se">\\</span><span class="s1">"\#"'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -13039,7 +13004,11 @@ method0()
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">regex</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">regex::Regex</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type regex_Regex = class end"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">regex::Regex</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type regex_Regex = class end"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'regex_Regex'</span>
     <span class="p">)</span>
 </pre></div>
@@ -14148,7 +14117,7 @@ method0()
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = test; expected = test }
 
 .rs output:
@@ -14237,7 +14206,7 @@ method0()
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-.py output (Cuda):
+.py output (Python):
 { name = __assert_eq; actual = bcde; expected = bcde }
 { name = __assert_eq; actual = bcd; expected = bcd }
 

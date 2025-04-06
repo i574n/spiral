@@ -9,11 +9,11 @@ import { ofSeq, find } from "../../deps/polyglot/deps/Fable/src/fable-library-ts
 import { milliseconds, seconds, minutes, hours, fromTicks } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/TimeSpan.js";
 import { trimStart, trimEnd } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/String.js";
 
-export let TraceState_trace_state = createAtom<Option<[Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>]>>(undefined);
-
 export interface IOsEnviron {
     environ(): any
 }
+
+export let TraceState_trace_state = createAtom<Option<[Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>]>>(undefined);
 
 export type US0_$union = 
     | US0<0>
@@ -226,6 +226,7 @@ export type US4_$union =
     | US4<3>
     | US4<4>
     | US4<5>
+    | US4<6>
 
 export type US4_$cases = {
     0: ["US4_0", [US3_$union]],
@@ -233,7 +234,8 @@ export type US4_$cases = {
     2: ["US4_2", [US3_$union]],
     3: ["US4_3", [US3_$union]],
     4: ["US4_4", [US3_$union]],
-    5: ["US4_5", [US3_$union]]
+    5: ["US4_5", [US3_$union]],
+    6: ["US4_6", [US3_$union]]
 }
 
 export function US4_US4_0(f0_0: US3_$union) {
@@ -260,17 +262,21 @@ export function US4_US4_5(f5_0: US3_$union) {
     return new US4<5>(5, [f5_0]);
 }
 
+export function US4_US4_6(f6_0: US3_$union) {
+    return new US4<6>(6, [f6_0]);
+}
+
 export class US4<Tag extends keyof US4_$cases> extends Union<Tag, US4_$cases[Tag][0]> {
     constructor(readonly tag: Tag, readonly fields: US4_$cases[Tag][1]) {
         super();
     }
     cases() {
-        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"];
+        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"];
     }
 }
 
 export function US4_$reflection(): TypeInfo {
-    return union_type("Trace.US4", [], US4, () => [[["f0_0", US3_$reflection()]], [["f1_0", US3_$reflection()]], [["f2_0", US3_$reflection()]], [["f3_0", US3_$reflection()]], [["f4_0", US3_$reflection()]], [["f5_0", US3_$reflection()]]]);
+    return union_type("Trace.US4", [], US4, () => [[["f0_0", US3_$reflection()]], [["f1_0", US3_$reflection()]], [["f2_0", US3_$reflection()]], [["f3_0", US3_$reflection()]], [["f4_0", US3_$reflection()]], [["f5_0", US3_$reflection()]], [["f6_0", US3_$reflection()]]]);
 }
 
 export type US5_$union = 
@@ -341,11 +347,11 @@ export function closure2(unitVar: void, v0: string): void {
 export function method0(v0: US0_$union): [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] {
     const patternInput: [US1_$union, US2_$union] = method1();
     const _run_target_args$0027_v3 = [patternInput[0], patternInput[1]] as [US1_$union, US2_$union];
-    const v173: US2_$union = _run_target_args$0027_v3[1];
-    const v172: US1_$union = _run_target_args$0027_v3[0];
+    const v185: US2_$union = _run_target_args$0027_v3[1];
+    const v184: US1_$union = _run_target_args$0027_v3[0];
     return [new Mut0(1n), new Mut1((v: string): void => {
         closure2(undefined, v);
-    }), new Mut2(true), new Mut3(""), new Mut4(((v172.tag as int32) === /* US1_0 */ 0) ? (v172.fields[0] as any) : v0), ((v173.tag as int32) === /* US2_0 */ 0) ? (v173.fields[0] as any) : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
+    }), new Mut2(true), new Mut3(""), new Mut4(((v184.tag as int32) === /* US1_0 */ 0) ? (v184.fields[0] as any) : v0), ((v185.tag as int32) === /* US2_0 */ 0) ? (v185.fields[0] as any) : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
 }
 
 export function closure0(unitVar: void, unitVar_1: void): void {
@@ -390,18 +396,18 @@ export function method10(): string {
 }
 
 export function method7(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>): string {
-    const v623: US2_$union = defaultArg(map<int64, US2_$union>(method8(), v5), US2_US2_1());
-    let v755: Date;
-    if ((v623.tag as int32) === /* US2_0 */ 0) {
-        const v627 = v623.fields[0] as any;
-        const v703: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v627)));
-        v755 = create(1, 1, 1, hours(v703), minutes(v703), seconds(v703), milliseconds(v703));
+    const v641: US2_$union = defaultArg(map<int64, US2_$union>(method8(), v5), US2_US2_1());
+    let v781: Date;
+    if ((v641.tag as int32) === /* US2_0 */ 0) {
+        const v645 = v641.fields[0] as any;
+        const v724: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v645)));
+        v781 = create(1, 1, 1, hours(v724), minutes(v724), seconds(v724), milliseconds(v724));
     }
     else {
-        v755 = now();
+        v781 = now();
     }
-    const v757: string = method10();
-    return toString(v755, (v757 === "") ? "M-d-y hh:mm:ss tt" : v757);
+    const v782: string = method10();
+    return toString(v781, (v782 === "") ? "M-d-y hh:mm:ss tt" : v782);
 }
 
 export function method12(): string {

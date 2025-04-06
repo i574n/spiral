@@ -63,8 +63,10 @@ inl unzip list =
         x |> listm.rev, y |> listm.rev
 
 /// ### try_index_of
-inl try_index_of item list =
-    inl rec loop i = function
+// inl try_index_of item list =
+inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =
+    // inl rec loop i = function
+    inl rec loop forall a {number}. (i : a) : list b -> option a = function
         | [] => None
         | x :: xs =>
             if x = item
@@ -75,8 +77,10 @@ inl try_index_of item list =
 inl index_of item =
     try_index_of item >> optionm.value
 
-inl try_index_of_ item list =
-    let rec loop i = function
+// inl try_index_of_ item list =
+inl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =
+    // let rec loop i = function
+    let rec loop forall a {number}. (i : a) : list b -> option a = function
         | [] => None
         | x :: xs =>
             if x = item

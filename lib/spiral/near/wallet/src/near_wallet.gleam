@@ -1,9 +1,9 @@
-import lustre/internals/vdom
-import lustre/element
 import lustre
 import lustre/attribute
+import lustre/internals/vdom
 import lustre/event
 import lustre/element/html
+import lustre/element
 import lustre/ui/button
 import gleam/string
 pub type Us0 {

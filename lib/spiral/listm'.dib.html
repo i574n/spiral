@@ -7327,6 +7327,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -7619,7 +7620,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0())))); expected = UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='c', v1=UH0_1(v0='d', v1=UH0_0())))) }
 
 .rs output:
@@ -8216,56 +8217,11 @@ method0()
 
 # spiral.process_python
 
-.py (Cuda):
-kernel = r"""
+.py (Python):
+kernels_main = r"""
 """
-class static_array():
-    def __init__(self, length):
-        self.ptr = []
-        for _ in range(length):
-            self.ptr.append(None)
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
-        self.ptr[index] = value
-
-class static_array_list(static_array):
-    def __init__(self, length):
-        super().__init__(length)
-        self.length = 0
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
-        self.ptr[index] = value
-
-    def push(self,value):
-        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
-        self.ptr[self.length] = value
-        self.length += 1
-
-    def pop(self):
-        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
-        self.length -= 1
-        return self.ptr[self.length]
-
-    def unsafe_set_length(self,i):
-        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
-        self.length = i
-
-class dynamic_array(static_array): 
-    pass
-
-class dynamic_array_list(static_array_list):
-    def length_(self): return self.length
-
+from main_auto import *
+kernels = kernels_aux + kernels_main
 import cupy as cp
 import numpy as np
 from dataclasses import dataclass
@@ -8273,7 +8229,9 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
-UH0 = Union["UH0_0", "UH0_1"]
+
+# fwd_dcls
+UH0 = Union["UH0_0", "UH0_1"]# types
 @dataclass
 class Mut0:
     v0 : string
@@ -8283,6 +8241,7 @@ class UH0_1(NamedTuple): # (1, Cons)
     v0 : string
     v1 : UH0
     tag = 1
+# functions
 def method1() -&gt; string:
     v0 = ""
     return v0
@@ -8417,6 +8376,7 @@ def method0() -&gt; None:
     print(v297)
     del v297
     return 
+# main_defs
 def main_body():
     return method0()
 
@@ -8956,8 +8916,10 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">try_index_of</span> <span class="n">item</span> <span class="nb">list</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">inl</span> <span class="n">try_index_of</span> <span class="n">item</span> <span class="nb">list</span> <span class="o">=</span>
+<span class="n">inl</span> <span class="n">try_index_of</span> <span class="n">forall</span> <span class="n">b</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">item</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">(</span><span class="nb">list</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">option</span> <span class="n">c</span> <span class="o">=</span>
+    <span class="o">//</span> <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">a</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">i</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">a</span> <span class="o">=</span> <span class="n">function</span>
         <span class="o">|</span> <span class="p">[]</span> <span class="o">=&gt;</span> <span class="kc">None</span>
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
             <span class="k">if</span> <span class="n">x</span> <span class="o">=</span> <span class="n">item</span>
@@ -8968,8 +8930,10 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <span class="n">inl</span> <span class="n">index_of</span> <span class="n">item</span> <span class="o">=</span>
     <span class="n">try_index_of</span> <span class="n">item</span> <span class="o">&gt;&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
 
-<span class="n">inl</span> <span class="n">try_index_of_</span> <span class="n">item</span> <span class="nb">list</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
+<span class="o">//</span> <span class="n">inl</span> <span class="n">try_index_of_</span> <span class="n">item</span> <span class="nb">list</span> <span class="o">=</span>
+<span class="n">inl</span> <span class="n">try_index_of_</span> <span class="n">forall</span> <span class="n">b</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">item</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">(</span><span class="nb">list</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">option</span> <span class="n">c</span> <span class="o">=</span>
+    <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">a</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">i</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">a</span> <span class="o">=</span> <span class="n">function</span>
         <span class="o">|</span> <span class="p">[]</span> <span class="o">=&gt;</span> <span class="kc">None</span>
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
             <span class="k">if</span> <span class="n">x</span> <span class="o">=</span> <span class="n">item</span>
@@ -9803,7 +9767,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-.py output (Cuda):
+.py output (Python):
 { name = __assert_eq; actual = true; expected = true }
 { name = __assert_eq; actual = false; expected = false }
 { name = __assert_eq; actual = false; expected = false }
@@ -9823,7 +9787,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:35:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\7e2ab23d9eacad24f9bf531c0691f3ea3276505f45c5ae81da0557f326934477\src\main.gleam:35:45</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">35 │                                         let v10 = v7 - 1</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                             ^^^ This variable is never used</span>
@@ -9831,7 +9795,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v10`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:93:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\7e2ab23d9eacad24f9bf531c0691f3ea3276505f45c5ae81da0557f326934477\src\main.gleam:93:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">93 │                                 let v7 = v4 - 1</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                     ^^ This variable is never used</span>
@@ -9839,7 +9803,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v7`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable code</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\fb0b4042c33054486652c964c50cc74abd92de9ecf0e1e3401ce70d712124848\src\main.gleam:129:22</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\7e2ab23d9eacad24f9bf531c0691f3ea3276505f45c5ae81da0557f326934477\src\main.gleam:129:22</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">129 │             let v3 = v2 == "a"</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                      ^^^^^^^^^</span>
@@ -11236,56 +11200,11 @@ method0()
 
 # spiral.process_python
 
-.py (Cuda):
-kernel = r"""
+.py (Python):
+kernels_main = r"""
 """
-class static_array():
-    def __init__(self, length):
-        self.ptr = []
-        for _ in range(length):
-            self.ptr.append(None)
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; len(self.ptr), "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; len(self.ptr), "The set index needs to be in range."
-        self.ptr[index] = value
-
-class static_array_list(static_array):
-    def __init__(self, length):
-        super().__init__(length)
-        self.length = 0
-
-    def __getitem__(self, index):
-        assert 0 &lt;= index &lt; self.length, "The get index needs to be in range."
-        return self.ptr[index]
-    
-    def __setitem__(self, index, value):
-        assert 0 &lt;= index &lt; self.length, "The set index needs to be in range."
-        self.ptr[index] = value
-
-    def push(self,value):
-        assert (self.length &lt; len(self.ptr)), "The length before pushing has to be less than the maximum length of the array."
-        self.ptr[self.length] = value
-        self.length += 1
-
-    def pop(self):
-        assert (0 &lt; self.length), "The length before popping has to be greater than 0."
-        self.length -= 1
-        return self.ptr[self.length]
-
-    def unsafe_set_length(self,i):
-        assert 0 &lt;= i &lt;= len(self.ptr), "The new length has to be in range."
-        self.length = i
-
-class dynamic_array(static_array): 
-    pass
-
-class dynamic_array_list(static_array_list):
-    def length_(self): return self.length
-
+from main_auto import *
+kernels = kernels_aux + kernels_main
 import cupy as cp
 import numpy as np
 from dataclasses import dataclass
@@ -11293,6 +11212,9 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 cuda = False
 
+
+# fwd_dcls
+# types
 class US0_0(NamedTuple): # (0, Some)
     v0 : char
     tag = 0
@@ -11302,6 +11224,7 @@ US0 = Union[US0_0, US0_1]
 @dataclass
 class Mut0:
     v0 : string
+# functions
 def method1(v0 : i64) -&gt; bool:
     v1 = v0 &gt;= 3
     if v1:
@@ -11753,6 +11676,7 @@ def method0() -&gt; None:
     else:
         del v733, v739
         return 
+# main_defs
 def main_body():
     return method0()
 
@@ -12173,7 +12097,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))); expected = UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))) }
 
 .rs output:

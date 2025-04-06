@@ -7327,6 +7327,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -7635,15 +7636,15 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">run_platform</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="n">os_platform</span> <span class="o">-&gt;</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="p">))</span> <span class="p">:</span> <span class="n">t</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">dyn</span> <span class="n">true</span>
     <span class="err">$</span><span class="s1">'let mutable _run_platform_!result : `t option = None '</span>
-    <span class="err">$</span><span class="s1">'</span><span class="se">\n</span><span class="s1">#if _FREEBSD'</span>
+    <span class="err">$</span><span class="s1">'</span><span class="se">\n</span><span class="s1">\#if _FREEBSD'</span>
     <span class="n">fn</span> <span class="n">FreeBSD</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">emit_unit</span>
-    <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if _LINUX'</span>
+    <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if _LINUX'</span>
     <span class="n">fn</span> <span class="n">Linux</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">emit_unit</span>
-    <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if _OSX'</span>
+    <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if _OSX'</span>
     <span class="n">fn</span> <span class="n">OSX</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">emit_unit</span>
-    <span class="err">$</span><span class="s1">'#endif</span><span class="se">\n</span><span class="s1">#if _WINDOWS'</span>
+    <span class="err">$</span><span class="s1">'\#endif</span><span class="se">\n</span><span class="s1">\#if _WINDOWS'</span>
     <span class="n">fn</span> <span class="n">Windows</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">emit_unit</span>
-    <span class="err">$</span><span class="s1">'#endif'</span>
+    <span class="err">$</span><span class="s1">'\#endif'</span>
     <span class="err">$</span><span class="s1">'|&gt; fun x -&gt; _run_platform_!result &lt;- Some x'</span>
     <span class="err">$</span><span class="s1">'match _run_platform_!result with Some x -&gt; x | None -&gt; failwith "runtime.run_platform / _run_platform_!result=None"'</span>
 </pre></div>
@@ -7743,7 +7744,11 @@ a.anchor-link {
             <span class="n">Windows</span> <span class="o">|&gt;</span> <span class="n">os_platform</span> <span class="o">|&gt;</span> <span class="n">is_os_platform</span>
         <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">backend_switch</span> <span class="p">{</span>
-                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/erlang/os"</span>
+                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                    <span class="n">backend_switch</span> <span class="p">{</span>
+                        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/erlang/os"</span>
+                    <span class="p">}</span>
+                    <span class="p">:</span> <span class="p">()</span>
             <span class="p">}</span>
             <span class="err">$</span><span class="s1">'os.family() == os.WindowsNt'</span>
         <span class="o">|</span> <span class="n">target</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">failwith</span> <span class="err">$</span><span class="s1">'$"platform.is_windows / target: {!target}"'</span>

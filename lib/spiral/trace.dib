@@ -183,6 +183,7 @@ let test_trace_level level : bool =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -194,7 +195,12 @@ test_trace_level Verbose |> _assert_eq true
 
 inl level = get_trace_state_or_init None .level
 level <- Debug
-test_trace_level Verbose |> _assert_eq false
+test_trace_level Verbose
+|> _assert_eq (backend_switch {
+    Gleam = fun () => true
+    Fsharp = fun () => false
+    Python = fun () => false
+})
 level <- Verbose
 test_trace_level Verbose |> _assert_eq true
 
@@ -283,6 +289,18 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                                 date_time.now ()
                                 |> date_time.ticks
                                 |> fun (date_time.timestamp x) => x |> convert
+                                |> fun (x : i64) =>
+                                    backend_switch {
+                                        Gleam = fun () =>
+                                            backend_switch {
+                                                Gleam = fun () =>
+                                                    global "import gleam/float"
+                                                    global "import gleam/time/timestamp"
+                                            }
+                                            $'!x |> timestamp.to_unix_seconds |> float.round' : i64
+                                        Fsharp = fun () => x
+                                        Python = fun () => x
+                                    }
                                 |> flip (-) repl_start
                                 |> date_time.time_span
                             date_time.date_time_milliseconds
@@ -379,6 +397,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -389,7 +408,11 @@ trace Debug (fun () => "test1") id
 trace Debug (fun () => "test2") id
 get_trace_state_or_init None .count
 |> fun x => *x
-|> _assert_eq 3
+|> _assert_eq (backend_switch {
+    Gleam = fun () => 1i64
+    Fsharp = fun () => 3i64
+    Python = fun () => 3i64
+})
 
 #!markdown
 

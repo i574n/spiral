@@ -25,7 +25,11 @@ inl write_line obj : () =
         Gleam = fun () =>
             backend_switch {
                 Gleam = fun () =>
-                    global "import gleam/io"
+                    backend_switch {
+                        Gleam = fun () =>
+                            global "import gleam/io"
+                    }
+                    : ()
             }
             $'io.println(!obj)' : ()
         Fsharp = fun () =>

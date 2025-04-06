@@ -7327,6 +7327,7 @@ a.anchor-link {
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -7685,7 +7686,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-.py output (Cuda):
+.py output (Python):
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = a b c }
 { name = __assert_eq'; actual = ['a' 'b' 'c']; expected = ['a' 'b' 'c'] }
@@ -7969,7 +7970,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-.py output (Cuda):
+.py output (Python):
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input =  }
 { name = __assert_eq'; actual = , US1_1(); expected = , US1_1() }
@@ -10946,7 +10947,7 @@ a.anchor-link {
   "-c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content test.txt""; options = { command = pwsh -c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content test.txt"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = Some
   "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9" } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #5 &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #6 runtime.execute_with_options_async / { exit_code = 0; output_length = 22; options = { command = pwsh -c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content test.txt"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = Some
+00:00:01 <span class="ansi-blue-intense-fg">d</span> #6 runtime.execute_with_options_async / { exit_code = 0; output_length = 22; options = { command = pwsh -c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content test.txt"; cancellation_token = None; environment_variables = [||]; on_line = None; stdin = None; trace = true; working_directory = Some
   "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\dotnet-repl\76793606-813b-88ad-7791-7ce2871edce9" } }
 { name = __assert_eq; actual = 0; expected = 0 }
 { name = __assert_eq; actual = ╭─[ 你好，世界！こんにちは世界！ ]─╮; expected = ╭─[ 你好，世界！こんにちは世界！ ]─╮ }
@@ -11437,14 +11438,14 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_7292c9b1541e8c0d0a2b14a2d683f1da02fb2b37fa42cd5dfc126380ad7057e7\9242780b-ce0e-9155-5e07-f6ee5667aa16 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[IO.File]::ReadAllText('c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7292c9b1541e8c0d0a2b14a2d683f1da02fb2b37fa42cd5dfc126380ad7057e7/9242780b-ce0e-9155-5e07-f6ee5667aa16/test.txt')"]; options = { command = pwsh -c "[IO.File]::ReadAllText('c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_7292c9b1541e8c0d0a2b14a2d683f1da02fb2b37fa42cd5dfc126380ad7057e7/9242780b-ce0e-9155-5e07-f6ee5667aa16/test.txt')"; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = None } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #3 ! <span class="ansi-red-intense-fg ansi-bold">MethodInvocationException: </span><span class="ansi-red-intense-fg ansi-bold">Exception calling "ReadAllText" with "1" argument(s): "Could not find file 'c:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_7292c9b1541e8c0d0a2b14a2d683f1da02fb2b37fa42cd5dfc126380ad7057e7\9242780b-ce0e-9155-5e07-f6ee5667aa16\test.txt'."</span>
+<pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_f203b6407abd3e56421a242aaa5fe69d334bff2a211cd20e8969b0139d7a565d\9242780b-ce0e-9155-5e07-f6ee5667aa16 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[IO.File]::ReadAllText('c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_f203b6407abd3e56421a242aaa5fe69d334bff2a211cd20e8969b0139d7a565d/9242780b-ce0e-9155-5e07-f6ee5667aa16/test.txt')"]; options = { command = pwsh -c "[IO.File]::ReadAllText('c:/Users/i574n/AppData/Local/Temp/!create_temp_path_/spiral_f203b6407abd3e56421a242aaa5fe69d334bff2a211cd20e8969b0139d7a565d/9242780b-ce0e-9155-5e07-f6ee5667aa16/test.txt')"; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = None } }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #3 ! <span class="ansi-red-intense-fg ansi-bold">MethodInvocationException: </span><span class="ansi-red-intense-fg ansi-bold">Exception calling "ReadAllText" with "1" argument(s): "Could not find file 'c:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_f203b6407abd3e56421a242aaa5fe69d334bff2a211cd20e8969b0139d7a565d\9242780b-ce0e-9155-5e07-f6ee5667aa16\test.txt'."</span>
 00:00:00 <span class="ansi-black-intense-fg">v</span> #4 runtime.execute_with_options / result / { exit_code = 1; std_trace_length = 304 }
 { name = __assert_eq; actual = 1; expected = 1 }
-{ name = __assert; actual = not find file; expected = <span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">MethodInvocationException: </span><span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">Exception calling "ReadAllText" with "1" argument(s): "Could not find file 'c:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_7292c9b1541e8c0d0a2b14a2d683f1da02fb2b37fa42cd5dfc126380ad7057e7\9242780b-ce0e-9155-5e07-f6ee5667aa16\test.txt'."</span> }
+{ name = __assert; actual = not find file; expected = <span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">MethodInvocationException: </span><span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">Exception calling "ReadAllText" with "1" argument(s): "Could not find file 'c:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_f203b6407abd3e56421a242aaa5fe69d334bff2a211cd20e8969b0139d7a565d\9242780b-ce0e-9155-5e07-f6ee5667aa16\test.txt'."</span> }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #5 runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"]; options = { command = pwsh -c "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"; cancellation_token = None; environment_variables = Array(MutCell([])); on_line = None; stdin = None; trace = true; working_directory = Some(
-    "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_7292c9b1541e8c0d0a2b14a2d683f1da02fb2b37fa42cd5dfc126380ad7057e7\9242780b-ce0e-9155-5e07-f6ee5667aa16",
+    "C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_f203b6407abd3e56421a242aaa5fe69d334bff2a211cd20e8969b0139d7a565d\9242780b-ce0e-9155-5e07-f6ee5667aa16",
 ) } }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #6 &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 22 }

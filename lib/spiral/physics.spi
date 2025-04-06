@@ -399,5 +399,3 @@ inl uniform_lorentz_force v_e v_b (st : particle_state) =
 /// #### system kinetic energy versus time 2
 
 /// #### wave 2
-
-/// ## end

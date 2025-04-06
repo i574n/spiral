@@ -208,8 +208,14 @@ inl (|>>) p f : parser _ =
         f result, rest
 
 /// ### many
-inl many p : parser (list _) = fun input =>
-    let rec loop acc input =
+// inl many p : parser (list _) = fun input =>
+inl many forall b c. (p : _ -> _ (b * _ * _) c) : parser (list _) = fun input =>
+    // let rec loop acc input =
+    let rec loop forall a.
+        (acc : list b)
+        (input : string * parser_state)
+        : result (list b * string * parser_state) a
+        =
         match p input with
         | Ok (result, rest) => loop (result :: acc) rest
         | Error _ => Ok (acc |> listm.rev, input)
@@ -263,8 +269,11 @@ inl many_strings p : parser string = fun input =>
     | Error e => Ok ("", input)
 
 /// ### choice
-inl choice parsers : parser _ = fun input =>
-    let rec loop = function
+// inl choice parsers : parser _ = fun input =>
+inl choice forall t. parsers : parser t = fun input =>
+    // let rec loop = function
+    let rec loop forall a. (x : list (string * parser_state -> result a string)) : result a string =
+        match x with
         | [] => Error "parsing.choice / no parsers succeeded"
         | p :: ps =>
             match p input with
@@ -290,8 +299,15 @@ inl between p_open p_close p_content : parser _ = fun input =>
     | Error e => Error e
 
 /// ### sep_by
-inl sep_by p sep : parser (list _) = fun input, s =>
-    let rec loop acc input s =
+// inl sep_by p sep : parser (list _) = fun input, s =>
+inl sep_by forall b. p sep : parser (list b) = fun input, s =>
+    // let rec loop acc input s =
+    let rec loop forall a.
+        (acc : list b)
+        (input : string)
+        (s : parser_state)
+        : result (list b * string * parser_state) a
+        =
         match p (input, s) with
         | Ok (result, rest, s) =>
             match sep (rest, s) with
@@ -302,7 +318,8 @@ inl sep_by p sep : parser (list _) = fun input, s =>
 
 /// ### span
 inl span pred str =
-    let rec loop i =
+    // let rec loop i =
+    let rec loop forall t {number; int}. (i : t) : t =
         if i >= sm'.length str
         then i
         elif pred (str |> sm'.index i)
