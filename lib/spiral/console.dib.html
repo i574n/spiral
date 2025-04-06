@@ -7679,7 +7679,11 @@ a.anchor-link {
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">backend_switch</span> <span class="p">{</span>
                 <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                    <span class="k">global</span> <span class="s2">"import gleam/io"</span>
+                    <span class="n">backend_switch</span> <span class="p">{</span>
+                        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                            <span class="k">global</span> <span class="s2">"import gleam/io"</span>
+                    <span class="p">}</span>
+                    <span class="p">:</span> <span class="p">()</span>
             <span class="p">}</span>
             <span class="err">$</span><span class="s1">'io.println(!obj)'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>

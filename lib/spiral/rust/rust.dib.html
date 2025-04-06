@@ -7609,7 +7609,7 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="nb">any</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">core::any::Any</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type core_any_Any = class end</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type core_any_Any = obj</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">core::any::Any</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type core_any_Any = class end</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type core_any_Any = obj</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'core_any_Any'</span>
     <span class="p">)</span>
 </pre></div>
@@ -7902,7 +7902,7 @@ a.anchor-link {
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Fsharp</span> <span class="o">=</span>
                 <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                    <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">&amp;$0</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type Ref&lt;'T&gt; = class end</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type Ref&lt;'T&gt; = 'T</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">&amp;$0</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type Ref&lt;'T&gt; = class end</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type Ref&lt;'T&gt; = 'T</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
                 <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
         <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Ref&lt;`t&gt;'</span>
@@ -9959,7 +9959,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">fix_closure</span><span class="s1">' forall t. (depth : u8 * u8) (x : t) : string =</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">text</span> <span class="p">(</span><span class="n">acc</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="n">n</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">u</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">text</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">(</span><span class="n">acc</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">u</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
         <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">0</span>
         <span class="n">then</span> <span class="n">acc</span>
         <span class="k">else</span> <span class="n">loop</span> <span class="n">text</span> <span class="p">(</span><span class="n">acc</span> <span class="o">+.</span> <span class="n">text</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
@@ -10073,83 +10073,83 @@ and method0 () : unit =
     let _run_target_args'_v10 = false 
     #endif
     let v17 : bool = _run_target_args'_v10 
-    let v19 : string = $"true; _fix_closure_v9 " + v4 + "); " + v7 + " // rust.fix_closure'"
-    let v20 : bool = v19 = "true; _fix_closure_v9 }}}); {{ // rust.fix_closure'"
-    let v22 : bool =
-        if v20 then
+    let v18 : string = $"true; _fix_closure_v9 " + v4 + "); " + v7 + " // rust.fix_closure'"
+    let v19 : bool = v18 = "true; _fix_closure_v9 }}}); {{ // rust.fix_closure'"
+    let v21 : bool =
+        if v19 then
             true
         else
-            method1(v20)
-    let v23 : string = method2()
-    let v24 : Mut0 = {l0 = v23} : Mut0
-    let v27 : string = "{ "
-    let v28 : string = $"{v27}"
-    let v36 : unit = ()
-    let v37 : (unit -&gt; unit) = closure0(v24, v28)
-    let v38 : unit = (fun () -&gt; v37 (); v36) ()
-    let v46 : string = "name"
-    let v47 : string = $"{v46}"
-    let v55 : unit = ()
-    let v56 : (unit -&gt; unit) = closure0(v24, v47)
-    let v57 : unit = (fun () -&gt; v56 (); v55) ()
-    let v65 : string = " = "
-    let v66 : string = $"{v65}"
-    let v74 : unit = ()
-    let v75 : (unit -&gt; unit) = closure0(v24, v66)
-    let v76 : unit = (fun () -&gt; v75 (); v74) ()
-    let v84 : string = "__assert_eq"
-    let v85 : string = $"{v84}"
-    let v93 : unit = ()
-    let v94 : (unit -&gt; unit) = closure0(v24, v85)
-    let v95 : unit = (fun () -&gt; v94 (); v93) ()
-    let v103 : string = "; "
-    let v104 : string = $"{v103}"
-    let v112 : unit = ()
-    let v113 : (unit -&gt; unit) = closure0(v24, v104)
-    let v114 : unit = (fun () -&gt; v113 (); v112) ()
-    let v122 : string = "actual"
-    let v123 : string = $"{v122}"
-    let v131 : unit = ()
-    let v132 : (unit -&gt; unit) = closure0(v24, v123)
-    let v133 : unit = (fun () -&gt; v132 (); v131) ()
-    let v140 : string = $"{v65}"
-    let v148 : unit = ()
-    let v149 : (unit -&gt; unit) = closure0(v24, v140)
-    let v150 : unit = (fun () -&gt; v149 (); v148) ()
-    let v157 : string = $"{v19}"
-    let v165 : unit = ()
-    let v166 : (unit -&gt; unit) = closure0(v24, v157)
-    let v167 : unit = (fun () -&gt; v166 (); v165) ()
-    let v174 : string = $"{v103}"
-    let v182 : unit = ()
-    let v183 : (unit -&gt; unit) = closure0(v24, v174)
-    let v184 : unit = (fun () -&gt; v183 (); v182) ()
-    let v192 : string = "expected"
-    let v193 : string = $"{v192}"
-    let v201 : unit = ()
-    let v202 : (unit -&gt; unit) = closure0(v24, v193)
-    let v203 : unit = (fun () -&gt; v202 (); v201) ()
-    let v210 : string = $"{v65}"
-    let v218 : unit = ()
-    let v219 : (unit -&gt; unit) = closure0(v24, v210)
-    let v220 : unit = (fun () -&gt; v219 (); v218) ()
-    let v228 : string = "true; _fix_closure_v9 }}}); {{ // rust.fix_closure'"
-    let v229 : string = $"{v228}"
-    let v237 : unit = ()
-    let v238 : (unit -&gt; unit) = closure0(v24, v229)
-    let v239 : unit = (fun () -&gt; v238 (); v237) ()
-    let v247 : string = " }"
-    let v248 : string = $"{v247}"
-    let v256 : unit = ()
-    let v257 : (unit -&gt; unit) = closure0(v24, v248)
-    let v258 : unit = (fun () -&gt; v257 (); v256) ()
-    let v264 : string = v24.l0
-    let v266 : unit = ()
-    let v267 : (unit -&gt; unit) = closure1(v264)
-    let v268 : unit = (fun () -&gt; v267 (); v266) ()
-    let v270 : bool = v22 = false
-    if v270 then
-        failwith&lt;unit&gt; v264
+            method1(v19)
+    let v22 : string = method2()
+    let v23 : Mut0 = {l0 = v22} : Mut0
+    let v26 : string = "{ "
+    let v27 : string = $"{v26}"
+    let v35 : unit = ()
+    let v36 : (unit -&gt; unit) = closure0(v23, v27)
+    let v37 : unit = (fun () -&gt; v36 (); v35) ()
+    let v45 : string = "name"
+    let v46 : string = $"{v45}"
+    let v54 : unit = ()
+    let v55 : (unit -&gt; unit) = closure0(v23, v46)
+    let v56 : unit = (fun () -&gt; v55 (); v54) ()
+    let v64 : string = " = "
+    let v65 : string = $"{v64}"
+    let v73 : unit = ()
+    let v74 : (unit -&gt; unit) = closure0(v23, v65)
+    let v75 : unit = (fun () -&gt; v74 (); v73) ()
+    let v83 : string = "__assert_eq"
+    let v84 : string = $"{v83}"
+    let v92 : unit = ()
+    let v93 : (unit -&gt; unit) = closure0(v23, v84)
+    let v94 : unit = (fun () -&gt; v93 (); v92) ()
+    let v102 : string = "; "
+    let v103 : string = $"{v102}"
+    let v111 : unit = ()
+    let v112 : (unit -&gt; unit) = closure0(v23, v103)
+    let v113 : unit = (fun () -&gt; v112 (); v111) ()
+    let v121 : string = "actual"
+    let v122 : string = $"{v121}"
+    let v130 : unit = ()
+    let v131 : (unit -&gt; unit) = closure0(v23, v122)
+    let v132 : unit = (fun () -&gt; v131 (); v130) ()
+    let v139 : string = $"{v64}"
+    let v147 : unit = ()
+    let v148 : (unit -&gt; unit) = closure0(v23, v139)
+    let v149 : unit = (fun () -&gt; v148 (); v147) ()
+    let v156 : string = $"{v18}"
+    let v164 : unit = ()
+    let v165 : (unit -&gt; unit) = closure0(v23, v156)
+    let v166 : unit = (fun () -&gt; v165 (); v164) ()
+    let v173 : string = $"{v102}"
+    let v181 : unit = ()
+    let v182 : (unit -&gt; unit) = closure0(v23, v173)
+    let v183 : unit = (fun () -&gt; v182 (); v181) ()
+    let v191 : string = "expected"
+    let v192 : string = $"{v191}"
+    let v200 : unit = ()
+    let v201 : (unit -&gt; unit) = closure0(v23, v192)
+    let v202 : unit = (fun () -&gt; v201 (); v200) ()
+    let v209 : string = $"{v64}"
+    let v217 : unit = ()
+    let v218 : (unit -&gt; unit) = closure0(v23, v209)
+    let v219 : unit = (fun () -&gt; v218 (); v217) ()
+    let v227 : string = "true; _fix_closure_v9 }}}); {{ // rust.fix_closure'"
+    let v228 : string = $"{v227}"
+    let v236 : unit = ()
+    let v237 : (unit -&gt; unit) = closure0(v23, v228)
+    let v238 : unit = (fun () -&gt; v237 (); v236) ()
+    let v246 : string = " }"
+    let v247 : string = $"{v246}"
+    let v255 : unit = ()
+    let v256 : (unit -&gt; unit) = closure0(v23, v247)
+    let v257 : unit = (fun () -&gt; v256 (); v255) ()
+    let v263 : string = v23.l0
+    let v265 : unit = ()
+    let v266 : (unit -&gt; unit) = closure1(v263)
+    let v267 : unit = (fun () -&gt; v266 (); v265) ()
+    let v269 : bool = v21 = false
+    if v269 then
+        failwith&lt;unit&gt; v263
 method0()
 
 { name = __assert_eq; actual = true; _fix_closure_v9 }}}); {{ // rust.fix_closure'; expected = true; _fix_closure_v9 }}}); {{ // rust.fix_closure' }
@@ -10229,84 +10229,84 @@ and method0 () : unit =
     let _run_target_args'_v2 = false 
     #endif
     let v3 : bool = _run_target_args'_v2 
-    let v5 : string = ""
-    let v6 : string = $"true; _fix_closure_v1 " + v5 + "); " + v5 + " // rust.fix_closure'"
-    let v7 : bool = v6 = "true; _fix_closure_v1 );  // rust.fix_closure'"
-    let v9 : bool =
-        if v7 then
+    let v4 : string = ""
+    let v5 : string = $"true; _fix_closure_v1 " + v4 + "); " + v4 + " // rust.fix_closure'"
+    let v6 : bool = v5 = "true; _fix_closure_v1 );  // rust.fix_closure'"
+    let v8 : bool =
+        if v6 then
             true
         else
-            method1(v7)
-    let v10 : string = method2()
-    let v11 : Mut0 = {l0 = v10} : Mut0
-    let v14 : string = "{ "
-    let v15 : string = $"{v14}"
-    let v23 : unit = ()
-    let v24 : (unit -&gt; unit) = closure0(v11, v15)
-    let v25 : unit = (fun () -&gt; v24 (); v23) ()
-    let v33 : string = "name"
-    let v34 : string = $"{v33}"
-    let v42 : unit = ()
-    let v43 : (unit -&gt; unit) = closure0(v11, v34)
-    let v44 : unit = (fun () -&gt; v43 (); v42) ()
-    let v52 : string = " = "
-    let v53 : string = $"{v52}"
-    let v61 : unit = ()
-    let v62 : (unit -&gt; unit) = closure0(v11, v53)
-    let v63 : unit = (fun () -&gt; v62 (); v61) ()
-    let v71 : string = "__assert_eq"
-    let v72 : string = $"{v71}"
-    let v80 : unit = ()
-    let v81 : (unit -&gt; unit) = closure0(v11, v72)
-    let v82 : unit = (fun () -&gt; v81 (); v80) ()
-    let v90 : string = "; "
-    let v91 : string = $"{v90}"
-    let v99 : unit = ()
-    let v100 : (unit -&gt; unit) = closure0(v11, v91)
-    let v101 : unit = (fun () -&gt; v100 (); v99) ()
-    let v109 : string = "actual"
-    let v110 : string = $"{v109}"
-    let v118 : unit = ()
-    let v119 : (unit -&gt; unit) = closure0(v11, v110)
-    let v120 : unit = (fun () -&gt; v119 (); v118) ()
-    let v127 : string = $"{v52}"
-    let v135 : unit = ()
-    let v136 : (unit -&gt; unit) = closure0(v11, v127)
-    let v137 : unit = (fun () -&gt; v136 (); v135) ()
-    let v144 : string = $"{v6}"
-    let v152 : unit = ()
-    let v153 : (unit -&gt; unit) = closure0(v11, v144)
-    let v154 : unit = (fun () -&gt; v153 (); v152) ()
-    let v161 : string = $"{v90}"
-    let v169 : unit = ()
-    let v170 : (unit -&gt; unit) = closure0(v11, v161)
-    let v171 : unit = (fun () -&gt; v170 (); v169) ()
-    let v179 : string = "expected"
-    let v180 : string = $"{v179}"
-    let v188 : unit = ()
-    let v189 : (unit -&gt; unit) = closure0(v11, v180)
-    let v190 : unit = (fun () -&gt; v189 (); v188) ()
-    let v197 : string = $"{v52}"
-    let v205 : unit = ()
-    let v206 : (unit -&gt; unit) = closure0(v11, v197)
-    let v207 : unit = (fun () -&gt; v206 (); v205) ()
-    let v215 : string = "true; _fix_closure_v1 );  // rust.fix_closure'"
-    let v216 : string = $"{v215}"
-    let v224 : unit = ()
-    let v225 : (unit -&gt; unit) = closure0(v11, v216)
-    let v226 : unit = (fun () -&gt; v225 (); v224) ()
-    let v234 : string = " }"
-    let v235 : string = $"{v234}"
-    let v243 : unit = ()
-    let v244 : (unit -&gt; unit) = closure0(v11, v235)
-    let v245 : unit = (fun () -&gt; v244 (); v243) ()
-    let v251 : string = v11.l0
-    let v253 : unit = ()
-    let v254 : (unit -&gt; unit) = closure1(v251)
-    let v255 : unit = (fun () -&gt; v254 (); v253) ()
-    let v257 : bool = v9 = false
-    if v257 then
-        failwith&lt;unit&gt; v251
+            method1(v6)
+    let v9 : string = method2()
+    let v10 : Mut0 = {l0 = v9} : Mut0
+    let v13 : string = "{ "
+    let v14 : string = $"{v13}"
+    let v22 : unit = ()
+    let v23 : (unit -&gt; unit) = closure0(v10, v14)
+    let v24 : unit = (fun () -&gt; v23 (); v22) ()
+    let v32 : string = "name"
+    let v33 : string = $"{v32}"
+    let v41 : unit = ()
+    let v42 : (unit -&gt; unit) = closure0(v10, v33)
+    let v43 : unit = (fun () -&gt; v42 (); v41) ()
+    let v51 : string = " = "
+    let v52 : string = $"{v51}"
+    let v60 : unit = ()
+    let v61 : (unit -&gt; unit) = closure0(v10, v52)
+    let v62 : unit = (fun () -&gt; v61 (); v60) ()
+    let v70 : string = "__assert_eq"
+    let v71 : string = $"{v70}"
+    let v79 : unit = ()
+    let v80 : (unit -&gt; unit) = closure0(v10, v71)
+    let v81 : unit = (fun () -&gt; v80 (); v79) ()
+    let v89 : string = "; "
+    let v90 : string = $"{v89}"
+    let v98 : unit = ()
+    let v99 : (unit -&gt; unit) = closure0(v10, v90)
+    let v100 : unit = (fun () -&gt; v99 (); v98) ()
+    let v108 : string = "actual"
+    let v109 : string = $"{v108}"
+    let v117 : unit = ()
+    let v118 : (unit -&gt; unit) = closure0(v10, v109)
+    let v119 : unit = (fun () -&gt; v118 (); v117) ()
+    let v126 : string = $"{v51}"
+    let v134 : unit = ()
+    let v135 : (unit -&gt; unit) = closure0(v10, v126)
+    let v136 : unit = (fun () -&gt; v135 (); v134) ()
+    let v143 : string = $"{v5}"
+    let v151 : unit = ()
+    let v152 : (unit -&gt; unit) = closure0(v10, v143)
+    let v153 : unit = (fun () -&gt; v152 (); v151) ()
+    let v160 : string = $"{v89}"
+    let v168 : unit = ()
+    let v169 : (unit -&gt; unit) = closure0(v10, v160)
+    let v170 : unit = (fun () -&gt; v169 (); v168) ()
+    let v178 : string = "expected"
+    let v179 : string = $"{v178}"
+    let v187 : unit = ()
+    let v188 : (unit -&gt; unit) = closure0(v10, v179)
+    let v189 : unit = (fun () -&gt; v188 (); v187) ()
+    let v196 : string = $"{v51}"
+    let v204 : unit = ()
+    let v205 : (unit -&gt; unit) = closure0(v10, v196)
+    let v206 : unit = (fun () -&gt; v205 (); v204) ()
+    let v214 : string = "true; _fix_closure_v1 );  // rust.fix_closure'"
+    let v215 : string = $"{v214}"
+    let v223 : unit = ()
+    let v224 : (unit -&gt; unit) = closure0(v10, v215)
+    let v225 : unit = (fun () -&gt; v224 (); v223) ()
+    let v233 : string = " }"
+    let v234 : string = $"{v233}"
+    let v242 : unit = ()
+    let v243 : (unit -&gt; unit) = closure0(v10, v234)
+    let v244 : unit = (fun () -&gt; v243 (); v242) ()
+    let v250 : string = v10.l0
+    let v252 : unit = ()
+    let v253 : (unit -&gt; unit) = closure1(v250)
+    let v254 : unit = (fun () -&gt; v253 (); v252) ()
+    let v256 : bool = v8 = false
+    if v256 then
+        failwith&lt;unit&gt; v250
 method0()
 
 { name = __assert_eq; actual = true; _fix_closure_v1 );  // rust.fix_closure'; expected = true; _fix_closure_v1 );  // rust.fix_closure' }
@@ -10456,7 +10456,11 @@ method0()
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">type_emit</span> <span class="n">t</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">*/ $0 /*</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type TypeEmit&lt;'T&gt; = class end"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">*/ $0 /*</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type TypeEmit&lt;'T&gt; = class end"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'TypeEmit&lt;`t&gt;'</span>
     <span class="p">)</span>
 </pre></div>
@@ -10520,7 +10524,7 @@ method0()
     <span class="n">inl</span> <span class="n">struct</span> <span class="p">()</span> <span class="o">=</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"} //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
 
-        <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"#[derive( //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"\#[derive( //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"  Debug, //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"  Clone, //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'")] //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
@@ -10605,7 +10609,7 @@ method0()
     <span class="n">inl</span> <span class="n">struct</span> <span class="p">()</span> <span class="o">=</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"} //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
 
-        <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"#[derive( //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"\#[derive( //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"  Debug, //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'")] //"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
         <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"pub struct CloneWrapper&lt;T&gt;(T); /*"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>

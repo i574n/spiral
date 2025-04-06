@@ -15,11 +15,11 @@ import { toArray, empty, FSharpList, cons } from "../../deps/polyglot/deps/Fable
 import { delay } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Seq.js";
 import { FSharpResult$2_$union, FSharpResult$2_Error, FSharpResult$2_Ok } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Result.js";
 
-export let TraceState_trace_state = createAtom<Option<[Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>]>>(undefined);
-
 export interface IOsEnviron {
     environ(): any
 }
+
+export let TraceState_trace_state = createAtom<Option<[Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>]>>(undefined);
 
 export type US0_$union = 
     | US0<0>
@@ -232,6 +232,7 @@ export type US4_$union =
     | US4<3>
     | US4<4>
     | US4<5>
+    | US4<6>
 
 export type US4_$cases = {
     0: ["US4_0", [US3_$union]],
@@ -239,7 +240,8 @@ export type US4_$cases = {
     2: ["US4_2", [US3_$union]],
     3: ["US4_3", [US3_$union]],
     4: ["US4_4", [US3_$union]],
-    5: ["US4_5", [US3_$union]]
+    5: ["US4_5", [US3_$union]],
+    6: ["US4_6", [US3_$union]]
 }
 
 export function US4_US4_0(f0_0: US3_$union) {
@@ -266,17 +268,21 @@ export function US4_US4_5(f5_0: US3_$union) {
     return new US4<5>(5, [f5_0]);
 }
 
+export function US4_US4_6(f6_0: US3_$union) {
+    return new US4<6>(6, [f6_0]);
+}
+
 export class US4<Tag extends keyof US4_$cases> extends Union<Tag, US4_$cases[Tag][0]> {
     constructor(readonly tag: Tag, readonly fields: US4_$cases[Tag][1]) {
         super();
     }
     cases() {
-        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"];
+        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"];
     }
 }
 
 export function US4_$reflection(): TypeInfo {
-    return union_type("Runtime.US4", [], US4, () => [[["f0_0", US3_$reflection()]], [["f1_0", US3_$reflection()]], [["f2_0", US3_$reflection()]], [["f3_0", US3_$reflection()]], [["f4_0", US3_$reflection()]], [["f5_0", US3_$reflection()]]]);
+    return union_type("Runtime.US4", [], US4, () => [[["f0_0", US3_$reflection()]], [["f1_0", US3_$reflection()]], [["f2_0", US3_$reflection()]], [["f3_0", US3_$reflection()]], [["f4_0", US3_$reflection()]], [["f5_0", US3_$reflection()]], [["f6_0", US3_$reflection()]]]);
 }
 
 export type US5_$union = 
@@ -863,11 +869,11 @@ export function closure2(unitVar: void, v0: string): void {
 export function method0(v0: US0_$union): [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] {
     const patternInput: [US1_$union, US2_$union] = method1();
     const _run_target_args$0027_v3 = [patternInput[0], patternInput[1]] as [US1_$union, US2_$union];
-    const v173: US2_$union = _run_target_args$0027_v3[1];
-    const v172: US1_$union = _run_target_args$0027_v3[0];
+    const v185: US2_$union = _run_target_args$0027_v3[1];
+    const v184: US1_$union = _run_target_args$0027_v3[0];
     return [new Mut0(1n), new Mut1((v: string): void => {
         closure2(undefined, v);
-    }), new Mut2(true), new Mut3(""), new Mut4(((v172.tag as int32) === /* US1_0 */ 0) ? (v172.fields[0] as any) : v0), ((v173.tag as int32) === /* US2_0 */ 0) ? (v173.fields[0] as any) : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
+    }), new Mut2(true), new Mut3(""), new Mut4(((v184.tag as int32) === /* US1_0 */ 0) ? (v184.fields[0] as any) : v0), ((v185.tag as int32) === /* US2_0 */ 0) ? (v185.fields[0] as any) : undefined] as [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>];
 }
 
 export function closure0(unitVar: void, unitVar_1: void): void {
@@ -912,18 +918,18 @@ export function method11(): string {
 }
 
 export function method8(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>): string {
-    const v623: US2_$union = defaultArg(map<int64, US2_$union>(method9(), v5), US2_US2_1());
-    let v755: Date;
-    if ((v623.tag as int32) === /* US2_0 */ 0) {
-        const v627 = v623.fields[0] as any;
-        const v703: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v627)));
-        v755 = create(1, 1, 1, hours(v703), minutes(v703), seconds(v703), milliseconds(v703));
+    const v641: US2_$union = defaultArg(map<int64, US2_$union>(method9(), v5), US2_US2_1());
+    let v781: Date;
+    if ((v641.tag as int32) === /* US2_0 */ 0) {
+        const v645 = v641.fields[0] as any;
+        const v724: number = fromTicks(toInt64(op_Subtraction(toInt64(fromInt64(getTicks(now()))), v645)));
+        v781 = create(1, 1, 1, hours(v724), minutes(v724), seconds(v724), milliseconds(v724));
     }
     else {
-        v755 = now();
+        v781 = now();
     }
-    const v757: string = method11();
-    return toString(v755, (v757 === "") ? "M-d-y hh:mm:ss tt" : v757);
+    const v782: string = method11();
+    return toString(v781, (v782 === "") ? "M-d-y hh:mm:ss tt" : v782);
 }
 
 export function method13(): string {
@@ -1759,77 +1765,77 @@ export function method37(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: O
     let v339: any;
     closure7(v18, " = ", undefined);
     v339 = undefined;
-    let v395: any;
+    let v398: any;
     closure7(v18, toText(interpolate("%A%P()", [v11])), undefined);
-    v395 = undefined;
-    let v412: any;
+    v398 = undefined;
+    let v415: any;
     closure7(v18, "; ", undefined);
-    v412 = undefined;
-    let v431: any;
+    v415 = undefined;
+    let v434: any;
     closure7(v18, "environment_variables", undefined);
-    v431 = undefined;
-    let v448: any;
+    v434 = undefined;
+    let v451: any;
     closure7(v18, " = ", undefined);
-    v448 = undefined;
-    let v469: any;
+    v451 = undefined;
+    let v472: any;
     closure7(v18, toText(interpolate("%A%P()", [v12])), undefined);
-    v469 = undefined;
-    let v486: any;
+    v472 = undefined;
+    let v489: any;
     closure7(v18, "; ", undefined);
-    v486 = undefined;
-    let v505: any;
+    v489 = undefined;
+    let v508: any;
     closure7(v18, "on_line", undefined);
-    v505 = undefined;
-    let v522: any;
+    v508 = undefined;
+    let v525: any;
     closure7(v18, " = ", undefined);
-    v522 = undefined;
-    let v578: any;
+    v525 = undefined;
+    let v584: any;
     closure7(v18, toText(interpolate("%A%P()", [v13])), undefined);
-    v578 = undefined;
-    let v595: any;
+    v584 = undefined;
+    let v601: any;
     closure7(v18, "; ", undefined);
-    v595 = undefined;
-    let v614: any;
+    v601 = undefined;
+    let v620: any;
     closure7(v18, "stdin", undefined);
-    v614 = undefined;
-    let v631: any;
+    v620 = undefined;
+    let v637: any;
     closure7(v18, " = ", undefined);
-    v631 = undefined;
-    let v687: any;
+    v637 = undefined;
+    let v696: any;
     closure7(v18, toText(interpolate("%A%P()", [v14_1])), undefined);
-    v687 = undefined;
-    let v704: any;
+    v696 = undefined;
+    let v713: any;
     closure7(v18, "; ", undefined);
-    v704 = undefined;
-    let v723: any;
+    v713 = undefined;
+    let v732: any;
     closure7(v18, "trace", undefined);
-    v723 = undefined;
-    let v740: any;
+    v732 = undefined;
+    let v749: any;
     closure7(v18, " = ", undefined);
-    v740 = undefined;
-    let v760: any;
+    v749 = undefined;
+    let v769: any;
     closure7(v18, v15_1 ? "true" : "false", undefined);
-    v760 = undefined;
-    let v777: any;
+    v769 = undefined;
+    let v786: any;
     closure7(v18, "; ", undefined);
-    v777 = undefined;
-    let v796: any;
+    v786 = undefined;
+    let v805: any;
     closure7(v18, "working_directory", undefined);
-    v796 = undefined;
-    let v813: any;
+    v805 = undefined;
+    let v822: any;
     closure7(v18, " = ", undefined);
-    v813 = undefined;
-    let v869: any;
+    v822 = undefined;
+    let v881: any;
     closure7(v18, toText(interpolate("%A%P()", [v16_1])), undefined);
-    v869 = undefined;
-    let v888: any;
+    v881 = undefined;
+    let v900: any;
     closure7(v18, " }", undefined);
-    v888 = undefined;
-    let v905: any;
+    v900 = undefined;
+    let v917: any;
     closure7(v18, " }", undefined);
-    v905 = undefined;
-    const v911: string = v18.l0;
-    return method16((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v911);
+    v917 = undefined;
+    const v923: string = v18.l0;
+    return method16((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v923);
 }
 
 export function closure17(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: US5_$union, v8: string, unitVar: void): void {
@@ -1942,8 +1948,8 @@ export function method47(): ((arg0: any) => US15_$union) {
 
 export function method48(v0: any): Async<any> {
     return singleton.Delay<any>((): Async<any> => {
-        const v560: any = defaultOf();
-        return singleton.Return<any>(v560);
+        const v612: any = defaultOf();
+        return singleton.Return<any>(v612);
     });
 }
 
@@ -1971,14 +1977,14 @@ export function method52(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: O
     let v62: any;
     closure7(v10, " = ", undefined);
     v62 = undefined;
-    let v118: any;
+    let v121: any;
     closure7(v10, toText(interpolate("%A%P()", [v8])), undefined);
-    v118 = undefined;
-    let v137: any;
+    v121 = undefined;
+    let v140: any;
     closure7(v10, " }", undefined);
-    v137 = undefined;
-    const v143: string = v10.l0;
-    return method16((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async / WaitForExitAsync") + " / ") + v143);
+    v140 = undefined;
+    const v146: string = v10.l0;
+    return method16((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async / WaitForExitAsync") + " / ") + v146);
 }
 
 export function closure23(v0: any, unitVar: void): void {
@@ -1999,17 +2005,17 @@ export function closure23(v0: any, unitVar: void): void {
 
 export function method51(v0: boolean, v1: any, v2: any): Async<int32> {
     return singleton.Delay<int32>((): Async<int32> => singleton.TryWith<int32>(singleton.Delay<int32>((): Async<int32> => {
-        const v10672: Async<void> = awaitTask(defaultOf());
-        return singleton.Bind<void, int32>(v10672, (): Async<int32> => {
-            const v10703: int32 = 0;
-            return singleton.Return<int32>(v10703);
+        const v11152: Async<void> = awaitTask(defaultOf());
+        return singleton.Bind<void, int32>(v11152, (): Async<int32> => {
+            const v11186: int32 = 0;
+            return singleton.Return<int32>(v11186);
         });
     }), (_arg_1: Error): Async<int32> => {
-        const v10990: Error = _arg_1;
-        const v11009: string = toText(interpolate("%A%P()", [v10990]));
-        let v11095: any;
-        closure23(v10990, undefined);
-        v11095 = undefined;
+        const v11488: Error = _arg_1;
+        const v11507: string = toText(interpolate("%A%P()", [v11488]));
+        let v11596: any;
+        closure23(v11488, undefined);
+        v11596 = undefined;
         return singleton.Return<int32>(-2147483648);
     }));
 }
@@ -2074,77 +2080,77 @@ export function method54(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: O
     let v341: any;
     closure7(v18, " = ", undefined);
     v341 = undefined;
-    let v397: any;
+    let v400: any;
     closure7(v18, toText(interpolate("%A%P()", [v11])), undefined);
-    v397 = undefined;
-    let v414: any;
+    v400 = undefined;
+    let v417: any;
     closure7(v18, "; ", undefined);
-    v414 = undefined;
-    let v433: any;
+    v417 = undefined;
+    let v436: any;
     closure7(v18, "environment_variables", undefined);
-    v433 = undefined;
-    let v450: any;
+    v436 = undefined;
+    let v453: any;
     closure7(v18, " = ", undefined);
-    v450 = undefined;
-    let v471: any;
+    v453 = undefined;
+    let v474: any;
     closure7(v18, toText(interpolate("%A%P()", [v12])), undefined);
-    v471 = undefined;
-    let v488: any;
+    v474 = undefined;
+    let v491: any;
     closure7(v18, "; ", undefined);
-    v488 = undefined;
-    let v507: any;
+    v491 = undefined;
+    let v510: any;
     closure7(v18, "on_line", undefined);
-    v507 = undefined;
-    let v524: any;
+    v510 = undefined;
+    let v527: any;
     closure7(v18, " = ", undefined);
-    v524 = undefined;
-    let v580: any;
+    v527 = undefined;
+    let v586: any;
     closure7(v18, toText(interpolate("%A%P()", [v13])), undefined);
-    v580 = undefined;
-    let v597: any;
+    v586 = undefined;
+    let v603: any;
     closure7(v18, "; ", undefined);
-    v597 = undefined;
-    let v616: any;
+    v603 = undefined;
+    let v622: any;
     closure7(v18, "stdin", undefined);
-    v616 = undefined;
-    let v633: any;
+    v622 = undefined;
+    let v639: any;
     closure7(v18, " = ", undefined);
-    v633 = undefined;
-    let v689: any;
+    v639 = undefined;
+    let v698: any;
     closure7(v18, toText(interpolate("%A%P()", [v14_1])), undefined);
-    v689 = undefined;
-    let v706: any;
+    v698 = undefined;
+    let v715: any;
     closure7(v18, "; ", undefined);
-    v706 = undefined;
-    let v725: any;
+    v715 = undefined;
+    let v734: any;
     closure7(v18, "trace", undefined);
-    v725 = undefined;
-    let v742: any;
+    v734 = undefined;
+    let v751: any;
     closure7(v18, " = ", undefined);
-    v742 = undefined;
-    let v762: any;
+    v751 = undefined;
+    let v771: any;
     closure7(v18, v15_1 ? "true" : "false", undefined);
-    v762 = undefined;
-    let v779: any;
+    v771 = undefined;
+    let v788: any;
     closure7(v18, "; ", undefined);
-    v779 = undefined;
-    let v798: any;
+    v788 = undefined;
+    let v807: any;
     closure7(v18, "working_directory", undefined);
-    v798 = undefined;
-    let v815: any;
+    v807 = undefined;
+    let v824: any;
     closure7(v18, " = ", undefined);
-    v815 = undefined;
-    let v871: any;
+    v824 = undefined;
+    let v883: any;
     closure7(v18, toText(interpolate("%A%P()", [v16_1])), undefined);
-    v871 = undefined;
-    let v890: any;
+    v883 = undefined;
+    let v902: any;
     closure7(v18, " }", undefined);
-    v890 = undefined;
-    let v907: any;
+    v902 = undefined;
+    let v919: any;
     closure7(v18, " }", undefined);
-    v907 = undefined;
-    const v913: string = v18.l0;
-    return method16((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v913);
+    v919 = undefined;
+    const v925: string = v18.l0;
+    return method16((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v925);
 }
 
 export function closure24(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: int32, v8: string, unitVar: void): void {

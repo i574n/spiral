@@ -39,7 +39,13 @@ inl random_next (min : i32) (max : i32) (random : random) : i32 =
     $'!random.Next (!min, !max)'
 
 /// ### disposable
-nominal disposable t = $"backend_switch `({ Fsharp : $'System.IDisposable'; Python : $'object' })"
+type disposable_switch t =
+    {
+        Gleam : $'Nil'
+        Fsharp : $'System.IDisposable'
+        Python : $'object'
+    }
+nominal disposable t = $'backend_switch `(disposable_switch t)'
 
 /// ### dispose
 inl dispose (disposable : disposable _) : () =

@@ -5,7 +5,11 @@ open rust_operators
 /// ### rexie
 nominal rexie =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"rexie::Rexie\")>]\n#endif\ntype rexie_Rexie = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"rexie::Rexie\")>]\n#endif\ntype rexie_Rexie = class end"
+                        ) : () -> ()
+        }
         $'' : $'rexie_Rexie'
     )
 
@@ -68,14 +72,22 @@ nominal document =
 /// ### html_element
 nominal html_element =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"web_sys::HtmlElement\")>]\n#endif\ntype web_sys_HtmlElement = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"web_sys::HtmlElement\")>]\n#endif\ntype web_sys_HtmlElement = class end"
+                        ) : () -> ()
+        }
         $'' : $'web_sys_HtmlElement'
     )
 
 /// ### storage
 nominal storage =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"web_sys::Storage\")>]\n#endif\ntype web_sys_Storage = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"web_sys::Storage\")>]\n#endif\ntype web_sys_Storage = class end"
+                        ) : () -> ()
+        }
         $'' : $'web_sys_Storage'
     )
 

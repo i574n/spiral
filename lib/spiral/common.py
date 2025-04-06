@@ -15,13 +15,13 @@ from dataclasses import dataclass
 import os
 from typing import (Any, Protocol)
 
-TraceState_trace_state: tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None] | None = create_atom(None)
-
 class IOsEnviron(Protocol):
     @abstractmethod
     def environ(self) -> Any:
         ...
 
+
+TraceState_trace_state: tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None] | None = create_atom(None)
 
 def _expr5() -> TypeInfo:
     return class_type("Common.Disposable", None, Disposable)
@@ -90,7 +90,7 @@ class Mut2(Record):
 
 Mut2_reflection = _expr9
 
-def _expr11() -> TypeInfo:
+def _expr10() -> TypeInfo:
     return record_type("Common.Mut3", [], Mut3, lambda: [("l0", string_type)])
 
 
@@ -98,9 +98,9 @@ def _expr11() -> TypeInfo:
 class Mut3(Record):
     l0: str
 
-Mut3_reflection = _expr11
+Mut3_reflection = _expr10
 
-def _expr12() -> TypeInfo:
+def _expr11() -> TypeInfo:
     return record_type("Common.Mut4", [], Mut4, lambda: [("l0", US0_reflection())])
 
 
@@ -108,7 +108,7 @@ def _expr12() -> TypeInfo:
 class Mut4(Record):
     l0: US0
 
-Mut4_reflection = _expr12
+Mut4_reflection = _expr11
 
 def _expr13() -> TypeInfo:
     return union_type("Common.US1", [], US1, lambda: [[("f0_0", US0_reflection())], []])
@@ -164,8 +164,8 @@ class US3(Union):
 
 US3_reflection = _expr15
 
-def _expr17() -> TypeInfo:
-    return union_type("Common.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())]])
+def _expr16() -> TypeInfo:
+    return union_type("Common.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())], [("f6_0", US3_reflection())]])
 
 
 class US4(Union):
@@ -177,12 +177,12 @@ class US4(Union):
 
     @staticmethod
     def cases() -> list[str]:
-        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5"]
+        return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"]
 
 
-US4_reflection = _expr17
+US4_reflection = _expr16
 
-def _expr20() -> TypeInfo:
+def _expr17() -> TypeInfo:
     return union_type("Common.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -198,9 +198,9 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr20
+US5_reflection = _expr17
 
-def _expr23() -> TypeInfo:
+def _expr18() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
 
 
@@ -216,9 +216,9 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr23
+US6_reflection = _expr18
 
-def _expr25() -> TypeInfo:
+def _expr21() -> TypeInfo:
     return union_type("Common.US7", [], US7, lambda: [[("f0_0", US6_reflection())], []])
 
 
@@ -234,7 +234,7 @@ class US7(Union):
         return ["US7_0", "US7_1"]
 
 
-US7_reflection = _expr25
+US7_reflection = _expr21
 
 def method3(v0: str) -> str:
     return v0
@@ -249,10 +249,10 @@ def closure1(unit_var: None, v0: str) -> US5:
 
 
 def method5(__unit: None=None) -> Callable[[str], US5]:
-    def _arrow28(v: str) -> US5:
+    def _arrow26(v: str) -> US5:
         return closure1(None, v)
 
-    return _arrow28
+    return _arrow26
 
 
 def method2(v0: str) -> str:
@@ -347,12 +347,12 @@ def closure2(unit_var: None, v0: str) -> None:
 def method0(v0: US0) -> tuple[Mut0, Mut1, Mut2, Mut3, Mut4, int64 | None]:
     pattern_input: tuple[US1, US2] = method1()
     _run_target_args_0027_v3: tuple[US1, US2] = (pattern_input[0], pattern_input[1])
-    v173: US2 = _run_target_args_0027_v3[1]
-    v172: US1 = _run_target_args_0027_v3[0]
-    def v179(v: str, v0: Any=v0) -> None:
+    v185: US2 = _run_target_args_0027_v3[1]
+    v184: US1 = _run_target_args_0027_v3[0]
+    def v191(v: str, v0: Any=v0) -> None:
         closure2(None, v)
 
-    return (Mut0(int64(1)), Mut1(v179), Mut2(True), Mut3(""), Mut4(v172.fields[0] if (v172.tag == 0) else v0), v173.fields[0] if (v173.tag == 0) else None)
+    return (Mut0(int64(1)), Mut1(v191), Mut2(True), Mut3(""), Mut4(v184.fields[0] if (v184.tag == 0) else v0), v185.fields[0] if (v185.tag == 0) else None)
 
 
 def closure0(unit_var: None, unit_var_1: None) -> None:
@@ -372,11 +372,11 @@ def method7(v0: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0: Callable[[], None]) -> IDisposable:
     v14_1: Callable[[], None] = method7(v0)
-    class ObjectExpr49(IDisposable):
+    class ObjectExpr46(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
             v14_1(None)
 
-    return ObjectExpr49()
+    return ObjectExpr46()
 
 
 def closure6(unit_var: None, v0: US6) -> US7:
@@ -403,17 +403,17 @@ def method9(v0: US0) -> bool:
         return False
 
     else: 
-        class ObjectExpr70:
+        class ObjectExpr65:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        class ObjectExpr71:
+        class ObjectExpr67:
             @property
             def Compare(self) -> Callable[[US0, US0], int]:
                 return compare
 
-        return find(v0, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr70())) >= find(v56, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr71()))
+        return find(v0, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr65())) >= find(v56, of_seq(to_enumerable([(US0(0), 0), (US0(1), 1), (US0(2), 2), (US0(3), 3), (US0(4), 4)]), ObjectExpr67()))
 
 
 
@@ -422,10 +422,10 @@ def closure10(unit_var: None, v0: int64) -> US2:
 
 
 def method11(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow72(v: int64) -> US2:
+    def _arrow69(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow72
+    return _arrow69
 
 
 def method12(__unit: None=None) -> str:
@@ -437,17 +437,17 @@ def method13(__unit: None=None) -> str:
 
 
 def method10(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v804: US2 = default_arg(map(method11(), v5), US2(1))
-    v936: Any
-    if v804.tag == 0:
-        v884: Any = create(op_subtraction(from_value(ticks_1(now()), False), v804.fields[0]))
-        v936 = create_1(1, 1, 1, hours(v884), minutes(v884), seconds(v884), milliseconds(v884))
+    v827: US2 = default_arg(map(method11(), v5), US2(1))
+    v967: Any
+    if v827.tag == 0:
+        v910: Any = create(op_subtraction(from_value(ticks_1(now()), False), v827.fields[0]))
+        v967 = create_1(1, 1, 1, hours(v910), minutes(v910), seconds(v910), milliseconds(v910))
 
     else: 
-        v936 = now()
+        v967 = now()
 
-    v938: str = method13()
-    return to_string(v936, "M-d-y hh:mm:ss tt" if (v938 == "") else v938)
+    v968: str = method13()
+    return to_string(v967, "M-d-y hh:mm:ss tt" if (v968 == "") else v968)
 
 
 def method15(__unit: None=None) -> str:
@@ -500,14 +500,14 @@ def method17(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None,
     v138: None
     closure11(v11, " = ", None)
     v138 = None
-    v194: None
+    v197: None
     closure11(v11, to_text(interpolate("%A%P()", [v9])), None)
-    v194 = None
-    v213: None
+    v197 = None
+    v216: None
     closure11(v11, " }", None)
-    v213 = None
-    v219: str = v11.l0
-    return method18((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + "common.retry_fn") + " / ") + v219)
+    v216 = None
+    v222: str = v11.l0
+    return method18((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + "common.retry_fn") + " / ") + v222)
 
 
 def closure12(v0: Mut0, unit_var: None) -> None:
@@ -613,9 +613,9 @@ def closure15(unit_var: None, v0: Callable[[], None]) -> Callable[[], None]:
     def _arrow74(__unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
         v1(None)
 
-    v6: Any = Lazy(_arrow74)
+    v5: Any = Lazy(_arrow74)
     def _arrow75(__unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
-        closure16(v6, None)
+        closure16(v5, None)
 
     return _arrow75
 

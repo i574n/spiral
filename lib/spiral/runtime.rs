@@ -48,6 +48,15 @@ pub mod Runtime {
     use fable_library_rust::System::Text::StringBuilder;
     use fable_library_rust::System::Threading::CancellationToken;
     type TaskCanceledException = ();
+    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
+        fn environ(&self) -> LrcPtr<dyn Any>;
+    }
+    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
+        #[inline]
+        fn environ(&self) -> LrcPtr<dyn Any> {
+            (**self).environ()
+        }
+    }
     pub mod TraceState {
         use super::*;
         pub fn trace_state() -> LrcPtr<
@@ -90,15 +99,6 @@ pub mod Runtime {
                     ))
                 })
                 .clone()
-        }
-    }
-    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
-        fn environ(&self) -> LrcPtr<dyn Any>;
-    }
-    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
-        #[inline]
-        fn environ(&self) -> LrcPtr<dyn Any> {
-            (**self).environ()
         }
     }
     #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
@@ -198,6 +198,7 @@ pub mod Runtime {
         US4_3(Runtime::US3),
         US4_4(Runtime::US3),
         US4_5(Runtime::US3),
+        US4_6(Runtime::US3),
     }
     impl core::fmt::Display for US4 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -685,8 +686,8 @@ pub mod Runtime {
         let patternInput: (Runtime::US1, Runtime::US2) = Runtime::method1();
         let _run_target_args__v3: (Runtime::US1, Runtime::US2) =
             (patternInput.0.clone(), patternInput.1.clone());
-        let v173: Runtime::US2 = _run_target_args__v3.1.clone();
-        let v172: Runtime::US1 = _run_target_args__v3.0.clone();
+        let v185: Runtime::US2 = _run_target_args__v3.1.clone();
+        let v184: Runtime::US1 = _run_target_args__v3.0.clone();
         (
             LrcPtr::new(Runtime::Mut0 {
                 l0: MutCell::new(1_i64),
@@ -701,8 +702,8 @@ pub mod Runtime {
                 l0: MutCell::new(string("")),
             }),
             LrcPtr::new(Runtime::Mut4 {
-                l0: MutCell::new(match &v172 {
-                    Runtime::US1::US1_0(v172_0_0) => match &v172 {
+                l0: MutCell::new(match &v184 {
+                    Runtime::US1::US1_0(v184_0_0) => match &v184 {
                         Runtime::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
@@ -710,8 +711,8 @@ pub mod Runtime {
                     _ => v0.clone(),
                 }),
             }),
-            match &v173 {
-                Runtime::US2::US2_0(v173_0_0) => Some(match &v173 {
+            match &v185 {
+                Runtime::US2::US2_0(v185_0_0) => Some(match &v185 {
                     Runtime::US2::US2_0(x) => x.clone(),
                     _ => unreachable!(),
                 }),
@@ -798,14 +799,14 @@ pub mod Runtime {
         v4: LrcPtr<Runtime::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v212: Runtime::US2 = defaultValue(Runtime::US2::US2_1, map(Runtime::method9(), v5));
-        let v344: DateTime = match &v212 {
-            Runtime::US2::US2_0(v212_0_0) => {
-                let v292: TimeSpan = TimeSpan::new_ticks(
+        let v220: Runtime::US2 = defaultValue(Runtime::US2::US2_1, map(Runtime::method9(), v5));
+        let v360: DateTime = match &v220 {
+            Runtime::US2::US2_0(v220_0_0) => {
+                let v303: TimeSpan = TimeSpan::new_ticks(
                     ({
                         let _arg: DateTime = DateTime::now();
                         _arg.ticks()
-                    }) - (match &v212 {
+                    }) - (match &v220 {
                         Runtime::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     }),
@@ -814,21 +815,21 @@ pub mod Runtime {
                     1_i32,
                     1_i32,
                     1_i32,
-                    v292.hours(),
-                    v292.minutes(),
-                    v292.seconds(),
-                    v292.milliseconds(),
+                    v303.hours(),
+                    v303.minutes(),
+                    v303.seconds(),
+                    v303.milliseconds(),
                 )
             }
             _ => DateTime::now(),
         };
-        let v346: string = Runtime::method10();
-        let provider: string = if (v346.clone()) == string("") {
+        let v361: string = Runtime::method10();
+        let provider: string = if (v361.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
-            v346
+            v361
         };
-        v344.toString(provider)
+        v360.toString(provider)
     }
     pub fn method13() -> string {
         string("")
@@ -853,9 +854,9 @@ pub mod Runtime {
         let v30: string = v9.l0.get().clone();
         let v49: &str = inline_colorization::color_yellow;
         let v56: &str = &*v30;
-        let v84: &str = inline_colorization::color_reset;
-        let v86: std::string::String = format!("{}{}{}", v49, v56, v84);
-        fable_library_rust::String_::fromString(v86)
+        let v87: &str = inline_colorization::color_reset;
+        let v89: std::string::String = format!("{}{}{}", v49, v56, v87);
+        fable_library_rust::String_::fromString(v89)
     }
     pub fn method16(v0: string) -> string {
         trimEndChars(
@@ -2245,9 +2246,9 @@ pub mod Runtime {
         let v30: string = v9.l0.get().clone();
         let v49: &str = inline_colorization::color_bright_blue;
         let v56: &str = &*v30;
-        let v84: &str = inline_colorization::color_reset;
-        let v86: std::string::String = format!("{}{}{}", v49, v56, v84);
-        fable_library_rust::String_::fromString(v86)
+        let v87: &str = inline_colorization::color_reset;
+        let v89: std::string::String = format!("{}{}{}", v49, v56, v87);
+        fable_library_rust::String_::fromString(v89)
     }
     pub fn method37(
         v0: LrcPtr<Runtime::Mut0>,
@@ -2344,7 +2345,7 @@ pub mod Runtime {
             ()
         };
         let v351: std::string::String = format!("{:#?}", v11);
-        let v395: () = {
+        let v398: () = {
             Runtime::closure7(
                 v18.clone(),
                 fable_library_rust::String_::fromString(v351),
@@ -2352,77 +2353,77 @@ pub mod Runtime {
             );
             ()
         };
-        let v412: () = {
+        let v415: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v431: () = {
+        let v434: () = {
             Runtime::closure7(v18.clone(), string("environment_variables"), ());
             ()
         };
-        let v448: () = {
+        let v451: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v469: () = {
+        let v472: () = {
             Runtime::closure7(v18.clone(), sprintf!("{:?}", v12), ());
             ()
         };
-        let v486: () = {
+        let v489: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v505: () = {
+        let v508: () = {
             Runtime::closure7(v18.clone(), string("on_line"), ());
             ()
         };
-        let v522: () = {
+        let v525: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v534: std::string::String = format!("{:#?}", v13);
-        let v578: () = {
+        let v537: std::string::String = format!("{:#?}", v13);
+        let v584: () = {
             Runtime::closure7(
                 v18.clone(),
-                fable_library_rust::String_::fromString(v534),
+                fable_library_rust::String_::fromString(v537),
                 (),
             );
             ()
         };
-        let v595: () = {
+        let v601: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v614: () = {
+        let v620: () = {
             Runtime::closure7(v18.clone(), string("stdin"), ());
             ()
         };
-        let v631: () = {
+        let v637: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v643: std::string::String = format!("{:#?}", v14_1);
-        let v687: () = {
+        let v649: std::string::String = format!("{:#?}", v14_1);
+        let v696: () = {
             Runtime::closure7(
                 v18.clone(),
-                fable_library_rust::String_::fromString(v643),
+                fable_library_rust::String_::fromString(v649),
                 (),
             );
             ()
         };
-        let v704: () = {
+        let v713: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v723: () = {
+        let v732: () = {
             Runtime::closure7(v18.clone(), string("trace"), ());
             ()
         };
-        let v740: () = {
+        let v749: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v760: () = {
+        let v769: () = {
             Runtime::closure7(
                 v18.clone(),
                 if v15_1 {
@@ -2434,36 +2435,36 @@ pub mod Runtime {
             );
             ()
         };
-        let v777: () = {
+        let v786: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v796: () = {
+        let v805: () = {
             Runtime::closure7(v18.clone(), string("working_directory"), ());
             ()
         };
-        let v813: () = {
+        let v822: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v825: std::string::String = format!("{:#?}", v16_1);
-        let v869: () = {
+        let v834: std::string::String = format!("{:#?}", v16_1);
+        let v881: () = {
             Runtime::closure7(
                 v18.clone(),
-                fable_library_rust::String_::fromString(v825),
+                fable_library_rust::String_::fromString(v834),
                 (),
             );
             ()
         };
-        let v888: () = {
+        let v900: () = {
             Runtime::closure7(v18.clone(), string(" }"), ());
             ()
         };
-        let v905: () = {
+        let v917: () = {
             Runtime::closure7(v18.clone(), string(" }"), ());
             ()
         };
-        let v911: string = v18.l0.get().clone();
+        let v923: string = v18.l0.get().clone();
         Runtime::method16(append(
             (append(
                 (append(
@@ -2478,7 +2479,7 @@ pub mod Runtime {
                 )),
                 string(" / "),
             )),
-            (v911),
+            (v923),
         ))
     }
     pub fn closure17(
@@ -2571,9 +2572,9 @@ pub mod Runtime {
         let v30: string = v9.l0.get().clone();
         let v49: &str = inline_colorization::color_bright_black;
         let v56: &str = &*v30;
-        let v84: &str = inline_colorization::color_reset;
-        let v86: std::string::String = format!("{}{}{}", v49, v56, v84);
-        fable_library_rust::String_::fromString(v86)
+        let v87: &str = inline_colorization::color_reset;
+        let v89: std::string::String = format!("{}{}{}", v49, v56, v87);
+        fable_library_rust::String_::fromString(v89)
     }
     pub fn method46(
         v0: LrcPtr<Runtime::Mut0>,
@@ -2738,7 +2739,7 @@ pub mod Runtime {
             ()
         };
         let v74: std::string::String = format!("{:#?}", v8);
-        let v118: () = {
+        let v121: () = {
             Runtime::closure7(
                 v10.clone(),
                 fable_library_rust::String_::fromString(v74),
@@ -2746,11 +2747,11 @@ pub mod Runtime {
             );
             ()
         };
-        let v137: () = {
+        let v140: () = {
             Runtime::closure7(v10.clone(), string(" }"), ());
             ()
         };
-        let v143: string = v10.l0.get().clone();
+        let v146: string = v10.l0.get().clone();
         Runtime::method16(append(
             (append(
                 (append(
@@ -2765,7 +2766,7 @@ pub mod Runtime {
                 )),
                 string(" / "),
             )),
-            (v143),
+            (v146),
         ))
     }
     pub fn closure23(v0: LrcPtr<TaskCanceledException>, unitVar: ()) {
@@ -2906,7 +2907,7 @@ pub mod Runtime {
             ()
         };
         let v353: std::string::String = format!("{:#?}", v11);
-        let v397: () = {
+        let v400: () = {
             Runtime::closure7(
                 v18.clone(),
                 fable_library_rust::String_::fromString(v353),
@@ -2914,77 +2915,77 @@ pub mod Runtime {
             );
             ()
         };
-        let v414: () = {
+        let v417: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v433: () = {
+        let v436: () = {
             Runtime::closure7(v18.clone(), string("environment_variables"), ());
             ()
         };
-        let v450: () = {
+        let v453: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v471: () = {
+        let v474: () = {
             Runtime::closure7(v18.clone(), sprintf!("{:?}", v12), ());
             ()
         };
-        let v488: () = {
+        let v491: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v507: () = {
+        let v510: () = {
             Runtime::closure7(v18.clone(), string("on_line"), ());
             ()
         };
-        let v524: () = {
+        let v527: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v536: std::string::String = format!("{:#?}", v13);
-        let v580: () = {
+        let v539: std::string::String = format!("{:#?}", v13);
+        let v586: () = {
             Runtime::closure7(
                 v18.clone(),
-                fable_library_rust::String_::fromString(v536),
+                fable_library_rust::String_::fromString(v539),
                 (),
             );
             ()
         };
-        let v597: () = {
+        let v603: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v616: () = {
+        let v622: () = {
             Runtime::closure7(v18.clone(), string("stdin"), ());
             ()
         };
-        let v633: () = {
+        let v639: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v645: std::string::String = format!("{:#?}", v14_1);
-        let v689: () = {
+        let v651: std::string::String = format!("{:#?}", v14_1);
+        let v698: () = {
             Runtime::closure7(
                 v18.clone(),
-                fable_library_rust::String_::fromString(v645),
+                fable_library_rust::String_::fromString(v651),
                 (),
             );
             ()
         };
-        let v706: () = {
+        let v715: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v725: () = {
+        let v734: () = {
             Runtime::closure7(v18.clone(), string("trace"), ());
             ()
         };
-        let v742: () = {
+        let v751: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v762: () = {
+        let v771: () = {
             Runtime::closure7(
                 v18.clone(),
                 if v15_1 {
@@ -2996,36 +2997,36 @@ pub mod Runtime {
             );
             ()
         };
-        let v779: () = {
+        let v788: () = {
             Runtime::closure7(v18.clone(), string("; "), ());
             ()
         };
-        let v798: () = {
+        let v807: () = {
             Runtime::closure7(v18.clone(), string("working_directory"), ());
             ()
         };
-        let v815: () = {
+        let v824: () = {
             Runtime::closure7(v18.clone(), string(" = "), ());
             ()
         };
-        let v827: std::string::String = format!("{:#?}", v16_1);
-        let v871: () = {
+        let v836: std::string::String = format!("{:#?}", v16_1);
+        let v883: () = {
             Runtime::closure7(
                 v18.clone(),
-                fable_library_rust::String_::fromString(v827),
+                fable_library_rust::String_::fromString(v836),
                 (),
             );
             ()
         };
-        let v890: () = {
+        let v902: () = {
             Runtime::closure7(v18.clone(), string(" }"), ());
             ()
         };
-        let v907: () = {
+        let v919: () = {
             Runtime::closure7(v18.clone(), string(" }"), ());
             ()
         };
-        let v913: string = v18.l0.get().clone();
+        let v925: string = v18.l0.get().clone();
         Runtime::method16(append(
             (append(
                 (append(
@@ -3040,7 +3041,7 @@ pub mod Runtime {
                 )),
                 string(" / "),
             )),
-            (v913),
+            (v925),
         ))
     }
     pub fn closure24(

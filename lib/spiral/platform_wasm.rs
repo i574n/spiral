@@ -1,8 +1,8 @@
 pub mod Platform {
     use super::*;
-    use fable_library_rust::Native_::on_startup;
     use fable_library_rust::Native_::Func0;
     use fable_library_rust::Native_::OnceInit;
+    use fable_library_rust::Native_::on_startup;
     use fable_library_rust::String_::string;
     #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
     pub enum US0 {
@@ -23,6 +23,7 @@ pub mod Platform {
         US1_3(Platform::US0),
         US1_4(Platform::US0),
         US1_5(Platform::US0),
+        US1_6(Platform::US0),
     }
     impl core::fmt::Display for US1 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {

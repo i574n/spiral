@@ -647,12 +647,12 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
             if runtime = None
             then ""
             else
-                $'$"#[near_sdk::near_bindgen]"'
-                ++\# $'$"#[derive(near_sdk::PanicOnDefault)]"'
+                $'$"\#[near_sdk::near_bindgen]"'
+                ++\# $'$"\#[derive(near_sdk::PanicOnDefault)]"'
                 ++\# $'$"pub struct MainState {{"'
                 ++\# $'$"}}"'
                 ++\# $'$""'
-                ++\# $'$"#[near_sdk::near_bindgen]"'
+                ++\# $'$"\#[near_sdk::near_bindgen]"'
                 ++\# $'$"impl MainState {{"'
                 ++\# $'$"    pub fn state_main() {{"'
                 ++\# $'$"        Spiral::method0();"'
@@ -1118,6 +1118,7 @@ inl process_typescript { fs_path deps trace_level } =
             inl lib_link_target_path = lib_path </> $'$"fable-library-{!extension}.{!version}"'
             inl lib_link_path = package_dir </> $'$"fable_modules/fable-library-{!extension}.{!version}"'
             lib_link_path |> file_system.link_directory lib_link_target_path
+            lib_link_target_path </> "fable_modules" |> file_system.directory_delete true
         | None => failwith $'$"spiral.process_typescript / fable library not found / lib_path: {!lib_path}"'
 
     link_lib ()
@@ -1526,7 +1527,7 @@ inl process_gleam { gleam_path target deps } =
                 else
                     inl js_path = $'$"{!package_dir}/build/dev/javascript/main/main.mjs"'
                     inl js_text = js_path |> file_system.read_all_text
-                    inl js_text = js_text |> sm'.replace $'$"#app_"' $'$"#app_{!hash_hex}"'
+                    inl js_text = js_text |> sm'.replace $'$"\#app_"' $'$"\#app_{!hash_hex}"'
                     if js_text |> sm'.ends_with "main()" |> not then
                         $'$"{!js_text}\nmain()"'
                         |> file_system.write_all_text_exists js_path

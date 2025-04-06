@@ -68,16 +68,19 @@ nominal unit = $'unit'
 
 inl backend_switch forall t. x : t =
     real
-        inl backend key : t =
+        inl backend (key : string) : t =
             inl s = real_core.string_lit_to_symbol key
             real_core.record_type_try_find `(`x) s
                 (forall v'. => (x s) ())
                 (fun () => $'' : t)
+        inl x' = {
+            Gleam = fun () => backend "Gleam"
+            Fsharp = fun () => backend "Fsharp"
+            Python = fun () => backend "Python"
+            Cpp = fun () => backend "Cpp"
+        }
         !!!!BackendSwitch (
-            ("Gleam", backend "Gleam"),
-            ("Fsharp", backend "Fsharp"),
-            ("Python", backend "Python"),
-            ("Cuda", backend "Cuda")
+            x'
         )
 
 #!markdown
@@ -101,6 +104,7 @@ union target =
     | Gleam : target_runtime
     | Fsharp : target_runtime
     | Cuda : target_runtime
+    | Cpp : target_runtime
     | Rust : target_runtime
     | TypeScript : target_runtime
     | Python : target_runtime
@@ -128,34 +132,37 @@ inl run_target_args' forall t u. (args : u) (fn : target -> (u -> t)) : t =
             inl emit_result x : () =
                 if is_unit |> not
                 then $'let _run_target_args\'_!result = !x '
-            $'\n#if FABLE_COMPILER || WASM || CONTRACT'
-            $'\n#if FABLE_COMPILER_RUST && \!WASM && \!CONTRACT'
+            $'\n\#if FABLE_COMPILER || WASM || CONTRACT'
+            $'\n\#if FABLE_COMPILER_RUST && \!WASM && \!CONTRACT'
             inl target = Rust Native
             fn target args |> emit_result
-            $'#endif\n#if FABLE_COMPILER_RUST && WASM'
+            $'\#endif\n\#if FABLE_COMPILER_RUST && WASM'
             inl target = Rust Wasm
             fn target args |> emit_result
-            $'#endif\n#if FABLE_COMPILER_RUST && CONTRACT'
+            $'\#endif\n\#if FABLE_COMPILER_RUST && CONTRACT'
             inl target = Rust Contract
             fn target args |> emit_result
-            $'#endif\n#if FABLE_COMPILER_TYPESCRIPT'
+            $'\#endif\n\#if FABLE_COMPILER_TYPESCRIPT'
             inl target = TypeScript Native
             fn target args |> emit_result
-            $'#endif\n#if FABLE_COMPILER_PYTHON'
+            $'\#endif\n\#if FABLE_COMPILER_PYTHON'
             inl target = Python Native
             fn target args |> emit_result
-            $'#endif\n#if \!FABLE_COMPILER_RUST && \!FABLE_COMPILER_TYPESCRIPT && \!FABLE_COMPILER_PYTHON'
+            $'\#endif\n\#if \!FABLE_COMPILER_RUST && \!FABLE_COMPILER_TYPESCRIPT && \!FABLE_COMPILER_PYTHON'
             inl target = Fsharp Wasm
             fn target args |> emit_result
-            $'#endif\n#else'
+            $'\#endif\n\#else'
             inl target = Fsharp Native
             fn target args |> emit_result
-            $'#endif'
+            $'\#endif'
             if is_unit
             then $'// run_target_args\' is_unit'
             else $'_run_target_args\'_!result ' : t
         Python = fun () =>
             inl target = Cuda Native
+            fn target args
+        Cpp = fun () =>
+            inl target = Cpp Native
             fn target args
     }
 
@@ -674,7 +681,7 @@ inl (++) a b =
 
 type pair_switch a b =
     {
-        Gleam : $'#(`a, `b  )'
+        Gleam : $'\#(`a, `b  )'
         Fsharp : $'(`a * `b)'
         Python : $'(`a, `b)'
     }
@@ -705,7 +712,7 @@ pair 1i32 2i32
 inl new_pair forall a b. (a : a) (b : b) : pair a b =
     backend_switch {
         Gleam = fun () =>
-            $'#(!a, !b )' : pair a b
+            $'\#(!a, !b )' : pair a b
         Fsharp = fun () =>
             $'!a, !b ' : pair a b
         Python = fun () =>
@@ -721,7 +728,7 @@ inl new_pair forall a b. (a : a) (b : b) : pair a b =
 inl from_pair forall a b. (pair : pair a b) : a * b =
     backend_switch {
         Gleam = fun () =>
-            $'let #(a, b) = !pair '
+            $'let \#(a, b) = !pair '
             ($'a' : a), ($'b' : b)
         Fsharp = fun () =>
             $'let (a, b) = !pair '
@@ -1116,7 +1123,13 @@ instance (~:>) any = to_any
 
 #!spiral
 
-nominal exn = $"backend_switch `({ Gleam : $'Nil'; Fsharp : $'exn'; Python : $'BaseException' })"
+type exn_switch =
+    {
+        Gleam : $'Nil'
+        Fsharp : $'exn'
+        Python : $'BaseException'
+    }
+nominal exn = $'backend_switch `(exn_switch)'
 
 inl exn x =
     x |> $'`exn '
@@ -1169,6 +1182,7 @@ try
     | Gleam => fun () => null ()
     | Fsharp => fun () => join "System.IndexOutOfRangeException: Index was outside the bounds of the array."
     | Cuda => fun () => "index 1 is out of bounds for axis 0 with size 1"
+    | Cpp => fun () => null ()
     | Rust => fun () => "Exception { message: \"index out of bounds: the len is 1 but the index is 1\" }"
     | TypeScript => fun () => "Error: Index was outside the bounds of the array.\\nParameter name: index"
     | Python => fun () => "array index out of range"

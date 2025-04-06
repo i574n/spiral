@@ -3,8 +3,8 @@ import { defaultOf } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/U
 
 export function method0(v0_1: any): Async<any> {
     return singleton.Delay<any>((): Async<any> => {
-        const v560: any = defaultOf();
-        return singleton.Return<any>(v560);
+        const v612: any = defaultOf();
+        return singleton.Return<any>(v612);
     });
 }
 

@@ -22,7 +22,7 @@ class US0(Union):
 US0_reflection = _expr125
 
 def _expr126() -> TypeInfo:
-    return union_type("Platform.US1", [], US1, lambda: [[("f0_0", US0_reflection())], [("f1_0", US0_reflection())], [("f2_0", US0_reflection())], [("f3_0", US0_reflection())], [("f4_0", US0_reflection())], [("f5_0", US0_reflection())]])
+    return union_type("Platform.US1", [], US1, lambda: [[("f0_0", US0_reflection())], [("f1_0", US0_reflection())], [("f2_0", US0_reflection())], [("f3_0", US0_reflection())], [("f4_0", US0_reflection())], [("f5_0", US0_reflection())], [("f6_0", US0_reflection())]])
 
 
 class US1(Union):
@@ -34,18 +34,18 @@ class US1(Union):
 
     @staticmethod
     def cases() -> list[str]:
-        return ["US1_0", "US1_1", "US1_2", "US1_3", "US1_4", "US1_5"]
+        return ["US1_0", "US1_1", "US1_2", "US1_3", "US1_4", "US1_5", "US1_6"]
 
 
 US1_reflection = _expr126
 
 def closure0(unit_var: None, unit_var_1: None) -> bool:
-    raise Exception(("platform.is_windows / target: " + str(US1(5, US0(0)))) + "")
+    raise Exception(("platform.is_windows / target: " + str(US1(6, US0(0)))) + "")
 
 
 def closure1(unit_var: None, unit_var_1: None) -> str:
     def _arrow127(__unit: None=None, unit_var: Any=unit_var, unit_var_1: Any=unit_var_1) -> bool:
-        raise Exception(("platform.is_windows / target: " + str(US1(5, US0(0)))) + "")
+        raise Exception(("platform.is_windows / target: " + str(US1(6, US0(0)))) + "")
 
     if _arrow127():
         return ".exe"

@@ -78,6 +78,57 @@ inl test_guid () =
 
 #!markdown
 
+## day_of_week
+
+#!spiral
+
+union day_of_week =
+    | Sunday
+    | Monday
+    | Tuesday
+    | Wednesday
+    | Thursday
+    | Friday
+    | Saturday
+
+#!markdown
+
+## month
+
+#!spiral
+
+union month =
+    | January
+    | February
+    | March
+    | April
+    | May
+    | June
+    | July
+    | August
+    | September
+    | October
+    | November
+    | December
+
+#!markdown
+
+## day
+
+#!spiral
+
+nominal day = int
+
+#!markdown
+
+## year
+
+#!spiral
+
+nominal year = int
+
+#!markdown
+
 ## fsharp
 
 #!markdown
@@ -280,7 +331,45 @@ inl date_time_milliseconds
     =
     backend_switch {
         Gleam = fun () =>
-            $'Nil' : date_time
+            backend_switch {
+                Gleam = fun () =>
+                    global "import gleam/time/calendar"
+                    global "import gleam/time/duration"
+                    global "import gleam/time/timestamp"
+            }
+            inl month =
+                match month with
+                | 1 => January
+                | 2 => February
+                | 3 => March
+                | 4 => April
+                | 5 => May
+                | 6 => June
+                | 7 => July
+                | 8 => August
+                | 9 => September
+                | 10 => October
+                | 11 => November
+                | 12 => December
+            inl month : infer =
+                match month with
+                | January => $'calendar.January'
+                | February => $'calendar.February'
+                | March => $'calendar.March'
+                | April => $'calendar.April'
+                | May => $'calendar.May'
+                | June => $'calendar.June'
+                | July => $'calendar.July'
+                | August => $'calendar.August'
+                | September => $'calendar.September'
+                | October => $'calendar.October'
+                | November => $'calendar.November'
+                | December => $'calendar.December'
+            inl date : date = $'calendar.Date(#year, #month, #day)'
+            inl nanoseconds = millisecond * 1000000
+            inl time_of_day : time_of_day = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
+            inl duration : duration = $'duration.milliseconds(#millisecond)'
+            (date, time_of_day, duration) |> to : date_time
         Fsharp = fun () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
         Python = fun () =>
@@ -485,7 +574,10 @@ inl ticks (date_time : date_time) : timestamp =
                 Gleam = fun () =>
                     global "import gleam/time/timestamp"
             }
-            inl date_time (date, time_of_day, duration) = date_time
+            // inl date_time (date, time_of_day, duration) = date_time
+            inl date : date = $'!date_time.0'
+            inl time_of_day : time_of_day = $'!date_time.1'
+            inl duration : duration = $'!date_time.2'
             $'timestamp.from_calendar(!date, !time_of_day, !duration)' : timestamp
         Fsharp = fun () =>
             run_target function
@@ -789,7 +881,9 @@ inl stopwatch_start (stopwatch : stopwatch) : () =
 
 nominal duration =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::time::Duration\")>]\n#endif\ntype std_time_Duration = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::time::Duration\")>]\n#endif\ntype std_time_Duration = class end") : () -> ()
+        }
         $'' : $'std_time_Duration'
     )
 

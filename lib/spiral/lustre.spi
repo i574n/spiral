@@ -74,7 +74,7 @@ inl simple forall model msg.
     : app model msg
     =
     global "import lustre"
-    $'lustre.simple(!init, fn (a, b) { !update(#(a, b)) }, !view)'
+    $'lustre.simple(!init, fn (a, b) { !update(\#(a, b)) }, !view)'
 
 /// ### start
 inl start id app =

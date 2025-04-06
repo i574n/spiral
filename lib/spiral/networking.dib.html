@@ -7948,7 +7948,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">tcp_client</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n\n</span><span class="s2">type System_Net_Sockets_TcpClient = System.IDisposable</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n\n</span><span class="s2">type System_Net_Sockets_TcpClient = System.IDisposable</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'System_Net_Sockets_TcpClient'</span>
     <span class="p">)</span>
 </pre></div>
@@ -8324,7 +8328,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">wait_for_port_access</span> <span class="n">timeout</span> <span class="n">status</span> <span class="n">host</span> <span class="n">port</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">retry</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="k">async</span><span class="o">.</span><span class="k">async</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">is_port_open</span> <span class="o">=</span>
                 <span class="k">match</span> <span class="n">timeout</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.unbox with</span>
@@ -8612,7 +8616,7 @@ a.anchor-link {
 00:00:01 <span class="ansi-black-intense-fg">v</span> #195 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:01 <span class="ansi-black-intense-fg">v</span> #196 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:01 <span class="ansi-black-intense-fg">v</span> #197 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:01 <span class="ansi-black-intense-fg">v</span> #198 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
+00:00:02 <span class="ansi-black-intense-fg">v</span> #198 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:02 <span class="ansi-black-intense-fg">v</span> #199 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:02 <span class="ansi-black-intense-fg">v</span> #200 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:02 <span class="ansi-black-intense-fg">v</span> #201 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
@@ -8808,7 +8812,7 @@ a.anchor-link {
 00:00:03 <span class="ansi-black-intense-fg">v</span> #391 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:03 <span class="ansi-black-intense-fg">v</span> #392 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:03 <span class="ansi-black-intense-fg">v</span> #393 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:03 <span class="ansi-black-intense-fg">v</span> #394 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
+00:00:04 <span class="ansi-black-intense-fg">v</span> #394 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:04 <span class="ansi-black-intense-fg">v</span> #395 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:04 <span class="ansi-black-intense-fg">v</span> #396 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:04 <span class="ansi-black-intense-fg">v</span> #397 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
@@ -8907,18 +8911,17 @@ a.anchor-link {
 00:00:04 <span class="ansi-black-intense-fg">v</span> #490 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:04 <span class="ansi-black-intense-fg">v</span> #491 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:04 <span class="ansi-black-intense-fg">v</span> #492 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:05 <span class="ansi-black-intense-fg">v</span> #493 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:05 <span class="ansi-blue-intense-fg">d</span> #494 _2
-00:00:05 <span class="ansi-blue-intense-fg">d</span> #495 _3
-00:00:05 <span class="ansi-blue-intense-fg">d</span> #496 4
-00:00:06 <span class="ansi-black-intense-fg">v</span> #497 networking.wait_for_port_access / { port = 5555; retry = 100; timeout = None; status = false }
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #498 _4
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #499 _5
-00:00:07 <span class="ansi-black-intense-fg">v</span> #500 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #501 5
-00:00:07 <span class="ansi-blue-intense-fg">d</span> #502 6
-{ name = __assert_between; actual = 486; expected = 2, 1500 }
-{ name = __assert_between; actual = 196; expected = 80, 600 }
+00:00:05 <span class="ansi-blue-intense-fg">d</span> #493 _2
+00:00:05 <span class="ansi-blue-intense-fg">d</span> #494 _3
+00:00:05 <span class="ansi-blue-intense-fg">d</span> #495 4
+00:00:06 <span class="ansi-black-intense-fg">v</span> #496 networking.wait_for_port_access / { port = 5555; retry = 100; timeout = None; status = false }
+00:00:07 <span class="ansi-blue-intense-fg">d</span> #497 _4
+00:00:07 <span class="ansi-blue-intense-fg">d</span> #498 _5
+00:00:07 <span class="ansi-black-intense-fg">v</span> #499 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
+00:00:07 <span class="ansi-blue-intense-fg">d</span> #500 5
+00:00:07 <span class="ansi-blue-intense-fg">d</span> #501 6
+{ name = __assert_between; actual = 485; expected = 2, 1500 }
+{ name = __assert_between; actual = 195; expected = 80, 600 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
@@ -8994,7 +8997,7 @@ a.anchor-link {
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 2
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 _1
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #3 _1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #4 3
 00:00:00 <span class="ansi-black-intense-fg">v</span> #5 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #6 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
@@ -9042,16 +9045,15 @@ a.anchor-link {
 00:00:00 <span class="ansi-black-intense-fg">v</span> #48 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #49 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #50 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #51 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #52 _2
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #53 _3
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #54 4
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #55 _4
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #56 _5
-00:00:00 <span class="ansi-black-intense-fg">v</span> #57 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #58 5
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #59 6
-{ name = __assert_between; actual = 48; expected = 2, 150 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #51 _2
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #52 _3
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #53 4
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #54 _4
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #55 _5
+00:00:00 <span class="ansi-black-intense-fg">v</span> #56 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #57 5
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #58 6
+{ name = __assert_between; actual = 47; expected = 2, 150 }
 { name = __assert_between; actual = 20; expected = 0, 60 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
@@ -9079,7 +9081,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">get_available_port</span> <span class="n">timeout</span> <span class="n">host</span> <span class="n">initial_port</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i32</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">port</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">port</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i32</span> <span class="o">=</span>
         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">is_port_open</span> <span class="o">=</span>
                 <span class="k">match</span> <span class="n">timeout</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.unbox with</span>
@@ -9180,7 +9182,7 @@ a.anchor-link {
 00:00:04 <span class="ansi-blue-intense-fg">d</span> #15 5
 00:00:04 <span class="ansi-blue-intense-fg">d</span> #16 6
 { name = __assert_eq; actual = 5557; expected = 5557 }
-{ name = __assert_between; actual = 367; expected = 50, 1200 }
+{ name = __assert_between; actual = 363; expected = 50, 1200 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
@@ -9262,12 +9264,12 @@ a.anchor-link {
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 networking.test_port_open / { port = 5557; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #8 4
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #9 _4
-00:00:00 <span class="ansi-black-intense-fg">v</span> #10 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #11 _5
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #10 _5
+00:00:00 <span class="ansi-black-intense-fg">v</span> #11 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (Connection refused) }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #12 5
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #13 6
 { name = __assert_eq; actual = 5557; expected = 5557 }
-{ name = __assert_between; actual = 15; expected = 1, 120 }
+{ name = __assert_between; actual = 16; expected = 1, 120 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>

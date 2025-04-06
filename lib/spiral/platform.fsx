@@ -9,6 +9,7 @@ and [<Struct>] US1 =
     | US1_3 of f3_0 : US0
     | US1_4 of f4_0 : US0
     | US1_5 of f5_0 : US0
+    | US1_6 of f6_0 : US0
 let rec closure0 () () : bool =
     (* run_target_args'
     let v1 : unit = ()
@@ -33,14 +34,14 @@ let rec closure0 () () : bool =
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
     let v8 : US0 = US0_0
-    let v9 : US1 = US1_4(v8)
+    let v9 : US1 = US1_5(v8)
     let v10 : string = $"platform.is_windows / target: {v9}"
     let v11 : bool = failwith<bool> v10
     let _run_target_args'_v1 = v11 
     #endif
 #if FABLE_COMPILER_PYTHON
     let v12 : US0 = US0_0
-    let v13 : US1 = US1_5(v12)
+    let v13 : US1 = US1_6(v12)
     let v14 : string = $"platform.is_windows / target: {v13}"
     let v15 : bool = failwith<bool> v14
     let _run_target_args'_v1 = v15 
@@ -83,14 +84,14 @@ and closure1 () () : string =
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
     let v8 : US0 = US0_0
-    let v9 : US1 = US1_4(v8)
+    let v9 : US1 = US1_5(v8)
     let v10 : string = $"platform.is_windows / target: {v9}"
     let v11 : bool = failwith<bool> v10
     let _run_target_args'_v1 = v11 
     #endif
 #if FABLE_COMPILER_PYTHON
     let v12 : US0 = US0_0
-    let v13 : US1 = US1_5(v12)
+    let v13 : US1 = US1_6(v12)
     let v14 : string = $"platform.is_windows / target: {v13}"
     let v15 : bool = failwith<bool> v14
     let _run_target_args'_v1 = v15 
@@ -109,11 +110,11 @@ and closure1 () () : string =
     #endif
     let v22 : bool = _run_target_args'_v1 
     if v22 then
-        let v28 : string = ".exe"
-        v28
+        let v31 : string = ".exe"
+        v31
     else
-        let v29 : string = ""
-        v29
+        let v32 : string = ""
+        v32
 let v0 : (unit -> bool) = closure0()
 let is_windows () = v0 ()
 let v1 : (unit -> string) = closure1()

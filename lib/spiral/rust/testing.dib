@@ -30,7 +30,7 @@ inl run_tests' tests =
     fields
     |> listm.iter fun name, (fn : string -> ()) =>
         !\($'"} /* /*"')
-        (!\($'$"*/ #[test] fn " + !name + "() { //"') : bool) |> ignore
+        (!\($'$"*/ \#[test] fn " + !name + "() { //"') : bool) |> ignore
         fn name
 
     fields

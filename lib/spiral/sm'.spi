@@ -249,7 +249,7 @@ inl string_builder (initial : string) : string_builder =
         if initial = ""
         then join initial
         else initial
-    
+
     backend_switch {
         Gleam = fun () => $'!initial ' : string_builder
         Fsharp = fun () => initial |> $'`string_builder ' : string_builder
@@ -460,7 +460,7 @@ inl byte_to_string (format : string) (x : u8) : string =
 /// ### str
 nominal str =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"str\")>]\ntype Str = class end\n#else\ntype Str = string\n#endif\n"
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"str\")>]\ntype Str = class end\n\#else\ntype Str = string\n#endif\n"
         $'' : $'Str'
     )
 
@@ -514,7 +514,11 @@ nominal from_utf8_error =
 /// ### json_value
 nominal json_value =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end"
+                        ) : () -> ()
+        }
         $'' : $'serde_json_Value'
     )
 
@@ -569,11 +573,11 @@ nominal os_string =
 
 /// ### raw_string_literal
 inl raw_string_literal (s : string) : rust.ref str =
-    !\($'"r#\\"" + !s + "\\"#"')
+    !\($'"r\#\\"" + !s + "\\"\#"')
 
 /// ### raw_string_literal_static
 inl raw_string_literal_static (s : string) : rust.static_ref str =
-    !\($'"r#\\"" + !s + "\\"#"')
+    !\($'"r\#\\"" + !s + "\\"\#"')
 
 /// ### (~#)
 inl (~#) s =
@@ -677,7 +681,11 @@ inl format'' (format : string) : std_string =
 /// ### regex
 nominal regex =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end"
+                        ) : () -> ()
+        }
         $'' : $'regex_Regex'
     )
 

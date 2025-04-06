@@ -35,7 +35,7 @@ nominal std_string =
         backend_switch `(()) `({}) {
             Fsharp =
                 (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n#else\ntype std_string_String = string\n#endif\n"
+                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n\#else\ntype std_string_String = string\n#endif\n"
                 ) : () -> ()
         }
         $'' : $'std_string_String'
@@ -347,7 +347,7 @@ inl format_pretty forall t. (x : t) : string =
     run_target_args `string `t (fun () => x) function
         | Rust _ => fun x =>
             open rust
-            inl result = rust.emit_expr `t `std_string x ($'"format\!(\\\"{:#?}\\\", $0)"' : string)
+            inl result = rust.emit_expr `t `std_string x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
             from_std_string result
         | _ => fun _ => format_debug `t x
 
@@ -821,7 +821,7 @@ inl string_builder (initial : string) : string_builder =
         if initial = ""
         then join initial
         else initial
-    
+
     backend_switch {
         Gleam = fun () => $'!initial ' : string_builder
         Fsharp = fun () => initial |> $'`string_builder ' : string_builder
@@ -1165,7 +1165,7 @@ inl byte_to_string (format : string) (x : u8) : string =
 
 nominal str =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"str\")>]\ntype Str = class end\n#else\ntype Str = string\n#endif\n"
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"str\")>]\ntype Str = class end\n\#else\ntype Str = string\n#endif\n"
         $'' : $'Str'
     )
 
@@ -1264,7 +1264,11 @@ nominal from_utf8_error =
 
 nominal json_value =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end"
+                        ) : () -> ()
+        }
         $'' : $'serde_json_Value'
     )
 
@@ -1359,7 +1363,7 @@ nominal os_string =
 #!spiral
 
 inl raw_string_literal (s : string) : rust.ref str =
-    !\($'"r#\\"" + !s + "\\"#"')
+    !\($'"r\#\\"" + !s + "\\"\#"')
 
 #!markdown
 
@@ -1368,7 +1372,7 @@ inl raw_string_literal (s : string) : rust.ref str =
 #!spiral
 
 inl raw_string_literal_static (s : string) : rust.static_ref str =
-    !\($'"r#\\"" + !s + "\\"#"')
+    !\($'"r\#\\"" + !s + "\\"\#"')
 
 #!markdown
 
@@ -1577,7 +1581,11 @@ inl format'' (format : string) : std_string =
 
 nominal regex =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end"
+                        ) : () -> ()
+        }
         $'' : $'regex_Regex'
     )
 

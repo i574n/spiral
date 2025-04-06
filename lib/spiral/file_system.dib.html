@@ -7749,7 +7749,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">file_info</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">type System_IO_FileInfo = bool</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type System_IO_FileInfo = System.IO.FileInfo</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">type System_IO_FileInfo = bool</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type System_IO_FileInfo = System.IO.FileInfo</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'System_IO_FileInfo'</span>
     <span class="p">)</span>
 
@@ -7783,7 +7787,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">directory_info</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">type System_IO_DirectoryInfo = bool</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type System_IO_DirectoryInfo = System.IO.DirectoryInfo</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">type System_IO_DirectoryInfo = bool</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type System_IO_DirectoryInfo = System.IO.DirectoryInfo</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'System_IO_DirectoryInfo'</span>
     <span class="p">)</span>
 
@@ -8121,7 +8129,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">read_all_text_async</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">string</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">string</span> <span class="o">=</span>
         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">try_unit</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -8332,7 +8340,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">display</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::path::Display</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type std_path_Display = class end</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type std_path_Display = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::path::Display</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type std_path_Display = class end</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type std_path_Display = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'std_path_Display'</span>
     <span class="p">)</span>
 </pre></div>
@@ -8390,7 +8402,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">path_buf</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::path::PathBuf</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type std_path_PathBuf = class end</span><span class="se">\n</span><span class="s2">#else</span><span class="se">\n</span><span class="s2">type std_path_PathBuf = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::path::PathBuf</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">type std_path_PathBuf = class end</span><span class="se">\n</span><span class="s2">\#else</span><span class="se">\n</span><span class="s2">type std_path_PathBuf = string</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'std_path_PathBuf'</span>
     <span class="p">)</span>
 </pre></div>
@@ -8941,7 +8957,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">file_type</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::fs::FileType</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type std_fs_FileType = class end"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::fs::FileType</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type std_fs_FileType = class end"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'std_fs_FileType'</span>
     <span class="p">)</span>
 </pre></div>
@@ -9023,7 +9043,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">file</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
-        <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::fs::File</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type std_fs_File = class end"</span>
+        <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"#if FABLE_COMPILER</span><span class="se">\n</span><span class="s2">[&lt;Fable.Core.Erase; Fable.Core.Emit(</span><span class="se">\"</span><span class="s2">std::fs::File</span><span class="se">\"</span><span class="s2">)&gt;]</span><span class="se">\n</span><span class="s2">#endif</span><span class="se">\n</span><span class="s2">type std_fs_File = class end"</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+        <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'std_fs_File'</span>
     <span class="p">)</span>
 </pre></div>
@@ -9710,7 +9734,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output (rust -d chrono):
-{ name = __assert_contains; actual = /tmp/!create_temp_path_/spiral_4b76c00f9ce9dddf73eaf7cb4a7eb68f9f2c25b9e098941f399b3f204cebb473/00000000-0000-0000-0000-000000000000; expected = / }
+{ name = __assert_contains; actual = /tmp/!create_temp_path_/spiral_e2cdd5a01606aa9ac74b1daa002506a9b0bfccec95010c803c9e8a5d668ef3c0/00000000-0000-0000-0000-000000000000; expected = / }
 
 </pre>
 </div>
@@ -9990,8 +10014,8 @@ a.anchor-link {
             <span class="p">(</span><span class="err">$</span><span class="s1">'System.IO.Directory.CreateSymbolicLink (!path, !target)'</span> <span class="p">:</span> <span class="n">file_system_info</span><span class="p">)</span>
             <span class="o">|&gt;</span> <span class="n">ignore</span>
         <span class="o">|</span> <span class="n">Rust</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; #[cfg(windows)] std::os::windows::fs::symlink_dir(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
-            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; #[cfg(unix)] std::os::unix::fs::symlink(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
+            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; \#[cfg(windows)] std::os::windows::fs::symlink_dir(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
+            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">()</span>
 </pre></div>
 </div>
@@ -10023,8 +10047,8 @@ a.anchor-link {
             <span class="p">(</span><span class="err">$</span><span class="s1">'System.IO.File.CreateSymbolicLink (!path, !target)'</span> <span class="p">:</span> <span class="n">file_system_info</span><span class="p">)</span>
             <span class="o">|&gt;</span> <span class="n">ignore</span>
         <span class="o">|</span> <span class="n">Rust</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; #[cfg(windows)] std::os::windows::fs::symlink_file(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
-            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; #[cfg(unix)] std::os::unix::fs::symlink(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
+            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; \#[cfg(windows)] std::os::windows::fs::symlink_file(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
+            <span class="p">(</span><span class="err">!</span>\\<span class="p">((</span><span class="n">target</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">()</span>
 </pre></div>
 </div>
@@ -10274,7 +10298,12 @@ a.anchor-link {
             <span class="k">if</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">directory_exists</span>
             <span class="n">then</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"std::fs::read_link(&amp;*$0)"'</span><span class="p">)</span>
             <span class="k">else</span>
-                <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
+                <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
+                <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span>
+                    <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span>
+                    <span class="p">(</span><span class="n">path</span><span class="s1">' : string)</span>
+                    <span class="p">:</span> <span class="n">resultm</span><span class="o">.</span><span class="n">result</span><span class="s1">' path_buf stream.io_error</span>
+                    <span class="o">=</span>
                     <span class="n">run_target</span> <span class="n">function</span>
                         <span class="o">|</span> <span class="n">Rust</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="n">inl</span> <span class="n">result</span> <span class="p">:</span> <span class="n">_</span> <span class="n">_</span> <span class="n">stream</span><span class="o">.</span><span class="n">io_error</span> <span class="o">=</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">path</span><span class="s1">', $'</span><span class="s2">"std::fs::read_link(&amp;*$0)"</span><span class="s1">')</span>
@@ -10286,7 +10315,12 @@ a.anchor-link {
                 <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">loop</span> <span class="mi">0</span><span class="n">u8</span>
         <span class="o">|</span> <span class="n">Fsharp</span> <span class="n">_</span>
         <span class="o">|</span> <span class="n">TypeScript</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
+            <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
+            <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span>
+                <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span>
+                <span class="p">(</span><span class="n">path</span><span class="s1">' : string)</span>
+                <span class="p">:</span> <span class="n">resultm</span><span class="o">.</span><span class="n">result</span><span class="s1">' path_buf stream.io_error</span>
+                <span class="o">=</span>
                 <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span>
                     <span class="n">path</span><span class="s1">'</span>
                     <span class="o">|&gt;</span> <span class="n">directory_info</span>
@@ -10905,7 +10939,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">delete_directory_async</span> <span class="n">path</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">run_target</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11174,7 +11208,7 @@ a.anchor-link {
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .rs output (rust -d chrono):
-00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_4e4b3d55f4dcefa8eee980df65771772308a963c54317531418e1899dae130ee/20250329-1455-4151-4023-000000547c02 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_77d6db7f810f597a473592254c714c1e6c0254bff036d4d3858220c913cabc7c/20250406-0541-2590-3956-000000e789b7 }
 { name = __assert_eq; actual = true; expected = true }
 { name = __assert_eq; actual = true; expected = true }
 { name = __assert_eq; actual = false; expected = false }
@@ -11203,7 +11237,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">120000</span>
+<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">360000</span>
 
 <span class="n">inl</span> <span class="n">lock_directory</span> <span class="n">path</span> <span class="o">=</span>
     <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11683,7 +11717,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">120000</span>
+<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">360000</span>
 
 <span class="n">inl</span> <span class="n">lock_file</span> <span class="n">path</span> <span class="o">=</span>
     <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11772,7 +11806,7 @@ a.anchor-link {
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #12 5
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #13 6
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #14 7
-{ name = __assert_between; actual = 195; expected = 100, 200 }
+{ name = __assert_between; actual = 196; expected = 100, 200 }
 { name = __assert_eq; actual = 1; expected = 1 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
@@ -11800,7 +11834,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">read_all_text_retry_async</span> <span class="n">full_path</span> <span class="p">:</span> <span class="k">async</span><span class="o">.</span><span class="k">async</span> <span class="p">(</span><span class="n">optionm</span><span class="s1">'.option'</span> <span class="n">string</span><span class="p">)</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="p">(</span><span class="n">optionm</span><span class="s1">'.option'</span> <span class="n">string</span><span class="p">)</span> <span class="o">=</span>
         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">try_unit</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11852,7 +11886,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">move_file_async</span> <span class="n">new_path</span> <span class="n">old_path</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">run_target</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11888,7 +11922,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">120000</span>
+<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">360000</span>
 
 <span class="n">inl</span> <span class="n">lock_file</span> <span class="n">path</span> <span class="o">=</span>
     <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -12006,7 +12040,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">delete_file_async</span> <span class="n">path</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">run_target</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -12041,7 +12075,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">120000</span>
+<span class="o">////</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">360000</span>
 
 <span class="n">inl</span> <span class="n">lock_file</span> <span class="n">path</span> <span class="o">=</span>
     <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>

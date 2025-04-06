@@ -157,15 +157,19 @@ inl memoize_ seq =
             new_state
 
 /// ### iterate
-inl iterate f x0 num_steps =
-    inl rec loop x n =
+// inl iterate f x0 num_steps =
+inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
+    // inl rec loop x n =
+    inl rec loop forall c {number}. (x : a) (n : c) : a =
         if n <= 0
         then x
         else loop (f x) (n - 1)
     loop x0 num_steps
 
-inl iterate_ f x0 num_steps =
-    let rec loop x n =
+// inl iterate_ f x0 num_steps =
+inl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
+    // let rec loop x n =
+    let rec loop forall c {number}. (x : a) (n : c) : a =
         if n <= 0
         then x
         else loop (f x) (n - 1)
@@ -192,7 +196,13 @@ inl list_find_last forall item result. (fn : item -> option result) (target : li
 /// ## fsharp
 
 /// ### seq'
-nominal seq' t = $"backend_switch `({ Gleam : $'List(`t)'; Fsharp : $'`t seq'; Python : $'list' })"
+type seq_switch' t =
+    {
+        Gleam : $'List(`t)'
+        Fsharp : $'`t seq'
+        Python : $'list'
+    }
+nominal seq' t = $'backend_switch `(seq_switch' t)'
 
 /// ### length'
 inl length' forall t. (items : seq' t) : int =

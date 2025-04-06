@@ -8,7 +8,7 @@ nominal std_string =
         backend_switch `(()) `({}) {
             Fsharp =
                 (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n#else\ntype std_string_String = string\n#endif\n"
+                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n\#else\ntype std_string_String = string\n#endif\n"
                 ) : () -> ()
         }
         $'' : $'std_string_String'
@@ -80,7 +80,7 @@ inl format_pretty forall t. (x : t) : string =
     run_target_args `string `t (fun () => x) function
         | Rust _ => fun x =>
             open rust
-            inl result = rust.emit_expr `t `std_string x ($'"format\!(\\\"{:#?}\\\", $0)"' : string)
+            inl result = rust.emit_expr `t `std_string x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
             from_std_string result
         | _ => fun _ => format_debug `t x
 
@@ -402,5 +402,3 @@ inl format_real forall t. (x : t) : string =
 /// ## main
 
 /// ## rust
-
-/// ### to_string std_string

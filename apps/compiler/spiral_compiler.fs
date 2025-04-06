@@ -1,3 +1,5 @@
+#nowarn 40
+
 #if !INTERACTIVE
 namespace Polyglot
 #endif
@@ -303,6 +305,13 @@ module spiral_compiler =
 
     //let print_ch = Ch<string>()
     //let pr x = Hopac.run (Ch.send print_ch (x.ToString()))
+
+    module Utils =
+        let memoize x =
+            memoize x
+
+        let get_default x =
+            get_default x
 
     /// ## ParserCombinators
 
@@ -835,7 +844,7 @@ module spiral_compiler =
     type Parenthesis = Round | Square | Curly
 
     /// ### MacroEnum
-    type MacroEnum = MTerm | MType | MTypeLit
+    type MacroEnum = MTerm | MType | MTypeLit | MTermInline
 
     /// ### Literal
     type Literal = 
@@ -905,7 +914,7 @@ module spiral_compiler =
         | TokEscapedVar
         | TokUnescapedChar of char
         | TokMacroOpen | TokMacroClose
-        | TokMacroTermVar of string
+        | TokMacroTermVar of string * is_inline : bool
         | TokMacroTypeVar of string
         | TokMacroTypeLitVar of string
         | TokMacroExpression of MacroEnum * ParenthesisState
@@ -1207,6 +1216,7 @@ module spiral_compiler =
             | '`' -> MType
             | '!' -> MTerm
             | '@' -> MTypeLit
+            | '#' -> MTermInline
             | _ -> failwith "Compiler error: Unknown char in the tokenizer."
 
         let p_special_char s =
@@ -1226,9 +1236,9 @@ module spiral_compiler =
             | _ -> error_char s.from "\\"
 
         let p_var s = (many1Satisfy2L is_var_char_starting is_var_char "variable") s
-        let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '\\') "macro text") |>> Text) s
+        let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> Text) s
         let p_expr s = 
-            let start = anyOf ['`'; '!'; '@']
+            let start = anyOf ['`'; '!'; '@'; '#']
             let case_paren start_char = 
                 let mutable c = 1 // number of open parens.
                 between (skip_char '(') (skip_char ')') (many1SatisfyL (fun x -> // Stops when the number of open parens is 0.
@@ -1265,7 +1275,7 @@ module spiral_compiler =
                 | UnescapedChar(r,x) -> [r, TokUnescapedChar x]
                 | Var(r,x,MType) -> [r, TokMacroTypeVar x]
                 | Var(r,x,MTypeLit) -> [r, TokMacroTypeLitVar x]
-                | Var(r,x,MTerm) -> [r, TokMacroTermVar x]
+                | Var(r,x,(MTerm | MTermInline as u)) -> [r, TokMacroTermVar(x, u = MTermInline)]
                 | Expression(r,x,t) -> 
                     let start = 
                         let r = {from=r.from; nearTo=r.from+2}
@@ -1672,7 +1682,7 @@ module spiral_compiler =
     /// ### RawMacro
     type RawMacro =
         | RawMacroText of VSCRange * string
-        | RawMacroTerm of VSCRange * RawExpr
+        | RawMacroTerm of VSCRange * RawExpr * is_inline : bool
         | RawMacroType of VSCRange * RawTExpr
         | RawMacroTypeLit of VSCRange * RawTExpr
     and RawRecordWith =
@@ -1965,7 +1975,7 @@ module spiral_compiler =
     /// ### read_macro_var
     let read_macro_var d =
         try_current d <| function
-            | p, TokMacroTermVar x -> skipBlockParsing d; Result.Ok(RawMacroTerm(p,rawv(p,x)))
+            | p, TokMacroTermVar (x, is_inline) -> skipBlockParsing d; Result.Ok(RawMacroTerm(p,rawv(p,x),is_inline))
             | p, TokMacroTypeVar x -> skipBlockParsing d; Result.Ok(RawMacroType(p,RawTVar(p,x)))
             | p, TokMacroTypeLitVar x -> skipBlockParsing d; Result.Ok(RawMacroTypeLit(p,RawTVar(p,x)))
             | p,_ -> Error [p, ExpectedMacroVar]
@@ -2802,7 +2812,8 @@ module spiral_compiler =
 
             let case_macro =
                 let read_macro_expression s = 
-                    (macro_expression MTerm (root_term |>> fun x -> RawMacroTerm(range_of_expr x,x))
+                    (macro_expression MTerm (root_term |>> fun x -> RawMacroTerm(range_of_expr x,x,false))
+                    <|> macro_expression MTermInline (root_term |>> fun x -> RawMacroTerm(range_of_expr x,x,true))
                     <|> macro_expression MType (root_type root_type_defaults |>> fun x -> RawMacroType(range_of_texpr x,x))
                     <|> macro_expression MTypeLit (root_type root_type_defaults |>> fun x -> RawMacroTypeLit(range_of_texpr x,x))) s
                 let body = many ((read_text true |>> RawMacroText) <|> read_macro_var <|> read_macro_expression)
@@ -3110,9 +3121,8 @@ module spiral_compiler =
         | ExpectedMacroExpression(MTerm,Open) -> "`("
         | ExpectedMacroExpression(MType,Open) -> "!("
         | ExpectedMacroExpression(MTypeLit,Open) -> "@("
-        | ExpectedMacroExpression(MTerm,Close) -> ")"
-        | ExpectedMacroExpression(MType,Close) -> ")"
-        | ExpectedMacroExpression(MTypeLit,Close) -> ")"
+        | ExpectedMacroExpression(MTermInline,Open) -> "#("
+        | ExpectedMacroExpression((MTerm | MTermInline | MType | MTypeLit),Close) -> ")"
         | ExpectedOpenParenthesis -> "(, { or ["
         | ExpectedOperator' -> "operator"
         | ExpectedOperator x -> x
@@ -3241,7 +3251,7 @@ module spiral_compiler =
         let g = add_offset offset
         List.map (function
             | RawMacroText(r,a) -> RawMacroText(g r,a)
-            | RawMacroTerm(r,a) -> RawMacroTerm(g r,fold_offset_term offset a)
+            | RawMacroTerm(r,a,b) -> RawMacroTerm(g r,fold_offset_term offset a,b)
             | RawMacroType(r,a) -> RawMacroType(g r,fold_offset_ty offset a)
             | RawMacroTypeLit(r,a) -> RawMacroTypeLit(g r,fold_offset_ty offset a)
             ) a
@@ -3900,7 +3910,7 @@ module spiral_compiler =
         and cmacro constraints term ty a =
             List.iter (function
                 | RawMacroText _ -> ()
-                | RawMacroTerm(r,a) -> cterm constraints (term, ty) a
+                | RawMacroTerm(r,a,_) -> cterm constraints (term, ty) a
                 | RawMacroType(r,a) | RawMacroTypeLit(r,a) -> ctype constraints term ty a
                 ) a
         and ctype constraints term ty x =
@@ -4465,10 +4475,10 @@ module spiral_compiler =
                 | RawSeq(r,a,b) -> RawSeq(r,f a,f b)
                 | RawHeapMutableSet(r,a,b,c) -> RawHeapMutableSet(r,f a,List.map f b,f c)
                 | RawMacro(r,l) ->
-                    let l = l |> List.map (function RawMacroTerm(r,x) -> RawMacroTerm(r,f x) | x -> x )
+                    let l = l |> List.map (function RawMacroTerm(r,x,b) -> RawMacroTerm(r,f x,b) | x -> x )
                     RawAnnot(r,RawMacro(r,l),annot r x)
                 | RawArray(r,a) -> RawAnnot(r,RawArray(r,List.map f a),annot r x)
-            and pattern rec_term x' =
+            and pattern recbterm x' =
                 let mutable rec_term = rec_term
                 let rec f = function
                     | PatFilledDefaultValue _ -> failwith "Compiler error: PatDefaultValueFilled should not appear in fill."
@@ -4812,7 +4822,7 @@ module spiral_compiler =
             | RawOp(_,_,l) -> List.iter (assert_bound_vars env) l
             | RawJoinPoint(r,None,a,_) -> annotations.Add(x,(r,s)); f s a
             | RawJoinPoint(r,Some _,a,_) ->
-                unify r s (TyPair(TyPrim Int32T, TySymbol "tuple_of_free_vars"))
+                unify r s (TySymbol "tuple_of_free_vars")
                 let s = fresh_var scope
                 annotations.Add(x,(r,s))
                 f s a
@@ -5010,7 +5020,7 @@ module spiral_compiler =
                 annotations.Add(x,(r,s))
                 List.iter (function
                     | RawMacroText _ -> ()
-                    | RawMacroTerm(_,a) -> term scope env (fresh_var scope) a
+                    | RawMacroTerm(_,a,_) -> term scope env (fresh_var scope) a
                     | RawMacroType(_,a) | RawMacroTypeLit(_,a) -> ty_init scope env (fresh_var scope) a
                     ) a
             | RawHeapMutableSet(r,a,b,c) ->
@@ -5634,7 +5644,7 @@ module spiral_compiler =
     /// ### Macro
     type Macro =
         | MText of string
-        | MTerm of E
+        | MTerm of E * is_inline : bool
         | MType of TPrepass
         | MLitType of TPrepass
     and TypeMacro =
@@ -5735,7 +5745,7 @@ module spiral_compiler =
     module Printable =
         type PMacro =
             | MText of string
-            | MTerm of PE
+            | MTerm of PE * bool
             | MType of PT
             | MLitType of PT
         and PTypeMacro =
@@ -5895,7 +5905,7 @@ module spiral_compiler =
                 | E.EMacro(_,a,b) ->
                     let a = a |> List.map (function
                         | Macro.MText a -> MText a
-                        | Macro.MTerm a -> MTerm(term a)
+                        | Macro.MTerm (a,b) -> MTerm(term a,b)
                         | Macro.MType a -> MType(ty a)
                         | Macro.MLitType a -> MLitType(ty a)
                         )
@@ -6074,7 +6084,7 @@ module spiral_compiler =
             | EIfThenElse(_,a,b,c) -> term a + term b + term c
             | EExists(_,a,b) -> List.fold (fun s a -> s + ty a) (term b) a
             | EPatternMiss a | EReal(_,a) -> term a
-            | EMacro(_,a,b) -> List.fold (fun s -> function MLitType x | MType x -> s + ty x | MTerm x -> s + term x | MText _ -> s) (ty b) a
+            | EMacro(_,a,b) -> List.fold (fun s -> function MLitType x | MType x -> s + ty x | MTerm (x,_) -> s + term x | MText _ -> s) (ty b) a
             | EPatternMemo a -> memoize dict term a
             // Regular pattern matching
             | ELet(_,bind,body,on_succ) -> term on_succ - bind + term body
@@ -6205,7 +6215,7 @@ module spiral_compiler =
             | EMutableSet(_,a,b,c) -> f a; List.iter (snd >> f) b; f c
             | EUnbox(_,_,_,a,b,c) | EIfThenElse(_,a,b,c) -> f a; f b; f c
             | EMacro(_,a,b) ->
-                a |> List.iter (function MLitType a | MType a -> ty env a | MTerm a -> f a | MText _ -> ())
+                a |> List.iter (function MLitType a | MType a -> ty env a | MTerm (a,_) -> f a | MText _ -> ())
                 ty env b
             | EPatternMemo a -> memoize dict f a
             | ERecordTest(_,l,_,a,b) -> 
@@ -6356,7 +6366,7 @@ module spiral_compiler =
                     | MText _ as x -> x
                     | MLitType a -> MLitType(g env a)
                     | MType a -> MType(g env a)
-                    | MTerm a -> MTerm(f a)
+                    | MTerm (a,b) -> MTerm(f a,b)
                     )
                 EMacro(r,a,g env b)
             | EPrototypeApply(r,a,b) -> EPrototypeApply(r,a,g env b)
@@ -6826,7 +6836,7 @@ module spiral_compiler =
             | RawAnnot(_,RawMacro(r,a),b) ->
                 let a = a |> List.map (function
                     | RawMacroText(r,a) -> MText a
-                    | RawMacroTerm(r,a) -> MTerm(f a)
+                    | RawMacroTerm(r,a,b) -> MTerm(f a,b)
                     | RawMacroType(r,a) -> MType(ty env a)
                     | RawMacroTypeLit(r,a) -> MLitType(ty env a)
                     )
@@ -7069,7 +7079,7 @@ module spiral_compiler =
     /// ### CodeMacro
     type CodeMacro =
         | CMText of string
-        | CMTerm of Data
+        | CMTerm of Data * is_inline : bool
         | CMType of Ty
         | CMTypeLit of Ty
 
@@ -8166,9 +8176,9 @@ module spiral_compiler =
                 match backend with
                 | None -> push_typedop_no_rewrite s (TyJoinPoint(JPMethod((backend',body),join_point_key),call_args)) ret_ty
                 | Some (range,_) ->
-                    let method_name = push_typedop_no_rewrite s (TyBackend((backend',body),join_point_key,range)) (YPrim Int32T)
+                    let _ = push_typedop_no_rewrite s (TyBackend((backend',body),join_point_key,range)) YB
                     let call_args = Array.foldBack (fun v s -> DPair(DV v,s)) call_args DB
-                    DPair(method_name, call_args)
+                    call_args
             | EDefaultLit(r,a,b) -> let s = add_trace s r in default_lit s a (ty s b) |> DLit
             | EType(r,_) -> raise_type_error (add_trace s r) "Raw types are not allowed on the term level."
             | EApply(r,a,b) -> let s = add_trace s r in apply s (term s a, term s b)
@@ -8299,7 +8309,7 @@ module spiral_compiler =
                 else raise_type_error s <| sprintf "The two side do not have the same type.\nGot: %s\nExpected: %s" (show_ty c_ty') (show_ty c_ty)
             | EMacro(r,a,b) ->
                 let s = add_trace s r
-                let a = a |> List.map (function MText x -> CMText x | MTerm x -> CMTerm(term s x |> dyn false s) | MType x -> CMType(ty s x) | MLitType x -> CMTypeLit(ty s x |> assert_ty_lit s))
+                let a = a |> List.map (function MText x -> CMText x | MTerm (x,b) -> CMTerm(term s x |> dyn false s, b) | MType x -> CMType(ty s x) | MLitType x -> CMTypeLit(ty s x |> assert_ty_lit s))
                 push_typedop_no_rewrite s (TyMacro(a)) (ty s b)
             | EPrototypeApply(_,prot_id,b) ->
                 let rec loop = function
@@ -8551,26 +8561,28 @@ module spiral_compiler =
                 | a -> raise_type_error s <| sprintf "Expected an i32 literal.\nGot: %s" (show_data a)
             | EOp(_,PragmaUnrollPop,[]) -> 
                 push_op_no_rewrite' s PragmaUnrollPop [] YB
-            | EOp(_,BackendSwitch,l) ->
+            | EOp(_,BackendSwitch,[a]) ->
                 let mutable t = None
                 let mutable d = None
                 let validate_type t' =
                     match t with
                     | Some t -> if t <> t' then raise_type_error s $"The backend switch needs to have the same type for all of its branches.\nGot: {show_ty t'}\nExpected: {show_ty t}"
                     | None -> t <- Some t'
-                l |> List.iter (function
-                    | EPair(_,ELit(_,LitString backend),b) -> 
+                match term s a with
+                | DRecord l ->
+                    l |> Map.iter (fun (_,backend) b ->
                         // The reason why we're evaling all the branches intead of just one and in this specific order is because otherwise
                         // compile time hashmaps could make type inference unsound.
                         if backend = s.backend.node then 
-                            let d' = term s b
+                            let d' = apply s (b, DB)
                             validate_type (data_to_ty s d')
                             d <- Some d'
                         else
-                            let _,t' = term_scope s b
-                            validate_type t'
-                    | _ -> raise_type_error s "BackendSwitch should be a list of (string literal,body) pairs."
+                            let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend}
+                            let d' = apply s (b, DB)
+                            validate_type (data_to_ty s d')
                     )
+                | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
                 match d with
                 | Some cur -> cur |> dyn true s
                 | None -> raise_type_error s $"Cannot find the backend {s.backend.node} in the backend switch op."
@@ -9474,15 +9486,29 @@ module spiral_compiler =
                     | _ -> push_op s UnionTag a (YPrim Int32T)
                 | DNominal(DUnion(DPair(DSymbol k,_),h), _) -> eval k h
                 | a -> raise_type_error s <| sprintf "Expected an union.\nGot: %s" (show_data a)
-            | EOp(_,Global & op,[a]) ->
-                match term s a with
+            | EOp(_,Global & op,[a']) ->
+                match term s a' with
                 | DLit (LitString text) & a ->
                     // if text.Contains "import " || text.Contains "Fable" then
                     //     let s = { s with trace = []; seq = ResizeArray() }
                     //     let l = s.cse |> List.map _.Count |> List.filter ((=) 0) |> List.length
                     //     Console.WriteLine ($"global / text: {text} / s: %A{s} / l: {l}")
-                    if s.i.contents < 2 && s.cse |> List.map _.Count |> List.filter ((=) 0) |> List.length = 2
-                    then global' text
+                    let cse_counts = s.cse |> List.map _.Count |> List.filter ((=) 0) |> List.length
+                    let x_ =
+                        s.backend.node = env.backend
+                        && s.i.contents < 2
+                        && (cse_counts = 2 || cse_counts = 3)
+                    if text.Contains "std_path_PathBuf"
+                        || text.Contains "std_path_Display"
+                        || text.Contains "regex_Regex"
+                        || text.Contains "VarError"
+                        then
+                        trace Verbose (fun () -> $"PartEval.peval / | EOp(_,Global & op,[a]) -> / s.i.contents: %A{s.i.contents} / s.cse.count: %A{s.cse |> List.map _.Count} / s.backend.node: %A{s.backend.node} / op: %A{op} / a': %A{a'} / env.backend: %A{env.backend} / x_: %A{x_} / text: %A{text}") _locals
+                    if s.backend.node = env.backend then
+                        // trace Verbose (fun () -> $"PartEval.peval / | EOp(_,Global & op,[a]) -> / s.i.contents: %A{s.i.contents} / s.cse.count: %A{s.cse |> List.map _.Count} / s.backend.node: %A{s.backend.node} / op: %A{op} / a': %A{a'} / env.backend: %A{env.backend} / x_: %A{x_} / text: %A{text}") _locals
+                    // && s.i.contents < 2
+                    // && s.cse |> List.map _.Count |> List.filter ((=) 0) |> List.length = 2
+                        global' text
                     push_op_no_rewrite s op a YB
                 | a -> raise_type_error s $"Expected a string literal.\nGot: {show_data a}"
             | EOp(_,ToPythonRecord,[a]) ->
@@ -9806,6 +9832,7 @@ module spiral_compiler =
 
         let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litFsharp a
+        let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
 
         let global' =
             let has_added = HashSet env.globals
@@ -9895,7 +9922,7 @@ module spiral_compiler =
                 | _ -> raise_codegen_error "Compiler error: Expected an int in length"
                 |> simple
             match a with
-            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm x -> tup x | CMType x -> tup_ty x | CMTypeLit x -> type_litFsharp x) |> String.concat "" |> simple
+            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litFsharp x) |> String.concat "" |> simple
             | TySizeOf t -> simple $"sizeof<{tup_ty t}>"
             | TyIf(cond,tr,fl) ->
                 complex <| fun s ->
@@ -10285,6 +10312,7 @@ module spiral_compiler =
 
         let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litGleam a
+        let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
 
         let global' =
             let has_added = HashSet env.globals
@@ -10390,7 +10418,7 @@ module spiral_compiler =
                 sprintf "string.length(%s)" (tup b)
                 |> simple
             match a with
-            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm x -> tup x | CMType x -> tup_ty x | CMTypeLit x -> type_litGleam x) |> String.concat "" |> simple
+            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litGleam x) |> String.concat "" |> simple
             | TySizeOf t -> simple $"0"
             | TyIf(cond,tr,fl) ->
                 complex <| fun s ->
@@ -10720,7 +10748,7 @@ module spiral_compiler =
         binds {text=main; indent=0} x
 
         let program = System.Text.StringBuilder()
-        env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        env.globals |> Seq.distinct |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iteri (fun i x -> program.Append("pub type ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append("pub fn ").Append(x) |> ignore)
         program.Append($"pub fn main () {{ {main} }}").ToString()
@@ -10771,7 +10799,7 @@ module spiral_compiler =
         and op (x : TypedOp) : TyV Set =
             match x with
             | TySizeOf _ -> Set.empty
-            | TyMacro l -> List.fold (fun s -> function CMTerm d -> s + fv d | _ -> s) Set.empty l
+            | TyMacro l -> List.fold (fun s -> function CMTerm (d,_) -> s + fv d | _ -> s) Set.empty l
             | TyArrayLiteral(_,l) | TyOp(_,l) -> List.fold (fun s x -> s + fv x) Set.empty l
             | TyToLayout(x,_) | TyUnionBox(_,x,_) | TyFailwith(_,x) | TyConv(_,x) | TyArrayCreate(_,x) | TyArrayLength(_,x) | TyStringLength(_,x) -> fv x
             | TyWhile(cond,body) -> jp cond + binds body
@@ -11026,7 +11054,7 @@ module spiral_compiler =
                 fun () -> let x = i in i <- i + 1u; x
 
             let global' =
-                let has_added = HashSet()
+                let has_added = HashSet env.globals
                 fun x -> if has_added.Add(x) then globals.Add x
 
             let import x = global' $"#include <{x}>"
@@ -11065,7 +11093,7 @@ module spiral_compiler =
                             let decl_vars = Array.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
                             match a with
                             | TyMacro a ->
-                                let m = a |> List.map (function CMText x -> x | CMTerm x -> tup_data x | CMType x -> tup_ty x | CMTypeLit x -> type_lit x) |> String.concat ""
+                                let m = a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup_data x) | CMType x -> tup_ty x | CMTypeLit x -> type_lit x) |> String.concat ""
                                 let q = m.Split("\\v")
                                 if q.Length = 1 then 
                                     decl_vars |> line' s
@@ -11757,41 +11785,86 @@ module spiral_compiler =
             | _ ->
                 raise_codegen_error "The return type of main in the C backend should be a 32-bit int."
 
-    /// ## CodegenCuda
-    module CodegenCuda =
+    /// ## CodegenCpp
+    module CodegenCpp =
         // open System
         // open System.Text
         open System.Collections.Generic
 
-        let backend_nameCuda = "Cuda"
-        let max_tag = 255uy
+        type backend_type =
+            | Cuda of args : L<int,Ty>[] * binds : TypedBind[]
+            | Cpp of binds : TypedBind[]
 
-        let is_stringCuda = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
-        let sizeof_tyvCuda = function
+        type codegen_env =
+            {
+                globals : string ResizeArray
+                fwd_dcls : string ResizeArray
+                types : string ResizeArray
+                functions : string ResizeArray
+                main_defs : string ResizeArray
+                backend_name : string
+                __device__ : string
+            }
+
+            static member Create(backend_name,__device__) =
+                {
+                    globals = ResizeArray()
+                    fwd_dcls = ResizeArray()
+                    types = ResizeArray()
+                    functions = ResizeArray()
+                    main_defs = ResizeArray()
+                    backend_name = backend_name
+                    __device__ = __device__
+                }
+
+        let backend_nameCpp = "Cpp"
+        let private max_tag = 255uy
+
+        let prim = function
+            | Int8T -> "char" 
+            | Int16T -> "short"
+            | Int32T -> "int"
+            | Int64T -> "long long"
+            | UInt8T -> "unsigned char"
+            | UInt16T -> "unsigned short"
+            | UInt32T -> "unsigned int"
+            | UInt64T -> "unsigned long long"
+            | Float32T -> "float"
+            | Float64T -> "double"
+            | BoolT -> "bool" // part of c++ standard
+            | CharT -> "char"
+            | StringT -> "const char *"
+
+        /// Replaces the default types in the corelib.cuh library.
+        let replace_default_types (default_env : DefaultEnv) (x : string) =
+            let opts = System.Text.RegularExpressions.RegexOptions.Multiline
+            System.Text.RegularExpressions.Regex.Replace(x, @"(^using default_int = )(.*?)(;)", $"$1{prim default_env.default_int}$3", opts)
+            |> fun x -> System.Text.RegularExpressions.Regex.Replace(x, @"(^using default_uint = )(.*?)(;)", $"$1{prim default_env.default_uint}$3", opts)
+
+        let is_stringCpp = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
+        let sizeof_tyvCpp = function
             | YPrim (Int64T | UInt64T | Float64T) -> 8
             | YPrim (Int32T | UInt32T | Float32T) -> 4
             | YPrim (Int16T | UInt16T) -> 2
             | YPrim (Int8T | UInt8T | CharT | BoolT) -> 1
             | _ -> 8
-        let order_args v = v |> Array.sortWith (fun (L(_,t)) (L(_,t')) -> compare (sizeof_tyvCuda t') (sizeof_tyvCuda t))
-        let lineCuda x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
-        let lineCuda' x s = line x (String.concat " " s)
+        let order_args v = v |> Array.sortWith (fun (L(_,t)) (L(_,t')) -> compare (sizeof_tyvCpp t') (sizeof_tyvCpp t))
+        let lineCpp x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
+        let lineCpp' x s = line x (String.concat " " s)
 
-        type BindsReturnCuda =
+        type BindsReturnCpp =
             | BindsTailEnd
             | BindsLocal of TyV []
 
-        let term_vars_to_tysCuda x = x |> Array.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
-        let binds_last_dataCuda x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
+        let term_vars_to_tysCpp x = x |> Array.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
+        let binds_last_dataCpp x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
 
-        type LayoutRecCuda = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
-        type UnionRecCuda = {tag : int; free_vars : Map<int * string, TyV[]>; is_heap : bool}
-        type MethodRecCuda = {tag : int; free_vars : TyV[]; range : Ty; body : TypedBind[]; name : string option}
-        type ClosureRecCuda = {tag : int; free_vars : TyV[]; domain : Ty; range : Ty; funtype : FunType; body : TypedBind[]}
-        type TupleRecCuda = {tag : int; tys : Ty []}
-        type CFunRecCuda = {tag : int; domain : Ty; range : Ty; funtype : FunType}
-
-        //let size_t = UInt32T
+        type LayoutRecCpp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
+        type UnionRecCpp = {tag : int; free_vars : Map<int * string, TyV[]>; is_heap : bool}
+        type MethodRecCpp = {tag : int; free_vars : TyV[]; range : Ty; body : TypedBind[]; name : string option}
+        type ClosureRecCpp = {tag : int; free_vars : TyV[]; domain : Ty; range : Ty; funtype : FunType; body : TypedBind[]}
+        type TupleRecCpp = {tag : int; tys : Ty []}
+        type CFunRecCpp = {tag : int; domain : Ty; range : Ty; funtype : FunType}
 
         // Replaces the invalid symbols in Spiral method names for the C backend.
         let fix_method_name (x : string) = x.Replace(''','_') + "_"
@@ -11799,7 +11872,7 @@ module spiral_compiler =
         let unroll_pop (s : Stack<int>) = if s.Count > 0 then s.Pop() else -1
         let unroll_peek (s : Stack<int>) = if s.Count > 0 then s.Peek() else -1
 
-        let lit_stringCuda x =
+        let lit_stringCpp x =
             let strb = System.Text.StringBuilder(String.length x + 2)
             strb.Append '"' |> ignore
             String.iter (function
@@ -11815,7 +11888,7 @@ module spiral_compiler =
             strb.Append '"' |> ignore
             strb.ToString()
 
-        let codegenCuda (default_env : DefaultEnv) (globals : _ ResizeArray, fwd_dcls : _ ResizeArray, types : _ ResizeArray, functions : _ ResizeArray, main_defs : _ ResizeArray) (env : PartEvalResult) =
+        let codegen' backend_handler (part_eval_env : PartEvalResult) (code_env : codegen_env) =
             let print show r =
                 let s_typ_fwd = {text=System.Text.StringBuilder(); indent=0}
                 let s_typ = {text=System.Text.StringBuilder(); indent=0}
@@ -11824,37 +11897,37 @@ module spiral_compiler =
                 let f (a : _ ResizeArray) (b : CodegenEnv) = 
                     let text = b.text.ToString()
                     if text <> "" then a.Add(text)
-                f fwd_dcls s_typ_fwd
-                f types s_typ
-                f functions s_fun
+                f code_env.fwd_dcls s_typ_fwd
+                f code_env.types s_typ
+                f code_env.functions s_fun
 
             let layout show =
                 let dict' = Dictionary(HashIdentity.Structural)
                 let dict = Dictionary(HashIdentity.Reference)
-                let f x : LayoutRecCuda = 
+                let f x : LayoutRecCpp = 
                     match x with
                     | YLayout(x,_) ->
-                    let x = env.ty_to_data x
-                    let a, b =
-                        match x with
-                        | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
-                        | _ -> data_free_vars x, Map.empty
-                    {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                        let x = part_eval_env.ty_to_data x
+                        let a, b =
+                            match x with
+                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                            | _ -> data_free_vars x, Map.empty
+                        {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (1).\nGot: %s{show_ty x}"
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
+                    let r = Utils.memoize dict (Utils.memoize dict' (fun x -> dirty <- true; f x)) x
                     if dirty then print show r
                     r
 
             let union show =
                 let dict = Dictionary(HashIdentity.Reference)
-                let f (a : Union) : UnionRecCuda = 
-                    let free_vars = a.Item.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars)
+                let f (a : Union) : UnionRecCpp = 
+                    let free_vars = a.Item.cases |> Map.map (fun _ -> part_eval_env.ty_to_data >> data_free_vars)
                     {free_vars=free_vars; tag=dict.Count; is_heap=a.Item.layout = UHeap}
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (fun x -> dirty <- true; f x) x
+                    let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
 
@@ -11863,7 +11936,7 @@ module spiral_compiler =
                 let f x = f (x, dict.Count)
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (fun x -> dirty <- true; f x) x
+                    let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
 
@@ -11872,7 +11945,7 @@ module spiral_compiler =
                 let f x = {tag=dict.Count; tys=x}
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (fun x -> dirty <- true; f x) x
+                    let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
 
@@ -11881,7 +11954,7 @@ module spiral_compiler =
                 let f (a : Ty, b : Ty, t : FunType) = {tag=dict.Count; domain=a; range=b; funtype=t}
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (fun x -> dirty <- true; f x) x
+                    let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
 
@@ -11892,8 +11965,8 @@ module spiral_compiler =
                 fun () -> let x = i in i <- i + 1u; x
 
             let global' =
-                let has_added = HashSet()
-                fun x -> if has_added.Add(x) then globals.Add x
+                let has_added = HashSet code_env.globals
+                fun x -> if has_added.Add(x) then code_env.globals.Add x
 
             let import x = global' $"#include <{x}>"
             let import' x = global' $"#include \"{x}\""
@@ -11908,13 +11981,13 @@ module spiral_compiler =
                 | ret ->
                     let tmp_i = tmp()
                     line s $"{tup_ty_tyvs ret} tmp{tmp_i} = {x};"
-                    Array.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> lineCuda' s
+                    Array.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> lineCpp' s
             and get_layout_rec lay a =
                 match lay with 
                 | Heap -> heap a 
                 | HeapMutable -> mut a
                 | StackMutable -> stack_mut a
-            and binds (unroll : Stack<int>) (s : CodegenEnv) (ret : BindsReturnCuda) (stmts : TypedBind []) =
+            and binds (unroll : Stack<int>) (s : CodegenEnv) (ret : BindsReturnCpp) (stmts : TypedBind []) =
                 let tup_destruct (a,b) =
                     Array.map2 (fun (L(i,_)) b ->
                         match b with
@@ -11928,8 +12001,8 @@ module spiral_compiler =
                             let decl_vars () = Array.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
                             let layout_index layout (x'_i : int) (x' : TyV []) = 
                                 match layout with
-                                | Heap | HeapMutable -> Array.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.base->v{i'};") d x' |> lineCuda' s
-                                | StackMutable -> Array.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.v{i'};") d x' |> lineCuda' s
+                                | Heap | HeapMutable -> Array.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.base->v{i'};") d x' |> lineCpp' s
+                                | StackMutable -> Array.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.v{i'};") d x' |> lineCpp' s
                             match a with
                             | TyToLayout(a,YLayout(_,StackMutable) & b) ->
                                 match d with
@@ -11950,7 +12023,7 @@ module spiral_compiler =
                                 | _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index by key to be a layout type."
                                 true
                             | TyMacro a ->
-                                let m = a |> List.map (function CMText x -> x | CMTerm x -> tup_data x | CMType x -> tup_ty x | CMTypeLit x -> type_lit x) |> String.concat ""
+                                let m = a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup_data x) | CMType x -> tup_ty x | CMTypeLit x -> type_lit x) |> String.concat ""
                                 if m.StartsWith("#pragma") then 
                                     line s m
                                     true
@@ -11963,7 +12036,7 @@ module spiral_compiler =
                                 else
                                     let q = m.Split("\\v")
                                     if q.Length = 1 then 
-                                        decl_vars() |> lineCuda' s
+                                        decl_vars() |> lineCpp' s
                                         return_local s d m 
                                         true
                                     else
@@ -12009,7 +12082,7 @@ module spiral_compiler =
                                     true
                                 | _ -> raise_codegen_error "Compiler error: Expected a single variable on the left side of a closure join point."
                             | _ ->
-                                decl_vars() |> lineCuda' s
+                                decl_vars() |> lineCpp' s
                                 op unroll s (BindsLocal d) a
                                 true
                         with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
@@ -12019,7 +12092,7 @@ module spiral_compiler =
                         with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                     | TyLocalReturnData(d,trace) ->
                         try match ret with
-                            | BindsLocal l -> lineCuda' s (tup_destruct (l,data_term_vars d))
+                            | BindsLocal l -> lineCpp' s (tup_destruct (l,data_term_vars d))
                             | BindsTailEnd -> line s $"return {tup_data d};"
                             true
                         with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
@@ -12029,16 +12102,15 @@ module spiral_compiler =
             and args' b = data_term_vars b |> Array.map show_w |> String.concat ", "
             and tup_term_vars x =
                 let args = Array.map show_w x |> String.concat ", "
-                if 1 < x.Length then sprintf "Tuple%i{%s}" (tup (term_vars_to_tysCuda x)).tag args else args
+                if 1 < x.Length then sprintf "Tuple%i{%s}" (tup (term_vars_to_tysCpp x)).tag args else args
             and tup_data x = tup_term_vars (data_term_vars x)
             and tup_ty_tys = function
                 | [||] -> "void"
                 | [|x|] -> tyv x
                 | x -> sprintf "Tuple%i" (tup x).tag
             and tup_ty_tyvs (x : TyV []) = tup_ty_tys (tyvs_to_tys x)
-            and tup_ty x = env.ty_to_data x |> data_free_vars |> tup_ty_tyvs
-            and tyv x =
-                match x with
+            and tup_ty x = part_eval_env.ty_to_data x |> data_free_vars |> tup_ty_tyvs
+            and tyv = function
                 | YUnion a ->
                     match a.Item.layout with
                     | UStack -> sprintf "Union%i" (unions a).tag
@@ -12049,9 +12121,9 @@ module spiral_compiler =
                     | HeapMutable -> sprintf "sptr<Mut%i>" (mut a).tag
                     | StackMutable -> sprintf "StackMut%i &" (stack_mut a).tag
                 | YMacro [Text "backend_switch "; Type (YRecord r)] ->
-                    match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameCuda then Some v else None) with
+                    match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameCpp then Some v else None) with
                     | Some x -> tup_ty x
-                    | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameCuda}' field."
+                    | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{code_env.backend_name}' field."
                 | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_lit a) |> String.concat ""
                 | YPrim a -> prim a
                 | YArray a -> sprintf "%s *" (tup_ty a)
@@ -12059,20 +12131,6 @@ module spiral_compiler =
                 | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
                 | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
                 | a -> raise_codegen_error (sprintf "Compiler error: Type not supported in the codegen.\nGot: %A" a)
-            and prim = function
-                | Int8T -> "char" 
-                | Int16T -> "short"
-                | Int32T -> "int"
-                | Int64T -> "long long"
-                | UInt8T -> "unsigned char"
-                | UInt16T -> "unsigned short"
-                | UInt32T -> "unsigned int"
-                | UInt64T -> "unsigned long long"
-                | Float32T -> "float"
-                | Float64T -> "double"
-                | BoolT -> "bool" // part of c++ standard
-                | CharT -> "char"
-                | StringT -> "const char *"
             and lit = function
                 | LitInt8 x -> sprintf "%i" x
                 | LitInt16 x -> sprintf "%i" x
@@ -12092,7 +12150,7 @@ module spiral_compiler =
                     elif x = -infinity then "-1.0 / 0.0"
                     elif System.Double.IsNaN x then "0.0 / 0.0"
                     else x.ToString("R") |> add_dec_point
-                | LitString x -> lit_stringCuda x
+                | LitString x -> lit_stringCpp x
                 | LitChar x -> 
                     match x with
                     | '\b' -> @"\b"
@@ -12107,7 +12165,7 @@ module spiral_compiler =
                 | YLit x -> lit x
                 | YSymbol x -> x
                 | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro." 
-            and op (unroll : Stack<int>)s (ret : BindsReturnCuda) a =
+            and op (unroll : Stack<int>)s (ret : BindsReturnCpp) a =
                 let binds a b = binds unroll a b
                 let return' (x : string) =
                     match ret with
@@ -12135,7 +12193,7 @@ module spiral_compiler =
                     binds (indent s) ret fl
                     line s "}"
                 | TyJoinPoint(a,args) -> return' (jp (a, args))
-                | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Cuda backend does not support the nesting of other backends."
+                | TyBackend(a,b,c) -> line s $"auto kernel = {backend_handler (a,b,c)};"
                 | TyWhile(a,b) ->
                     let cond =
                         match a with
@@ -12148,8 +12206,11 @@ module spiral_compiler =
                     line s (sprintf "while (%s){" cond)
                     binds (indent s) (BindsLocal [||]) b
                     line s "}"
-                | TyDo a | TyIndent a ->
-                    binds s ret a
+                | TyDo a ->
+                    line s "do"
+                    binds (indent s) ret a
+                | TyIndent a ->
+                    binds (indent s) ret a
                 | TyIntSwitch(L(v_i,_),on_succ,on_fail) ->
                     line s (sprintf "switch (v%i) {" v_i)
                     let _ =
@@ -12184,7 +12245,7 @@ module spiral_compiler =
                                 Array.iteri (fun field_i (L(v_i,t) as v) -> 
                                     qs.Add $"{tyv t} v{v_i} = v{data_i}{acs}case{union_i}.v{field_i};"
                                     ) a 
-                                lineCuda' s qs
+                                lineCpp' s qs
                                 ) is a
                             binds (indent s) ret b
                             line (indent s) "break;"
@@ -12217,7 +12278,7 @@ module spiral_compiler =
                         | HeapMutable ->
                             let tag = (mut b).tag
                             $"sptr<Mut{tag}>{{new Mut{tag}{{{args' a}}}}}"
-                        | StackMutable -> raise_codegen_error "The Cuda backend doesn't support stack mutable layout types."
+                        | StackMutable -> raise_codegen_error "The Cpp backend doesn't support stack mutable layout types."
                     | _ -> raise_codegen_error "Compiler error: Expected a layout type (2)."
                     |> return'
                 | TyLayoutIndexAll(x) -> raise_codegen_error "Compiler error: TyLayoutIndexAll should have been taken care of in TyLet."
@@ -12244,7 +12305,7 @@ module spiral_compiler =
                 | TyArrayLiteral(a,b') -> raise_codegen_error "Compiler error: TyArrayLiteral should have been taken care of in TyLet."
                 | TyArrayCreate(a,b) ->  raise_codegen_error "Compiler error: TyArrayCreate should have been taken care of in TyLet."
                 | TyFailwith(a,b) ->
-                    let string_in_op = function DLit (LitString b) -> lit_stringCuda b | b -> raise_codegen_error "In the Cuda backend, the exception string must be a literal."
+                    let string_in_op = function DLit (LitString b) -> lit_stringCpp b | b -> raise_codegen_error "In the Cuda backend, the exception string must be a literal."
                     let fmt = @"%s\n"
                     line s $"printf(\"{fmt}\", {string_in_op b});"
                     line s "__trap();" // TODO: Print out the error traces as well.
@@ -12285,7 +12346,7 @@ module spiral_compiler =
                     | Pow, [a;b] -> sprintf "pow(%s,%s)" (tup_data a) (tup_data b)
                     | LT, [a;b] -> sprintf "%s < %s" (tup_data a) (tup_data b)
                     | LTE, [a;b] -> sprintf "%s <= %s" (tup_data a) (tup_data b)
-                    | EQ, [a;b] | NEQ, [a;b] | GT, [a;b] | GTE, [a;b] when is_stringCuda a -> raise_codegen_error "String comparison operations are not supported in the Cuda C++ backend."
+                    | EQ, [a;b] | NEQ, [a;b] | GT, [a;b] | GTE, [a;b] when is_stringCpp a -> raise_codegen_error "String comparison operations are not supported in the Cuda C++ backend."
                     | EQ, [a;b] -> sprintf "%s == %s" (tup_data a) (tup_data b)
                     | NEQ, [a;b] -> sprintf "%s != %s" (tup_data a) (tup_data b)
                     | GT, [a;b] -> sprintf "%s > %s" (tup_data a) (tup_data b)
@@ -12321,9 +12382,9 @@ module spiral_compiler =
                     |> return'
             and print_ordered_args s v = // Unlike C# for example, C keeps the struct fields in input order. To reduce padding, it is best to order the fields from largest to smallest.
                 order_args v |> Array.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
-            and method_template is_while : _ -> MethodRecCuda =
+            and method_template is_while : _ -> MethodRecCpp =
                 jp (fun ((jp_body,key & (C(args,_))),i) ->
-                    match (fst env.join_point_method.[jp_body]).[key] with
+                    match (fst part_eval_env.join_point_method.[jp_body]).[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=Option.map fix_method_name name}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun s_fwd s_typ s_fun x ->
@@ -12333,14 +12394,14 @@ module spiral_compiler =
                     let inline_ = 
                         if is_while then "inline "
                         else 
-                            line s_fwd $"__device__ {ret_ty} {fun_name}{x.tag}({args});"
+                            line s_fwd $"{code_env.__device__}{ret_ty} {fun_name}{x.tag}({args});"
                             if fun_name.StartsWith "noinline" then "__noinline__ " else ""
-                    line s_fun $"__device__ {inline_}{ret_ty} {fun_name}{x.tag}({args}){{"
+                    line s_fun $"{code_env.__device__}{inline_}{ret_ty} {fun_name}{x.tag}({args}){{"
                     binds_start (indent s_fun) x.body
                     line s_fun "}"
                     )
-            and method : _ -> MethodRecCuda = method_template false
-            and method_while : _ -> MethodRecCuda = method_template true
+            and method : _ -> MethodRecCpp = method_template false
+            and method_while : _ -> MethodRecCpp = method_template true
             and closure_args domain count_start =
                 let rec loop = function
                     | YPair(a,b) -> a :: loop b
@@ -12349,16 +12410,16 @@ module spiral_compiler =
                 let rename x = Array.map (fun (L(i,t)) -> let x = L(count,t) in count <- count+1; x) x
                 let mutable i = 0
                 loop domain |> List.choose (fun x -> 
-                    let n = env.ty_to_data x |> data_free_vars 
+                    let n = part_eval_env.ty_to_data x |> data_free_vars 
                     let x = if n.Length <> 0 then Some(i, tup_ty_tyvs n, n |> rename) else None
                     i <- i+1
                     x
                     )
-            and closure : _ -> ClosureRecCuda =
+            and closure : _ -> ClosureRecCpp =
                 jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,t) ->
-                        match (fst env.join_point_closure.[jp_body]).[key] with
+                        match (fst part_eval_env.join_point_closure.[jp_body]).[key] with
                         | Some(domain_args, body) -> {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
@@ -12381,7 +12442,7 @@ module spiral_compiler =
                         binds_start s_fun x.body
                     match x.funtype with
                     | FT_Pointer ->
-                        $"__device__ {range} FunPointerMethod{i}({args}){{" |> line s_fun
+                        $"{code_env.__device__}{range} FunPointerMethod{i}({args}){{" |> line s_fun
                         print_body s_fun
                         line s_fun "}"
                     | FT_Vanilla | FT_Closure ->
@@ -12399,8 +12460,8 @@ module spiral_compiler =
                             let () = // operator()
                                 match x.funtype with
                                 | FT_Pointer -> raise_codegen_error "Compiler error: The pointer case have been taken care of (2)."
-                                | FT_Vanilla -> line s_typ $"__device__ {range} operator()({args}){{"
-                                | FT_Closure -> line s_typ $"__device__ {range} operator()({args}) override {{"
+                                | FT_Vanilla -> line s_typ $"{code_env.__device__}{range} operator()({args}){{"
+                                | FT_Closure -> line s_typ $"{code_env.__device__}{range} operator()({args}) override {{"
                                 print_body s_typ
                                 line s_typ "}"
                             let () = // constructor
@@ -12415,15 +12476,23 @@ module spiral_compiler =
                                         x.free_vars 
                                         |> Array.map (fun (L(i,t)) -> $"v{i}(_v{i})")
                                         |> String.concat ", "
-                                    line s_typ $"__device__ Closure{i}({constructor_args}) : {initializer_args} {{ }}"
+                                    line s_typ $"{code_env.__device__}Closure{i}({constructor_args}) : {initializer_args} {{ }}"
                             let () = // destructor
                                 match x.funtype with
                                 | FT_Pointer | FT_Vanilla -> ()
-                                | FT_Closure -> line s_typ $"__device__ ~Closure{i}() override = default;"
+                                | FT_Closure -> 
+                                    let destructor_calls =
+                                        x.free_vars 
+                                        |> Array.choose (fun (L(i,t)) -> 
+                                            if is_numeric t || is_char t then None else
+                                            Some $"destroy(v{i});" 
+                                            )
+                                        |> String.concat " "
+                                    line s_typ $"{code_env.__device__}~Closure{i}() override {{ {destructor_calls} }}"
                             ()
                         line s_typ "};"
                     )
-            and cfun : _ -> CFunRecCuda =
+            and cfun : _ -> CFunRecCpp =
                 cfun' (fun s_fwd s_typ s_fun x ->
                     let i, range = x.tag, tup_ty x.range
                     let domain_args_ty = closure_args x.domain 0 |> List.map (fun (_,ty,_) -> ty) |> String.concat ", "
@@ -12431,10 +12500,10 @@ module spiral_compiler =
                     | FT_Vanilla -> raise_codegen_error "Regular functions do not have a composable type in the Cuda backend. Consider explicitly converting them to either closures or pointers using `to_closure` or `to_fptr` if you want to pass them through boundaries."
                     | FT_Pointer -> line s_fwd $"typedef {range} (* Fun{i})({domain_args_ty});"
                     | FT_Closure ->
-                        line s_fwd $"struct ClosureBase{i} {{ int refc{{0}}; __device__ virtual {range} operator()({domain_args_ty}) = 0; __device__ virtual ~ClosureBase{i}() = default; }};"
+                        line s_fwd $"struct ClosureBase{i} {{ int refc{{0}}; {code_env.__device__}virtual {range} operator()({domain_args_ty}) = 0; {code_env.__device__}virtual ~ClosureBase{i}(){{}}; }};"
                         line s_fwd $"typedef csptr<ClosureBase{i}> Fun{i};"
                     )
-            and tup : _ -> TupleRecCuda = 
+            and tup : _ -> TupleRecCpp = 
                 tuple (fun s_fwd s_typ s_fun x ->
                     let name = sprintf "Tuple%i" x.tag
                     line s_fwd $"struct {name};"
@@ -12444,11 +12513,11 @@ module spiral_compiler =
                     let args = x.tys |> Array.mapi (fun i x -> $"{tyv x} t{i}")
                     let con_init = x.tys |> Array.mapi (fun i x -> $"v{i}(t{i})")
                     if args.Length <> 0 then
-                        line (indent s_typ) $"__device__ {name}() = default;"
-                        line (indent s_typ) $"__device__ {name}({concat args}) : {concat con_init} {{}}"
+                        line (indent s_typ) $"{code_env.__device__}{name}() = default;"
+                        line (indent s_typ) $"{code_env.__device__}{name}({concat args}) : {concat con_init} {{}}"
                     line s_typ "};"
                     )
-            and unions : _ -> UnionRecCuda = 
+            and unions : _ -> UnionRecCpp = 
                 let inline map_iteri f x = Map.fold (fun i k v -> f i k v; i+1) 0 x |> ignore
                 union (fun s_fwd s_typ s_fun x ->
                     let i = x.tag
@@ -12463,8 +12532,8 @@ module spiral_compiler =
                             let args = v |> Array.map (fun (L(i,x)) -> $"{tyv x} t{i}")
                             let con_init = v |> Array.map (fun (L(i,x)) -> $"v{i}(t{i})")
                             if v.Length <> 0 then 
-                                line s_typ $"__device__ Union{i}_{tag}({concat args}) : {concat con_init} {{}}" 
-                                line s_typ $"__device__ Union{i}_{tag}() = delete;" 
+                                line s_typ $"{code_env.__device__}Union{i}_{tag}({concat args}) : {concat con_init} {{}}" 
+                                line s_typ $"{code_env.__device__}Union{i}_{tag}() = delete;" 
                         line s_typ "};"
                         ) x.free_vars
 
@@ -12474,19 +12543,19 @@ module spiral_compiler =
                         line s_typ $"union {{"
                         let _ =
                             let s_typ = indent s_typ
-                            map_iteri (fun tag (_,k) v -> line s_typ $"Union{i}_{tag} case{tag}; // {k}") x.free_vars
+                            map_iteri (fun tag k v -> line s_typ $"Union{i}_{tag} case{tag}; // {k}") x.free_vars
                         line s_typ "};"
 
                         if x.is_heap then line s_typ "int refc{0};"
                         if x.free_vars.Count > int max_tag then raise_codegen_error $"Too many union cases. They should not be more than {max_tag}."
                         line s_typ $"unsigned char tag{{{max_tag}}};"
-                        line s_typ $"__device__ Union{i}() {{}}" // default constructor, the refc and tag have def value so we don't have to do anything here.
+                        line s_typ $"{code_env.__device__}Union{i}() {{}}" // default constructor, the refc and tag have def value so we don't have to do anything here.
 
                         map_iteri (fun tag k v -> // The constructors for all the union cases.
-                            line s_typ $"__device__ Union{i}(Union{i}_{tag} t) : tag({tag}), case{tag}(t) {{}} // {k}"
+                            line s_typ $"{code_env.__device__}Union{i}(Union{i}_{tag} t) : tag({tag}), case{tag}(t) {{}} // {k}"
                             ) x.free_vars
 
-                        line s_typ $"__device__ Union{i}(Union{i} & x) : tag(x.tag) {{" // copy constructor
+                        line s_typ $"{code_env.__device__}Union{i}(Union{i} & x) : tag(x.tag) {{" // copy constructor
                         let () =
                             let s_typ = indent s_typ
                             line s_typ "switch(x.tag){"
@@ -12497,7 +12566,7 @@ module spiral_compiler =
                                     ) x.free_vars
                             line s_typ "}"
                         line s_typ "}"
-                        line s_typ $"__device__ Union{i}(Union{i} && x) : tag(x.tag) {{" // move constructor
+                        line s_typ $"{code_env.__device__}Union{i}(Union{i} && x) : tag(x.tag) {{" // move constructor
                         let () =
                             let s_typ = indent s_typ
                             line s_typ "switch(x.tag){"
@@ -12508,7 +12577,7 @@ module spiral_compiler =
                                     ) x.free_vars
                             line s_typ "}"
                         line s_typ "}"
-                        line s_typ $"__device__ Union{i} & operator=(Union{i} & x) {{" // copy assignment operator
+                        line s_typ $"{code_env.__device__}Union{i} & operator=(Union{i} & x) {{" // copy assignment operator
                         let () =
                             let s_typ = indent s_typ
                             line s_typ "if (this->tag == x.tag) {" 
@@ -12529,7 +12598,7 @@ module spiral_compiler =
                             line s_typ "}"
                             line s_typ "return *this;"
                         line s_typ "}"
-                        line s_typ $"__device__ Union{i} & operator=(Union{i} && x) {{" // move assignment operator
+                        line s_typ $"{code_env.__device__}Union{i} & operator=(Union{i} && x) {{" // move assignment operator
                         let () =
                             let s_typ = indent s_typ
                             line s_typ "if (this->tag == x.tag) {" 
@@ -12550,7 +12619,7 @@ module spiral_compiler =
                             line s_typ "}"
                             line s_typ "return *this;"
                         line s_typ "}"
-                        line s_typ $"__device__ ~Union{i}() {{"
+                        line s_typ $"{code_env.__device__}~Union{i}() {{"
                         let () = // destructor
                             let s_typ = indent s_typ
                             line s_typ "switch(this->tag){"
@@ -12564,8 +12633,8 @@ module spiral_compiler =
                         line s_typ "}"
                     line s_typ "};"
                     )
-            and layout_tmpl is_heap name : _ -> LayoutRecCuda =
-                layout (fun s_fwd s_typ s_fun (x : LayoutRecCuda) ->
+            and layout_tmpl is_heap name : _ -> LayoutRecCpp =
+                layout (fun s_fwd s_typ s_fun (x : LayoutRecCpp) ->
                     let name = sprintf "%s%i" name x.tag
                     line s_fwd $"struct {name};"
                     line s_typ $"struct {name} {{"
@@ -12577,26 +12646,43 @@ module spiral_compiler =
                         let args = x.free_vars |> Array.map (fun (L(i,x)) -> $"{tyv x} t{i}")
                         let con_init = x.free_vars |> Array.map (fun (L(i,x)) -> $"v{i}(t{i})")
                         if args.Length <> 0 then
-                            line s_typ $"__device__ {name}() = default;"
-                            line s_typ $"__device__ {name}({concat args}) : {concat con_init} {{}}" 
+                            line s_typ $"{code_env.__device__}{name}() = default;"
+                            line s_typ $"{code_env.__device__}{name}({concat args}) : {concat con_init} {{}}" 
                     line s_typ "};"
                     )
-            and heap : _ -> LayoutRecCuda = layout_tmpl true "Heap"
-            and mut : _ -> LayoutRecCuda = layout_tmpl true "Mut"
-            and stack_mut : _ -> LayoutRecCuda = layout_tmpl false "StackMut"
+            and heap : _ -> LayoutRecCpp = layout_tmpl true "Heap"
+            and mut : _ -> LayoutRecCpp = layout_tmpl true "Mut"
+            and stack_mut : _ -> LayoutRecCpp = layout_tmpl false "StackMut"
 
-            fun vs (x : TypedBind []) ->
+            function
+            | Cpp x ->
+                let ret_ty =
+                    let er() = raise_codegen_error "The return type of main function in the Cuda host backend should be a i32."
+                    match binds_last_dataCpp x with
+                    | DLit(LitInt32 _) | DV(L(_, YPrim Int32T)) -> "int"
+                    | _ -> er()
+
+                let s = {text=System.Text.StringBuilder(); indent=0}
+                line s $"{ret_ty} main_body() {{"
+                binds_start (indent s) x
+                line s "}"
+                line s $"{ret_ty} main(){{"
+                line (indent s) "auto r = main_body();"
+                line (indent s) "gpuErrchk(cudaDeviceSynchronize()); // This line is here so the `__trap()` calls on the kernel aren't missed."
+                line (indent s) "return r;"
+                line s "}"
+                code_env.main_defs.Add(s.text.ToString())
+            | Cuda(vs,x) ->
                 let ret_ty =
                     let er() = raise_codegen_error "The return type of the __global__ kernel in the Cuda backend should be a void type or a record of type {cluster_dims : {x : int; y : int; z : int}}."
-                    match binds_last_dataCuda x with
+                    match binds_last_dataCpp x with
                     | DRecord m when m.Count = 1 ->
-                        match Map.tryPick (fun (_, k) v -> if k = "cluster_dims" then Some v else None) m with
+                        match m |> Map.tryPick (fun (_, k) v -> if k = "cluster_dims" then Some v else None) with
                         | Some(DRecord m) when m.Count = 3 ->
-                            match
-                                Map.tryPick (fun (_, k) v -> if k = "x" then Some v else None) m,
-                                Map.tryPick (fun (_, k) v -> if k = "y" then Some v else None) m,
-                                Map.tryPick (fun (_, k) v -> if k = "z" then Some v else None) m
-                            with
+                            let x = m |> Map.tryPick (fun (_, k) v -> if k = "x" then Some v else None)
+                            let y = m |> Map.tryPick (fun (_, k) v -> if k = "y" then Some v else None)
+                            let z = m |> Map.tryPick (fun (_, k) v -> if k = "z" then Some v else None)
+                            match x, y, z with
                             | Some(DSymbol x), Some(DSymbol y), Some(DSymbol z) ->  $"void __cluster_dims__({x},{y},{z})"
                             | Some(DV _), _, _
                             | _, Some(DV _), _
@@ -12605,20 +12691,81 @@ module spiral_compiler =
                         | _ -> er()
                     | DB -> "void"
                     | _ -> er()
-                let main_defs' = {text=System.Text.StringBuilder(); indent=0}
+                let s = {text=System.Text.StringBuilder(); indent=0}
                 let args = vs |> Array.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
-                line main_defs' $"extern \"C\" __global__ {ret_ty} entry%i{main_defs.Count}(%s{args}) {{"
-                binds_start (indent main_defs') x
-                line main_defs' "}"
-                main_defs.Add(main_defs'.text.ToString())
+                line s $"extern \"C\" __global__ {ret_ty} entry%i{code_env.main_defs.Count}(%s{args}) {{"
+                binds_start (indent s) x
+                line s "}"
+                code_env.main_defs.Add(s.text.ToString())
 
-                global' $"using default_int = {prim default_env.default_int};"
-                global' $"using default_uint = {prim default_env.default_uint};"
-                global' (System.IO.File.ReadAllText(System.IO.Path.Join(
-                    // AppDomain.CurrentDomain.BaseDirectory,
-                    System.IO.Path.Combine (SpiralFileSystem.get_workspace_root (), "deps/The-Spiral-Language/The Spiral Language 2"),
-                    "reference_counting.cuh"
-                )))
+        let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env x = 
+            let g = Dictionary HashIdentity.Structural
+            let host_code_env = codegen_env.Create("Cpp", "")
+            let device_code_env = codegen_env.Create("Cuda", "__device__ ")
+
+            let cuda_codegen = 
+                codegen' (fun (jp_body,key,r') -> 
+                    raise_codegen_error_backend r' $"The Cuda backend does not support nesting of backends."
+                    ) part_eval_env device_code_env
+            codegen' (fun (jp_body,key,r') ->
+                let backend_name = (fst jp_body).node
+                match backend_name with
+                | "Cuda" ->
+                    Utils.memoize g (fun (jp_body,key & C(args,_)) ->
+                        let args = rdata_free_vars args
+                        match (fst part_eval_env.join_point_method.[jp_body]).[key] with
+                        | Some a, Some _, _ -> cuda_codegen (Cuda(args, a))
+                        | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                        $"Device::entry{g.Count}"
+                        ) (jp_body,key)
+                | x -> raise_codegen_error_backend r' $"The Python + Cuda backend does not support the {x} backend."
+                ) part_eval_env host_code_env (Cpp x)
+
+            let append_lines (l : string seq) = (System.Text.StringBuilder(), l) ||> Seq.fold (fun s -> s.AppendLine)
+            let indent_lines (x : string) =
+                x.Split('\n')
+                |> Array.map (fun x -> if x <> "" then $"    {x}" else x)
+                |> fun x -> System.Text.StringBuilder().AppendJoin("", x)    
+
+            let aux_library_code =
+                let dir f =
+                    SpiralFileSystem.get_workspace_root ()
+                    + "/deps/The-Spiral-Language/The Spiral Language 2"
+                    |> fun x -> System.IO.Path.Join (x, f)
+                    |> System.IO.File.ReadAllText
+                (dir "corelib.cuh").Replace("__host__", "__host__ __device__")
+                |> replace_default_types default_env
+
+            let code =
+                let file_name = System.IO.Path.GetFileNameWithoutExtension file_path
+                System.Text.StringBuilder()
+                    .AppendLine($"#include \"{file_name}.auto.cu\"")
+                    .Append(append_lines host_code_env.globals)
+                    .Append(append_lines device_code_env.globals)
+                    .Append(
+                        System.Text.StringBuilder()
+                            .AppendLine("namespace Device {")
+                            .Append(
+                                System.Text.StringBuilder()
+                                    .AppendJoin("", device_code_env.fwd_dcls)
+                                    .AppendJoin("", device_code_env.types)
+                                    .AppendJoin("", device_code_env.functions)
+                                    .AppendJoin("", device_code_env.main_defs)
+                                    .ToString()
+                                |> indent_lines
+                            )
+                    )
+                    .AppendLine("}")
+                    .AppendJoin("", host_code_env.fwd_dcls)
+                    .AppendJoin("", host_code_env.types)
+                    .AppendJoin("", host_code_env.functions)
+                    .AppendJoin("", host_code_env.main_defs)
+                    .ToString()
+
+            [
+                {|code = aux_library_code; file_extension = ".auto.cu"|}
+                {|code = code.ToString(); file_extension = ".cu"|}
+            ]
 
     /// ## CodegenPython
     module CodegenPython =
@@ -12681,6 +12828,7 @@ module spiral_compiler =
 
         let show_w = function WV(L(i,_)) -> sprintf "v%i" i | WLit a -> litPython a
         let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+        let args' b = data_term_vars b |> Array.map show_w |> String.concat ", "
         let primPython x = show_primt x
         let cupy_ty x =
             match x with
@@ -12714,14 +12862,10 @@ module spiral_compiler =
 
         let linePython x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
 
-        let codegen' backend_handler (env : PartEvalResult) (x : TypedBind []) =
-            let fwd_dcls = ResizeArray()
-            let types = ResizeArray()
-            let functions = ResizeArray()
-
+        let codegen' backend_handler (part_eval_env : PartEvalResult) (code_env : CodegenCpp.codegen_env) =
             let global' =
-                let has_added = HashSet env.globals
-                fun x -> if has_added.Add(x) then env.globals.Add x
+                let has_added = HashSet code_env.globals
+                fun x -> if has_added.Add(x) then code_env.globals.Add x
 
             let import x = global' $"import {x}"
             let from x = global' $"from {x}"
@@ -12730,16 +12874,16 @@ module spiral_compiler =
                 let s = {text=System.Text.StringBuilder(); indent=0}
                 show s r
                 let text = s.text.ToString()
-                if is_type then types.Add(text) else functions.Add(text)
+                if is_type then code_env.types.Add(text) else code_env.functions.Add(text)
 
             let union show =
                 let dict = Dictionary(HashIdentity.Reference)
                 let f (a : Union) : UnionRecPython =
-                    let free_vars = a.Item.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars)
+                    let free_vars = a.Item.cases |> Map.map (fun _ -> part_eval_env.ty_to_data >> data_free_vars)
                     {free_vars=free_vars; tag=dict.Count}
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (fun x -> dirty <- true; f x) x
+                    let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print true show r
                     r
 
@@ -12749,16 +12893,16 @@ module spiral_compiler =
                 let f x : LayoutRecPython = 
                     match x with
                     | YLayout(x,_) ->
-                    let x = env.ty_to_data x
-                    let a, b =
-                        match x with
-                        | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
-                        | _ -> data_free_vars x, Map.empty
-                    {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                        let x = part_eval_env.ty_to_data x
+                        let a, b =
+                            match x with
+                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                            | _ -> data_free_vars x, Map.empty
+                        {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (5).\nGot: %s{show_ty x}"
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
+                    let r = Utils.memoize dict (Utils.memoize dict' (fun x -> dirty <- true; f x)) x
                     if dirty then print true show r
                     r
 
@@ -12767,11 +12911,11 @@ module spiral_compiler =
                 let f x = f (x, dict.Count)
                 fun x ->
                     let mutable dirty = false
-                    let r = memoize dict (fun x -> dirty <- true; f x) x
+                    let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print is_type show r
                     r
 
-            let cupy_ty x = env.ty_to_data x |> data_free_vars |> cupy_ty
+            let cupy_ty x = part_eval_env.ty_to_data x |> data_free_vars |> cupy_ty
             let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x).g_decr s BindsTailEnd x
             and binds g_decr (s : CodegenEnv) (ret : BindsReturnPython) (stmts : TypedBind []) = 
                 let s_len = s.text.Length
@@ -12808,8 +12952,7 @@ module spiral_compiler =
                 | [||] -> "None"
                 | [|x|] -> x
                 | args -> sprintf "(%s)" (String.concat ", " args)
-            and tyv x =
-                match x with
+            and tyv = function
                 | YUnion a ->
                     match a.Item.layout with
                     | UHeap -> sprintf "UH%i" (uheap a).tag
@@ -12823,24 +12966,17 @@ module spiral_compiler =
                     match r |> Map.tryPick (fun (_, k) v -> if k = backend_namePython then Some v else None) with
                     | Some x -> tup_ty x
                     | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_namePython}' field."
-                | YMacro a ->
-                    a
-                    |> List.map (function
-                        | Text a -> a
-                        | Type a -> tup_ty a
-                        | TypeLit a -> type_litPython a
-                    )
-                    |> String.concat ""
+                | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litPython a) |> String.concat ""
                 | YPrim a -> primPython a
                 | YArray a -> "(cp if cuda else np).ndarray"
                 | YFun(a,b,FT_Vanilla) -> 
-                    let a = env.ty_to_data a |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
+                    let a = part_eval_env.ty_to_data a |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
                     $"Callable[[{a}], {tup_ty b}]"
                 | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
                 | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
                 | a -> raise_codegen_error $"Complier error: Type not supported in the codegen.\nGot: %A{a}"
             and tup_ty x =
-                match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) with
+                match part_eval_env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) with
                 | [||] -> "None"
                 | [|x|] -> x
                 | x -> String.concat ", " x |> sprintf "Tuple[%s]"
@@ -12869,7 +13005,7 @@ module spiral_compiler =
                             let x = x |> SpiralSm.replace "%A{" "{"
                             $"f\"{x.[2..]}"
                         | CMText x -> x
-                        | CMTerm x -> tup_data x
+                        | CMTerm (x,inl) -> if inl then args' x else tup_data x
                         | CMType x -> tup_ty x
                         | CMTypeLit a -> type_litPython a
                     )
@@ -12881,12 +13017,13 @@ module spiral_compiler =
                     line s "else:"
                     binds g_decr (indent s) ret fl
                 | TyJoinPoint(a,args) -> return' (jp (a, args))
-                | TyBackend(a,b,c) -> return' (backend_handler (a,b,c))
+                | TyBackend(a,b,c) -> line s $"kernel = \"{backend_handler (a,b,c)}\""
                 | TyWhile(a,b) ->
                     line s (sprintf "while %s:" (jp a))
                     binds g_decr (indent s) (BindsLocal [||]) b
                 | TyDo a ->
-                    binds g_decr s ret a
+                    line s "do"
+                    binds g_decr (indent s) ret a
                 | TyIndent a ->
                     binds g_decr (indent s) ret a
                 | TyIntSwitch(L(v_i,_),on_succ,on_fail) ->
@@ -12910,7 +13047,7 @@ module spiral_compiler =
                         let cases = 
                             a |> List.map (fun a ->
                                 let x = data_free_vars a
-                                let g_decr' = get_default g_decr (Array.head b) (fun () -> Set.empty)
+                                let g_decr' = Utils.get_default g_decr (Array.head b) (fun () -> Set.empty)
                                 let x,g_decr' = Array.mapFold (fun g_decr (L(i,_) as v) -> if Set.contains v g_decr then "_", Set.remove v g_decr else sprintf "v%i" i, g_decr) g_decr' x
                                 g_decr.[Array.head b] <- g_decr'
                                 sprintf "%s_%i(%s)" prefix i (String.concat ", " x)
@@ -13024,7 +13161,7 @@ module spiral_compiler =
                     |> return'
             and uheap : _ -> UnionRecPython = union (fun s x ->
                 let cases = Array.init x.free_vars.Count (fun i -> $"\"UH{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
-                fwd_dcls.Add $"UH{x.tag} = {cases}"
+                code_env.fwd_dcls.Add $"UH{x.tag} = {cases}"
                 let mutable i = 0
                 x.free_vars |> Map.iter (fun k a ->
                     line s $"class UH{x.tag}_{i}(NamedTuple): # {k}"
@@ -13061,7 +13198,7 @@ module spiral_compiler =
                 )
             and method : _ -> MethodRecPython =
                 jp false (fun ((jp_body,key & (C(args,_))),i) ->
-                    match (fst env.join_point_method.[jp_body]).[key] with
+                    match (fst part_eval_env.join_point_method.[jp_body]).[key] with
                     | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun s x ->
@@ -13073,7 +13210,7 @@ module spiral_compiler =
                 jp true (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
-                        match (fst env.join_point_closure.[jp_body]).[key] with
+                        match (fst part_eval_env.join_point_closure.[jp_body]).[key] with
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
@@ -13094,16 +13231,16 @@ module spiral_compiler =
                     line s "return inner"
                     )
 
+            fun (x : TypedBind []) ->
             import "cupy as cp"
             import "numpy as np"
             from "dataclasses import dataclass"
             from "typing import NamedTuple, Union, Callable, Tuple"
-            env.globals.Add "i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str"
-            env.globals.Add "cuda = False"
-            env.globals.Add ""
+            code_env.globals.Add "i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str"
+            code_env.globals.Add "cuda = False"
+            code_env.globals.Add ""
 
-            let main = System.Text.StringBuilder()
-            let s = {text=main; indent=0}
+            let s = {text=System.Text.StringBuilder(); indent=0}
 
             line s "def main_body():"
             binds_start [||] (indent s) x
@@ -13116,53 +13253,87 @@ module spiral_compiler =
             s.text.AppendLine() |> ignore
 
             line s "if __name__ == '__main__': result = main(); None if result is None else print(result)"
+            code_env.main_defs.Add(s.text.ToString())
 
-            let program = System.Text.StringBuilder()
-            env.globals |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
-            fwd_dcls |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
-            types |> Seq.iter (fun x -> program.Append(x) |> ignore)
-            functions |> Seq.iter (fun x -> program.Append(x) |> ignore)
-            program.Append(main).ToString()
-
-        let codegenPython (default_env : DefaultEnv) env x = 
+        let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env (x : TypedBind[]) = 
             let cuda_kernels = System.Text.StringBuilder().AppendLine("kernel = r\"\"\"")
             let g = Dictionary(HashIdentity.Structural)
-            let globals, fwd_dcls, types, functions, main_defs as ars = ResizeArray(), ResizeArray(), ResizeArray(), ResizeArray(), ResizeArray()
 
-            let codegen = CodegenCuda.codegenCuda default_env ars env
+            let host_code_env = CodegenCpp.codegen_env.Create("Python", "")
+            let device_code_env = CodegenCpp.codegen_env.Create("Cuda", "__device__ ")
+
+            let cuda_codegen = 
+                CodegenCpp.codegen' (fun (jp_body,key,r') -> 
+                    raise_codegen_error_backend r' $"The Cuda backend does not support nesting of backends."
+                    ) part_eval_env device_code_env
             let python_code =
                 codegen' (fun (jp_body,key,r') ->
                     let backend_name = (fst jp_body).node
                     match backend_name with
                     | "Cuda" -> 
-                        memoize g (fun (jp_body,key & (C(args,_))) ->
+                        Utils.memoize g (fun (jp_body,key & C(args,_)) ->
                             let args = rdata_free_vars args
-                            match (fst env.join_point_method.[jp_body]).[key] with
-                            | Some a, Some _, _ -> codegen args a
+                            match (fst part_eval_env.join_point_method.[jp_body]).[key] with
+                            | Some a, Some _, _ -> cuda_codegen (CodegenCpp.Cuda(args,a))
                             | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
-                            string g.Count
+                            $"entry{g.Count}"
                             ) (jp_body,key)
                     | x -> raise_codegen_error_backend r' $"The Python + Cuda backend does not support the {x} backend."
-                    ) env x
+                    ) part_eval_env host_code_env x
 
-            globals |> Seq.iter (fun x -> cuda_kernels.AppendLine(x) |> ignore)
-            fwd_dcls |> Seq.iter (fun x -> cuda_kernels.Append(x) |> ignore)
-            types |> Seq.iter (fun x -> cuda_kernels.Append(x) |> ignore)
-            functions |> Seq.iter (fun x -> cuda_kernels.Append(x) |> ignore)
-            main_defs |> Seq.iter (fun x -> cuda_kernels.Append(x) |> ignore)
+            let append_lines (l : string seq) = (System.Text.StringBuilder(), l) ||> Seq.fold (fun s -> s.AppendLine)
 
-            cuda_kernels
-                .AppendLine("\"\"\"")
-                .AppendLine(System.IO.File.ReadAllText(System.IO.Path.Join(
-        #if !INTERACTIVE
-                    // AppDomain.CurrentDomain.BaseDirectory,
-                    System.IO.Path.Combine (SpiralFileSystem.get_workspace_root (), "deps/The-Spiral-Language/The Spiral Language 2"),
-        #else
-                    System.IO.Path.Combine (SpiralFileSystem.get_workspace_root (), "deps/The-Spiral-Language/The Spiral Language 2"),
-        #endif
-                    "reference_counting.py"
-                )))
-                .Append(python_code).ToString()
+            let file_name = System.IO.Path.GetFileNameWithoutExtension file_path
+
+            let aux_library_code =
+                let dir f =
+                    SpiralFileSystem.get_workspace_root ()
+                    + "/deps/The-Spiral-Language/The Spiral Language 2"
+                    |> fun x -> System.IO.Path.Join (x, f)
+                    |> System.IO.File.ReadAllText
+                let aux_library_code_python = dir "corelib.py"
+                let aux_library_code_cuda =
+                    (dir "corelib.cuh").Replace("__host__", "__device__")
+                    |> CodegenCpp.replace_default_types default_env
+
+                System.Text.StringBuilder()
+                    .AppendLine("kernels_aux = r\"\"\"")
+                    .AppendLine(aux_library_code_cuda)
+                    .AppendLine("\"\"\"")
+                    .AppendLine(aux_library_code_python)
+                    .ToString()
+            let code_main = 
+                System.Text.StringBuilder()
+                    .AppendLine("kernels_main = r\"\"\"")
+                    .Append(append_lines device_code_env.globals)
+                    .AppendJoin("", device_code_env.fwd_dcls)
+                    .AppendJoin("", device_code_env.types)
+                    .AppendJoin("", device_code_env.functions)
+                    .AppendJoin("", device_code_env.main_defs)
+                    .AppendLine("\"\"\"")
+                    .AppendLine($"from {file_name}_auto import *")
+                    .AppendLine("kernels = kernels_aux + kernels_main")
+                    .AppendLine(
+                        part_eval_env.globals
+                        |> Seq.append host_code_env.globals
+                        |> Seq.distinct
+                        |> append_lines
+                        |> _.ToString()
+                    )
+                    .AppendLine("# fwd_dcls")
+                    .AppendJoin("\n", host_code_env.fwd_dcls)
+                    .AppendLine("# types")
+                    .AppendJoin("", host_code_env.types)
+                    .AppendLine("# functions")
+                    .AppendJoin("", host_code_env.functions)
+                    .AppendLine("# main_defs")
+                    .AppendJoin("", host_code_env.main_defs)
+                    .ToString()
+
+            [
+                {|code = aux_library_code; file_extension = "_auto.py"|}
+                {|code = code_main; file_extension = ".py"|}
+            ]
 
     /// ## WDiff
     // open System
@@ -15041,7 +15212,8 @@ module spiral_compiler =
                     | BuildOk l ->
                         Job.fromAsync (async {
                             for x in l do
-                                do! System.IO.File.WriteAllTextAsync(System.IO.Path.ChangeExtension(file,x.file_extension), x.code) |> Async.AwaitTask
+                                let file = Path.ChangeExtension(file,null) // null removes the extension from path.
+                                do! System.IO.File.WriteAllTextAsync(file + x.file_extension, x.code) |> Async.AwaitTask
                         })
                         |> Hopac.start
                         l
@@ -15078,14 +15250,18 @@ module spiral_compiler =
                                     env.nominals |> Map.iter (fun k v -> d.Add(k, t.Add {|v with id=k|}))
                                     d
                                 try 
-                                    let build codegen backend file_extension =
+                                    let inline build_many codegen backend =
                                         let (a,_),b = peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend} main
-                                        BuildOk [{|code = codegen b a; file_extension = file_extension|}]
+                                        BuildOk (codegen file b a)
+                                    let build codegen backend file_extension =
+                                        build_many (fun file b a -> [{|code = codegen b a; file_extension = file_extension|}]) backend
                                     match backend with
-                                    | "Gleam" -> build codegenGleam "Gleam" "gleam"
-                                    | "Fsharp" -> build codegenFsharp "Fsharp" "fsx"
-                                    | "C" -> build CodegenC.codegenC "C" "c"
-                                    | "Python + Cuda" -> build (CodegenPython.codegenPython default_env) "Python" "py"
+                                    | "Gleam" -> build codegenGleam "Gleam" ".gleam"
+                                    | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
+                                    | "C" -> build CodegenC.codegenC "C" ".c"
+                                    | "Python + Cuda" -> build_many (CodegenPython.codegen default_env) "Python"
+                                    | "Cpp + Cuda" -> build_many (CodegenCpp.codegen default_env) "Cpp"
+
                                     | "Cuda C++" -> BuildFatalError "The host C++ backend originally made for FPGAs, and then ported to Cuda has been removed in v2.10.0 of Spiral. Please use an earlier version to access it." // Date: 5/8/2024
                                     | "Python" -> BuildFatalError "The prototype Python backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023
                                     | "UPMEM: Python + C" -> BuildFatalError "The UPMEM Python + C backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023

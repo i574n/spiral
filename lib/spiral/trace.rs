@@ -28,6 +28,15 @@ pub mod Trace {
     use fable_library_rust::String_::trimStartChars;
     use fable_library_rust::System::Collections::Generic::IEnumerable_1;
     use fable_library_rust::TimeSpan_::TimeSpan;
+    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
+        fn environ(&self) -> LrcPtr<dyn Any>;
+    }
+    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
+        #[inline]
+        fn environ(&self) -> LrcPtr<dyn Any> {
+            (**self).environ()
+        }
+    }
     pub mod TraceState {
         use super::*;
         pub fn trace_state() -> LrcPtr<
@@ -70,15 +79,6 @@ pub mod Trace {
                     ))
                 })
                 .clone()
-        }
-    }
-    pub trait IOsEnviron: core::fmt::Debug + core::fmt::Display {
-        fn environ(&self) -> LrcPtr<dyn Any>;
-    }
-    impl<V: IOsEnviron + core::fmt::Debug + core::fmt::Display> IOsEnviron for LrcPtr<V> {
-        #[inline]
-        fn environ(&self) -> LrcPtr<dyn Any> {
-            (**self).environ()
         }
     }
     #[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
@@ -178,6 +178,7 @@ pub mod Trace {
         US4_3(Trace::US3),
         US4_4(Trace::US3),
         US4_5(Trace::US3),
+        US4_6(Trace::US3),
     }
     impl core::fmt::Display for US4 {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -459,8 +460,8 @@ pub mod Trace {
         let patternInput: (Trace::US1, Trace::US2) = Trace::method1();
         let _run_target_args__v3: (Trace::US1, Trace::US2) =
             (patternInput.0.clone(), patternInput.1.clone());
-        let v173: Trace::US2 = _run_target_args__v3.1.clone();
-        let v172: Trace::US1 = _run_target_args__v3.0.clone();
+        let v185: Trace::US2 = _run_target_args__v3.1.clone();
+        let v184: Trace::US1 = _run_target_args__v3.0.clone();
         (
             LrcPtr::new(Trace::Mut0 {
                 l0: MutCell::new(1_i64),
@@ -475,8 +476,8 @@ pub mod Trace {
                 l0: MutCell::new(string("")),
             }),
             LrcPtr::new(Trace::Mut4 {
-                l0: MutCell::new(match &v172 {
-                    Trace::US1::US1_0(v172_0_0) => match &v172 {
+                l0: MutCell::new(match &v184 {
+                    Trace::US1::US1_0(v184_0_0) => match &v184 {
                         Trace::US1::US1_0(x) => x.clone(),
                         _ => unreachable!(),
                     }
@@ -484,8 +485,8 @@ pub mod Trace {
                     _ => v0.clone(),
                 }),
             }),
-            match &v173 {
-                Trace::US2::US2_0(v173_0_0) => Some(match &v173 {
+            match &v185 {
+                Trace::US2::US2_0(v185_0_0) => Some(match &v185 {
                     Trace::US2::US2_0(x) => x.clone(),
                     _ => unreachable!(),
                 }),
@@ -572,14 +573,14 @@ pub mod Trace {
         v4: LrcPtr<Trace::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v212: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method8(), v5));
-        let v344: DateTime = match &v212 {
-            Trace::US2::US2_0(v212_0_0) => {
-                let v292: TimeSpan = TimeSpan::new_ticks(
+        let v220: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method8(), v5));
+        let v360: DateTime = match &v220 {
+            Trace::US2::US2_0(v220_0_0) => {
+                let v303: TimeSpan = TimeSpan::new_ticks(
                     ({
                         let _arg: DateTime = DateTime::now();
                         _arg.ticks()
-                    }) - (match &v212 {
+                    }) - (match &v220 {
                         Trace::US2::US2_0(x) => x.clone(),
                         _ => unreachable!(),
                     }),
@@ -588,21 +589,21 @@ pub mod Trace {
                     1_i32,
                     1_i32,
                     1_i32,
-                    v292.hours(),
-                    v292.minutes(),
-                    v292.seconds(),
-                    v292.milliseconds(),
+                    v303.hours(),
+                    v303.minutes(),
+                    v303.seconds(),
+                    v303.milliseconds(),
                 )
             }
             _ => DateTime::now(),
         };
-        let v346: string = Trace::method9();
-        let provider: string = if (v346.clone()) == string("") {
+        let v361: string = Trace::method9();
+        let provider: string = if (v361.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
-            v346
+            v361
         };
-        v344.toString(provider)
+        v360.toString(provider)
     }
     pub fn method12() -> string {
         string("")
@@ -742,9 +743,9 @@ pub mod Trace {
             _ => inline_colorization::color_bright_red,
         };
         let v145: &str = &*v79;
-        let v173: &str = inline_colorization::color_reset;
-        let v175: std::string::String = format!("{}{}{}", v138, v145, v173);
-        fable_library_rust::String_::fromString(v175)
+        let v176: &str = inline_colorization::color_reset;
+        let v178: std::string::String = format!("{}{}{}", v138, v145, v176);
+        fable_library_rust::String_::fromString(v178)
     }
     pub fn method15(v0: string) -> string {
         trimEndChars(

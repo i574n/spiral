@@ -83,7 +83,11 @@ inl response_text (response : reqwest_response) : async.future_pin (resultm.resu
 /// ### tcp_client
 nominal tcp_client =
     `(
-        global "#if FABLE_COMPILER\n\ntype System_Net_Sockets_TcpClient = System.IDisposable\n#else\ntype System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\n#endif\n"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n\ntype System_Net_Sockets_TcpClient = System.IDisposable\n\#else\ntype System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\n#endif\n"
+                        ) : () -> ()
+        }
         $'' : $'System_Net_Sockets_TcpClient'
     )
 
@@ -153,7 +157,7 @@ let test_port_open_timeout timeout host port : _ bool = async.new_async_unit fun
 
 /// ### wait_for_port_access
 let wait_for_port_access timeout status host port : _ i64 =
-    let rec loop retry : _ i64 =
+    let rec loop forall t {number}. (retry : t) : async.async i64 =
         fun () =>
             inl is_port_open =
                 match timeout |> optionm'.unbox with
@@ -175,7 +179,7 @@ let wait_for_port_access timeout status host port : _ i64 =
 
 /// ### get_available_port
 let get_available_port timeout host initial_port : _ i32 =
-    let rec loop port =
+    let rec loop port : _ i32 =
         fun () =>
             inl is_port_open =
                 match timeout |> optionm'.unbox with

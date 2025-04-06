@@ -8,7 +8,7 @@ type any_base = any
 /// ### any
 nominal any =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"core::any::Any\")>]\ntype core_any_Any = class end\n#else\ntype core_any_Any = obj\n#endif\n"
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"core::any::Any\")>]\ntype core_any_Any = class end\n\#else\ntype core_any_Any = obj\n#endif\n"
         $'' : $'core_any_Any'
     )
 
@@ -81,7 +81,7 @@ nominal ref t =
         backend_switch `(()) `({}) {
             Fsharp =
                 (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"&$0\")>]\ntype Ref<'T> = class end\n#else\ntype Ref<'T> = 'T\n#endif\n"
+                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"&$0\")>]\ntype Ref<'T> = class end\n\#else\ntype Ref<'T> = 'T\n#endif\n"
                 ) : () -> ()
         }
         $'' : $'Ref<`t>'
@@ -520,7 +520,7 @@ inl break () : () =
 
 /// ### fix_closure'
 inl fix_closure' forall t. (depth : u8 * u8) (x : t) : string =
-    inl rec loop text (acc : string) n : string =
+    inl rec loop forall u {number}. (text : string) (acc : string) (n : u) : string =
         if n <= 0
         then acc
         else loop text (acc +. text) (n - 1)
@@ -580,7 +580,11 @@ inl capture_move forall t. (fn : () -> t) : t =
 /// ### type_emit
 nominal type_emit t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*/ $0 /*\")>]\n#endif\ntype TypeEmit<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () =>
+                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*/ $0 /*\")>]\n#endif\ntype TypeEmit<'T> = class end"
+                        ) : () -> ()
+        }
         $'' : $'TypeEmit<`t>'
     )
 
@@ -600,7 +604,7 @@ inl new_partial_eq_wrapper forall t.
     inl struct () =
         !\($'"} //"') : ()
 
-        !\($'"#[derive( //"') : ()
+        !\($'"\#[derive( //"') : ()
         !\($'"  Debug, //"') : ()
         !\($'"  Clone, //"') : ()
         !\($'")] //"') : ()
@@ -641,7 +645,7 @@ inl new_clone_wrapper forall t.
     inl struct () =
         !\($'"} //"') : ()
 
-        !\($'"#[derive( //"') : ()
+        !\($'"\#[derive( //"') : ()
         !\($'"  Debug, //"') : ()
         !\($'")] //"') : ()
         !\($'"pub struct CloneWrapper<T>(T); /*"') : ()

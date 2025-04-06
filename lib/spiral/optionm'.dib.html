@@ -8003,7 +8003,7 @@ a.anchor-link {
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; option.Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Some !x '</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
-        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x # some</span><span class="se">\'</span><span class="s1"> '</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x \# some</span><span class="se">\'</span><span class="s1"> '</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8230,7 +8230,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq'; actual = US0_0(v0=3), US0_1(); expected = US0_0(v0=3), US0_1() }
 
 .rs output:
@@ -8244,12 +8244,12 @@ a.anchor-link {
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6ad00fd898a7aa7308fa4ef847e408e53c2bbdee72e8a6a66fc21ee2f8eb75fb/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6ad00fd898a7aa7308fa4ef847e408e53c2bbdee72e8a6a66fc21ee2f8eb75fb/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7f8e483b5dcc91b8cf34adf4cb56294cb095c64c62656e10da88cda4d1c89e68/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7f8e483b5dcc91b8cf34adf4cb56294cb095c64c62656e10da88cda4d1c89e68/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6ad00fd898a7aa7308fa4ef847e408e53c2bbdee72e8a6a66fc21ee2f8eb75fb/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7f8e483b5dcc91b8cf34adf4cb56294cb095c64c62656e10da88cda4d1c89e68/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/6ad00fd898a7aa7308fa4ef847e408e53c2bbdee72e8a6a66fc21ee2f8eb75fb/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7f8e483b5dcc91b8cf34adf4cb56294cb095c64c62656e10da88cda4d1c89e68/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq'; actual = Us0i0(3), Us0i1; expected = Us0i0(3), Us0i1 }
 
 
@@ -8292,11 +8292,11 @@ a.anchor-link {
             <span class="err">$</span><span class="s1">'!x |&gt; option.Some'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'let mutable _!x = None'</span>
-            <span class="err">$</span><span class="s1">'#if \!FABLE_COMPILER &amp;&amp; \!WASM &amp;&amp; \!CONTRACT'</span>
+            <span class="err">$</span><span class="s1">'\#if \!FABLE_COMPILER &amp;&amp; \!WASM &amp;&amp; \!CONTRACT'</span>
             <span class="p">((</span><span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'Option.ofObj'</span><span class="p">)</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t) |&gt; emit_unit</span>
-            <span class="err">$</span><span class="s1">'#else'</span>
+            <span class="err">$</span><span class="s1">'\#else'</span>
             <span class="err">$</span><span class="s1">'Some !x '</span>
-            <span class="err">$</span><span class="s1">'#endif'</span>
+            <span class="err">$</span><span class="s1">'\#endif'</span>
             <span class="err">$</span><span class="s1">'|&gt; fun x -&gt; _!x &lt;- Some x'</span>
             <span class="err">$</span><span class="s1">'match _!x with Some x -&gt; x | None -&gt; failwith "optionm</span><span class="se">\'</span><span class="s1">.of_obj / _!x=None"'</span> <span class="p">:</span> <span class="n">option</span><span class="s1">' t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -8339,7 +8339,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq; actual = US0_1(); expected = US0_1() }
 
 .ts output:
@@ -8393,7 +8393,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>.py output (Cuda):
+<pre>.py output (Python):
 { name = __assert_eq'; actual = US0_0(v0=''); expected = US0_0(v0='') }
 
 .rs output:
@@ -8407,12 +8407,12 @@ a.anchor-link {
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2c691f7b7327fa51a0344aa4ceb51d1d5663ec8cb20bd0512e54ca13cb141b80/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2c691f7b7327fa51a0344aa4ceb51d1d5663ec8cb20bd0512e54ca13cb141b80/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7d5340690777eadce8c29fe6b234f86c99ad85c5a0f7cd0f19ee04322a9745ca/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7d5340690777eadce8c29fe6b234f86c99ad85c5a0f7cd0f19ee04322a9745ca/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2c691f7b7327fa51a0344aa4ceb51d1d5663ec8cb20bd0512e54ca13cb141b80/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7d5340690777eadce8c29fe6b234f86c99ad85c5a0f7cd0f19ee04322a9745ca/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2c691f7b7327fa51a0344aa4ceb51d1d5663ec8cb20bd0512e54ca13cb141b80/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7d5340690777eadce8c29fe6b234f86c99ad85c5a0f7cd0f19ee04322a9745ca/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq'; actual = Us0i0(""); expected = Us0i0("") }
 
 
