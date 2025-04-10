@@ -302,16 +302,22 @@ inl (++\#) a b =
 //// real
 
 inl format_debug forall t. (x : t) : string =
-    backend_switch `string `({}) {
-        Gleam = (fun () =>
-            backend_switch `(()) `({}) {
-                Gleam = (fun () => global "import gleam/string") : () -> ()
-            }
-            $'string.inspect(!x)' : string
-                ) : () -> string
-        Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
-        Python = (fun () => $'f"{!x}"' : string) : () -> string
-    }
+    typecase t with
+    | string => x
+    | _ =>
+        backend_switch `string `({}) {
+            Gleam = (fun () =>
+                typecase t with
+                | char => to `t `string x
+                | _ =>
+                    backend_switch `(()) `({}) {
+                        Gleam = (fun () => global "import gleam/string") : () -> ()
+                    }
+                    $'string.inspect(!x)' : string
+                    ) : () -> string
+            Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
+            Python = (fun () => $'f"{!x}"' : string) : () -> string
+        }
 
 #!spiral
 
@@ -388,7 +394,7 @@ prototype printable t : t -> ()
 
 //// real
 
-inl format_real forall t. (x : t) : string =
+let format_real forall t. (x : t) : string =
     inl result = mut `string (join "")
     inl rec write x =
         inl p ((a : string), b) =

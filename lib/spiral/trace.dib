@@ -131,7 +131,10 @@ inl init_trace_state trace_level : () =
     inl trace_level = trace_level |> optionm'.default_value Verbose
     backend_switch {
         Gleam = fun () =>
-            $'let trace_state = !new_trace_state(!trace_level)' : ()
+            global "fn trace_state () { option.None }"
+            $'let trace_state = fn () { case trace_state () { option.None -> !new_trace_state(!trace_level) |> option.Some' : ()
+            $'  x -> x' : ()
+            $'}}' : ()
         Fsharp = fun () =>
             backend_switch {
                 Fsharp = fun () =>
@@ -157,7 +160,8 @@ inl get_trace_state_or_init trace_level : trace_state =
     init_trace_state trace_level
     backend_switch {
         Gleam = fun () =>
-            $'trace_state' : trace_state
+            inl trace_level = trace_level |> optionm'.default_value Verbose
+            $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state
         Fsharp = fun () =>
             $'TraceState.trace_state.Value' : trace_state
         Python = fun () =>
@@ -166,11 +170,25 @@ inl get_trace_state_or_init trace_level : trace_state =
 
 #!markdown
 
+### set_trace_level
+
+#!spiral
+
+inl set_trace_level new_level =
+    inl ({ level } & trace_state) = get_trace_state_or_init None
+    level <- new_level
+    backend_switch {
+        Gleam = fun () =>
+            $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()
+    }
+
+#!markdown
+
 ### test_trace_level
 
 #!spiral
 
-let test_trace_level level : bool =
+inl test_trace_level level : bool =
     inl state = get_trace_state_or_init None
     inl level' = *state.level
     if *state.enabled |> not
@@ -192,16 +210,9 @@ let test_trace_level level : bool =
 
 test_trace_level Critical |> _assert_eq true
 test_trace_level Verbose |> _assert_eq true
-
-inl level = get_trace_state_or_init None .level
-level <- Debug
-test_trace_level Verbose
-|> _assert_eq (backend_switch {
-    Gleam = fun () => true
-    Fsharp = fun () => false
-    Python = fun () => false
-})
-level <- Verbose
+Debug |> set_trace_level
+test_trace_level Verbose |> _assert_eq false
+Verbose |> set_trace_level
 test_trace_level Verbose |> _assert_eq true
 
 #!markdown
@@ -212,9 +223,11 @@ test_trace_level Verbose |> _assert_eq true
 
 inl trace_raw level fn =
     fun () =>
-        if level |> test_trace_level then
-            inl text = fn ()
-            join
+        inl trace_state =
+            if level |> test_trace_level |> not
+            then None
+            else
+                inl text = fn ()
                 inl ({ count acc } & trace_state) = get_trace_state_or_init None
                 fun () =>
                     count <- *count + 1
@@ -251,7 +264,13 @@ inl trace_raw level fn =
                         !\\(text, $'\@"println\!(""{}"", $0)"')
                     | _ => fun text, write_line =>
                         text |> write_line
+
                 text |> *trace_state.trace_file
+                trace_state |> Some
+        backend_switch {
+            Gleam = fun () =>
+                $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
+        }
     |> exec_unit
 
 #!markdown
@@ -408,11 +427,7 @@ trace Debug (fun () => "test1") id
 trace Debug (fun () => "test2") id
 get_trace_state_or_init None .count
 |> fun x => *x
-|> _assert_eq (backend_switch {
-    Gleam = fun () => 1i64
-    Fsharp = fun () => 3i64
-    Python = fun () => 3i64
-})
+|> _assert_eq 3
 
 #!markdown
 

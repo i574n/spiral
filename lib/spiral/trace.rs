@@ -195,6 +195,23 @@ pub mod Trace {
             write!(f, "{}", core::any::type_name::<Self>())
         }
     }
+    #[derive(Clone, Debug)]
+    pub enum US6 {
+        US6_0(
+            LrcPtr<Trace::Mut0>,
+            LrcPtr<Trace::Mut1>,
+            LrcPtr<Trace::Mut2>,
+            LrcPtr<Trace::Mut3>,
+            LrcPtr<Trace::Mut4>,
+            Option<i64>,
+        ),
+        US6_1,
+    }
+    impl core::fmt::Display for US6 {
+        fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+            write!(f, "{}", core::any::type_name::<Self>())
+        }
+    }
     pub fn method3(v0: string) -> string {
         v0
     }
@@ -515,57 +532,19 @@ pub mod Trace {
             ()
         };
     }
-    pub fn method6(v0: Trace::US0) -> bool {
-        let v17: () = {
-            Trace::closure0((), ());
-            ()
-        };
-        let patternInput: (
-            LrcPtr<Trace::Mut0>,
-            LrcPtr<Trace::Mut1>,
-            LrcPtr<Trace::Mut2>,
-            LrcPtr<Trace::Mut3>,
-            LrcPtr<Trace::Mut4>,
-            Option<i64>,
-        ) = Trace::TraceState::trace_state().get().clone().unwrap();
-        let v56: Trace::US0 = (patternInput.4.clone()).l0.get().clone();
-        if ((patternInput.2.clone()).l0.get().clone()) == false {
-            false
-        } else {
-            (find(
-                v0,
-                ofSeq(ofList(ofArray(new_array(&[
-                    LrcPtr::new((Trace::US0::US0_0, 0_i32)),
-                    LrcPtr::new((Trace::US0::US0_1, 1_i32)),
-                    LrcPtr::new((Trace::US0::US0_2, 2_i32)),
-                    LrcPtr::new((Trace::US0::US0_3, 3_i32)),
-                    LrcPtr::new((Trace::US0::US0_4, 4_i32)),
-                ])))),
-            )) >= (find(
-                v56,
-                ofSeq(ofList(ofArray(new_array(&[
-                    LrcPtr::new((Trace::US0::US0_0, 0_i32)),
-                    LrcPtr::new((Trace::US0::US0_1, 1_i32)),
-                    LrcPtr::new((Trace::US0::US0_2, 2_i32)),
-                    LrcPtr::new((Trace::US0::US0_3, 3_i32)),
-                    LrcPtr::new((Trace::US0::US0_4, 4_i32)),
-                ])))),
-            ))
-        }
-    }
     pub fn closure7(unitVar: (), v0: i64) -> Trace::US2 {
         Trace::US2::US2_0(v0)
     }
-    pub fn method8() -> Func1<i64, Trace::US2> {
+    pub fn method7() -> Func1<i64, Trace::US2> {
         Func1::new(move |v: i64| Trace::closure7((), v))
     }
-    pub fn method9() -> string {
+    pub fn method8() -> string {
         string("hh:mm:ss")
     }
-    pub fn method10() -> string {
+    pub fn method9() -> string {
         string("HH:mm:ss")
     }
-    pub fn method7(
+    pub fn method6(
         v0: LrcPtr<Trace::Mut0>,
         v1: LrcPtr<Trace::Mut1>,
         v2: LrcPtr<Trace::Mut2>,
@@ -573,7 +552,7 @@ pub mod Trace {
         v4: LrcPtr<Trace::Mut4>,
         v5: Option<i64>,
     ) -> string {
-        let v220: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method8(), v5));
+        let v220: Trace::US2 = defaultValue(Trace::US2::US2_1, map(Trace::method7(), v5));
         let v360: DateTime = match &v220 {
             Trace::US2::US2_0(v220_0_0) => {
                 let v303: TimeSpan = TimeSpan::new_ticks(
@@ -597,7 +576,7 @@ pub mod Trace {
             }
             _ => DateTime::now(),
         };
-        let v361: string = Trace::method9();
+        let v361: string = Trace::method8();
         let provider: string = if (v361.clone()) == string("") {
             string("M-d-y hh:mm:ss tt")
         } else {
@@ -613,10 +592,20 @@ pub mod Trace {
         v0.l0.set(v4);
         ()
     }
+    pub fn method11(v0: char) -> string {
+        let v2: LrcPtr<Trace::Mut3> = LrcPtr::new(Trace::Mut3 {
+            l0: MutCell::new(Trace::method12()),
+        });
+        let v17: () = {
+            Trace::closure8(v2.clone(), sprintf!("{}", v0), ());
+            ()
+        };
+        v2.l0.get().clone()
+    }
     pub fn method13() -> string {
         string("\u{001b}[0m")
     }
-    pub fn method11(v0: Trace::US0) -> string {
+    pub fn method10(v0: Trace::US0) -> string {
         let v5: Trace::US5 = if if let Trace::US0::US0_0 = &v0 {
             true
         } else {
@@ -716,7 +705,7 @@ pub mod Trace {
                 }
             }
         };
-        let v56: char = getCharAt(
+        let v57: string = Trace::method11(getCharAt(
             toLower(match &v46 {
                 Trace::US5::US5_0(v46_0_0) => match &v46 {
                     Trace::US5::US5_0(x) => x.clone(),
@@ -726,28 +715,30 @@ pub mod Trace {
                 _ => panic!("{}", string("Option does not have a value."),),
             }),
             0_i32,
-        );
-        let v58: LrcPtr<Trace::Mut3> = LrcPtr::new(Trace::Mut3 {
-            l0: MutCell::new(Trace::method12()),
-        });
-        let v73: () = {
-            Trace::closure8(v58.clone(), sprintf!("{}", v56), ());
-            ()
-        };
-        let v79: string = v58.l0.get().clone();
-        let v138: &str = match &v0 {
+        ));
+        let v116: &str = match &v0 {
             Trace::US0::US0_1 => inline_colorization::color_bright_blue,
             Trace::US0::US0_2 => inline_colorization::color_bright_green,
             Trace::US0::US0_0 => inline_colorization::color_bright_black,
             Trace::US0::US0_3 => inline_colorization::color_yellow,
             _ => inline_colorization::color_bright_red,
         };
-        let v145: &str = &*v79;
-        let v176: &str = inline_colorization::color_reset;
-        let v178: std::string::String = format!("{}{}{}", v138, v145, v176);
-        fable_library_rust::String_::fromString(v178)
+        let v123: &str = &*v57;
+        let v154: &str = inline_colorization::color_reset;
+        let v156: std::string::String = format!("{}{}{}", v116, v123, v154);
+        fable_library_rust::String_::fromString(v156)
     }
     pub fn method15(v0: string) -> string {
+        let v2: LrcPtr<Trace::Mut3> = LrcPtr::new(Trace::Mut3 {
+            l0: MutCell::new(Trace::method12()),
+        });
+        let v14_1: () = {
+            Trace::closure8(v2.clone(), v0, ());
+            ()
+        };
+        v2.l0.get().clone()
+    }
+    pub fn method16(v0: string) -> string {
         trimEndChars(
             trimStartChars(v0, toArray(empty::<char>())),
             toArray(ofArray(new_array(&[' ', '/']))),
@@ -765,15 +756,8 @@ pub mod Trace {
         v8: string,
         v9: string,
     ) -> string {
-        let v11: LrcPtr<Trace::Mut3> = LrcPtr::new(Trace::Mut3 {
-            l0: MutCell::new(Trace::method12()),
-        });
-        let v23: () = {
-            Trace::closure8(v11.clone(), v9, ());
-            ()
-        };
-        let v29: string = v11.l0.get().clone();
-        Trace::method15(append(
+        let v10: string = Trace::method15(v9);
+        Trace::method16(append(
             (append(
                 (append(
                     (append(
@@ -787,7 +771,7 @@ pub mod Trace {
                 )),
                 string(" / "),
             )),
-            (v29),
+            (v10),
         ))
     }
     pub fn closure9(v0: LrcPtr<Trace::Mut0>, unitVar: ()) {
@@ -805,9 +789,12 @@ pub mod Trace {
         };
         ()
     }
-    pub fn method16(v0: string) {
-        let v17: () = {
+    pub fn closure6(v0: Trace::US0, v1: Func0<string>, v2: Func0<string>, unitVar: ()) {
+        fn v18() {
             Trace::closure0((), ());
+        }
+        let v19: () = {
+            v18();
             ()
         };
         let patternInput: (
@@ -818,20 +805,38 @@ pub mod Trace {
             LrcPtr<Trace::Mut4>,
             Option<i64>,
         ) = Trace::TraceState::trace_state().get().clone().unwrap();
-        let v60: () = {
-            Trace::closure9(patternInput.0.clone(), ());
-            ()
-        };
-        println!("{}", v0.clone());
-        ((patternInput.1.clone()).l0.get().clone())(v0)
-    }
-    pub fn closure6(v0: Trace::US0, v1: Func0<string>, v2: Func0<string>, unitVar: ()) {
-        if Trace::method6(v0.clone()) {
-            let v20: () = {
-                Trace::closure0((), ());
+        let v60: Trace::US0 = (patternInput.4.clone()).l0.get().clone();
+        let v306: Trace::US6 = if (if ((patternInput.2.clone()).l0.get().clone()) == false {
+            false
+        } else {
+            (find(
+                v0.clone(),
+                ofSeq(ofList(ofArray(new_array(&[
+                    LrcPtr::new((Trace::US0::US0_0, 0_i32)),
+                    LrcPtr::new((Trace::US0::US0_1, 1_i32)),
+                    LrcPtr::new((Trace::US0::US0_2, 2_i32)),
+                    LrcPtr::new((Trace::US0::US0_3, 3_i32)),
+                    LrcPtr::new((Trace::US0::US0_4, 4_i32)),
+                ])))),
+            )) >= (find(
+                v60,
+                ofSeq(ofList(ofArray(new_array(&[
+                    LrcPtr::new((Trace::US0::US0_0, 0_i32)),
+                    LrcPtr::new((Trace::US0::US0_1, 1_i32)),
+                    LrcPtr::new((Trace::US0::US0_2, 2_i32)),
+                    LrcPtr::new((Trace::US0::US0_3, 3_i32)),
+                    LrcPtr::new((Trace::US0::US0_4, 4_i32)),
+                ])))),
+            ))
+        }) == false
+        {
+            Trace::US6::US6_1
+        } else {
+            let v84: () = {
+                v18();
                 ()
             };
-            let patternInput: (
+            let patternInput_1: (
                 LrcPtr<Trace::Mut0>,
                 LrcPtr<Trace::Mut1>,
                 LrcPtr<Trace::Mut2>,
@@ -839,31 +844,60 @@ pub mod Trace {
                 LrcPtr<Trace::Mut4>,
                 Option<i64>,
             ) = Trace::TraceState::trace_state().get().clone().unwrap();
-            let v46: Option<i64> = patternInput.5.clone();
-            let v45: LrcPtr<Trace::Mut4> = patternInput.4.clone();
-            let v44: LrcPtr<Trace::Mut3> = patternInput.3.clone();
-            let v43: LrcPtr<Trace::Mut2> = patternInput.2.clone();
-            let v42: LrcPtr<Trace::Mut1> = patternInput.1.clone();
-            let v41: LrcPtr<Trace::Mut0> = patternInput.0.clone();
-            let v59: string = Trace::method7(
-                v41.clone(),
-                v42.clone(),
-                v43.clone(),
-                v44.clone(),
-                v45.clone(),
-                v46.clone(),
+            let v112: Option<i64> = patternInput_1.5.clone();
+            let v111: LrcPtr<Trace::Mut4> = patternInput_1.4.clone();
+            let v110: LrcPtr<Trace::Mut3> = patternInput_1.3.clone();
+            let v109: LrcPtr<Trace::Mut2> = patternInput_1.2.clone();
+            let v108: LrcPtr<Trace::Mut1> = patternInput_1.1.clone();
+            let v107: LrcPtr<Trace::Mut0> = patternInput_1.0.clone();
+            let v125: string = Trace::method6(
+                v107.clone(),
+                v108.clone(),
+                v109.clone(),
+                v110.clone(),
+                v111.clone(),
+                v112.clone(),
             );
-            let v60: string = Trace::method11(v0);
-            let v61: string = v1();
-            Trace::method16(if (v61.clone()) == string("") {
+            let v126: string = Trace::method10(v0);
+            let v127: string = v1();
+            let v132: string = if (v127.clone()) == string("") {
                 string("")
             } else {
-                Trace::method14(v41, v42, v43, v44, v45, v46, v59, v60, v61, v2())
-            })
+                Trace::method14(v107, v108, v109, v110, v111, v112, v125, v126, v127, v2())
+            };
+            let v148: () = {
+                v18();
+                ()
+            };
+            let patternInput_2: (
+                LrcPtr<Trace::Mut0>,
+                LrcPtr<Trace::Mut1>,
+                LrcPtr<Trace::Mut2>,
+                LrcPtr<Trace::Mut3>,
+                LrcPtr<Trace::Mut4>,
+                Option<i64>,
+            ) = Trace::TraceState::trace_state().get().clone().unwrap();
+            let v172: LrcPtr<Trace::Mut1> = patternInput_2.1.clone();
+            let v171: LrcPtr<Trace::Mut0> = patternInput_2.0.clone();
+            let v193: () = {
+                Trace::closure9(v171.clone(), ());
+                ()
+            };
+            println!("{}", v132.clone());
+            (v172.l0.get().clone())(v132);
+            Trace::US6::US6_0(
+                v171,
+                v172,
+                patternInput_2.2.clone(),
+                patternInput_2.3.clone(),
+                patternInput_2.4.clone(),
+                patternInput_2.5.clone(),
+            )
         };
+        ()
     }
     pub fn closure5(v0: Trace::US0, v1: Func0<string>, v2: Func0<string>) {
-        let v69: () = {
+        let v322: () = {
             Trace::closure6(v0, v1, v2, ());
             ()
         };
