@@ -1083,7 +1083,7 @@ inl between p_open p_close p_content : parser _ = fun input =>
         Fsharp = fun () =>
             run_target function
             | TypeScript _ => fun () => "parsing.between / expected closing delimiter / e: parsing.p_char / unexpected end of input / c: ']' / s: [aaabb,1,7 / input: [aaabb,[aaabb,1,1 / rest1: aaabb,[aaabb,1,2 / rest2: ,[aaabb,1,7" : string
-            | _ => fun () => join "\"parsing.between / expected closing delimiter / e: \"parsing.p_char / unexpected end of input / c: ']' / s: struct ([aaabb, 1, 7)\" / input: struct (\"[aaabb\", [aaabb, 1, 1) / rest1: struct (\"aaabb\", [aaabb, 1, 2) / rest2: struct (\"\", [aaabb, 1, 7)\"" : string
+            | _ => fun () => join "parsing.between / expected closing delimiter / e: \"parsing.p_char / unexpected end of input / c: ']' / s: struct ([aaabb, 1, 7)\" / input: struct (\"[aaabb\", [aaabb, 1, 1) / rest1: struct (\"aaabb\", [aaabb, 1, 2) / rest2: struct (\"\", [aaabb, 1, 7)" : string
         Python = fun () => "parsing.between / expected closing delimiter / e: parsing.p_char / unexpected end of input / c: ']' / s: ([aaabb, 1, 7) / input: ('[aaabb', [aaabb, 1, 1) / rest1: ('aaabb', [aaabb, 1, 2) / rest2: ('', [aaabb, 1, 7)" : string
     }
 )

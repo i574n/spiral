@@ -7769,7 +7769,10 @@ a.anchor-link {
     <span class="n">inl</span> <span class="n">trace_level</span> <span class="o">=</span> <span class="n">trace_level</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.default_value Verbose</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="err">$</span><span class="s1">'let trace_state = !new_trace_state(!trace_level)'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="k">global</span> <span class="s2">"fn trace_state () { option.None }"</span>
+            <span class="err">$</span><span class="s1">'let trace_state = fn () { case trace_state () { option.None -&gt; !new_trace_state(!trace_level) |&gt; option.Some'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'  x -&gt; x'</span> <span class="p">:</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'}}'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">backend_switch</span> <span class="p">{</span>
                 <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7812,7 +7815,8 @@ a.anchor-link {
     <span class="n">init_trace_state</span> <span class="n">trace_level</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="err">$</span><span class="s1">'trace_state'</span> <span class="p">:</span> <span class="n">trace_state</span>
+            <span class="n">inl</span> <span class="n">trace_level</span> <span class="o">=</span> <span class="n">trace_level</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.default_value Verbose</span>
+            <span class="err">$</span><span class="s1">'trace_state () |&gt; option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })'</span> <span class="p">:</span> <span class="n">trace_state</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'TraceState.trace_state.Value'</span> <span class="p">:</span> <span class="n">trace_state</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7830,7 +7834,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="test_trace_level">test_trace_level<a class="anchor-link" href="#test_trace_level">¶</a></h3>
+<h3 id="set_trace_level">set_trace_level<a class="anchor-link" href="#set_trace_level">¶</a></h3>
 </div>
 </div>
 </div>
@@ -7842,7 +7846,38 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">test_trace_level</span> <span class="n">level</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">set_trace_level</span> <span class="n">new_level</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="p">({</span> <span class="n">level</span> <span class="p">}</span> <span class="o">&amp;</span> <span class="n">trace_state</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_trace_state_or_init</span> <span class="kc">None</span>
+    <span class="n">level</span> <span class="o">&lt;-</span> <span class="n">new_level</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'let trace_state = fn () { !(trace_state |&gt; optionm'</span><span class="o">.</span><span class="n">some</span><span class="s1">') }'</span> <span class="p">:</span> <span class="p">()</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=19">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="test_trace_level">test_trace_level<a class="anchor-link" href="#test_trace_level">¶</a></h3>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=20">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">test_trace_level</span> <span class="n">level</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">state</span> <span class="o">=</span> <span class="n">get_trace_state_or_init</span> <span class="kc">None</span>
     <span class="n">inl</span> <span class="n">level</span><span class="s1">' = *state.level</span>
     <span class="k">if</span> <span class="o">*</span><span class="n">state</span><span class="o">.</span><span class="n">enabled</span> <span class="o">|&gt;</span> <span class="ow">not</span>
@@ -7856,7 +7891,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=19">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7874,16 +7909,9 @@ a.anchor-link {
 
 <span class="n">test_trace_level</span> <span class="n">Critical</span> <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="n">true</span>
 <span class="n">test_trace_level</span> <span class="n">Verbose</span> <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="n">true</span>
-
-<span class="n">inl</span> <span class="n">level</span> <span class="o">=</span> <span class="n">get_trace_state_or_init</span> <span class="kc">None</span> <span class="o">.</span><span class="n">level</span>
-<span class="n">level</span> <span class="o">&lt;-</span> <span class="n">Debug</span>
-<span class="n">test_trace_level</span> <span class="n">Verbose</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">backend_switch</span> <span class="p">{</span>
-    <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">true</span>
-    <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
-    <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
-<span class="p">})</span>
-<span class="n">level</span> <span class="o">&lt;-</span> <span class="n">Verbose</span>
+<span class="n">Debug</span> <span class="o">|&gt;</span> <span class="n">set_trace_level</span>
+<span class="n">test_trace_level</span> <span class="n">Verbose</span> <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="n">false</span>
+<span class="n">Verbose</span> <span class="o">|&gt;</span> <span class="n">set_trace_level</span>
 <span class="n">test_trace_level</span> <span class="n">Verbose</span> <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="n">true</span>
 </pre></div>
 </div>
@@ -7928,140 +7956,174 @@ a.anchor-link {
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported module</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:7:1</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:8:1</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">7 │ import gleam/time/calendar</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">8 │ import gleam/time/calendar</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │ ^^^^^^^^^^^^^^^^^^^^^^^^^^ This imported module is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:265:81</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:266:81</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">265 │ pub fn closure1 () -&gt; fn(_) -&gt; fn(Nil) -&gt; Nil   { fn(x : #( String)) { let #(   v0) = x</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">266 │ pub fn closure1 () -&gt; fn(_) -&gt; fn(Nil) -&gt; Nil   { fn(x : #( String)) { let #(   v0) = x</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                                                 ^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v0`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:309:11</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:407:11</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">309 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">407 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │           ^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v32`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:309:16</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:407:16</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">309 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">407 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                ^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v33`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:309:26</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:407:26</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">309 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">407 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                          ^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v35`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:309:36</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:407:36</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">309 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">407 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                    ^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v37`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:518:11</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:449:11</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">518 │     let #(v513, v514, v515, v516, v517, v518) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">449 │     let #(v104, v105, v106, v107, v108, v109) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v103) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │           ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v513`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v104`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:518:17</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:449:17</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">518 │     let #(v513, v514, v515, v516, v517, v518) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">449 │     let #(v104, v105, v106, v107, v108, v109) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v103) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                 ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v514`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v105`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:518:23</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:449:29</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">518 │     let #(v513, v514, v515, v516, v517, v518) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                       ^^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v515`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:518:29</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">518 │     let #(v513, v514, v515, v516, v517, v518) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">449 │     let #(v104, v105, v106, v107, v108, v109) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v103) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                             ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v516`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v107`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:518:35</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:449:41</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">518 │     let #(v513, v514, v515, v516, v517, v518) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                   ^^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v517`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:518:41</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">518 │     let #(v513, v514, v515, v516, v517, v518) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">449 │     let #(v104, v105, v106, v107, v108, v109) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v103) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                         ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v518`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v109`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:520:9</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:490:35</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">520 │     let v517 = Mut4(l0: v537)</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^^^ This variable is never used</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">490 │     let #(v175, v176, v177, v178, v179, v180) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v174) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                   ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v517`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable case clause</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:595:13</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │  </span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">595 │ ╭             False -&gt; {</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">596 │ │                 let v736 = "false"</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">597 │ │                 v736</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">598 │ │             }</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │ ╰─────────────^</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This case clause cannot be reached as it matches on a variant of a type</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">which is never present.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: It can be safely removed.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v179`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/src/main.gleam:620:9</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:500:11</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">620 │     let v517 = Mut4(l0: v779)</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^^^ This variable is never used</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">500 │     let #(v235, v236, v237, v238, v239, v240) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v234) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │           ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v517`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v235`.</span>
 
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:500:17</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">500 │     let #(v235, v236, v237, v238, v239, v240) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v234) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                 ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v236`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:500:29</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">500 │     let #(v235, v236, v237, v238, v239, v240) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v234) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                             ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v238`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:500:41</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">500 │     let #(v235, v236, v237, v238, v239, v240) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v234) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                         ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v240`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:542:35</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">542 │     let #(v307, v308, v309, v310, v311, v312) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v306) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                   ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v311`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:552:11</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">552 │     let #(v367, v368, v369, v370, v371, v372) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v366) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │           ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v367`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:552:17</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">552 │     let #(v367, v368, v369, v370, v371, v372) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v366) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                 ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v368`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:552:29</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">552 │     let #(v367, v368, v369, v370, v371, v372) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v366) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                             ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v370`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/src/main.gleam:552:41</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">552 │     let #(v367, v368, v369, v370, v371, v372) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v366) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                         ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v372`.</span>
+
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/build/dev/erlang/main/ebin/main@@main.beam"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1646314c82d10f13faa494ff3fe818fd59201a645ab9235e3cbdb6c3dfe7a4e0/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/86ebd9fea15a7f85ad972cf66364fbc6575c71a3cccaeaf8b6ac42a7af8127a8/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = true; expected = true }
 { name = __assert_eq; actual = true; expected = true }
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; actual = false; expected = false }
 { name = __assert_eq; actual = true; expected = true }
 
 
@@ -8082,7 +8144,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=20">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=22">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8092,7 +8154,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=21">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=23">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8102,9 +8164,11 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">trace_raw</span> <span class="n">level</span> <span class="n">fn</span> <span class="o">=</span>
     <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-        <span class="k">if</span> <span class="n">level</span> <span class="o">|&gt;</span> <span class="n">test_trace_level</span> <span class="n">then</span>
-            <span class="n">inl</span> <span class="n">text</span> <span class="o">=</span> <span class="n">fn</span> <span class="p">()</span>
-            <span class="n">join</span>
+        <span class="n">inl</span> <span class="n">trace_state</span> <span class="o">=</span>
+            <span class="k">if</span> <span class="n">level</span> <span class="o">|&gt;</span> <span class="n">test_trace_level</span> <span class="o">|&gt;</span> <span class="ow">not</span>
+            <span class="n">then</span> <span class="kc">None</span>
+            <span class="k">else</span>
+                <span class="n">inl</span> <span class="n">text</span> <span class="o">=</span> <span class="n">fn</span> <span class="p">()</span>
                 <span class="n">inl</span> <span class="p">({</span> <span class="n">count</span> <span class="n">acc</span> <span class="p">}</span> <span class="o">&amp;</span> <span class="n">trace_state</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_trace_state_or_init</span> <span class="kc">None</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                     <span class="n">count</span> <span class="o">&lt;-</span> <span class="o">*</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
@@ -8141,7 +8205,13 @@ a.anchor-link {
                         <span class="err">!</span>\\<span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="err">$</span><span class="s1">'\@"println\!(""</span><span class="si">{}</span><span class="s1">"", $0)"'</span><span class="p">)</span>
                     <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">text</span><span class="p">,</span> <span class="n">write_line</span> <span class="o">=&gt;</span>
                         <span class="n">text</span> <span class="o">|&gt;</span> <span class="n">write_line</span>
+
                 <span class="n">text</span> <span class="o">|&gt;</span> <span class="o">*</span><span class="n">trace_state</span><span class="o">.</span><span class="n">trace_file</span>
+                <span class="n">trace_state</span> <span class="o">|&gt;</span> <span class="n">Some</span>
+        <span class="n">backend_switch</span> <span class="p">{</span>
+            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="err">$</span><span class="s1">'let trace_state = fn () { !(trace_state |&gt; optionm'</span><span class="o">.</span><span class="n">box</span><span class="p">)</span> <span class="p">}</span><span class="s1">' : ()</span>
+        <span class="p">}</span>
     <span class="o">|&gt;</span> <span class="n">exec_unit</span>
 </pre></div>
 </div>
@@ -8149,7 +8219,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=22">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=24">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8159,7 +8229,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=23">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=25">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8305,7 +8375,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=24">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=26">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8325,11 +8395,7 @@ a.anchor-link {
 <span class="n">trace</span> <span class="n">Debug</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"test2"</span><span class="p">)</span> <span class="nb">id</span>
 <span class="n">get_trace_state_or_init</span> <span class="kc">None</span> <span class="o">.</span><span class="n">count</span>
 <span class="o">|&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="o">*</span><span class="n">x</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">backend_switch</span> <span class="p">{</span>
-    <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="n">i64</span>
-    <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="mi">3</span><span class="n">i64</span>
-    <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="mi">3</span><span class="n">i64</span>
-<span class="p">})</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="mi">3</span>
 </pre></div>
 </div>
 </div>
@@ -8369,322 +8435,306 @@ a.anchor-link {
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported module</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:9:1</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">9 │ import gleam/list</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │ ^^^^^^^^^^^^^^^^^ This imported module is never used</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:10:1</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">10 │ import gleam/list</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │ ^^^^^^^^^^^^^^^^^ This imported module is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:266:81</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:271:81</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">266 │ pub fn closure1 () -&gt; fn(_) -&gt; fn(Nil) -&gt; Nil   { fn(x : #( String)) { let #(   v0) = x</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">271 │ pub fn closure1 () -&gt; fn(_) -&gt; fn(Nil) -&gt; Nil   { fn(x : #( String)) { let #(   v0) = x</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                                                 ^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v0`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:310:11</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:315:17</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">310 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │           ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v32`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:310:16</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">310 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v33`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:310:26</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">310 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                          ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v35`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:310:36</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">310 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                    ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v37`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:330:17</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">330 │ pub fn method5 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">315 │ pub fn method4 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                 ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v0`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:330:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:315:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">330 │ pub fn method5 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">315 │ pub fn method4 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:330:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:315:45</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">330 │ pub fn method5 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">315 │ pub fn method4 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                             ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v2`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:330:59</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:315:59</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">330 │ pub fn method5 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">315 │ pub fn method4 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                           ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v3`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:330:73</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:315:73</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">330 │ pub fn method5 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">315 │ pub fn method4 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int)) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                                         ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v4`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:335:9</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:320:9</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">335 │     let v170 =</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">320 │     let v170 =</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v170`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:356:21</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:341:21</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">356 │                 let v108 = v107 </span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">341 │                 let v108 = v107 </span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                     ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v108`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:370:9</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:355:9</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">370 │     let v173 = "%H:%M:%S"</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">355 │     let v173 = "%H:%M:%S"</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v173`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:401:9</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:396:9</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">401 │     let v1 = []</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">396 │     let v1 = []</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:405:9</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:400:9</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">405 │     let v47 = [ " ", ..v43 ]</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">400 │     let v47 = [ " ", ..v43 ]</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v47`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:409:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:404:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">409 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">404 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:409:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:404:45</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">409 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">404 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                             ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v2`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:409:59</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:404:59</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">409 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">404 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                           ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v3`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:409:73</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:404:73</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">409 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">404 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                                         ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v4`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:409:87</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:404:87</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">409 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">404 │ pub fn method8 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v5`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:438:21</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:427:32</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">438 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                     ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v34`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:438:26</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">438 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                          ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v35`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:438:31</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">438 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v36`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:438:36</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">438 │     let #(v32, v33, v34, v35, v36, v37) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                    ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v37`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:441:9</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">441 │     let v32 = Mut0(l0: v57)</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v32`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:447:32</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">447 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">427 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:447:46</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:427:46</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">447 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">427 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                              ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v2`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:447:60</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:427:60</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">447 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">427 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                            ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v3`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:447:74</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:427:74</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">447 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">427 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                                          ^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v4`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:447:88</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:427:88</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">447 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">427 │ pub fn method11 (v0 :    Mut0, v1 :    Mut1, v2 :    Mut2, v3 :    Mut3, v4 :    Mut4, v5 :    option.Option(Int), v6 :    String, v7 :    String) -&gt; String {</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v5`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:508:17</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:520:11</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">508 │     let #(v277, v278, v279, v280, v281, v282) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">520 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │           ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v32`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:520:16</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">520 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v33`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:520:26</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">520 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                          ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v35`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:520:36</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">520 │     let #(v32, v33, v34, v35, v36, v37) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v31) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                    ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v37`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:584:11</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">584 │     let #(v653, v654, v655, v656, v657, v658) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v652) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │           ^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v653`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:584:17</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">584 │     let #(v653, v654, v655, v656, v657, v658) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v652) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                 ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v278`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v654`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:508:23</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:584:29</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">508 │     let #(v277, v278, v279, v280, v281, v282) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                       ^^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v279`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:508:29</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">508 │     let #(v277, v278, v279, v280, v281, v282) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">584 │     let #(v653, v654, v655, v656, v657, v658) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v652) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                             ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v280`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v656`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:508:35</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:584:41</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">508 │     let #(v277, v278, v279, v280, v281, v282) = trace_state</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                   ^^^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v281`.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/src/main.gleam:508:41</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">508 │     let #(v277, v278, v279, v280, v281, v282) = trace_state</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">584 │     let #(v653, v654, v655, v656, v657, v658) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v652) })</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                         ^^^^ This variable is never used</span>
 
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v282`.</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v658`.</span>
 
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:648:18</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">648 │     let #(v1274, v1275, v1276, v1277, v1278, v1279) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v1273) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                  ^^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1275`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:648:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">648 │     let #(v1274, v1275, v1276, v1277, v1278, v1279) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v1273) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1276`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:648:32</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">648 │     let #(v1274, v1275, v1276, v1277, v1278, v1279) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v1273) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                ^^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1277`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:648:39</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">648 │     let #(v1274, v1275, v1276, v1277, v1278, v1279) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v1273) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                       ^^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1278`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/src/main.gleam:648:46</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">648 │     let #(v1274, v1275, v1276, v1277, v1278, v1279) = trace_state () |&gt; option.lazy_unwrap(fn () { v0(v1273) })</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                              ^^^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1279`.</span>
+
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/build/dev/erlang/main/ebin/main@@main.beam"}
-src/main.gleam:358:20: Warning: a term is constructed, but never used
-%  358|                 let v123 = 0
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/build/dev/erlang/main/ebin/main@@main.beam"}
+src/main.gleam:343:20: Warning: a term is constructed, but never used
+%  343|                 let v123 = 0
 %     |                    ^
 
-src/main.gleam:379:25: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
-%  379|     
-%     |     ^^^^^^^^^^^^^^^^^^^^^
+src/main.gleam:364:25: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
+%  364|     let v1 = method7()
+%     |                       ^^^
 
-src/main.gleam:390:20: Warning: a term is constructed, but never used
-%  390|     let v16 = v8.l0 
-%     |                    ^
-
-src/main.gleam:442:15: Warning: the result of evaluating operator '+'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
-%  442|     let v63 = fn (x) { closure3()(#(x))(   Nil) }
-%     |               ^
-
-src/main.gleam:443:13: Warning: a term is constructed, but never used
-%  443|     v63(v0)
-%     |            ^^
+src/main.gleam:375:20: Warning: a term is constructed, but never used
+%  375|     
+%     |     ^^^^^^^^^^^^^^^^
 
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3f05460c811840aafac6b11d75dd7e22547e5182aee3aee1ea0379b8adc44d54/build/dev/erlang/main/ebin/main.beam"}
-? <span class="ansi-blue-intense-fg">"d"</span> #1 test1 /
-? <span class="ansi-blue-intense-fg">"d"</span> #1 test2 /
-{ name = __assert_eq; actual = 1; expected = 1 }
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/3b3d3c33fe6520975b755a40211de513d79274d89e0a6b406bcc7656344e4b0c/build/dev/erlang/main/ebin/main.beam"}
+? <span class="ansi-blue-intense-fg">d</span> #1 test1 /
+? <span class="ansi-blue-intense-fg">d</span> #2 test2 /
+{ name = __assert_eq; actual = 3; expected = 3 }
 
 
 </pre>
@@ -8703,7 +8753,7 @@ src/main.gleam:443:13: Warning: a term is constructed, but never used
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=25">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=27">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8713,7 +8763,7 @@ src/main.gleam:443:13: Warning: a term is constructed, but never used
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=28">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

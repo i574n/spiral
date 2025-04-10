@@ -7967,8 +7967,8 @@ a.anchor-link {
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -8493,8 +8493,8 @@ a.anchor-link {
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -8520,9 +8520,74 @@ pub fn method1 () -&gt; Int {
 pub fn method2 (v0 :    Bool) -&gt; Bool {
     v0
 }
-pub fn method3 () -&gt; String {
+pub fn method4 () -&gt; String {
     let v0 = ""
     v0
+}
+pub fn method3 (v0 :    String, v1 :    Int, v2 :    Int) -&gt; String {
+    let v3 = method4()
+    let v4 = Mut0(l0 :  v3)
+    let v5 = "{ "
+    let v6 = v5 
+    let v10 = v4.l0 
+    let v11 = v10 &lt;&gt; v6 
+    let v4 = Mut0(l0: v11)
+    let v23 = "name"
+    let v24 = v23 
+    let v28 = v4.l0 
+    let v29 = v28 &lt;&gt; v24 
+    let v4 = Mut0(l0: v29)
+    let v41 = " = "
+    let v42 = v41 
+    let v46 = v4.l0 
+    let v47 = v46 &lt;&gt; v42 
+    let v4 = Mut0(l0: v47)
+    let v59 = v0 
+    let v63 = v4.l0 
+    let v64 = v63 &lt;&gt; v59 
+    let v4 = Mut0(l0: v64)
+    let v76 = "; "
+    let v77 = v76 
+    let v81 = v4.l0 
+    let v82 = v81 &lt;&gt; v77 
+    let v4 = Mut0(l0: v82)
+    let v94 = "actual"
+    let v95 = v94 
+    let v99 = v4.l0 
+    let v100 = v99 &lt;&gt; v95 
+    let v4 = Mut0(l0: v100)
+    let v112 = v41 
+    let v116 = v4.l0 
+    let v117 = v116 &lt;&gt; v112 
+    let v4 = Mut0(l0: v117)
+    let v129 = string.inspect(v1)
+    let v136 = v4.l0 
+    let v137 = v136 &lt;&gt; v129 
+    let v4 = Mut0(l0: v137)
+    let v149 = v76 
+    let v153 = v4.l0 
+    let v154 = v153 &lt;&gt; v149 
+    let v4 = Mut0(l0: v154)
+    let v166 = "expected"
+    let v167 = v166 
+    let v171 = v4.l0 
+    let v172 = v171 &lt;&gt; v167 
+    let v4 = Mut0(l0: v172)
+    let v184 = v41 
+    let v188 = v4.l0 
+    let v189 = v188 &lt;&gt; v184 
+    let v4 = Mut0(l0: v189)
+    let v201 = string.inspect(v2)
+    let v208 = v4.l0 
+    let v209 = v208 &lt;&gt; v201 
+    let v4 = Mut0(l0: v209)
+    let v221 = " }"
+    let v222 = v221 
+    let v226 = v4.l0 
+    let v227 = v226 &lt;&gt; v222 
+    let v4 = Mut0(l0: v227)
+    let v239 = v4.l0 
+    v239
 }
 pub fn method0 () -&gt; Nil   {
     let v0 = method1()
@@ -8539,74 +8604,14 @@ pub fn method0 () -&gt; Nil   {
                 method2(v4)
             }
         }
-    let v7 = method3()
-    let v8 = Mut0(l0 :  v7)
-    let v9 = "{ "
-    let v10 = v9 
-    let v14 = v8.l0 
-    let v15 = v14 &lt;&gt; v10 
-    let v8 = Mut0(l0: v15)
-    let v27 = "name"
-    let v28 = v27 
-    let v32 = v8.l0 
-    let v33 = v32 &lt;&gt; v28 
-    let v8 = Mut0(l0: v33)
-    let v45 = " = "
-    let v46 = v45 
-    let v50 = v8.l0 
-    let v51 = v50 &lt;&gt; v46 
-    let v8 = Mut0(l0: v51)
-    let v63 = "__assert_eq"
-    let v64 = v63 
-    let v68 = v8.l0 
-    let v69 = v68 &lt;&gt; v64 
-    let v8 = Mut0(l0: v69)
-    let v81 = "; "
-    let v82 = v81 
-    let v86 = v8.l0 
-    let v87 = v86 &lt;&gt; v82 
-    let v8 = Mut0(l0: v87)
-    let v99 = "actual"
-    let v100 = v99 
-    let v104 = v8.l0 
-    let v105 = v104 &lt;&gt; v100 
-    let v8 = Mut0(l0: v105)
-    let v117 = v45 
-    let v121 = v8.l0 
-    let v122 = v121 &lt;&gt; v117 
-    let v8 = Mut0(l0: v122)
-    let v134 = string.inspect(v3)
-    let v141 = v8.l0 
-    let v142 = v141 &lt;&gt; v134 
-    let v8 = Mut0(l0: v142)
-    let v154 = v81 
-    let v158 = v8.l0 
-    let v159 = v158 &lt;&gt; v154 
-    let v8 = Mut0(l0: v159)
-    let v171 = "expected"
-    let v172 = v171 
-    let v176 = v8.l0 
-    let v177 = v176 &lt;&gt; v172 
-    let v8 = Mut0(l0: v177)
-    let v189 = v45 
-    let v193 = v8.l0 
-    let v194 = v193 &lt;&gt; v189 
-    let v8 = Mut0(l0: v194)
-    let v206 = string.inspect(15)
-    let v213 = v8.l0 
-    let v214 = v213 &lt;&gt; v206 
-    let v8 = Mut0(l0: v214)
-    let v226 = " }"
-    let v227 = v226 
-    let v231 = v8.l0 
-    let v232 = v231 &lt;&gt; v227 
-    let v8 = Mut0(l0: v232)
-    let v244 = v8.l0 
-    io.println(v244)
-    let v250 = v6 == False
-    case v250 {
+    let v7 = "__assert_eq"
+    let v8 = 15
+    let v9 = method3(v7, v3, v8)
+    io.println(v9)
+    let v15 = v6 == False
+    case v15 {
         True -&gt; {
-            panic as v244
+            panic as v9
         }
         False -&gt; {
         Nil
@@ -8621,7 +8626,7 @@ let rec method1 () : int32 =
     3
 and method2 (v0 : bool) : bool =
     v0
-and method3 () : string =
+and method4 () : string =
     let v0 : string = ""
     v0
 and closure0 (v0 : Mut0, v1 : string) () : unit =
@@ -8629,6 +8634,70 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
+and method3 (v0 : string, v1 : int32, v2 : int32) : string =
+    let v3 : string = method4()
+    let v4 : Mut0 = {l0 = v3} : Mut0
+    let v7 : string = "{ "
+    let v8 : string = $"{v7}"
+    let v16 : unit = ()
+    let v17 : (unit -&gt; unit) = closure0(v4, v8)
+    let v18 : unit = (fun () -&gt; v17 (); v16) ()
+    let v26 : string = "name"
+    let v27 : string = $"{v26}"
+    let v35 : unit = ()
+    let v36 : (unit -&gt; unit) = closure0(v4, v27)
+    let v37 : unit = (fun () -&gt; v36 (); v35) ()
+    let v45 : string = " = "
+    let v46 : string = $"{v45}"
+    let v54 : unit = ()
+    let v55 : (unit -&gt; unit) = closure0(v4, v46)
+    let v56 : unit = (fun () -&gt; v55 (); v54) ()
+    let v63 : string = $"{v0}"
+    let v71 : unit = ()
+    let v72 : (unit -&gt; unit) = closure0(v4, v63)
+    let v73 : unit = (fun () -&gt; v72 (); v71) ()
+    let v81 : string = "; "
+    let v82 : string = $"{v81}"
+    let v90 : unit = ()
+    let v91 : (unit -&gt; unit) = closure0(v4, v82)
+    let v92 : unit = (fun () -&gt; v91 (); v90) ()
+    let v100 : string = "actual"
+    let v101 : string = $"{v100}"
+    let v109 : unit = ()
+    let v110 : (unit -&gt; unit) = closure0(v4, v101)
+    let v111 : unit = (fun () -&gt; v110 (); v109) ()
+    let v118 : string = $"{v45}"
+    let v126 : unit = ()
+    let v127 : (unit -&gt; unit) = closure0(v4, v118)
+    let v128 : unit = (fun () -&gt; v127 (); v126) ()
+    let v138 : string = $"{v1}"
+    let v146 : unit = ()
+    let v147 : (unit -&gt; unit) = closure0(v4, v138)
+    let v148 : unit = (fun () -&gt; v147 (); v146) ()
+    let v155 : string = $"{v81}"
+    let v163 : unit = ()
+    let v164 : (unit -&gt; unit) = closure0(v4, v155)
+    let v165 : unit = (fun () -&gt; v164 (); v163) ()
+    let v173 : string = "expected"
+    let v174 : string = $"{v173}"
+    let v182 : unit = ()
+    let v183 : (unit -&gt; unit) = closure0(v4, v174)
+    let v184 : unit = (fun () -&gt; v183 (); v182) ()
+    let v191 : string = $"{v45}"
+    let v199 : unit = ()
+    let v200 : (unit -&gt; unit) = closure0(v4, v191)
+    let v201 : unit = (fun () -&gt; v200 (); v199) ()
+    let v211 : string = $"{v2}"
+    let v219 : unit = ()
+    let v220 : (unit -&gt; unit) = closure0(v4, v211)
+    let v221 : unit = (fun () -&gt; v220 (); v219) ()
+    let v229 : string = " }"
+    let v230 : string = $"{v229}"
+    let v238 : unit = ()
+    let v239 : (unit -&gt; unit) = closure0(v4, v230)
+    let v240 : unit = (fun () -&gt; v239 (); v238) ()
+    let v246 : string = v4.l0
+    v246
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -8643,75 +8712,15 @@ and method0 () : unit =
             true
         else
             method2(v4)
-    let v7 : string = method3()
-    let v8 : Mut0 = {l0 = v7} : Mut0
-    let v11 : string = "{ "
-    let v12 : string = $"{v11}"
-    let v20 : unit = ()
-    let v21 : (unit -&gt; unit) = closure0(v8, v12)
-    let v22 : unit = (fun () -&gt; v21 (); v20) ()
-    let v30 : string = "name"
-    let v31 : string = $"{v30}"
-    let v39 : unit = ()
-    let v40 : (unit -&gt; unit) = closure0(v8, v31)
-    let v41 : unit = (fun () -&gt; v40 (); v39) ()
-    let v49 : string = " = "
-    let v50 : string = $"{v49}"
-    let v58 : unit = ()
-    let v59 : (unit -&gt; unit) = closure0(v8, v50)
-    let v60 : unit = (fun () -&gt; v59 (); v58) ()
-    let v68 : string = "__assert_eq"
-    let v69 : string = $"{v68}"
-    let v77 : unit = ()
-    let v78 : (unit -&gt; unit) = closure0(v8, v69)
-    let v79 : unit = (fun () -&gt; v78 (); v77) ()
-    let v87 : string = "; "
-    let v88 : string = $"{v87}"
-    let v96 : unit = ()
-    let v97 : (unit -&gt; unit) = closure0(v8, v88)
-    let v98 : unit = (fun () -&gt; v97 (); v96) ()
-    let v106 : string = "actual"
-    let v107 : string = $"{v106}"
-    let v115 : unit = ()
-    let v116 : (unit -&gt; unit) = closure0(v8, v107)
-    let v117 : unit = (fun () -&gt; v116 (); v115) ()
-    let v124 : string = $"{v49}"
-    let v132 : unit = ()
-    let v133 : (unit -&gt; unit) = closure0(v8, v124)
-    let v134 : unit = (fun () -&gt; v133 (); v132) ()
-    let v144 : string = $"{v3}"
-    let v152 : unit = ()
-    let v153 : (unit -&gt; unit) = closure0(v8, v144)
-    let v154 : unit = (fun () -&gt; v153 (); v152) ()
-    let v161 : string = $"{v87}"
-    let v169 : unit = ()
-    let v170 : (unit -&gt; unit) = closure0(v8, v161)
-    let v171 : unit = (fun () -&gt; v170 (); v169) ()
-    let v179 : string = "expected"
-    let v180 : string = $"{v179}"
-    let v188 : unit = ()
-    let v189 : (unit -&gt; unit) = closure0(v8, v180)
-    let v190 : unit = (fun () -&gt; v189 (); v188) ()
-    let v197 : string = $"{v49}"
-    let v205 : unit = ()
-    let v206 : (unit -&gt; unit) = closure0(v8, v197)
-    let v207 : unit = (fun () -&gt; v206 (); v205) ()
-    let v217 : string = $"{15}"
-    let v225 : unit = ()
-    let v226 : (unit -&gt; unit) = closure0(v8, v217)
-    let v227 : unit = (fun () -&gt; v226 (); v225) ()
-    let v235 : string = " }"
-    let v236 : string = $"{v235}"
-    let v244 : unit = ()
-    let v245 : (unit -&gt; unit) = closure0(v8, v236)
-    let v246 : unit = (fun () -&gt; v245 (); v244) ()
-    let v252 : string = v8.l0
-    let v254 : unit = ()
-    let v255 : (unit -&gt; unit) = closure1(v252)
-    let v256 : unit = (fun () -&gt; v255 (); v254) ()
-    let v258 : bool = v6 = false
-    if v258 then
-        failwith&lt;unit&gt; v252
+    let v7 : string = "__assert_eq"
+    let v8 : int32 = 15
+    let v9 : string = method3(v7, v3, v8)
+    let v11 : unit = ()
+    let v12 : (unit -&gt; unit) = closure1(v9)
+    let v13 : unit = (fun () -&gt; v12 (); v11) ()
+    let v15 : bool = v6 = false
+    if v15 then
+        failwith&lt;unit&gt; v9
 method0()
 
 
@@ -8752,13 +8761,71 @@ mod module_6ff740fe {
         pub fn method2(v0: bool) -&gt; bool {
             v0
         }
-        pub fn method3() -&gt; string {
+        pub fn method4() -&gt; string {
             string("")
         }
         pub fn closure0(v0: LrcPtr&lt;Spiral::Mut0&gt;, v1: string, unitVar: ()) {
             let v4: string = append((v0.l0.get().clone()), (v1));
             v0.l0.set(v4);
             ()
+        }
+        pub fn method3(v0: string, v1: i32, v2: i32) -&gt; string {
+            let v4: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+                l0: MutCell::new(Spiral::method4()),
+            });
+            let v18: () = {
+                Spiral::closure0(v4.clone(), string("{ "), ());
+                ()
+            };
+            let v37: () = {
+                Spiral::closure0(v4.clone(), string("name"), ());
+                ()
+            };
+            let v56: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v73: () = {
+                Spiral::closure0(v4.clone(), v0, ());
+                ()
+            };
+            let v92: () = {
+                Spiral::closure0(v4.clone(), string("; "), ());
+                ()
+            };
+            let v111: () = {
+                Spiral::closure0(v4.clone(), string("actual"), ());
+                ()
+            };
+            let v128: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v148: () = {
+                Spiral::closure0(v4.clone(), sprintf!("{}", v1), ());
+                ()
+            };
+            let v165: () = {
+                Spiral::closure0(v4.clone(), string("; "), ());
+                ()
+            };
+            let v184: () = {
+                Spiral::closure0(v4.clone(), string("expected"), ());
+                ()
+            };
+            let v201: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v221: () = {
+                Spiral::closure0(v4.clone(), sprintf!("{}", v2), ());
+                ()
+            };
+            let v240: () = {
+                Spiral::closure0(v4.clone(), string(" }"), ());
+                ()
+            };
+            v4.l0.get().clone()
         }
         pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
@@ -8767,68 +8834,13 @@ mod module_6ff740fe {
             let v3: i32 = ((9_i32 + (Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method2(v4) };
-            let v8: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
-                l0: MutCell::new(Spiral::method3()),
-            });
-            let v22: () = {
-                Spiral::closure0(v8.clone(), string("{ "), ());
-                ()
-            };
-            let v41: () = {
-                Spiral::closure0(v8.clone(), string("name"), ());
-                ()
-            };
-            let v60: () = {
-                Spiral::closure0(v8.clone(), string(" = "), ());
-                ()
-            };
-            let v79: () = {
-                Spiral::closure0(v8.clone(), string("__assert_eq"), ());
-                ()
-            };
-            let v98: () = {
-                Spiral::closure0(v8.clone(), string("; "), ());
-                ()
-            };
-            let v117: () = {
-                Spiral::closure0(v8.clone(), string("actual"), ());
-                ()
-            };
-            let v134: () = {
-                Spiral::closure0(v8.clone(), string(" = "), ());
-                ()
-            };
-            let v154: () = {
-                Spiral::closure0(v8.clone(), sprintf!("{}", v3), ());
-                ()
-            };
-            let v171: () = {
-                Spiral::closure0(v8.clone(), string("; "), ());
-                ()
-            };
-            let v190: () = {
-                Spiral::closure0(v8.clone(), string("expected"), ());
-                ()
-            };
-            let v207: () = {
-                Spiral::closure0(v8.clone(), string(" = "), ());
-                ()
-            };
-            let v227: () = {
-                Spiral::closure0(v8.clone(), sprintf!("{}", 15_i32), ());
-                ()
-            };
-            let v246: () = {
-                Spiral::closure0(v8.clone(), string(" }"), ());
-                ()
-            };
-            let v252: string = v8.l0.get().clone();
-            let v256: () = {
-                Spiral::closure1(v252.clone(), ());
+            let v9: string = Spiral::method3(string("__assert_eq"), v3, 15_i32);
+            let v13: () = {
+                Spiral::closure1(v9.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v252,);
+                panic!("{}", v9,);
             }
         }
         // on_startup!(Spiral::method0());
@@ -8866,13 +8878,57 @@ export function method2(v0: boolean): boolean {
     return v0;
 }
 
-export function method3(): string {
+export function method4(): string {
     return "";
 }
 
 export function closure0(v0: Mut0, v1: string, unitVar: void): void {
     const v4: string = v0.l0 + v1;
     v0.l0 = v4;
+}
+
+export function method3(v0: string, v1: int32, v2: int32): string {
+    const v4: Mut0 = new Mut0(method4());
+    let v18: any;
+    closure0(v4, "{ ", undefined);
+    v18 = undefined;
+    let v37: any;
+    closure0(v4, "name", undefined);
+    v37 = undefined;
+    let v56: any;
+    closure0(v4, " = ", undefined);
+    v56 = undefined;
+    let v73: any;
+    closure0(v4, v0, undefined);
+    v73 = undefined;
+    let v92: any;
+    closure0(v4, "; ", undefined);
+    v92 = undefined;
+    let v111: any;
+    closure0(v4, "actual", undefined);
+    v111 = undefined;
+    let v128: any;
+    closure0(v4, " = ", undefined);
+    v128 = undefined;
+    let v148: any;
+    closure0(v4, `${v1}`, undefined);
+    v148 = undefined;
+    let v165: any;
+    closure0(v4, "; ", undefined);
+    v165 = undefined;
+    let v184: any;
+    closure0(v4, "expected", undefined);
+    v184 = undefined;
+    let v201: any;
+    closure0(v4, " = ", undefined);
+    v201 = undefined;
+    let v221: any;
+    closure0(v4, `${v2}`, undefined);
+    v221 = undefined;
+    let v240: any;
+    closure0(v4, " }", undefined);
+    v240 = undefined;
+    return v4.l0;
 }
 
 export function closure1(v0: string, unitVar: void): void {
@@ -8883,52 +8939,12 @@ export function method0(): void {
     const v3: int32 = (((9 + method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method2(v4);
-    const v8: Mut0 = new Mut0(method3());
-    let v22: any;
-    closure0(v8, "{ ", undefined);
-    v22 = undefined;
-    let v41: any;
-    closure0(v8, "name", undefined);
-    v41 = undefined;
-    let v60: any;
-    closure0(v8, " = ", undefined);
-    v60 = undefined;
-    let v79: any;
-    closure0(v8, "__assert_eq", undefined);
-    v79 = undefined;
-    let v98: any;
-    closure0(v8, "; ", undefined);
-    v98 = undefined;
-    let v117: any;
-    closure0(v8, "actual", undefined);
-    v117 = undefined;
-    let v134: any;
-    closure0(v8, " = ", undefined);
-    v134 = undefined;
-    let v154: any;
-    closure0(v8, `${v3}`, undefined);
-    v154 = undefined;
-    let v171: any;
-    closure0(v8, "; ", undefined);
-    v171 = undefined;
-    let v190: any;
-    closure0(v8, "expected", undefined);
-    v190 = undefined;
-    let v207: any;
-    closure0(v8, " = ", undefined);
-    v207 = undefined;
-    let v227: any;
-    closure0(v8, `${15}`, undefined);
-    v227 = undefined;
-    let v246: any;
-    closure0(v8, " }", undefined);
-    v246 = undefined;
-    const v252: string = v8.l0;
-    let v256: any;
-    closure1(v252, undefined);
-    v256 = undefined;
+    const v9: string = method3("__assert_eq", v3, 15);
+    let v13: any;
+    closure1(v9, undefined);
+    v13 = undefined;
     if (v6 === false) {
-        throw new Error(v252);
+        throw new Error(v9);
     }
 }
 
@@ -8959,13 +8975,57 @@ def method2(v0: bool) -&gt; bool:
     return v0
 
 
-def method3(__unit: None=None) -&gt; str:
+def method4(__unit: None=None) -&gt; str:
     return ""
 
 
 def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
     v4: str = v0.l0 + v1
     v0.l0 = v4
+
+
+def method3(v0: str, v1: int, v2: int) -&gt; str:
+    v4: Mut0 = Mut0(method4())
+    v18: None
+    closure0(v4, "{ ", None)
+    v18 = None
+    v37: None
+    closure0(v4, "name", None)
+    v37 = None
+    v56: None
+    closure0(v4, " = ", None)
+    v56 = None
+    v73: None
+    closure0(v4, v0, None)
+    v73 = None
+    v92: None
+    closure0(v4, "; ", None)
+    v92 = None
+    v111: None
+    closure0(v4, "actual", None)
+    v111 = None
+    v128: None
+    closure0(v4, " = ", None)
+    v128 = None
+    v148: None
+    closure0(v4, ("" + str(v1)) + "", None)
+    v148 = None
+    v165: None
+    closure0(v4, "; ", None)
+    v165 = None
+    v184: None
+    closure0(v4, "expected", None)
+    v184 = None
+    v201: None
+    closure0(v4, " = ", None)
+    v201 = None
+    v221: None
+    closure0(v4, ("" + str(v2)) + "", None)
+    v221 = None
+    v240: None
+    closure0(v4, " }", None)
+    v240 = None
+    return v4.l0
 
 
 def closure1(v0: str, unit_var: None) -&gt; None:
@@ -8976,52 +9036,12 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = (((9 + method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method2(v4)
-    v8: Mut0 = Mut0(method3())
-    v22: None
-    closure0(v8, "{ ", None)
-    v22 = None
-    v41: None
-    closure0(v8, "name", None)
-    v41 = None
-    v60: None
-    closure0(v8, " = ", None)
-    v60 = None
-    v79: None
-    closure0(v8, "__assert_eq", None)
-    v79 = None
-    v98: None
-    closure0(v8, "; ", None)
-    v98 = None
-    v117: None
-    closure0(v8, "actual", None)
-    v117 = None
-    v134: None
-    closure0(v8, " = ", None)
-    v134 = None
-    v154: None
-    closure0(v8, ("" + str(v3)) + "", None)
-    v154 = None
-    v171: None
-    closure0(v8, "; ", None)
-    v171 = None
-    v190: None
-    closure0(v8, "expected", None)
-    v190 = None
-    v207: None
-    closure0(v8, " = ", None)
-    v207 = None
-    v227: None
-    closure0(v8, ("" + str(15)) + "", None)
-    v227 = None
-    v246: None
-    closure0(v8, " }", None)
-    v246 = None
-    v252: str = v8.l0
-    v256: None
-    closure1(v252, None)
-    v256 = None
+    v9: str = method3("__assert_eq", v3, 15)
+    v13: None
+    closure1(v9, None)
+    v13 = None
     if v6 == False:
-        raise Exception(v252)
+        raise Exception(v9)
 
 
 
@@ -9051,9 +9071,111 @@ def method1() -&gt; i32:
     return 3
 def method2(v0 : bool) -&gt; bool:
     return v0
-def method3() -&gt; string:
+def method4() -&gt; string:
     v0 = ""
     return v0
+def method3(v0 : string, v1 : i32, v2 : i32) -&gt; string:
+    v3 = method4()
+    v4 = Mut0(v3)
+    del v3
+    v9 = "{ "
+    v10 = f"{v9}"
+    del v9
+    v20 = v4.v0
+    v23 = v20 + v10 
+    del v10, v20
+    v4.v0 = v23
+    del v23
+    v29 = "name"
+    v30 = f"{v29}"
+    del v29
+    v40 = v4.v0
+    v43 = v40 + v30 
+    del v30, v40
+    v4.v0 = v43
+    del v43
+    v49 = " = "
+    v50 = f"{v49}"
+    v60 = v4.v0
+    v63 = v60 + v50 
+    del v50, v60
+    v4.v0 = v63
+    del v63
+    v67 = f"{v0}"
+    del v0
+    v77 = v4.v0
+    v80 = v77 + v67 
+    del v67, v77
+    v4.v0 = v80
+    del v80
+    v86 = "; "
+    v87 = f"{v86}"
+    v97 = v4.v0
+    v100 = v97 + v87 
+    del v87, v97
+    v4.v0 = v100
+    del v100
+    v106 = "actual"
+    v107 = f"{v106}"
+    del v106
+    v117 = v4.v0
+    v120 = v117 + v107 
+    del v107, v117
+    v4.v0 = v120
+    del v120
+    v124 = f"{v49}"
+    v134 = v4.v0
+    v137 = v134 + v124 
+    del v124, v134
+    v4.v0 = v137
+    del v137
+    v144 = f"{v1}"
+    del v1
+    v154 = v4.v0
+    v157 = v154 + v144 
+    del v144, v154
+    v4.v0 = v157
+    del v157
+    v161 = f"{v86}"
+    del v86
+    v171 = v4.v0
+    v174 = v171 + v161 
+    del v161, v171
+    v4.v0 = v174
+    del v174
+    v180 = "expected"
+    v181 = f"{v180}"
+    del v180
+    v191 = v4.v0
+    v194 = v191 + v181 
+    del v181, v191
+    v4.v0 = v194
+    del v194
+    v198 = f"{v49}"
+    del v49
+    v208 = v4.v0
+    v211 = v208 + v198 
+    del v198, v208
+    v4.v0 = v211
+    del v211
+    v218 = f"{v2}"
+    del v2
+    v228 = v4.v0
+    v231 = v228 + v218 
+    del v218, v228
+    v4.v0 = v231
+    del v231
+    v237 = " }"
+    v238 = f"{v237}"
+    del v237
+    v248 = v4.v0
+    v251 = v248 + v238 
+    del v238, v248
+    v4.v0 = v251
+    del v251
+    v253 = v4.v0
+    del v4
+    return v253
 def method0() -&gt; None:
     v0 = method1()
     v1 = 9 + v0
@@ -9068,114 +9190,18 @@ def method0() -&gt; None:
     else:
         v6 = method2(v4)
     del v4
-    v7 = method3()
-    v8 = Mut0(v7)
-    del v7
-    v13 = "{ "
-    v14 = f"{v13}"
-    del v13
-    v24 = v8.v0
-    v27 = v24 + v14 
-    del v14, v24
-    v8.v0 = v27
-    del v27
-    v33 = "name"
-    v34 = f"{v33}"
-    del v33
-    v44 = v8.v0
-    v47 = v44 + v34 
-    del v34, v44
-    v8.v0 = v47
-    del v47
-    v53 = " = "
-    v54 = f"{v53}"
-    v64 = v8.v0
-    v67 = v64 + v54 
-    del v54, v64
-    v8.v0 = v67
-    del v67
-    v73 = "__assert_eq"
-    v74 = f"{v73}"
-    del v73
-    v84 = v8.v0
-    v87 = v84 + v74 
-    del v74, v84
-    v8.v0 = v87
-    del v87
-    v93 = "; "
-    v94 = f"{v93}"
-    v104 = v8.v0
-    v107 = v104 + v94 
-    del v94, v104
-    v8.v0 = v107
-    del v107
-    v113 = "actual"
-    v114 = f"{v113}"
-    del v113
-    v124 = v8.v0
-    v127 = v124 + v114 
-    del v114, v124
-    v8.v0 = v127
-    del v127
-    v131 = f"{v53}"
-    v141 = v8.v0
-    v144 = v141 + v131 
-    del v131, v141
-    v8.v0 = v144
-    del v144
-    v151 = f"{v3}"
-    del v3
-    v161 = v8.v0
-    v164 = v161 + v151 
-    del v151, v161
-    v8.v0 = v164
-    del v164
-    v168 = f"{v93}"
-    del v93
-    v178 = v8.v0
-    v181 = v178 + v168 
-    del v168, v178
-    v8.v0 = v181
-    del v181
-    v187 = "expected"
-    v188 = f"{v187}"
-    del v187
-    v198 = v8.v0
-    v201 = v198 + v188 
-    del v188, v198
-    v8.v0 = v201
-    del v201
-    v205 = f"{v53}"
-    del v53
-    v215 = v8.v0
-    v218 = v215 + v205 
-    del v205, v215
-    v8.v0 = v218
-    del v218
-    v225 = f"{15}"
-    v235 = v8.v0
-    v238 = v235 + v225 
-    del v225, v235
-    v8.v0 = v238
-    del v238
-    v244 = " }"
-    v245 = f"{v244}"
-    del v244
-    v255 = v8.v0
-    v258 = v255 + v245 
-    del v245, v255
-    v8.v0 = v258
-    del v258
-    v260 = v8.v0
-    del v8
-    print(v260)
-    v266 = v6 == False
+    v7 = "__assert_eq"
+    v8 = 15
+    v9 = method3(v7, v3, v8)
+    del v3, v7, v8
+    print(v9)
+    v15 = v6 == False
     del v6
-    if v266:
-        del v266
-        raise Exception(v260)
+    if v15:
+        del v15
+        raise Exception(v9)
     else:
-        del v260, v266
+        del v9, v15
         return 
 # main_defs
 def main_body():
@@ -9241,8 +9267,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -9272,9 +9298,74 @@ pub fn method2 (v0 :    Int, v1 :    Int) -&gt; Int {
 pub fn method3 (v0 :    Bool) -&gt; Bool {
     v0
 }
-pub fn method4 () -&gt; String {
+pub fn method5 () -&gt; String {
     let v0 = ""
     v0
+}
+pub fn method4 (v0 :    String, v1 :    Int, v2 :    Int) -&gt; String {
+    let v3 = method5()
+    let v4 = Mut0(l0 :  v3)
+    let v5 = "{ "
+    let v6 = v5 
+    let v10 = v4.l0 
+    let v11 = v10 &lt;&gt; v6 
+    let v4 = Mut0(l0: v11)
+    let v23 = "name"
+    let v24 = v23 
+    let v28 = v4.l0 
+    let v29 = v28 &lt;&gt; v24 
+    let v4 = Mut0(l0: v29)
+    let v41 = " = "
+    let v42 = v41 
+    let v46 = v4.l0 
+    let v47 = v46 &lt;&gt; v42 
+    let v4 = Mut0(l0: v47)
+    let v59 = v0 
+    let v63 = v4.l0 
+    let v64 = v63 &lt;&gt; v59 
+    let v4 = Mut0(l0: v64)
+    let v76 = "; "
+    let v77 = v76 
+    let v81 = v4.l0 
+    let v82 = v81 &lt;&gt; v77 
+    let v4 = Mut0(l0: v82)
+    let v94 = "actual"
+    let v95 = v94 
+    let v99 = v4.l0 
+    let v100 = v99 &lt;&gt; v95 
+    let v4 = Mut0(l0: v100)
+    let v112 = v41 
+    let v116 = v4.l0 
+    let v117 = v116 &lt;&gt; v112 
+    let v4 = Mut0(l0: v117)
+    let v129 = string.inspect(v1)
+    let v136 = v4.l0 
+    let v137 = v136 &lt;&gt; v129 
+    let v4 = Mut0(l0: v137)
+    let v149 = v76 
+    let v153 = v4.l0 
+    let v154 = v153 &lt;&gt; v149 
+    let v4 = Mut0(l0: v154)
+    let v166 = "expected"
+    let v167 = v166 
+    let v171 = v4.l0 
+    let v172 = v171 &lt;&gt; v167 
+    let v4 = Mut0(l0: v172)
+    let v184 = v41 
+    let v188 = v4.l0 
+    let v189 = v188 &lt;&gt; v184 
+    let v4 = Mut0(l0: v189)
+    let v201 = string.inspect(v2)
+    let v208 = v4.l0 
+    let v209 = v208 &lt;&gt; v201 
+    let v4 = Mut0(l0: v209)
+    let v221 = " }"
+    let v222 = v221 
+    let v226 = v4.l0 
+    let v227 = v226 &lt;&gt; v222 
+    let v4 = Mut0(l0: v227)
+    let v239 = v4.l0 
+    v239
 }
 pub fn method0 () -&gt; Nil   {
     let v0 = method1()
@@ -9292,74 +9383,14 @@ pub fn method0 () -&gt; Nil   {
                 method3(v5)
             }
         }
-    let v8 = method4()
-    let v9 = Mut0(l0 :  v8)
-    let v10 = "{ "
-    let v11 = v10 
-    let v15 = v9.l0 
-    let v16 = v15 &lt;&gt; v11 
-    let v9 = Mut0(l0: v16)
-    let v28 = "name"
-    let v29 = v28 
-    let v33 = v9.l0 
-    let v34 = v33 &lt;&gt; v29 
-    let v9 = Mut0(l0: v34)
-    let v46 = " = "
-    let v47 = v46 
-    let v51 = v9.l0 
-    let v52 = v51 &lt;&gt; v47 
-    let v9 = Mut0(l0: v52)
-    let v64 = "__assert_eq"
-    let v65 = v64 
-    let v69 = v9.l0 
-    let v70 = v69 &lt;&gt; v65 
-    let v9 = Mut0(l0: v70)
-    let v82 = "; "
-    let v83 = v82 
-    let v87 = v9.l0 
-    let v88 = v87 &lt;&gt; v83 
-    let v9 = Mut0(l0: v88)
-    let v100 = "actual"
-    let v101 = v100 
-    let v105 = v9.l0 
-    let v106 = v105 &lt;&gt; v101 
-    let v9 = Mut0(l0: v106)
-    let v118 = v46 
-    let v122 = v9.l0 
-    let v123 = v122 &lt;&gt; v118 
-    let v9 = Mut0(l0: v123)
-    let v135 = string.inspect(v4)
-    let v142 = v9.l0 
-    let v143 = v142 &lt;&gt; v135 
-    let v9 = Mut0(l0: v143)
-    let v155 = v82 
-    let v159 = v9.l0 
-    let v160 = v159 &lt;&gt; v155 
-    let v9 = Mut0(l0: v160)
-    let v172 = "expected"
-    let v173 = v172 
-    let v177 = v9.l0 
-    let v178 = v177 &lt;&gt; v173 
-    let v9 = Mut0(l0: v178)
-    let v190 = v46 
-    let v194 = v9.l0 
-    let v195 = v194 &lt;&gt; v190 
-    let v9 = Mut0(l0: v195)
-    let v207 = string.inspect(15)
-    let v214 = v9.l0 
-    let v215 = v214 &lt;&gt; v207 
-    let v9 = Mut0(l0: v215)
-    let v227 = " }"
-    let v228 = v227 
-    let v232 = v9.l0 
-    let v233 = v232 &lt;&gt; v228 
-    let v9 = Mut0(l0: v233)
-    let v245 = v9.l0 
-    io.println(v245)
-    let v251 = v7 == False
-    case v251 {
+    let v8 = "__assert_eq"
+    let v9 = 15
+    let v10 = method4(v8, v4, v9)
+    io.println(v10)
+    let v16 = v7 == False
+    case v16 {
         True -&gt; {
-            panic as v245
+            panic as v10
         }
         False -&gt; {
         Nil
@@ -9377,7 +9408,7 @@ and method2 (v0 : int32, v1 : int32) : int32 =
     v2
 and method3 (v0 : bool) : bool =
     v0
-and method4 () : string =
+and method5 () : string =
     let v0 : string = ""
     v0
 and closure0 (v0 : Mut0, v1 : string) () : unit =
@@ -9385,6 +9416,70 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
+and method4 (v0 : string, v1 : int32, v2 : int32) : string =
+    let v3 : string = method5()
+    let v4 : Mut0 = {l0 = v3} : Mut0
+    let v7 : string = "{ "
+    let v8 : string = $"{v7}"
+    let v16 : unit = ()
+    let v17 : (unit -&gt; unit) = closure0(v4, v8)
+    let v18 : unit = (fun () -&gt; v17 (); v16) ()
+    let v26 : string = "name"
+    let v27 : string = $"{v26}"
+    let v35 : unit = ()
+    let v36 : (unit -&gt; unit) = closure0(v4, v27)
+    let v37 : unit = (fun () -&gt; v36 (); v35) ()
+    let v45 : string = " = "
+    let v46 : string = $"{v45}"
+    let v54 : unit = ()
+    let v55 : (unit -&gt; unit) = closure0(v4, v46)
+    let v56 : unit = (fun () -&gt; v55 (); v54) ()
+    let v63 : string = $"{v0}"
+    let v71 : unit = ()
+    let v72 : (unit -&gt; unit) = closure0(v4, v63)
+    let v73 : unit = (fun () -&gt; v72 (); v71) ()
+    let v81 : string = "; "
+    let v82 : string = $"{v81}"
+    let v90 : unit = ()
+    let v91 : (unit -&gt; unit) = closure0(v4, v82)
+    let v92 : unit = (fun () -&gt; v91 (); v90) ()
+    let v100 : string = "actual"
+    let v101 : string = $"{v100}"
+    let v109 : unit = ()
+    let v110 : (unit -&gt; unit) = closure0(v4, v101)
+    let v111 : unit = (fun () -&gt; v110 (); v109) ()
+    let v118 : string = $"{v45}"
+    let v126 : unit = ()
+    let v127 : (unit -&gt; unit) = closure0(v4, v118)
+    let v128 : unit = (fun () -&gt; v127 (); v126) ()
+    let v138 : string = $"{v1}"
+    let v146 : unit = ()
+    let v147 : (unit -&gt; unit) = closure0(v4, v138)
+    let v148 : unit = (fun () -&gt; v147 (); v146) ()
+    let v155 : string = $"{v81}"
+    let v163 : unit = ()
+    let v164 : (unit -&gt; unit) = closure0(v4, v155)
+    let v165 : unit = (fun () -&gt; v164 (); v163) ()
+    let v173 : string = "expected"
+    let v174 : string = $"{v173}"
+    let v182 : unit = ()
+    let v183 : (unit -&gt; unit) = closure0(v4, v174)
+    let v184 : unit = (fun () -&gt; v183 (); v182) ()
+    let v191 : string = $"{v45}"
+    let v199 : unit = ()
+    let v200 : (unit -&gt; unit) = closure0(v4, v191)
+    let v201 : unit = (fun () -&gt; v200 (); v199) ()
+    let v211 : string = $"{v2}"
+    let v219 : unit = ()
+    let v220 : (unit -&gt; unit) = closure0(v4, v211)
+    let v221 : unit = (fun () -&gt; v220 (); v219) ()
+    let v229 : string = " }"
+    let v230 : string = $"{v229}"
+    let v238 : unit = ()
+    let v239 : (unit -&gt; unit) = closure0(v4, v230)
+    let v240 : unit = (fun () -&gt; v239 (); v238) ()
+    let v246 : string = v4.l0
+    v246
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -9400,75 +9495,15 @@ and method0 () : unit =
             true
         else
             method3(v5)
-    let v8 : string = method4()
-    let v9 : Mut0 = {l0 = v8} : Mut0
-    let v12 : string = "{ "
-    let v13 : string = $"{v12}"
-    let v21 : unit = ()
-    let v22 : (unit -&gt; unit) = closure0(v9, v13)
-    let v23 : unit = (fun () -&gt; v22 (); v21) ()
-    let v31 : string = "name"
-    let v32 : string = $"{v31}"
-    let v40 : unit = ()
-    let v41 : (unit -&gt; unit) = closure0(v9, v32)
-    let v42 : unit = (fun () -&gt; v41 (); v40) ()
-    let v50 : string = " = "
-    let v51 : string = $"{v50}"
-    let v59 : unit = ()
-    let v60 : (unit -&gt; unit) = closure0(v9, v51)
-    let v61 : unit = (fun () -&gt; v60 (); v59) ()
-    let v69 : string = "__assert_eq"
-    let v70 : string = $"{v69}"
-    let v78 : unit = ()
-    let v79 : (unit -&gt; unit) = closure0(v9, v70)
-    let v80 : unit = (fun () -&gt; v79 (); v78) ()
-    let v88 : string = "; "
-    let v89 : string = $"{v88}"
-    let v97 : unit = ()
-    let v98 : (unit -&gt; unit) = closure0(v9, v89)
-    let v99 : unit = (fun () -&gt; v98 (); v97) ()
-    let v107 : string = "actual"
-    let v108 : string = $"{v107}"
-    let v116 : unit = ()
-    let v117 : (unit -&gt; unit) = closure0(v9, v108)
-    let v118 : unit = (fun () -&gt; v117 (); v116) ()
-    let v125 : string = $"{v50}"
-    let v133 : unit = ()
-    let v134 : (unit -&gt; unit) = closure0(v9, v125)
-    let v135 : unit = (fun () -&gt; v134 (); v133) ()
-    let v145 : string = $"{v4}"
-    let v153 : unit = ()
-    let v154 : (unit -&gt; unit) = closure0(v9, v145)
-    let v155 : unit = (fun () -&gt; v154 (); v153) ()
-    let v162 : string = $"{v88}"
-    let v170 : unit = ()
-    let v171 : (unit -&gt; unit) = closure0(v9, v162)
-    let v172 : unit = (fun () -&gt; v171 (); v170) ()
-    let v180 : string = "expected"
-    let v181 : string = $"{v180}"
-    let v189 : unit = ()
-    let v190 : (unit -&gt; unit) = closure0(v9, v181)
-    let v191 : unit = (fun () -&gt; v190 (); v189) ()
-    let v198 : string = $"{v50}"
-    let v206 : unit = ()
-    let v207 : (unit -&gt; unit) = closure0(v9, v198)
-    let v208 : unit = (fun () -&gt; v207 (); v206) ()
-    let v218 : string = $"{15}"
-    let v226 : unit = ()
-    let v227 : (unit -&gt; unit) = closure0(v9, v218)
-    let v228 : unit = (fun () -&gt; v227 (); v226) ()
-    let v236 : string = " }"
-    let v237 : string = $"{v236}"
-    let v245 : unit = ()
-    let v246 : (unit -&gt; unit) = closure0(v9, v237)
-    let v247 : unit = (fun () -&gt; v246 (); v245) ()
-    let v253 : string = v9.l0
-    let v255 : unit = ()
-    let v256 : (unit -&gt; unit) = closure1(v253)
-    let v257 : unit = (fun () -&gt; v256 (); v255) ()
-    let v259 : bool = v7 = false
-    if v259 then
-        failwith&lt;unit&gt; v253
+    let v8 : string = "__assert_eq"
+    let v9 : int32 = 15
+    let v10 : string = method4(v8, v4, v9)
+    let v12 : unit = ()
+    let v13 : (unit -&gt; unit) = closure1(v10)
+    let v14 : unit = (fun () -&gt; v13 (); v12) ()
+    let v16 : bool = v7 = false
+    if v16 then
+        failwith&lt;unit&gt; v10
 method0()
 
 
@@ -9512,13 +9547,71 @@ mod module_6ff740fe {
         pub fn method3(v0: bool) -&gt; bool {
             v0
         }
-        pub fn method4() -&gt; string {
+        pub fn method5() -&gt; string {
             string("")
         }
         pub fn closure0(v0: LrcPtr&lt;Spiral::Mut0&gt;, v1: string, unitVar: ()) {
             let v4: string = append((v0.l0.get().clone()), (v1));
             v0.l0.set(v4);
             ()
+        }
+        pub fn method4(v0: string, v1: i32, v2: i32) -&gt; string {
+            let v4: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+                l0: MutCell::new(Spiral::method5()),
+            });
+            let v18: () = {
+                Spiral::closure0(v4.clone(), string("{ "), ());
+                ()
+            };
+            let v37: () = {
+                Spiral::closure0(v4.clone(), string("name"), ());
+                ()
+            };
+            let v56: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v73: () = {
+                Spiral::closure0(v4.clone(), v0, ());
+                ()
+            };
+            let v92: () = {
+                Spiral::closure0(v4.clone(), string("; "), ());
+                ()
+            };
+            let v111: () = {
+                Spiral::closure0(v4.clone(), string("actual"), ());
+                ()
+            };
+            let v128: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v148: () = {
+                Spiral::closure0(v4.clone(), sprintf!("{}", v1), ());
+                ()
+            };
+            let v165: () = {
+                Spiral::closure0(v4.clone(), string("; "), ());
+                ()
+            };
+            let v184: () = {
+                Spiral::closure0(v4.clone(), string("expected"), ());
+                ()
+            };
+            let v201: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v221: () = {
+                Spiral::closure0(v4.clone(), sprintf!("{}", v2), ());
+                ()
+            };
+            let v240: () = {
+                Spiral::closure0(v4.clone(), string(" }"), ());
+                ()
+            };
+            v4.l0.get().clone()
         }
         pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
@@ -9527,68 +9620,13 @@ mod module_6ff740fe {
             let v4: i32 = ((Spiral::method2(Spiral::method1(), 9_i32)) + 2_i32) + 1_i32;
             let v5: bool = (v4) == 15_i32;
             let v7: bool = if v5 { true } else { Spiral::method3(v5) };
-            let v9: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
-                l0: MutCell::new(Spiral::method4()),
-            });
-            let v23: () = {
-                Spiral::closure0(v9.clone(), string("{ "), ());
-                ()
-            };
-            let v42: () = {
-                Spiral::closure0(v9.clone(), string("name"), ());
-                ()
-            };
-            let v61: () = {
-                Spiral::closure0(v9.clone(), string(" = "), ());
-                ()
-            };
-            let v80: () = {
-                Spiral::closure0(v9.clone(), string("__assert_eq"), ());
-                ()
-            };
-            let v99: () = {
-                Spiral::closure0(v9.clone(), string("; "), ());
-                ()
-            };
-            let v118: () = {
-                Spiral::closure0(v9.clone(), string("actual"), ());
-                ()
-            };
-            let v135: () = {
-                Spiral::closure0(v9.clone(), string(" = "), ());
-                ()
-            };
-            let v155: () = {
-                Spiral::closure0(v9.clone(), sprintf!("{}", v4), ());
-                ()
-            };
-            let v172: () = {
-                Spiral::closure0(v9.clone(), string("; "), ());
-                ()
-            };
-            let v191: () = {
-                Spiral::closure0(v9.clone(), string("expected"), ());
-                ()
-            };
-            let v208: () = {
-                Spiral::closure0(v9.clone(), string(" = "), ());
-                ()
-            };
-            let v228: () = {
-                Spiral::closure0(v9.clone(), sprintf!("{}", 15_i32), ());
-                ()
-            };
-            let v247: () = {
-                Spiral::closure0(v9.clone(), string(" }"), ());
-                ()
-            };
-            let v253: string = v9.l0.get().clone();
-            let v257: () = {
-                Spiral::closure1(v253.clone(), ());
+            let v10: string = Spiral::method4(string("__assert_eq"), v4, 15_i32);
+            let v14: () = {
+                Spiral::closure1(v10.clone(), ());
                 ()
             };
             if (v7) == false {
-                panic!("{}", v253,);
+                panic!("{}", v10,);
             }
         }
         // on_startup!(Spiral::method0());
@@ -9630,13 +9668,57 @@ export function method3(v0: boolean): boolean {
     return v0;
 }
 
-export function method4(): string {
+export function method5(): string {
     return "";
 }
 
 export function closure0(v0: Mut0, v1: string, unitVar: void): void {
     const v4: string = v0.l0 + v1;
     v0.l0 = v4;
+}
+
+export function method4(v0: string, v1: int32, v2: int32): string {
+    const v4: Mut0 = new Mut0(method5());
+    let v18: any;
+    closure0(v4, "{ ", undefined);
+    v18 = undefined;
+    let v37: any;
+    closure0(v4, "name", undefined);
+    v37 = undefined;
+    let v56: any;
+    closure0(v4, " = ", undefined);
+    v56 = undefined;
+    let v73: any;
+    closure0(v4, v0, undefined);
+    v73 = undefined;
+    let v92: any;
+    closure0(v4, "; ", undefined);
+    v92 = undefined;
+    let v111: any;
+    closure0(v4, "actual", undefined);
+    v111 = undefined;
+    let v128: any;
+    closure0(v4, " = ", undefined);
+    v128 = undefined;
+    let v148: any;
+    closure0(v4, `${v1}`, undefined);
+    v148 = undefined;
+    let v165: any;
+    closure0(v4, "; ", undefined);
+    v165 = undefined;
+    let v184: any;
+    closure0(v4, "expected", undefined);
+    v184 = undefined;
+    let v201: any;
+    closure0(v4, " = ", undefined);
+    v201 = undefined;
+    let v221: any;
+    closure0(v4, `${v2}`, undefined);
+    v221 = undefined;
+    let v240: any;
+    closure0(v4, " }", undefined);
+    v240 = undefined;
+    return v4.l0;
 }
 
 export function closure1(v0: string, unitVar: void): void {
@@ -9647,52 +9729,12 @@ export function method0(): void {
     const v4: int32 = ((method2(method1(), 9) + 2) + 1) | 0;
     const v5: boolean = v4 === 15;
     const v7: boolean = v5 ? true : method3(v5);
-    const v9: Mut0 = new Mut0(method4());
-    let v23: any;
-    closure0(v9, "{ ", undefined);
-    v23 = undefined;
-    let v42: any;
-    closure0(v9, "name", undefined);
-    v42 = undefined;
-    let v61: any;
-    closure0(v9, " = ", undefined);
-    v61 = undefined;
-    let v80: any;
-    closure0(v9, "__assert_eq", undefined);
-    v80 = undefined;
-    let v99: any;
-    closure0(v9, "; ", undefined);
-    v99 = undefined;
-    let v118: any;
-    closure0(v9, "actual", undefined);
-    v118 = undefined;
-    let v135: any;
-    closure0(v9, " = ", undefined);
-    v135 = undefined;
-    let v155: any;
-    closure0(v9, `${v4}`, undefined);
-    v155 = undefined;
-    let v172: any;
-    closure0(v9, "; ", undefined);
-    v172 = undefined;
-    let v191: any;
-    closure0(v9, "expected", undefined);
-    v191 = undefined;
-    let v208: any;
-    closure0(v9, " = ", undefined);
-    v208 = undefined;
-    let v228: any;
-    closure0(v9, `${15}`, undefined);
-    v228 = undefined;
-    let v247: any;
-    closure0(v9, " }", undefined);
-    v247 = undefined;
-    const v253: string = v9.l0;
-    let v257: any;
-    closure1(v253, undefined);
-    v257 = undefined;
+    const v10: string = method4("__assert_eq", v4, 15);
+    let v14: any;
+    closure1(v10, undefined);
+    v14 = undefined;
     if (v7 === false) {
-        throw new Error(v253);
+        throw new Error(v10);
     }
 }
 
@@ -9727,13 +9769,57 @@ def method3(v0: bool) -&gt; bool:
     return v0
 
 
-def method4(__unit: None=None) -&gt; str:
+def method5(__unit: None=None) -&gt; str:
     return ""
 
 
 def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
     v4: str = v0.l0 + v1
     v0.l0 = v4
+
+
+def method4(v0: str, v1: int, v2: int) -&gt; str:
+    v4: Mut0 = Mut0(method5())
+    v18: None
+    closure0(v4, "{ ", None)
+    v18 = None
+    v37: None
+    closure0(v4, "name", None)
+    v37 = None
+    v56: None
+    closure0(v4, " = ", None)
+    v56 = None
+    v73: None
+    closure0(v4, v0, None)
+    v73 = None
+    v92: None
+    closure0(v4, "; ", None)
+    v92 = None
+    v111: None
+    closure0(v4, "actual", None)
+    v111 = None
+    v128: None
+    closure0(v4, " = ", None)
+    v128 = None
+    v148: None
+    closure0(v4, ("" + str(v1)) + "", None)
+    v148 = None
+    v165: None
+    closure0(v4, "; ", None)
+    v165 = None
+    v184: None
+    closure0(v4, "expected", None)
+    v184 = None
+    v201: None
+    closure0(v4, " = ", None)
+    v201 = None
+    v221: None
+    closure0(v4, ("" + str(v2)) + "", None)
+    v221 = None
+    v240: None
+    closure0(v4, " }", None)
+    v240 = None
+    return v4.l0
 
 
 def closure1(v0: str, unit_var: None) -&gt; None:
@@ -9744,52 +9830,12 @@ def method0(__unit: None=None) -&gt; None:
     v4: int = ((method2(method1(), 9) + 2) + 1) or 0
     v5: bool = v4 == 15
     v7: bool = True if v5 else method3(v5)
-    v9: Mut0 = Mut0(method4())
-    v23: None
-    closure0(v9, "{ ", None)
-    v23 = None
-    v42: None
-    closure0(v9, "name", None)
-    v42 = None
-    v61: None
-    closure0(v9, " = ", None)
-    v61 = None
-    v80: None
-    closure0(v9, "__assert_eq", None)
-    v80 = None
-    v99: None
-    closure0(v9, "; ", None)
-    v99 = None
-    v118: None
-    closure0(v9, "actual", None)
-    v118 = None
-    v135: None
-    closure0(v9, " = ", None)
-    v135 = None
-    v155: None
-    closure0(v9, ("" + str(v4)) + "", None)
-    v155 = None
-    v172: None
-    closure0(v9, "; ", None)
-    v172 = None
-    v191: None
-    closure0(v9, "expected", None)
-    v191 = None
-    v208: None
-    closure0(v9, " = ", None)
-    v208 = None
-    v228: None
-    closure0(v9, ("" + str(15)) + "", None)
-    v228 = None
-    v247: None
-    closure0(v9, " }", None)
-    v247 = None
-    v253: str = v9.l0
-    v257: None
-    closure1(v253, None)
-    v257 = None
+    v10: str = method4("__assert_eq", v4, 15)
+    v14: None
+    closure1(v10, None)
+    v14 = None
     if v7 == False:
-        raise Exception(v253)
+        raise Exception(v10)
 
 
 
@@ -9823,9 +9869,111 @@ def method2(v0 : i32, v1 : i32) -&gt; i32:
     return v2
 def method3(v0 : bool) -&gt; bool:
     return v0
-def method4() -&gt; string:
+def method5() -&gt; string:
     v0 = ""
     return v0
+def method4(v0 : string, v1 : i32, v2 : i32) -&gt; string:
+    v3 = method5()
+    v4 = Mut0(v3)
+    del v3
+    v9 = "{ "
+    v10 = f"{v9}"
+    del v9
+    v20 = v4.v0
+    v23 = v20 + v10 
+    del v10, v20
+    v4.v0 = v23
+    del v23
+    v29 = "name"
+    v30 = f"{v29}"
+    del v29
+    v40 = v4.v0
+    v43 = v40 + v30 
+    del v30, v40
+    v4.v0 = v43
+    del v43
+    v49 = " = "
+    v50 = f"{v49}"
+    v60 = v4.v0
+    v63 = v60 + v50 
+    del v50, v60
+    v4.v0 = v63
+    del v63
+    v67 = f"{v0}"
+    del v0
+    v77 = v4.v0
+    v80 = v77 + v67 
+    del v67, v77
+    v4.v0 = v80
+    del v80
+    v86 = "; "
+    v87 = f"{v86}"
+    v97 = v4.v0
+    v100 = v97 + v87 
+    del v87, v97
+    v4.v0 = v100
+    del v100
+    v106 = "actual"
+    v107 = f"{v106}"
+    del v106
+    v117 = v4.v0
+    v120 = v117 + v107 
+    del v107, v117
+    v4.v0 = v120
+    del v120
+    v124 = f"{v49}"
+    v134 = v4.v0
+    v137 = v134 + v124 
+    del v124, v134
+    v4.v0 = v137
+    del v137
+    v144 = f"{v1}"
+    del v1
+    v154 = v4.v0
+    v157 = v154 + v144 
+    del v144, v154
+    v4.v0 = v157
+    del v157
+    v161 = f"{v86}"
+    del v86
+    v171 = v4.v0
+    v174 = v171 + v161 
+    del v161, v171
+    v4.v0 = v174
+    del v174
+    v180 = "expected"
+    v181 = f"{v180}"
+    del v180
+    v191 = v4.v0
+    v194 = v191 + v181 
+    del v181, v191
+    v4.v0 = v194
+    del v194
+    v198 = f"{v49}"
+    del v49
+    v208 = v4.v0
+    v211 = v208 + v198 
+    del v198, v208
+    v4.v0 = v211
+    del v211
+    v218 = f"{v2}"
+    del v2
+    v228 = v4.v0
+    v231 = v228 + v218 
+    del v218, v228
+    v4.v0 = v231
+    del v231
+    v237 = " }"
+    v238 = f"{v237}"
+    del v237
+    v248 = v4.v0
+    v251 = v248 + v238 
+    del v238, v248
+    v4.v0 = v251
+    del v251
+    v253 = v4.v0
+    del v4
+    return v253
 def method0() -&gt; None:
     v0 = method1()
     v1 = 9
@@ -9841,114 +9989,18 @@ def method0() -&gt; None:
     else:
         v7 = method3(v5)
     del v5
-    v8 = method4()
-    v9 = Mut0(v8)
-    del v8
-    v14 = "{ "
-    v15 = f"{v14}"
-    del v14
-    v25 = v9.v0
-    v28 = v25 + v15 
-    del v15, v25
-    v9.v0 = v28
-    del v28
-    v34 = "name"
-    v35 = f"{v34}"
-    del v34
-    v45 = v9.v0
-    v48 = v45 + v35 
-    del v35, v45
-    v9.v0 = v48
-    del v48
-    v54 = " = "
-    v55 = f"{v54}"
-    v65 = v9.v0
-    v68 = v65 + v55 
-    del v55, v65
-    v9.v0 = v68
-    del v68
-    v74 = "__assert_eq"
-    v75 = f"{v74}"
-    del v74
-    v85 = v9.v0
-    v88 = v85 + v75 
-    del v75, v85
-    v9.v0 = v88
-    del v88
-    v94 = "; "
-    v95 = f"{v94}"
-    v105 = v9.v0
-    v108 = v105 + v95 
-    del v95, v105
-    v9.v0 = v108
-    del v108
-    v114 = "actual"
-    v115 = f"{v114}"
-    del v114
-    v125 = v9.v0
-    v128 = v125 + v115 
-    del v115, v125
-    v9.v0 = v128
-    del v128
-    v132 = f"{v54}"
-    v142 = v9.v0
-    v145 = v142 + v132 
-    del v132, v142
-    v9.v0 = v145
-    del v145
-    v152 = f"{v4}"
-    del v4
-    v162 = v9.v0
-    v165 = v162 + v152 
-    del v152, v162
-    v9.v0 = v165
-    del v165
-    v169 = f"{v94}"
-    del v94
-    v179 = v9.v0
-    v182 = v179 + v169 
-    del v169, v179
-    v9.v0 = v182
-    del v182
-    v188 = "expected"
-    v189 = f"{v188}"
-    del v188
-    v199 = v9.v0
-    v202 = v199 + v189 
-    del v189, v199
-    v9.v0 = v202
-    del v202
-    v206 = f"{v54}"
-    del v54
-    v216 = v9.v0
-    v219 = v216 + v206 
-    del v206, v216
-    v9.v0 = v219
-    del v219
-    v226 = f"{15}"
-    v236 = v9.v0
-    v239 = v236 + v226 
-    del v226, v236
-    v9.v0 = v239
-    del v239
-    v245 = " }"
-    v246 = f"{v245}"
-    del v245
-    v256 = v9.v0
-    v259 = v256 + v246 
-    del v246, v256
-    v9.v0 = v259
-    del v259
-    v261 = v9.v0
-    del v9
-    print(v261)
-    v267 = v7 == False
+    v8 = "__assert_eq"
+    v9 = 15
+    v10 = method4(v8, v4, v9)
+    del v4, v8, v9
+    print(v10)
+    v16 = v7 == False
     del v7
-    if v267:
-        del v267
-        raise Exception(v261)
+    if v16:
+        del v16
+        raise Exception(v10)
     else:
-        del v261, v267
+        del v10, v16
         return 
 # main_defs
 def main_body():
@@ -10075,9 +10127,74 @@ pub fn method2 (v0 :    Int) -&gt; Int {
 pub fn method3 (v0 :    Bool) -&gt; Bool {
     v0
 }
-pub fn method4 () -&gt; String {
+pub fn method5 () -&gt; String {
     let v0 = ""
     v0
+}
+pub fn method4 (v0 :    String, v1 :    Int, v2 :    Int) -&gt; String {
+    let v3 = method5()
+    let v4 = Mut0(l0 :  v3)
+    let v5 = "{ "
+    let v6 = v5 
+    let v10 = v4.l0 
+    let v11 = v10 &lt;&gt; v6 
+    let v4 = Mut0(l0: v11)
+    let v23 = "name"
+    let v24 = v23 
+    let v28 = v4.l0 
+    let v29 = v28 &lt;&gt; v24 
+    let v4 = Mut0(l0: v29)
+    let v41 = " = "
+    let v42 = v41 
+    let v46 = v4.l0 
+    let v47 = v46 &lt;&gt; v42 
+    let v4 = Mut0(l0: v47)
+    let v59 = v0 
+    let v63 = v4.l0 
+    let v64 = v63 &lt;&gt; v59 
+    let v4 = Mut0(l0: v64)
+    let v76 = "; "
+    let v77 = v76 
+    let v81 = v4.l0 
+    let v82 = v81 &lt;&gt; v77 
+    let v4 = Mut0(l0: v82)
+    let v94 = "actual"
+    let v95 = v94 
+    let v99 = v4.l0 
+    let v100 = v99 &lt;&gt; v95 
+    let v4 = Mut0(l0: v100)
+    let v112 = v41 
+    let v116 = v4.l0 
+    let v117 = v116 &lt;&gt; v112 
+    let v4 = Mut0(l0: v117)
+    let v129 = string.inspect(v1)
+    let v136 = v4.l0 
+    let v137 = v136 &lt;&gt; v129 
+    let v4 = Mut0(l0: v137)
+    let v149 = v76 
+    let v153 = v4.l0 
+    let v154 = v153 &lt;&gt; v149 
+    let v4 = Mut0(l0: v154)
+    let v166 = "expected"
+    let v167 = v166 
+    let v171 = v4.l0 
+    let v172 = v171 &lt;&gt; v167 
+    let v4 = Mut0(l0: v172)
+    let v184 = v41 
+    let v188 = v4.l0 
+    let v189 = v188 &lt;&gt; v184 
+    let v4 = Mut0(l0: v189)
+    let v201 = string.inspect(v2)
+    let v208 = v4.l0 
+    let v209 = v208 &lt;&gt; v201 
+    let v4 = Mut0(l0: v209)
+    let v221 = " }"
+    let v222 = v221 
+    let v226 = v4.l0 
+    let v227 = v226 &lt;&gt; v222 
+    let v4 = Mut0(l0: v227)
+    let v239 = v4.l0 
+    v239
 }
 pub fn method0 () -&gt; Nil   {
     let v0 = method1()
@@ -10094,74 +10211,14 @@ pub fn method0 () -&gt; Nil   {
                 method3(v4)
             }
         }
-    let v7 = method4()
-    let v8 = Mut0(l0 :  v7)
-    let v9 = "{ "
-    let v10 = v9 
-    let v14 = v8.l0 
-    let v15 = v14 &lt;&gt; v10 
-    let v8 = Mut0(l0: v15)
-    let v27 = "name"
-    let v28 = v27 
-    let v32 = v8.l0 
-    let v33 = v32 &lt;&gt; v28 
-    let v8 = Mut0(l0: v33)
-    let v45 = " = "
-    let v46 = v45 
-    let v50 = v8.l0 
-    let v51 = v50 &lt;&gt; v46 
-    let v8 = Mut0(l0: v51)
-    let v63 = "__assert_eq"
-    let v64 = v63 
-    let v68 = v8.l0 
-    let v69 = v68 &lt;&gt; v64 
-    let v8 = Mut0(l0: v69)
-    let v81 = "; "
-    let v82 = v81 
-    let v86 = v8.l0 
-    let v87 = v86 &lt;&gt; v82 
-    let v8 = Mut0(l0: v87)
-    let v99 = "actual"
-    let v100 = v99 
-    let v104 = v8.l0 
-    let v105 = v104 &lt;&gt; v100 
-    let v8 = Mut0(l0: v105)
-    let v117 = v45 
-    let v121 = v8.l0 
-    let v122 = v121 &lt;&gt; v117 
-    let v8 = Mut0(l0: v122)
-    let v134 = string.inspect(v3)
-    let v141 = v8.l0 
-    let v142 = v141 &lt;&gt; v134 
-    let v8 = Mut0(l0: v142)
-    let v154 = v81 
-    let v158 = v8.l0 
-    let v159 = v158 &lt;&gt; v154 
-    let v8 = Mut0(l0: v159)
-    let v171 = "expected"
-    let v172 = v171 
-    let v176 = v8.l0 
-    let v177 = v176 &lt;&gt; v172 
-    let v8 = Mut0(l0: v177)
-    let v189 = v45 
-    let v193 = v8.l0 
-    let v194 = v193 &lt;&gt; v189 
-    let v8 = Mut0(l0: v194)
-    let v206 = string.inspect(15)
-    let v213 = v8.l0 
-    let v214 = v213 &lt;&gt; v206 
-    let v8 = Mut0(l0: v214)
-    let v226 = " }"
-    let v227 = v226 
-    let v231 = v8.l0 
-    let v232 = v231 &lt;&gt; v227 
-    let v8 = Mut0(l0: v232)
-    let v244 = v8.l0 
-    io.println(v244)
-    let v250 = v6 == False
-    case v250 {
+    let v7 = "__assert_eq"
+    let v8 = 15
+    let v9 = method4(v7, v3, v8)
+    io.println(v9)
+    let v15 = v6 == False
+    case v15 {
         True -&gt; {
-            panic as v244
+            panic as v9
         }
         False -&gt; {
         Nil
@@ -10179,7 +10236,7 @@ and method2 (v0 : int32) : int32 =
     v1
 and method3 (v0 : bool) : bool =
     v0
-and method4 () : string =
+and method5 () : string =
     let v0 : string = ""
     v0
 and closure0 (v0 : Mut0, v1 : string) () : unit =
@@ -10187,6 +10244,70 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
+and method4 (v0 : string, v1 : int32, v2 : int32) : string =
+    let v3 : string = method5()
+    let v4 : Mut0 = {l0 = v3} : Mut0
+    let v7 : string = "{ "
+    let v8 : string = $"{v7}"
+    let v16 : unit = ()
+    let v17 : (unit -&gt; unit) = closure0(v4, v8)
+    let v18 : unit = (fun () -&gt; v17 (); v16) ()
+    let v26 : string = "name"
+    let v27 : string = $"{v26}"
+    let v35 : unit = ()
+    let v36 : (unit -&gt; unit) = closure0(v4, v27)
+    let v37 : unit = (fun () -&gt; v36 (); v35) ()
+    let v45 : string = " = "
+    let v46 : string = $"{v45}"
+    let v54 : unit = ()
+    let v55 : (unit -&gt; unit) = closure0(v4, v46)
+    let v56 : unit = (fun () -&gt; v55 (); v54) ()
+    let v63 : string = $"{v0}"
+    let v71 : unit = ()
+    let v72 : (unit -&gt; unit) = closure0(v4, v63)
+    let v73 : unit = (fun () -&gt; v72 (); v71) ()
+    let v81 : string = "; "
+    let v82 : string = $"{v81}"
+    let v90 : unit = ()
+    let v91 : (unit -&gt; unit) = closure0(v4, v82)
+    let v92 : unit = (fun () -&gt; v91 (); v90) ()
+    let v100 : string = "actual"
+    let v101 : string = $"{v100}"
+    let v109 : unit = ()
+    let v110 : (unit -&gt; unit) = closure0(v4, v101)
+    let v111 : unit = (fun () -&gt; v110 (); v109) ()
+    let v118 : string = $"{v45}"
+    let v126 : unit = ()
+    let v127 : (unit -&gt; unit) = closure0(v4, v118)
+    let v128 : unit = (fun () -&gt; v127 (); v126) ()
+    let v138 : string = $"{v1}"
+    let v146 : unit = ()
+    let v147 : (unit -&gt; unit) = closure0(v4, v138)
+    let v148 : unit = (fun () -&gt; v147 (); v146) ()
+    let v155 : string = $"{v81}"
+    let v163 : unit = ()
+    let v164 : (unit -&gt; unit) = closure0(v4, v155)
+    let v165 : unit = (fun () -&gt; v164 (); v163) ()
+    let v173 : string = "expected"
+    let v174 : string = $"{v173}"
+    let v182 : unit = ()
+    let v183 : (unit -&gt; unit) = closure0(v4, v174)
+    let v184 : unit = (fun () -&gt; v183 (); v182) ()
+    let v191 : string = $"{v45}"
+    let v199 : unit = ()
+    let v200 : (unit -&gt; unit) = closure0(v4, v191)
+    let v201 : unit = (fun () -&gt; v200 (); v199) ()
+    let v211 : string = $"{v2}"
+    let v219 : unit = ()
+    let v220 : (unit -&gt; unit) = closure0(v4, v211)
+    let v221 : unit = (fun () -&gt; v220 (); v219) ()
+    let v229 : string = " }"
+    let v230 : string = $"{v229}"
+    let v238 : unit = ()
+    let v239 : (unit -&gt; unit) = closure0(v4, v230)
+    let v240 : unit = (fun () -&gt; v239 (); v238) ()
+    let v246 : string = v4.l0
+    v246
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -10201,75 +10322,15 @@ and method0 () : unit =
             true
         else
             method3(v4)
-    let v7 : string = method4()
-    let v8 : Mut0 = {l0 = v7} : Mut0
-    let v11 : string = "{ "
-    let v12 : string = $"{v11}"
-    let v20 : unit = ()
-    let v21 : (unit -&gt; unit) = closure0(v8, v12)
-    let v22 : unit = (fun () -&gt; v21 (); v20) ()
-    let v30 : string = "name"
-    let v31 : string = $"{v30}"
-    let v39 : unit = ()
-    let v40 : (unit -&gt; unit) = closure0(v8, v31)
-    let v41 : unit = (fun () -&gt; v40 (); v39) ()
-    let v49 : string = " = "
-    let v50 : string = $"{v49}"
-    let v58 : unit = ()
-    let v59 : (unit -&gt; unit) = closure0(v8, v50)
-    let v60 : unit = (fun () -&gt; v59 (); v58) ()
-    let v68 : string = "__assert_eq"
-    let v69 : string = $"{v68}"
-    let v77 : unit = ()
-    let v78 : (unit -&gt; unit) = closure0(v8, v69)
-    let v79 : unit = (fun () -&gt; v78 (); v77) ()
-    let v87 : string = "; "
-    let v88 : string = $"{v87}"
-    let v96 : unit = ()
-    let v97 : (unit -&gt; unit) = closure0(v8, v88)
-    let v98 : unit = (fun () -&gt; v97 (); v96) ()
-    let v106 : string = "actual"
-    let v107 : string = $"{v106}"
-    let v115 : unit = ()
-    let v116 : (unit -&gt; unit) = closure0(v8, v107)
-    let v117 : unit = (fun () -&gt; v116 (); v115) ()
-    let v124 : string = $"{v49}"
-    let v132 : unit = ()
-    let v133 : (unit -&gt; unit) = closure0(v8, v124)
-    let v134 : unit = (fun () -&gt; v133 (); v132) ()
-    let v144 : string = $"{v3}"
-    let v152 : unit = ()
-    let v153 : (unit -&gt; unit) = closure0(v8, v144)
-    let v154 : unit = (fun () -&gt; v153 (); v152) ()
-    let v161 : string = $"{v87}"
-    let v169 : unit = ()
-    let v170 : (unit -&gt; unit) = closure0(v8, v161)
-    let v171 : unit = (fun () -&gt; v170 (); v169) ()
-    let v179 : string = "expected"
-    let v180 : string = $"{v179}"
-    let v188 : unit = ()
-    let v189 : (unit -&gt; unit) = closure0(v8, v180)
-    let v190 : unit = (fun () -&gt; v189 (); v188) ()
-    let v197 : string = $"{v49}"
-    let v205 : unit = ()
-    let v206 : (unit -&gt; unit) = closure0(v8, v197)
-    let v207 : unit = (fun () -&gt; v206 (); v205) ()
-    let v217 : string = $"{15}"
-    let v225 : unit = ()
-    let v226 : (unit -&gt; unit) = closure0(v8, v217)
-    let v227 : unit = (fun () -&gt; v226 (); v225) ()
-    let v235 : string = " }"
-    let v236 : string = $"{v235}"
-    let v244 : unit = ()
-    let v245 : (unit -&gt; unit) = closure0(v8, v236)
-    let v246 : unit = (fun () -&gt; v245 (); v244) ()
-    let v252 : string = v8.l0
-    let v254 : unit = ()
-    let v255 : (unit -&gt; unit) = closure1(v252)
-    let v256 : unit = (fun () -&gt; v255 (); v254) ()
-    let v258 : bool = v6 = false
-    if v258 then
-        failwith&lt;unit&gt; v252
+    let v7 : string = "__assert_eq"
+    let v8 : int32 = 15
+    let v9 : string = method4(v7, v3, v8)
+    let v11 : unit = ()
+    let v12 : (unit -&gt; unit) = closure1(v9)
+    let v13 : unit = (fun () -&gt; v12 (); v11) ()
+    let v15 : bool = v6 = false
+    if v15 then
+        failwith&lt;unit&gt; v9
 method0()
 
 
@@ -10313,13 +10374,71 @@ mod module_6ff740fe {
         pub fn method3(v0: bool) -&gt; bool {
             v0
         }
-        pub fn method4() -&gt; string {
+        pub fn method5() -&gt; string {
             string("")
         }
         pub fn closure0(v0: LrcPtr&lt;Spiral::Mut0&gt;, v1: string, unitVar: ()) {
             let v4: string = append((v0.l0.get().clone()), (v1));
             v0.l0.set(v4);
             ()
+        }
+        pub fn method4(v0: string, v1: i32, v2: i32) -&gt; string {
+            let v4: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+                l0: MutCell::new(Spiral::method5()),
+            });
+            let v18: () = {
+                Spiral::closure0(v4.clone(), string("{ "), ());
+                ()
+            };
+            let v37: () = {
+                Spiral::closure0(v4.clone(), string("name"), ());
+                ()
+            };
+            let v56: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v73: () = {
+                Spiral::closure0(v4.clone(), v0, ());
+                ()
+            };
+            let v92: () = {
+                Spiral::closure0(v4.clone(), string("; "), ());
+                ()
+            };
+            let v111: () = {
+                Spiral::closure0(v4.clone(), string("actual"), ());
+                ()
+            };
+            let v128: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v148: () = {
+                Spiral::closure0(v4.clone(), sprintf!("{}", v1), ());
+                ()
+            };
+            let v165: () = {
+                Spiral::closure0(v4.clone(), string("; "), ());
+                ()
+            };
+            let v184: () = {
+                Spiral::closure0(v4.clone(), string("expected"), ());
+                ()
+            };
+            let v201: () = {
+                Spiral::closure0(v4.clone(), string(" = "), ());
+                ()
+            };
+            let v221: () = {
+                Spiral::closure0(v4.clone(), sprintf!("{}", v2), ());
+                ()
+            };
+            let v240: () = {
+                Spiral::closure0(v4.clone(), string(" }"), ());
+                ()
+            };
+            v4.l0.get().clone()
         }
         pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
@@ -10328,68 +10447,13 @@ mod module_6ff740fe {
             let v3: i32 = ((Spiral::method2(Spiral::method1())) + 2_i32) + 1_i32;
             let v4: bool = (v3) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method3(v4) };
-            let v8: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
-                l0: MutCell::new(Spiral::method4()),
-            });
-            let v22: () = {
-                Spiral::closure0(v8.clone(), string("{ "), ());
-                ()
-            };
-            let v41: () = {
-                Spiral::closure0(v8.clone(), string("name"), ());
-                ()
-            };
-            let v60: () = {
-                Spiral::closure0(v8.clone(), string(" = "), ());
-                ()
-            };
-            let v79: () = {
-                Spiral::closure0(v8.clone(), string("__assert_eq"), ());
-                ()
-            };
-            let v98: () = {
-                Spiral::closure0(v8.clone(), string("; "), ());
-                ()
-            };
-            let v117: () = {
-                Spiral::closure0(v8.clone(), string("actual"), ());
-                ()
-            };
-            let v134: () = {
-                Spiral::closure0(v8.clone(), string(" = "), ());
-                ()
-            };
-            let v154: () = {
-                Spiral::closure0(v8.clone(), sprintf!("{}", v3), ());
-                ()
-            };
-            let v171: () = {
-                Spiral::closure0(v8.clone(), string("; "), ());
-                ()
-            };
-            let v190: () = {
-                Spiral::closure0(v8.clone(), string("expected"), ());
-                ()
-            };
-            let v207: () = {
-                Spiral::closure0(v8.clone(), string(" = "), ());
-                ()
-            };
-            let v227: () = {
-                Spiral::closure0(v8.clone(), sprintf!("{}", 15_i32), ());
-                ()
-            };
-            let v246: () = {
-                Spiral::closure0(v8.clone(), string(" }"), ());
-                ()
-            };
-            let v252: string = v8.l0.get().clone();
-            let v256: () = {
-                Spiral::closure1(v252.clone(), ());
+            let v9: string = Spiral::method4(string("__assert_eq"), v3, 15_i32);
+            let v13: () = {
+                Spiral::closure1(v9.clone(), ());
                 ()
             };
             if (v6) == false {
-                panic!("{}", v252,);
+                panic!("{}", v9,);
             }
         }
         // on_startup!(Spiral::method0());
@@ -10431,13 +10495,57 @@ export function method3(v0: boolean): boolean {
     return v0;
 }
 
-export function method4(): string {
+export function method5(): string {
     return "";
 }
 
 export function closure0(v0: Mut0, v1: string, unitVar: void): void {
     const v4: string = v0.l0 + v1;
     v0.l0 = v4;
+}
+
+export function method4(v0: string, v1: int32, v2: int32): string {
+    const v4: Mut0 = new Mut0(method5());
+    let v18: any;
+    closure0(v4, "{ ", undefined);
+    v18 = undefined;
+    let v37: any;
+    closure0(v4, "name", undefined);
+    v37 = undefined;
+    let v56: any;
+    closure0(v4, " = ", undefined);
+    v56 = undefined;
+    let v73: any;
+    closure0(v4, v0, undefined);
+    v73 = undefined;
+    let v92: any;
+    closure0(v4, "; ", undefined);
+    v92 = undefined;
+    let v111: any;
+    closure0(v4, "actual", undefined);
+    v111 = undefined;
+    let v128: any;
+    closure0(v4, " = ", undefined);
+    v128 = undefined;
+    let v148: any;
+    closure0(v4, `${v1}`, undefined);
+    v148 = undefined;
+    let v165: any;
+    closure0(v4, "; ", undefined);
+    v165 = undefined;
+    let v184: any;
+    closure0(v4, "expected", undefined);
+    v184 = undefined;
+    let v201: any;
+    closure0(v4, " = ", undefined);
+    v201 = undefined;
+    let v221: any;
+    closure0(v4, `${v2}`, undefined);
+    v221 = undefined;
+    let v240: any;
+    closure0(v4, " }", undefined);
+    v240 = undefined;
+    return v4.l0;
 }
 
 export function closure1(v0: string, unitVar: void): void {
@@ -10448,52 +10556,12 @@ export function method0(): void {
     const v3: int32 = ((method2(method1()) + 2) + 1) | 0;
     const v4: boolean = v3 === 15;
     const v6: boolean = v4 ? true : method3(v4);
-    const v8: Mut0 = new Mut0(method4());
-    let v22: any;
-    closure0(v8, "{ ", undefined);
-    v22 = undefined;
-    let v41: any;
-    closure0(v8, "name", undefined);
-    v41 = undefined;
-    let v60: any;
-    closure0(v8, " = ", undefined);
-    v60 = undefined;
-    let v79: any;
-    closure0(v8, "__assert_eq", undefined);
-    v79 = undefined;
-    let v98: any;
-    closure0(v8, "; ", undefined);
-    v98 = undefined;
-    let v117: any;
-    closure0(v8, "actual", undefined);
-    v117 = undefined;
-    let v134: any;
-    closure0(v8, " = ", undefined);
-    v134 = undefined;
-    let v154: any;
-    closure0(v8, `${v3}`, undefined);
-    v154 = undefined;
-    let v171: any;
-    closure0(v8, "; ", undefined);
-    v171 = undefined;
-    let v190: any;
-    closure0(v8, "expected", undefined);
-    v190 = undefined;
-    let v207: any;
-    closure0(v8, " = ", undefined);
-    v207 = undefined;
-    let v227: any;
-    closure0(v8, `${15}`, undefined);
-    v227 = undefined;
-    let v246: any;
-    closure0(v8, " }", undefined);
-    v246 = undefined;
-    const v252: string = v8.l0;
-    let v256: any;
-    closure1(v252, undefined);
-    v256 = undefined;
+    const v9: string = method4("__assert_eq", v3, 15);
+    let v13: any;
+    closure1(v9, undefined);
+    v13 = undefined;
     if (v6 === false) {
-        throw new Error(v252);
+        throw new Error(v9);
     }
 }
 
@@ -10528,13 +10596,57 @@ def method3(v0: bool) -&gt; bool:
     return v0
 
 
-def method4(__unit: None=None) -&gt; str:
+def method5(__unit: None=None) -&gt; str:
     return ""
 
 
 def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
     v4: str = v0.l0 + v1
     v0.l0 = v4
+
+
+def method4(v0: str, v1: int, v2: int) -&gt; str:
+    v4: Mut0 = Mut0(method5())
+    v18: None
+    closure0(v4, "{ ", None)
+    v18 = None
+    v37: None
+    closure0(v4, "name", None)
+    v37 = None
+    v56: None
+    closure0(v4, " = ", None)
+    v56 = None
+    v73: None
+    closure0(v4, v0, None)
+    v73 = None
+    v92: None
+    closure0(v4, "; ", None)
+    v92 = None
+    v111: None
+    closure0(v4, "actual", None)
+    v111 = None
+    v128: None
+    closure0(v4, " = ", None)
+    v128 = None
+    v148: None
+    closure0(v4, ("" + str(v1)) + "", None)
+    v148 = None
+    v165: None
+    closure0(v4, "; ", None)
+    v165 = None
+    v184: None
+    closure0(v4, "expected", None)
+    v184 = None
+    v201: None
+    closure0(v4, " = ", None)
+    v201 = None
+    v221: None
+    closure0(v4, ("" + str(v2)) + "", None)
+    v221 = None
+    v240: None
+    closure0(v4, " }", None)
+    v240 = None
+    return v4.l0
 
 
 def closure1(v0: str, unit_var: None) -&gt; None:
@@ -10545,52 +10657,12 @@ def method0(__unit: None=None) -&gt; None:
     v3: int = ((method2(method1()) + 2) + 1) or 0
     v4: bool = v3 == 15
     v6: bool = True if v4 else method3(v4)
-    v8: Mut0 = Mut0(method4())
-    v22: None
-    closure0(v8, "{ ", None)
-    v22 = None
-    v41: None
-    closure0(v8, "name", None)
-    v41 = None
-    v60: None
-    closure0(v8, " = ", None)
-    v60 = None
-    v79: None
-    closure0(v8, "__assert_eq", None)
-    v79 = None
-    v98: None
-    closure0(v8, "; ", None)
-    v98 = None
-    v117: None
-    closure0(v8, "actual", None)
-    v117 = None
-    v134: None
-    closure0(v8, " = ", None)
-    v134 = None
-    v154: None
-    closure0(v8, ("" + str(v3)) + "", None)
-    v154 = None
-    v171: None
-    closure0(v8, "; ", None)
-    v171 = None
-    v190: None
-    closure0(v8, "expected", None)
-    v190 = None
-    v207: None
-    closure0(v8, " = ", None)
-    v207 = None
-    v227: None
-    closure0(v8, ("" + str(15)) + "", None)
-    v227 = None
-    v246: None
-    closure0(v8, " }", None)
-    v246 = None
-    v252: str = v8.l0
-    v256: None
-    closure1(v252, None)
-    v256 = None
+    v9: str = method4("__assert_eq", v3, 15)
+    v13: None
+    closure1(v9, None)
+    v13 = None
     if v6 == False:
-        raise Exception(v252)
+        raise Exception(v9)
 
 
 
@@ -10624,9 +10696,111 @@ def method2(v0 : i32) -&gt; i32:
     return v1
 def method3(v0 : bool) -&gt; bool:
     return v0
-def method4() -&gt; string:
+def method5() -&gt; string:
     v0 = ""
     return v0
+def method4(v0 : string, v1 : i32, v2 : i32) -&gt; string:
+    v3 = method5()
+    v4 = Mut0(v3)
+    del v3
+    v9 = "{ "
+    v10 = f"{v9}"
+    del v9
+    v20 = v4.v0
+    v23 = v20 + v10 
+    del v10, v20
+    v4.v0 = v23
+    del v23
+    v29 = "name"
+    v30 = f"{v29}"
+    del v29
+    v40 = v4.v0
+    v43 = v40 + v30 
+    del v30, v40
+    v4.v0 = v43
+    del v43
+    v49 = " = "
+    v50 = f"{v49}"
+    v60 = v4.v0
+    v63 = v60 + v50 
+    del v50, v60
+    v4.v0 = v63
+    del v63
+    v67 = f"{v0}"
+    del v0
+    v77 = v4.v0
+    v80 = v77 + v67 
+    del v67, v77
+    v4.v0 = v80
+    del v80
+    v86 = "; "
+    v87 = f"{v86}"
+    v97 = v4.v0
+    v100 = v97 + v87 
+    del v87, v97
+    v4.v0 = v100
+    del v100
+    v106 = "actual"
+    v107 = f"{v106}"
+    del v106
+    v117 = v4.v0
+    v120 = v117 + v107 
+    del v107, v117
+    v4.v0 = v120
+    del v120
+    v124 = f"{v49}"
+    v134 = v4.v0
+    v137 = v134 + v124 
+    del v124, v134
+    v4.v0 = v137
+    del v137
+    v144 = f"{v1}"
+    del v1
+    v154 = v4.v0
+    v157 = v154 + v144 
+    del v144, v154
+    v4.v0 = v157
+    del v157
+    v161 = f"{v86}"
+    del v86
+    v171 = v4.v0
+    v174 = v171 + v161 
+    del v161, v171
+    v4.v0 = v174
+    del v174
+    v180 = "expected"
+    v181 = f"{v180}"
+    del v180
+    v191 = v4.v0
+    v194 = v191 + v181 
+    del v181, v191
+    v4.v0 = v194
+    del v194
+    v198 = f"{v49}"
+    del v49
+    v208 = v4.v0
+    v211 = v208 + v198 
+    del v198, v208
+    v4.v0 = v211
+    del v211
+    v218 = f"{v2}"
+    del v2
+    v228 = v4.v0
+    v231 = v228 + v218 
+    del v218, v228
+    v4.v0 = v231
+    del v231
+    v237 = " }"
+    v238 = f"{v237}"
+    del v237
+    v248 = v4.v0
+    v251 = v248 + v238 
+    del v238, v248
+    v4.v0 = v251
+    del v251
+    v253 = v4.v0
+    del v4
+    return v253
 def method0() -&gt; None:
     v0 = method1()
     v1 = method2(v0)
@@ -10641,114 +10815,18 @@ def method0() -&gt; None:
     else:
         v6 = method3(v4)
     del v4
-    v7 = method4()
-    v8 = Mut0(v7)
-    del v7
-    v13 = "{ "
-    v14 = f"{v13}"
-    del v13
-    v24 = v8.v0
-    v27 = v24 + v14 
-    del v14, v24
-    v8.v0 = v27
-    del v27
-    v33 = "name"
-    v34 = f"{v33}"
-    del v33
-    v44 = v8.v0
-    v47 = v44 + v34 
-    del v34, v44
-    v8.v0 = v47
-    del v47
-    v53 = " = "
-    v54 = f"{v53}"
-    v64 = v8.v0
-    v67 = v64 + v54 
-    del v54, v64
-    v8.v0 = v67
-    del v67
-    v73 = "__assert_eq"
-    v74 = f"{v73}"
-    del v73
-    v84 = v8.v0
-    v87 = v84 + v74 
-    del v74, v84
-    v8.v0 = v87
-    del v87
-    v93 = "; "
-    v94 = f"{v93}"
-    v104 = v8.v0
-    v107 = v104 + v94 
-    del v94, v104
-    v8.v0 = v107
-    del v107
-    v113 = "actual"
-    v114 = f"{v113}"
-    del v113
-    v124 = v8.v0
-    v127 = v124 + v114 
-    del v114, v124
-    v8.v0 = v127
-    del v127
-    v131 = f"{v53}"
-    v141 = v8.v0
-    v144 = v141 + v131 
-    del v131, v141
-    v8.v0 = v144
-    del v144
-    v151 = f"{v3}"
-    del v3
-    v161 = v8.v0
-    v164 = v161 + v151 
-    del v151, v161
-    v8.v0 = v164
-    del v164
-    v168 = f"{v93}"
-    del v93
-    v178 = v8.v0
-    v181 = v178 + v168 
-    del v168, v178
-    v8.v0 = v181
-    del v181
-    v187 = "expected"
-    v188 = f"{v187}"
-    del v187
-    v198 = v8.v0
-    v201 = v198 + v188 
-    del v188, v198
-    v8.v0 = v201
-    del v201
-    v205 = f"{v53}"
-    del v53
-    v215 = v8.v0
-    v218 = v215 + v205 
-    del v205, v215
-    v8.v0 = v218
-    del v218
-    v225 = f"{15}"
-    v235 = v8.v0
-    v238 = v235 + v225 
-    del v225, v235
-    v8.v0 = v238
-    del v238
-    v244 = " }"
-    v245 = f"{v244}"
-    del v244
-    v255 = v8.v0
-    v258 = v255 + v245 
-    del v245, v255
-    v8.v0 = v258
-    del v258
-    v260 = v8.v0
-    del v8
-    print(v260)
-    v266 = v6 == False
+    v7 = "__assert_eq"
+    v8 = 15
+    v9 = method4(v7, v3, v8)
+    del v3, v7, v8
+    print(v9)
+    v15 = v6 == False
     del v6
-    if v266:
-        del v266
-        raise Exception(v260)
+    if v15:
+        del v15
+        raise Exception(v9)
     else:
-        del v260, v266
+        del v9, v15
         return 
 # main_defs
 def main_body():
@@ -10849,8 +10927,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -10941,8 +11019,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11033,8 +11111,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11125,8 +11203,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11232,8 +11310,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11328,8 +11406,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11423,8 +11501,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11854,8 +11932,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11921,8 +11999,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
