@@ -18526,7 +18526,7 @@ let show_position (s : SupervisorState) (x : Range) =
     let col = (fst x.range).character
     let er_code = s.modules.[x.path].tokenizer.lines_text.[line]
     System.Text.StringBuilder()
-        .AppendLine(sprintf "Error trace on line: %i, column: %i in module: %s." (line+1) (col+1) x.path)
+        .AppendLine(sprintf "Error trace on line: %i, column: %i in module: %s ." (line+1) (col+1) x.path)
         .AppendLine(er_code)
         .Append(' ',col)
         .AppendLine("^")
@@ -19130,27 +19130,6 @@ SpiralTrace.TraceLevel.US0_0 |> set_trace_level
 
 let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
 async {
-(*
-    let fullPath = Supervisor.workspaceRoot </> "deps/spiral/lib/spiral/package.spiproj"
-    let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
-    let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
-    let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
-    let! projectFileOpenResult =
-        job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
-        |> Async.AwaitTask
-    trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
-    do! Async.Sleep 500
-
-    let fullPath = "C:/home/git/polyglot/target/spiral_Eval/packages/00b4ba49258747d295857ee25629c7b59c75cf4ab06958a0e3b0680ae9062d87/package.spiproj"
-    let fullPathUri = fullPath |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
-    let! spiprojCode = fullPath |> SpiralFileSystem.read_all_text_async
-    let projectFileOpenArgs = {| uri = fullPathUri; spiprojText = spiprojCode |}
-    let! projectFileOpenResult =
-        job_null (supervisor *<+ Supervisor.SupervisorReq.ProjectFileOpen projectFileOpenArgs)
-        |> Async.AwaitTask
-    trace Info (fun () -> $"Supervisor.ProjectFileOpen / projectFileOpenResult: %A{projectFileOpenResult}") (fun () -> "")
-    do! Async.Sleep 500
-*)
     let code = "inl main () = 1i32 + 1"
     let struct (fullPath, disposable) = SpiralFileSystem.create_temp_dir ()
     use _ = disposable
@@ -19158,9 +19137,7 @@ async {
     do! code |> SpiralFileSystem.write_all_text_async fullPathSpi
     let fullPathSpiproj = fullPath </> "package.spiproj"
     do! "packages:\n |core-\nmodules:\n main\n" |> SpiralFileSystem.write_all_text_async fullPathSpiproj
-    // let x = code |> Supervisor.persistCode
     let fullPathUri = fullPathSpi |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
-    // let! code = fullPath |> SpiralFileSystem.read_all_text_async
     let fileOpenArgs = {| uri = fullPathUri; spiText = code |}
     let! fileOpenResult =
         server.job_null (server.supervisor *<+ SupervisorReq.FileOpen fileOpenArgs)
@@ -19168,8 +19145,6 @@ async {
         |> Async.runWithTimeoutAsync 20000
         |> Async.map Option.get
     trace Info (fun () -> $"spiral_compiler.run / FileOpen / fileOpenResult: %A{fileOpenResult}") (fun () -> "")
-
-//    do! Async.Sleep 500
 
     let backendId = "Fsharp"
     let buildFileArgs = {| uri = fullPathUri; backend = backendId |}
@@ -19180,32 +19155,48 @@ async {
         |> Async.map Option.get
     trace Info (fun () -> $"spiral_compiler.run / BuildFile / buildFileResult: %A{buildFileResult}") (fun () -> "")
     return buildFileResult
-
-
-    (*
-    let lines = code |> SpiralSm.split "\n"
-    let fileTokenRangeArgs =
-        {|
-            uri = fullPathUri
-            range =
-                {|
-                    line = 0
-                    character = 0
-                |},
-                {|
-                    line = lines.Length - 1
-                    character = lines.[lines.Length - 1].Length
-                |}
-        |}
-    let! fileTokenRangeResult =
-        job_val (fun res -> supervisor *<+ Supervisor.SupervisorReq.FileTokenRange(fileTokenRangeArgs,res))
-        |> Async.AwaitTask
-    trace Info (fun () -> $"Supervisor.FileTokenRange / fileTokenRangeResult: %A{fileTokenRangeResult.Length}") (fun () -> "")
-    *)
 }
 |> Async.runWithTimeout 10000
 |> Option.map (fun x -> x |> SpiralSm.replace "\r\n" "\n")
 |> _assertEqual (Some "2\n")
+
+#!fsharp
+
+//// test
+
+SpiralTrace.TraceLevel.US0_0 |> set_trace_level
+
+let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+async {
+    let code = "inl main () = 1i32 + 1"
+    let struct (fullPath, disposable) = SpiralFileSystem.create_temp_dir ()
+    use _ = disposable
+    let fullPathSpi = fullPath </> "main.spi"
+    do! code |> SpiralFileSystem.write_all_text_async fullPathSpi
+    let fullPathSpiproj = fullPath </> "package.spiproj"
+    do! "packages:\n |core-\nmodules:\n main\n" |> SpiralFileSystem.write_all_text_async fullPathSpiproj
+    let fullPathUri = fullPathSpi |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+    let fileOpenArgs = {| uri = fullPathUri; spiText = code |}
+    let! fileOpenResult =
+        server.job_null (server.supervisor *<+ SupervisorReq.FileOpen fileOpenArgs)
+        |> Async.AwaitTask
+        |> Async.runWithTimeoutAsync 20000
+        |> Async.map Option.get
+    trace Info (fun () -> $"spiral_compiler.run / FileOpen / fileOpenResult: %A{fileOpenResult}") (fun () -> "")
+
+    let backendId = "Gleam"
+    let buildFileArgs = {| uri = fullPathUri; backend = backendId |}
+    let! buildFileResult =
+        server.job_val (fun res -> server.supervisor *<+ SupervisorReq.BuildFile(buildFileArgs,res))
+        |> Async.AwaitTask
+        |> Async.runWithTimeoutAsync 15000
+        |> Async.map Option.get
+    trace Info (fun () -> $"spiral_compiler.run / BuildFile / buildFileResult: %A{buildFileResult}") (fun () -> "")
+    return buildFileResult
+}
+|> Async.runWithTimeout 10000
+|> Option.map (fun x -> x |> SpiralSm.replace "\r\n" "\n")
+|> _assertEqual (Some "pub fn main () { 2\n }")
 
 #!markdown
 

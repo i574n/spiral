@@ -179,6 +179,8 @@ let format_real forall t. (x : t) : string =
 
 /// ### replicate
 
+/// ### string_builder
+
 /// ### obj_to_string
 
 /// ### pad_left
@@ -201,17 +203,15 @@ let format_real forall t. (x : t) : string =
 
 /// ### char_to_upper
 
-/// ### string_builder
-
 /// ### builder_append
 
 /// ### builder_append_line
 
 /// ### builder_replace
 
-/// ### builder_insert
-
 /// ### builder_clear
+
+/// ### builder_insert
 
 /// ### trim
 

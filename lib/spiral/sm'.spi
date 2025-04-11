@@ -123,10 +123,24 @@ inl last_index_of (search : string) (s : string) : i32 =
     $'!s.LastIndexOf !search '
 
 /// ### index_of
-inl index_of (search : string) (s : string) : i32 =
+inl index_of (search : string) (s : string) : int =
     backend_switch {
-        Fsharp = fun () => $'!s.IndexOf !search ' : i32
-        Python = fun () => $'!s.find(!search)' : i32
+        Gleam = fun () =>
+            global "import gleam/list"
+            global "import gleam/option"
+            global "import gleam/string"
+            inl g : list string =
+                $'!s |> string.to_graphemes'
+            $'let search = !search ' : ()
+            $'let x = !g |> list.index_fold (option.None, fn(acc, item, index) {' : ()
+            $'  case acc {' : ()
+            $'    option.None if item == search -> option.Some(index)' : ()
+            $'    _ -> acc' : ()
+            $'  }' : ()
+            $'})' : ()
+            $'x |> option.unwrap(-1)' : int
+        Fsharp = fun () => $'!s.IndexOf !search ' : int
+        Python = fun () => $'!s.find(!search)' : int
     }
 
 /// ### replicate
@@ -138,6 +152,35 @@ inl replicate (n : int) (s : string) : string =
     and inl loop i = join_body_unit body n i
     loop 0 ""
 
+/// ### string_builder
+nominal string_builder_python =
+    `(
+        global "import io"
+        $'' : $'io.StringIO'
+    )
+type string_builder_switch =
+    {
+        Gleam : $'String'
+        Fsharp : $'System.Text.StringBuilder'
+        Python : string_builder_python
+    }
+nominal string_builder = $'backend_switch `(string_builder_switch)'
+
+inl string_builder (initial : string) : string_builder =
+    inl initial =
+        if initial = ""
+        then join initial
+        else initial
+
+    backend_switch {
+        Gleam = fun () => $'!initial ' : string_builder
+        Fsharp = fun () => initial |> $'`string_builder ' : string_builder
+        Python = fun () =>
+            global "import io"
+            global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
+            $'CustomStringIO(!initial)' : string_builder
+    }
+
 /// ### obj_to_string
 inl obj_to_string x : string =
     backend_switch {
@@ -145,7 +188,13 @@ inl obj_to_string x : string =
             backend_switch {
                 Gleam = fun () => global "import gleam/string"
             }
-            $'string.inspect(!x)' : string
+            real
+                typecase `x with
+                | string => x
+                | char => to `(`x) `string x
+                | string_builder => to `(`x) `string x
+                | _ => $'string.inspect(!x)' : string
+            : string
         Fsharp = fun () => x |> $'_.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }
@@ -230,35 +279,6 @@ inl char_to_upper (input : char) : char =
         Python = fun () => $'!input.upper()' : char
     }
 
-/// ### string_builder
-nominal string_builder_python =
-    `(
-        global "import io"
-        $'' : $'io.StringIO'
-    )
-type string_builder_switch =
-    {
-        Gleam : $'String'
-        Fsharp : $'System.Text.StringBuilder'
-        Python : string_builder_python
-    }
-nominal string_builder = $'backend_switch `(string_builder_switch)'
-
-inl string_builder (initial : string) : string_builder =
-    inl initial =
-        if initial = ""
-        then join initial
-        else initial
-
-    backend_switch {
-        Gleam = fun () => $'!initial ' : string_builder
-        Fsharp = fun () => initial |> $'`string_builder ' : string_builder
-        Python = fun () =>
-            global "import io"
-            global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
-            $'CustomStringIO(!initial)' : string_builder
-    }
-
 /// ### builder_append
 inl builder_append (item : string) (sb : string_builder) : string_builder =
     backend_switch {
@@ -299,27 +319,12 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
             ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
     }
 
-/// ### builder_insert
-inl builder_insert (i : i32) (s : string) (sb : string_builder) : string_builder =
-    backend_switch {
-        Fsharp = fun () =>
-            ($'!sb.Insert (!i, !s)' : string_builder) |> ignore
-            sb
-        Python = fun () =>
-            inl sb = sb |> obj_to_string
-            $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
-        Gleam = fun () =>
-            inl sb = sb |> obj_to_string
-            inl a = sb |> slice 0 i
-            inl b = sb |> slice i (length sb)
-            [ a; s; b ] |> concat_list ""
-    }
-
 /// ### builder_clear
 inl builder_clear (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
-            $'""' : string_builder
+            $'let !sb = ""'
+            sb
         Fsharp = fun () =>
             ($'!sb.Clear' () : string_builder) |> ignore
             sb
@@ -327,6 +332,22 @@ inl builder_clear (sb : string_builder) : string_builder =
             ($'!sb.truncate(0)' : int) |> ignore
             ($'!sb.seek(0)' : int) |> ignore
             sb
+    }
+
+/// ### builder_insert
+inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
+    backend_switch {
+        Gleam = fun () =>
+            inl sb = sb |> obj_to_string
+            inl a = sb |> slice 0 i
+            inl b = sb |> slice i (length sb)
+            [ a; s; b ] |> concat_list "" |> string_builder
+        Fsharp = fun () =>
+            ($'!sb.Insert (!i, !s)' : string_builder) |> ignore
+            sb
+        Python = fun () =>
+            inl sb = sb |> obj_to_string
+            $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
     }
 
 /// ### trim

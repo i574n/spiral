@@ -14986,7 +14986,7 @@ module spiral_compiler =
         let col = (fst x.range).character
         let er_code = s.modules.[x.path].tokenizer.lines_text.[line]
         System.Text.StringBuilder()
-            .AppendLine(sprintf "Error trace on line: %i, column: %i in module: %s." (line+1) (col+1) x.path)
+            .AppendLine(sprintf "Error trace on line: %i, column: %i in module: %s ." (line+1) (col+1) x.path)
             .AppendLine(er_code)
             .Append(' ',col)
             .AppendLine("^")

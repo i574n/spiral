@@ -8,6 +8,10 @@
 
 #!spiral
 
+open sm'_operators
+
+#!spiral
+
 //// test
 
 open testing
@@ -377,7 +381,7 @@ inl update result s =
             line_text =
                 match c with
                 | '\n' => s.line_text |> sm'.builder_clear
-                | c => s.line_text |> sm'.builder_append (c |> sm'.obj_to_string)
+                | c => s.line_text |> sm'.builder_append $c
         } |> parser_state
 
 #!markdown
@@ -387,25 +391,19 @@ inl update result s =
 #!spiral
 
 inl any_char () : parser char = function
-    | "", s =>
-        backend_switch {
-            Gleam = fun () => $'"parsing.any_char / unexpected end of input / s: " <> !(s |> sm'.obj_to_string) ' : string
-            Fsharp = fun () => $'$"parsing.any_char / unexpected end of input / s: %A{!s}"' : string
-            Python = fun () => $'f"parsing.any_char / unexpected end of input / s: {!s}"' : string
-        }
-        |> Error
+    | "", s => "parsing.any_char / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     | x, s =>
         inl first_char = x |> sm'.index 0i32
         Ok (
             first_char,
             x |> sm'.range (am'.Start 1i32) (am'.End eval),
-            s |> update (first_char |> sm'.obj_to_string)
+            s |> update $first_char
         )
 
 #!spiral
 
 //// test
-////! gleam // __assert_eq / actual: "#(\"a\", \"bc\", \"\\\"\\\\\\\"\\\"\\\"a\\\"\\\"\\\\\\\"\\\"\", 1, 4)" / expected: "#(\"a\", \"bc\", \"a\", 1, 2)"
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -436,13 +434,7 @@ inl any_char () : parser char = function
 #!spiral
 
 inl p_char (c : char) : parser char = function
-    | "", s =>
-        backend_switch {
-            Gleam = fun () => $'"parsing.p_char / unexpected end of input / c: \'" <> !c <> "\' / s: " <> !s ' : string
-            Fsharp = fun () => $'$"parsing.p_char / unexpected end of input / c: \'{!c}\' / s: %A{!s}"' : string
-            Python = fun () => $'f"parsing.p_char / unexpected end of input / c: \'{!c}\' / s: {!s}"' : string
-        }
-        |> Error
+    | "", s => "parsing.p_char / unexpected end of input / " ++# ({ c s } |> sm'.format) |> Error
     | input, (parser_state ({ line_text position = { line col } } as s) as s') =>
         inl first_char = input |> sm'.index 0i32
         if first_char = c then
@@ -462,22 +454,17 @@ inl p_char (c : char) : parser char = function
                             | -2 => l () + 1
                             | i => i + 1
                         )
-                backend_switch {
-                    Gleam = fun () => $'"parsing.p_char / expected: \'" <> !c <> "\' / line: " <> !line <> " / col: " <> !col <> "\n" <> !line_text <> !rest ' : string
-                    Fsharp = fun () => $'$"parsing.p_char / expected: \'{!c}\' / line: {!line} / col: {!col}\n{!line_text}{!rest}"' : string
-                    Python = fun () => $'f"""parsing.p_char / expected: \'{!c}\' / line: {!line} / col: {!col}\n{!line_text}{!rest}"""' : string
-                }
-            inl pointer_line = (sm'.replicate (col - 1) " ") +. "^"
-            backend_switch {
-                Gleam = fun () => $'!message <> "\n" <> !pointer_line <> "\n"' : string
-                Fsharp = fun () => $'$"{!message}\n{!pointer_line}\n"' : string
-                Python = fun () => $'f"""{!message}\n{!pointer_line}\n"""' : string
-            }
+                "parsing.p_char / "
+                ++# ({ expected = c; line col } |> sm'.format)
+                ++# "\n" ++# $line_text ++# rest
+            inl pointer_line = (sm'.replicate (col - 1) " ") ++# "^"
+            message ++# "\n" ++# pointer_line ++# "\n"
             |> Error
 
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -508,12 +495,8 @@ inl p_char (c : char) : parser char = function
 #!spiral
 
 inl any_string length : parser string = fun input, s =>
-    if sm'.length input < length then
-        backend_switch {
-            Fsharp = fun () => $'$"parsing.any_string / unexpected end of input / s: %A{!s}"' : string
-            Python = fun () => $'f"parsing.any_string / unexpected end of input / s: {!s}"' : string
-        }
-        |> Error
+    if sm'.length input < length
+    then "parsing.any_string / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else
         inl result = input |> sm'.range (am'.Start 0i32) (am'.End fun _ => length)
         Ok (
@@ -525,6 +508,7 @@ inl any_string length : parser string = fun input, s =>
 #!spiral
 
 //// test
+////! gleam // { name = __assert_eq; actual = #("ab", "def", "ab", 1, 3); expected = #("abc", "def", "abc", 1, 4) }
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -555,12 +539,8 @@ inl any_string length : parser string = fun input, s =>
 #!spiral
 
 inl skip_any_string length : parser () = fun input, s =>
-    if sm'.length input < length then
-        backend_switch {
-            Fsharp = fun () => $'$"parsing.skip_any_string / unexpected end of input / s: %A{!s}"' : string
-            Python = fun () => $'f"parsing.skip_any_string / unexpected end of input / s: {!s}"' : string
-        }
-        |> Error
+    if sm'.length input < length
+    then "parsing.skip_any_string / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else
         Ok (
             (),
@@ -571,6 +551,7 @@ inl skip_any_string length : parser () = fun input, s =>
 #!spiral
 
 //// test
+////! gleam // { name = __assert_eq; actual = #("def", "ab", 1, 3); expected = #("def", "abc", 1, 4) }
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -636,6 +617,7 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -651,7 +633,7 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 
 "abc\ndef\nghi"
 |> parse (skip_any_string 5i32 >>. p_char 'a')
-|> _assert_eq (Error "parsing.p_char / expected: 'a' / line: 2 / col: 2\ndef\n ^\n")
+|> _assert_eq (Error "parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n")
 
 #!spiral
 
@@ -683,11 +665,7 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 inl none_of (chars : list char) : parser char = function
     | "", s =>
         inl chars = chars |> listm'.box |> listm'.to_array'
-        backend_switch {
-            Fsharp = fun () => $'$"parsing.none_of / unexpected end of input / chars: %A{!chars} / s: %A{!s}"' : string
-            Python = fun () => $'f"parsing.none_of / unexpected end of input / chars: {!chars} / s: {!s}"' : string
-        }
-        |> Error
+        "parsing.none_of / unexpected end of input / " ++# ({ chars s } |> sm'.format) |> Error
     | x, s =>
         inl first_char = x |> sm'.index 0i32
         if chars |> listm'.exists' ((=) first_char) |> not then
@@ -698,15 +676,12 @@ inl none_of (chars : list char) : parser char = function
             )
         else
             inl chars = chars |> listm'.box |> listm'.to_array'
-            backend_switch {
-                Fsharp = fun () => $'$"parsing.none_of / unexpected char: \'{!first_char}\' / chars: %A{!chars} / s: %A{!s}"' : string
-                Python = fun () => $'f"parsing.none_of / unexpected char: \'{!first_char}\' / chars: {!chars} / s: {!s}"' : string
-            }
-            |> Error
+            "parsing.none_of / unexpected char / " ++# ({ first_char chars s } |> sm'.format) |> Error
 
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -717,9 +692,9 @@ inl none_of (chars : list char) : parser char = function
     backend_switch {
         Fsharp = fun () =>
             run_target function
-            | TypeScript _ => fun () => "parsing.none_of / unexpected char: \'a\' / chars: a,b,c / s: ,1,1" : string
-            | _ => fun () => join "parsing.none_of / unexpected char: \'a\' / chars: [|'a'; 'b'; 'c'|] / s: struct (, 1, 1)" : string
-        Python = fun () => "parsing.none_of / unexpected char: \'a\' / chars: ['a' 'b' 'c'] / s: (, 1, 1)" : string
+            | TypeScript _ => fun () => "parsing.none_of / unexpected char / { first_char = a; chars = a,b,c; s = ,1,1 }" : string
+            | _ => fun () => join "parsing.none_of / unexpected char / { first_char = a; chars = [|'a'; 'b'; 'c'|]; s = struct (, 1, 1) }" : string
+        Python = fun () => "parsing.none_of / unexpected char / { first_char = a; chars = ['a' 'b' 'c']; s = (, 1, 1) }" : string
     }
     |> Error
 )
@@ -764,6 +739,7 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, s =>
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -779,7 +755,7 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, s =>
 
 "cba"
 |> parse (p_char 'a' <|> p_char 'b')
-|> _assert_eq (Error "parsing.p_char / expected: 'b' / line: 1 / col: 1\ncba\n^\n")
+|> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
 
 #!markdown
 
@@ -794,6 +770,7 @@ inl (|>>) p f : parser _ =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -829,6 +806,7 @@ inl many forall b c. (p : _ -> _ (b * _ * _) c) : parser (list _) = fun input =>
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -863,6 +841,7 @@ inl many1_chars p : parser string =
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -915,6 +894,7 @@ inl many1 p : parser (list _) =
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -924,7 +904,11 @@ inl many1 p : parser (list _) =
 |> resultm.get
 |> sm'.format_debug
 |> _assert_eq (
-    (['a'; 'a'; 'a'; 'b'; 'b'], "c", { line_text = "aaabb" |> sm'.string_builder; position = { line = 1i32; col = 6i32 } })
+    (
+        ['a'; 'a'; 'a'; 'b'; 'b'],
+        "c",
+        { line_text = "aaabb" |> sm'.string_builder; position = { line = 1i32; col = 6i32 } }
+    )
     |> sm'.format_debug
 )
 
@@ -939,7 +923,7 @@ inl many1 p : parser (list _) =
 
 "cba"
 |> parse (many1 (p_char 'a' <|> p_char 'b'))
-|> _assert_eq (Error "parsing.p_char / expected: 'b' / line: 1 / col: 1\ncba\n^\n")
+|> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
 
 #!markdown
 
@@ -959,6 +943,7 @@ inl many1_strings p : parser string =
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -1005,6 +990,7 @@ inl choice forall t. parsers : parser t = fun input =>
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -1041,10 +1027,7 @@ inl between p_open p_close p_content : parser _ = fun input =>
             match p_close rest2 with
             | Ok (_, rest3) => Ok (result, rest3)
             | Error e =>
-                backend_switch {
-                    Fsharp = fun () => $'$"parsing.between / expected closing delimiter / e: %A{!e} / input: %A{!input} / rest1: %A{!rest1} / rest2: %A{!rest2}"' : string
-                    Python = fun () => $'f"parsing.between / expected closing delimiter / e: {!e} / input: {!input} / rest1: {!rest1} / rest2: {!rest2}"' : string
-                }
+                "parsing.between / expected closing delimiter / " ++# ({ e input rest1 rest2 } |> sm'.format)
                 |> Error
         | Error _ => Error "parsing.between / expected content"
     | Error e => Error e
@@ -1061,6 +1044,7 @@ inl between p_open p_close p_content : parser _ = fun input =>
 #!spiral
 
 //// test
+////! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -1082,9 +1066,9 @@ inl between p_open p_close p_content : parser _ = fun input =>
     backend_switch {
         Fsharp = fun () =>
             run_target function
-            | TypeScript _ => fun () => "parsing.between / expected closing delimiter / e: parsing.p_char / unexpected end of input / c: ']' / s: [aaabb,1,7 / input: [aaabb,[aaabb,1,1 / rest1: aaabb,[aaabb,1,2 / rest2: ,[aaabb,1,7" : string
-            | _ => fun () => join "parsing.between / expected closing delimiter / e: \"parsing.p_char / unexpected end of input / c: ']' / s: struct ([aaabb, 1, 7)\" / input: struct (\"[aaabb\", [aaabb, 1, 1) / rest1: struct (\"aaabb\", [aaabb, 1, 2) / rest2: struct (\"\", [aaabb, 1, 7)" : string
-        Python = fun () => "parsing.between / expected closing delimiter / e: parsing.p_char / unexpected end of input / c: ']' / s: ([aaabb, 1, 7) / input: ('[aaabb', [aaabb, 1, 1) / rest1: ('aaabb', [aaabb, 1, 2) / rest2: ('', [aaabb, 1, 7)" : string
+            | TypeScript _ => fun () => "parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = [aaabb,1,7 }; input = [aaabb, [aaabb,1,1; rest1 = aaabb, [aaabb,1,2; rest2 = , [aaabb,1,7 }" : string
+            | _ => fun () => join "parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = struct ([aaabb, 1, 7) }; input = [aaabb, struct ([aaabb, 1, 1); rest1 = aaabb, struct ([aaabb, 1, 2); rest2 = , struct ([aaabb, 1, 7) }" : string
+        Python = fun () => "parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = ([aaabb, 1, 7) }; input = [aaabb, ([aaabb, 1, 1); rest1 = aaabb, ([aaabb, 1, 2); rest2 = , ([aaabb, 1, 7) }" : string
     }
 )
 
@@ -1160,16 +1144,12 @@ inl p_digit () : parser char = fun input, s =>
     match input |> sm'.index 0i32 with
     | ('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9') as c =>
         Ok (c, input |> sm'.range (am'.Start 1i32) (am'.End eval), s)
-    | c =>
-        backend_switch {
-            Fsharp = fun () => $'$"parsing.p_digit / unexpected char: {!c}"' : string
-            Python = fun () => $'f"parsing.p_digit / unexpected char: {!c}"' : string
-        }
-        |> Error
+    | c => "parsing.p_digit / unexpected char / " ++# ({ c } |> sm'.format) |> Error
 
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -1186,6 +1166,7 @@ inl p_digit () : parser char = fun input, s =>
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -1231,9 +1212,4 @@ inl rest_of_line () : parser string = fun input, s =>
 inl eof () : parser () = fun input, s =>
     if sm'.length input = 0i32
     then Ok ((), input, s)
-    else
-        backend_switch {
-            Fsharp = fun () => $'$"parsing.eof / expected end of input / input: %A{!input}"' : string
-            Python = fun () => $'f"parsing.eof / expected end of input / input: {!input}"' : string
-        }
-        |> Error
+    else "parsing.eof / expected end of input / " ++# ({ input } |> sm'.format) |> Error
