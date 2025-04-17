@@ -8232,7 +8232,6 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">lazy</span> <span class="n">t</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'Lazy&lt;`t&gt;'</span>
 
 <span class="n">inl</span> <span class="n">memoize</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">join</span> <span class="n">fn</span>
     <span class="n">inl</span> <span class="n">body</span> <span class="p">()</span> <span class="o">=</span>
         <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mut</span> <span class="kc">None</span>
         <span class="n">inl</span> <span class="n">computed</span> <span class="o">=</span> <span class="n">mut</span> <span class="n">false</span>
@@ -8244,6 +8243,7 @@ a.anchor-link {
                 <span class="n">computed</span> <span class="o">&lt;-</span> <span class="n">true</span>
                 <span class="o">*</span><span class="n">result</span>
             <span class="o">|&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
+        <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">body</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>

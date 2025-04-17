@@ -33,7 +33,9 @@ inl get forall t e. (source : result t e) : t =
     | Ok x => x
     | Error x =>
         backend_switch {
-            Gleam = fun () => $'"resultm.get / Result value was Error: " <> !x ' : string
+            Gleam = fun () =>
+                global "import gleam/string"
+                $'"resultm.get / Result value was Error: " <> string.inspect(!x)' : string
             Fsharp = fun () => $'$"resultm.get / Result value was Error: {!x}"' : string
             Python = fun () => $'f"resultm.get / Result value was Error: {!x}"' : string
         }
@@ -56,7 +58,9 @@ inl unwrap_err forall t u. (x : result t u) : u =
     match x with
     | Ok x =>
         backend_switch {
-            Gleam = fun () => $'"resultm.unwrap_err / x: " <> !x ' : string
+            Gleam = fun () =>
+                global "import gleam/string"
+                $'"resultm.unwrap_err / x: " <> string.inspect(!x)' : string
             Fsharp = fun () => $'$"resultm.unwrap_err / x: {!x}"' : string
             Python = fun () => $'f"resultm.unwrap_err / x: {!x}"' : string
         }

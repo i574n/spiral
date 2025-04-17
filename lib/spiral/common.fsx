@@ -2188,15 +2188,12 @@ and closure5 (v0 : int32) (v1 : (unit -> unit)) : unit option =
         v5
 and closure4 () (v0 : int32) : ((unit -> unit) -> unit option) =
     closure5(v0)
-and method20 (v0 : (unit -> unit)) : (unit -> unit) =
-    v0
 and closure16 (v0 : Lazy<unit>) () : unit =
     v0.Value
     ()
 and closure15 () (v0 : (unit -> unit)) : (unit -> unit) =
-    let v1 : (unit -> unit) = method20(v0)
-    let v5 : Lazy<unit> = lazy v1 ()
-    closure16(v5)
+    let v4 : Lazy<unit> = lazy v0 ()
+    closure16(v4)
 let v14 : unit = ()
 let v15 : (unit -> unit) = closure0()
 let v16 : unit = (fun () -> v15 (); v14) ()

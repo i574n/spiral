@@ -8285,6 +8285,7 @@ a.anchor-link {
                     <span class="k">global</span> <span class="s2">"import gleam/time/duration"</span>
                     <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
             <span class="p">}</span>
+            <span class="o">//</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">types</span>
             <span class="n">inl</span> <span class="n">month</span> <span class="o">=</span>
                 <span class="k">match</span> <span class="n">month</span> <span class="k">with</span>
                 <span class="o">|</span> <span class="mi">1</span> <span class="o">=&gt;</span> <span class="n">January</span>
@@ -9320,7 +9321,7 @@ a.anchor-link {
                     <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span>
                         <span class="k">if</span> <span class="n">days</span> <span class="o">&lt;=</span> <span class="mi">0</span>
                         <span class="n">then</span> <span class="n">time</span>
-                        <span class="k">else</span> <span class="err">$</span><span class="s1">'f"{!days}.{!time}"'</span> <span class="p">:</span> <span class="n">string</span>
+                        <span class="k">else</span> <span class="err">$</span><span class="n">days</span> <span class="o">++</span><span class="c1"># time</span>
                     <span class="n">inl</span> <span class="n">ms</span> <span class="o">=</span> <span class="n">time_span</span> <span class="o">|&gt;</span> <span class="n">milliseconds</span>
                     <span class="k">if</span> <span class="n">ms</span> <span class="o">&lt;=</span> <span class="mi">0</span>
                     <span class="n">then</span> <span class="n">result</span>
@@ -9330,7 +9331,7 @@ a.anchor-link {
                             <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.obj_to_string</span>
                             <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.pad_left 3 '</span><span class="mi">0</span><span class="s1">'</span>
                             <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.pad_right 7 '</span><span class="mi">0</span><span class="s1">'</span>
-                        <span class="err">$</span><span class="s1">'f"{!result}.{!ms}"'</span> <span class="p">:</span> <span class="n">string</span>
+                        <span class="n">result</span> <span class="o">++</span><span class="c1"># ms</span>
             <span class="p">}</span>
 </pre></div>
 </div>
@@ -9355,7 +9356,10 @@ a.anchor-link {
 <span class="p">(</span><span class="n">join</span> <span class="n">date_time_milliseconds</span> <span class="mi">2002</span> <span class="mi">2</span> <span class="mi">2</span> <span class="mi">20</span> <span class="mi">22</span> <span class="mi">24</span> <span class="mi">26</span><span class="p">)</span>
 <span class="o">|&gt;</span> <span class="n">new_time_span</span> <span class="p">(</span><span class="n">date_time_milliseconds</span> <span class="mi">2001</span> <span class="mi">1</span> <span class="mi">1</span> <span class="mi">10</span> <span class="mi">11</span> <span class="mi">12</span> <span class="mi">13</span><span class="p">)</span>
 <span class="o">|&gt;</span> <span class="n">time_span_format</span> <span class="s2">"c"</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"397.10:11:12.0130000"</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">backend_switch</span> <span class="p">{</span>
+    <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"397.10:11:12.0130000"</span>
+    <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"39710:11:120130000"</span>
+<span class="p">})</span>
 </pre></div>
 </div>
 </div>
@@ -9369,7 +9373,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 397.10:11:12.0130000; expected = 397.10:11:12.0130000 }
+{ name = __assert_eq; actual = 39710:11:120130000; expected = 39710:11:120130000 }
 
 .rs output:
 { name = __assert_eq; actual = 397.10:11:12.0130000; expected = 397.10:11:12.0130000 }
@@ -9467,7 +9471,10 @@ a.anchor-link {
 <span class="p">(</span><span class="n">join</span> <span class="n">date_time_milliseconds</span> <span class="mi">2002</span> <span class="mi">2</span> <span class="mi">2</span> <span class="mi">20</span> <span class="mi">22</span> <span class="mi">24</span> <span class="mi">999</span><span class="p">)</span>
 <span class="o">|&gt;</span> <span class="n">new_time_span</span> <span class="p">(</span><span class="n">date_time_milliseconds</span> <span class="mi">2002</span> <span class="mi">2</span> <span class="mi">2</span> <span class="mi">10</span> <span class="mi">11</span> <span class="mi">12</span> <span class="mi">0</span><span class="p">)</span>
 <span class="o">|&gt;</span> <span class="n">time_span_format</span> <span class="s2">"c"</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"10:11:12.9990000"</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">backend_switch</span> <span class="p">{</span>
+    <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"10:11:12.9990000"</span>
+    <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"10:11:129990000"</span>
+<span class="p">})</span>
 </pre></div>
 </div>
 </div>
@@ -9481,7 +9488,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 10:11:12.9990000; expected = 10:11:12.9990000 }
+{ name = __assert_eq; actual = 10:11:129990000; expected = 10:11:129990000 }
 
 .rs output:
 { name = __assert_eq; actual = 10:11:12.9990000; expected = 10:11:12.9990000 }

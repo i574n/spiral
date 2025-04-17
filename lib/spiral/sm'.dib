@@ -151,27 +151,6 @@ inl length forall dim {int}. (input : string) : dim =
 
 #!markdown
 
-### to_char_array
-
-#!spiral
-
-inl to_char_array (str : string) : array_base char =
-    am.init (str |> length) (fun i => str |> index i)
-    |> fun (a x : _ int _) => x
-
-#!spiral
-
-//// test
-///! fsharp
-///! cuda
-
-"abc"
-|> to_char_array
-|> sm'.format
-|> _assert_eq (;[ 'a'; 'b'; 'c' ] |> sm'.format)
-
-#!markdown
-
 ### to_char_list
 
 #!spiral
@@ -310,9 +289,7 @@ inl format_debug forall t. (x : t) : string =
                 typecase t with
                 | char => to `t `string x
                 | _ =>
-                    backend_switch `(()) `({}) {
-                        Gleam = (fun () => global "import gleam/string") : () -> ()
-                    }
+                    global "import gleam/string"
                     $'string.inspect(!x)' : string
                     ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
@@ -486,6 +463,27 @@ inl format forall t. (x : t) : string =
 
 #!markdown
 
+### to_char_array
+
+#!spiral
+
+inl to_char_array (str : string) : array_base char =
+    am.init (str |> length) (fun i => str |> index i)
+    |> fun (a x : _ int _) => x
+
+#!spiral
+
+//// test
+///! fsharp
+///! cuda
+
+"abc"
+|> to_char_array
+|> format
+|> _assert_eq (;[ 'a'; 'b'; 'c' ] |> format)
+
+#!markdown
+
 ### concat_array
 
 #!spiral
@@ -650,7 +648,7 @@ inl replicate (n : int) (s : string) : string =
 #!spiral
 
 //// test
-////! gleam
+///! gleam
 ///! fsharp
 
 "12"
@@ -671,6 +669,7 @@ inl replicate (n : int) (s : string) : string =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -761,6 +760,7 @@ inl pad_right (total_width : int) (padding_char : char) (s : string) : string =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -1829,14 +1829,14 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 |> resultm.unwrap'
 |> regex_captures "fable_modules/fable-library-ts.4.17.0"
 |> am'.vec_map (mapm.to_vec >> am'.vec_sort_by_key id)
-|> sm'.format_debug
+|> format_debug
 |> _assert_eq (
     ;[
         ;[ "", ""; "a", "4.17.0" ]
         |> am'.to_vec
     ]
     |> am'.to_vec
-    |> sm'.format_debug
+    |> format_debug
 )
 
 #!markdown
@@ -2169,7 +2169,7 @@ inl format_exception (ex : exn) : string =
 fun () => failwith "test"
 |> _throws
 |> optionm.value
-|> sm'.format_exception
+|> format_exception
 |> _assert_eq (run_target function
     | Fsharp _ => fun () => join "System.Exception: test"
     | Cuda _ => fun () => "test"
@@ -2192,7 +2192,13 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
         match start, end with
         | Start start, End fn => start, len |> fn
         | End start_fn, End end_fn => start_fn len, end_fn len
-    s |> slice (start |> i32) ((end |> i32) - 1)
+    inl end' =
+        backend_switch {
+            Gleam = fun () => if (s |> var_is) && (end |> var_is |> not) then 0i32 else 1
+            Fsharp = fun () => 1i32
+            Python = fun () => 1i32
+        }
+    s |> slice (start |> i32) ((end |> i32) - end')
 
 #!spiral
 
@@ -2206,6 +2212,14 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 |> _assert_eq "bcde"
 
 "abcde"
+|> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
+|> _assert_eq "bcd"
+
+(join "abcde")
+|> range (am'.Start 1i32) (am'.End eval)
+|> _assert_eq "bcde"
+
+(join "abcde")
 |> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
 |> _assert_eq "bcd"
 
@@ -2237,7 +2251,7 @@ let ellipsis_end (max : i64) (s : string) =
         inl end_half = half |> math.floor |> i64
         inl start = s |> slice 0 (start_half - 1)
         inl end = s |> slice (len - end_half) (len - 1)
-        (a ;[ start; "..."; end ] : _ i32 _)
+        (a ;[ start; "..."; end ] : _ int _)
         |> seq.of_array
         |> concat ""
 

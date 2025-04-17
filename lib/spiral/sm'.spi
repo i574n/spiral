@@ -30,11 +30,6 @@ inl index i (str : string) : char =
 inl length forall dim {int}. (input : string) : dim =
     input |> sm.length
 
-/// ### to_char_array
-inl to_char_array (str : string) : array_base char =
-    am.init (str |> length) (fun i => str |> index i)
-    |> fun (a x : _ int _) => x
-
 /// ### to_char_list
 inl to_char_list (str : string) : list char =
     listm.init (str |> length) (fun (i : i64) => str |> index i)
@@ -93,6 +88,11 @@ inl prim x = real
 /// ### format
 inl format forall t. (x : t) : string =
     real format_real `t x
+
+/// ### to_char_array
+inl to_char_array (str : string) : array_base char =
+    am.init (str |> length) (fun i => str |> index i)
+    |> fun (a x : _ int _) => x
 
 /// ### concat_array
 inl concat_array (separator : string) (input : a int string) =
@@ -993,7 +993,13 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
         match start, end with
         | Start start, End fn => start, len |> fn
         | End start_fn, End end_fn => start_fn len, end_fn len
-    s |> slice (start |> i32) ((end |> i32) - 1)
+    inl end' =
+        backend_switch {
+            Gleam = fun () => if (s |> var_is) && (end |> var_is |> not) then 0i32 else 1
+            Fsharp = fun () => 1i32
+            Python = fun () => 1i32
+        }
+    s |> slice (start |> i32) ((end |> i32) - end')
 
 /// ### concat_list
 inl concat_list s list =
@@ -1013,7 +1019,7 @@ let ellipsis_end (max : i64) (s : string) =
         inl end_half = half |> math.floor |> i64
         inl start = s |> slice 0 (start_half - 1)
         inl end = s |> slice (len - end_half) (len - 1)
-        (a ;[ start; "..."; end ] : _ i32 _)
+        (a ;[ start; "..."; end ] : _ int _)
         |> seq.of_array
         |> concat ""
 
