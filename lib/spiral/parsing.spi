@@ -74,7 +74,7 @@ inl p_char (c : char) : parser char = function
             Ok (
                 first_char,
                 input |> sm'.range (am'.Start 1i32) (am'.End eval),
-                s' |> update (first_char |> sm'.obj_to_string)
+                s' |> update $first_char
             )
         else
             inl message : string =
@@ -90,7 +90,7 @@ inl p_char (c : char) : parser char = function
                 "parsing.p_char / "
                 ++# ({ expected = c; line col } |> sm'.format)
                 ++# "\n" ++# $line_text ++# rest
-            inl pointer_line = (sm'.replicate (col - 1) " ") ++# "^"
+            inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
             message ++# "\n" ++# pointer_line ++# "\n"
             |> Error
 
@@ -147,21 +147,27 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
         b, rest, s
 
 /// ### none_of
-inl none_of (chars : list char) : parser char = function
+inl none_of (chars : list char) x =
+    inl chars' () : string =
+        backend_switch {
+            Gleam = fun () => chars |> listm'.box |> sm'.format
+            Fsharp = fun () => chars |> listm'.box |> listm'.to_array' |> sm'.format
+            Python = fun () => chars |> listm'.box |> listm'.to_array' |> sm'.format
+        }
+    match x with
     | "", s =>
-        inl chars = chars |> listm'.box |> listm'.to_array'
-        "parsing.none_of / unexpected end of input / " ++# ({ chars s } |> sm'.format) |> Error
+        ("parsing.none_of / unexpected end of input / " ++# ({ chars = chars' (); s } |> sm'.format)) |> Error
     | x, s =>
         inl first_char = x |> sm'.index 0i32
         if chars |> listm'.exists' ((=) first_char) |> not then
             Ok (
                 first_char,
                 x |> sm'.range (am'.Start 1i32) (am'.End eval),
-                s |> update (first_char |> sm'.obj_to_string)
+                s |> update $first_char
             )
         else
-            inl chars = chars |> listm'.box |> listm'.to_array'
-            "parsing.none_of / unexpected char / " ++# ({ first_char chars s } |> sm'.format) |> Error
+            "parsing.none_of / unexpected char / " ++# ({ first_char chars = chars' (); s } |> sm'.format)
+            |> Error
 
 /// ### (<|>)
 inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, s =>
@@ -193,9 +199,9 @@ inl many1_chars p : parser string =
     p >> resultm.map fun first_result, rest =>
         let rec loop acc input =
             match p input with
-            | Ok (result, rest) => loop (acc +. sm'.obj_to_string result) rest
+            | Ok (result, rest) => rest |> loop (acc ++# $result)
             | Error _ => acc, input
-        loop (first_result |> sm'.obj_to_string) rest
+        rest |> loop $first_result
 
 /// ### many_chars
 inl many_chars p : parser string = fun input =>

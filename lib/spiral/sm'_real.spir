@@ -36,8 +36,6 @@ inl symbol_to_string forall t {symbol}. : string =
 
 /// ### length
 
-/// ### to_char_array
-
 /// ### to_char_list
 
 /// ### is_empty
@@ -72,9 +70,7 @@ inl format_debug forall t. (x : t) : string =
                 typecase t with
                 | char => to `t `string x
                 | _ =>
-                    backend_switch `(()) `({}) {
-                        Gleam = (fun () => global "import gleam/string") : () -> ()
-                    }
+                    global "import gleam/string"
                     $'string.inspect(!x)' : string
                     ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
@@ -164,6 +160,8 @@ let format_real forall t. (x : t) : string =
     (~*) `string result
 
 /// ### format
+
+/// ### to_char_array
 
 /// ### concat_array
 

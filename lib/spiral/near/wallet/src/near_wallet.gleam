@@ -10,8 +10,8 @@ pub type Us0 {
     Us0i0
     Us0i1
 }
-pub fn closure1 () -> fn(_) -> fn(Nil) -> Int { fn(x : #( Int)) { let #(   v0) = x
-fn (_) {
+pub fn closure1 () -> fn(_) -> fn(       Nil) -> Int { fn(x : #(   Int)) { let #(   v0) = x
+fn (_) { // free_vars_tys: "" / domain: "x : #(   Int)" / x.domain_args: "[|L (0, YPrim Int32T)|]" / free_vars': "[||]"
     let v1 = v0 < 0
     case v1 {
         True -> {
@@ -22,8 +22,8 @@ fn (_) {
         }
     }
 }}}
-pub fn closure2 () -> fn(_) -> fn(Nil) -> Int { fn(x : #(#( Int, Us0))) { let #(#(   v0, v1)) = x
-fn (_) {
+pub fn closure2 () -> fn(_) -> fn(      Nil) -> Int { fn(x : #(#( Int, Us0))) { let #(#(   v0, v1)) = x
+fn (_) { // free_vars_tys: "" / domain: "x : #(#( Int, Us0))" / x.domain_args: "[|L (0, YPrim Int32T);  L (1,     YUnion       Polyglot.spiral_compiler+H`1[<>f__AnonymousType1029616380`5[Microsoft.FSharp.Collections.FSharpMap`2[System.Tuple`2[System.Int32,System.String],Polyglot.spiral_compiler+Ty],System.Boolean,Polyglot.spiral_compiler+UnionLayout,System.Tuple`2[System.String,Polyglot.spiral_compiler+Ty][],System.Collections.Generic.Dictionary`2[System.String,System.Int32]]])|]" / free_vars': "[||]"
     case v1 {
         Us0i1 -> { // Decr
             let v3 = v0 - 1
@@ -35,8 +35,8 @@ fn (_) {
         }
     }
 }}}
-pub fn closure3 () -> fn(_) -> fn(Nil) -> element.Element(Us0) { fn(x : #( Int)) { let #(   v0) = x
-fn (_) {
+pub fn closure3 () -> fn(_) -> fn(       Nil) -> element.Element(Us0) { fn(x : #(   Int)) { let #(   v0) = x
+fn (_) { // free_vars_tys: "" / domain: "x : #(   Int)" / x.domain_args: "[|L (0, YPrim Int32T)|]" / free_vars': "[||]"
     let v1 = []
     let v2 = "display"
     let v3 = "flex"
@@ -92,8 +92,8 @@ fn (_) {
     let v105 = html.div(v96, v101)
     v105
 }}}
-pub fn closure0 () -> fn(_) -> fn(Nil) -> Nil   { fn(x : #( Int)) { let #(   v0) = x
-fn (_) {
+pub fn closure0 () -> fn(_) -> fn(       Nil) -> Nil   { fn(x : #(   Int)) { let #(   v0) = x
+fn (_) { // free_vars_tys: "" / domain: "x : #(   Int)" / x.domain_args: "[|L (0, YPrim Int32T)|]" / free_vars': "[||]"
     let v1 = fn (x) { closure1()(#(x))(   Nil) }
     let v2 = fn (x) { closure2()(#(x))(   Nil) }
     let v3 = fn (x) { closure3()(#(x))(   Nil) }

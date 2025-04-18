@@ -13253,27 +13253,39 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
             | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
             | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
             ) (fun s x ->
-            let domain = 
+            let domain =
                 let domain_args =
-                    if x.domain_args |> Array.length < 1 then
+                    let t () =
                         x.domain_args
-                        |> Array.map (fun (L(i,t)) ->
-                            sprintf "v%i :   %s" i (tyv t)
-                        )
-                    else
+                        |> Array.map (fun (L(_,t)) -> $"{tyv t}")
+                        |> String.concat ", "
+                    if x.domain_args |> Array.length > 1 then
+                        [| $"x : #(#( {t ()}))" |]
+                    elif x.free_vars |> Array.length > 1 then
                         let t =
-                            x.domain_args
+                            x.free_vars
                             |> Array.map (fun (L(_,t)) -> $"{tyv t}")
                             |> String.concat ", "
-                        if x.domain_args |> Array.length > 1
-                        then [| $"x : #(#( {t}))" |]
-                        else [| $"x : #( {t})" |]
+                        [| $"x : #(  {t})" |]
+                    elif x.domain_args |> Array.length = 0
+                    then [||]
+                    else [| $"x : #(   {t ()})" |]
                 match domain_args with
                 | [||] -> ""
                 | [|x|] -> x
                 | x -> String.concat ", " x
+            let domain' = 
+                if x.domain_args |> Array.length <> 1
+                then "      Nil"
+                elif x.free_vars |> Array.length > 1 then
+                    x.domain_args
+                    |> Array.map (fun (L(_,t)) -> $"{tyv t}")
+                    |> String.concat ", "
+                else "       Nil"
             let free_vars_tys =
-                if x.domain_args |> Array.length < 1 then
+                if x.free_vars |> Array.length > 1
+                then ""
+                elif x.domain_args |> Array.length = 0 then
                     let t =
                         x.free_vars
                         |> Array.map (fun (L(_,t)) -> tup_ty t)
@@ -13285,18 +13297,33 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                 |> Array.filter ((<>) "")
                 |> String.concat ", "
             let args' =
-                if x.domain_args |> Array.length < 0 then
-                    ""
+                let args =
+                    if x.domain_args |> Array.isEmpty || x.free_vars |> Array.length > 1
+                    then x.free_vars
+                    else x.domain_args
+                    |> Array.map (fun (L(i,_)) -> $"v{i}")
+                    |> String.concat ", "
+                if x.domain_args |> Array.length > 1
+                then $"let #(#(   {args})) = x"
+                else $"let #(   {args}) = x"
+            let domain'' =
+                if x.domain_args |> Array.length <> 1 || x.free_vars |> Array.length <= 1
+                then "_"
                 else
-                    let args =
-                        (if x.domain_args |> Array.isEmpty then x.free_vars else x.domain_args)
-                        |> Array.map (fun (L(i,_)) -> $"v{i}")
-                        |> String.concat ", "
-                    if x.domain_args |> Array.length > 1
-                    then $"let #(#(   {args})) = x"
-                    else $"let #(   {args}) = x"
-            // line s (sprintf "closure%i () -> fn(_) -> %s { fn(%s) { %s" x.tag (tup_ty x.range) args args')
-            line s (sprintf "closure%i () -> fn(_) -> fn(Nil) -> %s { fn(%s) { %s\nfn (_) {" x.tag (tup_ty x.range) args args')
+                    x.domain_args
+                    |> Array.map (fun (L(i,_)) -> $"v{i}")
+                    |> String.concat ", "
+            let domain_args' =
+                $"%A{x.domain_args}"
+                |> SpiralSm.replace "\r\n" ""
+                |> SpiralSm.replace "\n" ""
+            let free_vars' =
+                $"%A{x.free_vars}"
+                |> SpiralSm.replace "\r\n" ""
+                |> SpiralSm.replace "\n" ""
+            line
+                s
+                $"closure{x.tag} () -> fn(_) -> fn({domain'}) -> {tup_ty x.range} {{ fn({args}) {{ {args'}\nfn ({domain''}) {{ // free_vars_tys: %A{free_vars_tys} / domain: %A{domain} / x.domain_args: %A{domain_args'} / free_vars': %A{free_vars'}"
             binds (indent s) x.body
             line s "}}}"
             )
@@ -19269,7 +19296,6 @@ open Hopac.Stream
 // open Common
 open SpiralFileSystem.Operators
 
-open FSharp.Json
 open Microsoft.AspNetCore.SignalR
 open Microsoft.AspNetCore.SignalR.Client
 
@@ -19283,12 +19309,12 @@ type SpiralHub(supervisor : Supervisor) =
             match x with
             | null -> null
             | :? Option<string> as x -> x.Value
-            | _ -> Json.serialize x
+            | _ -> FSharp.Json.Json.serialize x
 
         let job_val job = let res = IVar() in Hopac.queueAsTask (job res >>=. IVar.read res >>- serialize)
         let supervisor = supervisor.supervisor_ch
 
-        let client_req = Json.deserialize x
+        let client_req = FSharp.Json.Json.deserialize x
 
         if Directory.Exists traceDir then
             match client_req with
@@ -19368,7 +19394,8 @@ let main args =
     builder.Services
         .AddSingleton<Supervisor>(fun s ->
             let hub = s.GetService<IHubContext<SpiralHub>>()
-            let broadcast x = hub.Clients.All.SendCoreAsync("ServerToClientMsg",[|Json.serialize x|])
+            let broadcast x =
+                hub.Clients.All.SendCoreAsync("ServerToClientMsg",[|FSharp.Json.Json.serialize x|])
             
             let server = new_server ()
 

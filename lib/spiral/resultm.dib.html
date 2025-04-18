@@ -7713,7 +7713,9 @@ a.anchor-link {
     <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span>
     <span class="o">|</span> <span class="n">Error</span> <span class="n">x</span> <span class="o">=&gt;</span>
         <span class="n">backend_switch</span> <span class="p">{</span>
-            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"resultm.get / Result value was Error: " &lt;&gt; !x '</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"import gleam/string"</span>
+                <span class="err">$</span><span class="s1">'"resultm.get / Result value was Error: " &lt;&gt; string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"resultm.get / Result value was Error: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.get / Result value was Error: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="p">}</span>
@@ -7802,7 +7804,9 @@ a.anchor-link {
     <span class="k">match</span> <span class="n">x</span> <span class="k">with</span>
     <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span>
         <span class="n">backend_switch</span> <span class="p">{</span>
-            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"resultm.unwrap_err / x: " &lt;&gt; !x '</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"import gleam/string"</span>
+                <span class="err">$</span><span class="s1">'"resultm.unwrap_err / x: " &lt;&gt; string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"resultm.unwrap_err / x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.unwrap_err / x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="p">}</span>
@@ -8047,7 +8051,7 @@ a.anchor-link {
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable case clause</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/src/main.gleam:124:39</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/0fad61eaf53a02814459d0c50d72f2fbfea67ad8b111c73000b68ce196c71ef1/src/main.gleam:124:39</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">124 │     let v6 = case v0 { Ok(x) -&gt; v4(x) Error(x) -&gt; v5(x) }</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                       ^^^^^^^^^^^^^^^^^</span>
@@ -8057,12 +8061,12 @@ a.anchor-link {
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: It can be safely removed.</span>
 
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/0fad61eaf53a02814459d0c50d72f2fbfea67ad8b111c73000b68ce196c71ef1/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/0fad61eaf53a02814459d0c50d72f2fbfea67ad8b111c73000b68ce196c71ef1/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/0fad61eaf53a02814459d0c50d72f2fbfea67ad8b111c73000b68ce196c71ef1/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/62a15ae0330e8f81bfc764295173252cf4b0a89aa104eb158c415cad743496db/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/0fad61eaf53a02814459d0c50d72f2fbfea67ad8b111c73000b68ce196c71ef1/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq'; actual = Us0i0(3), Us0i1("error1"); expected = Us0i0(3), Us0i1("error1") }
 
 

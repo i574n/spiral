@@ -8240,7 +8240,6 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">lazy</span> <span class="n">t</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'Lazy&lt;`t&gt;'</span>
 
 <span class="n">inl</span> <span class="n">memoize</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">join</span> <span class="n">fn</span>
     <span class="n">inl</span> <span class="n">body</span> <span class="p">()</span> <span class="o">=</span>
         <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mut</span> <span class="kc">None</span>
         <span class="n">inl</span> <span class="n">computed</span> <span class="o">=</span> <span class="n">mut</span> <span class="n">false</span>
@@ -8252,6 +8251,7 @@ a.anchor-link {
                 <span class="n">computed</span> <span class="o">&lt;-</span> <span class="n">true</span>
                 <span class="o">*</span><span class="n">result</span>
             <span class="o">|&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
+        <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">body</span> <span class="p">()</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -8493,12 +8493,12 @@ a.anchor-link {
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fbd63a06b7327c54473c30cb2d9ac8112f097bee1830734b0bcf0d514e1c4ae2/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 15; expected = 15 }
 
 
@@ -9267,12 +9267,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fc9cc74ba0becd90a12131688ec2aff875fb1289f16ff51946d60cae400af215/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 15; expected = 15 }
 
 
@@ -10096,12 +10096,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f37b29a0da948a7d8afe16b232309d4e134edb5383b3bd98700044023d9aaa97/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f37b29a0da948a7d8afe16b232309d4e134edb5383b3bd98700044023d9aaa97/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f37b29a0da948a7d8afe16b232309d4e134edb5383b3bd98700044023d9aaa97/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f37b29a0da948a7d8afe16b232309d4e134edb5383b3bd98700044023d9aaa97/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 15; expected = 15 }
 
 
@@ -10927,12 +10927,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d40478f9a4ac0856107ca82a9da787879d3ed5dd49f6447c9f5d54a3aeae2a8a/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = -3; expected = -3 }
 
 
@@ -11019,12 +11019,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/799f5651f0a842ece420e17ba6a6a9c088ba07c89fe274ffb7a29722d4c20664/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = -3; expected = -3 }
 
 
@@ -11111,12 +11111,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1feee88c0c145f550daa829754b2688b080a22b23a7b40883d6fe7c02487c48b/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = -3; expected = -3 }
 
 
@@ -11203,12 +11203,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/cd4c5589576a9f5e26da88e3ab95d1996cebfbd07c1a8cc013e3a36ce8384b3f/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = -3; expected = -3 }
 
 
@@ -11310,12 +11310,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/25fa115467de4a699a594772280adee42a56d85f6633254255ddaecf3c18760b/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/25fa115467de4a699a594772280adee42a56d85f6633254255ddaecf3c18760b/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/25fa115467de4a699a594772280adee42a56d85f6633254255ddaecf3c18760b/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2b62e7ceb96771d16b00a475a955e8577137c4ff3918f2a915d338b20972a164/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/25fa115467de4a699a594772280adee42a56d85f6633254255ddaecf3c18760b/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = true; expected = true }
 
 
@@ -11406,12 +11406,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/dc7266507414b0783c712866ddd6e805ec523bd0fe880bb762b2b7f9096af4f9/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = true; expected = true }
 
 
@@ -11501,12 +11501,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fe59c9a6b32797aa4583b499d594afc9a0e4b49eeb2be407c34edb60052c852d/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fe59c9a6b32797aa4583b499d594afc9a0e4b49eeb2be407c34edb60052c852d/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fe59c9a6b32797aa4583b499d594afc9a0e4b49eeb2be407c34edb60052c852d/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/9c93f2af1c2f27865a0d7c7f604b8cf7cbcbfb75925d53dbfaf9746070370be8/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/fe59c9a6b32797aa4583b499d594afc9a0e4b49eeb2be407c34edb60052c852d/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = true; expected = true }
 
 
@@ -11674,12 +11674,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/405f07f2f2cc146f901bd31a79a885cbaf2304fbfd5ad1b1c19081ed510a7f46/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/405f07f2f2cc146f901bd31a79a885cbaf2304fbfd5ad1b1c19081ed510a7f46/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/405f07f2f2cc146f901bd31a79a885cbaf2304fbfd5ad1b1c19081ed510a7f46/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/405f07f2f2cc146f901bd31a79a885cbaf2304fbfd5ad1b1c19081ed510a7f46/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 1, 2; expected = 1, 2 }
 
 
@@ -11817,12 +11817,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d9bbe591c4cdca2c4a037e95e669c69234a12cfcd134569035126138c754f667/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d9bbe591c4cdca2c4a037e95e669c69234a12cfcd134569035126138c754f667/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/121fe6bcd53cbb76bc380283bdf783b2cc23ad2873d0c359e023ced5290cc3bd/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/121fe6bcd53cbb76bc380283bdf783b2cc23ad2873d0c359e023ced5290cc3bd/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d9bbe591c4cdca2c4a037e95e669c69234a12cfcd134569035126138c754f667/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/121fe6bcd53cbb76bc380283bdf783b2cc23ad2873d0c359e023ced5290cc3bd/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d9bbe591c4cdca2c4a037e95e669c69234a12cfcd134569035126138c754f667/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/121fe6bcd53cbb76bc380283bdf783b2cc23ad2873d0c359e023ced5290cc3bd/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq'; actual = a, #(1, "b"); expected = a, #(1, "b") }
 
 
@@ -11932,12 +11932,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/2935833ad798b2f5dbab9fc787abb7d188185e5394f81e66091b2bbf47478d2e/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 1; expected = 1 }
 
 
@@ -11999,12 +11999,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d7805e05451f8e1d7ad70337146e33a9e28c19b3d3074cd37caccc8e29523894/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d7805e05451f8e1d7ad70337146e33a9e28c19b3d3074cd37caccc8e29523894/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/ebin/main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d7805e05451f8e1d7ad70337146e33a9e28c19b3d3074cd37caccc8e29523894/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4a302f81693a57c1c0441dc2d88b0ed3da142b8eab1bac1cd21569fee713224f/build/dev/erlang/main/ebin/main@@main.beam"}
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/d7805e05451f8e1d7ad70337146e33a9e28c19b3d3074cd37caccc8e29523894/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 2, 1; expected = 2, 1 }
 
 

@@ -317,7 +317,6 @@ nominal lazy t = $'Lazy<`t>'
 nominal lazy t = $'Lazy<`t>'
 
 inl memoize forall t. (fn : () -> t) : () -> t =
-    inl fn = join fn
     inl body () =
         inl result = mut None
         inl computed = mut false
@@ -329,6 +328,7 @@ inl memoize forall t. (fn : () -> t) : () -> t =
                 computed <- true
                 *result
             |> optionm.value
+        : () -> t
     backend_switch {
         Gleam = fun () => body ()
         Fsharp = fun () =>
