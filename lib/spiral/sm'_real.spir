@@ -393,9 +393,9 @@ let format_real forall t. (x : t) : string =
 
 /// ### format_exception
 
-/// ### range
-
 /// ### concat_list
+
+/// ### range
 
 /// ### ellipsis_end
 

@@ -80,7 +80,7 @@ class Mut1(Record):
 
 Mut1_reflection = _expr8
 
-def _expr9() -> TypeInfo:
+def _expr10() -> TypeInfo:
     return record_type("Common.Mut2", [], Mut2, lambda: [("l0", bool_type)])
 
 
@@ -88,9 +88,9 @@ def _expr9() -> TypeInfo:
 class Mut2(Record):
     l0: bool
 
-Mut2_reflection = _expr9
+Mut2_reflection = _expr10
 
-def _expr10() -> TypeInfo:
+def _expr11() -> TypeInfo:
     return record_type("Common.Mut3", [], Mut3, lambda: [("l0", string_type)])
 
 
@@ -98,7 +98,7 @@ def _expr10() -> TypeInfo:
 class Mut3(Record):
     l0: str
 
-Mut3_reflection = _expr10
+Mut3_reflection = _expr11
 
 def _expr12() -> TypeInfo:
     return record_type("Common.Mut4", [], Mut4, lambda: [("l0", US0_reflection())])
@@ -182,7 +182,7 @@ class US4(Union):
 
 US4_reflection = _expr16
 
-def _expr17() -> TypeInfo:
+def _expr19() -> TypeInfo:
     return union_type("Common.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -198,9 +198,9 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr17
+US5_reflection = _expr19
 
-def _expr20() -> TypeInfo:
+def _expr22() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
 
 
@@ -216,9 +216,9 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr20
+US6_reflection = _expr22
 
-def _expr23() -> TypeInfo:
+def _expr25() -> TypeInfo:
     return union_type("Common.US7", [], US7, lambda: [[("f0_0", US6_reflection())], []])
 
 
@@ -234,9 +234,9 @@ class US7(Union):
         return ["US7_0", "US7_1"]
 
 
-US7_reflection = _expr23
+US7_reflection = _expr25
 
-def _expr26() -> TypeInfo:
+def _expr28() -> TypeInfo:
     return union_type("Common.US8", [], US8, lambda: [[("f0_0", Mut0_reflection()), ("f0_1", Mut1_reflection()), ("f0_2", Mut2_reflection()), ("f0_3", Mut3_reflection()), ("f0_4", Mut4_reflection()), ("f0_5", option_type(int64_type))], []])
 
 
@@ -252,7 +252,7 @@ class US8(Union):
         return ["US8_0", "US8_1"]
 
 
-US8_reflection = _expr26
+US8_reflection = _expr28
 
 def method3(v0: str) -> str:
     return v0
@@ -390,11 +390,11 @@ def method7(v0: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0: Callable[[], None]) -> IDisposable:
     v14_1: Callable[[], None] = method7(v0)
-    class ObjectExpr48(IDisposable):
+    class ObjectExpr47(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
             v14_1(None)
 
-    return ObjectExpr48()
+    return ObjectExpr47()
 
 
 def closure6(unit_var: None, v0: US6) -> US7:
@@ -416,10 +416,10 @@ def closure10(unit_var: None, v0: int64) -> US2:
 
 
 def method10(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow54(v: int64) -> US2:
+    def _arrow49(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow54
+    return _arrow49
 
 
 def method11(__unit: None=None) -> str:
@@ -618,22 +618,17 @@ def closure4(unit_var: None, v0: int) -> Callable[[Callable[[], None]], None | N
     return _arrow73
 
 
-def method20(v0: Callable[[], None]) -> Callable[[], None]:
-    return v0
-
-
 def closure16(v0: Any, unit_var: None) -> None:
     v0.Value
 
 
 def closure15(unit_var: None, v0: Callable[[], None]) -> Callable[[], None]:
-    v1: Callable[[], None] = method20(v0)
     def _arrow74(__unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
-        v1(None)
+        v0(None)
 
-    v5: Any = Lazy(_arrow74)
+    v4: Any = Lazy(_arrow74)
     def _arrow75(__unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
-        closure16(v5, None)
+        closure16(v4, None)
 
     return _arrow75
 

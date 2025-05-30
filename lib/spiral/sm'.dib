@@ -2181,6 +2181,18 @@ fun () => failwith "test"
 
 #!markdown
 
+### concat_list
+
+#!spiral
+
+inl concat_list s list =
+    list
+    |> listm'.box
+    |> seq.of_list'
+    |> concat s
+
+#!markdown
+
 ### range
 
 #!spiral
@@ -2194,11 +2206,60 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
         | End start_fn, End end_fn => start_fn len, end_fn len
     inl end' =
         backend_switch {
-            Gleam = fun () => if (s |> var_is) && (end |> var_is |> not) then 0i32 else 1
+            Gleam = fun () =>
+                // [
+                    // "sm'.range"
+                    // " / s: "; s
+                    // " / s |> var_is: "; s |> var_is |> obj_to_string
+                    // " / start |> var_is: "; start |> var_is |> obj_to_string
+                    // " / end |> var_is: "; end |> var_is |> obj_to_string
+                // ]
+                // |> concat_list ""
+                // |> console.write_line
+                if
+                    (end |> var_is |> not)
+                    && (start |> var_is |> not)
+                    && (s |> var_is)
+                    || (start |> var_is |> not) && (end |> var_is)
+                then 0i32 else 1
             Fsharp = fun () => 1i32
             Python = fun () => 1i32
         }
     s |> slice (start |> i32) ((end |> i32) - end')
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+///! cuda
+///! rust
+///! typescript
+///! python
+
+"abcde"
+|> range (am'.Start 1i32) (am'.End eval)
+|> _assert_eq "bcde"
+
+(join "abcde")
+|> range (am'.Start 1i32) (am'.End eval)
+|> _assert_eq "bcde"
+
+(join "abcde")
+|> range (am'.Start 1i32) (am'.End fun x => 5)
+|> _assert_eq "bcde"
+
+"abcde"
+|> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
+|> _assert_eq "bcd"
+
+(join "abcde")
+|> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
+|> _assert_eq "bcd"
+
+(join "abcde")
+|> range (am'.End fun x => x () - 4i32) (am'.End fun x => 4)
+|> _assert_eq "bcd"
 
 #!spiral
 
@@ -2222,18 +2283,6 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 (join "abcde")
 |> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
 |> _assert_eq "bcd"
-
-#!markdown
-
-### concat_list
-
-#!spiral
-
-inl concat_list s list =
-    list
-    |> listm'.box
-    |> seq.of_list'
-    |> concat s
 
 #!markdown
 

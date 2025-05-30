@@ -2086,18 +2086,18 @@ export function method84(): string {
 }
 
 export function method80(v0: string, v1: Date): string {
-    const v2334: string = method83();
-    const v2339: string = toString(v1, (v2334 === "") ? "M-d-y hh:mm:ss tt" : v2334);
-    const v2370: any = defaultOf();
-    let v2591: number;
+    const v2505: string = method83();
+    const v2510: string = toString(v1, (v2505 === "") ? "M-d-y hh:mm:ss tt" : v2505);
+    const v2541: any = defaultOf();
+    let v2762: number;
     throw new Error(`date_time.get_utc_offset / target: ${US4_US4_5(US3_US3_0())}`);
-    const v2612: uint8 = (hours(v2591) > 0) ? 1 : 0;
-    const v2613: string = method84();
-    const v2919 = `${v2612}${toString_1(v2591, "c", {})}`;
-    const v2922: string = v0;
-    const v2938: int32 = (v2339.length + v2919.length) | 0;
-    const v2959: int32 = (v2922.length - 1) | 0;
-    return parse(concat(v2339, v2919, ...v2922.slice(v2938, v2959 + 1)));
+    const v2783: uint8 = (hours(v2762) > 0) ? 1 : 0;
+    const v2784: string = method84();
+    const v3145 = `${v2783}${toString_1(v2762, "c", {})}`;
+    const v3148: string = v0;
+    const v3166: int32 = (v2510.length + v3145.length) | 0;
+    const v3187: int32 = (v3148.length - 1) | 0;
+    return parse(concat(v2510, v3145, ...v3148.slice(v3166, v3187 + 1)));
 }
 
 export function method86(): string {
@@ -2460,17 +2460,17 @@ export function method107(v0: int32, v1: string, v2: int32): ((arg0: string) => 
 export function method106(v0: string): string {
     const v3 = "0";
     const v13: string = method107(32 - v0.length, v3, 0)("") + v0;
-    const v724 = 0;
-    const v745: int32 = (8 - 1) | 0;
-    const v756 = 8;
-    const v777: int32 = (12 - 1) | 0;
-    const v788 = 12;
-    const v809: int32 = (16 - 1) | 0;
-    const v820 = 16;
-    const v841: int32 = (20 - 1) | 0;
-    const v852 = 20;
-    const v873: int32 = (32 - 1) | 0;
-    return parse((((((((v13.slice(v724, v745 + 1) + "-") + v13.slice(v756, v777 + 1)) + "-") + v13.slice(v788, v809 + 1)) + "-") + v13.slice(v820, v841 + 1)) + "-") + v13.slice(v852, v873 + 1));
+    const v756 = 0;
+    const v777: int32 = (8 - 1) | 0;
+    const v790 = 8;
+    const v811: int32 = (12 - 1) | 0;
+    const v824 = 12;
+    const v845: int32 = (16 - 1) | 0;
+    const v858 = 16;
+    const v879: int32 = (20 - 1) | 0;
+    const v892 = 20;
+    const v913: int32 = (32 - 1) | 0;
+    return parse((((((((v13.slice(v756, v777 + 1) + "-") + v13.slice(v790, v811 + 1)) + "-") + v13.slice(v824, v845 + 1)) + "-") + v13.slice(v858, v879 + 1)) + "-") + v13.slice(v892, v913 + 1));
 }
 
 export function closure48(unitVar: void, v0: string): [string, IDisposable] {

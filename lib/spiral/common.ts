@@ -702,21 +702,16 @@ export function closure4(unitVar: void, v0: int32): ((arg0: (() => void)) => Opt
     return (v: (() => void)): Option<void> => closure5(v0, v);
 }
 
-export function method20(v0: (() => void)): (() => void) {
-    return v0;
-}
-
 export function closure16(v0: any, unitVar: void): void {
     v0.Value;
 }
 
 export function closure15(unitVar: void, v0: (() => void)): (() => void) {
-    const v1: (() => void) = method20(v0);
-    const v5: any = new Lazy<void>((): void => {
-        v1();
+    const v4: any = new Lazy<void>((): void => {
+        v0();
     });
     return (): void => {
-        closure16(v5, undefined);
+        closure16(v4, undefined);
     };
 }
 

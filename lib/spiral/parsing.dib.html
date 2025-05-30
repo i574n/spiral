@@ -8289,6 +8289,14 @@ input: l "m n:\o.p"
     <span class="o">|</span> <span class="s2">""</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.p_char / unexpected end of input / "</span> <span class="o">++</span><span class="c1"># ({ c s } |&gt; sm'.format) |&gt; Error</span>
     <span class="o">|</span> <span class="nb">input</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="p">({</span> <span class="n">line_text</span> <span class="n">position</span> <span class="o">=</span> <span class="p">{</span> <span class="n">line</span> <span class="n">col</span> <span class="p">}</span> <span class="p">}</span> <span class="k">as</span> <span class="n">s</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="s1">') =&gt;</span>
         <span class="n">inl</span> <span class="n">first_char</span> <span class="o">=</span> <span class="nb">input</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index 0i32</span>
+        <span class="o">//</span> <span class="p">[</span>
+            <span class="o">//</span> <span class="s2">"parsing.p_char"</span>
+            <span class="o">//</span> <span class="s2">" / c: "</span><span class="p">;</span> <span class="err">$</span><span class="n">c</span>
+            <span class="o">//</span> <span class="s2">" / input: "</span><span class="p">;</span> <span class="nb">input</span>
+            <span class="o">//</span> <span class="s2">" / s: "</span><span class="p">;</span> <span class="p">{</span> <span class="n">s</span> <span class="p">}</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format</span>
+        <span class="o">//</span> <span class="p">]</span>
+        <span class="o">//</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.concat_list ""</span>
+        <span class="o">//</span> <span class="o">|&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">write_line</span>
         <span class="k">if</span> <span class="n">first_char</span> <span class="o">=</span> <span class="n">c</span> <span class="n">then</span>
             <span class="n">Ok</span> <span class="p">(</span>
                 <span class="n">first_char</span><span class="p">,</span>
@@ -8357,8 +8365,16 @@ input: l "m n:\o.p"
 .ts output:
 { name = __assert_eq; actual = a,bc,a,1,2; expected = a,bc,a,1,2 }
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f73c4778ec75ff94b449188785a50c2028234dc2927d7a23e66aba88cf72ab80\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f73c4778ec75ff94b449188785a50c2028234dc2927d7a23e66aba88cf72ab80\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f73c4778ec75ff94b449188785a50c2028234dc2927d7a23e66aba88cf72ab80/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f73c4778ec75ff94b449188785a50c2028234dc2927d7a23e66aba88cf72ab80/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #("a", "bc", "a", 1, 2); expected = #("a", "bc", "a", 1, 2) }
+
 
 </pre>
 </div>
@@ -8480,8 +8496,16 @@ input: l "m n:\o.p"
 .ts output:
 { name = __assert_eq; actual = abc,def,abc,1,4; expected = abc,def,abc,1,4 }
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\0734d407c8b775e97bb2d5407e76cdbeb70962b8d00d35e47bfd0926233d14b7\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\0734d407c8b775e97bb2d5407e76cdbeb70962b8d00d35e47bfd0926233d14b7\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/0734d407c8b775e97bb2d5407e76cdbeb70962b8d00d35e47bfd0926233d14b7/build/dev/erlang/main/ebin/main.beam"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/0734d407c8b775e97bb2d5407e76cdbeb70962b8d00d35e47bfd0926233d14b7/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = #("abc", "def", "abc", 1, 4); expected = #("abc", "def", "abc", 1, 4) }
+
 
 </pre>
 </div>
@@ -8602,8 +8626,16 @@ input: l "m n:\o.p"
 .ts output:
 { name = __assert_eq; actual = def,abc,1,4; expected = def,abc,1,4 }
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f38fac39449c40d2f50b0dd23c68a3b0b73458a9ea896309ab463caa4d1bd414\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f38fac39449c40d2f50b0dd23c68a3b0b73458a9ea896309ab463caa4d1bd414\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f38fac39449c40d2f50b0dd23c68a3b0b73458a9ea896309ab463caa4d1bd414/build/dev/erlang/main/ebin/main.beam"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f38fac39449c40d2f50b0dd23c68a3b0b73458a9ea896309ab463caa4d1bd414/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = #("def", "abc", 1, 4); expected = #("def", "abc", 1, 4) }
+
 
 </pre>
 </div>
@@ -8655,45 +8687,7 @@ input: l "m n:\o.p"
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">////</span><span class="err">!</span> <span class="n">gleam</span>
-
-<span class="s2">"abc</span><span class="se">\n</span><span class="s2">def</span><span class="se">\n</span><span class="s2">ghi"</span>
-<span class="o">|&gt;</span> <span class="n">parse</span> <span class="p">(</span><span class="n">skip_any_string</span> <span class="mi">5</span><span class="n">i32</span> <span class="o">&gt;&gt;.</span> <span class="n">p_char</span> <span class="s1">'a'</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">Error</span> <span class="s2">"parsing.p_char / { expected = a; line = 2; col = 2 }</span><span class="se">\n</span><span class="s2">def</span><span class="se">\n</span><span class="s2"> ^</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = US1_1 "parsing.p_char / { expected = a; line = 2; col = 2 }
-def
- ^
-"; expected = US1_1 "parsing.p_char / { expected = a; line = 2; col = 2 }
-def
- ^
-" }
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=41">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">////</span><span class="err">!</span> <span class="n">gleam</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">typescript</span>
@@ -8727,6 +8721,16 @@ def
 ) }
 
 
+.gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\22bdaf8999729397882d88c2ade4c92d8ad5ca55b4fd805a3875b7f66bbf422f\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\22bdaf8999729397882d88c2ade4c92d8ad5ca55b4fd805a3875b7f66bbf422f\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/22bdaf8999729397882d88c2ade4c92d8ad5ca55b4fd805a3875b7f66bbf422f/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/22bdaf8999729397882d88c2ade4c92d8ad5ca55b4fd805a3875b7f66bbf422f/build/dev/erlang/main/ebin/main.beam"}
+{ name = __assert_eq; actual = Us1i1("parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n"); expected = Us1i1("parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n") }
+
+
 </pre>
 </div>
 </div>
@@ -8747,7 +8751,7 @@ def
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=42">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=41">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8757,7 +8761,7 @@ def
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=43">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=42">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8778,7 +8782,7 @@ def
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=44">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=43">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8788,7 +8792,7 @@ def
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=45">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=44">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8809,7 +8813,7 @@ def
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=46">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=45">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8819,7 +8823,7 @@ def
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=47">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=46">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8835,7 +8839,7 @@ def
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=48">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=47">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8878,13 +8882,19 @@ def
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\9b4de1102d4955ee17b5f0ec8d06ccfe850fade1dab786cfa90201d044d03159\src\main.gleam:365:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d72b5d551a16197ed2e5bf2ec4417005e1dd6ac37f26f6ab69ea3e79d8ab834c\src\main.gleam:365:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">365 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v178`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d72b5d551a16197ed2e5bf2ec4417005e1dd6ac37f26f6ab69ea3e79d8ab834c\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d72b5d551a16197ed2e5bf2ec4417005e1dd6ac37f26f6ab69ea3e79d8ab834c\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d72b5d551a16197ed2e5bf2ec4417005e1dd6ac37f26f6ab69ea3e79d8ab834c/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d72b5d551a16197ed2e5bf2ec4417005e1dd6ac37f26f6ab69ea3e79d8ab834c/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #("b", "c", "ab", 1, 3); expected = #("b", "c", "ab", 1, 3) }
 
 
@@ -8901,7 +8911,7 @@ def
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=49">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=48">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8934,7 +8944,7 @@ def
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=50">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=49">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8981,7 +8991,7 @@ Expecting: 'a'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=51">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=50">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8991,7 +9001,7 @@ Expecting: 'a'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=52">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=51">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9025,7 +9035,7 @@ Expecting: 'a'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=53">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=52">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9096,13 +9106,23 @@ Expecting: 'a'
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\11009ca77c1fbac060179d34bbfdfb5c0b6cece4f0a34a69e76b437011aae52d\src\main.gleam:113:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d962c2234eed54750060437916ca7e6244733d38be932d828ba727dc0b329492\src\main.gleam:113:45</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">113 │                                         let v11 = v8 - 1</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                             ^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v11`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d962c2234eed54750060437916ca7e6244733d38be932d828ba727dc0b329492\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d962c2234eed54750060437916ca7e6244733d38be932d828ba727dc0b329492\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d962c2234eed54750060437916ca7e6244733d38be932d828ba727dc0b329492/build/dev/erlang/main/ebin/main@@main.beam"}
+src\main.gleam:114:46: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
+%  114|                                         Us1i1
+%     |                                              ^
+
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d962c2234eed54750060437916ca7e6244733d38be932d828ba727dc0b329492/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = Us0i1("parsing.none_of / unexpected char / { first_char = a; chars = [\"a\", \"b\", \"c\"]; s = #(\"\", 1, 1) }"); expected = Us0i1("parsing.none_of / unexpected char / { first_char = a; chars = [\"a\", \"b\", \"c\"]; s = #(\"\", 1, 1) }") }
 { name = __assert_eq; actual = #("d", "ef", "d", 1, 2); expected = #("d", "ef", "d", 1, 2) }
 
@@ -9123,7 +9143,7 @@ Expecting: 'a'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=54">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=53">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9177,7 +9197,7 @@ Expecting: any char not in ‘abc’
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=55">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=54">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9187,7 +9207,7 @@ Expecting: any char not in ‘abc’
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=56">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=55">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9204,7 +9224,7 @@ Expecting: any char not in ‘abc’
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=57">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=56">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9261,7 +9281,7 @@ cba
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:410:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:410:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">410 │             Us0i1(v183) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9269,7 +9289,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v183`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:492:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:492:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">492 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9277,7 +9297,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v178`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:492:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:492:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">492 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -9285,7 +9305,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v179`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:492:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:492:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">492 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -9293,7 +9313,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v180`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:492:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:492:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">492 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -9301,7 +9321,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v181`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:492:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:492:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">492 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -9309,7 +9329,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v182`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:622:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:622:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">622 │             Us0i1(v578) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9317,7 +9337,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v578`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:704:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:704:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">704 │             Us0i0(v573, v574, v575, v576, v577) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9325,7 +9345,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v573`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:704:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:704:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">704 │             Us0i0(v573, v574, v575, v576, v577) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -9333,7 +9353,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v574`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:704:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:704:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">704 │             Us0i0(v573, v574, v575, v576, v577) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -9341,7 +9361,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v575`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:704:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:704:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">704 │             Us0i0(v573, v574, v575, v576, v577) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -9349,13 +9369,19 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v576`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\18cc9709968ea88897b2f04b8edf2e97044a742496b77cd135b7254d303e1f73\src\main.gleam:704:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\src\main.gleam:704:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">704 │             Us0i0(v573, v574, v575, v576, v577) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v577`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f5f820efa7fc8cad6ff81091e7ac5afa9ff639111208665a6b0de4041e14ac73/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #("a", "bc", "a", 1, 2); expected = #("a", "bc", "a", 1, 2) }
 { name = __assert_eq; actual = Us0i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n"); expected = Us0i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
 
@@ -9381,7 +9407,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=58">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=57">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9391,7 +9417,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=59">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=58">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9407,7 +9433,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=60">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=59">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9447,8 +9473,16 @@ cba
 .ts output:
 { name = __assert_eq; actual = A,bc,a,1,2; expected = A,bc,a,1,2 }
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\09aea787136940bf743bfc39d56aad508ff284b0f1a5accf5dbcb847f63e015b\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\09aea787136940bf743bfc39d56aad508ff284b0f1a5accf5dbcb847f63e015b\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/09aea787136940bf743bfc39d56aad508ff284b0f1a5accf5dbcb847f63e015b/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/09aea787136940bf743bfc39d56aad508ff284b0f1a5accf5dbcb847f63e015b/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #("A", "bc", "a", 1, 2); expected = #("A", "bc", "a", 1, 2) }
+
 
 </pre>
 </div>
@@ -9464,7 +9498,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=61">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=60">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9474,7 +9508,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=62">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=61">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9499,7 +9533,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=63">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=62">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9546,7 +9580,7 @@ cba
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\c3be6872abef8b76a576ce48b8da6f8c7065bba7c3feb0bbcd26dbc02c22f038\src\main.gleam:302:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\src\main.gleam:302:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">302 │             Us1i1(v169) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9554,7 +9588,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v169`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\c3be6872abef8b76a576ce48b8da6f8c7065bba7c3feb0bbcd26dbc02c22f038\src\main.gleam:383:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\src\main.gleam:383:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us1i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9562,7 +9596,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v164`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\c3be6872abef8b76a576ce48b8da6f8c7065bba7c3feb0bbcd26dbc02c22f038\src\main.gleam:383:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\src\main.gleam:383:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us1i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -9570,7 +9604,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v165`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\c3be6872abef8b76a576ce48b8da6f8c7065bba7c3feb0bbcd26dbc02c22f038\src\main.gleam:383:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\src\main.gleam:383:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us1i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -9578,7 +9612,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v166`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\c3be6872abef8b76a576ce48b8da6f8c7065bba7c3feb0bbcd26dbc02c22f038\src\main.gleam:383:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\src\main.gleam:383:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us1i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -9586,7 +9620,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v167`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\c3be6872abef8b76a576ce48b8da6f8c7065bba7c3feb0bbcd26dbc02c22f038\src\main.gleam:383:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\src\main.gleam:383:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us1i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -9594,13 +9628,19 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v168`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\c3be6872abef8b76a576ce48b8da6f8c7065bba7c3feb0bbcd26dbc02c22f038\src\main.gleam:388:15</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\src\main.gleam:388:15</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">388 │         Us1i1(v337) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │               ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v337`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/cfa34da09a7fde4948ef4d7d68b209addf065c668fcd51ad980fad68a2761c77/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6); expected = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6) }
 
 
@@ -9620,7 +9660,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=64">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=63">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9630,7 +9670,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=65">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=64">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9650,7 +9690,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=66">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=65">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9693,7 +9733,7 @@ cba
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:291:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:291:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">291 │             Us0i1(v169) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9701,7 +9741,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v169`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:372:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:372:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9709,7 +9749,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v164`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:372:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:372:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -9717,7 +9757,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v165`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:372:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:372:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -9725,7 +9765,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v166`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:372:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:372:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -9733,7 +9773,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v167`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:372:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:372:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -9741,7 +9781,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v168`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:377:15</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:377:15</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">377 │         Us0i1(v349) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │               ^^^^ This variable is never used</span>
@@ -9749,7 +9789,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v349`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:546:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:546:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">546 │             Us0i1(v183) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9757,7 +9797,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v183`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:628:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:628:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">628 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9765,7 +9805,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v178`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:628:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:628:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">628 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -9773,7 +9813,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v179`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:628:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:628:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">628 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -9781,7 +9821,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v180`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:628:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:628:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">628 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -9789,13 +9829,19 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v181`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\1d48f942f88d3528dfaa270b3795af3e0b48f511d773473460b83abd6a379533\src\main.gleam:628:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\src\main.gleam:628:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">628 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v182`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d6d9bae0915c667cf975d7a00ef4f168f7ee31ba9542395e29bc7e67d9dcacd9/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #("aaabb", "c", "aaabb", 1, 6); expected = #("aaabb", "c", "aaabb", 1, 6) }
 
 
@@ -9813,7 +9859,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=67">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=66">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9823,7 +9869,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=68">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=67">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9841,7 +9887,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=69">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=68">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9851,7 +9897,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=70">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=69">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9869,7 +9915,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=71">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=70">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9879,7 +9925,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=72">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=71">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9899,7 +9945,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=73">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=72">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9971,7 +10017,7 @@ cba
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:302:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:302:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">302 │             Us0i1(v169) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9979,7 +10025,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v169`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:383:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:383:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -9987,7 +10033,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v164`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:383:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:383:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -9995,7 +10041,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v165`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:383:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:383:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10003,7 +10049,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v166`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:383:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:383:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -10011,7 +10057,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v167`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:383:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:383:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">383 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -10019,7 +10065,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v168`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:388:15</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:388:15</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">388 │         Us0i1(v341) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │               ^^^^ This variable is never used</span>
@@ -10027,7 +10073,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v341`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:625:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:625:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">625 │             Us0i1(v183) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10035,7 +10081,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v183`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:707:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:707:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">707 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10043,7 +10089,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v178`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:707:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:707:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">707 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -10051,7 +10097,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v179`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:707:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:707:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">707 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10059,7 +10105,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v180`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:707:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:707:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">707 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -10067,7 +10113,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v181`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:707:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:707:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">707 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -10075,7 +10121,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v182`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:855:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:855:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">855 │             Us0i1(v613) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10083,7 +10129,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v613`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:937:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:937:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">937 │             Us0i0(v608, v609, v610, v611, v612) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10091,7 +10137,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v608`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:937:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:937:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">937 │             Us0i0(v608, v609, v610, v611, v612) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -10099,7 +10145,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v609`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:937:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:937:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">937 │             Us0i0(v608, v609, v610, v611, v612) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10107,7 +10153,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v610`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:937:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:937:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">937 │             Us0i0(v608, v609, v610, v611, v612) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -10115,7 +10161,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v611`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:937:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:937:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">937 │             Us0i0(v608, v609, v610, v611, v612) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -10123,7 +10169,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v612`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:1080:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:1080:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1080 │             Us0i1(v1030) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                   ^^^^^ This variable is never used</span>
@@ -10131,7 +10177,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1030`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:1162:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:1162:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1162 │             Us0i0(v1025, v1026, v1027, v1028, v1029) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                   ^^^^^ This variable is never used</span>
@@ -10139,7 +10185,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1025`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:1162:26</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:1162:26</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1162 │             Us0i0(v1025, v1026, v1027, v1028, v1029) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                          ^^^^^ This variable is never used</span>
@@ -10147,7 +10193,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1026`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:1162:33</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:1162:33</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1162 │             Us0i0(v1025, v1026, v1027, v1028, v1029) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                 ^^^^^ This variable is never used</span>
@@ -10155,7 +10201,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1027`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:1162:40</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:1162:40</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1162 │             Us0i0(v1025, v1026, v1027, v1028, v1029) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                        ^^^^^ This variable is never used</span>
@@ -10163,13 +10209,19 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1028`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4da07a5b8d62c7bbb524f397de6c77892a87049b1580fbfc891c13b9baf21764\src\main.gleam:1162:47</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\src\main.gleam:1162:47</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1162 │             Us0i0(v1025, v1026, v1027, v1028, v1029) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                               ^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1029`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/532f3d362e0f22f6712f0273d2676ae95ea070601f503bd11f3a6e99a42a4962/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6); expected = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6) }
 { name = __assert_eq; actual = #(Uh0i1("b", Uh0i0), "cc", "b", 1, 2); expected = #(Uh0i1("b", Uh0i0), "cc", "b", 1, 2) }
 { name = __assert_eq; actual = Us1i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n"); expected = Us1i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
@@ -10199,7 +10251,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=74">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=73">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10209,7 +10261,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=75">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=74">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10230,7 +10282,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=76">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=75">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10273,7 +10325,7 @@ cba
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:310:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:310:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">310 │             Us0i1(v169) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10281,7 +10333,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v169`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:391:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:391:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">391 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10289,7 +10341,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v164`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:391:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:391:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">391 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -10297,7 +10349,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v165`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:391:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:391:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">391 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10305,7 +10357,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v166`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:391:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:391:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">391 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -10313,7 +10365,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v167`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:391:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:391:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">391 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -10321,7 +10373,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v168`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:396:15</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:396:15</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">396 │         Us0i1(v341) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │               ^^^^ This variable is never used</span>
@@ -10329,7 +10381,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v341`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:590:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:590:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">590 │             Us0i1(v183) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10337,7 +10389,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v183`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:672:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:672:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">672 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10345,7 +10397,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v178`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:672:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:672:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">672 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -10353,7 +10405,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v179`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:672:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:672:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">672 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10361,7 +10413,7 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v180`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:672:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:672:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">672 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -10369,13 +10421,19 @@ cba
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v181`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\ce3b1ca42661f06078884ce9b8c5f008c7d83f74dd33635d1940daba34b1b033\src\main.gleam:672:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\src\main.gleam:672:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">672 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v182`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/8804e5affd693b7776f9144ba93377494041e3036cd0b5777ad49492bd405892/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #("aaabb", "c", "aaabb", 1, 6); expected = #("aaabb", "c", "aaabb", 1, 6) }
 
 
@@ -10393,7 +10451,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=77">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=76">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10403,7 +10461,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=78">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=77">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10422,7 +10480,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=79">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=78">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10432,7 +10490,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=80">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=79">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10456,7 +10514,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=81">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=80">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10465,7 +10523,7 @@ cba
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">////</span><span class="err">!</span> <span class="n">gleam</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">typescript</span>
@@ -10510,6 +10568,65 @@ cba
 { name = __assert_eq; actual = c,ba,c,1,2; expected = c,ba,c,1,2 }
 
 
+.gleam output (Gleam):
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\src\main.gleam:461:23</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">461 │                 Us0i1(v13) -&gt; { // Error</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                       ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v13`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\src\main.gleam:464:23</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">464 │                 Us0i0(v8, v9, v10, v11, v12) -&gt; { // Ok</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                       ^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v8`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\src\main.gleam:464:27</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">464 │                 Us0i0(v8, v9, v10, v11, v12) -&gt; { // Ok</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                           ^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v9`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\src\main.gleam:464:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">464 │                 Us0i0(v8, v9, v10, v11, v12) -&gt; { // Ok</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v10`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\src\main.gleam:464:36</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">464 │                 Us0i0(v8, v9, v10, v11, v12) -&gt; { // Ok</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                    ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v11`.</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\src\main.gleam:464:41</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">464 │                 Us0i0(v8, v9, v10, v11, v12) -&gt; { // Ok</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                         ^^^ This variable is never used</span>
+
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v12`.</span>
+
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/e9d8336149b6373d0cc01c673859947c378d4304dbc40d47216f2e40105ec4cd/build/dev/erlang/main/ebin/main.beam"}
+{ name = __assert_eq; actual = #("b", "ca", "b", 1, 2); expected = #("b", "ca", "b", 1, 2) }
+{ name = __assert_eq; actual = #("c", "ba", "c", 1, 2); expected = #("c", "ba", "c", 1, 2) }
+
+
 </pre>
 </div>
 </div>
@@ -10525,7 +10642,7 @@ cba
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=82">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=81">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10535,7 +10652,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=83">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=82">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10560,7 +10677,7 @@ cba
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=84">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=83">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10599,7 +10716,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=85">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=84">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10675,7 +10792,7 @@ Expecting: ']', 'a' or 'b'
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:291:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:291:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">291 │             Us0i1(v169) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10683,7 +10800,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v169`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:372:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:372:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10691,7 +10808,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v164`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:372:25</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:372:25</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                         ^^^^ This variable is never used</span>
@@ -10699,7 +10816,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v165`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:372:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:372:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10707,7 +10824,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v166`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:372:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:372:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -10715,7 +10832,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v167`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:372:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:372:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">372 │             Us0i0(v164, v165, v166, v167, v168) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -10723,7 +10840,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v168`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:377:15</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:377:15</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">377 │         Us0i1(v349) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │               ^^^^ This variable is never used</span>
@@ -10731,7 +10848,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v349`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:659:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:659:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">659 │             Us0i0(v178, v179, v180, v181, v182) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                   ^^^^ This variable is never used</span>
@@ -10739,7 +10856,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v178`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:742:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:742:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">742 │                         Us0i1(v346) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10747,7 +10864,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v346`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:822:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:822:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">822 │                         Us0i0(v341, v342, v343, v344, v345) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                               ^^^^ This variable is never used</span>
@@ -10755,7 +10872,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v341`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:822:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:822:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">822 │                         Us0i0(v341, v342, v343, v344, v345) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^^^ This variable is never used</span>
@@ -10763,7 +10880,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v342`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:822:43</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:822:43</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">822 │                         Us0i0(v341, v342, v343, v344, v345) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                           ^^^^ This variable is never used</span>
@@ -10771,7 +10888,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v343`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:822:49</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:822:49</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">822 │                         Us0i0(v341, v342, v343, v344, v345) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                 ^^^^ This variable is never used</span>
@@ -10779,7 +10896,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v344`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:822:55</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:822:55</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">822 │                         Us0i0(v341, v342, v343, v344, v345) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                                       ^^^^ This variable is never used</span>
@@ -10787,7 +10904,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v345`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:838:27</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:838:27</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">838 │                     Us1i1(v707) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                           ^^^^ This variable is never used</span>
@@ -10795,7 +10912,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v707`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:932:35</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:932:35</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">932 │                             Us0i0(v689, v690, v691, v692, v693) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                   ^^^^ This variable is never used</span>
@@ -10803,7 +10920,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v689`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1068:19</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1068:19</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1068 │             Us0i0(v943, v944, v945, v946, v947) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                   ^^^^ This variable is never used</span>
@@ -10811,7 +10928,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v943`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1151:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1151:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1151 │                         Us0i1(v1111) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                               ^^^^^ This variable is never used</span>
@@ -10819,7 +10936,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1111`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1231:31</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1231:31</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1231 │                         Us0i0(v1106, v1107, v1108, v1109, v1110) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                               ^^^^^ This variable is never used</span>
@@ -10827,7 +10944,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1106`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1231:38</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1231:38</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1231 │                         Us0i0(v1106, v1107, v1108, v1109, v1110) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                      ^^^^^ This variable is never used</span>
@@ -10835,7 +10952,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1107`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1231:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1231:45</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1231 │                         Us0i0(v1106, v1107, v1108, v1109, v1110) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                             ^^^^^ This variable is never used</span>
@@ -10843,7 +10960,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1108`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1231:52</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1231:52</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1231 │                         Us0i0(v1106, v1107, v1108, v1109, v1110) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                                    ^^^^^ This variable is never used</span>
@@ -10851,7 +10968,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1109`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1231:59</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1231:59</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1231 │                         Us0i0(v1106, v1107, v1108, v1109, v1110) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                                           ^^^^^ This variable is never used</span>
@@ -10859,7 +10976,7 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1110`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1247:27</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1247:27</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1247 │                     Us1i1(v1472) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                           ^^^^^ This variable is never used</span>
@@ -10867,13 +10984,19 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1472`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\aaab1a8286ea05b72a764d1e49f206baaafe4120c22eec37d70980e581e6b5f7\src\main.gleam:1341:35</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\src\main.gleam:1341:35</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1341 │                             Us0i0(v1454, v1455, v1456, v1457, v1458) -&gt; { // Ok</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">     │                                   ^^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v1454`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/f99b028bcc765d7b0c1e7d33c37cd630fe513c7e1a5ba1d7cbca82157e75348d/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #("aaabb", "", "[aaabb]", 1, 8); expected = #("aaabb", "", "[aaabb]", 1, 8) }
 { name = __assert_eq; actual = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = #("[aaabb", 1, 7) }; input = [aaabb, #("", 1, 1); rest1 = aaabb, #("[", 1, 2); rest2 = , #("[aaabb", 1, 7) }; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = #("[aaabb", 1, 7) }; input = [aaabb, #("", 1, 1); rest1 = aaabb, #("[", 1, 2); rest2 = , #("[aaabb", 1, 7) } }
 
@@ -10893,7 +11016,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=86">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=85">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10903,7 +11026,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=87">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=86">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10933,7 +11056,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=88">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=87">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10943,7 +11066,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=89">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=88">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10966,7 +11089,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=90">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=89">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10976,7 +11099,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=91">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=90">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10994,7 +11117,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=92">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=91">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11004,7 +11127,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=93">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=92">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11023,7 +11146,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=94">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=93">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11033,7 +11156,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=95">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=94">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11051,7 +11174,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=96">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=95">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11094,7 +11217,7 @@ Expecting: ']', 'a' or 'b'
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4207a660a8aef400aa50709c6392595ce5899456637822eae88c8e80dc3b763d\src\main.gleam:240:15</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\23db76a81efe240c7d464a41c9edfcea77288506b7cbe4440857ac5459a1e2ca\src\main.gleam:240:15</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">240 │         Us1i1(v486) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │               ^^^^ This variable is never used</span>
@@ -11102,13 +11225,19 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v486`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\4207a660a8aef400aa50709c6392595ce5899456637822eae88c8e80dc3b763d\src\main.gleam:266:23</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\23db76a81efe240c7d464a41c9edfcea77288506b7cbe4440857ac5459a1e2ca\src\main.gleam:266:23</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">266 │                 Us2i1(v479) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                       ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v479`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\23db76a81efe240c7d464a41c9edfcea77288506b7cbe4440857ac5459a1e2ca\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\23db76a81efe240c7d464a41c9edfcea77288506b7cbe4440857ac5459a1e2ca\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/23db76a81efe240c7d464a41c9edfcea77288506b7cbe4440857ac5459a1e2ca/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/23db76a81efe240c7d464a41c9edfcea77288506b7cbe4440857ac5459a1e2ca/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #(Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))), "", "", 1, 1); expected = #(Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))), "", "", 1, 1) }
 
 
@@ -11125,7 +11254,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=97">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=96">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11169,7 +11298,7 @@ Expecting: ']', 'a' or 'b'
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\6f0def9d491332e887f84dd7136a5670d27ad0b33e48ca24c29a3e9dfcfc654d\src\main.gleam:240:15</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d28ca02b5162e040fcfcca8c8a6b145462ded0861434d605d31155894a0f6a2c\src\main.gleam:240:15</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">240 │         Us1i1(v486) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │               ^^^^ This variable is never used</span>
@@ -11177,13 +11306,19 @@ Expecting: ']', 'a' or 'b'
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v486`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\6f0def9d491332e887f84dd7136a5670d27ad0b33e48ca24c29a3e9dfcfc654d\src\main.gleam:266:23</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\d28ca02b5162e040fcfcca8c8a6b145462ded0861434d605d31155894a0f6a2c\src\main.gleam:266:23</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">266 │                 Us2i1(v479) -&gt; { // Error</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                       ^^^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v479`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d28ca02b5162e040fcfcca8c8a6b145462ded0861434d605d31155894a0f6a2c\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\d28ca02b5162e040fcfcca8c8a6b145462ded0861434d605d31155894a0f6a2c\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d28ca02b5162e040fcfcca8c8a6b145462ded0861434d605d31155894a0f6a2c/build/dev/erlang/main/ebin/main@@main.beam"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/d28ca02b5162e040fcfcca8c8a6b145462ded0861434d605d31155894a0f6a2c/build/dev/erlang/main/ebin/main.beam"}
 { name = __assert_eq; actual = #(Uh0i1("1", Uh0i0), "a 2", "", 1, 1); expected = #(Uh0i1("1", Uh0i0), "a 2", "", 1, 1) }
 
 
@@ -11201,7 +11336,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=98">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=97">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11211,7 +11346,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=99">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=98">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11229,7 +11364,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=100">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=99">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11239,7 +11374,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=101">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=100">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11257,7 +11392,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=102">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=101">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -11267,7 +11402,7 @@ Expecting: ']', 'a' or 'b'
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=103">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=102">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

@@ -945,22 +945,18 @@ pub mod Common {
             move |v: Func0<()>| Common::closure5(v0, v)
         })
     }
-    pub fn method20(v0: Func0<()>) -> Func0<()> {
-        v0
-    }
     pub fn closure16(v0: LrcPtr<Lazy_1<()>>, unitVar: ()) {
         v0.get_Value();
         ()
     }
     pub fn closure15(unitVar: (), v0: Func0<()>) -> Func0<()> {
-        let v1 = Common::method20(v0);
-        let v5: LrcPtr<Lazy_1<()>> = LazyExtensions::Create(Func0::new({
-            let v1 = v1.clone();
-            move || v1()
+        let v4: LrcPtr<Lazy_1<()>> = LazyExtensions::Create(Func0::new({
+            let v0 = v0.clone();
+            move || v0()
         }));
         Func0::new({
-            let v5 = v5.clone();
-            move || Common::closure16(v5.clone(), ())
+            let v4 = v4.clone();
+            move || Common::closure16(v4.clone(), ())
         })
     }
     pub fn v14() -> () {
