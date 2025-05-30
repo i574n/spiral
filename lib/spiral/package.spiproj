@@ -22,9 +22,9 @@ modules:
     iter
     sm'_prototypes-
     sm'_real*
+    console
     sm'
     sm'_operators
-    console
     reflection
     guid
     parsing

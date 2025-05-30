@@ -7965,16 +7965,8 @@ a.anchor-link {
 .py output:
 { name = __assert_eq; actual = 1; expected = 1 }
 
-
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/1ac295c6122d0b9593015a6f2b5a16b9644a00653f17189b2b47b5383cf94230/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 1; expected = 1 }
-
 
 </pre>
 </div>
@@ -8491,16 +8483,8 @@ a.anchor-link {
 .py output:
 { name = __assert_eq; actual = 15; expected = 15 }
 
-
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/a7a214789ca848f1d3bde74337af0c7c8e64037a7bacc1d9b0e14ec7036a6efb/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 15; expected = 15 }
-
 
 
 
@@ -8848,9 +8832,9 @@ mod module_6ff740fe {
 }
 pub use module_6ff740fe::*;
 
-
-
-pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
+pub fn main() -&gt; Result&lt;(), String&gt; {
+    Ok(Spiral::method0())
+}
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -8951,6 +8935,9 @@ export function method0(): void {
 method0();
 
 
+
+// spiral.process_typescript
+
 .py:
 from __future__ import annotations
 from dataclasses import dataclass
@@ -9047,6 +9034,9 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
+
+
+# spiral.process_python
 
 .py (Python):
 kernels_main = r"""
@@ -9265,16 +9255,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 .py output:
 { name = __assert_eq; actual = 15; expected = 15 }
 
-
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/e89520362b567ab73bbc571646fa344ac92a1394a98c4654d6d37ec082d746b7/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 15; expected = 15 }
-
 
 
 
@@ -9634,9 +9616,9 @@ mod module_6ff740fe {
 }
 pub use module_6ff740fe::*;
 
-
-
-pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
+pub fn main() -&gt; Result&lt;(), String&gt; {
+    Ok(Spiral::method0())
+}
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -9741,6 +9723,9 @@ export function method0(): void {
 method0();
 
 
+
+// spiral.process_typescript
+
 .py:
 from __future__ import annotations
 from dataclasses import dataclass
@@ -9841,6 +9826,9 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
+
+
+# spiral.process_python
 
 .py (Python):
 kernels_main = r"""
@@ -10094,16 +10082,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 .py output:
 { name = __assert_eq; actual = 15; expected = 15 }
 
-
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/42bdad1b94a0f1be4af250102ba358dcdc851be06b603d99f5dcd83cb491e9dd/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = 15; expected = 15 }
-
 
 
 
@@ -10461,9 +10441,9 @@ mod module_6ff740fe {
 }
 pub use module_6ff740fe::*;
 
-
-
-pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
+pub fn main() -&gt; Result&lt;(), String&gt; {
+    Ok(Spiral::method0())
+}
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -10568,6 +10548,9 @@ export function method0(): void {
 method0();
 
 
+
+// spiral.process_typescript
+
 .py:
 from __future__ import annotations
 from dataclasses import dataclass
@@ -10668,6 +10651,9 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
+
+
+# spiral.process_python
 
 .py (Python):
 kernels_main = r"""
@@ -10925,16 +10911,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 .py output:
 { name = __assert_eq; actual = -3; expected = -3 }
 
-
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/bc9721d4b9a7c16fd889fb325b2bb95e57739f87625950b0373ba5e5f3d8887d/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = -3; expected = -3 }
-
 
 </pre>
 </div>
@@ -11017,16 +10995,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 .py output:
 { name = __assert_eq; actual = -3; expected = -3 }
 
-
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/f92908db8ee53be643362e5008769bb5058b0317380d56f1a3830e0b9bcc0c82/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = -3; expected = -3 }
-
 
 </pre>
 </div>
@@ -11109,16 +11079,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 .py output:
 { name = __assert_eq; actual = -3; expected = -3 }
 
-
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/_gleam_artefacts/main.erl"}
-{compiled,main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/ebin/main.beam"}
-{compiled,main@@main,
-          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/8283a24853e8cdbc7f00e5e3f041b621b430bdb2af7ce40d6a225410ec97f050/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = -3; expected = -3 }
-
 
 </pre>
 </div>
@@ -11203,8 +11165,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ea3c5d060ee5b33328d1d2a38765a926cc8f23da58ce9efe84e907a5165b2640/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11406,8 +11368,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7397771abc04a65362fa63ed54cd540c9263c95542595c299726d93c9dd92213/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11674,8 +11636,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4559d029e10f9bc0889608d4828c0de1fe8c7e8b433fbf0a904316112540d342/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,
@@ -11932,8 +11894,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 
 .gleam output (Gleam):
-{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/_gleam_artefacts/main.erl"}
 {compiled,main,
           "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/c23124a846c556119a41f9659ec1650e9755820eb02fa20436044a9da2529b9f/build/dev/erlang/main/ebin/main.beam"}
 {compiled,main@@main,

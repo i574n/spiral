@@ -40,10 +40,9 @@ inl write_line obj : () =
 
 /// ### write
 inl write forall t. (x : t) : () =
-    inl s = x |> sm'.format
     backend_switch {
-        Python = fun () => $'print(!s, end="")' : ()
-        Fsharp = fun () => $'!s |> System.Console.Write' : ()
+        Python = fun () => $'print(!x, end="")' : ()
+        Fsharp = fun () => $'!x |> System.Console.Write' : ()
     }
 
 /// ### write_ln
