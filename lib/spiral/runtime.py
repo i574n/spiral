@@ -941,15 +941,15 @@ def method27(v0_mut: UH0, v1_mut: Any, v2_mut: int, v3_mut: int) -> tuple[Any, i
             v6: bool = "\n" == v4
             pattern_input: tuple[int, int] = ((v2 + 1, 1)) if v6 else ((v2, v3 + 1))
             v0_mut = v0.fields[1]
-            def _arrow253(__unit: None=None, v0: Any=v0, v1: Any=v1, v2: Any=v2, v3: Any=v3) -> Any:
+            def _arrow252(__unit: None=None, v0: Any=v0, v1: Any=v1, v2: Any=v2, v3: Any=v3) -> Any:
                 v12: Any = StringBuilder__Clear(v1)
                 return v1
 
-            def _arrow254(__unit: None=None, v0: Any=v0, v1: Any=v1, v2: Any=v2, v3: Any=v3) -> Any:
+            def _arrow253(__unit: None=None, v0: Any=v0, v1: Any=v1, v2: Any=v2, v3: Any=v3) -> Any:
                 v23: Any = StringBuilder__Append_Z721C83C5(v1, v4)
                 return v1
 
-            v1_mut = _arrow253() if v6 else _arrow254()
+            v1_mut = _arrow252() if v6 else _arrow253()
             v2_mut = pattern_input[0]
             v3_mut = pattern_input[1]
             continue
@@ -1011,10 +1011,10 @@ def closure15(v0: int, v1: int, v2: str) -> str:
 
 
 def method29(v0: int, v1: int) -> Callable[[str], str]:
-    def _arrow255(v: str, v0: Any=v0, v1: Any=v1) -> str:
+    def _arrow254(v: str, v0: Any=v0, v1: Any=v1) -> str:
         return closure15(v0, v1, v)
 
-    return _arrow255
+    return _arrow254
 
 
 def closure14(unit_var: None, _arg: tuple[str, Any, int, int]) -> US8:
@@ -1151,10 +1151,10 @@ def method33(v0_mut: str, v1_mut: int64) -> bool:
                     v11 = US10(1)
 
 
-            def _arrow257(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
+            def _arrow255(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0 == (v11.fields[0] if (v11.tag == 0) else _arrow257()):
+            if v0 == (v11.fields[0] if (v11.tag == 0) else _arrow255()):
                 return True
 
             else: 
@@ -1376,10 +1376,10 @@ def method38(v0_mut: str, v1_mut: int64) -> bool:
 
 
 
-            def _arrow265(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
+            def _arrow256(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0 == (v15_1.fields[0] if (v15_1.tag == 0) else _arrow265()):
+            if v0 == (v15_1.fields[0] if (v15_1.tag == 0) else _arrow256()):
                 return True
 
             else: 
@@ -1522,10 +1522,10 @@ def method43(v0_mut: str, v1_mut: str, v2_mut: Any, v3_mut: int, v4_mut: int) ->
 def method23(v0: str) -> US7:
     _v0: (str | None) | None = None
     _v0 = some(v0)
-    def _arrow266(__unit: None=None, v0: Any=v0) -> str | None:
+    def _arrow257(__unit: None=None, v0: Any=v0) -> str | None:
         raise Exception("optionm\'.of_obj / _v0=None")
 
-    v10: str = default_arg(_arrow266() if (_v0 is None) else value_12(_v0), "")
+    v10: str = default_arg(_arrow257() if (_v0 is None) else value_12(_v0), "")
     v16_1: Any = StringBuilder__ctor_Z721C83C5(method24())
     def v19(_arg10: tuple[str, Any, int, int], v0: Any=v0) -> US8:
         return closure14(None, _arg10)
