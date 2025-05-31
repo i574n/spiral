@@ -314,45 +314,45 @@ mod module_fb49c4a9 {
             let v73: string = toLower(string("Warning"));
             let v80: string = toLower(string("Info"));
             let v87: string = toLower(string("Debug"));
-            let v120: Array<string> = toArray(ofArray(new_array(&[
+            let v122: Array<string> = toArray(ofArray(new_array(&[
                 toLower(string("Verbose")),
                 v87,
                 v80,
                 v73,
                 v66,
             ])));
-            let v124: Vec<string> = v120.to_vec();
-            let v126: bool = true;
-            let _vec_map: Vec<_> = v124
+            let v126: Vec<string> = v122.to_vec();
+            let v128: bool = true;
+            let _vec_map: Vec<_> = v126
                 .into_iter()
                 .map(|x| {
                     //;
-                    let v128: string = x;
-                    let v135: &str = &*v128;
-                    let v171: std::string::String = String::from(v135);
-                    let v202: Box<std::string::String> = Box::new(v171);
-                    let v204: &'static mut std::string::String = Box::leak(v202);
-                    let v206: clap::builder::PossibleValue =
-                        clap::builder::PossibleValue::new(&**v204);
-                    let v208: bool = true;
-                    v206
+                    let v130: string = x;
+                    let v137: &str = &*v130;
+                    let v173: std::string::String = String::from(v137);
+                    let v204: Box<std::string::String> = Box::new(v173);
+                    let v206: &'static mut std::string::String = Box::leak(v204);
+                    let v208: clap::builder::PossibleValue =
+                        clap::builder::PossibleValue::new(&**v206);
+                    let v210: bool = true;
+                    v208
                 })
                 .collect::<Vec<_>>();
-            let v210: Vec<clap::builder::PossibleValue> = _vec_map;
-            let v212: clap::builder::ValueParser = Into::<clap::builder::ValueParser>::into(
-                clap::builder::PossibleValuesParser::new(v210),
+            let v212: Vec<clap::builder::PossibleValue> = _vec_map;
+            let v214: clap::builder::ValueParser = Into::<clap::builder::ValueParser>::into(
+                clap::builder::PossibleValuesParser::new(v212),
             );
-            let v214: clap::Arg = v61.value_parser(v212);
-            let v216: clap::Command = clap::Command::arg(v50, v214);
-            let v218: string = string("r#\"wasm\"#");
-            let v219: &'static str = r#"wasm"#;
-            let v221: clap::Arg = clap::Arg::new(v219);
-            let v223: clap::Arg = v221.short('w');
-            let v224: string = string("r#\"wasm\"#");
-            let v225: &'static str = r#"wasm"#;
-            let v227: clap::Arg = v223.long(v225);
-            let v229: clap::Arg = v227.required(true);
-            clap::Command::arg(v216, v229)
+            let v216: clap::Arg = v61.value_parser(v214);
+            let v218: clap::Command = clap::Command::arg(v50, v216);
+            let v220: string = string("r#\"wasm\"#");
+            let v221: &'static str = r#"wasm"#;
+            let v223: clap::Arg = clap::Arg::new(v221);
+            let v225: clap::Arg = v223.short('w');
+            let v226: string = string("r#\"wasm\"#");
+            let v227: &'static str = r#"wasm"#;
+            let v229: clap::Arg = v225.long(v227);
+            let v231: clap::Arg = v229.required(true);
+            clap::Command::arg(v218, v231)
         }
         pub fn method1() -> string {
             string("trace_level")
@@ -4686,62 +4686,62 @@ mod module_fb49c4a9 {
             let v933: Option<std::string::String> =
                 clap::ArgMatches::get_one(&v3.clone(), v902).cloned();
             let v937: Option<string> = map(Spiral_wasm::method21(), v933);
-            let v1066: Spiral_wasm::US7 =
+            let v1074: Spiral_wasm::US7 =
                 defaultValue(Spiral_wasm::US7::US7_1, map(Spiral_wasm::method8(), v937));
-            let v1070: std::pin::Pin<
+            let v1078: std::pin::Pin<
                 Box<dyn std::future::Future<Output = Result<u8, anyhow::Error>>>,
             > = Spiral_wasm::method22(v3);
-            let v1072 = tokio::runtime::Builder::new_multi_thread()
+            let v1080 = tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
                 .unwrap();
-            let v1074: Result<u8, anyhow::Error> = v1072.handle().block_on(v1070);
-            let v1075 = Spiral_wasm::method50();
-            let v1088: Result<u8, std::string::String> = v1074.map_err(|x| v1075(x));
-            let v1091 = Spiral_wasm::method62();
-            let v1092 = Spiral_wasm::method63();
-            let v1094: Spiral_wasm::US11 = match &v1088 {
-                Err(v1088_1_0) => v1092(v1088_1_0.clone()),
-                Ok(v1088_0_0) => v1091(v1088_0_0.clone()),
+            let v1082: Result<u8, anyhow::Error> = v1080.handle().block_on(v1078);
+            let v1083 = Spiral_wasm::method50();
+            let v1096: Result<u8, std::string::String> = v1082.map_err(|x| v1083(x));
+            let v1099 = Spiral_wasm::method62();
+            let v1100 = Spiral_wasm::method63();
+            let v1102: Spiral_wasm::US11 = match &v1096 {
+                Err(v1096_1_0) => v1100(v1096_1_0.clone()),
+                Ok(v1096_0_0) => v1099(v1096_0_0.clone()),
             };
-            match &v1094 {
-                Spiral_wasm::US11::US11_0(v1094_0_0) => {
-                    if let Spiral_wasm::US7::US7_0(v1066_0_0) = &v1066 {
-                        let v1099: string = sprintf!(
+            match &v1102 {
+                Spiral_wasm::US11::US11_0(v1102_0_0) => {
+                    if let Spiral_wasm::US7::US7_0(v1074_0_0) = &v1074 {
+                        let v1107: string = sprintf!(
                             "spiral_wasm.main / retries: {} / exception: \'{}\'",
-                            v1094_0_0.clone(),
-                            v1066_0_0.clone()
+                            v1102_0_0.clone(),
+                            v1074_0_0.clone()
                         );
-                        let v1103: Result<(), string> = Err(v1099);
-                        v1103.unwrap();
+                        let v1111: Result<(), string> = Err(v1107);
+                        v1111.unwrap();
                         ()
                     }
                 }
-                Spiral_wasm::US11::US11_1(v1094_1_0) => {
-                    let v1119: std::string::String = v1094_1_0.clone();
-                    if let Spiral_wasm::US7::US7_0(v1066_0_0) = &v1066 {
-                        let v1120: string = v1066_0_0.clone();
-                        if string("") == (v1120.clone()) {
+                Spiral_wasm::US11::US11_1(v1102_1_0) => {
+                    let v1127: std::string::String = v1102_1_0.clone();
+                    if let Spiral_wasm::US7::US7_0(v1074_0_0) = &v1074 {
+                        let v1128: string = v1074_0_0.clone();
+                        if string("") == (v1128.clone()) {
                             ()
                         } else {
                             if contains(
-                                fable_library_rust::String_::fromString(v1119.clone()),
-                                v1120.clone(),
+                                fable_library_rust::String_::fromString(v1127.clone()),
+                                v1128.clone(),
                             ) {
                                 ()
                             } else {
-                                let v1128: string = sprintf!(
+                                let v1136: string = sprintf!(
                                     "spiral_wasm.main / exception: \'{}\' / error: {}",
-                                    v1120,
-                                    v1119
+                                    v1128,
+                                    v1127
                                 );
-                                let v1132: Result<(), string> = Err(v1128);
-                                v1132.unwrap();
+                                let v1140: Result<(), string> = Err(v1136);
+                                v1140.unwrap();
                                 ()
                             }
                         }
                     } else {
-                        let v1151: u8 = v1088.clone().unwrap();
+                        let v1159: u8 = v1096.clone().unwrap();
                         ()
                     }
                 }

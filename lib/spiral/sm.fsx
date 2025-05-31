@@ -189,8 +189,8 @@ and closure18 (v0 : int32) (v1 : int32) : (string -> string) =
 and closure17 () (v0 : int32) : (int32 -> (string -> string)) =
     closure18(v0)
 and closure21 (v0 : string) (v1 : string) : (string []) =
-    let v8 : (string []) = v1.Split v0 
-    v8
+    let v11 : (string []) = v1.Split v0 
+    v11
 and closure20 () (v0 : string) : (string -> (string [])) =
     closure21(v0)
 and method4 () : string =
@@ -200,107 +200,107 @@ and method5 (v0 : string) : string =
     v0
 and closure23 (v0 : (string [])) (v1 : string) : (string []) =
     (* run_target_args'
-    let v25 : unit = ()
+    let v28 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v27 : string seq = v0 |> Seq.ofArray
-    let v30 : string = method4()
-    let v32 : bool = v30 = "\n"
-    let v34 : string =
-        if v32 then
-            method5(v30)
+    let v30 : string seq = v0 |> Seq.ofArray
+    let v33 : string = method4()
+    let v35 : bool = v33 = "\n"
+    let v37 : string =
+        if v35 then
+            method5(v33)
         else
-            v30
-    let v35 : (string -> (string seq -> string)) = String.concat
-    let v36 : (string seq -> string) = v35 v34
-    let v37 : string = v36 v27
-    let v46 : (string []) = v1.Split v37 
-    let _run_target_args'_v25 = v46 
+            v33
+    let v38 : (string -> (string seq -> string)) = String.concat
+    let v39 : (string seq -> string) = v38 v37
+    let v40 : string = v39 v30
+    let v52 : (string []) = v1.Split v40 
+    let _run_target_args'_v28 = v52 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v50 : string seq = v0 |> Seq.ofArray
-    let v53 : string = method4()
-    let v55 : bool = v53 = "\n"
-    let v57 : string =
-        if v55 then
-            method5(v53)
+    let v56 : string seq = v0 |> Seq.ofArray
+    let v59 : string = method4()
+    let v61 : bool = v59 = "\n"
+    let v63 : string =
+        if v61 then
+            method5(v59)
         else
-            v53
-    let v58 : (string -> (string seq -> string)) = String.concat
-    let v59 : (string seq -> string) = v58 v57
-    let v60 : string = v59 v50
-    let v69 : (string []) = v1.Split v60 
-    let _run_target_args'_v25 = v69 
+            v59
+    let v64 : (string -> (string seq -> string)) = String.concat
+    let v65 : (string seq -> string) = v64 v63
+    let v66 : string = v65 v56
+    let v78 : (string []) = v1.Split v66 
+    let _run_target_args'_v28 = v78 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v73 : string seq = v0 |> Seq.ofArray
-    let v76 : string = method4()
-    let v78 : bool = v76 = "\n"
-    let v80 : string =
-        if v78 then
-            method5(v76)
+    let v82 : string seq = v0 |> Seq.ofArray
+    let v85 : string = method4()
+    let v87 : bool = v85 = "\n"
+    let v89 : string =
+        if v87 then
+            method5(v85)
         else
-            v76
-    let v81 : (string -> (string seq -> string)) = String.concat
-    let v82 : (string seq -> string) = v81 v80
-    let v83 : string = v82 v73
-    let v92 : (string []) = v1.Split v83 
-    let _run_target_args'_v25 = v92 
+            v85
+    let v90 : (string -> (string seq -> string)) = String.concat
+    let v91 : (string seq -> string) = v90 v89
+    let v92 : string = v91 v82
+    let v104 : (string []) = v1.Split v92 
+    let _run_target_args'_v28 = v104 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v96 : string seq = v0 |> Seq.ofArray
-    let v99 : string = method4()
-    let v101 : bool = v99 = "\n"
-    let v103 : string =
-        if v101 then
-            method5(v99)
+    let v108 : string seq = v0 |> Seq.ofArray
+    let v111 : string = method4()
+    let v113 : bool = v111 = "\n"
+    let v115 : string =
+        if v113 then
+            method5(v111)
         else
-            v99
-    let v104 : (string -> (string seq -> string)) = String.concat
-    let v105 : (string seq -> string) = v104 v103
-    let v106 : string = v105 v96
-    let v115 : (string []) = v1.Split v106 
-    let _run_target_args'_v25 = v115 
+            v111
+    let v116 : (string -> (string seq -> string)) = String.concat
+    let v117 : (string seq -> string) = v116 v115
+    let v118 : string = v117 v108
+    let v130 : (string []) = v1.Split v118 
+    let _run_target_args'_v28 = v130 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v119 : string seq = v0 |> Seq.ofArray
-    let v122 : string = method4()
-    let v124 : bool = v122 = "\n"
-    let v126 : string =
-        if v124 then
-            method5(v122)
+    let v134 : string seq = v0 |> Seq.ofArray
+    let v137 : string = method4()
+    let v139 : bool = v137 = "\n"
+    let v141 : string =
+        if v139 then
+            method5(v137)
         else
-            v122
-    let v127 : (string -> (string seq -> string)) = String.concat
-    let v128 : (string seq -> string) = v127 v126
-    let v129 : string = v128 v119
-    let v138 : (string []) = v1.Split v129 
-    let _run_target_args'_v25 = v138 
+            v137
+    let v142 : (string -> (string seq -> string)) = String.concat
+    let v143 : (string seq -> string) = v142 v141
+    let v144 : string = v143 v134
+    let v156 : (string []) = v1.Split v144 
+    let _run_target_args'_v28 = v156 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v142 : string seq = v0 |> Seq.ofArray
-    let v145 : string = method4()
-    let v147 : bool = v145 = "\n"
-    let v149 : string =
-        if v147 then
-            method5(v145)
+    let v160 : string seq = v0 |> Seq.ofArray
+    let v163 : string = method4()
+    let v165 : bool = v163 = "\n"
+    let v167 : string =
+        if v165 then
+            method5(v163)
         else
-            v145
-    let v150 : (string -> (string seq -> string)) = String.concat
-    let v151 : (string seq -> string) = v150 v149
-    let v152 : string = v151 v142
-    let v161 : (string []) = v1.Split v152 
-    let _run_target_args'_v25 = v161 
+            v163
+    let v168 : (string -> (string seq -> string)) = String.concat
+    let v169 : (string seq -> string) = v168 v167
+    let v170 : string = v169 v160
+    let v182 : (string []) = v1.Split v170 
+    let _run_target_args'_v28 = v182 
     #endif
 #else
-    let v164 : (string []) = v1.Split (v0, System.StringSplitOptions.None)
-    let _run_target_args'_v25 = v164 
+    let v185 : (string []) = v1.Split (v0, System.StringSplitOptions.None)
+    let _run_target_args'_v28 = v185 
     #endif
-    let v165 : (string []) = _run_target_args'_v25 
-    v165
+    let v186 : (string []) = _run_target_args'_v28 
+    v186
 and closure22 () (v0 : (string [])) : (string -> (string [])) =
     closure23(v0)
 and closure25 (v0 : string) (v1 : string) : bool =
@@ -341,10 +341,10 @@ and method7 (v0 : UH0, v1 : char list) : char list =
 and closure35 (v0 : UH0) (v1 : string) : string =
     let v2 : char list = []
     let v3 : char list = method7(v0, v2)
-    let v6 : (char list -> (char [])) = List.toArray
-    let v7 : (char []) = v6 v3
-    let v10 : string = v1.TrimEnd v7 
-    v10
+    let v10 : (char list -> (char [])) = List.toArray
+    let v11 : (char []) = v10 v3
+    let v14 : string = v1.TrimEnd v11 
+    v14
 and closure32 () (v0 : (char [])) : (string -> string) =
     let v2 : char list = v0 |> Array.toList
     let v10 : ((char -> (UH0 -> UH0)) -> (char list -> (UH0 -> UH0))) = List.foldBack
@@ -357,10 +357,10 @@ and closure32 () (v0 : (char [])) : (string -> string) =
 and closure37 (v0 : UH0) (v1 : string) : string =
     let v2 : char list = []
     let v3 : char list = method7(v0, v2)
-    let v6 : (char list -> (char [])) = List.toArray
-    let v7 : (char []) = v6 v3
-    let v10 : string = v1.TrimStart v7 
-    v10
+    let v10 : (char list -> (char [])) = List.toArray
+    let v11 : (char []) = v10 v3
+    let v14 : string = v1.TrimStart v11 
+    v14
 and closure36 () (v0 : (char [])) : (string -> string) =
     let v2 : char list = v0 |> Array.toList
     let v10 : ((char -> (UH0 -> UH0)) -> (char list -> (UH0 -> UH0))) = List.foldBack

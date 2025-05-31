@@ -378,7 +378,17 @@ inl null forall t. () : t =
 
 /// ### defaultof
 inl defaultof forall t. () : t =
-    $'Unchecked.defaultof<`t>'
+    inl run default =
+        real
+            typecase t with
+            | string => ""
+            | i32 => 0
+            | option ~u => None `u
+            | _ => default ()
+    backend_switch {
+        Gleam = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
+        Fsharp = fun () => run (fun () => $'Unchecked.defaultof<`t>' : t) : t
+    }
 
 /// ### choice2'
 nominal choice2' a b = $'Choice<`a, `b>'

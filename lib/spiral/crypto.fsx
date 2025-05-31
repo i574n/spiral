@@ -2174,16 +2174,16 @@ and method20 (v0 : int32, v1 : string, v2 : uint16) : string =
     v246
 and method21 (v0 : string) : string =
     let v1 : char list = []
-    let v4 : (char list -> (char [])) = List.toArray
-    let v5 : (char []) = v4 v1
-    let v8 : string = v0.TrimStart v5 
-    let v42 : char list = []
-    let v44 : char list = '/' :: v42 
-    let v48 : char list = ' ' :: v44 
-    let v53 : (char list -> (char [])) = List.toArray
-    let v54 : (char []) = v53 v48
-    let v57 : string = v8.TrimEnd v54 
-    v57
+    let v8 : (char list -> (char [])) = List.toArray
+    let v9 : (char []) = v8 v1
+    let v12 : string = v0.TrimStart v9 
+    let v46 : char list = []
+    let v48 : char list = '/' :: v46 
+    let v52 : char list = ' ' :: v48 
+    let v61 : (char list -> (char [])) = List.toArray
+    let v62 : (char []) = v61 v52
+    let v65 : string = v12.TrimEnd v62 
+    v65
 and method19 (v0 : Mut1, v1 : Mut2, v2 : Mut3, v3 : Mut4, v4 : Mut5, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : string, v10 : uint16) : string =
     let v11 : string = method20(v8, v9, v10)
     let v12 : int64 = v0.l0
