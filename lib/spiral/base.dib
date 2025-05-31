@@ -859,7 +859,32 @@ inl null forall t. () : t =
 #!spiral
 
 inl defaultof forall t. () : t =
-    $'Unchecked.defaultof<`t>'
+    inl run default =
+        real
+            typecase t with
+            | string => ""
+            | i32 => 0
+            | option ~u => None `u
+            | _ => default ()
+    backend_switch {
+        Gleam = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
+        Fsharp = fun () => run (fun () => $'Unchecked.defaultof<`t>' : t) : t
+    }
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+
+real defaultof `string ()
+|> _assert_eq ""
+
+real defaultof `i32 ()
+|> _assert_eq 0i32
+
+real defaultof `(option string) ()
+|> _assert_eq (None : option string)
 
 #!markdown
 

@@ -10224,6 +10224,7 @@ module spiral_compiler =
             | '\t' -> @"\t"
             | '\r' -> @"\r"
             | '\\' -> @"\\"
+            | '"' -> "\\\""
             | x -> string x
             |> sprintf "\"%s\""
         | LitBool x -> if x then "True" else "False"
@@ -10338,6 +10339,7 @@ module spiral_compiler =
             | YPrim a -> primGleam a
             | YArray a ->
                 global' "import gary"
+                global' "import gary/array"
                 sprintf "gary.ErlangArray(%s)" (tup_ty a)
             | YFun(a,b,FT_Vanilla) -> sprintf "fn(%s) -> %s" (tup_ty a) (tup_ty b)
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
