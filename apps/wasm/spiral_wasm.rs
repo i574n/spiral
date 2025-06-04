@@ -825,11 +825,11 @@ mod module_fb49c4a9 {
                 Spiral_wasm::closure8(v2.clone(), string(" = "), ());
                 ()
             };
-            let v75: () = {
+            let v76: () = {
                 Spiral_wasm::closure8(v2.clone(), sprintf!("{:?}", v0_1), ());
                 ()
             };
-            let v94: () = {
+            let v95: () = {
                 Spiral_wasm::closure8(v2.clone(), string(" }"), ());
                 ()
             };

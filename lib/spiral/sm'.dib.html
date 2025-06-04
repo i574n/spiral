@@ -8337,6 +8337,10 @@ a.anchor-link {
                 <span class="o">|</span> <span class="n">char</span> <span class="o">=&gt;</span> <span class="n">to</span> <span class="err">`</span><span class="n">t</span> <span class="err">`</span><span class="n">string</span> <span class="n">x</span>
                 <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span>
                     <span class="k">global</span> <span class="s2">"import gleam/string"</span>
+                    <span class="n">inl</span> <span class="n">x</span> <span class="o">=</span>
+                        <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span>
+                        <span class="o">|</span> <span class="n">array_base</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; array.to_list'</span> <span class="p">:</span> <span class="n">t</span>
+                        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">x</span>
                     <span class="err">$</span><span class="s1">'string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
             <span class="n">Fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"%A{!x}"'</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
@@ -10956,15 +10960,14 @@ method0()
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">obj_to_string</span> <span class="n">x</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">backend_switch</span> <span class="p">{</span>
-                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/string"</span>
-            <span class="p">}</span>
             <span class="n">real</span>
                 <span class="n">typecase</span> <span class="err">`</span><span class="n">x</span> <span class="k">with</span>
                 <span class="o">|</span> <span class="n">string</span> <span class="o">=&gt;</span> <span class="n">x</span>
                 <span class="o">|</span> <span class="n">char</span> <span class="o">=&gt;</span> <span class="n">to</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">x</span><span class="p">)</span> <span class="err">`</span><span class="n">string</span> <span class="n">x</span>
                 <span class="o">|</span> <span class="n">string_builder</span> <span class="o">=&gt;</span> <span class="n">to</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">x</span><span class="p">)</span> <span class="err">`</span><span class="n">string</span> <span class="n">x</span>
-                <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
+                <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span>
+                    <span class="k">global</span> <span class="s2">"import gleam/string"</span>
+                    <span class="err">$</span><span class="s1">'string.inspect( !x)'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="p">:</span> <span class="n">string</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'_.ToString()'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'str(!x)'</span> <span class="p">:</span> <span class="n">string</span>
@@ -11071,18 +11074,8 @@ method0()
 .py output:
 { name = __assert_eq; actual = 123   ; expected = 123    }
 
-
 .gleam output (Gleam):
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported module</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ec2b3ca9e1fbd290863445b60152cc600568040fc3c6f7774d96d579da81feab/src/main.gleam:1:1</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1 │ import gleam/string</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │ ^^^^^^^^^^^^^^^^^^^ This imported module is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
 { name = __assert_eq; actual = 123   ; expected = 123    }
-
 
 </pre>
 </div>
@@ -11424,18 +11417,8 @@ method0()
 .py output:
 { name = __assert_eq; actual = abcdef; expected = abcdef }
 
-
 .gleam output (Gleam):
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported module</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/ae367b809fe84c30bb6876e7cb7d5059b1988a33cae4548458d67840adac3a13/src/main.gleam:1:1</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1 │ import gleam/string</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │ ^^^^^^^^^^^^^^^^^^^ This imported module is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
 { name = __assert_eq; actual = abcdef; expected = abcdef }
-
 
 </pre>
 </div>
@@ -11670,18 +11653,10 @@ method0()
 
 
 .gleam output (Gleam):
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused imported module</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4bc607312178e517c5b89396e06f7ed68ef874f5c35179ec28a1ecda2c2f762a/src/main.gleam:1:1</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">1 │ import gleam/string</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  │ ^^^^^^^^^^^^^^^^^^^ This imported module is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can safely remove it.</span>
-
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/4bc607312178e517c5b89396e06f7ed68ef874f5c35179ec28a1ecda2c2f762a/src/main.gleam:80:9</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ /home/runner/work/spiral/polyglot/target/spiral_Eval/packages/7c2f1edc2488ebf686a376851aa4cfb8c70f2882c364d5dfa9d111f090e4f499/src/main.gleam:79:9</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">80 │     let v7 = v1 &lt;&gt; v6 </span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">79 │     let v7 = v1 &lt;&gt; v6 </span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │         ^^ This variable is never used</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v7`.</span>

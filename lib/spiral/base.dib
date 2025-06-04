@@ -1171,6 +1171,8 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
     inl fn = dyn fn
     inl ex_fn = dyn ex_fn
     backend_switch {
+        Gleam = fun () =>
+            fn () |> some
         Fsharp = fun () =>
             $'let result = ref !(None : option t)'
             $'try'
@@ -1212,6 +1214,22 @@ try
     | TypeScript => fun () => "Error: Index was outside the bounds of the array.\\nParameter name: index"
     | Python => fun () => "array index out of range"
 )
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+///! cuda
+///! rust
+///! typescript
+///! python
+
+try
+    fun () => a ;[ 0i32 ] |> am'.index 0i32 |> sm'.format
+    (fun ex => $'!ex ' |> sm'.format_exception |> Some)
+|> optionm.value
+|> _assert_eq "0"
 
 #!markdown
 

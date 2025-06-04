@@ -2163,19 +2163,19 @@ and method8 (v0 : int32, v1 : (unit -> unit), v2 : int32) : US6 =
     let v3 : (US6 -> US7) = closure6()
     let v4 : (unit -> US6) = closure7(v0, v1, v2)
     let v5 : (exn -> US7) = closure8(v2)
-    let v7 : US7 = US7_1
-    let result = ref v7
+    let v8 : US7 = US7_1
+    let result = ref v8
     try
         result.Value <- v4 () |> v3 
     with ex ->
         result.Value <- v5 ex 
-    let v8 : US7 = result.Value
-    match v8 with
+    let v9 : US7 = result.Value
+    match v9 with
     | US7_1 -> (* None *)
-        let v13 : int32 = v2 + 1
-        method8(v0, v1, v13)
-    | US7_0(v12) -> (* Some *)
-        v12
+        let v14 : int32 = v2 + 1
+        method8(v0, v1, v14)
+    | US7_0(v13) -> (* Some *)
+        v13
 and closure5 (v0 : int32) (v1 : (unit -> unit)) : unit option =
     let v2 : int32 = 0
     let v3 : US6 = method8(v0, v1, v2)

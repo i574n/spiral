@@ -549,6 +549,8 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
     inl fn = dyn fn
     inl ex_fn = dyn ex_fn
     backend_switch {
+        Gleam = fun () =>
+            fn () |> some
         Fsharp = fun () =>
             $'let result = ref !(None : option t)'
             $'try'

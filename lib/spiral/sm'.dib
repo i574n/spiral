@@ -290,6 +290,10 @@ inl format_debug forall t. (x : t) : string =
                 | char => to `t `string x
                 | _ =>
                     global "import gleam/string"
+                    inl x =
+                        typecase t with
+                        | array_base _ => $'!x |> array.to_list' : t
+                        | _ => x
                     $'string.inspect(!x)' : string
                     ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
@@ -723,15 +727,14 @@ inl string_builder (initial : string) : string_builder =
 inl obj_to_string x : string =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () => global "import gleam/string"
-            }
             real
                 typecase `x with
                 | string => x
                 | char => to `(`x) `string x
                 | string_builder => to `(`x) `string x
-                | _ => $'string.inspect(!x)' : string
+                | _ =>
+                    global "import gleam/string"
+                    $'string.inspect( !x)' : string
             : string
         Fsharp = fun () => x |> $'_.ToString()' : string
         Python = fun () => $'str(!x)' : string
