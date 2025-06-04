@@ -52,6 +52,7 @@ let split_args (args : string) : result (array_base string) string =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -117,6 +118,7 @@ let split_command (command : string) : result (string * option string) string =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust

@@ -71,6 +71,10 @@ inl format_debug forall t. (x : t) : string =
                 | char => to `t `string x
                 | _ =>
                     global "import gleam/string"
+                    inl x =
+                        typecase t with
+                        | array_base _ => $'!x |> array.to_list' : t
+                        | _ => x
                     $'string.inspect(!x)' : string
                     ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string

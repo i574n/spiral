@@ -185,15 +185,14 @@ inl string_builder (initial : string) : string_builder =
 inl obj_to_string x : string =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () => global "import gleam/string"
-            }
             real
                 typecase `x with
                 | string => x
                 | char => to `(`x) `string x
                 | string_builder => to `(`x) `string x
-                | _ => $'string.inspect(!x)' : string
+                | _ =>
+                    global "import gleam/string"
+                    $'string.inspect( !x)' : string
             : string
         Fsharp = fun () => x |> $'_.ToString()' : string
         Python = fun () => $'str(!x)' : string

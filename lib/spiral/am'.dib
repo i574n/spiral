@@ -38,6 +38,7 @@ inl length forall dim {int} el. (a : a dim el) : dim =
 
 inl index forall dim {int} el. (i : dim) (a : a dim el) : el =
     backend_switch {
+        Gleam = fun () => index a i
         Fsharp = fun () => index a i
         Python = fun () => $'!a[!i]' : el
     }

@@ -12976,6 +12976,19 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
             global' "import gleam/string"
             sprintf "string.length(%s)" (tup b)
             |> simple
+        let listToArray panic x =
+            global' "import gary/array"
+            global' "import gleam/option"
+            global' "import gleam/list"
+            $"{x} " +
+            $"|> list.map(option.Some) " +
+            $"|> array.from_list(option.None) " +
+            $"|> array.map(fn(_, x) {{ " +
+            $"     case x {{ " +
+            $"       option.Some(x) -> x " +
+            $"       _ -> panic as \"{panic}\" " +
+            $"     }} " +
+            $"   }}) "
         match a with
         | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litGleam x) |> String.concat "" |> simple
         | TySizeOf t -> simple $"0"
@@ -13074,13 +13087,13 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
             match lay with
             | Heap -> heap a 
             | HeapMutable -> mut a 
-            | StackMutable -> raise_codegen_error "The F# backend doesn't support indexing into stack mutable layout types."
+            | StackMutable -> raise_codegen_error "The Gleam backend doesn't support indexing into stack mutable layout types."
             |> fun x -> x.free_vars |> layout_index i
         | TyLayoutIndexByKey(L(i,YLayout(_,lay) & a),key) -> 
             match lay with
             | Heap -> heap a
             | HeapMutable -> mut a 
-            | StackMutable -> raise_codegen_error "The F# backend doesn't support indexing into stack mutable layout types."
+            | StackMutable -> raise_codegen_error "The Gleam backend doesn't support indexing into stack mutable layout types."
             |> fun x ->
                 x.free_vars_by_key
                 |> Map.tryPick (fun (_, k) v -> if k = key then Some v else None)
@@ -13097,8 +13110,11 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                 then line s (sprintf "let v%i = %s(..v%i, l%i: %s)" i (tup_ty t) i i' (show_w b))
                 else line s (sprintf "let v%i = %s(l%i: %s)" i (tup_ty t) i' (show_w b))
                 ) a_vars (data_term_vars c)
-        | TyArrayLiteral(a,b) -> simple <| sprintf "[ %s ]" (List.map tup b |> String.concat ", ")
-        | TyArrayCreate(a,b) -> simple "[]"
+        | TyArrayLiteral(a,b) ->
+            $"""[ {List.map tup b |> String.concat ", "} ]"""
+            |> listToArray "spiral_compiler..TyArrayLiteral"
+            |> simple
+        | TyArrayCreate(a,b) -> $"[]" |> listToArray "spiral_compiler..TyArrayCreate" |> simple
         | TyArrayLength(a,b) -> length (a,b)
         | TyStringLength(a,b) -> length (a,b)
         | TyFailwith(a,b) -> simple (sprintf "panic as %s" (tup b))
@@ -13136,8 +13152,14 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                 sprintf "%s |> string.slice(%s, %s)" (tup a) (tup b) (tup c)
             | ArrayIndex, [a;b] ->
                 global' "import gary/array"
-                global' "import gleam/result"
-                sprintf "%s |> array.get(%s) |> result.unwrap" (tup a) (tup b)
+                $"{tup a} " +
+                $"|> array.get({tup b}) " +
+                $"|> fn(x) -> _ {{ " +
+                $"     case x {{ " +
+                $"       Ok(x) -> x " +
+                $"       Error(_) -> panic as \"spiral_compiler..ArrayIndex / i: {tup b}\" " +
+                $"     }} " +
+                $"   }} "
             | ArrayIndexSet, [a;b;c] ->
                 global' "import gary/array"
                 global' "import gleam/result"
@@ -13255,28 +13277,33 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
             | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
             | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
             ) (fun s x ->
-            let domain =
-                let domain_args =
+            let domain, nil =
+                let domain_args, nil =
                     let t () =
                         x.domain_args
                         |> Array.map (fun (L(_,t)) -> $"{tyv t}")
                         |> String.concat ", "
                     if x.domain_args |> Array.length > 1 then
-                        [| $"x : #(#( {t ()}))" |]
+                        [| $"x : #(#( {t ()}))" |], false
                     elif x.free_vars |> Array.length > 1 then
                         let t =
                             x.free_vars
                             |> Array.map (fun (L(_,t)) -> $"{tyv t}")
                             |> String.concat ", "
-                        [| $"x : #(  {t})" |]
+                        [| $"x : #(  {t})" |], false
                     elif x.domain_args |> Array.length = 0
-                    then [||]
-                    else [| $"x : #(   {t ()})" |]
+                    then [||], false
+                    else
+                        let t = t ()
+                        if t = "Nil" && x.free_vars |> Array.length = 1
+                        then [||], true
+                        else [| $"x : #(   {t})" |], false
                 match domain_args with
                 | [||] -> ""
                 | [|x|] -> x
                 | x -> String.concat ", " x
-            let domain' = 
+                , nil
+            let domain' =
                 if x.domain_args |> Array.length <> 1
                 then "      Nil"
                 elif x.free_vars |> Array.length > 1 then
@@ -13292,7 +13319,14 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                         x.free_vars
                         |> Array.map (fun (L(_,t)) -> tup_ty t)
                         |> String.concat ", "
+                    let t =
+                        if t = ""
+                        then "Nil    "
+                        else t
                     $"x : #(  {t})"
+                elif nil && x.free_vars |> Array.length = 1 then
+                    match x.free_vars.[0] with
+                    | L(i,t) -> $"v{i} :    #({tup_ty t}) "
                 else args_tys x.free_vars
             let args =
                 [| free_vars_tys; domain |]
@@ -13305,9 +13339,15 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                     else x.domain_args
                     |> Array.map (fun (L(i,_)) -> $"v{i}")
                     |> String.concat ", "
+                let args =
+                    if args = ""
+                    then "Nil     "
+                    else args
                 if x.domain_args |> Array.length > 1
-                then $"let #(#(   {args})) = x"
-                else $"let #(   {args}) = x"
+                then $"let #(#(   {args} )) = x"
+                elif nil
+                then $"let #(v0) = v0 let {args} = Nil"
+                else $"let #(   {args} ) = x"
             let domain'' =
                 if x.domain_args |> Array.length <> 1 || x.free_vars |> Array.length <= 1
                 then "_"
@@ -13323,9 +13363,11 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                 $"%A{x.free_vars}"
                 |> SpiralSm.replace "\r\n" ""
                 |> SpiralSm.replace "\n" ""
+            let comment =
+                $"// free_vars_tys: %A{free_vars_tys} / domain: %A{domain} / x.domain_args: %A{domain_args'} / free_vars': %A{free_vars'}"
             line
                 s
-                $"closure{x.tag} () -> fn(_) -> fn({domain'}) -> {tup_ty x.range} {{ fn({args}) {{ {args'}\nfn ({domain''}) {{ // free_vars_tys: %A{free_vars_tys} / domain: %A{domain} / x.domain_args: %A{domain_args'} / free_vars': %A{free_vars'}"
+                $"closure{x.tag} () -> fn(_) -> fn({domain'}) -> {tup_ty x.range} {{ fn({args}) {{ {args'}\nfn ({domain''}) {{ {comment}"
             binds (indent s) x.body
             line s "}}}"
             )
