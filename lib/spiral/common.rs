@@ -917,9 +917,9 @@ pub mod Common {
                     },
                 );
                 {
-                    let v8: Common::US7 = result.get().clone();
-                    match &v8 {
-                        Common::US7::US7_0(v8_0_0) => match &v8 {
+                    let v9: Common::US7 = result.get().clone();
+                    match &v9 {
+                        Common::US7::US7_0(v9_0_0) => match &v9 {
                             Common::US7::US7_0(x) => x.clone(),
                             _ => unreachable!(),
                         }

@@ -674,9 +674,9 @@ export function method8(v0_mut: int32, v1_mut: (() => void), v2_mut: int32): US6
         catch (ex: any) {
             result.contents = closure8(v2, ex);
         }
-        const v8: US7_$union = result.contents;
-        if ((v8.tag as int32) === /* US7_0 */ 0) {
-            return v8.fields[0] as any;
+        const v9: US7_$union = result.contents;
+        if ((v9.tag as int32) === /* US7_0 */ 0) {
+            return v9.fields[0] as any;
         }
         else {
             v0_mut = v0;
