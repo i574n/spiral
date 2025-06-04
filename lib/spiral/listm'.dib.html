@@ -11627,6 +11627,9 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">to_array</span><span class="s1">' forall t. (items : list'</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">array_base</span> <span class="n">t</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">d</span> <span class="o">=</span> <span class="n">real</span> <span class="n">defaultof</span> <span class="err">`</span><span class="n">t</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'!items |&gt; array.from_list(default: !d)'</span> <span class="p">:</span> <span class="n">array_base</span> <span class="n">t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">items</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'List.toArray'</span> <span class="p">:</span> <span class="n">array_base</span> <span class="n">t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(cp if cuda else np).array(!items)'</span> <span class="p">:</span> <span class="n">array_base</span> <span class="n">t</span>
     <span class="p">}</span>
