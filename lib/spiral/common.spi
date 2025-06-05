@@ -4,7 +4,7 @@
 
 /// ### retry_fn'
 inl retry_fn' retries fn =
-    let rec loop retry =
+    let rec 루프 retry =
         inl is_error, result =
             match fn () with
             | Ok x => false, x
@@ -13,10 +13,10 @@ inl retry_fn' retries fn =
         then result
         else
             trace Debug
-                fun () => "common.retry_fn\' / loop"
+                fun () => "common.retry_fn\' / 루프"
                 fun () => { is_error retry = $'$"{!retry}/{!retries}"' : string; result }
-            loop (retry + 1)
-    loop 1
+            루프 (retry + 1)
+    루프 1
 
 /// ## fsharp
 
@@ -68,7 +68,7 @@ inl return' forall t. (x : t) : t =
 
 /// ### retry_fn
 inl retry_fn forall t. retries (fn : () -> t) : option t =
-    let rec loop retry =
+    let rec 루프 retry =
         try
             fun () =>
                 if retry < retries
@@ -81,8 +81,8 @@ inl retry_fn forall t. retries (fn : () -> t) : option t =
                 None
         |> function
             | Some x => x
-            | None => loop (retry + 1)
-    loop 0
+            | None => 루프 (retry + 1)
+    루프 0
 
 /// ## common
 

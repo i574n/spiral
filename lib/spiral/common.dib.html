@@ -7583,7 +7583,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">retry_fn</span><span class="s1">' retries fn =</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">retry</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">retry</span> <span class="o">=</span>
         <span class="n">inl</span> <span class="n">is_error</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span>
             <span class="k">match</span> <span class="n">fn</span> <span class="p">()</span> <span class="k">with</span>
             <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">,</span> <span class="n">x</span>
@@ -7592,10 +7592,10 @@ a.anchor-link {
         <span class="n">then</span> <span class="n">result</span>
         <span class="k">else</span>
             <span class="n">trace</span> <span class="n">Debug</span>
-                <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"common.retry_fn</span><span class="se">\'</span><span class="s2"> / loop"</span>
+                <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"common.retry_fn</span><span class="se">\'</span><span class="s2"> / 루프"</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="n">is_error</span> <span class="n">retry</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'$"{!retry}/{!retries}"'</span> <span class="p">:</span> <span class="n">string</span><span class="p">;</span> <span class="n">result</span> <span class="p">}</span>
-            <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">loop</span> <span class="mi">1</span>
+            <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">루프</span> <span class="mi">1</span>
 </pre></div>
 </div>
 </div>
@@ -7876,7 +7876,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">retry_fn</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="n">retries</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">option</span> <span class="n">t</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">retry</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">retry</span> <span class="o">=</span>
         <span class="k">try</span>
             <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="k">if</span> <span class="n">retry</span> <span class="o">&lt;</span> <span class="n">retries</span>
@@ -7889,8 +7889,8 @@ a.anchor-link {
                 <span class="kc">None</span>
         <span class="o">|&gt;</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span>
-            <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+            <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>

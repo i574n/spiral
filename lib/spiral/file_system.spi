@@ -163,7 +163,7 @@ let file_move (new_path : string) (old_path : string) : () =
 
 /// ### read_all_text_async
 let read_all_text_async (path : string) : _ string =
-    let rec loop (retry : i64) : _ string =
+    let rec 루프 (retry : i64) : _ string =
         fun () =>
             try_unit
                 fun () =>
@@ -185,11 +185,11 @@ let read_all_text_async (path : string) : _ string =
                         }
                     async.sleep 10i32 |> async.do
                     if retry < 3
-                    then loop (retry + 1)
+                    then 루프 (retry + 1)
                     else failwith $'$"file_system.read_all_text_async / retry: {!retry} / path: {!path}"'
                     |> async.return_await
         |> async.new_async
-    loop 0
+    루프 0
 
 /// ### write_all_text_async
 let write_all_text_async (path : string) (text : string) : _ () =
@@ -694,19 +694,19 @@ union file_type =
 let find_parent file_type name root_dir =
     inl is_file = file_type = File
     inl exists_fn = if is_file then file_exists else directory_exists
-    let rec loop dir =
+    let rec 루프 dir =
         if dir </> name |> exists_fn
         then dir |> Ok
         else
             inl parent = dir |> directory_get_parent
             match parent |> optionm'.unbox with
-            | Some parent => parent |> loop
+            | Some parent => parent |> 루프
             | None =>
                 $'$"""file_system.find_parent / No parent for {if !is_file then "file" else "dir"}"""'
                 +. $'$" \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"'
                 |> fun x => x : string
                 |> Error
-    root_dir |> loop
+    root_dir |> 루프
 
 /// ### file_delete
 inl file_delete (path : string) : () =
@@ -723,7 +723,7 @@ inl file_delete (path : string) : () =
 
 /// ### read_link
 let read_link (path : string) : resultm.result' path_buf stream.io_error =
-    let run loop n error path' =
+    let run 루프 n error path' =
         inl name = path' |> get_file_name
         inl parent = path' |> directory_get_parent |> optionm'.unbox
         inl error'' = error |> sm'.format
@@ -734,7 +734,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
             |> stream.new_io_error
             |> resultm.err
         | Some parent when path' <>. "" =>
-            match loop (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with
+            match 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with
             | Ok parent' =>
                 (parent' |> path_buf_display |> convert) </> name
                 |> sm'.to_std_string
@@ -756,8 +756,8 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
             if path |> directory_exists
             then !\\(path, $'"std::fs::read_link(&*$0)"')
             else
-                // let rec loop n path' =
-                let rec loop forall t {number}.
+                // let rec 루프 n path' =
+                let rec 루프 forall t {number}.
                     (n : t)
                     (path' : string)
                     : resultm.result' path_buf stream.io_error
@@ -768,13 +768,13 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                             inl result = result |> resultm.map_error' sm'.format |> resultm.unbox
                             match result with
                             | Ok x => x |> resultm.ok''
-                            | Error error => path' |> run loop n error
+                            | Error error => path' |> run 루프 n error
                         | _ => fun () => null ()
-                path |> loop 0u8
+                path |> 루프 0u8
         | Fsharp _
         | TypeScript _ => fun () =>
-            // let rec loop n path' =
-            let rec loop forall t {number}.
+            // let rec 루프 n path' =
+            let rec 루프 forall t {number}.
                 (n : t)
                 (path' : string)
                 : resultm.result' path_buf stream.io_error
@@ -796,8 +796,8 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                         +. $'$"The file or directory is not a reparse point. / "'
                         +. $'$"path: {!path} / result: {!result} / path\': {!path'} / n: {!n}"'
                         |> stream.new_io_error
-                    path' |> run loop n error
-            path |> loop 0u8
+                    path' |> run 루프 n error
+            path |> 루프 0u8
         | _ => fun () => $'Unchecked.defaultof<_>'
 
 /// ### normalize_path
@@ -936,7 +936,7 @@ let write_all_text_exists_async path contents =
 
 /// ### delete_directory_async
 let delete_directory_async path : _ i64 =
-    let rec loop (retry : i64) : _ i64 =
+    let rec 루프 (retry : i64) : _ i64 =
         run_target function
             | Fsharp (Native) => fun () =>
                 fun () =>
@@ -953,10 +953,10 @@ let delete_directory_async path : _ i64 =
                                         path = path |> get_file_name
                                     }
                             async.sleep 10i32 |> async.do
-                            loop (retry + 1) |> async.return_await
+                            루프 (retry + 1) |> async.return_await
                 |> async.new_async
             | _ => fun () => null ()
-    loop 0
+    루프 0
 
 /// ### trace_file
 let rec trace_file text =
@@ -1081,7 +1081,7 @@ let write_all_text_exists path contents =
 
 /// ### wait_for_file_access
 let wait_for_file_access access path =
-    let rec loop (retry : i64) : _ i64 =
+    let rec 루프 (retry : i64) : _ i64 =
         run_target function
             | Fsharp (Native) => fun () =>
                 inl file_access, file_share =
@@ -1108,10 +1108,10 @@ let wait_for_file_access access path =
                                         ex = ex () |> sm'.format_exception
                                     }
                             async.sleep 10i32 |> async.do
-                            loop (retry + 1) |> async.return_await
+                            루프 (retry + 1) |> async.return_await
                 |> async.new_async
             | _ => fun () => null ()
-    loop 0
+    루프 0
 
 /// ### wait_for_file_access_read
 let wait_for_file_access_read path =
@@ -1123,7 +1123,7 @@ let wait_for_file_access_read path =
 
 /// ### read_all_text_retry_async
 let read_all_text_retry_async full_path : async.async (optionm'.option' string) =
-    let rec loop (retry : i64) : _ (optionm'.option' string) =
+    let rec 루프 (retry : i64) : _ (optionm'.option' string) =
         fun () =>
             try_unit
                 fun () =>
@@ -1147,13 +1147,13 @@ let read_all_text_retry_async full_path : async.async (optionm'.option' string) 
                                 }
                             (None : _ string) |> optionm'.box |> return
                         fun () =>
-                            loop (retry + 1) |> async.return_await
+                            루프 (retry + 1) |> async.return_await
         |> async.new_async
-    loop 0
+    루프 0
 
 /// ### move_file_async
 let move_file_async new_path old_path : _ i64 =
-    let rec loop (retry : i64) : _ i64 =
+    let rec 루프 (retry : i64) : _ i64 =
         run_target function
             | Fsharp (Native) => fun () =>
                 fun () =>
@@ -1171,14 +1171,14 @@ let move_file_async new_path old_path : _ i64 =
                                         ex = ex () |> sm'.format_exception
                                     }
                             async.sleep 10 |> async.do
-                            loop (retry + 1) |> async.return_await
+                            루프 (retry + 1) |> async.return_await
                 |> async.new_async_unit
             | _ => fun () => null ()
-    loop 0
+    루프 0
 
 /// ### delete_file_async
 let delete_file_async path : _ i64 =
-    let rec loop (retry : i64) : _ i64 =
+    let rec 루프 (retry : i64) : _ i64 =
         run_target function
             | Fsharp (Native) => fun () =>
                 fun () =>
@@ -1195,10 +1195,10 @@ let delete_file_async path : _ i64 =
                                         ex = ex () |> sm'.format_exception
                                     }
                             async.sleep 10 |> async.do
-                            loop (retry + 1) |> async.return_await
+                            루프 (retry + 1) |> async.return_await
                 |> async.new_async
             | _ => fun () => null ()
-    loop 0
+    루프 0
 
 /// ## main
 inl main () =

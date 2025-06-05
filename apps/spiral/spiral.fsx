@@ -28685,7 +28685,7 @@ and method233 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64
     let v32 : string = v31 v13
     let v36 : string = v27 + v32 
     let v40 : string = v36 + v16 
-    let v45 : string = "common.retry_fn' / loop"
+    let v45 : string = "common.retry_fn' / 루프"
     let v46 : string = v40 + v45 
     let v51 : string = " / "
     let v52 : string = v46 + v51 

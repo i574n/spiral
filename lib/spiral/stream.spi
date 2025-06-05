@@ -11,18 +11,18 @@ union rec stream t =
 /// ### fold
 inl fold fn init s =
     inl rec body acc = function
-        | StreamCons (st, fn') => loop (fn acc st) (fn' ())
+        | StreamCons (st, fn') => 루프 (fn acc st) (fn' ())
         | StreamNil => acc
-    and inl loop acc = join_body body acc
-    loop init s
+    and inl 루프 acc = join_body body acc
+    루프 init s
 
 /// ### fold_back
 inl fold_back fn s init =
     inl rec body acc = function
-        | StreamCons (st, fn') => fn st (loop acc (fn' ()))
+        | StreamCons (st, fn') => fn st (루프 acc (fn' ()))
         | StreamNil => acc
-    and inl loop acc = join_body body acc
-    loop init s
+    and inl 루프 acc = join_body body acc
+    루프 init s
 
 /// ### to_list
 inl to_list s =
@@ -47,39 +47,39 @@ inl try_item i s =
     // inl rec body i = function
     inl rec body forall a {number} b. (i : a) : stream b -> option b = function
         | StreamCons (x, _) when i <= 0 => Some x
-        | StreamCons (_, fn) => loop (i - 1) (fn ())
+        | StreamCons (_, fn) => 루프 (i - 1) (fn ())
         | StreamNil => None
-    // and inl loop acc s' =
-    and inl loop forall a {number} b. (acc : a) (s' : stream b) : option b =
+    // and inl 루프 acc s' =
+    and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =
         match var_is acc, var_is s' with
         | false, false => body acc s'
         | _ =>
             inl acc = dyn acc
             inl s' = dyn s'
             join body acc s'
-    loop i s
+    루프 i s
 
 inl item i =
     try_item i >> optionm.value
 
 /// ### new_infinite_stream
 inl new_infinite_stream fn =
-    inl rec loop n =
-        StreamCons (fn n, fun () => loop (n + 1))
-    loop 0
+    inl rec 루프 n =
+        StreamCons (fn n, fun () => 루프 (n + 1))
+    루프 0
 
 inl new_infinite_stream_ fn =
-    let rec loop n =
-        StreamCons (fn n, fun () => loop (n + 1))
-    loop 0
+    let rec 루프 n =
+        StreamCons (fn n, fun () => 루프 (n + 1))
+    루프 0
 
 /// ### new_finite_stream
 inl new_finite_stream fn max =
-    inl rec loop n =
+    inl rec 루프 n =
         if n >= max
         then StreamNil
-        else StreamCons (fn n, fun () => loop (n + 1))
-    loop 0
+        else StreamCons (fn n, fun () => 루프 (n + 1))
+    루프 0
 
 /// ### memoize
 union memoized_stream t =
@@ -97,22 +97,22 @@ inl memoize s =
                 inl new_state =
                     match fn () with
                     | StreamNil => StreamNil
-                    | StreamCons (x, fn) => StreamCons (x, loop fn)
+                    | StreamCons (x, fn) => StreamCons (x, 루프 fn)
                 state <- Computed new_state
                 new_state
-    // and inl loop s' = join_body_unit body s s'
-    and inl loop forall t. (s' : () -> stream t) : () -> stream t =
+    // and inl 루프 s' = join_body_unit body s s'
+    and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =
         join_body_unit body s s'
-    loop (fun () => s)
+    루프 (fun () => s)
 
 /// ### unfold
 inl unfold f x0 =
     inl rec body x =
         match f x with
-        | Some (x', y) => StreamCons (x', fun () => loop y)
+        | Some (x', y) => StreamCons (x', fun () => 루프 y)
         | None => StreamNil
-    and inl loop x = join_body_unit body x0 x
-    loop x0
+    and inl 루프 x = join_body_unit body x0 x
+    루프 x0
 
 /// ### iterate
 inl iterate f =
@@ -130,10 +130,10 @@ inl iterate_map f m =
 /// ### take_while
 inl take_while cond s =
     inl rec body i = function
-        | StreamCons (st, fn) when cond st i => StreamCons (st, fun () => loop (i + 1) (fn ()))
+        | StreamCons (st, fn) when cond st i => StreamCons (st, fun () => 루프 (i + 1) (fn ()))
         | _ => StreamNil
-    and inl loop i = join_body body i
-    loop 0 s
+    and inl 루프 i = join_body body i
+    루프 0 s
 
 /// ### sum
 inl sum seq =
@@ -155,20 +155,20 @@ inl map fn s =
 
 /// ### zip_with
 inl zip_with fn s1 s2 =
-    inl rec loop s1 s2 =
+    inl rec 루프 s1 s2 =
         match s1, s2 with
         | StreamCons (st1, fn1), StreamCons (st2, fn2) =>
-            StreamCons (fn st1 st2, fun () => loop (fn1 ()) (fn2 ()))
+            StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))
         | StreamNil, _ | _, StreamNil => StreamNil
-    loop s1 s2
+    루프 s1 s2
 
 inl zip_with_ fn s1 s2 =
-    let rec loop s1 s2 =
+    let rec 루프 s1 s2 =
         match s1, s2 with
         | StreamCons (st1, fn1), StreamCons (st2, fn2) =>
-            StreamCons (fn st1 st2, fun () => loop (fn1 ()) (fn2 ()))
+            StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))
         | StreamNil, _ | _, StreamNil => StreamNil
-    loop s1 s2
+    루프 s1 s2
 
 /// ### zip
 inl zip s1 s2 =
@@ -183,17 +183,17 @@ inl unzip s =
     inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =
         match s with
         | StreamCons ((x, y), fn) =>
-            inl xs, ys = loop (fn ())
+            inl xs, ys = 루프 (fn ())
             StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)
         | StreamNil => pair StreamNil StreamNil
-    // and inl loop x =
-    and inl loop forall a b. (x : stream (a * b)) : stream a * stream b =
+    // and inl 루프 x =
+    and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =
         if var_is x |> not
         then body x
         else
             inl x = dyn x
             join body x
-    loop s
+    루프 s
 
 /// ## rust
 

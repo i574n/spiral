@@ -66,12 +66,12 @@ inl replicate count x =
 #!spiral
 
 inl map4 f l1 l2 l3 l4 =
-    inl rec loop l1 l2 l3 l4 acc =
+    inl rec 루프 l1 l2 l3 l4 acc =
         match l1, l2, l3, l4 with
         | (x1 :: xs1), (x2 :: xs2), (x3 :: xs3), (x4 :: xs4) =>
-            loop xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)
+            루프 xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)
         | _ => acc |> listm.rev
-    loop l1 l2 l3 l4 []
+    루프 l1 l2 l3 l4 []
 
 #!markdown
 
@@ -218,28 +218,28 @@ listm.init 10i32 id
 
 // inl try_index_of item list =
 inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =
-    // inl rec loop i = function
-    inl rec loop forall a {number}. (i : a) : list b -> option a = function
+    // inl rec 루프 i = function
+    inl rec 루프 forall a {number}. (i : a) : list b -> option a = function
         | [] => None
         | x :: xs =>
             if x = item
             then Some i
-            else loop (i + 1) xs
-    loop 0 list
+            else 루프 (i + 1) xs
+    루프 0 list
 
 inl index_of item =
     try_index_of item >> optionm.value
 
 // inl try_index_of_ item list =
 inl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =
-    // let rec loop i = function
-    let rec loop forall a {number}. (i : a) : list b -> option a = function
+    // let rec 루프 i = function
+    let rec 루프 forall a {number}. (i : a) : list b -> option a = function
         | [] => None
         | x :: xs =>
             if x = item
             then Some i
-            else loop (i + 1) xs
-    loop 0 list
+            else 루프 (i + 1) xs
+    루프 0 list
 
 inl index_of_ item =
     try_index_of_ item >> optionm.value
@@ -248,7 +248,7 @@ inl try_index_of__ item list =
     inl i = mut 0
     inl list = mut list
     inl result = mut None
-    let rec loop () =
+    let rec 루프 () =
         match *list with
         | [] => result <- None
         | x :: xs =>
@@ -257,8 +257,8 @@ inl try_index_of__ item list =
             else
                 i <- *i + 1
                 list <- xs
-                loop ()
-    loop ()
+                루프 ()
+    루프 ()
     *result
 
 inl index_of__ item =
@@ -287,22 +287,22 @@ listm.init 10i32 id
 #!spiral
 
 inl try_find fn list =
-    inl rec loop = function
+    inl rec 루프 = function
         | [] => None
         | x :: xs =>
             if fn x
             then Some x
-            else loop xs
-    loop list
+            else 루프 xs
+    루프 list
 
 inl try_find_ fn list =
-    let rec loop = function
+    let rec 루프 = function
         | [] => None
         | x :: xs =>
             if fn x
             then Some x
-            else loop xs
-    loop list
+            else 루프 xs
+    루프 list
 
 #!spiral
 
@@ -367,20 +367,20 @@ inl filter forall t. (fn : t -> bool) (list : list t) : list t =
 #!spiral
 
 inl zip_with fn xs ys =
-    inl rec loop acc xs ys =
+    inl rec 루프 acc xs ys =
         match xs, ys with
         | Cons (x, xs), Cons (y, ys) =>
-            loop (fn x y :: acc) xs ys
+            루프 (fn x y :: acc) xs ys
         | _ => listm.rev acc
-    loop [] xs ys
+    루프 [] xs ys
 
 inl zip_with_ fn xs ys =
-    let rec loop acc xs ys =
+    let rec 루프 acc xs ys =
         match xs, ys with
         | Cons (x, xs), Cons (y, ys) =>
-            loop (fn x y :: acc) xs ys
+            루프 (fn x y :: acc) xs ys
         | _ => listm.rev acc
-    loop [] xs ys
+    루프 [] xs ys
 
 #!spiral
 
@@ -509,15 +509,15 @@ inl try_pick fn list =
         | x :: xs =>
             match fn x with
             | Some y => Some y
-            | None => loop xs
-    and inl loop list =
+            | None => 루프 xs
+    and inl 루프 list =
         if var_is list |> not
         then body fn list
         else
             inl fn = join fn
             inl list = dyn list
             join body fn list
-    loop list
+    루프 list
 
 #!spiral
 
@@ -535,13 +535,13 @@ listm.init 10i32 id
 
 inl exists' f x =
     inl length_x : i64 = x |> listm.length
-    let rec loop i =
+    let rec 루프 i =
         if i >= length_x
         then false
         elif x |> item i |> f
         then true
-        else loop (i + 1)
-    loop 0
+        else 루프 (i + 1)
+    루프 0
 
 #!spiral
 

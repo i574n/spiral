@@ -8129,7 +8129,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">read_all_text_async</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">string</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">string</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">string</span> <span class="o">=</span>
         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">try_unit</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -8151,11 +8151,11 @@ a.anchor-link {
                         <span class="p">}</span>
                     <span class="k">async</span><span class="o">.</span><span class="n">sleep</span> <span class="mi">10</span><span class="n">i32</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">do</span>
                     <span class="k">if</span> <span class="n">retry</span> <span class="o">&lt;</span> <span class="mi">3</span>
-                    <span class="n">then</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">then</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
                     <span class="k">else</span> <span class="n">failwith</span> <span class="err">$</span><span class="s1">'$"file_system.read_all_text_async / retry: {!retry} / path: {!path}"'</span>
                     <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
         <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">new_async</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -10104,19 +10104,19 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">find_parent</span> <span class="n">file_type</span> <span class="n">name</span> <span class="n">root_dir</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">is_file</span> <span class="o">=</span> <span class="n">file_type</span> <span class="o">=</span> <span class="n">File</span>
     <span class="n">inl</span> <span class="n">exists_fn</span> <span class="o">=</span> <span class="k">if</span> <span class="n">is_file</span> <span class="n">then</span> <span class="n">file_exists</span> <span class="k">else</span> <span class="n">directory_exists</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="nb">dir</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="nb">dir</span> <span class="o">=</span>
         <span class="k">if</span> <span class="nb">dir</span> <span class="o">&lt;/&gt;</span> <span class="n">name</span> <span class="o">|&gt;</span> <span class="n">exists_fn</span>
         <span class="n">then</span> <span class="nb">dir</span> <span class="o">|&gt;</span> <span class="n">Ok</span>
         <span class="k">else</span>
             <span class="n">inl</span> <span class="n">parent</span> <span class="o">=</span> <span class="nb">dir</span> <span class="o">|&gt;</span> <span class="n">directory_get_parent</span>
             <span class="k">match</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.unbox with</span>
-            <span class="o">|</span> <span class="n">Some</span> <span class="n">parent</span> <span class="o">=&gt;</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">loop</span>
+            <span class="o">|</span> <span class="n">Some</span> <span class="n">parent</span> <span class="o">=&gt;</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">루프</span>
             <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span>
                 <span class="err">$</span><span class="s1">'$"""file_system.find_parent / No parent for {if !is_file then "file" else "dir"}"""'</span>
                 <span class="o">+.</span> <span class="err">$</span><span class="s1">'$" </span><span class="se">\'</span><span class="s1">{!name}</span><span class="se">\'</span><span class="s1"> at </span><span class="se">\'</span><span class="s1">{!root_dir}</span><span class="se">\'</span><span class="s1"> (until </span><span class="se">\'</span><span class="s1">{!dir}</span><span class="se">\'</span><span class="s1">)"'</span>
                 <span class="o">|&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="p">:</span> <span class="n">string</span>
                 <span class="o">|&gt;</span> <span class="n">Error</span>
-    <span class="n">root_dir</span> <span class="o">|&gt;</span> <span class="n">loop</span>
+    <span class="n">root_dir</span> <span class="o">|&gt;</span> <span class="n">루프</span>
 </pre></div>
 </div>
 </div>
@@ -10265,7 +10265,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">read_link</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">resultm</span><span class="o">.</span><span class="n">result</span><span class="s1">' path_buf stream.io_error =</span>
-    <span class="n">let</span> <span class="n">run</span> <span class="n">loop</span> <span class="n">n</span> <span class="n">error</span> <span class="n">path</span><span class="s1">' =</span>
+    <span class="n">let</span> <span class="n">run</span> <span class="n">루프</span> <span class="n">n</span> <span class="n">error</span> <span class="n">path</span><span class="s1">' =</span>
         <span class="n">inl</span> <span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="s1">' |&gt; get_file_name</span>
         <span class="n">inl</span> <span class="n">parent</span> <span class="o">=</span> <span class="n">path</span><span class="s1">' |&gt; directory_get_parent |&gt; optionm'</span><span class="o">.</span><span class="n">unbox</span>
         <span class="n">inl</span> <span class="n">error</span><span class="s1">''</span> <span class="o">=</span> <span class="n">error</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format</span>
@@ -10276,7 +10276,7 @@ a.anchor-link {
             <span class="o">|&gt;</span> <span class="n">stream</span><span class="o">.</span><span class="n">new_io_error</span>
             <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">err</span>
         <span class="o">|</span> <span class="n">Some</span> <span class="n">parent</span> <span class="n">when</span> <span class="n">path</span><span class="s1">' &lt;&gt;. "" =&gt;</span>
-            <span class="k">match</span> <span class="n">loop</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">map_error</span><span class="s1">' sm'</span><span class="o">.</span><span class="n">format</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">unbox</span> <span class="k">with</span>
+            <span class="k">match</span> <span class="n">루프</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">parent</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">map_error</span><span class="s1">' sm'</span><span class="o">.</span><span class="n">format</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">unbox</span> <span class="k">with</span>
             <span class="o">|</span> <span class="n">Ok</span> <span class="n">parent</span><span class="s1">' =&gt;</span>
                 <span class="p">(</span><span class="n">parent</span><span class="s1">' |&gt; path_buf_display |&gt; convert) &lt;/&gt; name</span>
                 <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.to_std_string</span>
@@ -10298,8 +10298,8 @@ a.anchor-link {
             <span class="k">if</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">directory_exists</span>
             <span class="n">then</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"std::fs::read_link(&amp;*$0)"'</span><span class="p">)</span>
             <span class="k">else</span>
-                <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
-                <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span>
+                <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
+                <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span>
                     <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span>
                     <span class="p">(</span><span class="n">path</span><span class="s1">' : string)</span>
                     <span class="p">:</span> <span class="n">resultm</span><span class="o">.</span><span class="n">result</span><span class="s1">' path_buf stream.io_error</span>
@@ -10310,13 +10310,13 @@ a.anchor-link {
                             <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">result</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">map_error</span><span class="s1">' sm'</span><span class="o">.</span><span class="n">format</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">unbox</span>
                             <span class="k">match</span> <span class="n">result</span> <span class="k">with</span>
                             <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">ok</span><span class="s1">''</span>
-                            <span class="o">|</span> <span class="n">Error</span> <span class="n">error</span> <span class="o">=&gt;</span> <span class="n">path</span><span class="s1">' |&gt; run loop n error</span>
+                            <span class="o">|</span> <span class="n">Error</span> <span class="n">error</span> <span class="o">=&gt;</span> <span class="n">path</span><span class="s1">' |&gt; run 루프 n error</span>
                         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
-                <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">loop</span> <span class="mi">0</span><span class="n">u8</span>
+                <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">루프</span> <span class="mi">0</span><span class="n">u8</span>
         <span class="o">|</span> <span class="n">Fsharp</span> <span class="n">_</span>
         <span class="o">|</span> <span class="n">TypeScript</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
-            <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span>
+            <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">n</span> <span class="n">path</span><span class="s1">' =</span>
+            <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span>
                 <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span>
                 <span class="p">(</span><span class="n">path</span><span class="s1">' : string)</span>
                 <span class="p">:</span> <span class="n">resultm</span><span class="o">.</span><span class="n">result</span><span class="s1">' path_buf stream.io_error</span>
@@ -10338,8 +10338,8 @@ a.anchor-link {
                         <span class="o">+.</span> <span class="err">$</span><span class="s1">'$"The file or directory is not a reparse point. / "'</span>
                         <span class="o">+.</span> <span class="err">$</span><span class="s1">'$"path: {!path} / result: {!result} / path</span><span class="se">\'</span><span class="s1">: {!path'</span><span class="p">}</span> <span class="o">/</span> <span class="n">n</span><span class="p">:</span> <span class="p">{</span><span class="err">!</span><span class="n">n</span><span class="p">}</span><span class="s2">"'</span>
                         <span class="o">|&gt;</span> <span class="n">stream</span><span class="o">.</span><span class="n">new_io_error</span>
-                    <span class="n">path</span><span class="s1">' |&gt; run loop n error</span>
-            <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">loop</span> <span class="mi">0</span><span class="n">u8</span>
+                    <span class="n">path</span><span class="s1">' |&gt; run 루프 n error</span>
+            <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">루프</span> <span class="mi">0</span><span class="n">u8</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Unchecked.defaultof&lt;_&gt;'</span>
 </pre></div>
 </div>
@@ -10939,7 +10939,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">delete_directory_async</span> <span class="n">path</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">run_target</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -10956,10 +10956,10 @@ a.anchor-link {
                                         <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">get_file_name</span>
                                     <span class="p">}</span>
                             <span class="k">async</span><span class="o">.</span><span class="n">sleep</span> <span class="mi">10</span><span class="n">i32</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">do</span>
-                            <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
+                            <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
                 <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">new_async</span>
             <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -11043,7 +11043,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = 210; expected = 210 }
+<pre>{ name = __assert_eq; actual = 212; expected = 212 }
 </pre>
 </div>
 </div>
@@ -11208,7 +11208,7 @@ a.anchor-link {
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .rs output (rust -d chrono):
-00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_2470f4d675819b1a98797daa0fb249a8c6fcb3d1a297c93ae36e9df378122020\20250604-0037-5312-1746-0000000d6312 }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #1 file_system.create_dir / { dir = C:\Users\i574n\AppData\Local\Temp\!create_temp_path_\spiral_2470f4d675819b1a98797daa0fb249a8c6fcb3d1a297c93ae36e9df378122020\20250605-1308-0973-1178-00000019e1a5 }
 { name = __assert_eq; actual = true; expected = true }
 { name = __assert_eq; actual = true; expected = true }
 { name = __assert_eq; actual = false; expected = false }
@@ -11309,7 +11309,7 @@ a.anchor-link {
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #9 _3
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #10 5
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #11 6
-{ name = __assert_between; actual = 122; expected = 50, 180 }
+{ name = __assert_between; actual = 124; expected = 50, 180 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>
@@ -11644,7 +11644,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">wait_for_file_access</span> <span class="n">access</span> <span class="n">path</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">run_target</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="n">inl</span> <span class="n">file_access</span><span class="p">,</span> <span class="n">file_share</span> <span class="o">=</span>
@@ -11671,10 +11671,10 @@ a.anchor-link {
                                         <span class="n">ex</span> <span class="o">=</span> <span class="n">ex</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format_exception</span>
                                     <span class="p">}</span>
                             <span class="k">async</span><span class="o">.</span><span class="n">sleep</span> <span class="mi">10</span><span class="n">i32</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">do</span>
-                            <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
+                            <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
                 <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">new_async</span>
             <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -11808,7 +11808,7 @@ a.anchor-link {
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #12 5
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #13 6
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #14 7
-{ name = __assert_between; actual = 127; expected = 50, 180 }
+{ name = __assert_between; actual = 128; expected = 50, 180 }
 { name = __assert_eq; actual = 1; expected = 1 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
@@ -11836,7 +11836,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">read_all_text_retry_async</span> <span class="n">full_path</span> <span class="p">:</span> <span class="k">async</span><span class="o">.</span><span class="k">async</span> <span class="p">(</span><span class="n">optionm</span><span class="s1">'.option'</span> <span class="n">string</span><span class="p">)</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="p">(</span><span class="n">optionm</span><span class="s1">'.option'</span> <span class="n">string</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="p">(</span><span class="n">optionm</span><span class="s1">'.option'</span> <span class="n">string</span><span class="p">)</span> <span class="o">=</span>
         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">try_unit</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11860,9 +11860,9 @@ a.anchor-link {
                                 <span class="p">}</span>
                             <span class="p">(</span><span class="kc">None</span> <span class="p">:</span> <span class="n">_</span> <span class="n">string</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.box |&gt; return</span>
                         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                            <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
+                            <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
         <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">new_async</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -11888,7 +11888,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">move_file_async</span> <span class="n">new_path</span> <span class="n">old_path</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">run_target</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -11906,10 +11906,10 @@ a.anchor-link {
                                         <span class="n">ex</span> <span class="o">=</span> <span class="n">ex</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format_exception</span>
                                     <span class="p">}</span>
                             <span class="k">async</span><span class="o">.</span><span class="n">sleep</span> <span class="mi">10</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">do</span>
-                            <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
+                            <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
                 <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">new_async_unit</span>
             <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -12014,7 +12014,7 @@ a.anchor-link {
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #11 6
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #12 7
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #13 8
-{ name = __assert_between; actual = 126; expected = 50, 200 }
+{ name = __assert_between; actual = 128; expected = 50, 200 }
 { name = __assert_between; actual = 0; expected = 0, 0 }
 { name = __assert_eq; actual = 0; expected = 0 }
 { name = __assert_eq; actual = true; expected = true }
@@ -12043,7 +12043,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">delete_file_async</span> <span class="n">path</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="p">:</span> <span class="n">_</span> <span class="n">i64</span> <span class="o">=</span>
         <span class="n">run_target</span> <span class="n">function</span>
             <span class="o">|</span> <span class="n">Fsharp</span> <span class="p">(</span><span class="n">Native</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -12060,10 +12060,10 @@ a.anchor-link {
                                         <span class="n">ex</span> <span class="o">=</span> <span class="n">ex</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format_exception</span>
                                     <span class="p">}</span>
                             <span class="k">async</span><span class="o">.</span><span class="n">sleep</span> <span class="mi">10</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">do</span>
-                            <span class="n">loop</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
+                            <span class="n">루프</span> <span class="p">(</span><span class="n">retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">return_await</span>
                 <span class="o">|&gt;</span> <span class="k">async</span><span class="o">.</span><span class="n">new_async</span>
             <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -12154,7 +12154,7 @@ a.anchor-link {
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #9 _3
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #10 5
 00:00:02 <span class="ansi-blue-intense-fg">d</span> #11 6
-{ name = __assert_between; actual = 125; expected = 50, 180 }
+{ name = __assert_between; actual = 128; expected = 50, 180 }
 { name = __assert_eq; actual = true; expected = true }
 </pre>
 </div>

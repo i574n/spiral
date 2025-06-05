@@ -29,11 +29,11 @@ type integration = (f64 -> f64) -> f64 -> f64 -> f64
 
 inl integral dt : integration =
     fun f a b =>
-        inl rec loop t y =
+        inl rec 루프 t y =
             if t < b
-            then loop (t + dt) (y + f t * dt)
+            then 루프 (t + dt) (y + f t * dt)
             else t, y
-        loop (a + dt / 2) 0
+        루프 (a + dt / 2) 0
         |> snd
 
 inl integral' dt : integration =

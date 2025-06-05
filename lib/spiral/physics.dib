@@ -133,11 +133,11 @@ type integration = (f64 -> f64) -> f64 -> f64 -> f64
 
 inl integral dt : integration =
     fun f a b =>
-        inl rec loop t y =
+        inl rec 루프 t y =
             if t < b
-            then loop (t + dt) (y + f t * dt)
+            then 루프 (t + dt) (y + f t * dt)
             else t, y
-        loop (a + dt / 2) 0
+        루프 (a + dt / 2) 0
         |> snd
 
 #!spiral
@@ -891,17 +891,17 @@ inl y = x |> am'.map_base (baseball_range 0.01 45)
 //// test
 
 inl best_angle (min, max) =
-    let rec loop theta_deg (best_range, best_theta_deg) =
+    let rec 루프 theta_deg (best_range, best_theta_deg) =
         if theta_deg > max
         then best_range, best_theta_deg
         else
             inl range = baseball_range 0.01 45 theta_deg
-            loop
+            루프
                 (theta_deg + 1)
                 (if range > best_range
                     then range, theta_deg
                     else best_range, best_theta_deg)
-    loop min (0f64, min)
+    루프 min (0f64, min)
 
 best_angle (30f64, 60f64)
 |> _assert_eq (116.77499158246208, 41)

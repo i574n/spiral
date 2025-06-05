@@ -111,16 +111,16 @@ inl choose forall dim {number} t u. (fn : t -> option u) (s : seq dim t) : seq d
             | Some x =>
                 match x |> fn with
                 | Some x when n = i' => Some x
-                | Some _ => loop (i + 1) (i' + 1)
-                | _ => loop (i + 1) i'
-        and inl loop i i' =
+                | Some _ => 루프 (i + 1) (i' + 1)
+                | _ => 루프 (i + 1) i'
+        and inl 루프 i i' =
             if n |> var_is |> not
             then body fn s i i'
             else
                 inl fn = join fn
                 inl s = join s
                 join body fn s i i'
-        loop 0 0
+        루프 0 0
 
 #!spiral
 
@@ -196,18 +196,18 @@ inl zip_with fn seq1 seq2 =
 #!spiral
 
 inl fold fn init seq =
-    inl rec loop acc n =
+    inl rec 루프 acc n =
         match seq n with
-        | Some x => loop (fn acc x) (n + 1)
+        | Some x => 루프 (fn acc x) (n + 1)
         | None => acc
-    loop init 0
+    루프 init 0
 
 inl fold_ fn init seq =
-    let rec loop acc n =
+    let rec 루프 acc n =
         match seq n with
-        | Some x => loop (fn acc x) (n + 1)
+        | Some x => 루프 (fn acc x) (n + 1)
         | None => acc
-    loop init 0
+    루프 init 0
 
 #!markdown
 
@@ -315,11 +315,11 @@ listm.init 10i32 id
 #!spiral
 
 inl take_while cond seq =
-    inl rec loop acc i =
+    inl rec 루프 acc i =
         match seq i with
-        | Some st when cond st i => loop (st :: acc) (i + 1)
+        | Some st when cond st i => 루프 (st :: acc) (i + 1)
         | _ => acc |> listm.rev
-    loop [] 0
+    루프 [] 0
 
 #!spiral
 
@@ -348,11 +348,11 @@ stream.new_finite_stream print_and_return 10i32
 #!spiral
 
 inl take_while_ cond seq =
-    let rec loop acc i =
+    let rec 루프 acc i =
         match seq i with
-        | Some st when cond st i => loop (st :: acc) (i + 1)
+        | Some st when cond st i => 루프 (st :: acc) (i + 1)
         | _ => acc |> listm.rev
-    loop [] 0
+    루프 [] 0
 
 #!spiral
 
@@ -445,12 +445,12 @@ seq
 
 // inl iterate f x0 num_steps =
 inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
-    // inl rec loop x n =
-    inl rec loop forall c {number}. (x : a) (n : c) : a =
+    // inl rec 루프 x n =
+    inl rec 루프 forall c {number}. (x : a) (n : c) : a =
         if n <= 0
         then x
-        else loop (f x) (n - 1)
-    loop x0 num_steps
+        else 루프 (f x) (n - 1)
+    루프 x0 num_steps
 
 #!spiral
 
@@ -463,12 +463,12 @@ inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
 
 // inl iterate_ f x0 num_steps =
 inl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
-    // let rec loop x n =
-    let rec loop forall c {number}. (x : a) (n : c) : a =
+    // let rec 루프 x n =
+    let rec 루프 forall c {number}. (x : a) (n : c) : a =
         if n <= 0
         then x
-        else loop (f x) (n - 1)
-    loop x0 num_steps
+        else 루프 (f x) (n - 1)
+    루프 x0 num_steps
 
 #!spiral
 

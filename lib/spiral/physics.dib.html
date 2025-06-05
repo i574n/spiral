@@ -8974,11 +8974,11 @@ velocity of car (m/s)
 
 <span class="n">inl</span> <span class="n">integral</span> <span class="n">dt</span> <span class="p">:</span> <span class="n">integration</span> <span class="o">=</span>
     <span class="n">fun</span> <span class="n">f</span> <span class="n">a</span> <span class="n">b</span> <span class="o">=&gt;</span>
-        <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">t</span> <span class="n">y</span> <span class="o">=</span>
+        <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">t</span> <span class="n">y</span> <span class="o">=</span>
             <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">b</span>
-            <span class="n">then</span> <span class="n">loop</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="p">)</span> <span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="n">f</span> <span class="n">t</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span>
+            <span class="n">then</span> <span class="n">루프</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="p">)</span> <span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="n">f</span> <span class="n">t</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span>
             <span class="k">else</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span>
-        <span class="n">loop</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="mi">0</span>
+        <span class="n">루프</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="mi">0</span>
         <span class="o">|&gt;</span> <span class="n">snd</span>
 </pre></div>
 </div>
@@ -12783,17 +12783,17 @@ horizontal range (m)
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
 
 <span class="n">inl</span> <span class="n">best_angle</span> <span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">)</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">theta_deg</span> <span class="p">(</span><span class="n">best_range</span><span class="p">,</span> <span class="n">best_theta_deg</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">theta_deg</span> <span class="p">(</span><span class="n">best_range</span><span class="p">,</span> <span class="n">best_theta_deg</span><span class="p">)</span> <span class="o">=</span>
         <span class="k">if</span> <span class="n">theta_deg</span> <span class="o">&gt;</span> <span class="nb">max</span>
         <span class="n">then</span> <span class="n">best_range</span><span class="p">,</span> <span class="n">best_theta_deg</span>
         <span class="k">else</span>
             <span class="n">inl</span> <span class="nb">range</span> <span class="o">=</span> <span class="n">baseball_range</span> <span class="mf">0.01</span> <span class="mi">45</span> <span class="n">theta_deg</span>
-            <span class="n">loop</span>
+            <span class="n">루프</span>
                 <span class="p">(</span><span class="n">theta_deg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="p">(</span><span class="k">if</span> <span class="nb">range</span> <span class="o">&gt;</span> <span class="n">best_range</span>
                     <span class="n">then</span> <span class="nb">range</span><span class="p">,</span> <span class="n">theta_deg</span>
                     <span class="k">else</span> <span class="n">best_range</span><span class="p">,</span> <span class="n">best_theta_deg</span><span class="p">)</span>
-    <span class="n">loop</span> <span class="nb">min</span> <span class="p">(</span><span class="mi">0</span><span class="n">f64</span><span class="p">,</span> <span class="nb">min</span><span class="p">)</span>
+    <span class="n">루프</span> <span class="nb">min</span> <span class="p">(</span><span class="mi">0</span><span class="n">f64</span><span class="p">,</span> <span class="nb">min</span><span class="p">)</span>
 
 <span class="n">best_angle</span> <span class="p">(</span><span class="mi">30</span><span class="n">f64</span><span class="p">,</span> <span class="mi">60</span><span class="n">f64</span><span class="p">)</span>
 <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="mf">116.77499158246208</span><span class="p">,</span> <span class="mi">41</span><span class="p">)</span>

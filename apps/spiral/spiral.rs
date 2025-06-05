@@ -13590,7 +13590,7 @@ mod module_1216f6c3 {
                             )),
                             string(" "),
                         )),
-                        string("common.retry_fn\' / loop"),
+                        string("common.retry_fn\' / 루프"),
                     )),
                     string(" / "),
                 )),

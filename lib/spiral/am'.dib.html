@@ -7735,11 +7735,11 @@ a.anchor-link {
     <span class="k">if</span> <span class="n">length</span> <span class="n">x1</span> <span class="o">&lt;&gt;..</span> <span class="n">length</span> <span class="n">x2</span>
     <span class="n">then</span> <span class="n">false</span>
     <span class="k">else</span>
-        <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span>
+        <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">i</span> <span class="o">=</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">length</span> <span class="n">x1</span>
-            <span class="n">then</span> <span class="n">index</span> <span class="n">i</span> <span class="n">x1</span> <span class="o">=</span> <span class="n">index</span> <span class="n">i</span> <span class="n">x2</span> <span class="o">&amp;&amp;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">then</span> <span class="n">index</span> <span class="n">i</span> <span class="n">x1</span> <span class="o">=</span> <span class="n">index</span> <span class="n">i</span> <span class="n">x2</span> <span class="o">&amp;&amp;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
             <span class="k">else</span> <span class="n">true</span>
-        <span class="n">loop</span> <span class="mi">0</span>
+        <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>

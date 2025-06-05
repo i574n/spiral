@@ -141,7 +141,7 @@ let rec run
                 else error |> resultm.anyhow_error |> resultm.err
             |> async.new_future_move
 
-        let rec loop (retry : u8) =
+        let rec 루프 (retry : u8) =
             inl max = 15
             inl init (error : _ string) =
                 fun () =>
@@ -172,9 +172,9 @@ let rec run
                 | Error error =>
                     trace Warning (fun () => "spiral_wasm.run / Error error") fun () => { retry error }
                     trace_raw Warning (fun () => "\n")
-                    loop (retry + 1) |> async.await
+                    루프 (retry + 1) |> async.await
             |> async.new_future_move
-        inl retries = loop 1 |> async.await
+        inl retries = 루프 1 |> async.await
 
         trace Verbose (fun () => "spiral_wasm.run") fun () => { retries }
 

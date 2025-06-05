@@ -191,25 +191,25 @@ inl (|>>) p f : parser _ =
 /// ### many
 // inl many p : parser (list _) = fun input =>
 inl many forall b c. (p : _ -> _ (b * _ * _) c) : parser (list _) = fun input =>
-    // let rec loop acc input =
-    let rec loop forall a.
+    // let rec 루프 acc input =
+    let rec 루프 forall a.
         (acc : list b)
         (input : string * parser_state)
         : result (list b * string * parser_state) a
         =
         match p input with
-        | Ok (result, rest) => loop (result :: acc) rest
+        | Ok (result, rest) => 루프 (result :: acc) rest
         | Error _ => Ok (acc |> listm.rev, input)
-    loop [] input
+    루프 [] input
 
 /// ### many1_chars
 inl many1_chars p : parser string =
     p >> resultm.map fun first_result, rest =>
-        let rec loop acc input =
+        let rec 루프 acc input =
             match p input with
-            | Ok (result, rest) => rest |> loop (acc ++# $result)
+            | Ok (result, rest) => rest |> 루프 (acc ++# $result)
             | Error _ => acc, input
-        rest |> loop $first_result
+        rest |> 루프 $first_result
 
 /// ### many_chars
 inl many_chars p : parser string = fun input =>
@@ -226,11 +226,11 @@ inl many_chars_till p end_p : parser string = fun input =>
 /// ### many1
 inl many1 p : parser (list _) =
     p >> resultm.map fun first_result, rest =>
-        let rec loop acc input =
+        let rec 루프 acc input =
             match p input with
-            | Ok (result, rest) => loop (result :: acc) rest
+            | Ok (result, rest) => 루프 (result :: acc) rest
             | Error _ => acc |> listm.rev, input
-        loop [ first_result ] rest
+        루프 [ first_result ] rest
 
 /// ### many1_strings
 inl many1_strings p : parser string =
@@ -252,15 +252,15 @@ inl many_strings p : parser string = fun input =>
 /// ### choice
 // inl choice parsers : parser _ = fun input =>
 inl choice forall t. parsers : parser t = fun input =>
-    // let rec loop = function
-    let rec loop forall a. (x : list (string * parser_state -> result a string)) : result a string =
+    // let rec 루프 = function
+    let rec 루프 forall a. (x : list (string * parser_state -> result a string)) : result a string =
         match x with
         | [] => Error "parsing.choice / no parsers succeeded"
         | p :: ps =>
             match p input with
             | Ok _ as result => result
-            | Error _ => loop ps
-    loop parsers
+            | Error _ => 루프 ps
+    루프 parsers
 
 /// ### between
 inl between p_open p_close p_content : parser _ = fun input =>
@@ -279,8 +279,8 @@ inl between p_open p_close p_content : parser _ = fun input =>
 /// ### sep_by
 // inl sep_by p sep : parser (list _) = fun input, s =>
 inl sep_by forall b. p sep : parser (list b) = fun input, s =>
-    // let rec loop acc input s =
-    let rec loop forall a.
+    // let rec 루프 acc input s =
+    let rec 루프 forall a.
         (acc : list b)
         (input : string)
         (s : parser_state)
@@ -289,21 +289,21 @@ inl sep_by forall b. p sep : parser (list b) = fun input, s =>
         match p (input, s) with
         | Ok (result, rest, s) =>
             match sep (rest, s) with
-            | Ok (_, rest, s) => loop (result :: acc) rest s
+            | Ok (_, rest, s) => 루프 (result :: acc) rest s
             | Error _ => Ok ((result :: acc) |> listm.rev, rest, s)
         | Error _ => Ok (acc |> listm.rev, input, s)
-    loop [] input s
+    루프 [] input s
 
 /// ### span
 inl span pred str =
-    // let rec loop i =
-    let rec loop forall t {number; int}. (i : t) : t =
+    // let rec 루프 i =
+    let rec 루프 forall t {number; int}. (i : t) : t =
         if i >= sm'.length str
         then i
         elif pred (str |> sm'.index i)
-        then loop (i + 1)
+        then 루프 (i + 1)
         else i
-    loop 0
+    루프 0
 
 /// ### spaces1
 inl spaces1 () : parser () = fun input, s =>

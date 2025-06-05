@@ -961,12 +961,12 @@ inl break () : () =
 #!spiral
 
 inl fix_closure' forall t. (depth : u8 * u8) (x : t) : string =
-    inl rec loop forall u {number}. (text : string) (acc : string) (n : u) : string =
+    inl rec 루프 forall u {number}. (text : string) (acc : string) (n : u) : string =
         if n <= 0
         then acc
-        else loop text (acc +. text) (n - 1)
-    inl a = depth |> fst |> loop "}" ""
-    inl b = depth |> snd |> loop "{" ""
+        else 루프 text (acc +. text) (n - 1)
+    inl a = depth |> fst |> 루프 "}" ""
+    inl b = depth |> snd |> 루프 "{" ""
     inl is_unit : bool =
         real
             typecase t with

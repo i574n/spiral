@@ -934,7 +934,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
 /// ### process_dib
 inl process_dib { path retries working_directory } =
     inl exit_code, repl_result =
-        let rec loop retry =
+        let rec 루프 retry =
             inl exit_code, repl_result =
                 runtime.execution_options fun x => { x with
                     command = $'$"dotnet repl --exit-after-run --run \\\"{!path}\\\" --output-path \\\"{!path}.ipynb\\\""'
@@ -953,8 +953,8 @@ inl process_dib { path retries working_directory } =
                 trace Debug
                     fun () => "spiral.run / repl error"
                     fun () => { exit_code repl_result retry = $'$"{!retry}/{!retries}"' : string }
-                loop (retry + 1)
-        loop 1
+                루프 (retry + 1)
+        루프 1
 
     inl exit_code, result =
         if exit_code <>. 0

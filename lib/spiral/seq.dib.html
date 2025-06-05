@@ -7845,16 +7845,16 @@ print_and_return{ x = 9 }
             <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">=&gt;</span>
                 <span class="k">match</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">fn</span> <span class="k">with</span>
                 <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="n">when</span> <span class="n">n</span> <span class="o">=</span> <span class="n">i</span><span class="s1">' =&gt; Some x</span>
-                <span class="o">|</span> <span class="n">Some</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="n">i</span><span class="s1">' + 1)</span>
-                <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">i</span><span class="s1">'</span>
-        <span class="ow">and</span> <span class="n">inl</span> <span class="n">loop</span> <span class="n">i</span> <span class="n">i</span><span class="s1">' =</span>
+                <span class="o">|</span> <span class="n">Some</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="n">i</span><span class="s1">' + 1)</span>
+                <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">i</span><span class="s1">'</span>
+        <span class="ow">and</span> <span class="n">inl</span> <span class="n">루프</span> <span class="n">i</span> <span class="n">i</span><span class="s1">' =</span>
             <span class="k">if</span> <span class="n">n</span> <span class="o">|&gt;</span> <span class="n">var_is</span> <span class="o">|&gt;</span> <span class="ow">not</span>
             <span class="n">then</span> <span class="n">body</span> <span class="n">fn</span> <span class="n">s</span> <span class="n">i</span> <span class="n">i</span><span class="s1">'</span>
             <span class="k">else</span>
                 <span class="n">inl</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">join</span> <span class="n">fn</span>
                 <span class="n">inl</span> <span class="n">s</span> <span class="o">=</span> <span class="n">join</span> <span class="n">s</span>
                 <span class="n">join</span> <span class="n">body</span> <span class="n">fn</span> <span class="n">s</span> <span class="n">i</span> <span class="n">i</span><span class="s1">'</span>
-        <span class="n">loop</span> <span class="mi">0</span> <span class="mi">0</span>
+        <span class="n">루프</span> <span class="mi">0</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -8100,18 +8100,18 @@ print_and_return{ x = 9 }
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">fold</span> <span class="n">fn</span> <span class="n">init</span> <span class="n">seq</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">acc</span> <span class="n">n</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">acc</span> <span class="n">n</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">seq</span> <span class="n">n</span> <span class="k">with</span>
-        <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">fn</span> <span class="n">acc</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">fn</span> <span class="n">acc</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">acc</span>
-    <span class="n">loop</span> <span class="n">init</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="n">init</span> <span class="mi">0</span>
 
 <span class="n">inl</span> <span class="n">fold_</span> <span class="n">fn</span> <span class="n">init</span> <span class="n">seq</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">acc</span> <span class="n">n</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">acc</span> <span class="n">n</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">seq</span> <span class="n">n</span> <span class="k">with</span>
-        <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">fn</span> <span class="n">acc</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="o">|</span> <span class="n">Some</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">fn</span> <span class="n">acc</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">acc</span>
-    <span class="n">loop</span> <span class="n">init</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="n">init</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -8414,11 +8414,11 @@ print_and_return{ x = 9 }
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">take_while</span> <span class="n">cond</span> <span class="n">seq</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">acc</span> <span class="n">i</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">acc</span> <span class="n">i</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">seq</span> <span class="n">i</span> <span class="k">with</span>
-        <span class="o">|</span> <span class="n">Some</span> <span class="n">st</span> <span class="n">when</span> <span class="n">cond</span> <span class="n">st</span> <span class="n">i</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">st</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="o">|</span> <span class="n">Some</span> <span class="n">st</span> <span class="n">when</span> <span class="n">cond</span> <span class="n">st</span> <span class="n">i</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">st</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">acc</span> <span class="o">|&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">rev</span>
-    <span class="n">loop</span> <span class="p">[]</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="p">[]</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -8526,11 +8526,11 @@ print_and_return{ x = 5 }
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">take_while_</span> <span class="n">cond</span> <span class="n">seq</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">acc</span> <span class="n">i</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">acc</span> <span class="n">i</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">seq</span> <span class="n">i</span> <span class="k">with</span>
-        <span class="o">|</span> <span class="n">Some</span> <span class="n">st</span> <span class="n">when</span> <span class="n">cond</span> <span class="n">st</span> <span class="n">i</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="p">(</span><span class="n">st</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="o">|</span> <span class="n">Some</span> <span class="n">st</span> <span class="n">when</span> <span class="n">cond</span> <span class="n">st</span> <span class="n">i</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="p">(</span><span class="n">st</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">acc</span> <span class="o">|&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">rev</span>
-    <span class="n">loop</span> <span class="p">[]</span> <span class="mi">0</span>
+    <span class="n">루프</span> <span class="p">[]</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -8784,12 +8784,12 @@ print_and_return{ x = 5 }
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">inl</span> <span class="n">iterate</span> <span class="n">f</span> <span class="n">x0</span> <span class="n">num_steps</span> <span class="o">=</span>
 <span class="n">inl</span> <span class="n">iterate</span> <span class="n">forall</span> <span class="n">a</span> <span class="n">b</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">f</span> <span class="p">:</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">x0</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">num_steps</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">=</span>
-    <span class="o">//</span> <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">x</span> <span class="n">n</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">c</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">=</span>
+    <span class="o">//</span> <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">x</span> <span class="n">n</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">forall</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">c</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">=</span>
         <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">0</span>
         <span class="n">then</span> <span class="n">x</span>
-        <span class="k">else</span> <span class="n">loop</span> <span class="p">(</span><span class="n">f</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">loop</span> <span class="n">x0</span> <span class="n">num_steps</span>
+        <span class="k">else</span> <span class="n">루프</span> <span class="p">(</span><span class="n">f</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">루프</span> <span class="n">x0</span> <span class="n">num_steps</span>
 </pre></div>
 </div>
 </div>
@@ -8835,12 +8835,12 @@ print_and_return{ x = 5 }
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">inl</span> <span class="n">iterate_</span> <span class="n">f</span> <span class="n">x0</span> <span class="n">num_steps</span> <span class="o">=</span>
 <span class="n">inl</span> <span class="n">iterate_</span> <span class="n">forall</span> <span class="n">a</span> <span class="n">b</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">f</span> <span class="p">:</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">x0</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">num_steps</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">=</span>
-    <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">x</span> <span class="n">n</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">c</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">=</span>
+    <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">x</span> <span class="n">n</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">forall</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">c</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="o">=</span>
         <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">0</span>
         <span class="n">then</span> <span class="n">x</span>
-        <span class="k">else</span> <span class="n">loop</span> <span class="p">(</span><span class="n">f</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">loop</span> <span class="n">x0</span> <span class="n">num_steps</span>
+        <span class="k">else</span> <span class="n">루프</span> <span class="p">(</span><span class="n">f</span> <span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">루프</span> <span class="n">x0</span> <span class="n">num_steps</span>
 </pre></div>
 </div>
 </div>

@@ -14,7 +14,7 @@ open testing
 
 #!markdown
 
-## execution
+## base
 
 #!markdown
 
@@ -46,19 +46,11 @@ inl use forall t. (x : t) : t =
 
 #!markdown
 
-## type
-
-#!markdown
-
 ### unit
 
 #!spiral
 
 nominal unit = $'unit'
-
-#!markdown
-
-## target
 
 #!markdown
 
@@ -204,10 +196,6 @@ run_target function
     | Python (Native) => fun () => $'1uy'
     | _ => fun () => $'2uy'
 |> _assert_eq 1u8
-
-#!markdown
-
-## function
 
 #!markdown
 
@@ -477,10 +465,6 @@ inl join_body_unit body d x =
 
 #!markdown
 
-## arithmetic
-
-#!markdown
-
 ### (+.)
 
 #!spiral
@@ -569,10 +553,6 @@ inl (/.) forall t. (a : t) (b : t) : t =
 
 #!markdown
 
-## comparison
-
-#!markdown
-
 ### (=.)
 
 #!spiral
@@ -650,10 +630,6 @@ inl (<>..) a b =
 
 #!markdown
 
-## composition
-
-#!markdown
-
 ### append
 
 #!spiral
@@ -668,10 +644,6 @@ prototype append t : t -> t -> t
 
 inl (++) a b =
     b |> append a
-
-#!markdown
-
-## pair
 
 #!markdown
 
@@ -754,10 +726,6 @@ new_pair "a" (new_pair 1i32 "b")
 
 #!markdown
 
-## application
-
-#!markdown
-
 ### (||>)
 
 #!spiral
@@ -810,10 +778,6 @@ inl fix_condition x a b =
         $'fix_condition then *) else' : ()
         b () |> fun x => $'(* fix_condition else' : ()
     |> fun x => $'fix_condition else *)' : ()
-
-#!markdown
-
-## type
 
 #!markdown
 
@@ -912,10 +876,6 @@ inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =
 
 #!markdown
 
-## ref
-
-#!markdown
-
 ### ref
 
 #!spiral
@@ -949,10 +909,6 @@ inl ref_value forall t. (x : ref t) : t =
 inl ref_set_value forall t. (value : t) (ref : ref t) : ref t =
     $'!ref.Value <- !value '
     ref
-
-#!markdown
-
-## convert
 
 #!markdown
 
@@ -1137,10 +1093,6 @@ inl to_any forall t. (obj : t) : any =
 #!spiral
 
 instance (~:>) any = to_any
-
-#!markdown
-
-## error
 
 #!markdown
 

@@ -8483,12 +8483,12 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">map4</span> <span class="n">f</span> <span class="n">l1</span> <span class="n">l2</span> <span class="n">l3</span> <span class="n">l4</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">l1</span> <span class="n">l2</span> <span class="n">l3</span> <span class="n">l4</span> <span class="n">acc</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">l1</span> <span class="n">l2</span> <span class="n">l3</span> <span class="n">l4</span> <span class="n">acc</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">l3</span><span class="p">,</span> <span class="n">l4</span> <span class="k">with</span>
         <span class="o">|</span> <span class="p">(</span><span class="n">x1</span> <span class="p">::</span> <span class="n">xs1</span><span class="p">),</span> <span class="p">(</span><span class="n">x2</span> <span class="p">::</span> <span class="n">xs2</span><span class="p">),</span> <span class="p">(</span><span class="n">x3</span> <span class="p">::</span> <span class="n">xs3</span><span class="p">),</span> <span class="p">(</span><span class="n">x4</span> <span class="p">::</span> <span class="n">xs4</span><span class="p">)</span> <span class="o">=&gt;</span>
-            <span class="n">loop</span> <span class="n">xs1</span> <span class="n">xs2</span> <span class="n">xs3</span> <span class="n">xs4</span> <span class="p">(</span><span class="n">f</span> <span class="n">x1</span> <span class="n">x2</span> <span class="n">x3</span> <span class="n">x4</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span>
+            <span class="n">루프</span> <span class="n">xs1</span> <span class="n">xs2</span> <span class="n">xs3</span> <span class="n">xs4</span> <span class="p">(</span><span class="n">f</span> <span class="n">x1</span> <span class="n">x2</span> <span class="n">x3</span> <span class="n">x4</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">acc</span> <span class="o">|&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">rev</span>
-    <span class="n">loop</span> <span class="n">l1</span> <span class="n">l2</span> <span class="n">l3</span> <span class="n">l4</span> <span class="p">[]</span>
+    <span class="n">루프</span> <span class="n">l1</span> <span class="n">l2</span> <span class="n">l3</span> <span class="n">l4</span> <span class="p">[]</span>
 </pre></div>
 </div>
 </div>
@@ -8933,28 +8933,28 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">//</span> <span class="n">inl</span> <span class="n">try_index_of</span> <span class="n">item</span> <span class="nb">list</span> <span class="o">=</span>
 <span class="n">inl</span> <span class="n">try_index_of</span> <span class="n">forall</span> <span class="n">b</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">item</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">(</span><span class="nb">list</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">option</span> <span class="n">c</span> <span class="o">=</span>
-    <span class="o">//</span> <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">a</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">i</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">a</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="o">//</span> <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">forall</span> <span class="n">a</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">i</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">a</span> <span class="o">=</span> <span class="n">function</span>
         <span class="o">|</span> <span class="p">[]</span> <span class="o">=&gt;</span> <span class="kc">None</span>
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
             <span class="k">if</span> <span class="n">x</span> <span class="o">=</span> <span class="n">item</span>
             <span class="n">then</span> <span class="n">Some</span> <span class="n">i</span>
-            <span class="k">else</span> <span class="n">loop</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">xs</span>
-    <span class="n">loop</span> <span class="mi">0</span> <span class="nb">list</span>
+            <span class="k">else</span> <span class="n">루프</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">xs</span>
+    <span class="n">루프</span> <span class="mi">0</span> <span class="nb">list</span>
 
 <span class="n">inl</span> <span class="n">index_of</span> <span class="n">item</span> <span class="o">=</span>
     <span class="n">try_index_of</span> <span class="n">item</span> <span class="o">&gt;&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
 
 <span class="o">//</span> <span class="n">inl</span> <span class="n">try_index_of_</span> <span class="n">item</span> <span class="nb">list</span> <span class="o">=</span>
 <span class="n">inl</span> <span class="n">try_index_of_</span> <span class="n">forall</span> <span class="n">b</span> <span class="n">c</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">item</span> <span class="p">:</span> <span class="n">b</span><span class="p">)</span> <span class="p">(</span><span class="nb">list</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span><span class="p">)</span> <span class="p">:</span> <span class="n">option</span> <span class="n">c</span> <span class="o">=</span>
-    <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">forall</span> <span class="n">a</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">i</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">a</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="o">//</span> <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">i</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">forall</span> <span class="n">a</span> <span class="p">{</span><span class="n">number</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">i</span> <span class="p">:</span> <span class="n">a</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">a</span> <span class="o">=</span> <span class="n">function</span>
         <span class="o">|</span> <span class="p">[]</span> <span class="o">=&gt;</span> <span class="kc">None</span>
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
             <span class="k">if</span> <span class="n">x</span> <span class="o">=</span> <span class="n">item</span>
             <span class="n">then</span> <span class="n">Some</span> <span class="n">i</span>
-            <span class="k">else</span> <span class="n">loop</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">xs</span>
-    <span class="n">loop</span> <span class="mi">0</span> <span class="nb">list</span>
+            <span class="k">else</span> <span class="n">루프</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="n">xs</span>
+    <span class="n">루프</span> <span class="mi">0</span> <span class="nb">list</span>
 
 <span class="n">inl</span> <span class="n">index_of_</span> <span class="n">item</span> <span class="o">=</span>
     <span class="n">try_index_of_</span> <span class="n">item</span> <span class="o">&gt;&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
@@ -8963,7 +8963,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
     <span class="n">inl</span> <span class="n">i</span> <span class="o">=</span> <span class="n">mut</span> <span class="mi">0</span>
     <span class="n">inl</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">mut</span> <span class="nb">list</span>
     <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mut</span> <span class="kc">None</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="p">()</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="p">()</span> <span class="o">=</span>
         <span class="k">match</span> <span class="o">*</span><span class="nb">list</span> <span class="k">with</span>
         <span class="o">|</span> <span class="p">[]</span> <span class="o">=&gt;</span> <span class="n">result</span> <span class="o">&lt;-</span> <span class="kc">None</span>
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
@@ -8972,8 +8972,8 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
             <span class="k">else</span>
                 <span class="n">i</span> <span class="o">&lt;-</span> <span class="o">*</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
                 <span class="nb">list</span> <span class="o">&lt;-</span> <span class="n">xs</span>
-                <span class="n">loop</span> <span class="p">()</span>
-    <span class="n">loop</span> <span class="p">()</span>
+                <span class="n">루프</span> <span class="p">()</span>
+    <span class="n">루프</span> <span class="p">()</span>
     <span class="o">*</span><span class="n">result</span>
 
 <span class="n">inl</span> <span class="n">index_of__</span> <span class="n">item</span> <span class="o">=</span>
@@ -9065,22 +9065,22 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">try_find</span> <span class="n">fn</span> <span class="nb">list</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="o">=</span> <span class="n">function</span>
         <span class="o">|</span> <span class="p">[]</span> <span class="o">=&gt;</span> <span class="kc">None</span>
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
             <span class="k">if</span> <span class="n">fn</span> <span class="n">x</span>
             <span class="n">then</span> <span class="n">Some</span> <span class="n">x</span>
-            <span class="k">else</span> <span class="n">loop</span> <span class="n">xs</span>
-    <span class="n">loop</span> <span class="nb">list</span>
+            <span class="k">else</span> <span class="n">루프</span> <span class="n">xs</span>
+    <span class="n">루프</span> <span class="nb">list</span>
 
 <span class="n">inl</span> <span class="n">try_find_</span> <span class="n">fn</span> <span class="nb">list</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="o">=</span> <span class="n">function</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="o">=</span> <span class="n">function</span>
         <span class="o">|</span> <span class="p">[]</span> <span class="o">=&gt;</span> <span class="kc">None</span>
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
             <span class="k">if</span> <span class="n">fn</span> <span class="n">x</span>
             <span class="n">then</span> <span class="n">Some</span> <span class="n">x</span>
-            <span class="k">else</span> <span class="n">loop</span> <span class="n">xs</span>
-    <span class="n">loop</span> <span class="nb">list</span>
+            <span class="k">else</span> <span class="n">루프</span> <span class="n">xs</span>
+    <span class="n">루프</span> <span class="nb">list</span>
 </pre></div>
 </div>
 </div>
@@ -9275,20 +9275,20 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">zip_with</span> <span class="n">fn</span> <span class="n">xs</span> <span class="n">ys</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">acc</span> <span class="n">xs</span> <span class="n">ys</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">acc</span> <span class="n">xs</span> <span class="n">ys</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">xs</span><span class="p">,</span> <span class="n">ys</span> <span class="k">with</span>
         <span class="o">|</span> <span class="n">Cons</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">xs</span><span class="p">),</span> <span class="n">Cons</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ys</span><span class="p">)</span> <span class="o">=&gt;</span>
-            <span class="n">loop</span> <span class="p">(</span><span class="n">fn</span> <span class="n">x</span> <span class="n">y</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="n">xs</span> <span class="n">ys</span>
+            <span class="n">루프</span> <span class="p">(</span><span class="n">fn</span> <span class="n">x</span> <span class="n">y</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="n">xs</span> <span class="n">ys</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">rev</span> <span class="n">acc</span>
-    <span class="n">loop</span> <span class="p">[]</span> <span class="n">xs</span> <span class="n">ys</span>
+    <span class="n">루프</span> <span class="p">[]</span> <span class="n">xs</span> <span class="n">ys</span>
 
 <span class="n">inl</span> <span class="n">zip_with_</span> <span class="n">fn</span> <span class="n">xs</span> <span class="n">ys</span> <span class="o">=</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">acc</span> <span class="n">xs</span> <span class="n">ys</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">acc</span> <span class="n">xs</span> <span class="n">ys</span> <span class="o">=</span>
         <span class="k">match</span> <span class="n">xs</span><span class="p">,</span> <span class="n">ys</span> <span class="k">with</span>
         <span class="o">|</span> <span class="n">Cons</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">xs</span><span class="p">),</span> <span class="n">Cons</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ys</span><span class="p">)</span> <span class="o">=&gt;</span>
-            <span class="n">loop</span> <span class="p">(</span><span class="n">fn</span> <span class="n">x</span> <span class="n">y</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="n">xs</span> <span class="n">ys</span>
+            <span class="n">루프</span> <span class="p">(</span><span class="n">fn</span> <span class="n">x</span> <span class="n">y</span> <span class="p">::</span> <span class="n">acc</span><span class="p">)</span> <span class="n">xs</span> <span class="n">ys</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">rev</span> <span class="n">acc</span>
-    <span class="n">loop</span> <span class="p">[]</span> <span class="n">xs</span> <span class="n">ys</span>
+    <span class="n">루프</span> <span class="p">[]</span> <span class="n">xs</span> <span class="n">ys</span>
 </pre></div>
 </div>
 </div>
@@ -9663,15 +9663,15 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
         <span class="o">|</span> <span class="n">x</span> <span class="p">::</span> <span class="n">xs</span> <span class="o">=&gt;</span>
             <span class="k">match</span> <span class="n">fn</span> <span class="n">x</span> <span class="k">with</span>
             <span class="o">|</span> <span class="n">Some</span> <span class="n">y</span> <span class="o">=&gt;</span> <span class="n">Some</span> <span class="n">y</span>
-            <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">loop</span> <span class="n">xs</span>
-    <span class="ow">and</span> <span class="n">inl</span> <span class="n">loop</span> <span class="nb">list</span> <span class="o">=</span>
+            <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">루프</span> <span class="n">xs</span>
+    <span class="ow">and</span> <span class="n">inl</span> <span class="n">루프</span> <span class="nb">list</span> <span class="o">=</span>
         <span class="k">if</span> <span class="n">var_is</span> <span class="nb">list</span> <span class="o">|&gt;</span> <span class="ow">not</span>
         <span class="n">then</span> <span class="n">body</span> <span class="n">fn</span> <span class="nb">list</span>
         <span class="k">else</span>
             <span class="n">inl</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">join</span> <span class="n">fn</span>
             <span class="n">inl</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">dyn</span> <span class="nb">list</span>
             <span class="n">join</span> <span class="n">body</span> <span class="n">fn</span> <span class="nb">list</span>
-    <span class="n">loop</span> <span class="nb">list</span>
+    <span class="n">루프</span> <span class="nb">list</span>
 </pre></div>
 </div>
 </div>
@@ -9729,13 +9729,13 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">exists</span><span class="s1">' f x =</span>
     <span class="n">inl</span> <span class="n">length_x</span> <span class="p">:</span> <span class="n">i64</span> <span class="o">=</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">length</span>
-    <span class="n">let</span> <span class="n">rec</span> <span class="n">loop</span> <span class="n">i</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">rec</span> <span class="n">루프</span> <span class="n">i</span> <span class="o">=</span>
         <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">length_x</span>
         <span class="n">then</span> <span class="n">false</span>
         <span class="k">elif</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">item</span> <span class="n">i</span> <span class="o">|&gt;</span> <span class="n">f</span>
         <span class="n">then</span> <span class="n">true</span>
-        <span class="k">else</span> <span class="n">loop</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">loop</span> <span class="mi">0</span>
+        <span class="k">else</span> <span class="n">루프</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">루프</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -9802,7 +9802,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 
 .gleam output (Gleam):
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\7e2ab23d9eacad24f9bf531c0691f3ea3276505f45c5ae81da0557f326934477\src\main.gleam:35:45</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8d3d632f04e3db1d28de271ea767bd25e3de6dd98d5f74a9ff7143bd7f78e584\src\main.gleam:35:45</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">35 │                                         let v10 = v7 - 1</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">   │                                             ^^^ This variable is never used</span>
@@ -9810,7 +9810,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v10`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\7e2ab23d9eacad24f9bf531c0691f3ea3276505f45c5ae81da0557f326934477\src\main.gleam:180:37</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8d3d632f04e3db1d28de271ea767bd25e3de6dd98d5f74a9ff7143bd7f78e584\src\main.gleam:180:37</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">180 │                                 let v7 = v4 - 1</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                                     ^^ This variable is never used</span>
@@ -9818,13 +9818,27 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v7`.</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable code</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\7e2ab23d9eacad24f9bf531c0691f3ea3276505f45c5ae81da0557f326934477\src\main.gleam:216:22</span>
+<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8d3d632f04e3db1d28de271ea767bd25e3de6dd98d5f74a9ff7143bd7f78e584\src\main.gleam:216:22</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">216 │             let v3 = v2 == "a"</span>
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │                      ^^^^^^^^^</span>
 
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This code is unreachable because it comes after a `panic`.</span>
 
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\8d3d632f04e3db1d28de271ea767bd25e3de6dd98d5f74a9ff7143bd7f78e584\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\8d3d632f04e3db1d28de271ea767bd25e3de6dd98d5f74a9ff7143bd7f78e584\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+src\main.gleam:36:46: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
+%   36|                                         Us0i1
+%     |                                              ^
+
+src\main.gleam:181:37: Warning: the result of evaluating operator '-'/2 is ignored (suppress the warning by assigning the expression to the _ variable)
+%  181|                                 Us0i1
+%     |                                     ^
+
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/8d3d632f04e3db1d28de271ea767bd25e3de6dd98d5f74a9ff7143bd7f78e584/build/dev/erlang/main/ebin/main.beam"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/8d3d632f04e3db1d28de271ea767bd25e3de6dd98d5f74a9ff7143bd7f78e584/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = true; expected = true }
 { name = __assert_eq; actual = false; expected = false }
 { name = __assert_eq; actual = false; expected = false }
@@ -11590,8 +11604,16 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 .py output:
 { name = __assert_eq; actual = UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))); expected = UH0_1 ("1", UH0_1 ("2", UH0_1 ("3", UH0_0))) }
 
+
 .gleam output (Gleam):
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\87494bde905a6fdfd9b353be88dab83e1ff0eea2f49fde664c7670b16a1f359d\\build\\dev\\erlang\\main\\_gleam_artefacts\\main.erl"}
+{compiling,"c:\\home\\git\\polyglot\\target\\spiral_Eval\\packages\\87494bde905a6fdfd9b353be88dab83e1ff0eea2f49fde664c7670b16a1f359d\\build\\dev\\erlang\\main\\_gleam_artefacts\\main@@main.erl"}
+{compiled,main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/87494bde905a6fdfd9b353be88dab83e1ff0eea2f49fde664c7670b16a1f359d/build/dev/erlang/main/ebin/main.beam"}
+{compiled,main@@main,
+          "c:/home/git/polyglot/target/spiral_Eval/packages/87494bde905a6fdfd9b353be88dab83e1ff0eea2f49fde664c7670b16a1f359d/build/dev/erlang/main/ebin/main@@main.beam"}
 { name = __assert_eq; actual = Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))); expected = Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))) }
+
 
 </pre>
 </div>
