@@ -157,7 +157,7 @@ let test_port_open_timeout timeout host port : _ bool = async.new_async_unit fun
 
 /// ### wait_for_port_access
 let wait_for_port_access timeout status host port : _ i64 =
-    let rec loop forall t {number}. (retry : t) : async.async i64 =
+    let rec 루프 forall t {number}. (retry : t) : async.async i64 =
         fun () =>
             inl is_port_open =
                 match timeout |> optionm'.unbox with
@@ -173,13 +173,13 @@ let wait_for_port_access timeout status host port : _ i64 =
                             fun () => "networking.wait_for_port_access"
                             fun () => { port retry timeout status }
                     async.sleep 10 |> async.do
-                    loop (retry + 1) |> async.return_await
+                    루프 (retry + 1) |> async.return_await
         |> async.new_async_unit
-    loop 1i64
+    루프 1i64
 
 /// ### get_available_port
 let get_available_port timeout host initial_port : _ i32 =
-    let rec loop port : _ i32 =
+    let rec 루프 port : _ i32 =
         fun () =>
             inl is_port_open =
                 match timeout |> optionm'.unbox with
@@ -189,9 +189,9 @@ let get_available_port timeout host initial_port : _ i32 =
             fix_condition
                 fun () => is_port_open |> not
                 fun () => port |> return
-                fun () => loop (port + 1) |> async.return_await
+                fun () => 루프 (port + 1) |> async.return_await
         |> async.new_async_unit
-    loop initial_port
+    루프 initial_port
 
 /// ## main
 inl main () =

@@ -1,6 +1,6 @@
 /// # base
 
-/// ## execution
+/// ## base
 
 /// ### emit
 inl emit forall t. (x : t) : t =
@@ -15,12 +15,8 @@ inl use forall t. (x : t) : t =
     $'use !x = !x ' : ()
     $'!x '
 
-/// ## type
-
 /// ### unit
 nominal unit = $'unit'
-
-/// ## target
 
 /// ### backend_switch
 inl backend_switch forall t. x : t =
@@ -116,8 +112,6 @@ inl run_target_args forall t u. (args : () -> u) (fn : target -> (u -> t)) : t =
 /// ### run_target
 inl run_target forall t. (fn : target -> (() -> t)) : t =
     run_target_args id fn
-
-/// ## function
 
 /// ### eval
 inl eval fn =
@@ -249,8 +243,6 @@ inl join_body_unit body d x =
         inl x = dyn x
         join body x
 
-/// ## arithmetic
-
 /// ### (+.)
 inl (+.) forall t. (a : t) (b : t) : t =
     $'!a + !b '
@@ -266,8 +258,6 @@ inl (*.) forall t. (a : t) (b : t) : t =
 /// ### (/.)
 inl (/.) forall t. (a : t) (b : t) : t =
     $'!a / !b '
-
-/// ## comparison
 
 /// ### (=.)
 inl (=.) forall t. (a : t) (b : t) : bool =
@@ -292,16 +282,12 @@ inl (<>..) a b =
     |> eval
     |> not
 
-/// ## composition
-
 /// ### append
 prototype append t : t -> t -> t
 
 /// ### (++)
 inl (++) a b =
     b |> append a
-
-/// ## pair
 
 /// ### pair
 type pair_switch a b =
@@ -340,8 +326,6 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
             ($'a' : a), ($'b' : b)
     }
 
-/// ## application
-
 /// ### (||>)
 inl (||>) (arg1, arg2) fn =
     arg2 |> fn arg1
@@ -356,8 +340,6 @@ inl fix_condition x a b =
         $'fix_condition then *) else' : ()
         b () |> fun x => $'(* fix_condition else' : ()
     |> fun x => $'fix_condition else *)' : ()
-
-/// ## type
 
 /// ### infer
 nominal infer = $'_'
@@ -404,8 +386,6 @@ inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =
             $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'
         | _ => fun _ => null ()
 
-/// ## ref
-
 /// ### ref
 nominal ref t = $'`t ref'
 
@@ -421,8 +401,6 @@ inl ref_value forall t. (x : ref t) : t =
 inl ref_set_value forall t. (value : t) (ref : ref t) : ref t =
     $'!ref.Value <- !value '
     ref
-
-/// ## convert
 
 /// ### to
 inl to forall t u. (x : t) : u =
@@ -527,8 +505,6 @@ inl to_any forall t. (obj : t) : any =
 
 /// ### (~:>) any
 instance (~:>) any = to_any
-
-/// ## error
 
 /// ### exn
 type exn_switch =

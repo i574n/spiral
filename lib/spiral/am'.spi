@@ -33,11 +33,11 @@ inl generic_equable x1 x2 =
     if length x1 <>.. length x2
     then false
     else
-        let rec loop i =
+        let rec 루프 i =
             if i < length x1
-            then index i x1 = index i x2 && loop (i + 1)
+            then index i x1 = index i x2 && 루프 (i + 1)
             else true
-        loop 0
+        루프 0
 
 /// ### equable
 instance equable a dim {number; int} t = generic_equable

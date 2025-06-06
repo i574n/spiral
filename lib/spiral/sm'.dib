@@ -645,9 +645,9 @@ inl replicate (n : int) (s : string) : string =
     inl rec body i acc =
         if i >= n
         then acc
-        else loop (i + 1) (acc ++# s)
-    and inl loop i = join_body_unit body n i
-    loop 0 ""
+        else 루프 (i + 1) (acc ++# s)
+    and inl 루프 i = join_body_unit body n i
+    루프 0 ""
 
 #!spiral
 
