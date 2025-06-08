@@ -7,6 +7,18 @@ function FixRust {
             # -replace "_self_.", "self." `
             # -replace "use fable_library_rust::System::Collections::Generic::", "use fable_library_rust::Interfaces_::System::Collections::Generic::" `
             # -replace "use fable_library_rust::System::IDisposable;", "use fable_library_rust::Interfaces_::System::IDisposable;" `
+            #
+            # -replace [regex]::Escape("),);"), "));" `
+            # -replace "__self__.", "self." `
+            # -replace "null::<\(\)>\(\)", "null()" `
+            # -replace "unbox::<bool>\(null\(\)\)", "false" `
+            # -replace "unbox::<string>\(null\(\)\)", "fable_library_rust::Native_::getZero()" `
+            # -replace "unbox::<i32>\(null\(\)\)", "0" `
+            # -replace "null\(\)", "fable_library_rust::Native_::getZero()" `
+            # -replace "([^=]\s)fable_library_rust::Native_::getZero\(\);", "`$1fable_library_rust::Native_::getZero::<()>();" `
+            # -replace "use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1;", "type ConcurrentStack_1<T> = T;" `
+            # -replace "use fable_library_rust::System::Threading::Tasks::TaskCanceledException;", "type TaskCanceledException = ();" `
+            # -replace "use fable_library_rust::System::TimeZoneInfo;", "type TimeZoneInfo = i64;"
     process {
         $text `
             -replace [regex]::Escape("),);"), "));" `
@@ -148,6 +160,11 @@ function CopyTarget {
                 -replace "from `"../../../../../../../lib", "from `"../../../../../polyglot/lib" `
                 | FixTypeScript `
                 | FixTypeScriptExternal
+
+            if ($name -in @("file_system")) {
+                $text = $text `
+                    -replace ", awaitTask, ", ", awaitPromise as awaitTask, " `
+            }
         }
         if ($Language -eq "py") {
             $text = $text `
