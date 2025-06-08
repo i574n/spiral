@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"name":"spiral"}]}}
 
 #!fsharp
 
@@ -19033,6 +19033,10 @@ type Supervisor = {
 
 ## new_server
 
+#!pwsh
+
+ls ~/.nuget/packages/microsoft.aspnetcore.signalr.client
+
 #!fsharp
 
 // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.ref/7.0.11/ref/net7.0/Microsoft.AspNetCore.SignalR.Core.dll"
@@ -19044,8 +19048,8 @@ type Supervisor = {
 #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.http.connections.common/7.0.0/lib/net7.0/Microsoft.AspNetCore.Http.Connections.Common.dll"
 #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.http.connections.client/7.0.0/lib/net7.0/Microsoft.AspNetCore.Http.Connections.Client.dll"
 #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.common/7.0.0/lib/net7.0/Microsoft.AspNetCore.SignalR.Common.dll"
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.client/9.0.0/lib/net9.0/Microsoft.AspNetCore.SignalR.Client.dll"
-#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.client.core/9.0.0/lib/net9.0/Microsoft.AspNetCore.SignalR.Client.Core.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.client/9.0.5/lib/net9.0/Microsoft.AspNetCore.SignalR.Client.dll"
+#r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.client.core/9.0.5/lib/net9.0/Microsoft.AspNetCore.SignalR.Client.Core.dll"
 #r @"../../../../../../../.nuget/packages/fsharp.json/0.4.1/lib/netstandard2.0/FSharp.Json.dll"
 
 #!fsharp
