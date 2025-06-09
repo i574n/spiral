@@ -7663,9 +7663,7 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">new_raw_guid</span> <span class="p">()</span> <span class="p">:</span> <span class="n">guid</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">backend_switch</span> <span class="p">{</span>
-                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam_uuid"</span>
-            <span class="p">}</span>
+            <span class="k">global</span> <span class="s2">"import gleam_uuid"</span>
             <span class="err">$</span><span class="s1">'gleam_uuid.v4_string ()'</span> <span class="p">:</span> <span class="n">guid</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'System.Guid.NewGuid'</span> <span class="p">()</span> <span class="p">:</span> <span class="n">guid</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'uuid.uuid4()'</span> <span class="p">:</span> <span class="n">guid</span>
@@ -7722,6 +7720,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
@@ -7730,11 +7729,23 @@ a.anchor-link {
 
 <span class="s2">""</span>
 <span class="o">|&gt;</span> <span class="n">hash_guid</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span><span class="s1">' (new_guid "00000000-0000-0000-0000-000000000000")</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span><span class="s1">' (</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_guid</span> <span class="s2">"00000000-000000000000-0000000000000000-0000000000000000-000000000000"</span>
+        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_guid</span> <span class="s2">"00000000-0000-0000-0000-000000000000"</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_guid</span> <span class="s2">"00000000-0000-0000-0000-000000000000"</span>
+    <span class="p">}</span>
+<span class="p">)</span>
 
 <span class="s2">"123456789012345678901234567890123"</span>
 <span class="o">|&gt;</span> <span class="n">hash_guid</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span><span class="s1">' (new_guid "12345678-9012-3456-7890-123456789012")</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span><span class="s1">' (</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_guid</span> <span class="s2">"12345678-901234567890-3456789012345678-78901234567890123-1234567890123"</span>
+        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_guid</span> <span class="s2">"12345678-9012-3456-7890-123456789012"</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_guid</span> <span class="s2">"12345678-9012-3456-7890-123456789012"</span>
+    <span class="p">}</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7774,6 +7785,17 @@ a.anchor-link {
 .py output:
 { name = __assert_eq'; actual = 00000000-0000-0000-0000-000000000000; expected = 00000000-0000-0000-0000-000000000000 }
 { name = __assert_eq'; actual = 12345678-9012-3456-7890-123456789012; expected = 12345678-9012-3456-7890-123456789012 }
+
+
+.gleam output (Gleam):
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/5c60dca95f3e51658f7e5eb55df7898768f13a71279b2cb54e979f233bc1861b/build/dev/erlang/main/_gleam_artefacts/main@@main.erl"}
+{compiling,"/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/5c60dca95f3e51658f7e5eb55df7898768f13a71279b2cb54e979f233bc1861b/build/dev/erlang/main/_gleam_artefacts/main.erl"}
+{compiled,main,
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/5c60dca95f3e51658f7e5eb55df7898768f13a71279b2cb54e979f233bc1861b/build/dev/erlang/main/ebin/main.beam"}
+{compiled,main@@main,
+          "/home/runner/work/spiral/polyglot/target/spiral_Eval/packages/5c60dca95f3e51658f7e5eb55df7898768f13a71279b2cb54e979f233bc1861b/build/dev/erlang/main/ebin/main@@main.beam"}
+{ name = __assert_eq'; actual = "00000000-000000000000-0000000000000000-0000000000000000-000000000000"; expected = "00000000-000000000000-0000000000000000-0000000000000000-000000000000" }
+{ name = __assert_eq'; actual = "12345678-901234567890-3456789012345678-78901234567890123-1234567890123"; expected = "12345678-901234567890-3456789012345678-78901234567890123-1234567890123" }
 
 
 </pre>

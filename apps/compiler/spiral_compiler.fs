@@ -15435,13 +15435,6 @@ module spiral_compiler =
         }
 
     /// ## new_server
-    // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.ref/7.0.11/ref/net7.0/Microsoft.AspNetCore.SignalR.Core.dll"
-    // #r @"../../../../../../../.nuget/packages/system.management/9.0.0/lib/netstandard2.0/System.Management.dll"
-    // #r @"../../../../../../../.nuget/packages/fsharp.control.asyncseq/3.2.1/lib/netstandard2.1/FSharp.Control.AsyncSeq.dll"
-    // #r @"../../../../../../../.nuget/packages/system.reactive/6.0.1-preview.1/lib/net6.0/System.Reactive.dll"
-    // #r @"../../../../../../../.nuget/packages/system.reactive.linq/6.0.1-preview.1/lib/netstandard2.0/System.Reactive.Linq.dll"
-    // #r @"../../../../../../../.nuget/packages/argu/6.2.4/lib/netstandard2.0/Argu.dll"
-
     // #!import ../../../polyglot/apps/builder/Builder.fs
     // #!import ../../../polyglot/apps/spiral/Supervisor.fs
 

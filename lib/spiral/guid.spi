@@ -27,9 +27,7 @@ inl new_guid (x : string) : guid =
 inl new_raw_guid () : guid =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () => global "import gleam_uuid"
-            }
+            global "import gleam_uuid"
             $'gleam_uuid.v4_string ()' : guid
         Fsharp = fun () => $'System.Guid.NewGuid' () : guid
         Python = fun () => $'uuid.uuid4()' : guid

@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"name":"spiral"}]}}
 
 #!markdown
 
@@ -59,9 +59,7 @@ inl new_guid (x : string) : guid =
 inl new_raw_guid () : guid =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () => global "import gleam_uuid"
-            }
+            global "import gleam_uuid"
             $'gleam_uuid.v4_string ()' : guid
         Fsharp = fun () => $'System.Guid.NewGuid' () : guid
         Python = fun () => $'uuid.uuid4()' : guid
@@ -91,6 +89,7 @@ let hash_guid (hash : string) : hash_guid =
 #!spiral
 
 //// test
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust
@@ -99,11 +98,23 @@ let hash_guid (hash : string) : hash_guid =
 
 ""
 |> hash_guid
-|> _assert_eq' (new_guid "00000000-0000-0000-0000-000000000000")
+|> _assert_eq' (
+    backend_switch {
+        Gleam = fun () => new_guid "00000000-000000000000-0000000000000000-0000000000000000-000000000000"
+        Fsharp = fun () => new_guid "00000000-0000-0000-0000-000000000000"
+        Python = fun () => new_guid "00000000-0000-0000-0000-000000000000"
+    }
+)
 
 "123456789012345678901234567890123"
 |> hash_guid
-|> _assert_eq' (new_guid "12345678-9012-3456-7890-123456789012")
+|> _assert_eq' (
+    backend_switch {
+        Gleam = fun () => new_guid "12345678-901234567890-3456789012345678-78901234567890123-1234567890123"
+        Fsharp = fun () => new_guid "12345678-9012-3456-7890-123456789012"
+        Python = fun () => new_guid "12345678-9012-3456-7890-123456789012"
+    }
+)
 
 #!markdown
 
