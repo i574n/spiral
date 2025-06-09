@@ -11,7 +11,7 @@ import * as path from "path";
 import { replace, concat, interpolate, toText, trimStart, trimEnd } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/String.js";
 import { ofSeq, find } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Map.js";
 import { Async, singleton } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/AsyncBuilder.js";
-import { ignore, catchAsync, startChild, awaitTask, sleep } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Async.js";
+import { ignore, catchAsync, startChild, awaitPromise as awaitTask, sleep } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Async.js";
 import { FSharpChoice$2_$union } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Choice.js";
 import { newGuid, parse } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Guid.js";
 import { FSharpResult$2_Ok, FSharpResult$2_$union, FSharpResult$2_Error } from "../../deps/polyglot/deps/Fable/src/fable-library-ts/Result.js";
