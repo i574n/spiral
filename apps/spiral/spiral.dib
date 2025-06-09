@@ -1048,7 +1048,11 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                         }
                     result'
 
-        if cleanup then
+        inl ci = "CI" |> env.get_environment_variable
+
+        if cleanup || ci <> "" then
+            package_dir |> file_system.directory_delete true
+
             inl cleanup =
                 inl build_target =
                     if runtime <> None
