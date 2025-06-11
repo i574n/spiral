@@ -164,7 +164,7 @@ class US3(Union):
 
 US3_reflection = _expr15
 
-def _expr18() -> TypeInfo:
+def _expr17() -> TypeInfo:
     return union_type("Common.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())], [("f6_0", US3_reflection())]])
 
 
@@ -180,9 +180,9 @@ class US4(Union):
         return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"]
 
 
-US4_reflection = _expr18
+US4_reflection = _expr17
 
-def _expr21() -> TypeInfo:
+def _expr20() -> TypeInfo:
     return union_type("Common.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -198,7 +198,7 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr21
+US5_reflection = _expr20
 
 def _expr24() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
@@ -390,11 +390,11 @@ def method7(v0: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0: Callable[[], None]) -> IDisposable:
     v14_1: Callable[[], None] = method7(v0)
-    class ObjectExpr48(IDisposable):
+    class ObjectExpr52(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
             v14_1(None)
 
-    return ObjectExpr48()
+    return ObjectExpr52()
 
 
 def closure6(unit_var: None, v0: US6) -> US7:
@@ -416,10 +416,10 @@ def closure10(unit_var: None, v0: int64) -> US2:
 
 
 def method10(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow52(v: int64) -> US2:
+    def _arrow56(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow52
+    return _arrow56
 
 
 def method11(__unit: None=None) -> str:
