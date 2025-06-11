@@ -13,7 +13,6 @@
     "dockerfile": "Dockerfile"
   },
   "features": {
-    "docker-in-docker": "latest"
   },
   "hostRequirements": {
     "cpus": 4,
