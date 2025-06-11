@@ -323,7 +323,7 @@ let persist_code_project { workspace_root package_dir packages modules name code
     fsproj_path
 
 /// ### publish_project
-let publish_project runtime' output_dir path =
+inl publish_project runtime' output_dir path =
     inl full_path = path |> file_system.get_full_path
     inl file_dir = full_path |> file_system.directory_get_parent |> optionm'.default_value' ""
     inl extension = full_path |> file_system.get_extension
@@ -343,27 +343,18 @@ let publish_project runtime' output_dir path =
 
     inl output_dir = output_dir |> optionm'.default_value "dist"
 
-    inl exit_code =
-        runtimes
-        |> listm.map fun runtime' =>
-            inl dir = file_dir </> runtime'
-            dir |> file_system.create_dir |> ignore
-            runtime.execution_options fun x => { x with
-                command = $'$@@"dotnet publish \"\"{!full_path}\"\" --configuration Release --output \"\"{!output_dir}\"\" --runtime {!runtime'}"'
-                working_directory = dir |> Some |> optionm'.box
-            }
-            |> runtime.execute_with_options
-            |> fst
-        |> listm'.sum
-
-    // inl ci = "CI" |> env.get_environment_variable
-    // if ci <> "" then
-    //    file_dir |> file_system.directory_delete true
-
-    exit_code
+    runtimes
+    |> listm.map fun runtime' =>
+        runtime.execution_options fun x => { x with
+            command = $'$@@"dotnet publish \"\"{!path}\"\" --configuration Release --output \"\"{!output_dir}\"\" --runtime {!runtime'}"'
+            working_directory = file_dir |> Some |> optionm'.box
+        }
+        |> runtime.execute_with_options
+        |> fst
+    |> listm'.sum
 
 /// ### publish_code
-let publish_code { workspace_root runtime packages modules output_dir name code } =
+inl publish_code { workspace_root runtime packages modules output_dir name code } =
     inl package_dir = get_package_dir { workspace_root name target = None; hash = None }
     inl fsproj_path = persist_code_project { workspace_root package_dir packages modules name code }
     inl exit_code = fsproj_path |> publish_project runtime output_dir
@@ -374,10 +365,10 @@ let publish_code { workspace_root runtime packages modules output_dir name code 
                 code = code |> sm'.ellipsis_end 400
                 fsproj_text = fsproj_path |> file_system.read_all_text
             }
-    { package_dir exit_code }
+    exit_code
 
 /// ### read_file
-let read_file path =
+inl read_file path =
     inl code =
         path
         |> file_system.read_all_text
@@ -388,14 +379,14 @@ let read_file path =
     else code
 
 /// ### persist_file
-let persist_file { workspace_root package_dir packages modules path } =
+inl persist_file { workspace_root package_dir packages modules path } =
     inl full_path = path |> file_system.get_full_path
     inl name = full_path |> file_system.get_file_name_without_extension
     inl code = full_path |> read_file
     persist_code_project { workspace_root package_dir packages modules name code }
 
 /// ### publish_file
-let publish_file { workspace_root runtime packages modules path } =
+inl publish_file { workspace_root runtime packages modules path } =
     inl full_path = path |> file_system.get_full_path
     inl dir = full_path |> file_system.directory_get_parent |> optionm'.default_value' ""
     publish_code {
@@ -411,7 +402,7 @@ let publish_file { workspace_root runtime packages modules path } =
 /// ## rust
 
 /// ### get_workspace_cargo_toml_content
-let get_workspace_cargo_toml_content { workspace_root } : string =
+inl get_workspace_cargo_toml_content { workspace_root } : string =
     inl workspace_root = workspace_root |> file_system.normalize_path
     $'$"cargo-features = [\\\"profile-rustflags\\\"]"'
     ++\# $'$""'
@@ -437,7 +428,7 @@ let get_workspace_cargo_toml_content { workspace_root } : string =
     ++\# $'$"rustflags = [\\\"-C\\\", \\\"link-arg=-s\\\"]"'
 
 /// ### get_cargo_toml_content
-let get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string =
+inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string =
     $'$"cargo-features = [\\\"edition2024\\\"]"'
     ++\# $'$""'
     ++\# $'$"[package]"'
@@ -475,7 +466,7 @@ let get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string
     ++\# $'$"path = \\\"spiral.rs\\\""'
 
 /// ### get_empty_cargo_toml_content
-let get_empty_cargo_toml_content () =
+inl get_empty_cargo_toml_content () =
     inl guid = date_time.now () |> date_time.new_guid_from_date_time |> sm'.obj_to_string
     $'$"[package]"'
     ++\# $'$"name = \\\"spiral_{!guid}\\\""'
@@ -487,7 +478,7 @@ let get_empty_cargo_toml_content () =
     ++\# $'$"path = \\\"spiral.rs\\\""'
 
 /// ### process_rust
-let process_rust { fs_path deps trace_level runtime cleanup } =
+inl process_rust { fs_path deps trace_level runtime cleanup } =
     open runtime
 
     inl extension = "rs"
@@ -916,11 +907,10 @@ let process_rust { fs_path deps trace_level runtime cleanup } =
                         }
                     result'
 
-        // inl ci = "CI" |> env.get_environment_variable
+        inl ci = "CI" |> env.get_environment_variable
 
-        // if cleanup || ci <> "" then
-        if cleanup then
-        //    package_dir |> file_system.directory_delete true
+        if cleanup || ci <> "" then
+            package_dir |> file_system.directory_delete true
 
             inl cleanup =
                 inl build_target =
@@ -946,7 +936,7 @@ let process_rust { fs_path deps trace_level runtime cleanup } =
 /// ## dib
 
 /// ### process_dib
-let process_dib { path retries working_directory } =
+inl process_dib { path retries working_directory } =
     inl exit_code, repl_result =
         let rec 루프 retry =
             inl exit_code, repl_result =
@@ -1268,7 +1258,7 @@ inl process_typescript { fs_path deps trace_level } =
 /// ## python
 
 /// ### process_python
-let process_python { fs_path deps trace_level } =
+inl process_python { fs_path deps trace_level } =
     inl extension = "py"
     inl is_trace = trace_level = Verbose
     inl _trace (fn : () -> string) =
@@ -1653,7 +1643,7 @@ inl process_gleam { gleam_path target deps } =
 /// ## cuda
 
 /// ### process_cuda
-let process_cuda { py_path env deps } =
+inl process_cuda { py_path env deps } =
     inl extension = "py"
 
     inl new_code_path = py_path
@@ -1780,7 +1770,7 @@ let process_cuda { py_path env deps } =
 /// ## fsharp
 
 /// ### process_fsharp
-let process_fsharp { spi_path } =
+inl process_fsharp { spi_path } =
     inl extension = "fsx"
 
     inl new_code_path = spi_path

@@ -390,7 +390,7 @@ let persist_code_project { workspace_root package_dir packages modules name code
 
 #!spiral
 
-let publish_project runtime' output_dir path =
+inl publish_project runtime' output_dir path =
     inl full_path = path |> file_system.get_full_path
     inl file_dir = full_path |> file_system.directory_get_parent |> optionm'.default_value' ""
     inl extension = full_path |> file_system.get_extension
@@ -410,24 +410,15 @@ let publish_project runtime' output_dir path =
 
     inl output_dir = output_dir |> optionm'.default_value "dist"
 
-    inl exit_code =
-        runtimes
-        |> listm.map fun runtime' =>
-            inl dir = file_dir </> runtime'
-            dir |> file_system.create_dir |> ignore
-            runtime.execution_options fun x => { x with
-                command = $'$@@"dotnet publish \"\"{!full_path}\"\" --configuration Release --output \"\"{!output_dir}\"\" --runtime {!runtime'}"'
-                working_directory = dir |> Some |> optionm'.box
-            }
-            |> runtime.execute_with_options
-            |> fst
-        |> listm'.sum
-
-    // inl ci = "CI" |> env.get_environment_variable
-    // if ci <> "" then
-    //    file_dir |> file_system.directory_delete true
-
-    exit_code
+    runtimes
+    |> listm.map fun runtime' =>
+        runtime.execution_options fun x => { x with
+            command = $'$@@"dotnet publish \"\"{!path}\"\" --configuration Release --output \"\"{!output_dir}\"\" --runtime {!runtime'}"'
+            working_directory = file_dir |> Some |> optionm'.box
+        }
+        |> runtime.execute_with_options
+        |> fst
+    |> listm'.sum
 
 #!markdown
 
@@ -435,7 +426,7 @@ let publish_project runtime' output_dir path =
 
 #!spiral
 
-let publish_code { workspace_root runtime packages modules output_dir name code } =
+inl publish_code { workspace_root runtime packages modules output_dir name code } =
     inl package_dir = get_package_dir { workspace_root name target = None; hash = None }
     inl fsproj_path = persist_code_project { workspace_root package_dir packages modules name code }
     inl exit_code = fsproj_path |> publish_project runtime output_dir
@@ -446,14 +437,14 @@ let publish_code { workspace_root runtime packages modules output_dir name code 
                 code = code |> sm'.ellipsis_end 400
                 fsproj_text = fsproj_path |> file_system.read_all_text
             }
-    { package_dir exit_code }
+    exit_code
 
 #!spiral
 
 //// test
 ///! rust -d encoding_rs encoding_rs_io regex
 
-inl { package_dir exit_code } = publish_code {
+publish_code {
     workspace_root = file_system.get_workspace_root ()
     runtime = None
     packages = []
@@ -462,15 +453,14 @@ inl { package_dir exit_code } = publish_code {
     name = "test1"
     code = "1 + 1 |> ignore"
 }
-package_dir |> file_system.directory_delete true
-exit_code |> _assert_eq 0
+|> _assert_eq 0
 
 #!spiral
 
 //// test
 ///! rust -d encoding_rs encoding_rs_io regex
 
-inl { package_dir exit_code } = publish_code {
+publish_code {
     workspace_root = file_system.get_workspace_root ()
     runtime = None
     packages = []
@@ -479,8 +469,7 @@ inl { package_dir exit_code } = publish_code {
     name = "test2"
     code = "1 + a |> ignore"
 }
-package_dir |> file_system.directory_delete true
-exit_code |> _assert_eq 2
+|> _assert_eq 2
 
 #!markdown
 
@@ -488,7 +477,7 @@ exit_code |> _assert_eq 2
 
 #!spiral
 
-let read_file path =
+inl read_file path =
     inl code =
         path
         |> file_system.read_all_text
@@ -504,7 +493,7 @@ let read_file path =
 
 #!spiral
 
-let persist_file { workspace_root package_dir packages modules path } =
+inl persist_file { workspace_root package_dir packages modules path } =
     inl full_path = path |> file_system.get_full_path
     inl name = full_path |> file_system.get_file_name_without_extension
     inl code = full_path |> read_file
@@ -516,7 +505,7 @@ let persist_file { workspace_root package_dir packages modules path } =
 
 #!spiral
 
-let publish_file { workspace_root runtime packages modules path } =
+inl publish_file { workspace_root runtime packages modules path } =
     inl full_path = path |> file_system.get_full_path
     inl dir = full_path |> file_system.directory_get_parent |> optionm'.default_value' ""
     publish_code {
@@ -539,7 +528,7 @@ let publish_file { workspace_root runtime packages modules path } =
 
 #!spiral
 
-let get_workspace_cargo_toml_content { workspace_root } : string =
+inl get_workspace_cargo_toml_content { workspace_root } : string =
     inl workspace_root = workspace_root |> file_system.normalize_path
     $'$"cargo-features = [\\\"profile-rustflags\\\"]"'
     ++\# $'$""'
@@ -570,7 +559,7 @@ let get_workspace_cargo_toml_content { workspace_root } : string =
 
 #!spiral
 
-let get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string =
+inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string =
     $'$"cargo-features = [\\\"edition2024\\\"]"'
     ++\# $'$""'
     ++\# $'$"[package]"'
@@ -613,7 +602,7 @@ let get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string
 
 #!spiral
 
-let get_empty_cargo_toml_content () =
+inl get_empty_cargo_toml_content () =
     inl guid = date_time.now () |> date_time.new_guid_from_date_time |> sm'.obj_to_string
     $'$"[package]"'
     ++\# $'$"name = \\\"spiral_{!guid}\\\""'
@@ -630,7 +619,7 @@ let get_empty_cargo_toml_content () =
 
 #!spiral
 
-let process_rust { fs_path deps trace_level runtime cleanup } =
+inl process_rust { fs_path deps trace_level runtime cleanup } =
     open runtime
 
     inl extension = "rs"
@@ -1059,11 +1048,10 @@ let process_rust { fs_path deps trace_level runtime cleanup } =
                         }
                     result'
 
-        // inl ci = "CI" |> env.get_environment_variable
+        inl ci = "CI" |> env.get_environment_variable
 
-        // if cleanup || ci <> "" then
-        if cleanup then
-        //    package_dir |> file_system.directory_delete true
+        if cleanup || ci <> "" then
+            package_dir |> file_system.directory_delete true
 
             inl cleanup =
                 inl build_target =
@@ -1096,7 +1084,7 @@ let process_rust { fs_path deps trace_level runtime cleanup } =
 
 #!spiral
 
-let process_dib { path retries working_directory } =
+inl process_dib { path retries working_directory } =
     inl exit_code, repl_result =
         let rec 루프 retry =
             inl exit_code, repl_result =
@@ -1432,7 +1420,7 @@ inl process_typescript { fs_path deps trace_level } =
 
 #!spiral
 
-let process_python { fs_path deps trace_level } =
+inl process_python { fs_path deps trace_level } =
     inl extension = "py"
     inl is_trace = trace_level = Verbose
     inl _trace (fn : () -> string) =
@@ -1831,7 +1819,7 @@ inl process_gleam { gleam_path target deps } =
 
 #!spiral
 
-let process_cuda { py_path env deps } =
+inl process_cuda { py_path env deps } =
     inl extension = "py"
 
     inl new_code_path = py_path
@@ -1965,7 +1953,7 @@ let process_cuda { py_path env deps } =
 
 #!spiral
 
-let process_fsharp { spi_path } =
+inl process_fsharp { spi_path } =
     inl extension = "fsx"
 
     inl new_code_path = spi_path
