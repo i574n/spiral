@@ -83,6 +83,7 @@ type execution_options =
         stdin : optionm'.option' (threading.arc (threading.mutex process_child_stdin) -> ())
         trace : bool
         working_directory : optionm'.option' string
+        stderr : bool
     }
 
 inl execution_options (fn : execution_options -> execution_options) : execution_options =
@@ -94,6 +95,7 @@ inl execution_options (fn : execution_options -> execution_options) : execution_
         stdin = None |> optionm'.box
         trace = true
         working_directory = None |> optionm'.box
+        stderr = true
     }
     |> fn
 
@@ -674,7 +676,8 @@ let execute_with_options_async (options : execution_options) : _ (int * string) 
                             output |> threading.concurrent_stack_push $'$"{!l}{!data}{!r}"'
                     |> async.new_async
                 proc |> process_add_output_data_received (event false >> async.start_immediate)
-                proc |> process_add_error_data_received (event true >> async.start_immediate)
+                if options.stderr
+                then proc |> process_add_error_data_received (event true >> async.start_immediate)
                 if proc |> process_start |> not
                 then failwith $'$"runtime.execute_with_options_async / process_start error"'
                 proc |> process_begin_error_read_line
@@ -796,12 +799,8 @@ let execute_with_options (options : execution_options) : i32 * string =
                     // |> new_command_mutex
                     |> fun command =>
                         match options.working_directory |> optionm'.unbox with
-                        | Some working_directory =>
-                            command
-                            |> process_command_current_dir working_directory
-                        | None =>
-                            !\($'$"!command"')
-                            // |> rust.emit
+                        | Some working_directory => command |> process_command_current_dir working_directory
+                        | None => !\($'$"!command"') |> rust.emit
                     |> fun command =>
                         match options.environment_variables with
                         | ;[] => command
@@ -877,9 +876,12 @@ let execute_with_options (options : execution_options) : i32 * string =
                                     |> stream.new_buf_reader
                                     |> stream.buf_read_lines
                                     |> iter.try_for_each fun lines =>
-                                        inl channel_sender' = channel_sender' |> rust.clone
-                                        lines
-                                        |> stdio_line (Error ()) options.trace channel_sender'
+                                        if options.stderr |> not
+                                        then Ok () |> resultm.box
+                                        else
+                                            inl channel_sender' = channel_sender' |> rust.clone
+                                            lines
+                                            |> stdio_line (Error ()) options.trace channel_sender'
                                         |> resultm.to_try
                                 |> threading.spawn (1, 0) 1
                             match options.stdin |> optionm'.unbox with

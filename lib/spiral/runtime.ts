@@ -725,7 +725,8 @@ export class Heap0 extends Record {
     readonly l4: Option<((arg0: any) => void)>;
     readonly l5: boolean;
     readonly l6: Option<string>;
-    constructor(l0: string, l1: Option<any>, l2: [string, string][], l3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, l4: Option<((arg0: any) => void)>, l5: boolean, l6: Option<string>) {
+    readonly l7: boolean;
+    constructor(l0: string, l1: Option<any>, l2: [string, string][], l3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, l4: Option<((arg0: any) => void)>, l5: boolean, l6: Option<string>, l7: boolean) {
         super();
         this.l0 = l0;
         this.l1 = l1;
@@ -734,11 +735,12 @@ export class Heap0 extends Record {
         this.l4 = l4;
         this.l5 = l5;
         this.l6 = l6;
+        this.l7 = l7;
     }
 }
 
 export function Heap0_$reflection(): TypeInfo {
-    return record_type("Runtime.Heap0", [], Heap0, () => [["l0", string_type], ["l1", option_type(class_type("System.Threading.CancellationToken"))], ["l2", array_type(tuple_type(string_type, string_type))], ["l3", option_type(lambda_type(tuple_type(int32_type, string_type, bool_type), class_type("Microsoft.FSharp.Control.FSharpAsync`1", [unit_type])))], ["l4", option_type(lambda_type(string_type, unit_type))], ["l5", bool_type], ["l6", option_type(string_type)]]);
+    return record_type("Runtime.Heap0", [], Heap0, () => [["l0", string_type], ["l1", option_type(class_type("System.Threading.CancellationToken"))], ["l2", array_type(tuple_type(string_type, string_type))], ["l3", option_type(lambda_type(tuple_type(int32_type, string_type, bool_type), class_type("Microsoft.FSharp.Control.FSharpAsync`1", [unit_type])))], ["l4", option_type(lambda_type(string_type, unit_type))], ["l5", bool_type], ["l6", option_type(string_type)], ["l7", bool_type]]);
 }
 
 export type US17_$union = 
@@ -2061,182 +2063,194 @@ export function method44(): string {
     return ("\u001b[94m" + method12(v4[0])) + method14();
 }
 
-export function method46(v0: string, v1: US5_$union, v2: string, v3: Option<any>, v4: [string, string][], v5: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v6: Option<((arg0: any) => void)>, v7: boolean, v8: Option<string>): string {
-    const v10: Mut3 = new Mut3(method13());
-    let v24: any;
-    closure7(v10, "{ ", undefined);
-    v24 = undefined;
-    let v43: any;
-    closure7(v10, "file_name", undefined);
-    v43 = undefined;
-    let v62: any;
-    closure7(v10, " = ", undefined);
-    v62 = undefined;
-    let v79: any;
-    closure7(v10, v0, undefined);
-    v79 = undefined;
-    let v98: any;
-    closure7(v10, "; ", undefined);
-    v98 = undefined;
-    let v117: any;
-    closure7(v10, "arguments", undefined);
-    v117 = undefined;
-    let v134: any;
-    closure7(v10, " = ", undefined);
-    v134 = undefined;
-    let v155: any;
-    closure7(v10, toText(interpolate("%A%P()", [v1])), undefined);
-    v155 = undefined;
-    let v172: any;
-    closure7(v10, "; ", undefined);
-    v172 = undefined;
-    let v191: any;
-    closure7(v10, "options", undefined);
-    v191 = undefined;
-    let v208: any;
-    closure7(v10, " = ", undefined);
-    v208 = undefined;
-    let v225: any;
-    closure7(v10, "{ ", undefined);
-    v225 = undefined;
-    let v244: any;
-    closure7(v10, "command", undefined);
-    v244 = undefined;
-    let v261: any;
-    closure7(v10, " = ", undefined);
-    v261 = undefined;
-    let v278: any;
-    closure7(v10, v2, undefined);
-    v278 = undefined;
-    let v295: any;
-    closure7(v10, "; ", undefined);
-    v295 = undefined;
-    let v314: any;
-    closure7(v10, "cancellation_token", undefined);
-    v314 = undefined;
-    let v331: any;
-    closure7(v10, " = ", undefined);
-    v331 = undefined;
-    let v390: any;
-    closure7(v10, toText(interpolate("%A%P()", [v3])), undefined);
-    v390 = undefined;
-    let v407: any;
-    closure7(v10, "; ", undefined);
-    v407 = undefined;
-    let v426: any;
-    closure7(v10, "environment_variables", undefined);
-    v426 = undefined;
-    let v443: any;
-    closure7(v10, " = ", undefined);
-    v443 = undefined;
-    let v465: any;
-    closure7(v10, toText(interpolate("%A%P()", [v4])), undefined);
-    v465 = undefined;
-    let v482: any;
-    closure7(v10, "; ", undefined);
-    v482 = undefined;
-    let v501: any;
-    closure7(v10, "on_line", undefined);
-    v501 = undefined;
-    let v518: any;
-    closure7(v10, " = ", undefined);
-    v518 = undefined;
-    let v577: any;
-    closure7(v10, toText(interpolate("%A%P()", [v5])), undefined);
-    v577 = undefined;
-    let v594: any;
-    closure7(v10, "; ", undefined);
-    v594 = undefined;
-    let v613: any;
-    closure7(v10, "stdin", undefined);
-    v613 = undefined;
-    let v630: any;
-    closure7(v10, " = ", undefined);
-    v630 = undefined;
-    let v689: any;
-    closure7(v10, toText(interpolate("%A%P()", [v6])), undefined);
-    v689 = undefined;
-    let v706: any;
-    closure7(v10, "; ", undefined);
-    v706 = undefined;
-    let v725: any;
-    closure7(v10, "trace", undefined);
-    v725 = undefined;
-    let v742: any;
-    closure7(v10, " = ", undefined);
-    v742 = undefined;
-    let v762: any;
-    closure7(v10, v7 ? "true" : "false", undefined);
-    v762 = undefined;
-    let v779: any;
-    closure7(v10, "; ", undefined);
-    v779 = undefined;
-    let v798: any;
-    closure7(v10, "working_directory", undefined);
-    v798 = undefined;
-    let v815: any;
-    closure7(v10, " = ", undefined);
-    v815 = undefined;
-    let v874: any;
-    closure7(v10, toText(interpolate("%A%P()", [v8])), undefined);
-    v874 = undefined;
-    let v893: any;
-    closure7(v10, " }", undefined);
-    v893 = undefined;
-    let v910: any;
-    closure7(v10, " }", undefined);
-    v910 = undefined;
-    return v10.l0;
+export function method46(v0: string, v1: US5_$union, v2: string, v3: Option<any>, v4: [string, string][], v5: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v6: Option<((arg0: any) => void)>, v7: boolean, v8: Option<string>, v9: boolean): string {
+    const v11: Mut3 = new Mut3(method13());
+    let v25: any;
+    closure7(v11, "{ ", undefined);
+    v25 = undefined;
+    let v44: any;
+    closure7(v11, "file_name", undefined);
+    v44 = undefined;
+    let v63: any;
+    closure7(v11, " = ", undefined);
+    v63 = undefined;
+    let v80: any;
+    closure7(v11, v0, undefined);
+    v80 = undefined;
+    let v99: any;
+    closure7(v11, "; ", undefined);
+    v99 = undefined;
+    let v118: any;
+    closure7(v11, "arguments", undefined);
+    v118 = undefined;
+    let v135: any;
+    closure7(v11, " = ", undefined);
+    v135 = undefined;
+    let v156: any;
+    closure7(v11, toText(interpolate("%A%P()", [v1])), undefined);
+    v156 = undefined;
+    let v173: any;
+    closure7(v11, "; ", undefined);
+    v173 = undefined;
+    let v192: any;
+    closure7(v11, "options", undefined);
+    v192 = undefined;
+    let v209: any;
+    closure7(v11, " = ", undefined);
+    v209 = undefined;
+    let v226: any;
+    closure7(v11, "{ ", undefined);
+    v226 = undefined;
+    let v245: any;
+    closure7(v11, "command", undefined);
+    v245 = undefined;
+    let v262: any;
+    closure7(v11, " = ", undefined);
+    v262 = undefined;
+    let v279: any;
+    closure7(v11, v2, undefined);
+    v279 = undefined;
+    let v296: any;
+    closure7(v11, "; ", undefined);
+    v296 = undefined;
+    let v315: any;
+    closure7(v11, "cancellation_token", undefined);
+    v315 = undefined;
+    let v332: any;
+    closure7(v11, " = ", undefined);
+    v332 = undefined;
+    let v391: any;
+    closure7(v11, toText(interpolate("%A%P()", [v3])), undefined);
+    v391 = undefined;
+    let v408: any;
+    closure7(v11, "; ", undefined);
+    v408 = undefined;
+    let v427: any;
+    closure7(v11, "environment_variables", undefined);
+    v427 = undefined;
+    let v444: any;
+    closure7(v11, " = ", undefined);
+    v444 = undefined;
+    let v466: any;
+    closure7(v11, toText(interpolate("%A%P()", [v4])), undefined);
+    v466 = undefined;
+    let v483: any;
+    closure7(v11, "; ", undefined);
+    v483 = undefined;
+    let v502: any;
+    closure7(v11, "on_line", undefined);
+    v502 = undefined;
+    let v519: any;
+    closure7(v11, " = ", undefined);
+    v519 = undefined;
+    let v578: any;
+    closure7(v11, toText(interpolate("%A%P()", [v5])), undefined);
+    v578 = undefined;
+    let v595: any;
+    closure7(v11, "; ", undefined);
+    v595 = undefined;
+    let v614: any;
+    closure7(v11, "stdin", undefined);
+    v614 = undefined;
+    let v631: any;
+    closure7(v11, " = ", undefined);
+    v631 = undefined;
+    let v690: any;
+    closure7(v11, toText(interpolate("%A%P()", [v6])), undefined);
+    v690 = undefined;
+    let v707: any;
+    closure7(v11, "; ", undefined);
+    v707 = undefined;
+    let v726: any;
+    closure7(v11, "trace", undefined);
+    v726 = undefined;
+    let v743: any;
+    closure7(v11, " = ", undefined);
+    v743 = undefined;
+    let v763: any;
+    closure7(v11, v7 ? "true" : "false", undefined);
+    v763 = undefined;
+    let v780: any;
+    closure7(v11, "; ", undefined);
+    v780 = undefined;
+    let v799: any;
+    closure7(v11, "working_directory", undefined);
+    v799 = undefined;
+    let v816: any;
+    closure7(v11, " = ", undefined);
+    v816 = undefined;
+    let v875: any;
+    closure7(v11, toText(interpolate("%A%P()", [v8])), undefined);
+    v875 = undefined;
+    let v892: any;
+    closure7(v11, "; ", undefined);
+    v892 = undefined;
+    let v911: any;
+    closure7(v11, "stderr", undefined);
+    v911 = undefined;
+    let v928: any;
+    closure7(v11, " = ", undefined);
+    v928 = undefined;
+    let v948: any;
+    closure7(v11, v9 ? "true" : "false", undefined);
+    v948 = undefined;
+    let v967: any;
+    closure7(v11, " }", undefined);
+    v967 = undefined;
+    let v984: any;
+    closure7(v11, " }", undefined);
+    v984 = undefined;
+    return v11.l0;
 }
 
-export function method45(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: string, v9: US5_$union, v10: string, v11: Option<any>, v12: [string, string][], v13: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v14_1: Option<((arg0: any) => void)>, v15_1: boolean, v16_1: Option<string>): string {
-    const v17: string = method46(v8, v9, v10, v11, v12, v13, v14_1, v15_1, v16_1);
-    return method17((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v17);
+export function method45(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: string, v9: US5_$union, v10: string, v11: Option<any>, v12: [string, string][], v13: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v14_1: Option<((arg0: any) => void)>, v15_1: boolean, v16_1: Option<string>, v17: boolean): string {
+    const v18: string = method46(v8, v9, v10, v11, v12, v13, v14_1, v15_1, v16_1, v17);
+    return method17((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v18);
 }
 
-export function closure17(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: US5_$union, v8: string, unitVar: void): void {
-    const v24 = (): void => {
+export function closure17(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: US5_$union, v9: string, unitVar: void): void {
+    const v25 = (): void => {
         closure0(undefined, undefined);
     };
-    let v25: any;
-    v24();
-    v25 = undefined;
+    let v26: any;
+    v25();
+    v26 = undefined;
     const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_12(TraceState_trace_state());
-    const v66: US0_$union = patternInput[4].l0;
-    let v306: US6_$union;
-    if (((patternInput[2].l0 === false) ? false : (1 >= find<US0_$union, int32>(v66, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
+    const v67: US0_$union = patternInput[4].l0;
+    let v307: US6_$union;
+    if (((patternInput[2].l0 === false) ? false : (1 >= find<US0_$union, int32>(v67, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
         Compare: compare,
     })))) === false) {
-        v306 = US6_US6_1();
+        v307 = US6_US6_1();
     }
     else {
-        let v89: any;
-        v24();
-        v89 = undefined;
+        let v90: any;
+        v25();
+        v90 = undefined;
         const patternInput_1: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_12(TraceState_trace_state());
-        const v117: Option<int64> = patternInput_1[5];
-        const v116: Mut4 = patternInput_1[4];
-        const v115: Mut3 = patternInput_1[3];
-        const v114: Mut2 = patternInput_1[2];
-        const v113: Mut1 = patternInput_1[1];
-        const v112: Mut0 = patternInput_1[0];
-        const v132: string = method45(v112, v113, v114, v115, v116, v117, method7(v112, v113, v114, v115, v116, v117), method44(), v8, v7, v0, v1, v2, v3, v4, v5, v6);
-        let v148: any;
-        v24();
-        v148 = undefined;
+        const v118: Option<int64> = patternInput_1[5];
+        const v117: Mut4 = patternInput_1[4];
+        const v116: Mut3 = patternInput_1[3];
+        const v115: Mut2 = patternInput_1[2];
+        const v114: Mut1 = patternInput_1[1];
+        const v113: Mut0 = patternInput_1[0];
+        const v133: string = method45(v113, v114, v115, v116, v117, v118, method7(v113, v114, v115, v116, v117, v118), method44(), v9, v8, v0, v1, v2, v3, v4, v5, v6, v7);
+        let v149: any;
+        v25();
+        v149 = undefined;
         const patternInput_2: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_12(TraceState_trace_state());
-        const v172: Mut1 = patternInput_2[1];
-        const v171: Mut0 = patternInput_2[0];
-        let v193: any;
-        closure8(v171, undefined);
-        v193 = undefined;
-        closure9(undefined, v132);
-        v172.l0(v132);
-        v306 = US6_US6_0(v171, v172, patternInput_2[2], patternInput_2[3], patternInput_2[4], patternInput_2[5]);
+        const v173: Mut1 = patternInput_2[1];
+        const v172: Mut0 = patternInput_2[0];
+        let v194: any;
+        closure8(v172, undefined);
+        v194 = undefined;
+        closure9(undefined, v133);
+        v173.l0(v133);
+        v307 = US6_US6_0(v172, v173, patternInput_2[2], patternInput_2[3], patternInput_2[4], patternInput_2[5]);
     }
 }
 
-export function method47(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>): [string, string][] {
+export function method47(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean): [string, string][] {
     return v2;
 }
 
@@ -2312,18 +2326,18 @@ export function closure20(v0: string, unitVar: void): void {
     }
 }
 
-export function method50(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: any, v9: boolean, v10: boolean): Async<void> {
+export function method50(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: boolean, v9: any, v10: boolean, v11: boolean): Async<void> {
     return singleton.Delay<void>((): Async<void> => {
-        let v8990: US15_$union, v8996: Async<void>;
-        const v8959: string = method51(v10);
-        const v8965: boolean = (v8959 === defaultOf()) !== true;
-        return singleton.Combine<void>(v8965 ? ((v8990 = defaultArg(map<((arg0: [int32, string, boolean]) => Async<void>), US15_$union>(method52(), v3), US15_US15_1()), singleton.Combine<void>(((v8990.tag as int32) === /* US15_0 */ 0) ? ((v8996 = (v8990.fields[0] as any)([method53(v7), v8959, v9] as [int32, string, boolean]), singleton.Bind<void, void>(v8996, (): Async<void> => {
+        let v8991: US15_$union, v8997: Async<void>;
+        const v8960: string = method51(v11);
+        const v8966: boolean = (v8960 === defaultOf()) !== true;
+        return singleton.Combine<void>(v8966 ? ((v8991 = defaultArg(map<((arg0: [int32, string, boolean]) => Async<void>), US15_$union>(method52(), v3), US15_US15_1()), singleton.Combine<void>(((v8991.tag as int32) === /* US15_0 */ 0) ? ((v8997 = (v8991.fields[0] as any)([method53(v8), v8960, v10] as [int32, string, boolean]), singleton.Bind<void, void>(v8997, (): Async<void> => {
             return singleton.Zero();
         }))) : (singleton.Zero()), singleton.Delay<void>((): Async<void> => {
-            let v9316: any, v9637: any;
-            const v8999: string = v9 ? concat("! ", ...v8959) : concat("> ", ...v8959);
-            return singleton.Combine<void>(v5 ? ((v9316 = ((closure20(v8999, undefined), undefined)), singleton.Zero())) : ((v9637 = ((closure10(v8999, undefined), undefined)), singleton.Zero())), singleton.Delay<void>((): Async<void> => {
-                const v9645: string = concat(v9 ? "\u001b[7;4m" : "", v8959, ...(v9 ? "\u001b[0m" : ""));
+            let v9317: any, v9638: any;
+            const v9000: string = v10 ? concat("! ", ...v8960) : concat("> ", ...v8960);
+            return singleton.Combine<void>(v5 ? ((v9317 = ((closure20(v9000, undefined), undefined)), singleton.Zero())) : ((v9638 = ((closure10(v9000, undefined), undefined)), singleton.Zero())), singleton.Delay<void>((): Async<void> => {
+                const v9646: string = concat(v10 ? "\u001b[7;4m" : "", v8960, ...(v10 ? "\u001b[0m" : ""));
                 return singleton.Zero();
             }));
         })))) : singleton.Zero(), singleton.Delay<void>((): Async<void> => {
@@ -2332,12 +2346,12 @@ export function method50(v0: string, v1: Option<any>, v2: [string, string][], v3
     });
 }
 
-export function method49(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: any, v9: boolean, v10: boolean): Async<void> {
-    return method50(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10);
+export function method49(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: boolean, v9: any, v10: boolean, v11: boolean): Async<void> {
+    return method50(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11);
 }
 
-export function closure18(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: any, v9: boolean, v10: boolean): void {
-    startImmediate(method49(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10));
+export function closure18(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: boolean, v9: any, v10: boolean, v11: boolean): void {
+    startImmediate(method49(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11));
 }
 
 export function closure21(unitVar: void, v0: any): US16_$union {
@@ -2456,207 +2470,219 @@ export function method63(): string {
     return "\n";
 }
 
-export function method65(v0: int32, v1: int32, v2: string, v3: Option<any>, v4: [string, string][], v5: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v6: Option<((arg0: any) => void)>, v7: boolean, v8: Option<string>): string {
-    const v10: Mut3 = new Mut3(method13());
-    let v24: any;
-    closure7(v10, "{ ", undefined);
-    v24 = undefined;
-    let v43: any;
-    closure7(v10, "exit_code", undefined);
-    v43 = undefined;
-    let v62: any;
-    closure7(v10, " = ", undefined);
-    v62 = undefined;
-    let v82: any;
-    closure7(v10, `${v0}`, undefined);
-    v82 = undefined;
-    let v101: any;
-    closure7(v10, "; ", undefined);
-    v101 = undefined;
-    let v120: any;
-    closure7(v10, "output_length", undefined);
-    v120 = undefined;
-    let v137: any;
-    closure7(v10, " = ", undefined);
-    v137 = undefined;
-    let v157: any;
-    closure7(v10, `${v1}`, undefined);
-    v157 = undefined;
-    let v174: any;
-    closure7(v10, "; ", undefined);
-    v174 = undefined;
-    let v193: any;
-    closure7(v10, "options", undefined);
-    v193 = undefined;
-    let v210: any;
-    closure7(v10, " = ", undefined);
-    v210 = undefined;
-    let v227: any;
-    closure7(v10, "{ ", undefined);
-    v227 = undefined;
-    let v246: any;
-    closure7(v10, "command", undefined);
-    v246 = undefined;
-    let v263: any;
-    closure7(v10, " = ", undefined);
-    v263 = undefined;
-    let v280: any;
-    closure7(v10, v2, undefined);
-    v280 = undefined;
-    let v297: any;
-    closure7(v10, "; ", undefined);
-    v297 = undefined;
-    let v316: any;
-    closure7(v10, "cancellation_token", undefined);
-    v316 = undefined;
-    let v333: any;
-    closure7(v10, " = ", undefined);
-    v333 = undefined;
-    let v392: any;
-    closure7(v10, toText(interpolate("%A%P()", [v3])), undefined);
-    v392 = undefined;
-    let v409: any;
-    closure7(v10, "; ", undefined);
-    v409 = undefined;
-    let v428: any;
-    closure7(v10, "environment_variables", undefined);
-    v428 = undefined;
-    let v445: any;
-    closure7(v10, " = ", undefined);
-    v445 = undefined;
-    let v467: any;
-    closure7(v10, toText(interpolate("%A%P()", [v4])), undefined);
-    v467 = undefined;
-    let v484: any;
-    closure7(v10, "; ", undefined);
-    v484 = undefined;
-    let v503: any;
-    closure7(v10, "on_line", undefined);
-    v503 = undefined;
-    let v520: any;
-    closure7(v10, " = ", undefined);
-    v520 = undefined;
-    let v579: any;
-    closure7(v10, toText(interpolate("%A%P()", [v5])), undefined);
-    v579 = undefined;
-    let v596: any;
-    closure7(v10, "; ", undefined);
-    v596 = undefined;
-    let v615: any;
-    closure7(v10, "stdin", undefined);
-    v615 = undefined;
-    let v632: any;
-    closure7(v10, " = ", undefined);
-    v632 = undefined;
-    let v691: any;
-    closure7(v10, toText(interpolate("%A%P()", [v6])), undefined);
-    v691 = undefined;
-    let v708: any;
-    closure7(v10, "; ", undefined);
-    v708 = undefined;
-    let v727: any;
-    closure7(v10, "trace", undefined);
-    v727 = undefined;
-    let v744: any;
-    closure7(v10, " = ", undefined);
-    v744 = undefined;
-    let v764: any;
-    closure7(v10, v7 ? "true" : "false", undefined);
-    v764 = undefined;
-    let v781: any;
-    closure7(v10, "; ", undefined);
-    v781 = undefined;
-    let v800: any;
-    closure7(v10, "working_directory", undefined);
-    v800 = undefined;
-    let v817: any;
-    closure7(v10, " = ", undefined);
-    v817 = undefined;
-    let v876: any;
-    closure7(v10, toText(interpolate("%A%P()", [v8])), undefined);
-    v876 = undefined;
-    let v895: any;
-    closure7(v10, " }", undefined);
-    v895 = undefined;
-    let v912: any;
-    closure7(v10, " }", undefined);
-    v912 = undefined;
-    return v10.l0;
+export function method65(v0: int32, v1: int32, v2: string, v3: Option<any>, v4: [string, string][], v5: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v6: Option<((arg0: any) => void)>, v7: boolean, v8: Option<string>, v9: boolean): string {
+    const v11: Mut3 = new Mut3(method13());
+    let v25: any;
+    closure7(v11, "{ ", undefined);
+    v25 = undefined;
+    let v44: any;
+    closure7(v11, "exit_code", undefined);
+    v44 = undefined;
+    let v63: any;
+    closure7(v11, " = ", undefined);
+    v63 = undefined;
+    let v83: any;
+    closure7(v11, `${v0}`, undefined);
+    v83 = undefined;
+    let v102: any;
+    closure7(v11, "; ", undefined);
+    v102 = undefined;
+    let v121: any;
+    closure7(v11, "output_length", undefined);
+    v121 = undefined;
+    let v138: any;
+    closure7(v11, " = ", undefined);
+    v138 = undefined;
+    let v158: any;
+    closure7(v11, `${v1}`, undefined);
+    v158 = undefined;
+    let v175: any;
+    closure7(v11, "; ", undefined);
+    v175 = undefined;
+    let v194: any;
+    closure7(v11, "options", undefined);
+    v194 = undefined;
+    let v211: any;
+    closure7(v11, " = ", undefined);
+    v211 = undefined;
+    let v228: any;
+    closure7(v11, "{ ", undefined);
+    v228 = undefined;
+    let v247: any;
+    closure7(v11, "command", undefined);
+    v247 = undefined;
+    let v264: any;
+    closure7(v11, " = ", undefined);
+    v264 = undefined;
+    let v281: any;
+    closure7(v11, v2, undefined);
+    v281 = undefined;
+    let v298: any;
+    closure7(v11, "; ", undefined);
+    v298 = undefined;
+    let v317: any;
+    closure7(v11, "cancellation_token", undefined);
+    v317 = undefined;
+    let v334: any;
+    closure7(v11, " = ", undefined);
+    v334 = undefined;
+    let v393: any;
+    closure7(v11, toText(interpolate("%A%P()", [v3])), undefined);
+    v393 = undefined;
+    let v410: any;
+    closure7(v11, "; ", undefined);
+    v410 = undefined;
+    let v429: any;
+    closure7(v11, "environment_variables", undefined);
+    v429 = undefined;
+    let v446: any;
+    closure7(v11, " = ", undefined);
+    v446 = undefined;
+    let v468: any;
+    closure7(v11, toText(interpolate("%A%P()", [v4])), undefined);
+    v468 = undefined;
+    let v485: any;
+    closure7(v11, "; ", undefined);
+    v485 = undefined;
+    let v504: any;
+    closure7(v11, "on_line", undefined);
+    v504 = undefined;
+    let v521: any;
+    closure7(v11, " = ", undefined);
+    v521 = undefined;
+    let v580: any;
+    closure7(v11, toText(interpolate("%A%P()", [v5])), undefined);
+    v580 = undefined;
+    let v597: any;
+    closure7(v11, "; ", undefined);
+    v597 = undefined;
+    let v616: any;
+    closure7(v11, "stdin", undefined);
+    v616 = undefined;
+    let v633: any;
+    closure7(v11, " = ", undefined);
+    v633 = undefined;
+    let v692: any;
+    closure7(v11, toText(interpolate("%A%P()", [v6])), undefined);
+    v692 = undefined;
+    let v709: any;
+    closure7(v11, "; ", undefined);
+    v709 = undefined;
+    let v728: any;
+    closure7(v11, "trace", undefined);
+    v728 = undefined;
+    let v745: any;
+    closure7(v11, " = ", undefined);
+    v745 = undefined;
+    let v765: any;
+    closure7(v11, v7 ? "true" : "false", undefined);
+    v765 = undefined;
+    let v782: any;
+    closure7(v11, "; ", undefined);
+    v782 = undefined;
+    let v801: any;
+    closure7(v11, "working_directory", undefined);
+    v801 = undefined;
+    let v818: any;
+    closure7(v11, " = ", undefined);
+    v818 = undefined;
+    let v877: any;
+    closure7(v11, toText(interpolate("%A%P()", [v8])), undefined);
+    v877 = undefined;
+    let v894: any;
+    closure7(v11, "; ", undefined);
+    v894 = undefined;
+    let v913: any;
+    closure7(v11, "stderr", undefined);
+    v913 = undefined;
+    let v930: any;
+    closure7(v11, " = ", undefined);
+    v930 = undefined;
+    let v950: any;
+    closure7(v11, v9 ? "true" : "false", undefined);
+    v950 = undefined;
+    let v969: any;
+    closure7(v11, " }", undefined);
+    v969 = undefined;
+    let v986: any;
+    closure7(v11, " }", undefined);
+    v986 = undefined;
+    return v11.l0;
 }
 
-export function method64(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: int32, v10: string, v11: Option<any>, v12: [string, string][], v13: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v14_1: Option<((arg0: any) => void)>, v15_1: boolean, v16_1: Option<string>): string {
-    const v17: string = method65(v8, v9, v10, v11, v12, v13, v14_1, v15_1, v16_1);
-    return method17((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v17);
+export function method64(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: int32, v10: string, v11: Option<any>, v12: [string, string][], v13: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v14_1: Option<((arg0: any) => void)>, v15_1: boolean, v16_1: Option<string>, v17: boolean): string {
+    const v18: string = method65(v8, v9, v10, v11, v12, v13, v14_1, v15_1, v16_1, v17);
+    return method17((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "runtime.execute_with_options_async") + " / ") + v18);
 }
 
-export function closure24(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: int32, v8: string, unitVar: void): void {
-    const v24 = (): void => {
+export function closure24(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean, v8: int32, v9: string, unitVar: void): void {
+    const v25 = (): void => {
         closure0(undefined, undefined);
     };
-    let v25: any;
-    v24();
-    v25 = undefined;
+    let v26: any;
+    v25();
+    v26 = undefined;
     const patternInput: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_12(TraceState_trace_state());
-    const v66: US0_$union = patternInput[4].l0;
-    let v307: US6_$union;
-    if (((patternInput[2].l0 === false) ? false : (1 >= find<US0_$union, int32>(v66, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
+    const v67: US0_$union = patternInput[4].l0;
+    let v308: US6_$union;
+    if (((patternInput[2].l0 === false) ? false : (1 >= find<US0_$union, int32>(v67, ofSeq([[US0_US0_0(), 0] as [US0_$union, int32], [US0_US0_1(), 1] as [US0_$union, int32], [US0_US0_2(), 2] as [US0_$union, int32], [US0_US0_3(), 3] as [US0_$union, int32], [US0_US0_4(), 4] as [US0_$union, int32]], {
         Compare: compare,
     })))) === false) {
-        v307 = US6_US6_1();
+        v308 = US6_US6_1();
     }
     else {
-        let v89: any;
-        v24();
-        v89 = undefined;
+        let v90: any;
+        v25();
+        v90 = undefined;
         const patternInput_1: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_12(TraceState_trace_state());
-        const v117: Option<int64> = patternInput_1[5];
-        const v116: Mut4 = patternInput_1[4];
-        const v115: Mut3 = patternInput_1[3];
-        const v114: Mut2 = patternInput_1[2];
-        const v113: Mut1 = patternInput_1[1];
-        const v112: Mut0 = patternInput_1[0];
-        const v133: string = method64(v112, v113, v114, v115, v116, v117, method7(v112, v113, v114, v115, v116, v117), method44(), v7, v8.length, v0, v1, v2, v3, v4, v5, v6);
-        let v149: any;
-        v24();
-        v149 = undefined;
+        const v118: Option<int64> = patternInput_1[5];
+        const v117: Mut4 = patternInput_1[4];
+        const v116: Mut3 = patternInput_1[3];
+        const v115: Mut2 = patternInput_1[2];
+        const v114: Mut1 = patternInput_1[1];
+        const v113: Mut0 = patternInput_1[0];
+        const v134: string = method64(v113, v114, v115, v116, v117, v118, method7(v113, v114, v115, v116, v117, v118), method44(), v8, v9.length, v0, v1, v2, v3, v4, v5, v6, v7);
+        let v150: any;
+        v25();
+        v150 = undefined;
         const patternInput_2: [Mut0, Mut1, Mut2, Mut3, Mut4, Option<int64>] = value_12(TraceState_trace_state());
-        const v173: Mut1 = patternInput_2[1];
-        const v172: Mut0 = patternInput_2[0];
-        let v194: any;
-        closure8(v172, undefined);
-        v194 = undefined;
-        closure9(undefined, v133);
-        v173.l0(v133);
-        v307 = US6_US6_0(v172, v173, patternInput_2[2], patternInput_2[3], patternInput_2[4], patternInput_2[5]);
+        const v174: Mut1 = patternInput_2[1];
+        const v173: Mut0 = patternInput_2[0];
+        let v195: any;
+        closure8(v173, undefined);
+        v195 = undefined;
+        closure9(undefined, v134);
+        v174.l0(v134);
+        v308 = US6_US6_0(v173, v174, patternInput_2[2], patternInput_2[3], patternInput_2[4], patternInput_2[5]);
     }
 }
 
-export function method22(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>): Async<[int32, string]> {
+export function method22(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean): Async<[int32, string]> {
     return singleton.Delay<[int32, string]>((): Async<[int32, string]> => {
         const patternInput: [int32, string] = defaultOf();
         return singleton.Return<[int32, string]>([patternInput[0], patternInput[1]] as [int32, string]);
     });
 }
 
-export function method21(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>): Async<[int32, string]> {
-    return method22(v0, v1, v2, v3, v4, v5, v6);
+export function method21(v0: string, v1: Option<any>, v2: [string, string][], v3: Option<((arg0: [int32, string, boolean]) => Async<void>)>, v4: Option<((arg0: any) => void)>, v5: boolean, v6: Option<string>, v7: boolean): Async<[int32, string]> {
+    return method22(v0, v1, v2, v3, v4, v5, v6, v7);
 }
 
 export function method20(v0: string): Async<[int32, string]> {
-    return method21(v0, undefined, [], undefined, undefined, true, undefined);
+    return method21(v0, undefined, [], undefined, undefined, true, undefined, true);
 }
 
 export function closure13(unitVar: void, v0: string): Async<[int32, string]> {
     return method20(v0);
 }
 
-export function closure25(unitVar: void, _arg: [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>]): Async<[int32, string]> {
-    return method21(_arg[0], _arg[1], _arg[2], _arg[3], _arg[4], _arg[5], _arg[6]);
+export function closure25(unitVar: void, _arg: [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>, boolean]): Async<[int32, string]> {
+    return method21(_arg[0], _arg[1], _arg[2], _arg[3], _arg[4], _arg[5], _arg[6], _arg[7]);
 }
 
-export function closure26(unitVar: void, v0: ((arg0: Heap0) => Heap0)): [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>] {
-    const v20: Heap0 = v0(new Heap0("", undefined, [], undefined, undefined, true, undefined));
-    return [v20.l0, v20.l1, v20.l2, v20.l3, v20.l4, v20.l5, v20.l6] as [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>];
+export function closure26(unitVar: void, v0: ((arg0: Heap0) => Heap0)): [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>, boolean] {
+    const v20: Heap0 = v0(new Heap0("", undefined, [], undefined, undefined, true, undefined, true));
+    return [v20.l0, v20.l1, v20.l2, v20.l3, v20.l4, v20.l5, v20.l6, v20.l7] as [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>, boolean];
 }
 
 export function method68(v0_mut: string, v1_mut: int64): boolean {
@@ -3308,15 +3334,15 @@ export function execute_async(x: string): Async<[int32, string]> {
     return v32(x);
 }
 
-export const v33 = (arg10$0040: [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>]): Async<[int32, string]> => closure25(undefined, arg10$0040);
+export const v33 = (arg10$0040: [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>, boolean]): Async<[int32, string]> => closure25(undefined, arg10$0040);
 
-export function execute_with_options_async(x: [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>]): Async<[int32, string]> {
+export function execute_with_options_async(x: [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>, boolean]): Async<[int32, string]> {
     return v33(x);
 }
 
-export const v34 = (v: ((arg0: Heap0) => Heap0)): [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>] => closure26(undefined, v);
+export const v34 = (v: ((arg0: Heap0) => Heap0)): [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>, boolean] => closure26(undefined, v);
 
-export function execution_options(x: ((arg0: Heap0) => Heap0)): [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>] {
+export function execution_options(x: ((arg0: Heap0) => Heap0)): [string, Option<any>, [string, string][], Option<((arg0: [int32, string, boolean]) => Async<void>)>, Option<((arg0: any) => void)>, boolean, Option<string>, boolean] {
     return v34(x);
 }
 
