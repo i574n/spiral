@@ -1677,6 +1677,7 @@ inl process_gleam { gleam_path target deps } =
                 command
                 environment_variables
                 working_directory = package_dir |> optionm'.some'
+                stderr = false
             }
             |> runtime.execute_with_options
 
