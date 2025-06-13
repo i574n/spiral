@@ -80,7 +80,7 @@ class Mut1(Record):
 
 Mut1_reflection = _expr8
 
-def _expr9() -> TypeInfo:
+def _expr10() -> TypeInfo:
     return record_type("Common.Mut2", [], Mut2, lambda: [("l0", bool_type)])
 
 
@@ -88,7 +88,7 @@ def _expr9() -> TypeInfo:
 class Mut2(Record):
     l0: bool
 
-Mut2_reflection = _expr9
+Mut2_reflection = _expr10
 
 def _expr11() -> TypeInfo:
     return record_type("Common.Mut3", [], Mut3, lambda: [("l0", string_type)])
@@ -390,11 +390,11 @@ def method7(v0: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0: Callable[[], None]) -> IDisposable:
     v14_1: Callable[[], None] = method7(v0)
-    class ObjectExpr48(IDisposable):
+    class ObjectExpr50(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
             v14_1(None)
 
-    return ObjectExpr48()
+    return ObjectExpr50()
 
 
 def closure6(unit_var: None, v0: US6) -> US7:
@@ -416,10 +416,10 @@ def closure10(unit_var: None, v0: int64) -> US2:
 
 
 def method10(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow52(v: int64) -> US2:
+    def _arrow54(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow52
+    return _arrow54
 
 
 def method11(__unit: None=None) -> str:

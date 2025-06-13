@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 $projectName = "spiral_compiler"
 
 if (!$SkipFsx) {
-    if (!$fast -and !$SkipNotebook -and !$env:CI) {
+    if (!$fast -and !$SkipNotebook) {
         $workingDirectory = ResolveLink (GetFullPath "../../deps/polyglot/lib/fsharp")
         { . ../../workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/$projectName.dib" --working-directory $workingDirectory } | Invoke-Block -Retries 3
     }
