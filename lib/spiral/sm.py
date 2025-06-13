@@ -85,10 +85,10 @@ def closure7(v0_1: int, v1_1: str, v2_1: int, v3_1: str) -> str:
 
 
 def method0(v0_1: int, v1_1: str, v2_1: int) -> Callable[[str], str]:
-    def _arrow10(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> str:
+    def _arrow9(v: str, v0_1: Any=v0_1, v1_1: Any=v1_1, v2_1: Any=v2_1) -> str:
         return closure7(v0_1, v1_1, v2_1, v)
 
-    return _arrow10
+    return _arrow9
 
 
 def closure6(v0_1: int, v1_1: str, v2_1: str) -> str:
@@ -446,21 +446,21 @@ def contains(x: str) -> Callable[[str], bool]:
     return v0(x)
 
 
-def _arrow49(v: str) -> Callable[[str], bool]:
+def _arrow48(v: str) -> Callable[[str], bool]:
     return closure2(None, v)
 
 
-v1: Callable[[str, str], bool] = _arrow49
+v1: Callable[[str, str], bool] = _arrow48
 
 def ends_with(x: str) -> Callable[[str], bool]:
     return v1(x)
 
 
-def _arrow50(v: int) -> Callable[[str, str], str]:
+def _arrow49(v: int) -> Callable[[str, str], str]:
     return closure4(None, v)
 
 
-v2: Callable[[int, str, str], str] = _arrow50
+v2: Callable[[int, str, str], str] = _arrow49
 
 def pad_left(x: int) -> Callable[[str, str], str]:
     return v2(x)
@@ -476,21 +476,21 @@ def pad_right(x: int) -> Callable[[str, str], str]:
     return v3(x)
 
 
-def _arrow53(v: str) -> Callable[[str, str], str]:
+def _arrow52(v: str) -> Callable[[str, str], str]:
     return closure11(None, v)
 
 
-v4: Callable[[str, str, str], str] = _arrow53
+v4: Callable[[str, str, str], str] = _arrow52
 
 def replace(x: str) -> Callable[[str, str], str]:
     return v4(x)
 
 
-def _arrow54(v: str) -> Callable[[str, str], str]:
+def _arrow53(v: str) -> Callable[[str, str], str]:
     return closure14(None, v)
 
 
-v5: Callable[[str, str, str], str] = _arrow54
+v5: Callable[[str, str, str], str] = _arrow53
 
 def replace_regex(x: str) -> Callable[[str, str], str]:
     return v5(x)
