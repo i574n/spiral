@@ -1618,6 +1618,7 @@ inl process_gleam { gleam_path target deps } =
             "gleam_erlang=\">=0.34.0 and <1.0.0\""
             "envoy=\">=1.0.0 and <2.0.0\""
             "gary=\">=1.1.0 and <2.0.0\""
+            "gtempo=\">=7.1.0 and <8.0.0\""
         ]
         |> am'.to_vec
         |> am'.vec_map sm'.to_std_string
@@ -1777,13 +1778,13 @@ inl process_gleam { gleam_path target deps } =
                             }
                             |> runtime.execute_with_options
 
-                        if exit_code <>. 0 then
+                        if exit_code = 0
+                        then html_path |> file_system.read_all_text
+                        else
                             trace Critical
                                 fun () => "spiral.process_gleam / trunk error"
                                 fun () => { exit_code run_result new_code_path }
                             ""
-                        else
-                            html_path |> file_system.read_all_text
 
             inl run_result' = run_result |> sm'.to_std_string
 
@@ -1792,9 +1793,19 @@ inl process_gleam { gleam_path target deps } =
                     fun () =>
                         run_result
                         |> sm'.split "\n"
-                        |> fun x => a x : _ i32 _
+                        |> am'.to_vec
+                        |> am'.vec_filter fun x =>
+                            (x |> sm'.starts_with "{compiling,\"" |> not)
+                            && (x |> sm'.starts_with "{compiled,main" |> not)
+                            && (x |> sm'.ends_with "main.beam\"}" |> not)
+                            && (x |> sm'.starts_with "src\\main.gleam:" |> not)
+                            && (x |> sm'.starts_with "src/main.gleam:" |> not)
+                            && (x |> sm'.starts_with "% " |> not)
+                        |> am'.from_vec
+                        |> fun x => x : _ int _
                         |> seq.of_array
                         |> sm'.concat "\n"
+                        |> sm'.trim
                     fun ex =>
                         trace Critical
                             fun () => "spiral.process_gleam / Exception"

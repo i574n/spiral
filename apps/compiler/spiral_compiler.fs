@@ -10704,10 +10704,10 @@ module spiral_compiler =
                     if is_fn
                     then $"{range_ty} {{ fn(_)"
                     else range_ty
-                line s (sprintf "method%i (%s) -> %s {" x.tag (args_tys x.free_vars) ret)
+                line s $"method{x.tag} ({args_tys x.free_vars}) -> {ret} {{"
                 binds (indent s) x.body
                 if is_fn
-                then line s "}}"
+                then line s "(Nil)}}"
                 else line s "}"
                 )
         and closure : _ -> ClosureRecGleam =

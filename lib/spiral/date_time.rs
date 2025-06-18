@@ -86,79 +86,79 @@ pub mod Date_time {
         string("hhmm")
     }
     pub fn method0(v0_1: Guid, v1_1: DateTime) -> Guid {
-        let v745: DateTime = {
+        let v752: DateTime = {
             let _arg: DateTime = DateTime::unixEpoch();
             _arg.toUniversalTime()
         };
-        let v755: DateTime = {
+        let v762: DateTime = {
             let _arg_1: DateTime = DateTime::specifyKind(v1_1, 2_i32);
             _arg_1.toUniversalTime()
         };
-        let v855: i64 = ((v755.ticks()) - (v745.ticks())) / 10_i64;
-        let v857: Option<chrono::DateTime<chrono::Utc>> =
-            chrono::DateTime::from_timestamp_micros(v855);
-        let v882: Date_time::US0 =
-            defaultValue(Date_time::US0::US0_1, map(Date_time::method1(), v857));
-        let v902: Date_time::US1 = match &v882 {
-            Date_time::US0::US0_0(v882_0_0) => {
-                let v888: chrono::NaiveDateTime = match &v882 {
+        let v862: i64 = ((v762.ticks()) - (v752.ticks())) / 10_i64;
+        let v864: Option<chrono::DateTime<chrono::Utc>> =
+            chrono::DateTime::from_timestamp_micros(v862);
+        let v889: Date_time::US0 =
+            defaultValue(Date_time::US0::US0_1, map(Date_time::method1(), v864));
+        let v909: Date_time::US1 = match &v889 {
+            Date_time::US0::US0_0(v889_0_0) => {
+                let v895: chrono::NaiveDateTime = match &v889 {
                     Date_time::US0::US0_0(x) => x.clone(),
                     _ => unreachable!(),
                 }
                 .clone()
                 .naive_utc();
-                let v890: chrono::DateTime<chrono::Local> =
-                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v888);
-                let v892: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
-                let v893: &str = r#"%Y%m%d-%H%M-%S%f"#;
-                let v895: std::string::String = v890.format(v893).to_string();
-                let v897: string = fable_library_rust::String_::fromString(v895);
+                let v897: chrono::DateTime<chrono::Local> =
+                    chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &v895);
+                let v899: string = string("r#\"%Y%m%d-%H%M-%S%f\"#");
+                let v900: &str = r#"%Y%m%d-%H%M-%S%f"#;
+                let v902: std::string::String = v897.format(v900).to_string();
+                let v904: string = fable_library_rust::String_::fromString(v902);
                 Date_time::US1::US1_0(sprintf!(
                     "{}-{}-{}",
-                    getSlice(v897.clone(), Some(0_i32), Some(17_i32)),
-                    getSlice(v897.clone(), Some(18_i32), Some(21_i32)),
-                    getCharAt(v897, 22_i32)
+                    getSlice(v904.clone(), Some(0_i32), Some(17_i32)),
+                    getSlice(v904.clone(), Some(18_i32), Some(21_i32)),
+                    getCharAt(v904, 22_i32)
                 ))
             }
             _ => Date_time::US1::US1_1,
         };
-        let v906: string = match &v902 {
-            Date_time::US1::US1_0(v902_0_0) => match &v902 {
+        let v913: string = match &v909 {
+            Date_time::US1::US1_0(v909_0_0) => match &v909 {
                 Date_time::US1::US1_0(x) => x.clone(),
                 _ => unreachable!(),
             }
             .clone(),
             _ => string(""),
         };
-        let v913: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
+        let v920: LrcPtr<TimeZoneInfo> = std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(
             chrono::Local::now().offset(),
         ) as i64);
-        let v957: i64 = v755.ticks();
-        let v993: string = string(
+        let v964: i64 = v762.ticks();
+        let v1000: string = string(
             "chrono::FixedOffset::local_minus_utc(&chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(&chrono::DateTime::from_timestamp_nanos($1))))",
         );
-        let v1144: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
+        let v1151: TimeSpan = TimeSpan::new_ticks(chrono::FixedOffset::local_minus_utc(
             &chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(
-                &chrono::DateTime::from_timestamp_nanos(v957),
+                &chrono::DateTime::from_timestamp_nanos(v964),
             )),
         ) as i64);
-        let v1165: u8 = if (v1144.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
-        let v1166: string = Date_time::method2();
-        let v1386: string = v1144.toString(v1166);
-        let v1527: string = sprintf!(
+        let v1172: u8 = if (v1151.hours()) > 0_i32 { 1_u8 } else { 0_u8 };
+        let v1173: string = Date_time::method2();
+        let v1393: string = v1151.toString(v1173);
+        let v1534: string = sprintf!(
             "{}{}{}",
-            v1165,
-            getSlice(v1386.clone(), Some(0_i32), Some(1_i32)),
-            getSlice(v1386, Some(3_i32), Some(4_i32))
+            v1172,
+            getSlice(v1393.clone(), Some(0_i32), Some(1_i32)),
+            getSlice(v1393, Some(3_i32), Some(4_i32))
         );
-        let v1530: string = toString(v0_1);
+        let v1537: string = toString(v0_1);
         parse(concat(new_array(&[
-            v906.clone(),
-            v1527.clone(),
+            v913.clone(),
+            v1534.clone(),
             getSlice(
-                v1530.clone(),
-                Some((length(v906)) + (length(v1527))),
-                Some((length(v1530)) - 1_i32),
+                v1537.clone(),
+                Some((length(v913)) + (length(v1534))),
+                Some((length(v1537)) - 1_i32),
             ),
         ])))
     }

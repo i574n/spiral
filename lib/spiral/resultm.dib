@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"name":"spiral"}]}}
 
 #!markdown
 
@@ -77,9 +77,9 @@ inl get forall t e. (source : result t e) : t =
         backend_switch {
             Gleam = fun () =>
                 global "import gleam/string"
-                $'"resultm.get / Result value was Error: " <> string.inspect(!x)' : string
-            Fsharp = fun () => $'$"resultm.get / Result value was Error: {!x}"' : string
-            Python = fun () => $'f"resultm.get / Result value was Error: {!x}"' : string
+                $'"resultm.get / Error x: " <> string.inspect(!x)' : string
+            Fsharp = fun () => $'$"resultm.get / Error x: {!x}"' : string
+            Python = fun () => $'f"resultm.get / Error x: {!x}"' : string
         }
         |> failwith
 
@@ -117,9 +117,9 @@ inl unwrap_err forall t u. (x : result t u) : u =
         backend_switch {
             Gleam = fun () =>
                 global "import gleam/string"
-                $'"resultm.unwrap_err / x: " <> string.inspect(!x)' : string
-            Fsharp = fun () => $'$"resultm.unwrap_err / x: {!x}"' : string
-            Python = fun () => $'f"resultm.unwrap_err / x: {!x}"' : string
+                $'"resultm.unwrap_err / Ok x: " <> string.inspect(!x)' : string
+            Fsharp = fun () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
+            Python = fun () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
         }
         |> failwith
     | Error x => x

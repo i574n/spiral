@@ -112,6 +112,28 @@ type date_time_switch =
     }
 nominal date_time = $'backend_switch `(date_time_switch)'
 
+/// ### calendar_month
+nominal calendar_month =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () =>
+                global "import gleam/time/calendar"
+                        ) : () -> ()
+        }
+        $'' : $'calendar.Month'
+    )
+
+/// ### tempo_date_time
+nominal tempo_date_time =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () =>
+                global "import tempo"
+                        ) : () -> ()
+        }
+        $'' : $'tempo.DateTime'
+    )
+
 /// ### year
 inl year (date_time : date_time) : i32 =
     backend_switch {
@@ -124,7 +146,19 @@ inl year (date_time : date_time) : i32 =
 inl format (format : string) (date_time : date_time) : string =
     backend_switch {
         Gleam = fun () =>
-            "?" : string
+            global "import tempo/datetime"
+            inl date : date = $'!date_time.0'
+            inl time_of_day : time_of_day = $'!date_time.1'
+            inl duration : duration = $'!date_time.2'
+            inl timestamp : timestamp = $'timestamp.from_calendar(!date, !time_of_day, !duration)'
+            inl tempo_date_time : tempo_date_time = $'!timestamp |> datetime.from_timestamp'
+            inl tempo_date_time : tempo_date_time = $'!tempo_date_time |> datetime.add(!duration)'
+            inl format =
+                if format = ""
+                then "M-D-YY hh:mm:ss A"
+                else format
+            $'!tempo_date_time |> datetime.format(tempo.Custom(!format))' : string
+            // { date_time format date time_of_day duration timestamp tempo_date_time } |> sm'.format
         Fsharp = fun () =>
             inl format =
                 if format = ""
@@ -161,27 +195,35 @@ inl max_value () : date_time =
         Python = fun () => $'datetime.datetime.max' : date_time
     }
 
-/// ### to_calendar
-inl to_calendar (timestamp : timestamp) : date_time =
+/// ### to_calendar_utc
+inl to_calendar_utc (timestamp : timestamp) : date_time =
     backend_switch {
         Gleam = fun () =>
-            global "import gleam/time/duration"
+            global "import gleam/time/calendar"
             global "import gleam/time/timestamp"
     }
-    inl duration = $'duration.seconds(0)' : duration
+    inl duration = $'calendar.utc_offset' : duration
     inl (date : date), (time_of_day : time_of_day) = $'!timestamp |> timestamp.to_calendar(!duration)'
     (date, time_of_day, duration) |> to
+
+/// ### tempo_date_time
+nominal time_zone_provider =
+    `(
+        backend_switch `(()) `({}) {
+            Gleam = (fun () =>
+                global "import tempo"
+                        ) : () -> ()
+        }
+        $'' : $'tempo.TimeZoneProvider'
+    )
 
 /// ### unix_epoch
 inl unix_epoch () : date_time =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () =>
-                    global "import gleam/time/timestamp"
-            }
+            global "import gleam/time/timestamp"
             inl timestamp = $'timestamp.from_unix_seconds (0)' : timestamp
-            timestamp |> to_calendar
+            timestamp |> to_calendar_utc
         Fsharp = fun () => $'System.DateTime.UnixEpoch' : date_time
         Python = fun () => $'datetime.datetime(1970, 1, 1)' : date_time
     }
@@ -193,42 +235,43 @@ inl date_time_milliseconds
     =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () =>
-                    global "import gleam/time/calendar"
-                    global "import gleam/time/duration"
-                    global "import gleam/time/timestamp"
-            }
+            global "import gleam/time/calendar"
+            global "import gleam/time/duration"
+            global "import gleam/time/timestamp"
+            global "import tempo/month"
+            inl calendar_month : resultm.result' calendar_month () =
+                $"!month |> month.from_int"
+            inl calendar_month = calendar_month |> resultm.unbox |> resultm.get
             // TODO: types
-            inl month =
-                match month with
-                | 1 => January
-                | 2 => February
-                | 3 => March
-                | 4 => April
-                | 5 => May
-                | 6 => June
-                | 7 => July
-                | 8 => August
-                | 9 => September
-                | 10 => October
-                | 11 => November
-                | 12 => December
-            inl month : infer =
-                match month with
-                | January => $'calendar.January'
-                | February => $'calendar.February'
-                | March => $'calendar.March'
-                | April => $'calendar.April'
-                | May => $'calendar.May'
-                | June => $'calendar.June'
-                | July => $'calendar.July'
-                | August => $'calendar.August'
-                | September => $'calendar.September'
-                | October => $'calendar.October'
-                | November => $'calendar.November'
-                | December => $'calendar.December'
-            inl date : date = $'calendar.Date(#year, #month, #day)'
+            // inl month =
+            //     match month with
+            //     | 1 => January
+            //     | 2 => February
+            //     | 3 => March
+            //     | 4 => April
+            //     | 5 => May
+            //     | 6 => June
+            //     | 7 => July
+            //     | 8 => August
+            //     | 9 => September
+            //     | 10 => October
+            //     | 11 => November
+            //     | 12 => December
+            // inl month : infer =
+            //     match month with
+            //     | January => $'calendar.January'
+            //     | February => $'calendar.February'
+            //     | March => $'calendar.March'
+            //     | April => $'calendar.April'
+            //     | May => $'calendar.May'
+            //     | June => $'calendar.June'
+            //     | July => $'calendar.July'
+            //     | August => $'calendar.August'
+            //     | September => $'calendar.September'
+            //     | October => $'calendar.October'
+            //     | November => $'calendar.November'
+            //     | December => $'calendar.December'
+            inl date : date = $'calendar.Date(#year, #calendar_month, #day)'
             inl nanoseconds = millisecond * 1000000
             inl time_of_day : time_of_day = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
             inl duration : duration = $'duration.milliseconds(#millisecond)'
@@ -323,10 +366,7 @@ inl days (time_span : time_span) : f64 =
 inl ticks (date_time : date_time) : timestamp =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () =>
-                    global "import gleam/time/timestamp"
-            }
+            global "import gleam/time/timestamp"
             // inl date_time (date, time_of_day, duration) = date_time
             inl date : date = $'!date_time.0'
             inl time_of_day : time_of_day = $'!date_time.1'
@@ -413,6 +453,17 @@ nominal time_zone_info = $'System.TimeZoneInfo'
 inl add_days (days : i32) (date_time : date_time) : date_time =
     $'!date_time.AddDays' days
 
+/// ### to_calendar
+inl to_calendar (timestamp : timestamp) : date_time =
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/time/timestamp"
+            global "import gleam/time/calendar"
+    }
+    inl duration = $'calendar.local_offset()' : duration
+    inl (date : date), (time_of_day : time_of_day) = $'!timestamp |> timestamp.to_calendar(!duration)'
+    (date, time_of_day, duration) |> to
+
 /// ### now
 inl now () : date_time =
     backend_switch {
@@ -461,8 +512,8 @@ inl stopwatch_start (stopwatch : stopwatch) : () =
 
 /// ## rust
 
-/// ### duration
-nominal duration =
+/// ### duration'
+nominal duration' =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::time::Duration\")>]\n#endif\ntype std_time_Duration = class end") : () -> ()
@@ -538,7 +589,7 @@ inl format_timestamp forall t {number; int}. (timestamp : t) =
     |> resultm.from_option
 
 /// ### duration_from_millis
-inl duration_from_millis (ms : u64) : duration =
+inl duration_from_millis (ms : u64) : duration' =
     inl ms = join ms
     !\($'"std::time::Duration::from_millis(!ms)"')
 

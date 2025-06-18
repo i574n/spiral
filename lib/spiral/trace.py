@@ -345,17 +345,17 @@ def method9(__unit: None=None) -> str:
 
 
 def method6(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v827: US2 = default_arg(map(method7(), v5), US2(1))
-    v967: Any
-    if v827.tag == 0:
-        v910: Any = create(op_subtraction(from_value(ticks_1(now()), False), v827.fields[0]))
-        v967 = create_1(1, 1, 1, hours(v910), minutes(v910), seconds(v910), milliseconds(v910))
+    v920: US2 = default_arg(map(method7(), v5), US2(1))
+    v1074: Any
+    if v920.tag == 0:
+        v1003: Any = create(op_subtraction(from_value(ticks_1(now()), False), v920.fields[0]))
+        v1074 = create_1(1, 1, 1, hours(v1003), minutes(v1003), seconds(v1003), milliseconds(v1003))
 
     else: 
-        v967 = now()
+        v1074 = now()
 
-    v968: str = method9()
-    return to_string(v967, "M-d-y hh:mm:ss tt" if (v968 == "") else v968)
+    v1075: str = method9()
+    return to_string(v1074, "M-d-y hh:mm:ss tt" if (v1075 == "") else v1075)
 
 
 def method12(__unit: None=None) -> str:

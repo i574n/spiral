@@ -7745,10 +7745,7 @@ a.anchor-link {
         <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">backend_switch</span> <span class="p">{</span>
                 <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                    <span class="n">backend_switch</span> <span class="p">{</span>
-                        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">global</span> <span class="s2">"import gleam/erlang/os"</span>
-                    <span class="p">}</span>
-                    <span class="p">:</span> <span class="p">()</span>
+                    <span class="k">global</span> <span class="s2">"import gleam/erlang/os"</span>
             <span class="p">}</span>
             <span class="err">$</span><span class="s1">'os.family() == os.WindowsNt'</span>
         <span class="o">|</span> <span class="n">target</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">failwith</span> <span class="err">$</span><span class="s1">'$"platform.is_windows / target: {!target}"'</span>
