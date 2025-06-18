@@ -7715,9 +7715,9 @@ a.anchor-link {
         <span class="n">backend_switch</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="k">global</span> <span class="s2">"import gleam/string"</span>
-                <span class="err">$</span><span class="s1">'"resultm.get / Result value was Error: " &lt;&gt; string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
-            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"resultm.get / Result value was Error: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
-            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.get / Result value was Error: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
+                <span class="err">$</span><span class="s1">'"resultm.get / Error x: " &lt;&gt; string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"resultm.get / Error x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.get / Error x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="p">}</span>
         <span class="o">|&gt;</span> <span class="n">failwith</span>
 </pre></div>
@@ -7806,9 +7806,9 @@ a.anchor-link {
         <span class="n">backend_switch</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="k">global</span> <span class="s2">"import gleam/string"</span>
-                <span class="err">$</span><span class="s1">'"resultm.unwrap_err / x: " &lt;&gt; string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
-            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"resultm.unwrap_err / x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
-            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.unwrap_err / x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
+                <span class="err">$</span><span class="s1">'"resultm.unwrap_err / Ok x: " &lt;&gt; string.inspect(!x)'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"resultm.unwrap_err / Ok x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.unwrap_err / Ok x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="p">}</span>
         <span class="o">|&gt;</span> <span class="n">failwith</span>
     <span class="o">|</span> <span class="n">Error</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span>

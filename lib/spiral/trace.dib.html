@@ -8103,11 +8103,8 @@ a.anchor-link {
                                 <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=&gt;</span>
                                     <span class="n">backend_switch</span> <span class="p">{</span>
                                         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                                            <span class="n">backend_switch</span> <span class="p">{</span>
-                                                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                                                    <span class="k">global</span> <span class="s2">"import gleam/float"</span>
-                                                    <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
-                                            <span class="p">}</span>
+                                            <span class="k">global</span> <span class="s2">"import gleam/float"</span>
+                                            <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
                                             <span class="err">$</span><span class="s1">'!x |&gt; timestamp.to_unix_seconds |&gt; float.round'</span> <span class="p">:</span> <span class="n">i64</span>
                                         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span>
                                         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span>
@@ -8123,7 +8120,7 @@ a.anchor-link {
                         <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
                         <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">format</span> <span class="p">(</span>
                             <span class="n">backend_switch</span> <span class="p">{</span>
-                                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"%H:%M:%S"</span>
+                                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"HH:mm:ss"</span>
                                 <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                                     <span class="k">match</span> <span class="n">target</span> <span class="k">with</span>
                                     <span class="o">|</span> <span class="n">Rust</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"hh:mm:ss"</span>
@@ -8218,8 +8215,8 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">////</span> <span class="n">test</span>
-<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">fsharp</span>
+<span class="o">///</span><span class="err">!</span> <span class="n">gleam</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">cuda</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">rust</span>
 <span class="o">///</span><span class="err">!</span> <span class="n">typescript</span>
@@ -8249,6 +8246,12 @@ a.anchor-link {
 { name = __assert_eq; actual = 3; expected = 3 }
 
 
+.gleam output (Gleam):
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
+{ name = __assert_eq; actual = 3; expected = 3 }
+
+
 .rs output:
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
@@ -8264,12 +8267,6 @@ a.anchor-link {
 .py output:
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 test1
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #2 test2
-{ name = __assert_eq; actual = 3; expected = 3 }
-
-
-.gleam output (Gleam):
-? <span class="ansi-blue-intense-fg">d</span> #1 test1 /
-? <span class="ansi-blue-intense-fg">d</span> #2 test2 /
 { name = __assert_eq; actual = 3; expected = 3 }
 
 

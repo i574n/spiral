@@ -644,17 +644,17 @@ def method14(__unit: None=None) -> str:
 
 
 def method11(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v827: US2 = default_arg(map(method12(), v5), US2(1))
-    v967: Any
-    if v827.tag == 0:
-        v910: Any = create(op_subtraction(from_value(ticks_1(now()), False), v827.fields[0]))
-        v967 = create_1(1, 1, 1, hours(v910), minutes(v910), seconds(v910), milliseconds(v910))
+    v920: US2 = default_arg(map(method12(), v5), US2(1))
+    v1074: Any
+    if v920.tag == 0:
+        v1003: Any = create(op_subtraction(from_value(ticks_1(now()), False), v920.fields[0]))
+        v1074 = create_1(1, 1, 1, hours(v1003), minutes(v1003), seconds(v1003), milliseconds(v1003))
 
     else: 
-        v967 = now()
+        v1074 = now()
 
-    v968: str = method14()
-    return to_string(v967, "M-d-y hh:mm:ss tt" if (v968 == "") else v968)
+    v1075: str = method14()
+    return to_string(v1074, "M-d-y hh:mm:ss tt" if (v1075 == "") else v1075)
 
 
 def method17(__unit: None=None) -> str:
@@ -2010,17 +2010,17 @@ def method84(__unit: None=None) -> str:
 
 
 def method80(v0: str, v1: Any) -> str:
-    v3236: str = method83()
-    v3241: str = to_string(v1, "M-d-y hh:mm:ss tt" if (v3236 == "") else v3236)
-    v3493: Any
+    v3253: str = method83()
+    v3268: str = to_string(v1, "M-d-y hh:mm:ss tt" if (v3253 == "") else v3253)
+    v3520: Any
     raise Exception(("date_time.get_utc_offset / target: " + str(US4(6, US3(0)))) + "")
-    v3514: uint8 = uint8(1) if (hours(v3493) > 0) else uint8(0)
-    v3515: str = method84()
-    v3876: str = ((("" + str(v3514)) + "") + to_string_1(v3493, "c", {})) + ""
-    v3879: str = str(v0)
-    v3884: int = (len(v3241) + len(v3876)) or 0
-    v3918: int = (len(v3879) - 1) or 0
-    return parse(concat(v3241, v3876, *v3879[v3884:v3918 + 1]))
+    v3541: uint8 = uint8(1) if (hours(v3520) > 0) else uint8(0)
+    v3542: str = method84()
+    v3903: str = ((("" + str(v3541)) + "") + to_string_1(v3520, "c", {})) + ""
+    v3906: str = str(v0)
+    v3911: int = (len(v3268) + len(v3903)) or 0
+    v3945: int = (len(v3906) - 1) or 0
+    return parse(concat(v3268, v3903, *v3906[v3911:v3945 + 1]))
 
 
 def method86(__unit: None=None) -> str:

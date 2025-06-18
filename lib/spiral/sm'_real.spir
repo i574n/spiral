@@ -219,10 +219,6 @@ let format_real forall t. (x : t) : string =
 
 /// ### concat
 
-/// ### trim_end
-
-/// ### trim_start
-
 /// ### length'
 
 /// ### to_string any
@@ -400,6 +396,10 @@ let format_real forall t. (x : t) : string =
 /// ### concat_list
 
 /// ### range
+
+/// ### trim_end
+
+/// ### trim_start
 
 /// ### ellipsis_end
 

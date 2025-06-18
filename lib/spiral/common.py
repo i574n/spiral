@@ -164,7 +164,7 @@ class US3(Union):
 
 US3_reflection = _expr15
 
-def _expr16() -> TypeInfo:
+def _expr18() -> TypeInfo:
     return union_type("Common.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())], [("f6_0", US3_reflection())]])
 
 
@@ -180,9 +180,9 @@ class US4(Union):
         return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"]
 
 
-US4_reflection = _expr16
+US4_reflection = _expr18
 
-def _expr19() -> TypeInfo:
+def _expr21() -> TypeInfo:
     return union_type("Common.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -198,9 +198,9 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr19
+US5_reflection = _expr21
 
-def _expr22() -> TypeInfo:
+def _expr24() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
 
 
@@ -216,9 +216,9 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr22
+US6_reflection = _expr24
 
-def _expr25() -> TypeInfo:
+def _expr26() -> TypeInfo:
     return union_type("Common.US7", [], US7, lambda: [[("f0_0", US6_reflection())], []])
 
 
@@ -234,9 +234,9 @@ class US7(Union):
         return ["US7_0", "US7_1"]
 
 
-US7_reflection = _expr25
+US7_reflection = _expr26
 
-def _expr27() -> TypeInfo:
+def _expr28() -> TypeInfo:
     return union_type("Common.US8", [], US8, lambda: [[("f0_0", Mut0_reflection()), ("f0_1", Mut1_reflection()), ("f0_2", Mut2_reflection()), ("f0_3", Mut3_reflection()), ("f0_4", Mut4_reflection()), ("f0_5", option_type(int64_type))], []])
 
 
@@ -252,7 +252,7 @@ class US8(Union):
         return ["US8_0", "US8_1"]
 
 
-US8_reflection = _expr27
+US8_reflection = _expr28
 
 def method3(v0: str) -> str:
     return v0
@@ -390,11 +390,11 @@ def method7(v0: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0: Callable[[], None]) -> IDisposable:
     v14_1: Callable[[], None] = method7(v0)
-    class ObjectExpr50(IDisposable):
+    class ObjectExpr58(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
             v14_1(None)
 
-    return ObjectExpr50()
+    return ObjectExpr58()
 
 
 def closure6(unit_var: None, v0: US6) -> US7:
@@ -416,10 +416,10 @@ def closure10(unit_var: None, v0: int64) -> US2:
 
 
 def method10(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow54(v: int64) -> US2:
+    def _arrow62(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow54
+    return _arrow62
 
 
 def method11(__unit: None=None) -> str:
@@ -431,17 +431,17 @@ def method12(__unit: None=None) -> str:
 
 
 def method9(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None=None) -> str:
-    v827: US2 = default_arg(map(method10(), v5), US2(1))
-    v967: Any
-    if v827.tag == 0:
-        v910: Any = create(op_subtraction(from_value(ticks_1(now()), False), v827.fields[0]))
-        v967 = create_1(1, 1, 1, hours(v910), minutes(v910), seconds(v910), milliseconds(v910))
+    v920: US2 = default_arg(map(method10(), v5), US2(1))
+    v1074: Any
+    if v920.tag == 0:
+        v1003: Any = create(op_subtraction(from_value(ticks_1(now()), False), v920.fields[0]))
+        v1074 = create_1(1, 1, 1, hours(v1003), minutes(v1003), seconds(v1003), milliseconds(v1003))
 
     else: 
-        v967 = now()
+        v1074 = now()
 
-    v968: str = method12()
-    return to_string(v967, "M-d-y hh:mm:ss tt" if (v968 == "") else v968)
+    v1075: str = method12()
+    return to_string(v1074, "M-d-y hh:mm:ss tt" if (v1075 == "") else v1075)
 
 
 def method15(__unit: None=None) -> str:

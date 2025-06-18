@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"name":"spiral"}]}}
 
 #!markdown
 
@@ -100,10 +100,7 @@ inl is_windows () : bool =
         | Gleam _ => fun () =>
             backend_switch {
                 Gleam = fun () =>
-                    backend_switch {
-                        Gleam = fun () => global "import gleam/erlang/os"
-                    }
-                    : ()
+                    global "import gleam/erlang/os"
             }
             $'os.family() == os.WindowsNt'
         | target => fun () => failwith $'$"platform.is_windows / target: {!target}"'

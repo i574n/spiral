@@ -311,11 +311,8 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                                 |> fun (x : i64) =>
                                     backend_switch {
                                         Gleam = fun () =>
-                                            backend_switch {
-                                                Gleam = fun () =>
-                                                    global "import gleam/float"
-                                                    global "import gleam/time/timestamp"
-                                            }
+                                            global "import gleam/float"
+                                            global "import gleam/time/timestamp"
                                             $'!x |> timestamp.to_unix_seconds |> float.round' : i64
                                         Fsharp = fun () => x
                                         Python = fun () => x
@@ -331,7 +328,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         | None => date_time.now ()
                         |> date_time.format (
                             backend_switch {
-                                Gleam = fun () => "%H:%M:%S"
+                                Gleam = fun () => "HH:mm:ss"
                                 Fsharp = fun () =>
                                     match target with
                                     | Rust _ => join "hh:mm:ss"
@@ -416,8 +413,8 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
 #!spiral
 
 //// test
-///! gleam
 ///! fsharp
+///! gleam
 ///! cuda
 ///! rust
 ///! typescript
