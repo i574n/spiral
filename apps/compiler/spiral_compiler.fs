@@ -765,6 +765,22 @@ module spiral_compiler =
             let i = s.from
             error_char i "number"
 
+    /// ### isHexDigit
+    let isHexDigit c =
+        ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')
+
+    /// ### hexNumberLineParser
+    let hexNumberLineParser (s : Tokenizer) =
+        let from = s.from
+        if peek s = '0' && (let x = peek' s 1 in x = 'x' || x = 'X') then
+            inc' 2 s
+            let res = many1SatisfyL isHexDigit "hexadecimal digit" s
+            if Result.isError res then error_char from "hexadecimal digit"
+            else res
+        else
+            let i = s.from
+            error_char i "0x prefix"
+
     /// ### number_fractional
     let number_fractional s =
         (numberLineParsers .>>. (opt (skip_char '.' >>. numberLineParsers))) s
@@ -1025,6 +1041,18 @@ module spiral_compiler =
 
         (many1Satisfy2L is_var_char_starting is_var_char "variable" >>= body .>> spaces) s
 
+    /// ### hexNumberTokenize
+    let hexNumberTokenize (s: Tokenizer) : Result<_,_> =
+        let from = s.from
+        let p s =
+            match hexNumberLineParser s with
+            | Ok hexStr ->
+                let value = System.Convert.ToInt32(hexStr, 16)
+                Ok ([{from=from; nearTo=s.from}, TokValue(LitInt32 value)])
+            | Error e -> Error e
+
+        (p .>> spaces) s
+
     /// ### numberTokenize
     let numberTokenize (s: Tokenizer) = 
         let from = s.from
@@ -1199,7 +1227,7 @@ module spiral_compiler =
     let rec token s =
         let i = s.from
         let inline (+) a b = alt i a b
-        let individual_tokens = string_quoted + numberTokenize + ((var + symbol + string_raw + char_quoted + brackets + comment + operator) |>> fun x -> [x]) |>> fun x -> x, []
+        let individual_tokens = string_quoted + hexNumberTokenize + numberTokenize + ((var + symbol + string_raw + char_quoted + brackets + comment + operator) |>> fun x -> [x]) |>> fun x -> x, []
         (macro + individual_tokens) s
     and tokenize text =
         let mutable ar = FSharpx.Collections.PersistentVector.empty
@@ -10363,7 +10391,10 @@ module spiral_compiler =
             | [|x|] -> x
             | x -> String.concat ", " x |> sprintf "#(%s)  "
         and op s d a =
+            let a'' = a
             let jp (a, b) =
+                let a' = a
+                let b' = b
                 let args = args b
                 match a with
                 | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
@@ -10375,13 +10406,21 @@ module spiral_compiler =
                             "("
                             if args = "" then "" else $")(#({args})"
                             ")"
-                            if args = "" || args |> SpiralSm.contains ", " then "" else "(Nil)"
+                            // if args = "" || args |> SpiralSm.contains ", "
+                            // then ""
+                            // else "( Nil )"
                         ]
                         |> SpiralSm.concat ""
-                    if args = "" then
-                        // trace Verbose (fun () -> $"""CodegenGleam.codegenGleam / """) _locals
-                        $"fn (x) {{ {code}(#(x))(   Nil) }}"
+                    if args = ""
+                    then $"fn (x) {{ {code}(#(x))(   Nil) }}"
                     else code
+                    |> fun code ->
+                        let comment =
+                            $"// args: %A{args} / d: %A{d} / b': %A{b'} / b: %A{b}"
+                            |> SpiralSm.replace "\r\n" ""
+                            |> SpiralSm.replace "\n" ""
+                            |> fun comment -> $"{comment |> SpiralSm.ellipsis 1000}\n"
+                        $"{code} {comment}"
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
@@ -10558,7 +10597,10 @@ module spiral_compiler =
                 |> listToArray "spiral_compiler..TyArrayLiteral"
                 |> simple
             | TyArrayCreate(a,b) -> $"[]" |> listToArray "spiral_compiler..TyArrayCreate" |> simple
-            | TyArrayLength(a,b) -> length (a,b)
+            | TyArrayLength(a,b) ->
+                global' "import gary/array"
+                sprintf "array.get_size(%s)" (tup b)
+                |> simple
             | TyStringLength(a,b) -> length (a,b)
             | TyFailwith(a,b) -> simple (sprintf "panic as %s" (tup b))
             | TyConv(a,b) ->
@@ -10578,9 +10620,18 @@ module spiral_compiler =
                 |> simple
             | TyApply(L(i,t),b) ->
                 match tup b with
-                | "Nil " when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"v{i}(Nil     ) "
+                // | "Nil " when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"    v{i}    "
+                | "Nil " when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"    v{i}( Nil      )"
                 | "Nil " -> $"v{i} "
-                | b' -> $"v{i}({b'})"
+                | b' when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"v{i}( {b'}(      Nil)  ) "
+                | b' -> $"v{i}( {b'}  )"
+                |> fun code ->
+                    let comment =
+                        $"// tup_ty t: {tup_ty t} / b: %A{b} / d: %A{d} / a'': %A{a''}"
+                        |> SpiralSm.replace "\r\n" ""
+                        |> SpiralSm.replace "\n" ""
+                        |> fun comment -> $"{comment |> SpiralSm.ellipsis 1000}\n"
+                    $"{code} {comment}"
                 |> simple
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(op,l) ->
@@ -10707,7 +10758,7 @@ module spiral_compiler =
                 line s $"method{x.tag} ({args_tys x.free_vars}) -> {ret} {{"
                 binds (indent s) x.body
                 if is_fn
-                then line s "(Nil)}}"
+                then line s "(    Nil  )}}"
                 else line s "}"
                 )
         and closure : _ -> ClosureRecGleam =
@@ -14971,13 +15022,7 @@ module spiral_compiler =
                         next ers
 
             let loop_module (s : AttentionState) mpath (m : ModuleState) =
-                let mpath' = mpath |> SpiralFileSystem.standardize_path
                 let uri = file_uri mpath
-                trace Verbose (fun () -> $"Supervisor.attention_server.loop.loop_module / mpath: {mpath} / mpath': {mpath'} / uri: {uri}") _locals
-                let mpath = mpath'
-
-
-
                 let interrupt x = loop (update {s with modules=push mpath s.modules} x)
                 let rec bundler (r : BlockBundleState) ers' = r >>= function
                     | Cons((_,x),rs) -> body uri interrupt x.errors ers' errors.parser (bundler rs)
@@ -15042,8 +15087,17 @@ module spiral_compiler =
             match s.modules with
             | se,x :: xs ->
                 let s = {s with modules=Set.remove x se,xs}
+                let x' = x |> SpiralFileSystem.standardize_path
+                trace Verbose (fun () -> $"Supervisor.attention_server.loop / x: {x} / x': {x'}") _locals
                 match Map.tryFind x s.supervisor.modules with
-                | Some v -> loop_module s x v
+                | Some v ->
+                    let codeDir = x |> System.IO.Path.GetDirectoryName
+                    let tokensPath = codeDir </> "tokens.json"
+                    if tokensPath |> System.IO.File.Exists |> not
+                    then loop_module s x v
+                    else
+                        trace Verbose (fun () -> $"Supervisor.attention_server.loop / tokens found, skipping / x: {x}") _locals
+                        package s
                 | None -> clear (file_uri x); package s
             | _,[] -> package s
 

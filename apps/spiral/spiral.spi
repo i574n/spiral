@@ -1629,8 +1629,11 @@ inl process_gleam { gleam_path target deps } =
                             (x |> sm'.starts_with "{compiling,\"" |> not)
                             && (x |> sm'.starts_with "{compiled,main" |> not)
                             && (x |> sm'.ends_with "main.beam\"}" |> not)
+                            && (x |> sm'.ends_with "main_real.beam\"}" |> not)
                             && (x |> sm'.starts_with "src\\main.gleam:" |> not)
+                            && (x |> sm'.starts_with "src\\main_real.gleam:" |> not)
                             && (x |> sm'.starts_with "src/main.gleam:" |> not)
+                            && (x |> sm'.starts_with "src/main_real.gleam:" |> not)
                             && (x |> sm'.starts_with "% " |> not)
                         |> am'.from_vec
                         |> fun x => x : _ int _
