@@ -94,15 +94,19 @@ fn (_) { // free_vars_tys: "" / domain: "x : #(   Int)" / x.domain_args: "[|L (0
 }}}
 pub fn closure0 () -> fn(_) -> fn(       Nil) -> Nil   { fn(x : #(   Int)) { let #(   v0 ) = x
 fn (_) { // free_vars_tys: "" / domain: "x : #(   Int)" / x.domain_args: "[|L (0, YPrim Int32T)|]" / free_vars': "[||]"
-    let v1 = fn (x) { closure1()(#(x))(   Nil) }
-    let v2 = fn (x) { closure2()(#(x))(   Nil) }
-    let v3 = fn (x) { closure3()(#(x))(   Nil) }
+    let v1 = fn (x) { closure1()(#(x))(   Nil) } // args: "" / d: Some (DV (L (1, YFun (YPrim Int32T, YPrim Int32T, FT_Vanilla)))) / b': [||] / b: <tag 0>
+
+    let v2 = fn (x) { closure2()(#(x))(   Nil) } // args: "" / d: Some  (DV     (L (2,         YFun           (YPair (YPrim Int32T, YNominal <tag 253>), YPrim Int32T, FT_Vanilla)))) / b': [||] / b: <tag 0>
+
+    let v3 = fn (x) { closure3()(#(x))(   Nil) } // args: "" / d: Some  (DV     (L (3,         YFun           (YPrim Int32T, YApply (YNominal <tag 250>, YNominal <tag 253>),            FT_Vanilla)))) / b': [||] / b: <tag 0>
+
     let v4 = lustre.simple(v1, fn (a, b) { v2(#(a, b)) }, v3)
     let v5 = "#app_"
     let assert Ok(_) = lustre.start(v4, v5, 0)
     Nil 
 }}}
-pub fn main () { let v0 = fn (x) { closure0()(#(x))(   Nil) }
+pub fn main () { let v0 = fn (x) { closure0()(#(x))(   Nil) } // args: "" / d: Some (DV (L (0, YFun (YPrim Int32T, YB, FT_Vanilla)))) / b': [||] / b: <tag 0>
+
 v0 (0)
 Nil 
  }

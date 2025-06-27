@@ -7834,47 +7834,35 @@ a.anchor-link {
 
 
 .gleam output (Gleam):
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["a", "b", "c"] }
-
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = a b c }
 { name = __assert_eq'; actual = ["a", "b", "c"]; expected = ["a", "b", "c"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["e", "f", "g h", "i"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = e f "g h" i }
 { name = __assert_eq'; actual = ["e", "f", "g h", "i"]; expected = ["e", "f", "g h", "i"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["j k", "l", "m"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = "j k" "l" "m" }
 { name = __assert_eq'; actual = ["j k", "l", "m"]; expected = ["j k", "l", "m"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["s", "-t", "u `\"v`\" w"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = s -t "u `"v`" w" }
 { name = __assert_eq'; actual = ["s", "-t", "u `\"v`\" w"]; expected = ["s", "-t", "u `\"v`\" w"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["n", "-o", "p \\\"q\\\" r"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = n -o "p \"q\" r" }
 { name = __assert_eq'; actual = ["n", "-o", "p \\\"q\\\" r"]; expected = ["n", "-o", "p \\\"q\\\" r"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["r", "-s", "t \\\"u\\\""] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = r -s "t \"u\"" }
 { name = __assert_eq'; actual = ["r", "-s", "t \\\"u\\\""]; expected = ["r", "-s", "t \\\"u\\\""] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["x", "-y", "$z -a '(b=\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = x -y "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }" }
 { name = __assert_eq'; actual = ["x", "-y", "$z -a '(b=\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"]; expected = ["x", "-y", "$z -a '(b=\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["e", "-f", "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = e -f "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" }
 { name = __assert_eq'; actual = ["e", "-f", "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"]; expected = ["e", "-f", "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["--l", "''' m '''"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = --l \"''' m '''\"  }
 { name = __assert_eq'; actual = ["--l", "''' m '''"]; expected = ["--l", "''' m '''"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["n", "--o", "--p", "q", "--r", "s:/t u/v.w", "--x", "y:/z.a", "--b", "c.d", "\\e{f-g}", "h.i", "j (k)"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = n --o --p q --r "s:/t u/v.w" --x "y:/z.a" --b c.d "\e{f-g}" h.i "j (k)" }
 { name = __assert_eq'; actual = ["n", "--o", "--p", "q", "--r", "s:/t u/v.w", "--x", "y:/z.a", "--b", "c.d", "\\e{f-g}", "h.i", "j (k)"]; expected = ["n", "--o", "--p", "q", "--r", "s:/t u/v.w", "--x", "y:/z.a", "--b", "c.d", "\\e{f-g}", "h.i", "j (k)"] }
-00:00:00 <span class="ansi-red-intense-fg">c</span> #1 _assert_fn / error / { ex = Nil; expected = ["l", "m n:\\o.p"] }
 
 00:00:00 <span class="ansi-black-intense-fg">v</span> #1 _assert_fn / { input = l "m n:\o.p" }
 { name = __assert_eq'; actual = ["l", "m n:\\o.p"]; expected = ["l", "m n:\\o.p"] }

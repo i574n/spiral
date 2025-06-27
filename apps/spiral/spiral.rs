@@ -11573,11 +11573,35 @@ mod module_6ff740fe {
             if (startsWith3(v0_1.clone(), string("{compiling,\""), false)) == false {
                 if (startsWith3(v0_1.clone(), string("{compiled,main"), false)) == false {
                     if (endsWith3(v0_1.clone(), string("main.beam\"}"), false)) == false {
-                        if (startsWith3(v0_1.clone(), string("src\\main.gleam:"), false)) == false {
-                            if (startsWith3(v0_1.clone(), string("src/main.gleam:"), false))
+                        if (endsWith3(v0_1.clone(), string("main_real.beam\"}"), false)) == false {
+                            if (startsWith3(v0_1.clone(), string("src\\main.gleam:"), false))
                                 == false
                             {
-                                (startsWith3(v0_1, string("% "), false)) == false
+                                if (startsWith3(
+                                    v0_1.clone(),
+                                    string("src\\main_real.gleam:"),
+                                    false,
+                                )) == false
+                                {
+                                    if (startsWith3(v0_1.clone(), string("src/main.gleam:"), false))
+                                        == false
+                                    {
+                                        if (startsWith3(
+                                            v0_1.clone(),
+                                            string("src/main_real.gleam:"),
+                                            false,
+                                        )) == false
+                                        {
+                                            (startsWith3(v0_1, string("% "), false)) == false
+                                        } else {
+                                            false
+                                        }
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
                             } else {
                                 false
                             }

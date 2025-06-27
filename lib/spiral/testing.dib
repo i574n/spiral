@@ -255,6 +255,28 @@ inl rec _assert_fn fn list =
         | [] => ()
         | x => x |> sm'.format_debug |> failwith
 
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+///! cuda
+///! rust
+///! typescript
+///! python
+
+[
+    3i32,
+    2i32
+
+    2,
+    1
+]
+|> _assert_fn fun x =>
+    x - 1
+    |> Ok
+    |> fun x => x : _ _ ()
+
 #!markdown
 
 ### _assert_in

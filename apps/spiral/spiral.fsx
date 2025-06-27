@@ -23775,18 +23775,36 @@ and closure74 () (v0 : string) : bool =
             let v18 : bool = v0.EndsWith (v17, false, null)
             let v21 : bool = v18 = false
             if v21 then
-                let v24 : string = "src\\main.gleam:"
-                let v25 : bool = v0.StartsWith (v24, false, null)
+                let v24 : string = "main_real.beam\"}"
+                let v25 : bool = v0.EndsWith (v24, false, null)
                 let v28 : bool = v25 = false
                 if v28 then
-                    let v31 : string = "src/main.gleam:"
+                    let v31 : string = "src\\main.gleam:"
                     let v32 : bool = v0.StartsWith (v31, false, null)
                     let v35 : bool = v32 = false
                     if v35 then
-                        let v38 : string = "% "
+                        let v38 : string = "src\\main_real.gleam:"
                         let v39 : bool = v0.StartsWith (v38, false, null)
                         let v42 : bool = v39 = false
-                        v42
+                        if v42 then
+                            let v45 : string = "src/main.gleam:"
+                            let v46 : bool = v0.StartsWith (v45, false, null)
+                            let v49 : bool = v46 = false
+                            if v49 then
+                                let v52 : string = "src/main_real.gleam:"
+                                let v53 : bool = v0.StartsWith (v52, false, null)
+                                let v56 : bool = v53 = false
+                                if v56 then
+                                    let v59 : string = "% "
+                                    let v60 : bool = v0.StartsWith (v59, false, null)
+                                    let v63 : bool = v60 = false
+                                    v63
+                                else
+                                    false
+                            else
+                                false
+                        else
+                            false
                     else
                         false
                 else
