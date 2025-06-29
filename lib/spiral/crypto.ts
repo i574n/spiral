@@ -487,16 +487,12 @@ export function method16(v0_1: string): string {
     return v2.l0;
 }
 
-export function method18(): string {
-    return "\u001b[0m";
-}
-
 export function method15(): string {
-    const v4: string = "Verbose".toLocaleLowerCase();
-    return ("\u001b[90m" + method16(v4[0])) + method18();
+    const v133: string = "Verbose".toLocaleLowerCase();
+    return ("\u001b[90m" + method16(v133[0])) + "\u001b[0m";
 }
 
-export function method20(v0_1: int32, v1_1: string, v2: uint16): string {
+export function method19(v0_1: int32, v1_1: string, v2: uint16): string {
     const v4: Mut4 = new Mut4(method17());
     let v18: any;
     closure7(v4, "{ ", undefined);
@@ -540,13 +536,13 @@ export function method20(v0_1: int32, v1_1: string, v2: uint16): string {
     return v4.l0;
 }
 
-export function method21(v0_1: string): string {
+export function method20(v0_1: string): string {
     return trimEnd(trimStart(v0_1, ...[]), ...[" ", "/"]);
 }
 
-export function method19(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: string, v10: uint16): string {
-    const v11: string = method20(v8, v9, v10);
-    return method21((((((((v6 + " ") + v7) + " #") + int64ToString(v0_1.l0)) + " ") + "crypto.hash_to_port") + " / ") + v11);
+export function method18(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: string, v10: uint16): string {
+    const v11: string = method19(v8, v9, v10);
+    return method20((((((((v6 + " ") + v7) + " #") + int64ToString(v0_1.l0)) + " ") + "crypto.hash_to_port") + " / ") + v11);
 }
 
 export function closure8(v0_1: Mut1, unitVar: void): void {
@@ -590,7 +586,7 @@ export function closure2(v0_1: int32, v1_1: string, v2: uint16, unitVar: void): 
         const v108: Mut3 = patternInput_1[2];
         const v107: Mut2 = patternInput_1[1];
         const v106: Mut1 = patternInput_1[0];
-        const v126: string = method19(v106, v107, v108, v109, v110, v111, method11(v106, v107, v108, v109, v110, v111), method15(), v0_1, v1_1, v2);
+        const v126: string = method18(v106, v107, v108, v109, v110, v111, method11(v106, v107, v108, v109, v110, v111), method15(), v0_1, v1_1, v2);
         let v142: any;
         v18();
         v142 = undefined;

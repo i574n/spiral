@@ -254,62 +254,20 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         )
         inl level_str =
             join
+                inl color =
+                    match level with
+                    | Verbose => console.color_bright_black ()
+                    | Debug => console.color_bright_blue ()
+                    | Info => console.color_bright_green ()
+                    | Warning => console.color_yellow ()
+                    | Critical => console.color_bright_red ()
                 inl level_str =
                     level
                     |> reflection.union_to_string
                     |> sm'.to_lower
                     |> sm'.index 0i32
                     |> sm'.format
-                run_target function
-                | Rust _ => fun () =>
-                    open rust
-                    open rust.rust_operators
-                    inl color : rust.ref sm'.str =
-                        match level with
-                        | Verbose => !\($'"inline_colorization::color_bright_black"')
-                        | Debug => !\($'"inline_colorization::color_bright_blue"')
-                        | Info => !\($'"inline_colorization::color_bright_green"')
-                        | Warning => !\($'"inline_colorization::color_yellow"')
-                        | Critical => !\($'"inline_colorization::color_bright_red"')
-                    inl level_str = level_str |> sm'.as_str
-                    inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_reset"')
-                    !\\((color, level_str, color_reset), $'$"format\!(\\\"{{}}{{}}{{}}\\\", $0, $1, $2)"')
-                    |> sm'.from_std_string
-                | _ => fun () =>
-                    inl color =
-                        backend_switch {
-                            Gleam = fun () =>
-                                match level with
-                                | Verbose => $'"\\u{001b}[90m"'
-                                | Debug => $'"\\u{001b}[94m"'
-                                | Info => $'"\\u{001b}[92m"'
-                                | Warning => $'"\\u{001b}[93m"'
-                                | Critical => $'"\\u{001b}[91m"'
-                                : string
-                            Fsharp = fun () =>
-                                match level with
-                                | Verbose => $'"\\u001b[90m"'
-                                | Debug => $'"\\u001b[94m"'
-                                | Info => $'"\\u001b[92m"'
-                                | Warning => $'"\\u001b[93m"'
-                                | Critical => $'"\\u001b[91m"'
-                                : string
-                            Python = fun () =>
-                                match level with
-                                | Verbose => $'"\\u001b[90m"'
-                                | Debug => $'"\\u001b[94m"'
-                                | Info => $'"\\u001b[92m"'
-                                | Warning => $'"\\u001b[93m"'
-                                | Critical => $'"\\u001b[91m"'
-                                : string
-                        }
-                    inl color_reset =
-                        backend_switch {
-                            Gleam = fun () => $'"\\u{001b}[0m"' : string
-                            Fsharp = fun () => join $'"\\u001b[0m"' : string
-                            Python = fun () => $'"\\u001b[0m"' : string
-                        }
-                    color ++# level_str ++# color_reset
+                color ++# level_str ++# console.color_reset ()
         inl text = text_fn ()
         if text = ""
         then ""

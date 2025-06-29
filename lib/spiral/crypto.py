@@ -428,16 +428,12 @@ def method16(v0_1: str) -> str:
     return v2.l0
 
 
-def method18(__unit: None=None) -> str:
-    return "\u001b[0m"
-
-
 def method15(__unit: None=None) -> str:
-    v4: str = "Verbose".lower()
-    return ("\u001b[90m" + method16(v4[0])) + method18()
+    v133: str = "Verbose".lower()
+    return ("\u001b[90m" + method16(v133[0])) + "\u001b[0m"
 
 
-def method20(v0_1: int, v1_1: str, v2: uint16) -> str:
+def method19(v0_1: int, v1_1: str, v2: uint16) -> str:
     v4: Mut4 = Mut4(method17())
     v18: None
     closure7(v4, "{ ", None)
@@ -481,13 +477,13 @@ def method20(v0_1: int, v1_1: str, v2: uint16) -> str:
     return v4.l0
 
 
-def method21(v0_1: str) -> str:
+def method20(v0_1: str) -> str:
     return trim_end(trim_start(v0_1, *to_array(empty())), *to_array(of_array([" ", "/"])))
 
 
-def method19(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None, v6: str, v7: str, v8: int, v9: str, v10: uint16) -> str:
-    v11: str = method20(v8, v9, v10)
-    return method21((((((((v6 + " ") + v7) + " #") + int64_to_string(v0_1.l0)) + " ") + "crypto.hash_to_port") + " / ") + v11)
+def method18(v0_1: Mut1, v1_1: Mut2, v2: Mut3, v3: Mut4, v4: Mut5, v5: int64 | None, v6: str, v7: str, v8: int, v9: str, v10: uint16) -> str:
+    v11: str = method19(v8, v9, v10)
+    return method20((((((((v6 + " ") + v7) + " #") + int64_to_string(v0_1.l0)) + " ") + "crypto.hash_to_port") + " / ") + v11)
 
 
 def closure8(v0_1: Mut1, unit_var: None) -> None:
@@ -534,7 +530,7 @@ def closure2(v0_1: int, v1_1: str, v2: uint16, unit_var: None) -> None:
         v108: Mut3 = pattern_input_1[2]
         v107: Mut2 = pattern_input_1[1]
         v106: Mut1 = pattern_input_1[0]
-        v126: str = method19(v106, v107, v108, v109, v110, v111, method11(v106, v107, v108, v109, v110, v111), method15(), v0_1, v1_1, v2)
+        v126: str = method18(v106, v107, v108, v109, v110, v111, method11(v106, v107, v108, v109, v110, v111), method15(), v0_1, v1_1, v2)
         v142: None
         v18(None)
         v142 = None

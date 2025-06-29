@@ -8130,62 +8130,20 @@ a.anchor-link {
                         <span class="p">)</span>
         <span class="n">inl</span> <span class="n">level_str</span> <span class="o">=</span>
             <span class="n">join</span>
+                <span class="n">inl</span> <span class="n">color</span> <span class="o">=</span>
+                    <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
+                    <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">color_bright_black</span> <span class="p">()</span>
+                    <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">color_bright_blue</span> <span class="p">()</span>
+                    <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">color_bright_green</span> <span class="p">()</span>
+                    <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">color_yellow</span> <span class="p">()</span>
+                    <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">color_bright_red</span> <span class="p">()</span>
                 <span class="n">inl</span> <span class="n">level_str</span> <span class="o">=</span>
                     <span class="n">level</span>
                     <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_to_string</span>
                     <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.to_lower</span>
                     <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index 0i32</span>
                     <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.format</span>
-                <span class="n">run_target</span> <span class="n">function</span>
-                <span class="o">|</span> <span class="n">Rust</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                    <span class="nb">open</span> <span class="n">rust</span>
-                    <span class="nb">open</span> <span class="n">rust</span><span class="o">.</span><span class="n">rust_operators</span>
-                    <span class="n">inl</span> <span class="n">color</span> <span class="p">:</span> <span class="n">rust</span><span class="o">.</span><span class="n">ref</span> <span class="n">sm</span><span class="s1">'.str =</span>
-                        <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
-                        <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"inline_colorization::color_bright_black"'</span><span class="p">)</span>
-                        <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"inline_colorization::color_bright_blue"'</span><span class="p">)</span>
-                        <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"inline_colorization::color_bright_green"'</span><span class="p">)</span>
-                        <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"inline_colorization::color_yellow"'</span><span class="p">)</span>
-                        <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">!</span>\<span class="p">(</span><span class="err">$</span><span class="s1">'"inline_colorization::color_bright_red"'</span><span class="p">)</span>
-                    <span class="n">inl</span> <span class="n">level_str</span> <span class="o">=</span> <span class="n">level_str</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.as_str</span>
-                    <span class="n">inl</span> <span class="n">color_reset</span> <span class="p">:</span> <span class="n">rust</span><span class="o">.</span><span class="n">ref</span> <span class="n">sm</span><span class="s1">'.str = !\($'</span><span class="s2">"inline_colorization::color_reset"</span><span class="s1">')</span>
-                    <span class="err">!</span>\\<span class="p">((</span><span class="n">color</span><span class="p">,</span> <span class="n">level_str</span><span class="p">,</span> <span class="n">color_reset</span><span class="p">),</span> <span class="err">$</span><span class="s1">'$"format\!(</span><span class="se">\\\"</span><span class="s1">{{}}{{}}{{}}</span><span class="se">\\\"</span><span class="s1">, $0, $1, $2)"'</span><span class="p">)</span>
-                    <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.from_std_string</span>
-                <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                    <span class="n">inl</span> <span class="n">color</span> <span class="o">=</span>
-                        <span class="n">backend_switch</span> <span class="p">{</span>
-                            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                                <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
-                                <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[90m"'</span>
-                                <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[94m"'</span>
-                                <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[92m"'</span>
-                                <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[93m"'</span>
-                                <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[91m"'</span>
-                                <span class="p">:</span> <span class="n">string</span>
-                            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                                <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
-                                <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[90m"'</span>
-                                <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[94m"'</span>
-                                <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[92m"'</span>
-                                <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[93m"'</span>
-                                <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[91m"'</span>
-                                <span class="p">:</span> <span class="n">string</span>
-                            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                                <span class="k">match</span> <span class="n">level</span> <span class="k">with</span>
-                                <span class="o">|</span> <span class="n">Verbose</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[90m"'</span>
-                                <span class="o">|</span> <span class="n">Debug</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[94m"'</span>
-                                <span class="o">|</span> <span class="n">Info</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[92m"'</span>
-                                <span class="o">|</span> <span class="ne">Warning</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[93m"'</span>
-                                <span class="o">|</span> <span class="n">Critical</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[91m"'</span>
-                                <span class="p">:</span> <span class="n">string</span>
-                        <span class="p">}</span>
-                    <span class="n">inl</span> <span class="n">color_reset</span> <span class="o">=</span>
-                        <span class="n">backend_switch</span> <span class="p">{</span>
-                            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[0m"'</span> <span class="p">:</span> <span class="n">string</span>
-                            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[0m"'</span> <span class="p">:</span> <span class="n">string</span>
-                            <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[0m"'</span> <span class="p">:</span> <span class="n">string</span>
-                        <span class="p">}</span>
-                    <span class="n">color</span> <span class="o">++</span><span class="c1"># level_str ++# color_reset</span>
+                <span class="n">color</span> <span class="o">++</span><span class="c1"># level_str ++# console.color_reset ()</span>
         <span class="n">inl</span> <span class="n">text</span> <span class="o">=</span> <span class="n">text_fn</span> <span class="p">()</span>
         <span class="k">if</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">""</span>
         <span class="n">then</span> <span class="s2">""</span>

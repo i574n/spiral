@@ -439,51 +439,47 @@ export function method11(v0: string): string {
     return v2.l0;
 }
 
-export function method13(): string {
-    return "\u001b[0m";
-}
-
 export function method10(v0: US0_$union): string {
-    const v5: US5_$union = ((v0.tag as int32) === /* US0_0 */ 0) ? US5_US5_0("Verbose") : US5_US5_1();
-    let v46: US5_$union;
-    if ((v5.tag as int32) === /* US5_0 */ 0) {
-        v46 = US5_US5_0(v5.fields[0] as any);
+    const v650: string = ((v0.tag as int32) === /* US0_1 */ 1) ? "\u001b[94m" : (((v0.tag as int32) === /* US0_2 */ 2) ? "\u001b[92m" : (((v0.tag as int32) === /* US0_0 */ 0) ? "\u001b[90m" : (((v0.tag as int32) === /* US0_3 */ 3) ? "\u001b[93m" : "\u001b[91m")));
+    const v655: US5_$union = ((v0.tag as int32) === /* US0_0 */ 0) ? US5_US5_0("Verbose") : US5_US5_1();
+    let v696: US5_$union;
+    if ((v655.tag as int32) === /* US5_0 */ 0) {
+        v696 = US5_US5_0(v655.fields[0] as any);
     }
     else {
-        const v12: US5_$union = ((v0.tag as int32) === /* US0_1 */ 1) ? US5_US5_0("Debug") : US5_US5_1();
-        if ((v12.tag as int32) === /* US5_0 */ 0) {
-            v46 = US5_US5_0(v12.fields[0] as any);
+        const v662: US5_$union = ((v0.tag as int32) === /* US0_1 */ 1) ? US5_US5_0("Debug") : US5_US5_1();
+        if ((v662.tag as int32) === /* US5_0 */ 0) {
+            v696 = US5_US5_0(v662.fields[0] as any);
         }
         else {
-            const v19: US5_$union = ((v0.tag as int32) === /* US0_2 */ 2) ? US5_US5_0("Info") : US5_US5_1();
-            if ((v19.tag as int32) === /* US5_0 */ 0) {
-                v46 = US5_US5_0(v19.fields[0] as any);
+            const v669: US5_$union = ((v0.tag as int32) === /* US0_2 */ 2) ? US5_US5_0("Info") : US5_US5_1();
+            if ((v669.tag as int32) === /* US5_0 */ 0) {
+                v696 = US5_US5_0(v669.fields[0] as any);
             }
             else {
-                const v26: US5_$union = ((v0.tag as int32) === /* US0_3 */ 3) ? US5_US5_0("Warning") : US5_US5_1();
-                if ((v26.tag as int32) === /* US5_0 */ 0) {
-                    v46 = US5_US5_0(v26.fields[0] as any);
+                const v676: US5_$union = ((v0.tag as int32) === /* US0_3 */ 3) ? US5_US5_0("Warning") : US5_US5_1();
+                if ((v676.tag as int32) === /* US5_0 */ 0) {
+                    v696 = US5_US5_0(v676.fields[0] as any);
                 }
                 else {
-                    const v33: US5_$union = ((v0.tag as int32) === /* US0_4 */ 4) ? US5_US5_0("Critical") : US5_US5_1();
-                    v46 = (((v33.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v33.fields[0] as any) : US5_US5_1());
+                    const v683: US5_$union = ((v0.tag as int32) === /* US0_4 */ 4) ? US5_US5_0("Critical") : US5_US5_1();
+                    v696 = (((v683.tag as int32) === /* US5_0 */ 0) ? US5_US5_0(v683.fields[0] as any) : US5_US5_1());
                 }
             }
         }
     }
-    let v50: string;
-    if ((v46.tag as int32) === /* US5_0 */ 0) {
-        v50 = (v46.fields[0] as any);
+    let v700: string;
+    if ((v696.tag as int32) === /* US5_0 */ 0) {
+        v700 = (v696.fields[0] as any);
     }
     else {
         throw new Error("Option does not have a value.");
     }
-    const v53: string = v50.toLocaleLowerCase();
-    const v57: string = method11(v53[0]);
-    return ((((v0.tag as int32) === /* US0_1 */ 1) ? "\u001b[94m" : (((v0.tag as int32) === /* US0_2 */ 2) ? "\u001b[92m" : (((v0.tag as int32) === /* US0_0 */ 0) ? "\u001b[90m" : (((v0.tag as int32) === /* US0_3 */ 3) ? "\u001b[93m" : "\u001b[91m")))) + v57) + method13();
+    const v703: string = v700.toLocaleLowerCase();
+    return (v650 + method11(v703[0])) + "\u001b[0m";
 }
 
-export function method15(v0: string): string {
+export function method14(v0: string): string {
     const v2: Mut3 = new Mut3(method12());
     let v14_1: any;
     closure8(v2, v0, undefined);
@@ -491,13 +487,13 @@ export function method15(v0: string): string {
     return v2.l0;
 }
 
-export function method16(v0: string): string {
+export function method15(v0: string): string {
     return trimEnd(trimStart(v0, ...[]), ...[" ", "/"]);
 }
 
-export function method14(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: string, v9: string): string {
-    const v10: string = method15(v9);
-    return method16((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + v8) + " / ") + v10);
+export function method13(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: string, v9: string): string {
+    const v10: string = method14(v9);
+    return method15((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + v8) + " / ") + v10);
 }
 
 export function closure9(v0: Mut0, unitVar: void): void {
@@ -546,7 +542,7 @@ export function closure6(v0: US0_$union, v1: (() => string), v2: (() => string),
         const v125: string = method6(v107, v108, v109, v110, v111, v112);
         const v126: string = method10(v0);
         const v127: string = v1();
-        const v132: string = (v127 === "") ? "" : method14(v107, v108, v109, v110, v111, v112, v125, v126, v127, v2());
+        const v132: string = (v127 === "") ? "" : method13(v107, v108, v109, v110, v111, v112, v125, v126, v127, v2());
         let v148: any;
         v18();
         v148 = undefined;

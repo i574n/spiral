@@ -7,8 +7,11 @@ pub mod Async_ {
     use fable_library_rust::Native_::getNull;
     use fable_library_rust::Native_::on_startup;
     use fable_library_rust::System::Threading::CancellationToken;
-    pub fn method0(v0_1: CancellationToken) -> Arc<Async<CancellationToken>> {
+    pub fn method1(v0_1: CancellationToken) -> Arc<Async<CancellationToken>> {
         fable_library_rust::Native_::getZero()
+    }
+    pub fn method0(v0_1: CancellationToken) -> Arc<Async<CancellationToken>> {
+        Async_::method1(v0_1)
     }
     pub fn closure0(unitVar: (), v0_1: CancellationToken) -> Arc<Async<CancellationToken>> {
         Async_::method0(v0_1)
