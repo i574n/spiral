@@ -1808,7 +1808,7 @@ inl process_gleam { gleam_path target deps } =
                         |> fun x => x : _ int _
                         |> seq.of_array
                         |> sm'.concat "\n"
-                        |> sm'.trim
+                        |> sm'.trim_start [ '\n' ]
                     fun ex =>
                         trace Critical
                             fun () => "spiral.process_gleam / Exception"

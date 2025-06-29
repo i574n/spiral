@@ -24378,8 +24378,12 @@ and closure73 (v0 : string) () : string =
     let v29 : (string -> (string seq -> string)) = String.concat
     let v30 : (string seq -> string) = v29 v28
     let v31 : string = v30 v24
-    let v35 : (unit -> string) = v31.Trim
-    v35 ()
+    let v34 : char list = []
+    let v36 : char list = '\n' :: v34 
+    let v45 : (char list -> (char [])) = List.toArray
+    let v46 : (char []) = v45 v36
+    let v49 : string = v31.TrimStart v46 
+    v49
 and method190 (v0 : exn, v1 : std_string_String, v2 : string, v3 : string) : string =
     let v4 : string = method13()
     let v5 : Mut3 = {l0 = v4} : Mut3

@@ -29,6 +29,7 @@ mod module_1216f6c3 {
         use fable_library_rust::List_::cons;
         use fable_library_rust::List_::empty;
         use fable_library_rust::List_::ofArray;
+        use fable_library_rust::List_::singleton;
         use fable_library_rust::List_::toArray;
         use fable_library_rust::Map_::find;
         use fable_library_rust::Map_::ofSeq;
@@ -77,7 +78,6 @@ mod module_1216f6c3 {
         use fable_library_rust::String_::toLower;
         use fable_library_rust::String_::toString;
         use fable_library_rust::String_::toUpper;
-        use fable_library_rust::String_::trim;
         use fable_library_rust::String_::trimEndChars;
         use fable_library_rust::String_::trimStartChars;
         use fable_library_rust::TimeSpan_::TimeSpan;
@@ -11647,7 +11647,10 @@ mod module_1216f6c3 {
                 .collect::<Vec<_>>();
             let v24: LrcPtr<dyn IEnumerable_1<string>> =
                 ofArray_1(fable_library_rust::NativeArray_::array_from(v20.clone()));
-            trim(join(Spiral::method72(), toArray_1(v24)))
+            trimStartChars(
+                join(Spiral::method72(), toArray_1(v24)),
+                toArray(singleton('\n')),
+            )
         }
         pub fn method190(
             v0_1: LrcPtr<Exception>,

@@ -80,18 +80,18 @@ inl color_bright_black () =
             |> sm'.from_std_string
         | _ => fun () => $'"\\u001b[90m"'
 
-/// ### color_bright_blue
-inl color_bright_blue () =
+/// ### color_bright_red
+inl color_bright_red () =
     run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[94m"'
+        | Gleam _ => fun () => $'"\\u{001b}[91m"'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
-            inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_bright_blue"')
+            inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_bright_red"')
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
-        | _ => fun () => $'"\\u001b[94m"'
+        | _ => fun () => $'"\\u001b[91m"'
 
 /// ### color_bright_green
 inl color_bright_green () =
@@ -119,15 +119,54 @@ inl color_yellow () =
             |> sm'.from_std_string
         | _ => fun () => $'"\\u001b[93m"'
 
-/// ### color_bright_red
-inl color_bright_red () =
+/// ### color_bright_blue
+inl color_bright_blue () =
     run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[91m"'
+        | Gleam _ => fun () => $'"\\u{001b}[94m"'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
-            inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_bright_red"')
+            inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_bright_blue"')
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
-        | _ => fun () => $'"\\u001b[91m"'
+        | _ => fun () => $'"\\u001b[94m"'
+
+/// ### color_bright_magenta
+inl color_bright_magenta () =
+    run_target function
+        | Gleam _ => fun () => $'"\\u{001b}[95m"'
+        | Rust _ => fun () =>
+            open rust
+            open rust.rust_operators
+            inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_bright_magenta"')
+            color_reset
+            |> sm'.ref_to_std_string
+            |> sm'.from_std_string
+        | _ => fun () => $'"\\u001b[95m"'
+
+/// ### color_bright_cyan
+inl color_bright_cyan () =
+    run_target function
+        | Gleam _ => fun () => $'"\\u{001b}[96m"'
+        | Rust _ => fun () =>
+            open rust
+            open rust.rust_operators
+            inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_bright_cyan"')
+            color_reset
+            |> sm'.ref_to_std_string
+            |> sm'.from_std_string
+        | _ => fun () => $'"\\u001b[96m"'
+
+/// ### color_bright_white
+inl color_bright_white () =
+    run_target function
+        | Gleam _ => fun () => $'"\\u{001b}[97m"'
+        | Rust _ => fun () =>
+            open rust
+            open rust.rust_operators
+            inl color_reset : rust.ref sm'.str = !\($'"inline_colorization::color_bright_white"')
+            color_reset
+            |> sm'.ref_to_std_string
+            |> sm'.from_std_string
+        | _ => fun () => $'"\\u001b[97m"'
