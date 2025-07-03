@@ -23,16 +23,6 @@ open testing
 
 #!markdown
 
-### sleep
-
-#!spiral
-
-inl sleep (duration : date_time.duration) : () =
-    inl duration = join duration
-    !\($'"std::thread::sleep(!duration)"')
-
-#!markdown
-
 ### join_handle
 
 #!spiral
@@ -485,11 +475,11 @@ inl channel_send forall t. (line : t) (sender : rust.ref (channel_sender t)) : r
 
 #!markdown
 
-### sleep'
+### sleep
 
 #!spiral
 
-inl sleep' (n : i32) : () =
+inl sleep (n : i32) : () =
     run_target function
         | Fsharp (Native)
         | Rust _

@@ -7850,7 +7850,7 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">date</span> <span class="o">=</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">date_gleam</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7859,7 +7859,7 @@ a.anchor-link {
         <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'calendar.Date'</span>
     <span class="p">)</span>
-<span class="n">nominal</span> <span class="n">time_of_day</span> <span class="o">=</span>
+<span class="n">nominal</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7868,7 +7868,7 @@ a.anchor-link {
         <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'calendar.TimeOfDay'</span>
     <span class="p">)</span>
-<span class="n">nominal</span> <span class="n">duration</span> <span class="o">=</span>
+<span class="n">nominal</span> <span class="n">duration_gleam</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7887,7 +7887,7 @@ a.anchor-link {
     <span class="p">)</span>
 <span class="nb">type</span> <span class="n">date_time_switch</span> <span class="o">=</span>
     <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="p">:</span> <span class="n">date</span> <span class="o">*</span> <span class="n">time_of_day</span> <span class="o">*</span> <span class="n">duration</span>
+        <span class="n">Gleam</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">*</span> <span class="n">time_of_day_gleam</span> <span class="o">*</span> <span class="n">duration_gleam</span>
         <span class="n">Fsharp</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'System.DateTime'</span>
         <span class="n">Python</span> <span class="p">:</span> <span class="n">date_time_python</span>
     <span class="p">}</span>
@@ -7982,7 +7982,7 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">year</span> <span class="p">(</span><span class="n">date_time</span> <span class="p">:</span> <span class="n">date_time</span><span class="p">)</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_year</span> <span class="p">(</span><span class="n">date_time</span> <span class="p">:</span> <span class="n">date_time</span><span class="p">)</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'0'</span> <span class="p">:</span> <span class="n">i32</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">date_time</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'_.Year'</span> <span class="p">:</span> <span class="n">i32</span>
@@ -8016,9 +8016,9 @@ a.anchor-link {
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import tempo/datetime"</span>
-            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
-            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
-            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
+            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
+            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
+            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
             <span class="n">inl</span> <span class="n">timestamp</span> <span class="p">:</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'timestamp.from_calendar(!date, !time_of_day, !duration)'</span>
             <span class="n">inl</span> <span class="n">tempo_date_time</span> <span class="p">:</span> <span class="n">tempo_date_time</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; datetime.from_timestamp'</span>
             <span class="n">inl</span> <span class="n">tempo_date_time</span> <span class="p">:</span> <span class="n">tempo_date_time</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!tempo_date_time |&gt; datetime.add(!duration)'</span>
@@ -8038,7 +8038,7 @@ a.anchor-link {
             <span class="n">inl</span> <span class="n">date_time</span> <span class="o">=</span> <span class="n">join</span> <span class="n">date_time</span>
             <span class="k">if</span> <span class="nb">format</span> <span class="o">&lt;&gt;</span> <span class="s2">""</span>
             <span class="n">then</span> <span class="err">$</span><span class="s1">'!date_time.strftime(!format)'</span> <span class="p">:</span> <span class="n">string</span>
-            <span class="k">elif</span> <span class="n">year</span> <span class="n">date_time</span> <span class="o">&lt;</span> <span class="mi">1000</span>
+            <span class="k">elif</span> <span class="n">get_year</span> <span class="n">date_time</span> <span class="o">&lt;</span> <span class="mi">1000</span>
             <span class="n">then</span> <span class="err">$</span><span class="s1">'</span><span class="se">\'</span><span class="si">{dt.month}</span><span class="s1">-</span><span class="si">{dt.day}</span><span class="s1">-</span><span class="si">{dt.year}</span><span class="s1"> {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}</span><span class="se">\'</span><span class="s1">.format(dt=!date_time)'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="k">else</span> <span class="err">$</span><span class="s1">'</span><span class="se">\'</span><span class="si">{dt.month}</span><span class="s1">-</span><span class="si">{dt.day}</span><span class="s1">-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}</span><span class="se">\'</span><span class="s1">.format(dt=!date_time)'</span> <span class="p">:</span> <span class="n">string</span>
     <span class="p">}</span>
@@ -8245,8 +8245,8 @@ a.anchor-link {
             <span class="k">global</span> <span class="s2">"import gleam/time/calendar"</span>
             <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
     <span class="p">}</span>
-    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.utc_offset'</span> <span class="p">:</span> <span class="n">duration</span>
-    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
+    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.utc_offset'</span> <span class="p">:</span> <span class="n">duration_gleam</span>
+    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
     <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">to</span>
 </pre></div>
 </div>
@@ -8427,10 +8427,10 @@ a.anchor-link {
             <span class="o">//</span>     <span class="o">|</span> <span class="n">October</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'calendar.October'</span>
             <span class="o">//</span>     <span class="o">|</span> <span class="n">November</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'calendar.November'</span>
             <span class="o">//</span>     <span class="o">|</span> <span class="n">December</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'calendar.December'</span>
-            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.Date(#year, #calendar_month, #day)'</span>
+            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.Date(#year, #calendar_month, #day)'</span>
             <span class="n">inl</span> <span class="n">nanoseconds</span> <span class="o">=</span> <span class="n">millisecond</span> <span class="o">*</span> <span class="mi">1000000</span>
-            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'</span>
-            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'duration.milliseconds(#millisecond)'</span>
+            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'</span>
+            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'duration.milliseconds(#millisecond)'</span>
             <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">date_time</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)'</span> <span class="p">:</span> <span class="n">date_time</span>
@@ -8989,9 +8989,9 @@ a.anchor-link {
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
             <span class="o">//</span> <span class="n">inl</span> <span class="n">date_time</span> <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">=</span> <span class="n">date_time</span>
-            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
-            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
-            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
+            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
+            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
+            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
             <span class="err">$</span><span class="s1">'timestamp.from_calendar(!date, !time_of_day, !duration)'</span> <span class="p">:</span> <span class="n">timestamp</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">run_target</span> <span class="n">function</span>
@@ -9702,8 +9702,8 @@ a.anchor-link {
             <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
             <span class="k">global</span> <span class="s2">"import gleam/time/calendar"</span>
     <span class="p">}</span>
-    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.local_offset()'</span> <span class="p">:</span> <span class="n">duration</span>
-    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
+    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.local_offset()'</span> <span class="p">:</span> <span class="n">duration_gleam</span>
+    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
     <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">to</span>
 </pre></div>
 </div>

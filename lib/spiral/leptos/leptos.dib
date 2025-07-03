@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"name":"spiral"}]}}
 
 #!markdown
 
@@ -1797,7 +1797,7 @@ inl interval_handle_clear (interval_handle : interval_handle) =
 
 inl set_interval_with_handle
     (fn : () -> ())
-    (interval_millis : date_time.duration)
+    (interval_millis : int)
     : resultm.result' interval_handle wasm.js_value
     =
     inl fn = fn |> rust.func0_from

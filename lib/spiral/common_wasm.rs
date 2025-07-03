@@ -675,18 +675,18 @@ pub mod Common {
         };
         v2.l0.get().clone()
     }
-    pub fn method16() -> string {
-        string("\u{001b}[0m")
-    }
     pub fn method13() -> string {
-        let v8: string = Common::method14(getCharAt(toLower(string("Warning")), 0_i32));
-        let v71: &str = inline_colorization::color_yellow;
-        let v80: &str = &*v8;
-        let v109: &str = inline_colorization::color_reset;
-        let v111: std::string::String = format!("{}{}{}", v71, v80, v109);
-        fable_library_rust::String_::fromString(v111)
+        let v43: &str = inline_colorization::color_yellow;
+        let v52: std::string::String = String::from(v43);
+        let v139: string = append(
+            (fable_library_rust::String_::fromString(v52)),
+            (Common::method14(getCharAt(toLower(string("Warning")), 0_i32))),
+        );
+        let v185: &str = inline_colorization::color_reset;
+        let v194: std::string::String = String::from(v185);
+        append((v139), (fable_library_rust::String_::fromString(v194)))
     }
-    pub fn method18(v0: i32, v1: LrcPtr<Exception>) -> string {
+    pub fn method17(v0: i32, v1: LrcPtr<Exception>) -> string {
         let v3: LrcPtr<Common::Mut3> = LrcPtr::new(Common::Mut3 {
             l0: MutCell::new(Common::method15()),
         });
@@ -733,13 +733,13 @@ pub mod Common {
         };
         v3.l0.get().clone()
     }
-    pub fn method19(v0: string) -> string {
+    pub fn method18(v0: string) -> string {
         trimEndChars(
             trimStartChars(v0, toArray(empty::<char>())),
             toArray(ofArray(new_array(&[' ', '/']))),
         )
     }
-    pub fn method17(
+    pub fn method16(
         v0: LrcPtr<Common::Mut0>,
         v1: LrcPtr<Common::Mut1>,
         v2: LrcPtr<Common::Mut2>,
@@ -751,8 +751,8 @@ pub mod Common {
         v8: i32,
         v9: LrcPtr<Exception>,
     ) -> string {
-        let v10: string = Common::method18(v8, v9);
-        Common::method19(append(
+        let v10: string = Common::method17(v8, v9);
+        Common::method18(append(
             (append(
                 (append(
                     (append(
@@ -837,7 +837,7 @@ pub mod Common {
             let v107: LrcPtr<Common::Mut2> = patternInput_1.2.clone();
             let v106: LrcPtr<Common::Mut1> = patternInput_1.1.clone();
             let v105: LrcPtr<Common::Mut0> = patternInput_1.0.clone();
-            let v125: string = Common::method17(
+            let v125: string = Common::method16(
                 v105.clone(),
                 v106.clone(),
                 v107.clone(),
