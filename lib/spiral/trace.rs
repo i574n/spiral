@@ -588,7 +588,7 @@ pub mod Trace {
         string("")
     }
     pub fn closure8(v0: LrcPtr<Trace::Mut3>, v1: string, unitVar: ()) {
-        let v4: string = append((v0.l0.get().clone()), (v1));
+        let v4: string = append(v0.l0.get().clone(), v1);
         v0.l0.set(v4);
         ()
     }
@@ -730,8 +730,8 @@ pub mod Trace {
             }
         };
         let v709: string = append(
-            (v650),
-            (Trace::method11(getCharAt(
+            v650,
+            Trace::method11(getCharAt(
                 toLower(match &v696 {
                     Trace::US5::US5_0(v696_0_0) => match &v696 {
                         Trace::US5::US5_0(x) => x.clone(),
@@ -741,11 +741,11 @@ pub mod Trace {
                     _ => panic!("{}", string("Option does not have a value."),),
                 }),
                 0_i32,
-            ))),
+            )),
         );
         let v715: &str = inline_colorization::color_reset;
         let v722: std::string::String = String::from(v715);
-        append((v709), (fable_library_rust::String_::fromString(v722)))
+        append(v709, fable_library_rust::String_::fromString(v722))
     }
     pub fn method14(v0: string) -> string {
         let v2: LrcPtr<Trace::Mut3> = LrcPtr::new(Trace::Mut3 {
@@ -777,20 +777,20 @@ pub mod Trace {
     ) -> string {
         let v10: string = Trace::method14(v9);
         Trace::method15(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
-                    (v8),
-                )),
+                    ),
+                    v8,
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure9(v0: LrcPtr<Trace::Mut0>, unitVar: ()) {

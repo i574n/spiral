@@ -23,14 +23,14 @@ inl rec __expect
     inl result =
         result || join result
     inl get_raw_text () =
-        { name actual = a; expected = b } |> sm'.format
+        { name expected = b } |> sm'.format
     match trace' with
     | Console =>
         inl text = get_raw_text ()
         text |> console.write_line
         text
     | Trace =>
-        trace Info (fun () => name) fun () => { actual = a; expected = b }
+        trace Info (fun () => name) fun () => { expected = b }
         get_raw_text ()
     | TraceRaw =>
         inl text = get_raw_text ()

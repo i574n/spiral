@@ -91,7 +91,7 @@ pub mod Sm {
         if (v2_1) >= (v0_1) {
             v3_1.clone()
         } else {
-            (Sm::method0(v0_1, v1_1.clone(), (v2_1) + 1_i32))(append((v3_1), (v1_1)))
+            (Sm::method0(v0_1, v1_1.clone(), (v2_1) + 1_i32))(append(v3_1, v1_1))
         }
     }
     pub fn method0(v0_1: i32, v1_1: string, v2_1: i32) -> Func1<string, string> {
@@ -105,8 +105,8 @@ pub mod Sm {
     pub fn closure6(v0_1: i32, v1_1: char, v2_1: string) -> string {
         let v5_1: string = ofChar(v1_1);
         append(
-            ((Sm::method0((v0_1) - (length(v2_1.clone())), v5_1, 0_i32))(string(""))),
-            (v2_1),
+            (Sm::method0((v0_1) - (length(v2_1.clone())), v5_1, 0_i32))(string("")),
+            v2_1,
         )
     }
     pub fn closure5(v0_1: i32, v1_1: char) -> Func1<string, string> {
@@ -125,8 +125,8 @@ pub mod Sm {
     pub fn closure10(v0_1: i32, v1_1: char, v2_1: string) -> string {
         let v5_1: string = ofChar(v1_1);
         append(
-            (v2_1.clone()),
-            ((Sm::method0((v0_1) - (length(v2_1)), v5_1, 0_i32))(string(""))),
+            v2_1.clone(),
+            (Sm::method0((v0_1) - (length(v2_1)), v5_1, 0_i32))(string("")),
         )
     }
     pub fn closure9(v0_1: i32, v1_1: char) -> Func1<string, string> {
@@ -342,7 +342,7 @@ pub mod Sm {
             v1_1.clone()
         } else {
             append(
-                (getSlice(v1_1, Some(0_i32), Some((v0_1) - 1_i32))),
+                getSlice(v1_1, Some(0_i32), Some((v0_1) - 1_i32)),
                 string("..."),
             )
         }
@@ -406,8 +406,7 @@ pub mod Sm {
             let v9_1: i32 = ((v6_1.wrapping_neg()) + (v2_1)) - 1_i32;
             let matchValue: string = v4_1.l1.get().clone();
             let matchValue_1: string = v4_1.l2.get().clone();
-            let v18_1: string =
-                append((append((v1_1[v9_1].clone()), (matchValue_1))), (matchValue));
+            let v18_1: string = append(append(v1_1[v9_1].clone(), matchValue_1), matchValue);
             let v21_1: i32 = (v6_1) + 1_i32;
             v4_1.l0.set(v21_1);
             v4_1.l1.set(v18_1);

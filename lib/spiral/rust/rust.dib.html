@@ -10024,70 +10024,53 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
-and method2 (v0 : string, v1 : string, v2 : string) : string =
-    let v3 : string = method3()
-    let v4 : Mut0 = {l0 = v3} : Mut0
-    let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v4, v8)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v26 : string = "name"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -&gt; unit) = closure0(v4, v27)
-    let v37 : unit = (fun () -&gt; v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -&gt; unit) = closure0(v4, v46)
-    let v56 : unit = (fun () -&gt; v55 (); v54) ()
-    let v63 : string = $"{v0}"
-    let v71 : unit = ()
-    let v72 : (unit -&gt; unit) = closure0(v4, v63)
-    let v73 : unit = (fun () -&gt; v72 (); v71) ()
-    let v81 : string = "; "
-    let v82 : string = $"{v81}"
-    let v90 : unit = ()
-    let v91 : (unit -&gt; unit) = closure0(v4, v82)
-    let v92 : unit = (fun () -&gt; v91 (); v90) ()
-    let v100 : string = "actual"
-    let v101 : string = $"{v100}"
-    let v109 : unit = ()
-    let v110 : (unit -&gt; unit) = closure0(v4, v101)
-    let v111 : unit = (fun () -&gt; v110 (); v109) ()
-    let v118 : string = $"{v45}"
-    let v126 : unit = ()
-    let v127 : (unit -&gt; unit) = closure0(v4, v118)
-    let v128 : unit = (fun () -&gt; v127 (); v126) ()
-    let v135 : string = $"{v1}"
-    let v143 : unit = ()
-    let v144 : (unit -&gt; unit) = closure0(v4, v135)
-    let v145 : unit = (fun () -&gt; v144 (); v143) ()
-    let v152 : string = $"{v81}"
-    let v160 : unit = ()
-    let v161 : (unit -&gt; unit) = closure0(v4, v152)
-    let v162 : unit = (fun () -&gt; v161 (); v160) ()
-    let v170 : string = "expected"
-    let v171 : string = $"{v170}"
-    let v179 : unit = ()
-    let v180 : (unit -&gt; unit) = closure0(v4, v171)
-    let v181 : unit = (fun () -&gt; v180 (); v179) ()
-    let v188 : string = $"{v45}"
-    let v196 : unit = ()
-    let v197 : (unit -&gt; unit) = closure0(v4, v188)
-    let v198 : unit = (fun () -&gt; v197 (); v196) ()
-    let v205 : string = $"{v2}"
-    let v213 : unit = ()
-    let v214 : (unit -&gt; unit) = closure0(v4, v205)
-    let v215 : unit = (fun () -&gt; v214 (); v213) ()
-    let v223 : string = " }"
-    let v224 : string = $"{v223}"
-    let v232 : unit = ()
-    let v233 : (unit -&gt; unit) = closure0(v4, v224)
-    let v234 : unit = (fun () -&gt; v233 (); v232) ()
-    let v240 : string = v4.l0
-    v240
+and method2 (v0 : string, v1 : string) : string =
+    let v2 : string = method3()
+    let v3 : Mut0 = {l0 = v2} : Mut0
+    let v6 : string = "{ "
+    let v7 : string = $"{v6}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v3, v7)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v25 : string = "name"
+    let v26 : string = $"{v25}"
+    let v34 : unit = ()
+    let v35 : (unit -&gt; unit) = closure0(v3, v26)
+    let v36 : unit = (fun () -&gt; v35 (); v34) ()
+    let v44 : string = " = "
+    let v45 : string = $"{v44}"
+    let v53 : unit = ()
+    let v54 : (unit -&gt; unit) = closure0(v3, v45)
+    let v55 : unit = (fun () -&gt; v54 (); v53) ()
+    let v62 : string = $"{v0}"
+    let v70 : unit = ()
+    let v71 : (unit -&gt; unit) = closure0(v3, v62)
+    let v72 : unit = (fun () -&gt; v71 (); v70) ()
+    let v80 : string = "; "
+    let v81 : string = $"{v80}"
+    let v89 : unit = ()
+    let v90 : (unit -&gt; unit) = closure0(v3, v81)
+    let v91 : unit = (fun () -&gt; v90 (); v89) ()
+    let v99 : string = "expected"
+    let v100 : string = $"{v99}"
+    let v108 : unit = ()
+    let v109 : (unit -&gt; unit) = closure0(v3, v100)
+    let v110 : unit = (fun () -&gt; v109 (); v108) ()
+    let v117 : string = $"{v44}"
+    let v125 : unit = ()
+    let v126 : (unit -&gt; unit) = closure0(v3, v117)
+    let v127 : unit = (fun () -&gt; v126 (); v125) ()
+    let v134 : string = $"{v1}"
+    let v142 : unit = ()
+    let v143 : (unit -&gt; unit) = closure0(v3, v134)
+    let v144 : unit = (fun () -&gt; v143 (); v142) ()
+    let v152 : string = " }"
+    let v153 : string = $"{v152}"
+    let v161 : unit = ()
+    let v162 : (unit -&gt; unit) = closure0(v3, v153)
+    let v163 : unit = (fun () -&gt; v162 (); v161) ()
+    let v169 : string = v3.l0
+    v169
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -10146,7 +10129,7 @@ and method0 () : unit =
             method1(v19)
     let v22 : string = "__assert_eq"
     let v23 : string = "true; _fix_closure_v9 }}}); {{ // rust.fix_closure'"
-    let v24 : string = method2(v22, v18, v23)
+    let v24 : string = method2(v22, v23)
     let v26 : unit = ()
     let v27 : (unit -&gt; unit) = closure1(v24)
     let v28 : unit = (fun () -&gt; v27 (); v26) ()
@@ -10155,7 +10138,7 @@ and method0 () : unit =
         failwith&lt;unit&gt; v24
 method0()
 
-{ name = __assert_eq; actual = true; _fix_closure_v9 }}}); {{ // rust.fix_closure'; expected = true; _fix_closure_v9 }}}); {{ // rust.fix_closure' }
+{ name = __assert_eq; expected = true; _fix_closure_v9 }}}); {{ // rust.fix_closure' }
 </pre>
 </div>
 </div>
@@ -10197,70 +10180,53 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
-and method2 (v0 : string, v1 : string, v2 : string) : string =
-    let v3 : string = method3()
-    let v4 : Mut0 = {l0 = v3} : Mut0
-    let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v4, v8)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v26 : string = "name"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -&gt; unit) = closure0(v4, v27)
-    let v37 : unit = (fun () -&gt; v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -&gt; unit) = closure0(v4, v46)
-    let v56 : unit = (fun () -&gt; v55 (); v54) ()
-    let v63 : string = $"{v0}"
-    let v71 : unit = ()
-    let v72 : (unit -&gt; unit) = closure0(v4, v63)
-    let v73 : unit = (fun () -&gt; v72 (); v71) ()
-    let v81 : string = "; "
-    let v82 : string = $"{v81}"
-    let v90 : unit = ()
-    let v91 : (unit -&gt; unit) = closure0(v4, v82)
-    let v92 : unit = (fun () -&gt; v91 (); v90) ()
-    let v100 : string = "actual"
-    let v101 : string = $"{v100}"
-    let v109 : unit = ()
-    let v110 : (unit -&gt; unit) = closure0(v4, v101)
-    let v111 : unit = (fun () -&gt; v110 (); v109) ()
-    let v118 : string = $"{v45}"
-    let v126 : unit = ()
-    let v127 : (unit -&gt; unit) = closure0(v4, v118)
-    let v128 : unit = (fun () -&gt; v127 (); v126) ()
-    let v135 : string = $"{v1}"
-    let v143 : unit = ()
-    let v144 : (unit -&gt; unit) = closure0(v4, v135)
-    let v145 : unit = (fun () -&gt; v144 (); v143) ()
-    let v152 : string = $"{v81}"
-    let v160 : unit = ()
-    let v161 : (unit -&gt; unit) = closure0(v4, v152)
-    let v162 : unit = (fun () -&gt; v161 (); v160) ()
-    let v170 : string = "expected"
-    let v171 : string = $"{v170}"
-    let v179 : unit = ()
-    let v180 : (unit -&gt; unit) = closure0(v4, v171)
-    let v181 : unit = (fun () -&gt; v180 (); v179) ()
-    let v188 : string = $"{v45}"
-    let v196 : unit = ()
-    let v197 : (unit -&gt; unit) = closure0(v4, v188)
-    let v198 : unit = (fun () -&gt; v197 (); v196) ()
-    let v205 : string = $"{v2}"
-    let v213 : unit = ()
-    let v214 : (unit -&gt; unit) = closure0(v4, v205)
-    let v215 : unit = (fun () -&gt; v214 (); v213) ()
-    let v223 : string = " }"
-    let v224 : string = $"{v223}"
-    let v232 : unit = ()
-    let v233 : (unit -&gt; unit) = closure0(v4, v224)
-    let v234 : unit = (fun () -&gt; v233 (); v232) ()
-    let v240 : string = v4.l0
-    v240
+and method2 (v0 : string, v1 : string) : string =
+    let v2 : string = method3()
+    let v3 : Mut0 = {l0 = v2} : Mut0
+    let v6 : string = "{ "
+    let v7 : string = $"{v6}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v3, v7)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v25 : string = "name"
+    let v26 : string = $"{v25}"
+    let v34 : unit = ()
+    let v35 : (unit -&gt; unit) = closure0(v3, v26)
+    let v36 : unit = (fun () -&gt; v35 (); v34) ()
+    let v44 : string = " = "
+    let v45 : string = $"{v44}"
+    let v53 : unit = ()
+    let v54 : (unit -&gt; unit) = closure0(v3, v45)
+    let v55 : unit = (fun () -&gt; v54 (); v53) ()
+    let v62 : string = $"{v0}"
+    let v70 : unit = ()
+    let v71 : (unit -&gt; unit) = closure0(v3, v62)
+    let v72 : unit = (fun () -&gt; v71 (); v70) ()
+    let v80 : string = "; "
+    let v81 : string = $"{v80}"
+    let v89 : unit = ()
+    let v90 : (unit -&gt; unit) = closure0(v3, v81)
+    let v91 : unit = (fun () -&gt; v90 (); v89) ()
+    let v99 : string = "expected"
+    let v100 : string = $"{v99}"
+    let v108 : unit = ()
+    let v109 : (unit -&gt; unit) = closure0(v3, v100)
+    let v110 : unit = (fun () -&gt; v109 (); v108) ()
+    let v117 : string = $"{v44}"
+    let v125 : unit = ()
+    let v126 : (unit -&gt; unit) = closure0(v3, v117)
+    let v127 : unit = (fun () -&gt; v126 (); v125) ()
+    let v134 : string = $"{v1}"
+    let v142 : unit = ()
+    let v143 : (unit -&gt; unit) = closure0(v3, v134)
+    let v144 : unit = (fun () -&gt; v143 (); v142) ()
+    let v152 : string = " }"
+    let v153 : string = $"{v152}"
+    let v161 : unit = ()
+    let v162 : (unit -&gt; unit) = closure0(v3, v153)
+    let v163 : unit = (fun () -&gt; v162 (); v161) ()
+    let v169 : string = v3.l0
+    v169
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -10306,7 +10272,7 @@ and method0 () : unit =
             method1(v6)
     let v9 : string = "__assert_eq"
     let v10 : string = "true; _fix_closure_v1 );  // rust.fix_closure'"
-    let v11 : string = method2(v9, v5, v10)
+    let v11 : string = method2(v9, v10)
     let v13 : unit = ()
     let v14 : (unit -&gt; unit) = closure1(v11)
     let v15 : unit = (fun () -&gt; v14 (); v13) ()
@@ -10315,7 +10281,7 @@ and method0 () : unit =
         failwith&lt;unit&gt; v11
 method0()
 
-{ name = __assert_eq; actual = true; _fix_closure_v1 );  // rust.fix_closure'; expected = true; _fix_closure_v1 );  // rust.fix_closure' }
+{ name = __assert_eq; expected = true; _fix_closure_v1 );  // rust.fix_closure' }
 </pre>
 </div>
 </div>

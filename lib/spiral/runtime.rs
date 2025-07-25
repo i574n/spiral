@@ -814,7 +814,7 @@ pub mod Runtime {
         string("")
     }
     pub fn closure7(v0: LrcPtr<Runtime::Mut3>, v1: string, unitVar: ()) {
-        let v4: string = append((v0.l0.get().clone()), (v1));
+        let v4: string = append(v0.l0.get().clone(), v1);
         v0.l0.set(v4);
         ()
     }
@@ -832,12 +832,12 @@ pub mod Runtime {
         let v3: &str = inline_colorization::color_yellow;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (Runtime::method12(getCharAt(toLower(string("Warning")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            Runtime::method12(getCharAt(toLower(string("Warning")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method15() -> string {
         let v1: LrcPtr<Runtime::Mut3> = LrcPtr::new(Runtime::Mut3 {
@@ -863,20 +863,20 @@ pub mod Runtime {
     ) -> string {
         let v8: string = Runtime::method15();
         Runtime::method16(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("runtime.current_process_kill / exiting... 3"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v8),
+            ),
+            v8,
         ))
     }
     pub fn closure8(v0: LrcPtr<Runtime::Mut0>, unitVar: ()) {
@@ -1000,20 +1000,20 @@ pub mod Runtime {
     ) -> string {
         let v8: string = Runtime::method15();
         Runtime::method16(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("runtime.current_process_kill / exiting... 2"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v8),
+            ),
+            v8,
         ))
     }
     pub fn closure11(unitVar: (), unitVar_1: ()) {
@@ -1122,20 +1122,20 @@ pub mod Runtime {
     ) -> string {
         let v8: string = Runtime::method15();
         Runtime::method16(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("runtime.current_process_kill / exiting... 1"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v8),
+            ),
+            v8,
         ))
     }
     pub fn closure12(unitVar: (), unitVar_1: ()) {
@@ -1312,7 +1312,7 @@ pub mod Runtime {
         let v2: MutCell<i32> = MutCell::new(v2);
         let v3: MutCell<i32> = MutCell::new(v3);
         '_method26: loop {
-            break '_method26 (match v0.get().clone().as_ref() {
+            break '_method26 match v0.get().clone().as_ref() {
                 Runtime::UH0::UH0_0 => (v1.get().clone(), v2.get().clone(), v3.get().clone()),
                 Runtime::UH0::UH0_1(v0_1_0, v0_1_1) => {
                     let v4: char = match v0.get().clone().as_ref() {
@@ -1350,7 +1350,7 @@ pub mod Runtime {
                         continue '_method26;
                     }
                 }
-            });
+            };
         }
     }
     pub fn method27(v0: char, v1: i32, v2: i32) -> string {
@@ -1415,7 +1415,7 @@ pub mod Runtime {
         if (v1) >= (v0) {
             v2.clone()
         } else {
-            (Runtime::method28(v0, (v1) + 1_i32))(append((v2), string(" ")))
+            (Runtime::method28(v0, (v1) + 1_i32))(append(v2, string(" ")))
         }
     }
     pub fn method28(v0: i32, v1: i32) -> Func1<string, string> {
@@ -1433,7 +1433,7 @@ pub mod Runtime {
         if string("") == (v0.clone()) {
             Runtime::US8::US8_1(append(
                 string("parsing.p_char / unexpected end of input / "),
-                (Runtime::method24('\"', v1.clone(), v2, v3)),
+                Runtime::method24('\"', v1.clone(), v2, v3),
             ))
         } else {
             let v14_1: char = getCharAt(v0.clone(), 0_i32);
@@ -1468,28 +1468,28 @@ pub mod Runtime {
                     ),
                 );
                 Runtime::US8::US8_1(append(
-                    (append(
-                        (append(
-                            (append(
-                                (append(
-                                    (append(
-                                        (append(
+                    append(
+                        append(
+                            append(
+                                append(
+                                    append(
+                                        append(
                                             string("parsing.p_char / "),
-                                            (Runtime::method27('\"', v2, v3)),
-                                        )),
+                                            Runtime::method27('\"', v2, v3),
+                                        ),
                                         string("\n"),
-                                    )),
-                                    (toString(v1)),
-                                )),
-                                (v114),
-                            )),
+                                    ),
+                                    toString(v1),
+                                ),
+                                v114,
+                            ),
                             string("\n"),
-                        )),
-                        (append(
-                            ((Runtime::method28((v3) - 1_i32, 0_i32))(string(""))),
+                        ),
+                        append(
+                            (Runtime::method28((v3) - 1_i32, 0_i32))(string("")),
                             string("^"),
-                        )),
-                    )),
+                        ),
+                    ),
                     string("\n"),
                 ))
             }
@@ -1503,7 +1503,7 @@ pub mod Runtime {
         if string("") == (v0.clone()) {
             Runtime::US8::US8_1(append(
                 string("parsing.p_char / unexpected end of input / "),
-                (Runtime::method24('\'', v1.clone(), v2, v3)),
+                Runtime::method24('\'', v1.clone(), v2, v3),
             ))
         } else {
             let v14_1: char = getCharAt(v0.clone(), 0_i32);
@@ -1538,28 +1538,28 @@ pub mod Runtime {
                     ),
                 );
                 Runtime::US8::US8_1(append(
-                    (append(
-                        (append(
-                            (append(
-                                (append(
-                                    (append(
-                                        (append(
+                    append(
+                        append(
+                            append(
+                                append(
+                                    append(
+                                        append(
                                             string("parsing.p_char / "),
-                                            (Runtime::method27('\'', v2, v3)),
-                                        )),
+                                            Runtime::method27('\'', v2, v3),
+                                        ),
                                         string("\n"),
-                                    )),
-                                    (toString(v1)),
-                                )),
-                                (v114),
-                            )),
+                                    ),
+                                    toString(v1),
+                                ),
+                                v114,
+                            ),
                             string("\n"),
-                        )),
-                        (append(
-                            ((Runtime::method28((v3) - 1_i32, 0_i32))(string(""))),
+                        ),
+                        append(
+                            (Runtime::method28((v3) - 1_i32, 0_i32))(string("")),
                             string("^"),
-                        )),
-                    )),
+                        ),
+                    ),
                     string("\n"),
                 ))
             }
@@ -1574,7 +1574,7 @@ pub mod Runtime {
         let v1: MutCell<LrcPtr<StringBuilder>> = MutCell::new(v1.clone());
         let v2: MutCell<LrcPtr<Runtime::UH1>> = MutCell::new(v2.clone());
         '_method29: loop {
-            break '_method29 (match v2.get().clone().as_ref() {
+            break '_method29 match v2.get().clone().as_ref() {
                 Runtime::UH1::UH1_0 => {
                     Runtime::US8::US8_1(string("parsing.choice / no parsers succeeded"))
                 }
@@ -1605,7 +1605,7 @@ pub mod Runtime {
                         }
                     }
                 }
-            });
+            };
         }
     }
     pub fn method30(v0: Array<char>) -> string {
@@ -1669,7 +1669,7 @@ pub mod Runtime {
         let v0: MutCell<char> = MutCell::new(v0);
         let v1: MutCell<i64> = MutCell::new(v1);
         '_method32: loop {
-            break '_method32 (if (v1.get().clone()) >= 2_i64 {
+            break '_method32 if (v1.get().clone()) >= 2_i64 {
                 false
             } else {
                 let v11: Runtime::US10 = if (v1.get().clone()) == 0_i64 {
@@ -1700,7 +1700,7 @@ pub mod Runtime {
                     v1.set(v1_temp);
                     continue '_method32;
                 }
-            });
+            };
         }
     }
     pub fn method33(v0: char, v1: string, v2: LrcPtr<StringBuilder>, v3: i32, v4: i32) -> string {
@@ -1783,12 +1783,12 @@ pub mod Runtime {
                 let v176: Runtime::US8 = if string("") == (v1.get().clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.none_of / unexpected end of input / "),
-                        (Runtime::method31(
+                        Runtime::method31(
                             Runtime::method30(toArray(ofArray(new_array(&['\"', '\''])))),
                             v2.get().clone(),
                             v3.get().clone(),
                             v4.get().clone(),
-                        )),
+                        ),
                     ))
                 } else {
                     let v63: char = getCharAt(v1.get().clone(), 0_i32);
@@ -1815,13 +1815,13 @@ pub mod Runtime {
                     } else {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected char / "),
-                            (Runtime::method33(
+                            Runtime::method33(
                                 v63,
                                 Runtime::method30(toArray(ofArray(new_array(&['\"', '\''])))),
                                 v2.get().clone(),
                                 v3.get().clone(),
                                 v4.get().clone(),
-                            )),
+                            ),
                         ))
                     }
                 };
@@ -1840,8 +1840,7 @@ pub mod Runtime {
                 };
                 match &v188 {
                     Runtime::US8::US8_0(v188_0_0, v188_0_1, v188_0_2, v188_0_3, v188_0_4) => {
-                        let v0_temp: string =
-                            append((v0.get().clone()), (ofChar(v188_0_0.clone())));
+                        let v0_temp: string = append(v0.get().clone(), ofChar(v188_0_0.clone()));
                         let v1_temp: string = v188_0_1.clone();
                         let v2_temp: LrcPtr<StringBuilder> = v188_0_2.clone();
                         let v3_temp: i32 = v188_0_3.clone();
@@ -1877,7 +1876,7 @@ pub mod Runtime {
         let v3: MutCell<i32> = MutCell::new(v3);
         let v4: MutCell<LrcPtr<Runtime::UH1>> = MutCell::new(v4.clone());
         '_method35: loop {
-            break '_method35 (match v4.get().clone().as_ref() {
+            break '_method35 match v4.get().clone().as_ref() {
                 Runtime::UH1::UH1_0 => {
                     Runtime::US8::US8_1(string("parsing.choice / no parsers succeeded"))
                 }
@@ -1912,7 +1911,7 @@ pub mod Runtime {
                         }
                     }
                 }
-            });
+            };
         }
     }
     pub fn method36(
@@ -2046,7 +2045,7 @@ pub mod Runtime {
         let v0: MutCell<char> = MutCell::new(v0);
         let v1: MutCell<i64> = MutCell::new(v1);
         '_method37: loop {
-            break '_method37 (if (v1.get().clone()) >= 3_i64 {
+            break '_method37 if (v1.get().clone()) >= 3_i64 {
                 false
             } else {
                 let v15_1: Runtime::US10 = if (v1.get().clone()) == 0_i64 {
@@ -2082,7 +2081,7 @@ pub mod Runtime {
                     v1.set(v1_temp);
                     continue '_method37;
                 }
-            });
+            };
         }
     }
     pub fn method38(
@@ -2102,12 +2101,12 @@ pub mod Runtime {
                 let v200: Runtime::US8 = if string("") == (v1.get().clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.none_of / unexpected end of input / "),
-                        (Runtime::method31(
+                        Runtime::method31(
                             Runtime::method30(toArray(ofArray(new_array(&['\"', '\'', ' '])))),
                             v2.get().clone(),
                             v3.get().clone(),
                             v4.get().clone(),
-                        )),
+                        ),
                     ))
                 } else {
                     let v75: char = getCharAt(v1.get().clone(), 0_i32);
@@ -2134,13 +2133,13 @@ pub mod Runtime {
                     } else {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected char / "),
-                            (Runtime::method33(
+                            Runtime::method33(
                                 v75,
                                 Runtime::method30(toArray(ofArray(new_array(&['\"', '\'', ' '])))),
                                 v2.get().clone(),
                                 v3.get().clone(),
                                 v4.get().clone(),
-                            )),
+                            ),
                         ))
                     }
                 };
@@ -2159,8 +2158,7 @@ pub mod Runtime {
                 };
                 match &v212 {
                     Runtime::US8::US8_0(v212_0_0, v212_0_1, v212_0_2, v212_0_3, v212_0_4) => {
-                        let v0_temp: string =
-                            append((v0.get().clone()), (ofChar(v212_0_0.clone())));
+                        let v0_temp: string = append(v0.get().clone(), ofChar(v212_0_0.clone()));
                         let v1_temp: string = v212_0_1.clone();
                         let v2_temp: LrcPtr<StringBuilder> = v212_0_2.clone();
                         let v3_temp: i32 = v212_0_3.clone();
@@ -2213,7 +2211,7 @@ pub mod Runtime {
         let v0: MutCell<string> = MutCell::new(v0.clone());
         let v1: MutCell<i32> = MutCell::new(v1);
         '_method40: loop {
-            break '_method40 (if (v1.get().clone()) >= (length(v0.get().clone())) {
+            break '_method40 if (v1.get().clone()) >= (length(v0.get().clone())) {
                 v1.get().clone()
             } else {
                 if ' ' == (getCharAt(v0.get().clone(), v1.get().clone())) {
@@ -2225,7 +2223,7 @@ pub mod Runtime {
                 } else {
                     v1.get().clone()
                 }
-            });
+            };
         }
     }
     pub fn method41(v0: LrcPtr<StringBuilder>, v1: i32, v2: i32) -> string {
@@ -2272,7 +2270,7 @@ pub mod Runtime {
                 let v66: Runtime::US8 = if string("") == (v1.get().clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.any_char / unexpected end of input / "),
-                        (Runtime::method41(v2.get().clone(), v3.get().clone(), v4.get().clone())),
+                        Runtime::method41(v2.get().clone(), v3.get().clone(), v4.get().clone()),
                     ))
                 } else {
                     let v14_1: char = getCharAt(v1.get().clone(), 0_i32);
@@ -2298,7 +2296,7 @@ pub mod Runtime {
                 };
                 match &v66 {
                     Runtime::US8::US8_0(v66_0_0, v66_0_1, v66_0_2, v66_0_3, v66_0_4) => {
-                        let v0_temp: string = append((v0.get().clone()), (ofChar(v66_0_0.clone())));
+                        let v0_temp: string = append(v0.get().clone(), ofChar(v66_0_0.clone()));
                         let v1_temp: string = v66_0_1.clone();
                         let v2_temp: LrcPtr<StringBuilder> = v66_0_2.clone();
                         let v3_temp: i32 = v66_0_3.clone();
@@ -2359,12 +2357,12 @@ pub mod Runtime {
                     let v201: Runtime::US8 = if string("") == (v26.clone()) {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected end of input / "),
-                            (Runtime::method31(
+                            Runtime::method31(
                                 Runtime::method30(toArray(ofArray(new_array(&['\"', '\''])))),
                                 v27.clone(),
                                 v28,
                                 v29,
-                            )),
+                            ),
                         ))
                     } else {
                         let v88: char = getCharAt(v26.clone(), 0_i32);
@@ -2391,13 +2389,13 @@ pub mod Runtime {
                         } else {
                             Runtime::US8::US8_1(append(
                                 string("parsing.none_of / unexpected char / "),
-                                (Runtime::method33(
+                                Runtime::method33(
                                     v88,
                                     Runtime::method30(toArray(ofArray(new_array(&['\"', '\''])))),
                                     v27.clone(),
                                     v28,
                                     v29,
-                                )),
+                                ),
                             ))
                         }
                     };
@@ -2481,7 +2479,7 @@ pub mod Runtime {
                                 ),
                                 Runtime::US8::US8_1(v252_1_0) => Runtime::US9::US9_1(append(
                                     string("parsing.between / expected closing delimiter / "),
-                                    (Runtime::method36(
+                                    Runtime::method36(
                                         v252_1_0.clone(),
                                         v10.clone(),
                                         v16_1.clone(),
@@ -2495,7 +2493,7 @@ pub mod Runtime {
                                         v246.clone(),
                                         v247,
                                         v248,
-                                    )),
+                                    ),
                                 )),
                             }
                         }
@@ -2512,12 +2510,12 @@ pub mod Runtime {
                     let v488: Runtime::US8 = if string("") == (v10.clone()) {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected end of input / "),
-                            (Runtime::method31(
+                            Runtime::method31(
                                 Runtime::method30(toArray(ofArray(new_array(&['\"', '\'', ' '])))),
                                 v16_1.clone(),
                                 1_i32,
                                 1_i32,
-                            )),
+                            ),
                         ))
                     } else {
                         let v359: char = getCharAt(v10.clone(), 0_i32);
@@ -2545,7 +2543,7 @@ pub mod Runtime {
                         } else {
                             Runtime::US8::US8_1(append(
                                 string("parsing.none_of / unexpected char / "),
-                                (Runtime::method33(
+                                Runtime::method33(
                                     v359,
                                     Runtime::method30(toArray(ofArray(new_array(&[
                                         '\"', '\'', ' ',
@@ -2553,7 +2551,7 @@ pub mod Runtime {
                                     v16_1.clone(),
                                     1_i32,
                                     1_i32,
-                                )),
+                                ),
                             ))
                         }
                     };
@@ -2600,7 +2598,7 @@ pub mod Runtime {
                             } else {
                                 Runtime::US11::US11_1(append(
                                     string("parsing.eof / expected end of input / "),
-                                    (Runtime::method39(v10.clone())),
+                                    Runtime::method39(v10.clone()),
                                 ))
                             };
                             let v547: Runtime::US9 = match &v538 {
@@ -2655,7 +2653,7 @@ pub mod Runtime {
                     let v771: Runtime::US8 = if string("") == (v604.clone()) {
                         Runtime::US8::US8_1(append(
                             string("parsing.p_char / unexpected end of input / "),
-                            (Runtime::method24(' ', v605.clone(), v606, v607)),
+                            Runtime::method24(' ', v605.clone(), v606, v607),
                         ))
                     } else {
                         let v618: char = getCharAt(v604.clone(), 0_i32);
@@ -2694,28 +2692,28 @@ pub mod Runtime {
                                 ),
                             );
                             Runtime::US8::US8_1(append(
-                                (append(
-                                    (append(
-                                        (append(
-                                            (append(
-                                                (append(
-                                                    (append(
+                                append(
+                                    append(
+                                        append(
+                                            append(
+                                                append(
+                                                    append(
                                                         string("parsing.p_char / "),
-                                                        (Runtime::method27(' ', v606, v607)),
-                                                    )),
+                                                        Runtime::method27(' ', v606, v607),
+                                                    ),
                                                     string("\n"),
-                                                )),
-                                                (toString(v605.clone())),
-                                            )),
-                                            (v718),
-                                        )),
+                                                ),
+                                                toString(v605.clone()),
+                                            ),
+                                            v718,
+                                        ),
                                         string("\n"),
-                                    )),
-                                    (append(
-                                        ((Runtime::method28((v607) - 1_i32, 0_i32))(string(""))),
+                                    ),
+                                    append(
+                                        (Runtime::method28((v607) - 1_i32, 0_i32))(string("")),
                                         string("^"),
-                                    )),
-                                )),
+                                    ),
+                                ),
                                 string("\n"),
                             ))
                         }
@@ -2747,7 +2745,7 @@ pub mod Runtime {
                             let v850: Runtime::US8 = if string("") == (v785.clone()) {
                                 Runtime::US8::US8_1(append(
                                     string("parsing.any_char / unexpected end of input / "),
-                                    (Runtime::method41(v786.clone(), v787, v788)),
+                                    Runtime::method41(v786.clone(), v787, v788),
                                 ))
                             } else {
                                 let v798: char = getCharAt(v785.clone(), 0_i32);
@@ -2859,12 +2857,12 @@ pub mod Runtime {
         let v3: &str = inline_colorization::color_bright_blue;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (Runtime::method12(getCharAt(toLower(string("Debug")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            Runtime::method12(getCharAt(toLower(string("Debug")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method45(
         v0: string,
@@ -3113,20 +3111,20 @@ pub mod Runtime {
     ) -> string {
         let v18: string = Runtime::method45(v8, v9, v10, v11, v12, v13, v14_1, v15_1, v16_1, v17);
         Runtime::method16(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("runtime.execute_with_options_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v18),
+            ),
+            v18,
         ))
     }
     pub fn closure17(
@@ -3276,12 +3274,12 @@ pub mod Runtime {
         let v3: &str = inline_colorization::color_bright_black;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (Runtime::method12(getCharAt(toLower(string("Verbose")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            Runtime::method12(getCharAt(toLower(string("Verbose")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method54(
         v0: LrcPtr<Runtime::Mut0>,
@@ -3296,20 +3294,20 @@ pub mod Runtime {
     ) -> string {
         let v9: string = Runtime::method15();
         Runtime::method16(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
-                    (v8),
-                )),
+                    ),
+                    v8,
+                ),
                 string(" / "),
-            )),
-            (v9),
+            ),
+            v9,
         ))
     }
     pub fn closure20(v0: string, unitVar: ()) {
@@ -3525,20 +3523,20 @@ pub mod Runtime {
     ) -> string {
         let v9: string = Runtime::method62(v8);
         Runtime::method16(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("runtime.execute_with_options_async / WaitForExitAsync"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v9),
+            ),
+            v9,
         ))
     }
     pub fn closure23(v0: LrcPtr<TaskCanceledException>, unitVar: ()) {
@@ -3893,20 +3891,20 @@ pub mod Runtime {
     ) -> string {
         let v18: string = Runtime::method65(v8, v9, v10, v11, v12, v13, v14_1, v15_1, v16_1, v17);
         Runtime::method16(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("runtime.execute_with_options_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v18),
+            ),
+            v18,
         ))
     }
     pub fn closure24(
@@ -4126,7 +4124,7 @@ pub mod Runtime {
         let v0: MutCell<char> = MutCell::new(v0);
         let v1: MutCell<i64> = MutCell::new(v1);
         '_method68: loop {
-            break '_method68 (if (v1.get().clone()) >= 4_i64 {
+            break '_method68 if (v1.get().clone()) >= 4_i64 {
                 false
             } else {
                 let v19: Runtime::US10 = if (v1.get().clone()) == 0_i64 {
@@ -4167,7 +4165,7 @@ pub mod Runtime {
                     v1.set(v1_temp);
                     continue '_method68;
                 }
-            });
+            };
         }
     }
     pub fn method69(
@@ -4187,12 +4185,12 @@ pub mod Runtime {
                 let v224: Runtime::US8 = if string("") == (v1.get().clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.none_of / unexpected end of input / "),
-                        (Runtime::method31(
+                        Runtime::method31(
                             Runtime::method30(toArray(ofArray(new_array(&['\\', '`', '\"', ' '])))),
                             v2.get().clone(),
                             v3.get().clone(),
                             v4.get().clone(),
-                        )),
+                        ),
                     ))
                 } else {
                     let v87: char = getCharAt(v1.get().clone(), 0_i32);
@@ -4219,7 +4217,7 @@ pub mod Runtime {
                     } else {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected char / "),
-                            (Runtime::method33(
+                            Runtime::method33(
                                 v87,
                                 Runtime::method30(toArray(ofArray(new_array(&[
                                     '\\', '`', '\"', ' ',
@@ -4227,14 +4225,13 @@ pub mod Runtime {
                                 v2.get().clone(),
                                 v3.get().clone(),
                                 v4.get().clone(),
-                            )),
+                            ),
                         ))
                     }
                 };
                 match &v224 {
                     Runtime::US8::US8_0(v224_0_0, v224_0_1, v224_0_2, v224_0_3, v224_0_4) => {
-                        let v0_temp: string =
-                            append((v0.get().clone()), (ofChar(v224_0_0.clone())));
+                        let v0_temp: string = append(v0.get().clone(), ofChar(v224_0_0.clone()));
                         let v1_temp: string = v224_0_1.clone();
                         let v2_temp: LrcPtr<StringBuilder> = v224_0_2.clone();
                         let v3_temp: i32 = v224_0_3.clone();
@@ -4261,7 +4258,7 @@ pub mod Runtime {
         let v0: MutCell<char> = MutCell::new(v0);
         let v1: MutCell<i64> = MutCell::new(v1);
         '_method71: loop {
-            break '_method71 (if (v1.get().clone()) >= 3_i64 {
+            break '_method71 if (v1.get().clone()) >= 3_i64 {
                 false
             } else {
                 let v15_1: Runtime::US10 = if (v1.get().clone()) == 0_i64 {
@@ -4297,7 +4294,7 @@ pub mod Runtime {
                     v1.set(v1_temp);
                     continue '_method71;
                 }
-            });
+            };
         }
     }
     pub fn closure28(unitVar: (), _arg: (string, LrcPtr<StringBuilder>, i32, i32)) -> Runtime::US9 {
@@ -4308,7 +4305,7 @@ pub mod Runtime {
         let v168: Runtime::US8 = if string("") == (v0.clone()) {
             Runtime::US8::US8_1(append(
                 string("parsing.p_char / unexpected end of input / "),
-                (Runtime::method24('\\', v1.clone(), v2, v3)),
+                Runtime::method24('\\', v1.clone(), v2, v3),
             ))
         } else {
             let v14_1: char = getCharAt(v0.clone(), 0_i32);
@@ -4343,28 +4340,28 @@ pub mod Runtime {
                     ),
                 );
                 Runtime::US8::US8_1(append(
-                    (append(
-                        (append(
-                            (append(
-                                (append(
-                                    (append(
-                                        (append(
+                    append(
+                        append(
+                            append(
+                                append(
+                                    append(
+                                        append(
                                             string("parsing.p_char / "),
-                                            (Runtime::method27('\\', v2, v3)),
-                                        )),
+                                            Runtime::method27('\\', v2, v3),
+                                        ),
                                         string("\n"),
-                                    )),
-                                    (toString(v1)),
-                                )),
-                                (v114),
-                            )),
+                                    ),
+                                    toString(v1),
+                                ),
+                                v114,
+                            ),
                             string("\n"),
-                        )),
-                        (append(
-                            ((Runtime::method28((v3) - 1_i32, 0_i32))(string(""))),
+                        ),
+                        append(
+                            (Runtime::method28((v3) - 1_i32, 0_i32))(string("")),
                             string("^"),
-                        )),
-                    )),
+                        ),
+                    ),
                     string("\n"),
                 ))
             }
@@ -4378,7 +4375,7 @@ pub mod Runtime {
                 if string("") == (v170.clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.any_char / unexpected end of input / "),
-                        (Runtime::method41(v171.clone(), v172, v173)),
+                        Runtime::method41(v171.clone(), v172, v173),
                     ))
                 } else {
                     let v183: char = getCharAt(v170.clone(), 0_i32);
@@ -4405,7 +4402,7 @@ pub mod Runtime {
         match &v239 {
             Runtime::US8::US8_0(v239_0_0, v239_0_1, v239_0_2, v239_0_3, v239_0_4) => {
                 Runtime::US9::US9_0(
-                    append((ofChar('\\')), (ofChar(v239_0_0.clone()))),
+                    append(ofChar('\\'), ofChar(v239_0_0.clone())),
                     v239_0_1.clone(),
                     v239_0_2.clone(),
                     v239_0_3.clone(),
@@ -4423,7 +4420,7 @@ pub mod Runtime {
         let v168: Runtime::US8 = if string("") == (v0.clone()) {
             Runtime::US8::US8_1(append(
                 string("parsing.p_char / unexpected end of input / "),
-                (Runtime::method24('`', v1.clone(), v2, v3)),
+                Runtime::method24('`', v1.clone(), v2, v3),
             ))
         } else {
             let v14_1: char = getCharAt(v0.clone(), 0_i32);
@@ -4458,28 +4455,28 @@ pub mod Runtime {
                     ),
                 );
                 Runtime::US8::US8_1(append(
-                    (append(
-                        (append(
-                            (append(
-                                (append(
-                                    (append(
-                                        (append(
+                    append(
+                        append(
+                            append(
+                                append(
+                                    append(
+                                        append(
                                             string("parsing.p_char / "),
-                                            (Runtime::method27('`', v2, v3)),
-                                        )),
+                                            Runtime::method27('`', v2, v3),
+                                        ),
                                         string("\n"),
-                                    )),
-                                    (toString(v1)),
-                                )),
-                                (v114),
-                            )),
+                                    ),
+                                    toString(v1),
+                                ),
+                                v114,
+                            ),
                             string("\n"),
-                        )),
-                        (append(
-                            ((Runtime::method28((v3) - 1_i32, 0_i32))(string(""))),
+                        ),
+                        append(
+                            (Runtime::method28((v3) - 1_i32, 0_i32))(string("")),
                             string("^"),
-                        )),
-                    )),
+                        ),
+                    ),
                     string("\n"),
                 ))
             }
@@ -4493,7 +4490,7 @@ pub mod Runtime {
                 if string("") == (v170.clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.any_char / unexpected end of input / "),
-                        (Runtime::method41(v171.clone(), v172, v173)),
+                        Runtime::method41(v171.clone(), v172, v173),
                     ))
                 } else {
                     let v183: char = getCharAt(v170.clone(), 0_i32);
@@ -4520,7 +4517,7 @@ pub mod Runtime {
         match &v239 {
             Runtime::US8::US8_0(v239_0_0, v239_0_1, v239_0_2, v239_0_3, v239_0_4) => {
                 Runtime::US9::US9_0(
-                    append((ofChar('`')), (ofChar(v239_0_0.clone()))),
+                    append(ofChar('`'), ofChar(v239_0_0.clone())),
                     v239_0_1.clone(),
                     v239_0_2.clone(),
                     v239_0_3.clone(),
@@ -4543,7 +4540,7 @@ pub mod Runtime {
         let v3: MutCell<i32> = MutCell::new(v3);
         let v4: MutCell<LrcPtr<Runtime::UH3>> = MutCell::new(v4.clone());
         '_method72: loop {
-            break '_method72 (match v4.get().clone().as_ref() {
+            break '_method72 match v4.get().clone().as_ref() {
                 Runtime::UH3::UH3_0 => {
                     Runtime::US9::US9_1(string("parsing.choice / no parsers succeeded"))
                 }
@@ -4578,14 +4575,14 @@ pub mod Runtime {
                         }
                     }
                 }
-            });
+            };
         }
     }
     pub fn method73(v0: LrcPtr<Runtime::UH2>, v1: LrcPtr<Runtime::UH2>) -> LrcPtr<Runtime::UH2> {
         let v0: MutCell<LrcPtr<Runtime::UH2>> = MutCell::new(v0.clone());
         let v1: MutCell<LrcPtr<Runtime::UH2>> = MutCell::new(v1.clone());
         '_method73: loop {
-            break '_method73 (match v0.get().clone().as_ref() {
+            break '_method73 match v0.get().clone().as_ref() {
                 Runtime::UH2::UH2_0 => v1.get().clone(),
                 Runtime::UH2::UH2_1(v0_1_0, v0_1_1) => {
                     let v0_temp: LrcPtr<Runtime::UH2> = match v0.get().clone().as_ref() {
@@ -4605,7 +4602,7 @@ pub mod Runtime {
                     v1.set(v1_temp);
                     continue '_method73;
                 }
-            });
+            };
         }
     }
     pub fn method70(
@@ -4625,12 +4622,12 @@ pub mod Runtime {
                 let v200: Runtime::US8 = if string("") == (v1.get().clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.none_of / unexpected end of input / "),
-                        (Runtime::method31(
+                        Runtime::method31(
                             Runtime::method30(toArray(ofArray(new_array(&['\\', '`', '\"'])))),
                             v2.get().clone(),
                             v3.get().clone(),
                             v4.get().clone(),
-                        )),
+                        ),
                     ))
                 } else {
                     let v75: char = getCharAt(v1.get().clone(), 0_i32);
@@ -4657,13 +4654,13 @@ pub mod Runtime {
                     } else {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected char / "),
-                            (Runtime::method33(
+                            Runtime::method33(
                                 v75,
                                 Runtime::method30(toArray(ofArray(new_array(&['\\', '`', '\"'])))),
                                 v2.get().clone(),
                                 v3.get().clone(),
                                 v4.get().clone(),
-                            )),
+                            ),
                         ))
                     }
                 };
@@ -4773,12 +4770,12 @@ pub mod Runtime {
                 let v200: Runtime::US8 = if string("") == (v1.get().clone()) {
                     Runtime::US8::US8_1(append(
                         string("parsing.none_of / unexpected end of input / "),
-                        (Runtime::method31(
+                        Runtime::method31(
                             Runtime::method30(toArray(ofArray(new_array(&['\\', '`', '\"'])))),
                             v2.get().clone(),
                             v3.get().clone(),
                             v4.get().clone(),
-                        )),
+                        ),
                     ))
                 } else {
                     let v75: char = getCharAt(v1.get().clone(), 0_i32);
@@ -4805,13 +4802,13 @@ pub mod Runtime {
                     } else {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected char / "),
-                            (Runtime::method33(
+                            Runtime::method33(
                                 v75,
                                 Runtime::method30(toArray(ofArray(new_array(&['\\', '`', '\"'])))),
                                 v2.get().clone(),
                                 v3.get().clone(),
                                 v4.get().clone(),
-                            )),
+                            ),
                         ))
                     }
                 };
@@ -4871,12 +4868,12 @@ pub mod Runtime {
                 let v224: Runtime::US8 = if v5 {
                     Runtime::US8::US8_1(append(
                         string("parsing.none_of / unexpected end of input / "),
-                        (Runtime::method31(
+                        Runtime::method31(
                             Runtime::method30(toArray(ofArray(new_array(&['\\', '`', '\"', ' '])))),
                             v2.get().clone(),
                             v3.get().clone(),
                             v4.get().clone(),
-                        )),
+                        ),
                     ))
                 } else {
                     let v87: char = getCharAt(v1.get().clone(), 0_i32);
@@ -4903,7 +4900,7 @@ pub mod Runtime {
                     } else {
                         Runtime::US8::US8_1(append(
                             string("parsing.none_of / unexpected char / "),
-                            (Runtime::method33(
+                            Runtime::method33(
                                 v87,
                                 Runtime::method30(toArray(ofArray(new_array(&[
                                     '\\', '`', '\"', ' ',
@@ -4911,7 +4908,7 @@ pub mod Runtime {
                                 v2.get().clone(),
                                 v3.get().clone(),
                                 v4.get().clone(),
-                            )),
+                            ),
                         ))
                     }
                 };
@@ -4943,12 +4940,12 @@ pub mod Runtime {
                         let v414: Runtime::US8 = if v5 {
                             Runtime::US8::US8_1(append(
                                 string("parsing.p_char / unexpected end of input / "),
-                                (Runtime::method24(
+                                Runtime::method24(
                                     '\"',
                                     v2.get().clone(),
                                     v3.get().clone(),
                                     v4.get().clone(),
-                                )),
+                                ),
                             ))
                         } else {
                             let v260: char = getCharAt(v1.get().clone(), 0_i32);
@@ -4987,37 +4984,34 @@ pub mod Runtime {
                                     ),
                                 );
                                 Runtime::US8::US8_1(append(
-                                    (append(
-                                        (append(
-                                            (append(
-                                                (append(
-                                                    (append(
-                                                        (append(
+                                    append(
+                                        append(
+                                            append(
+                                                append(
+                                                    append(
+                                                        append(
                                                             string("parsing.p_char / "),
-                                                            (Runtime::method27(
+                                                            Runtime::method27(
                                                                 '\"',
                                                                 v3.get().clone(),
                                                                 v4.get().clone(),
-                                                            )),
-                                                        )),
+                                                            ),
+                                                        ),
                                                         string("\n"),
-                                                    )),
-                                                    (toString(v2.get().clone())),
-                                                )),
-                                                (v360),
-                                            )),
+                                                    ),
+                                                    toString(v2.get().clone()),
+                                                ),
+                                                v360,
+                                            ),
                                             string("\n"),
-                                        )),
-                                        (append(
-                                            ((Runtime::method28(
-                                                (v4.get().clone()) - 1_i32,
-                                                0_i32,
-                                            ))(
-                                                string("")
-                                            )),
+                                        ),
+                                        append(
+                                            (Runtime::method28((v4.get().clone()) - 1_i32, 0_i32))(
+                                                string(""),
+                                            ),
                                             string("^"),
-                                        )),
-                                    )),
+                                        ),
+                                    ),
                                     string("\n"),
                                 ))
                             }
@@ -5086,7 +5080,7 @@ pub mod Runtime {
                                                 string(
                                                     "parsing.p_char / unexpected end of input / ",
                                                 ),
-                                                (Runtime::method24('\"', v457.clone(), v458, v459)),
+                                                Runtime::method24('\"', v457.clone(), v458, v459),
                                             ))
                                         } else {
                                             let v470: char = getCharAt(v456.clone(), 0_i32);
@@ -5133,37 +5127,37 @@ pub mod Runtime {
                                                     ),
                                                 );
                                                 Runtime::US8::US8_1(append(
-                                                    (append(
-                                                        (append(
-                                                            (append(
-                                                                (append(
-                                                                    (append(
-                                                                        (append(
+                                                    append(
+                                                        append(
+                                                            append(
+                                                                append(
+                                                                    append(
+                                                                        append(
                                                                             string(
                                                                                 "parsing.p_char / ",
                                                                             ),
-                                                                            (Runtime::method27(
+                                                                            Runtime::method27(
                                                                                 '\"', v458, v459,
-                                                                            )),
-                                                                        )),
+                                                                            ),
+                                                                        ),
                                                                         string("\n"),
-                                                                    )),
-                                                                    (toString(v457.clone())),
-                                                                )),
-                                                                (v570),
-                                                            )),
+                                                                    ),
+                                                                    toString(v457.clone()),
+                                                                ),
+                                                                v570,
+                                                            ),
                                                             string("\n"),
-                                                        )),
-                                                        (append(
-                                                            ((Runtime::method28(
+                                                        ),
+                                                        append(
+                                                            (Runtime::method28(
                                                                 (v459) - 1_i32,
                                                                 0_i32,
                                                             ))(
                                                                 string("")
-                                                            )),
+                                                            ),
                                                             string("^"),
-                                                        )),
-                                                    )),
+                                                        ),
+                                                    ),
                                                     string("\n"),
                                                 ))
                                             }
@@ -5187,7 +5181,7 @@ pub mod Runtime {
                                                     string(
                                                         "parsing.between / expected closing delimiter / ",
                                                     ),
-                                                    (Runtime::method36(
+                                                    Runtime::method36(
                                                         v624_1_0.clone(),
                                                         v1.get().clone(),
                                                         v2.get().clone(),
@@ -5201,7 +5195,7 @@ pub mod Runtime {
                                                         v457.clone(),
                                                         v458,
                                                         v459,
-                                                    )),
+                                                    ),
                                                 ))
                                             }
                                         }

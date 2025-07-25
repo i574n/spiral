@@ -646,7 +646,7 @@ pub mod Networking {
         string("")
     }
     pub fn closure7(v0: LrcPtr<Networking::Mut3>, v1: string, unitVar: ()) {
-        let v4: string = append((v0.l0.get().clone()), (v1));
+        let v4: string = append(v0.l0.get().clone(), v1);
         v0.l0.set(v4);
         ()
     }
@@ -664,12 +664,12 @@ pub mod Networking {
         let v3: &str = inline_colorization::color_bright_black;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (Networking::method13(getCharAt(toLower(string("Verbose")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            Networking::method13(getCharAt(toLower(string("Verbose")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method16(v0: i32, v1: string) -> string {
         let v3: LrcPtr<Networking::Mut3> = LrcPtr::new(Networking::Mut3 {
@@ -733,20 +733,20 @@ pub mod Networking {
     ) -> string {
         let v10: string = Networking::method16(v8, v9);
         Networking::method17(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("networking.test_port_open"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure8(v0: LrcPtr<Networking::Mut0>, unitVar: ()) {
@@ -962,20 +962,20 @@ pub mod Networking {
     ) -> string {
         let v9: string = Networking::method29(v8);
         Networking::method17(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("async.run_with_timeout_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v9),
+            ),
+            v9,
         ))
     }
     pub fn closure19(v0: i32, unitVar: ()) {
@@ -1077,12 +1077,12 @@ pub mod Networking {
         let v3: &str = inline_colorization::color_bright_red;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (Networking::method13(getCharAt(toLower(string("Critical")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            Networking::method13(getCharAt(toLower(string("Critical")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method32(v0: i32, v1: string) -> string {
         let v3: LrcPtr<Networking::Mut3> = LrcPtr::new(Networking::Mut3 {
@@ -1140,20 +1140,20 @@ pub mod Networking {
     ) -> string {
         let v10: string = Networking::method32(v8, v9);
         Networking::method17(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("async.run_with_timeout_async**"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure20(v0: i32, v1: LrcPtr<Exception>, unitVar: ()) {
@@ -1421,20 +1421,20 @@ pub mod Networking {
     ) -> string {
         let v12: string = Networking::method40(v8, v9, v10, v11);
         Networking::method17(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("networking.wait_for_port_access"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v12),
+            ),
+            v12,
         ))
     }
     pub fn closure26(v0: Option<i32>, v1: bool, v2: i32, v3: i64, unitVar: ()) {

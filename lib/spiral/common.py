@@ -70,7 +70,7 @@ class Mut0(Record):
 
 Mut0_reflection = _expr7
 
-def _expr9() -> TypeInfo:
+def _expr8() -> TypeInfo:
     return record_type("Common.Mut1", [], Mut1, lambda: [("l0", lambda_type(string_type, unit_type))])
 
 
@@ -78,7 +78,7 @@ def _expr9() -> TypeInfo:
 class Mut1(Record):
     l0: Callable[[str], None]
 
-Mut1_reflection = _expr9
+Mut1_reflection = _expr8
 
 def _expr10() -> TypeInfo:
     return record_type("Common.Mut2", [], Mut2, lambda: [("l0", bool_type)])
@@ -164,7 +164,7 @@ class US3(Union):
 
 US3_reflection = _expr15
 
-def _expr19() -> TypeInfo:
+def _expr18() -> TypeInfo:
     return union_type("Common.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())], [("f6_0", US3_reflection())]])
 
 
@@ -180,9 +180,9 @@ class US4(Union):
         return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"]
 
 
-US4_reflection = _expr19
+US4_reflection = _expr18
 
-def _expr23() -> TypeInfo:
+def _expr20() -> TypeInfo:
     return union_type("Common.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -198,7 +198,7 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr23
+US5_reflection = _expr20
 
 def _expr24() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
@@ -218,7 +218,7 @@ class US6(Union):
 
 US6_reflection = _expr24
 
-def _expr27() -> TypeInfo:
+def _expr25() -> TypeInfo:
     return union_type("Common.US7", [], US7, lambda: [[("f0_0", US6_reflection())], []])
 
 
@@ -234,7 +234,7 @@ class US7(Union):
         return ["US7_0", "US7_1"]
 
 
-US7_reflection = _expr27
+US7_reflection = _expr25
 
 def _expr28() -> TypeInfo:
     return union_type("Common.US8", [], US8, lambda: [[("f0_0", Mut0_reflection()), ("f0_1", Mut1_reflection()), ("f0_2", Mut2_reflection()), ("f0_3", Mut3_reflection()), ("f0_4", Mut4_reflection()), ("f0_5", option_type(int64_type))], []])
@@ -390,11 +390,11 @@ def method7(v0: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0: Callable[[], None]) -> IDisposable:
     v14_1: Callable[[], None] = method7(v0)
-    class ObjectExpr59(IDisposable):
+    class ObjectExpr56(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
             v14_1(None)
 
-    return ObjectExpr59()
+    return ObjectExpr56()
 
 
 def closure6(unit_var: None, v0: US6) -> US7:
@@ -416,10 +416,10 @@ def closure10(unit_var: None, v0: int64) -> US2:
 
 
 def method10(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow63(v: int64) -> US2:
+    def _arrow62(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow63
+    return _arrow62
 
 
 def method11(__unit: None=None) -> str:

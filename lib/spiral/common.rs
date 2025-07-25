@@ -667,7 +667,7 @@ pub mod Common {
         string("")
     }
     pub fn closure11(v0: LrcPtr<Common::Mut3>, v1: string, unitVar: ()) {
-        let v4: string = append((v0.l0.get().clone()), (v1));
+        let v4: string = append(v0.l0.get().clone(), v1);
         v0.l0.set(v4);
         ()
     }
@@ -685,12 +685,12 @@ pub mod Common {
         let v3: &str = inline_colorization::color_yellow;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (Common::method14(getCharAt(toLower(string("Warning")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            Common::method14(getCharAt(toLower(string("Warning")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method17(v0: i32, v1: LrcPtr<Exception>) -> string {
         let v3: LrcPtr<Common::Mut3> = LrcPtr::new(Common::Mut3 {
@@ -759,20 +759,20 @@ pub mod Common {
     ) -> string {
         let v10: string = Common::method17(v8, v9);
         Common::method18(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("common.retry_fn"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure12(v0: LrcPtr<Common::Mut0>, unitVar: ()) {

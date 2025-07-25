@@ -865,7 +865,7 @@ pub mod File_system {
         string("")
     }
     pub fn closure6(v0: LrcPtr<File_system::Mut3>, v1: string, unitVar: ()) {
-        let v4: string = append((v0.l0.get().clone()), (v1));
+        let v4: string = append(v0.l0.get().clone(), v1);
         v0.l0.set(v4);
         ()
     }
@@ -883,12 +883,12 @@ pub mod File_system {
         let v3: &str = inline_colorization::color_bright_blue;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (File_system::method16(getCharAt(toLower(string("Debug")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            File_system::method16(getCharAt(toLower(string("Debug")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method18(v0: string) -> string {
         let v12: &str = &*v0;
@@ -981,20 +981,20 @@ pub mod File_system {
     ) -> string {
         let v10: string = File_system::method20(v8, v9);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.delete_directory_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure7(v0: LrcPtr<File_system::Mut0>, unitVar: ()) {
@@ -1202,20 +1202,20 @@ pub mod File_system {
     ) -> string {
         let v11: string = File_system::method26(v8, v9, v10);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.wait_for_file_access"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v11),
+            ),
+            v11,
         ))
     }
     pub fn closure12(v0: string, v1: i64, v2: LrcPtr<Exception>, unitVar: ()) {
@@ -1361,12 +1361,12 @@ pub mod File_system {
         let v3: &str = inline_colorization::color_bright_black;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (File_system::method16(getCharAt(toLower(string("Verbose")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            File_system::method16(getCharAt(toLower(string("Verbose")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method33(v0: i64, v1: string, v2: LrcPtr<Exception>) -> string {
         let v4: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
@@ -1446,20 +1446,20 @@ pub mod File_system {
     ) -> string {
         let v11: string = File_system::method33(v8, v9, v10);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.read_all_text_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v11),
+            ),
+            v11,
         ))
     }
     pub fn closure15(v0: string, v1: i64, v2: LrcPtr<Exception>, unitVar: ()) {
@@ -1680,12 +1680,12 @@ pub mod File_system {
         let v3: &str = inline_colorization::color_bright_red;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (File_system::method16(getCharAt(toLower(string("Critical")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            File_system::method16(getCharAt(toLower(string("Critical")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method51(v0: string) -> string {
         let v2: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
@@ -1726,20 +1726,20 @@ pub mod File_system {
     ) -> string {
         let v9: string = File_system::method51(v8);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.file_delete"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v9),
+            ),
+            v9,
         ))
     }
     pub fn closure26(v0: string, unitVar: ()) {
@@ -1850,12 +1850,12 @@ pub mod File_system {
         let v3: &str = inline_colorization::color_yellow;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (File_system::method16(getCharAt(toLower(string("Warning")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            File_system::method16(getCharAt(toLower(string("Warning")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method54(v0: string, v1: string) -> string {
         let v3: LrcPtr<File_system::Mut3> = LrcPtr::new(File_system::Mut3 {
@@ -1913,20 +1913,20 @@ pub mod File_system {
     ) -> string {
         let v10: string = File_system::method54(v8, v9);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("delete_file_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure27(v0: string, v1: LrcPtr<Exception>, unitVar: ()) {
@@ -2122,20 +2122,20 @@ pub mod File_system {
     ) -> string {
         let v11: string = File_system::method60(v8, v9, v10);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("move_file_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v11),
+            ),
+            v11,
         ))
     }
     pub fn closure30(v0: string, v1: string, v2: LrcPtr<Exception>, unitVar: ()) {
@@ -2349,20 +2349,20 @@ pub mod File_system {
     ) -> string {
         let v9: string = File_system::method73(v8);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("async.run_with_timeout_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v9),
+            ),
+            v9,
         ))
     }
     pub fn closure37(v0: i32, unitVar: ()) {
@@ -2525,20 +2525,20 @@ pub mod File_system {
     ) -> string {
         let v10: string = File_system::method75(v8, v9);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("async.run_with_timeout_async**"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure38(v0: i32, v1: LrcPtr<Exception>, unitVar: ()) {
@@ -2759,20 +2759,20 @@ pub mod File_system {
     ) -> string {
         let v10: string = File_system::method81(v8, v9);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.read_all_text_retry_async"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure40(v0: i64, v1: LrcPtr<Exception>, unitVar: ()) {
@@ -3107,20 +3107,20 @@ pub mod File_system {
     ) -> string {
         let v10: string = File_system::method99(v8, v9);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.create_dir"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure47(v0: string, v1: std::string::String, unitVar: ()) {
@@ -3267,20 +3267,20 @@ pub mod File_system {
     ) -> string {
         let v9: string = File_system::method101(v8);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.create_dir"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v9),
+            ),
+            v9,
         ))
     }
     pub fn closure48(v0: string, unitVar: ()) {
@@ -3461,20 +3461,20 @@ pub mod File_system {
     ) -> string {
         let v10: string = File_system::method106(v8, v9);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.create_dir"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure50(v0: string, v1: string, unitVar: ()) {
@@ -3653,7 +3653,7 @@ pub mod File_system {
         if (v2) >= (v0) {
             v3.clone()
         } else {
-            (File_system::method110(v0, v1.clone(), (v2) + 1_i32))(append((v3), (v1)))
+            (File_system::method110(v0, v1.clone(), (v2) + 1_i32))(append(v3, v1))
         }
     }
     pub fn method110(v0: i32, v1: string, v2: i32) -> Func1<string, string> {
@@ -3667,33 +3667,33 @@ pub mod File_system {
     pub fn method109(v0: string) -> Guid {
         let v3: string = ofChar('0');
         let v13: string = append(
-            ((File_system::method110(32_i32 - (length(v0.clone())), v3, 0_i32))(string(""))),
-            (v0),
+            (File_system::method110(32_i32 - (length(v0.clone())), v3, 0_i32))(string("")),
+            v0,
         );
         parse(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append(
-                                (append(
-                                    (append(
-                                        (getSlice(v13.clone(), Some(0_i32), Some((8_i32) - 1_i32))),
+            append(
+                append(
+                    append(
+                        append(
+                            append(
+                                append(
+                                    append(
+                                        getSlice(v13.clone(), Some(0_i32), Some((8_i32) - 1_i32)),
                                         string("-"),
-                                    )),
-                                    (getSlice(v13.clone(), Some(8_i32), Some((12_i32) - 1_i32))),
-                                )),
+                                    ),
+                                    getSlice(v13.clone(), Some(8_i32), Some((12_i32) - 1_i32)),
+                                ),
                                 string("-"),
-                            )),
-                            (getSlice(v13.clone(), Some(12_i32), Some((16_i32) - 1_i32))),
-                        )),
+                            ),
+                            getSlice(v13.clone(), Some(12_i32), Some((16_i32) - 1_i32)),
+                        ),
                         string("-"),
-                    )),
-                    (getSlice(v13.clone(), Some(16_i32), Some((20_i32) - 1_i32))),
-                )),
+                    ),
+                    getSlice(v13.clone(), Some(16_i32), Some((20_i32) - 1_i32)),
+                ),
                 string("-"),
-            )),
-            (getSlice(v13, Some(20_i32), Some((32_i32) - 1_i32))),
+            ),
+            getSlice(v13, Some(20_i32), Some((32_i32) - 1_i32)),
         ))
     }
     pub fn closure52(unitVar: (), v0: string) -> (string, LrcPtr<dyn IDisposable>) {
@@ -4556,7 +4556,7 @@ pub mod File_system {
         let v3 = MutCell::new(v3.clone());
         let v4: MutCell<string> = MutCell::new(v4.clone());
         '_method142: loop {
-            break '_method142 (if v3(File_system::method91(v4.get().clone(), v0.get().clone())) {
+            break '_method142 if v3(File_system::method91(v4.get().clone(), v0.get().clone())) {
                 File_system::US18::US18_0(v4.get().clone())
             } else {
                 let v8: Option<string> = File_system::method118(v4.get().clone());
@@ -4581,14 +4581,14 @@ pub mod File_system {
                         continue '_method142;
                     }
                     _ => File_system::US18::US18_1(append(
-                        (concat(new_array(&[
+                        concat(new_array(&[
                             string("file_system.find_parent / No parent for "),
                             if v2.get().clone() {
                                 string("file")
                             } else {
                                 string("dir")
                             },
-                        ]))),
+                        ])),
                         sprintf!(
                             " \'{}\' at \'{}\' (until \'{}\')",
                             v0.get().clone(),
@@ -4597,7 +4597,7 @@ pub mod File_system {
                         ),
                     )),
                 }
-            });
+            };
         }
     }
     pub fn method141(
@@ -4625,10 +4625,10 @@ pub mod File_system {
                     .clone(),
                 ),
                 _ => File_system::US18::US18_1(append(
-                    (concat(new_array(&[
+                    concat(new_array(&[
                         string("file_system.find_parent / No parent for "),
                         if v2 { string("file") } else { string("dir") },
-                    ]))),
+                    ])),
                     sprintf!(
                         " \'{}\' at \'{}\' (until \'{}\')",
                         v0.clone(),
@@ -4712,20 +4712,20 @@ pub mod File_system {
     ) -> string {
         let v10: string = File_system::method144(v8, v9);
         File_system::method21(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("file_system.get_workspace_root"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v10),
+            ),
+            v10,
         ))
     }
     pub fn closure69(v0: string, v1: string, unitVar: ()) {

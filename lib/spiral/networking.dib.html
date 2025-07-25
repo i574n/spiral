@@ -8238,7 +8238,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 networking.test_port_open / { port = 65536; ex = System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'port') }
-{ name = __assert_eq; actual = US7_0 false; expected = US7_0 false }
+{ name = __assert_eq; expected = US7_0 false }
 </pre>
 </div>
 </div>
@@ -8302,7 +8302,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-black-intense-fg">v</span> #1 async.run_with_timeout_async / { timeout = 120 }
-{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; expected = false }
 </pre>
 </div>
 </div>
@@ -8434,9 +8434,9 @@ a.anchor-link {
 00:00:09 <span class="ansi-black-intense-fg">v</span> #13 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (No connection could be made because the target machine actively refused it.) }
 00:00:09 <span class="ansi-blue-intense-fg">d</span> #14 5
 00:00:09 <span class="ansi-blue-intense-fg">d</span> #15 6
-{ name = __assert_between; actual = 3; expected = 2, 5 }
-{ name = __assert_between; actual = 118; expected = 80, 200 }
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_between; expected = 2, 5 }
+{ name = __assert_between; expected = 80, 200 }
+{ name = __assert_eq; expected = true }
 </pre>
 </div>
 </div>
@@ -8518,19 +8518,18 @@ a.anchor-link {
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 async.run_with_timeout_async / { timeout = 60 }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #8 async.run_with_timeout_async / { timeout = 60 }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #9 async.run_with_timeout_async / { timeout = 60 }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #10 async.run_with_timeout_async / { timeout = 60 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #11 _2
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #12 _3
-00:00:00 <span class="ansi-black-intense-fg">v</span> #13 async.run_with_timeout_async / { timeout = 60 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #14 4
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #15 _4
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #16 _5
-00:00:00 <span class="ansi-black-intense-fg">v</span> #17 async.run_with_timeout_async / { timeout = 60 }
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #18 5
-00:00:00 <span class="ansi-blue-intense-fg">d</span> #19 6
-{ name = __assert_between; actual = 8; expected = 4, 15 }
-{ name = __assert_between; actual = 10; expected = 5, 20 }
-{ name = __assert_eq; actual = true; expected = true }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #10 _2
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #11 _3
+00:00:00 <span class="ansi-black-intense-fg">v</span> #12 async.run_with_timeout_async / { timeout = 60 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #13 4
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #14 _4
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #15 _5
+00:00:00 <span class="ansi-black-intense-fg">v</span> #16 async.run_with_timeout_async / { timeout = 60 }
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #17 5
+00:00:00 <span class="ansi-blue-intense-fg">d</span> #18 6
+{ name = __assert_between; expected = 4, 15 }
+{ name = __assert_between; expected = 5, 20 }
+{ name = __assert_eq; expected = true }
 </pre>
 </div>
 </div>
@@ -8654,9 +8653,9 @@ a.anchor-link {
 00:00:06 <span class="ansi-black-intense-fg">v</span> #12 networking.test_port_open / { port = 5555; ex = System.AggregateException: One or more errors occurred. (No connection could be made because the target machine actively refused it.) }
 00:00:06 <span class="ansi-blue-intense-fg">d</span> #13 5
 00:00:06 <span class="ansi-blue-intense-fg">d</span> #14 6
-{ name = __assert_eq; actual = 5557; expected = 5557 }
-{ name = __assert_between; actual = 107; expected = 50, 150 }
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = 5557 }
+{ name = __assert_between; expected = 50, 150 }
+{ name = __assert_eq; expected = true }
 </pre>
 </div>
 </div>
@@ -8741,9 +8740,9 @@ a.anchor-link {
 00:00:00 <span class="ansi-black-intense-fg">v</span> #11 async.run_with_timeout_async / { timeout = 60 }
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #12 5
 00:00:00 <span class="ansi-blue-intense-fg">d</span> #13 6
-{ name = __assert_eq; actual = 5557; expected = 5557 }
-{ name = __assert_between; actual = 8; expected = 2, 10 }
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = 5557 }
+{ name = __assert_between; expected = 2, 10 }
+{ name = __assert_eq; expected = true }
 </pre>
 </div>
 </div>

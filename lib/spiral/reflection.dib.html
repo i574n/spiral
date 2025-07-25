@@ -7648,13 +7648,13 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output:
-{ name = __assert_eq'; actual = Array(MutCell([("Native", US0_0), ("Wasm", US0_1), ("Contract", US0_2)])); expected = Array(MutCell([("Native", US0_0), ("Wasm", US0_1), ("Contract", US0_2)])) }
+{ name = __assert_eq'; expected = Array(MutCell([("Native", US0_0), ("Wasm", US0_1), ("Contract", US0_2)])) }
 
 .ts output:
-{ name = __assert_eq'; actual = Native,US0_0,Wasm,US0_1,Contract,US0_2; expected = Native,US0_0,Wasm,US0_1,Contract,US0_2 }
+{ name = __assert_eq'; expected = Native,US0_0,Wasm,US0_1,Contract,US0_2 }
 
 .py output:
-{ name = __assert_eq'; actual = [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)]; expected = [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)] }
+{ name = __assert_eq'; expected = [('Native', US0_0), ('Wasm', US0_1), ('Contract', US0_2)] }
 
 </pre>
 </div>
@@ -7663,7 +7663,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = [|struct ("Native", US0_0); struct ("Wasm", US0_1); struct ("Contract", US0_2)|]; expected = [|struct ("Native", US0_0); struct ("Wasm", US0_1); struct ("Contract", US0_2)|] }
+{ name = __assert_eq'; expected = [|struct ("Native", US0_0); struct ("Wasm", US0_1); struct ("Contract", US0_2)|] }
 </pre>
 </div>
 </div>
@@ -7703,13 +7703,13 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output:
-{ name = __assert_eq'; actual = Array(MutCell([("Some", US0_0(0)), ("None", US0_1)])); expected = Array(MutCell([("Some", US0_0(0)), ("None", US0_1)])) }
+{ name = __assert_eq'; expected = Array(MutCell([("Some", US0_0(0)), ("None", US0_1)])) }
 
 .ts output:
-{ name = __assert_eq'; actual = Some,US0_0 0,None,US0_1; expected = Some,US0_0 0,None,US0_1 }
+{ name = __assert_eq'; expected = Some,US0_0 0,None,US0_1 }
 
 .py output:
-{ name = __assert_eq'; actual = [('Some', US0_0 0), ('None', US0_1)]; expected = [('Some', US0_0 0), ('None', US0_1)] }
+{ name = __assert_eq'; expected = [('Some', US0_0 0), ('None', US0_1)] }
 
 </pre>
 </div>
@@ -7718,7 +7718,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = [|struct ("Some", US0_0 0); struct ("None", US0_1)|]; expected = [|struct ("Some", US0_0 0); struct ("None", US0_1)|] }
+{ name = __assert_eq'; expected = [|struct ("Some", US0_0 0); struct ("None", US0_1)|] }
 </pre>
 </div>
 </div>
@@ -7818,16 +7818,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq'; actual = UH0_1(v0='Native', v1=US0_0(), v2=UH0_1(v0='Wasm', v1=US0_1(), v2=UH0_1(v0='Contract', v1=US0_2(), v2=UH0_0()))); expected = UH0_1(v0='Native', v1=US0_0(), v2=UH0_1(v0='Wasm', v1=US0_1(), v2=UH0_1(v0='Contract', v1=US0_2(), v2=UH0_0()))) }
+{ name = __assert_eq'; expected = UH0_1(v0='Native', v1=US0_0(), v2=UH0_1(v0='Wasm', v1=US0_1(), v2=UH0_1(v0='Contract', v1=US0_2(), v2=UH0_0()))) }
 
 .rs output:
-{ name = __assert_eq'; actual = UH0_1("Native", US0_0, UH0_1("Wasm", US0_1, UH0_1("Contract", US0_2, UH0_0))); expected = UH0_1("Native", US0_0, UH0_1("Wasm", US0_1, UH0_1("Contract", US0_2, UH0_0))) }
+{ name = __assert_eq'; expected = UH0_1("Native", US0_0, UH0_1("Wasm", US0_1, UH0_1("Contract", US0_2, UH0_0))) }
 
 .ts output:
-{ name = __assert_eq'; actual = UH0_1 (Native, US0_0, UH0_1 (Wasm, US0_1, UH0_1 (Contract, US0_2, UH0_0))); expected = UH0_1 (Native, US0_0, UH0_1 (Wasm, US0_1, UH0_1 (Contract, US0_2, UH0_0))) }
+{ name = __assert_eq'; expected = UH0_1 (Native, US0_0, UH0_1 (Wasm, US0_1, UH0_1 (Contract, US0_2, UH0_0))) }
 
 .py output:
-{ name = __assert_eq'; actual = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))); expected = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) }
+{ name = __assert_eq'; expected = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) }
 
 </pre>
 </div>
@@ -7836,7 +7836,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))); expected = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) }
+{ name = __assert_eq'; expected = UH0_1 ("Native", US0_0, UH0_1 ("Wasm", US0_1, UH0_1 ("Contract", US0_2, UH0_0))) }
 </pre>
 </div>
 </div>
@@ -7872,16 +7872,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq'; actual = UH0_1(v0='Some', v1=US0_0(), v2=UH0_1(v0='None', v1=US0_1(), v2=UH0_0())); expected = UH0_1(v0='Some', v1=US0_0(), v2=UH0_1(v0='None', v1=US0_1(), v2=UH0_0())) }
+{ name = __assert_eq'; expected = UH0_1(v0='Some', v1=US0_0(), v2=UH0_1(v0='None', v1=US0_1(), v2=UH0_0())) }
 
 .rs output:
-{ name = __assert_eq'; actual = UH0_1("Some", US0_0, UH0_1("None", US0_1, UH0_0)); expected = UH0_1("Some", US0_0, UH0_1("None", US0_1, UH0_0)) }
+{ name = __assert_eq'; expected = UH0_1("Some", US0_0, UH0_1("None", US0_1, UH0_0)) }
 
 .ts output:
-{ name = __assert_eq'; actual = UH0_1 (Some, US0_0, UH0_1 (None, US0_1, UH0_0)); expected = UH0_1 (Some, US0_0, UH0_1 (None, US0_1, UH0_0)) }
+{ name = __assert_eq'; expected = UH0_1 (Some, US0_0, UH0_1 (None, US0_1, UH0_0)) }
 
 .py output:
-{ name = __assert_eq'; actual = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)); expected = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) }
+{ name = __assert_eq'; expected = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) }
 
 </pre>
 </div>
@@ -7890,7 +7890,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)); expected = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) }
+{ name = __assert_eq'; expected = UH0_1 ("Some", US0_0, UH0_1 ("None", US0_1, UH0_0)) }
 </pre>
 </div>
 </div>
@@ -7960,8 +7960,8 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = US0_0 US1_1; expected = US0_0 US1_1 }
-{ name = __assert_eq; actual = US0_0 US1_1; expected = US0_0 US1_1 }
+<pre>{ name = __assert_eq; expected = US0_0 US1_1 }
+{ name = __assert_eq; expected = US0_0 US1_1 }
 </pre>
 </div>
 </div>
@@ -8060,16 +8060,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq'; actual = Some; expected = Some }
+{ name = __assert_eq'; expected = Some }
 
 .rs output:
-{ name = __assert_eq'; actual = Some; expected = Some }
+{ name = __assert_eq'; expected = Some }
 
 .ts output:
-{ name = __assert_eq'; actual = Some; expected = Some }
+{ name = __assert_eq'; expected = Some }
 
 .py output:
-{ name = __assert_eq'; actual = Some; expected = Some }
+{ name = __assert_eq'; expected = Some }
 
 </pre>
 </div>
@@ -8078,7 +8078,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = Some; expected = Some }
+{ name = __assert_eq'; expected = Some }
 </pre>
 </div>
 </div>
@@ -8141,7 +8141,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = test1; expected = test1 }
+<pre>{ name = __assert_eq'; expected = test1 }
 </pre>
 </div>
 </div>
@@ -8206,7 +8206,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = UH0_1 ("a", "1", UH0_1 ("b", "2", UH0_0)); expected = UH0_1 ("a", "1", UH0_1 ("b", "2", UH0_0)) }
+<pre>{ name = __assert_eq'; expected = UH0_1 ("a", "1", UH0_1 ("b", "2", UH0_0)) }
 </pre>
 </div>
 </div>
@@ -8303,8 +8303,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = [|struct ("one", [|struct ("a", "int32")|], "int32");
-  struct ("two", [|struct ("a", "int32"); struct ("b", "int32")|], "int32")|]; expected = [|struct ("one", [|struct ("a", "int32")|], "int32");
+<pre>{ name = __assert_eq'; expected = [|struct ("one", [|struct ("a", "int32")|], "int32");
   struct ("two", [|struct ("a", "int32"); struct ("b", "int32")|], "int32")|] }
 </pre>
 </div>

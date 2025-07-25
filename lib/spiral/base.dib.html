@@ -7932,19 +7932,19 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .rs output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .ts output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .py output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 </pre>
 </div>
@@ -7953,7 +7953,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 </pre>
 </div>
 </div>
@@ -8264,16 +8264,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .rs output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .ts output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .py output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 </pre>
 </div>
@@ -8282,7 +8282,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 </pre>
 </div>
 </div>
@@ -8439,19 +8439,19 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .rs output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .ts output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .py output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 
 
@@ -8475,70 +8475,53 @@ pub fn method4 () -&gt; String {
     let v0 = ""
     v0
 }
-pub fn method3 (v0 :    String, v1 :    Int, v2 :    Int) -&gt; String {
-    let v3 = method4()
-    let v4 = Mut0(l0 :  v3)
-    let v5 = "{ "
-    let v6 = v5 
-    let v10 = v4.l0 
-    let v11 = v10 &lt;&gt; v6 
-    let v4 = Mut0(l0: v11)
-    let v23 = "name"
-    let v24 = v23 
-    let v28 = v4.l0 
-    let v29 = v28 &lt;&gt; v24 
-    let v4 = Mut0(l0: v29)
-    let v41 = " = "
-    let v42 = v41 
-    let v46 = v4.l0 
-    let v47 = v46 &lt;&gt; v42 
-    let v4 = Mut0(l0: v47)
-    let v59 = v0 
-    let v63 = v4.l0 
-    let v64 = v63 &lt;&gt; v59 
-    let v4 = Mut0(l0: v64)
-    let v76 = "; "
-    let v77 = v76 
-    let v81 = v4.l0 
-    let v82 = v81 &lt;&gt; v77 
-    let v4 = Mut0(l0: v82)
-    let v94 = "actual"
-    let v95 = v94 
-    let v99 = v4.l0 
-    let v100 = v99 &lt;&gt; v95 
-    let v4 = Mut0(l0: v100)
-    let v112 = v41 
-    let v116 = v4.l0 
-    let v117 = v116 &lt;&gt; v112 
-    let v4 = Mut0(l0: v117)
-    let v129 = string.inspect(v1)
-    let v136 = v4.l0 
-    let v137 = v136 &lt;&gt; v129 
-    let v4 = Mut0(l0: v137)
-    let v149 = v76 
-    let v153 = v4.l0 
+pub fn method3 (v0 :    String, v1 :    Int) -&gt; String {
+    let v2 = method4()
+    let v3 = Mut0(l0 :  v2)
+    let v4 = "{ "
+    let v5 = v4 
+    let v9 = v3.l0 
+    let v10 = v9 &lt;&gt; v5 
+    let v3 = Mut0(l0: v10)
+    let v22 = "name"
+    let v23 = v22 
+    let v27 = v3.l0 
+    let v28 = v27 &lt;&gt; v23 
+    let v3 = Mut0(l0: v28)
+    let v40 = " = "
+    let v41 = v40 
+    let v45 = v3.l0 
+    let v46 = v45 &lt;&gt; v41 
+    let v3 = Mut0(l0: v46)
+    let v58 = v0 
+    let v62 = v3.l0 
+    let v63 = v62 &lt;&gt; v58 
+    let v3 = Mut0(l0: v63)
+    let v75 = "; "
+    let v76 = v75 
+    let v80 = v3.l0 
+    let v81 = v80 &lt;&gt; v76 
+    let v3 = Mut0(l0: v81)
+    let v93 = "expected"
+    let v94 = v93 
+    let v98 = v3.l0 
+    let v99 = v98 &lt;&gt; v94 
+    let v3 = Mut0(l0: v99)
+    let v111 = v40 
+    let v115 = v3.l0 
+    let v116 = v115 &lt;&gt; v111 
+    let v3 = Mut0(l0: v116)
+    let v128 = string.inspect(v1)
+    let v135 = v3.l0 
+    let v136 = v135 &lt;&gt; v128 
+    let v3 = Mut0(l0: v136)
+    let v148 = " }"
+    let v149 = v148 
+    let v153 = v3.l0 
     let v154 = v153 &lt;&gt; v149 
-    let v4 = Mut0(l0: v154)
-    let v166 = "expected"
-    let v167 = v166 
-    let v171 = v4.l0 
-    let v172 = v171 &lt;&gt; v167 
-    let v4 = Mut0(l0: v172)
-    let v184 = v41 
-    let v188 = v4.l0 
-    let v189 = v188 &lt;&gt; v184 
-    let v4 = Mut0(l0: v189)
-    let v201 = string.inspect(v2)
-    let v208 = v4.l0 
-    let v209 = v208 &lt;&gt; v201 
-    let v4 = Mut0(l0: v209)
-    let v221 = " }"
-    let v222 = v221 
-    let v226 = v4.l0 
-    let v227 = v226 &lt;&gt; v222 
-    let v4 = Mut0(l0: v227)
-    let v239 = v4.l0 
-    v239
+    let v3 = Mut0(l0: v154)
+    let v166 = v3.l0 
+    v166
 }
 pub fn method0 () -&gt; Nil   {
     let v0 = method1()
@@ -8557,7 +8540,7 @@ pub fn method0 () -&gt; Nil   {
         }
     let v7 = "__assert_eq"
     let v8 = 15
-    let v9 = method3(v7, v3, v8)
+    let v9 = method3(v7, v8)
     io.println(v9)
     let v15 = v6 == False
     case v15 {
@@ -8585,70 +8568,53 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
-and method3 (v0 : string, v1 : int32, v2 : int32) : string =
-    let v3 : string = method4()
-    let v4 : Mut0 = {l0 = v3} : Mut0
-    let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v4, v8)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v26 : string = "name"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -&gt; unit) = closure0(v4, v27)
-    let v37 : unit = (fun () -&gt; v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -&gt; unit) = closure0(v4, v46)
-    let v56 : unit = (fun () -&gt; v55 (); v54) ()
-    let v63 : string = $"{v0}"
-    let v71 : unit = ()
-    let v72 : (unit -&gt; unit) = closure0(v4, v63)
-    let v73 : unit = (fun () -&gt; v72 (); v71) ()
-    let v81 : string = "; "
-    let v82 : string = $"{v81}"
-    let v90 : unit = ()
-    let v91 : (unit -&gt; unit) = closure0(v4, v82)
-    let v92 : unit = (fun () -&gt; v91 (); v90) ()
-    let v100 : string = "actual"
-    let v101 : string = $"{v100}"
-    let v109 : unit = ()
-    let v110 : (unit -&gt; unit) = closure0(v4, v101)
-    let v111 : unit = (fun () -&gt; v110 (); v109) ()
-    let v118 : string = $"{v45}"
-    let v126 : unit = ()
-    let v127 : (unit -&gt; unit) = closure0(v4, v118)
-    let v128 : unit = (fun () -&gt; v127 (); v126) ()
-    let v138 : string = $"{v1}"
-    let v146 : unit = ()
-    let v147 : (unit -&gt; unit) = closure0(v4, v138)
-    let v148 : unit = (fun () -&gt; v147 (); v146) ()
-    let v155 : string = $"{v81}"
-    let v163 : unit = ()
-    let v164 : (unit -&gt; unit) = closure0(v4, v155)
-    let v165 : unit = (fun () -&gt; v164 (); v163) ()
-    let v173 : string = "expected"
-    let v174 : string = $"{v173}"
-    let v182 : unit = ()
-    let v183 : (unit -&gt; unit) = closure0(v4, v174)
-    let v184 : unit = (fun () -&gt; v183 (); v182) ()
-    let v191 : string = $"{v45}"
-    let v199 : unit = ()
-    let v200 : (unit -&gt; unit) = closure0(v4, v191)
-    let v201 : unit = (fun () -&gt; v200 (); v199) ()
-    let v211 : string = $"{v2}"
-    let v219 : unit = ()
-    let v220 : (unit -&gt; unit) = closure0(v4, v211)
-    let v221 : unit = (fun () -&gt; v220 (); v219) ()
-    let v229 : string = " }"
-    let v230 : string = $"{v229}"
-    let v238 : unit = ()
-    let v239 : (unit -&gt; unit) = closure0(v4, v230)
-    let v240 : unit = (fun () -&gt; v239 (); v238) ()
-    let v246 : string = v4.l0
-    v246
+and method3 (v0 : string, v1 : int32) : string =
+    let v2 : string = method4()
+    let v3 : Mut0 = {l0 = v2} : Mut0
+    let v6 : string = "{ "
+    let v7 : string = $"{v6}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v3, v7)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v25 : string = "name"
+    let v26 : string = $"{v25}"
+    let v34 : unit = ()
+    let v35 : (unit -&gt; unit) = closure0(v3, v26)
+    let v36 : unit = (fun () -&gt; v35 (); v34) ()
+    let v44 : string = " = "
+    let v45 : string = $"{v44}"
+    let v53 : unit = ()
+    let v54 : (unit -&gt; unit) = closure0(v3, v45)
+    let v55 : unit = (fun () -&gt; v54 (); v53) ()
+    let v62 : string = $"{v0}"
+    let v70 : unit = ()
+    let v71 : (unit -&gt; unit) = closure0(v3, v62)
+    let v72 : unit = (fun () -&gt; v71 (); v70) ()
+    let v80 : string = "; "
+    let v81 : string = $"{v80}"
+    let v89 : unit = ()
+    let v90 : (unit -&gt; unit) = closure0(v3, v81)
+    let v91 : unit = (fun () -&gt; v90 (); v89) ()
+    let v99 : string = "expected"
+    let v100 : string = $"{v99}"
+    let v108 : unit = ()
+    let v109 : (unit -&gt; unit) = closure0(v3, v100)
+    let v110 : unit = (fun () -&gt; v109 (); v108) ()
+    let v117 : string = $"{v44}"
+    let v125 : unit = ()
+    let v126 : (unit -&gt; unit) = closure0(v3, v117)
+    let v127 : unit = (fun () -&gt; v126 (); v125) ()
+    let v137 : string = $"{v1}"
+    let v145 : unit = ()
+    let v146 : (unit -&gt; unit) = closure0(v3, v137)
+    let v147 : unit = (fun () -&gt; v146 (); v145) ()
+    let v155 : string = " }"
+    let v156 : string = $"{v155}"
+    let v164 : unit = ()
+    let v165 : (unit -&gt; unit) = closure0(v3, v156)
+    let v166 : unit = (fun () -&gt; v165 (); v164) ()
+    let v172 : string = v3.l0
+    v172
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -8665,7 +8631,7 @@ and method0 () : unit =
             method2(v4)
     let v7 : string = "__assert_eq"
     let v8 : int32 = 15
-    let v9 : string = method3(v7, v3, v8)
+    let v9 : string = method3(v7, v8)
     let v11 : unit = ()
     let v12 : (unit -&gt; unit) = closure1(v9)
     let v13 : unit = (fun () -&gt; v12 (); v11) ()
@@ -8687,7 +8653,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_ca9e350b {
+mod module_593d7895 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::LrcPtr;
@@ -8720,72 +8686,55 @@ mod module_ca9e350b {
             v0.l0.set(v4);
             ()
         }
-        pub fn method3(v0: string, v1: i32, v2: i32) -&gt; string {
-            let v4: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+        pub fn method3(v0: string, v1: i32) -&gt; string {
+            let v3: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
                 l0: MutCell::new(Spiral::method4()),
             });
-            let v18: () = {
-                Spiral::closure0(v4.clone(), string("{ "), ());
+            let v17: () = {
+                Spiral::closure0(v3.clone(), string("{ "), ());
                 ()
             };
-            let v37: () = {
-                Spiral::closure0(v4.clone(), string("name"), ());
+            let v36: () = {
+                Spiral::closure0(v3.clone(), string("name"), ());
                 ()
             };
-            let v56: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
+            let v55: () = {
+                Spiral::closure0(v3.clone(), string(" = "), ());
                 ()
             };
-            let v73: () = {
-                Spiral::closure0(v4.clone(), v0, ());
+            let v72: () = {
+                Spiral::closure0(v3.clone(), v0, ());
                 ()
             };
-            let v92: () = {
-                Spiral::closure0(v4.clone(), string("; "), ());
+            let v91: () = {
+                Spiral::closure0(v3.clone(), string("; "), ());
                 ()
             };
-            let v111: () = {
-                Spiral::closure0(v4.clone(), string("actual"), ());
+            let v110: () = {
+                Spiral::closure0(v3.clone(), string("expected"), ());
                 ()
             };
-            let v128: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
+            let v127: () = {
+                Spiral::closure0(v3.clone(), string(" = "), ());
                 ()
             };
-            let v148: () = {
-                Spiral::closure0(v4.clone(), sprintf!("{}", v1), ());
+            let v147: () = {
+                Spiral::closure0(v3.clone(), sprintf!("{}", v1), ());
                 ()
             };
-            let v165: () = {
-                Spiral::closure0(v4.clone(), string("; "), ());
+            let v166: () = {
+                Spiral::closure0(v3.clone(), string(" }"), ());
                 ()
             };
-            let v184: () = {
-                Spiral::closure0(v4.clone(), string("expected"), ());
-                ()
-            };
-            let v201: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
-                ()
-            };
-            let v221: () = {
-                Spiral::closure0(v4.clone(), sprintf!("{}", v2), ());
-                ()
-            };
-            let v240: () = {
-                Spiral::closure0(v4.clone(), string(" }"), ());
-                ()
-            };
-            v4.l0.get().clone()
+            v3.l0.get().clone()
         }
         pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
         }
         pub fn method0() {
-            let v3: i32 = ((9_i32 + (Spiral::method1())) + 2_i32) + 1_i32;
-            let v4: bool = (v3) == 15_i32;
+            let v4: bool = (((9_i32 + (Spiral::method1())) + 2_i32) + 1_i32) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method2(v4) };
-            let v9: string = Spiral::method3(string("__assert_eq"), v3, 15_i32);
+            let v9: string = Spiral::method3(string("__assert_eq"), 15_i32);
             let v13: () = {
                 Spiral::closure1(v9.clone(), ());
                 ()
@@ -8797,11 +8746,11 @@ mod module_ca9e350b {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_ca9e350b::*;
+pub use module_593d7895::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -8838,48 +8787,36 @@ export function closure0(v0: Mut0, v1: string, unitVar: void): void {
     v0.l0 = v4;
 }
 
-export function method3(v0: string, v1: int32, v2: int32): string {
-    const v4: Mut0 = new Mut0(method4());
-    let v18: any;
-    closure0(v4, "{ ", undefined);
-    v18 = undefined;
-    let v37: any;
-    closure0(v4, "name", undefined);
-    v37 = undefined;
-    let v56: any;
-    closure0(v4, " = ", undefined);
-    v56 = undefined;
-    let v73: any;
-    closure0(v4, v0, undefined);
-    v73 = undefined;
-    let v92: any;
-    closure0(v4, "; ", undefined);
-    v92 = undefined;
-    let v111: any;
-    closure0(v4, "actual", undefined);
-    v111 = undefined;
-    let v128: any;
-    closure0(v4, " = ", undefined);
-    v128 = undefined;
-    let v148: any;
-    closure0(v4, `${v1}`, undefined);
-    v148 = undefined;
-    let v165: any;
-    closure0(v4, "; ", undefined);
-    v165 = undefined;
-    let v184: any;
-    closure0(v4, "expected", undefined);
-    v184 = undefined;
-    let v201: any;
-    closure0(v4, " = ", undefined);
-    v201 = undefined;
-    let v221: any;
-    closure0(v4, `${v2}`, undefined);
-    v221 = undefined;
-    let v240: any;
-    closure0(v4, " }", undefined);
-    v240 = undefined;
-    return v4.l0;
+export function method3(v0: string, v1: int32): string {
+    const v3: Mut0 = new Mut0(method4());
+    let v17: any;
+    closure0(v3, "{ ", undefined);
+    v17 = undefined;
+    let v36: any;
+    closure0(v3, "name", undefined);
+    v36 = undefined;
+    let v55: any;
+    closure0(v3, " = ", undefined);
+    v55 = undefined;
+    let v72: any;
+    closure0(v3, v0, undefined);
+    v72 = undefined;
+    let v91: any;
+    closure0(v3, "; ", undefined);
+    v91 = undefined;
+    let v110: any;
+    closure0(v3, "expected", undefined);
+    v110 = undefined;
+    let v127: any;
+    closure0(v3, " = ", undefined);
+    v127 = undefined;
+    let v147: any;
+    closure0(v3, `${v1}`, undefined);
+    v147 = undefined;
+    let v166: any;
+    closure0(v3, " }", undefined);
+    v166 = undefined;
+    return v3.l0;
 }
 
 export function closure1(v0: string, unitVar: void): void {
@@ -8887,10 +8824,9 @@ export function closure1(v0: string, unitVar: void): void {
 }
 
 export function method0(): void {
-    const v3: int32 = (((9 + method1()) + 2) + 1) | 0;
-    const v4: boolean = v3 === 15;
+    const v4: boolean = (((9 + method1()) + 2) + 1) === 15;
     const v6: boolean = v4 ? true : method2(v4);
-    const v9: string = method3("__assert_eq", v3, 15);
+    const v9: string = method3("__assert_eq", 15);
     let v13: any;
     closure1(v9, undefined);
     v13 = undefined;
@@ -8901,9 +8837,6 @@ export function method0(): void {
 
 method0();
 
-
-
-// spiral.process_typescript
 
 .py:
 from __future__ import annotations
@@ -8938,48 +8871,36 @@ def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
     v0.l0 = v4
 
 
-def method3(v0: str, v1: int, v2: int) -&gt; str:
-    v4: Mut0 = Mut0(method4())
-    v18: None
-    closure0(v4, "{ ", None)
-    v18 = None
-    v37: None
-    closure0(v4, "name", None)
-    v37 = None
-    v56: None
-    closure0(v4, " = ", None)
-    v56 = None
-    v73: None
-    closure0(v4, v0, None)
-    v73 = None
-    v92: None
-    closure0(v4, "; ", None)
-    v92 = None
-    v111: None
-    closure0(v4, "actual", None)
-    v111 = None
-    v128: None
-    closure0(v4, " = ", None)
-    v128 = None
-    v148: None
-    closure0(v4, ("" + str(v1)) + "", None)
-    v148 = None
-    v165: None
-    closure0(v4, "; ", None)
-    v165 = None
-    v184: None
-    closure0(v4, "expected", None)
-    v184 = None
-    v201: None
-    closure0(v4, " = ", None)
-    v201 = None
-    v221: None
-    closure0(v4, ("" + str(v2)) + "", None)
-    v221 = None
-    v240: None
-    closure0(v4, " }", None)
-    v240 = None
-    return v4.l0
+def method3(v0: str, v1: int) -&gt; str:
+    v3: Mut0 = Mut0(method4())
+    v17: None
+    closure0(v3, "{ ", None)
+    v17 = None
+    v36: None
+    closure0(v3, "name", None)
+    v36 = None
+    v55: None
+    closure0(v3, " = ", None)
+    v55 = None
+    v72: None
+    closure0(v3, v0, None)
+    v72 = None
+    v91: None
+    closure0(v3, "; ", None)
+    v91 = None
+    v110: None
+    closure0(v3, "expected", None)
+    v110 = None
+    v127: None
+    closure0(v3, " = ", None)
+    v127 = None
+    v147: None
+    closure0(v3, ("" + str(v1)) + "", None)
+    v147 = None
+    v166: None
+    closure0(v3, " }", None)
+    v166 = None
+    return v3.l0
 
 
 def closure1(v0: str, unit_var: None) -&gt; None:
@@ -8987,10 +8908,9 @@ def closure1(v0: str, unit_var: None) -&gt; None:
 
 
 def method0(__unit: None=None) -&gt; None:
-    v3: int = (((9 + method1()) + 2) + 1) or 0
-    v4: bool = v3 == 15
+    v4: bool = (((9 + method1()) + 2) + 1) == 15
     v6: bool = True if v4 else method2(v4)
-    v9: str = method3("__assert_eq", v3, 15)
+    v9: str = method3("__assert_eq", 15)
     v13: None
     closure1(v9, None)
     v13 = None
@@ -9001,9 +8921,6 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Python):
 kernels_main = r"""
@@ -9031,108 +8948,81 @@ def method2(v0 : bool) -&gt; bool:
 def method4() -&gt; string:
     v0 = ""
     return v0
-def method3(v0 : string, v1 : i32, v2 : i32) -&gt; string:
-    v3 = method4()
-    v4 = Mut0(v3)
-    del v3
-    v9 = "{ "
-    v10 = f"{v9}"
-    del v9
-    v20 = v4.v0
-    v23 = v20 + v10 
-    del v10, v20
-    v4.v0 = v23
-    del v23
-    v29 = "name"
-    v30 = f"{v29}"
-    del v29
-    v40 = v4.v0
-    v43 = v40 + v30 
-    del v30, v40
-    v4.v0 = v43
-    del v43
-    v49 = " = "
-    v50 = f"{v49}"
-    v60 = v4.v0
-    v63 = v60 + v50 
-    del v50, v60
-    v4.v0 = v63
-    del v63
-    v67 = f"{v0}"
-    del v0
-    v77 = v4.v0
-    v80 = v77 + v67 
-    del v67, v77
-    v4.v0 = v80
-    del v80
-    v86 = "; "
-    v87 = f"{v86}"
-    v97 = v4.v0
-    v100 = v97 + v87 
-    del v87, v97
-    v4.v0 = v100
-    del v100
-    v106 = "actual"
-    v107 = f"{v106}"
-    del v106
-    v117 = v4.v0
-    v120 = v117 + v107 
-    del v107, v117
-    v4.v0 = v120
-    del v120
-    v124 = f"{v49}"
-    v134 = v4.v0
-    v137 = v134 + v124 
-    del v124, v134
-    v4.v0 = v137
-    del v137
-    v144 = f"{v1}"
-    del v1
-    v154 = v4.v0
-    v157 = v154 + v144 
-    del v144, v154
-    v4.v0 = v157
-    del v157
-    v161 = f"{v86}"
-    del v86
-    v171 = v4.v0
-    v174 = v171 + v161 
-    del v161, v171
-    v4.v0 = v174
-    del v174
-    v180 = "expected"
-    v181 = f"{v180}"
-    del v180
-    v191 = v4.v0
-    v194 = v191 + v181 
-    del v181, v191
-    v4.v0 = v194
-    del v194
-    v198 = f"{v49}"
-    del v49
-    v208 = v4.v0
-    v211 = v208 + v198 
-    del v198, v208
-    v4.v0 = v211
-    del v211
-    v218 = f"{v2}"
+def method3(v0 : string, v1 : i32) -&gt; string:
+    v2 = method4()
+    v3 = Mut0(v2)
     del v2
-    v228 = v4.v0
-    v231 = v228 + v218 
-    del v218, v228
-    v4.v0 = v231
-    del v231
-    v237 = " }"
-    v238 = f"{v237}"
-    del v237
-    v248 = v4.v0
-    v251 = v248 + v238 
-    del v238, v248
-    v4.v0 = v251
-    del v251
-    v253 = v4.v0
-    del v4
-    return v253
+    v8 = "{ "
+    v9 = f"{v8}"
+    del v8
+    v19 = v3.v0
+    v22 = v19 + v9 
+    del v9, v19
+    v3.v0 = v22
+    del v22
+    v28 = "name"
+    v29 = f"{v28}"
+    del v28
+    v39 = v3.v0
+    v42 = v39 + v29 
+    del v29, v39
+    v3.v0 = v42
+    del v42
+    v48 = " = "
+    v49 = f"{v48}"
+    v59 = v3.v0
+    v62 = v59 + v49 
+    del v49, v59
+    v3.v0 = v62
+    del v62
+    v66 = f"{v0}"
+    del v0
+    v76 = v3.v0
+    v79 = v76 + v66 
+    del v66, v76
+    v3.v0 = v79
+    del v79
+    v85 = "; "
+    v86 = f"{v85}"
+    del v85
+    v96 = v3.v0
+    v99 = v96 + v86 
+    del v86, v96
+    v3.v0 = v99
+    del v99
+    v105 = "expected"
+    v106 = f"{v105}"
+    del v105
+    v116 = v3.v0
+    v119 = v116 + v106 
+    del v106, v116
+    v3.v0 = v119
+    del v119
+    v123 = f"{v48}"
+    del v48
+    v133 = v3.v0
+    v136 = v133 + v123 
+    del v123, v133
+    v3.v0 = v136
+    del v136
+    v143 = f"{v1}"
+    del v1
+    v153 = v3.v0
+    v156 = v153 + v143 
+    del v143, v153
+    v3.v0 = v156
+    del v156
+    v162 = " }"
+    v163 = f"{v162}"
+    del v162
+    v173 = v3.v0
+    v176 = v173 + v163 
+    del v163, v173
+    v3.v0 = v176
+    del v176
+    v178 = v3.v0
+    del v3
+    return v178
 def method0() -&gt; None:
     v0 = method1()
     v1 = 9 + v0
@@ -9142,6 +9032,7 @@ def method0() -&gt; None:
     v3 = v2 + 1
     del v2
     v4 = v3 == 15
+    del v3
     if v4:
         v6 = True
     else:
@@ -9149,8 +9040,8 @@ def method0() -&gt; None:
     del v4
     v7 = "__assert_eq"
     v8 = 15
-    v9 = method3(v7, v3, v8)
-    del v3, v7, v8
+    v9 = method3(v7, v8)
+    del v7, v8
     print(v9)
     v15 = v6 == False
     del v6
@@ -9172,7 +9063,7 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 </pre>
 </div>
 </div>
@@ -9211,19 +9102,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .rs output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .ts output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .py output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 
 
@@ -9251,70 +9142,53 @@ pub fn method5 () -&gt; String {
     let v0 = ""
     v0
 }
-pub fn method4 (v0 :    String, v1 :    Int, v2 :    Int) -&gt; String {
-    let v3 = method5()
-    let v4 = Mut0(l0 :  v3)
-    let v5 = "{ "
-    let v6 = v5 
-    let v10 = v4.l0 
-    let v11 = v10 &lt;&gt; v6 
-    let v4 = Mut0(l0: v11)
-    let v23 = "name"
-    let v24 = v23 
-    let v28 = v4.l0 
-    let v29 = v28 &lt;&gt; v24 
-    let v4 = Mut0(l0: v29)
-    let v41 = " = "
-    let v42 = v41 
-    let v46 = v4.l0 
-    let v47 = v46 &lt;&gt; v42 
-    let v4 = Mut0(l0: v47)
-    let v59 = v0 
-    let v63 = v4.l0 
-    let v64 = v63 &lt;&gt; v59 
-    let v4 = Mut0(l0: v64)
-    let v76 = "; "
-    let v77 = v76 
-    let v81 = v4.l0 
-    let v82 = v81 &lt;&gt; v77 
-    let v4 = Mut0(l0: v82)
-    let v94 = "actual"
-    let v95 = v94 
-    let v99 = v4.l0 
-    let v100 = v99 &lt;&gt; v95 
-    let v4 = Mut0(l0: v100)
-    let v112 = v41 
-    let v116 = v4.l0 
-    let v117 = v116 &lt;&gt; v112 
-    let v4 = Mut0(l0: v117)
-    let v129 = string.inspect(v1)
-    let v136 = v4.l0 
-    let v137 = v136 &lt;&gt; v129 
-    let v4 = Mut0(l0: v137)
-    let v149 = v76 
-    let v153 = v4.l0 
+pub fn method4 (v0 :    String, v1 :    Int) -&gt; String {
+    let v2 = method5()
+    let v3 = Mut0(l0 :  v2)
+    let v4 = "{ "
+    let v5 = v4 
+    let v9 = v3.l0 
+    let v10 = v9 &lt;&gt; v5 
+    let v3 = Mut0(l0: v10)
+    let v22 = "name"
+    let v23 = v22 
+    let v27 = v3.l0 
+    let v28 = v27 &lt;&gt; v23 
+    let v3 = Mut0(l0: v28)
+    let v40 = " = "
+    let v41 = v40 
+    let v45 = v3.l0 
+    let v46 = v45 &lt;&gt; v41 
+    let v3 = Mut0(l0: v46)
+    let v58 = v0 
+    let v62 = v3.l0 
+    let v63 = v62 &lt;&gt; v58 
+    let v3 = Mut0(l0: v63)
+    let v75 = "; "
+    let v76 = v75 
+    let v80 = v3.l0 
+    let v81 = v80 &lt;&gt; v76 
+    let v3 = Mut0(l0: v81)
+    let v93 = "expected"
+    let v94 = v93 
+    let v98 = v3.l0 
+    let v99 = v98 &lt;&gt; v94 
+    let v3 = Mut0(l0: v99)
+    let v111 = v40 
+    let v115 = v3.l0 
+    let v116 = v115 &lt;&gt; v111 
+    let v3 = Mut0(l0: v116)
+    let v128 = string.inspect(v1)
+    let v135 = v3.l0 
+    let v136 = v135 &lt;&gt; v128 
+    let v3 = Mut0(l0: v136)
+    let v148 = " }"
+    let v149 = v148 
+    let v153 = v3.l0 
     let v154 = v153 &lt;&gt; v149 
-    let v4 = Mut0(l0: v154)
-    let v166 = "expected"
-    let v167 = v166 
-    let v171 = v4.l0 
-    let v172 = v171 &lt;&gt; v167 
-    let v4 = Mut0(l0: v172)
-    let v184 = v41 
-    let v188 = v4.l0 
-    let v189 = v188 &lt;&gt; v184 
-    let v4 = Mut0(l0: v189)
-    let v201 = string.inspect(v2)
-    let v208 = v4.l0 
-    let v209 = v208 &lt;&gt; v201 
-    let v4 = Mut0(l0: v209)
-    let v221 = " }"
-    let v222 = v221 
-    let v226 = v4.l0 
-    let v227 = v226 &lt;&gt; v222 
-    let v4 = Mut0(l0: v227)
-    let v239 = v4.l0 
-    v239
+    let v3 = Mut0(l0: v154)
+    let v166 = v3.l0 
+    v166
 }
 pub fn method0 () -&gt; Nil   {
     let v0 = method1()
@@ -9334,7 +9208,7 @@ pub fn method0 () -&gt; Nil   {
         }
     let v8 = "__assert_eq"
     let v9 = 15
-    let v10 = method4(v8, v4, v9)
+    let v10 = method4(v8, v9)
     io.println(v10)
     let v16 = v7 == False
     case v16 {
@@ -9365,70 +9239,53 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
-and method4 (v0 : string, v1 : int32, v2 : int32) : string =
-    let v3 : string = method5()
-    let v4 : Mut0 = {l0 = v3} : Mut0
-    let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v4, v8)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v26 : string = "name"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -&gt; unit) = closure0(v4, v27)
-    let v37 : unit = (fun () -&gt; v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -&gt; unit) = closure0(v4, v46)
-    let v56 : unit = (fun () -&gt; v55 (); v54) ()
-    let v63 : string = $"{v0}"
-    let v71 : unit = ()
-    let v72 : (unit -&gt; unit) = closure0(v4, v63)
-    let v73 : unit = (fun () -&gt; v72 (); v71) ()
-    let v81 : string = "; "
-    let v82 : string = $"{v81}"
-    let v90 : unit = ()
-    let v91 : (unit -&gt; unit) = closure0(v4, v82)
-    let v92 : unit = (fun () -&gt; v91 (); v90) ()
-    let v100 : string = "actual"
-    let v101 : string = $"{v100}"
-    let v109 : unit = ()
-    let v110 : (unit -&gt; unit) = closure0(v4, v101)
-    let v111 : unit = (fun () -&gt; v110 (); v109) ()
-    let v118 : string = $"{v45}"
-    let v126 : unit = ()
-    let v127 : (unit -&gt; unit) = closure0(v4, v118)
-    let v128 : unit = (fun () -&gt; v127 (); v126) ()
-    let v138 : string = $"{v1}"
-    let v146 : unit = ()
-    let v147 : (unit -&gt; unit) = closure0(v4, v138)
-    let v148 : unit = (fun () -&gt; v147 (); v146) ()
-    let v155 : string = $"{v81}"
-    let v163 : unit = ()
-    let v164 : (unit -&gt; unit) = closure0(v4, v155)
-    let v165 : unit = (fun () -&gt; v164 (); v163) ()
-    let v173 : string = "expected"
-    let v174 : string = $"{v173}"
-    let v182 : unit = ()
-    let v183 : (unit -&gt; unit) = closure0(v4, v174)
-    let v184 : unit = (fun () -&gt; v183 (); v182) ()
-    let v191 : string = $"{v45}"
-    let v199 : unit = ()
-    let v200 : (unit -&gt; unit) = closure0(v4, v191)
-    let v201 : unit = (fun () -&gt; v200 (); v199) ()
-    let v211 : string = $"{v2}"
-    let v219 : unit = ()
-    let v220 : (unit -&gt; unit) = closure0(v4, v211)
-    let v221 : unit = (fun () -&gt; v220 (); v219) ()
-    let v229 : string = " }"
-    let v230 : string = $"{v229}"
-    let v238 : unit = ()
-    let v239 : (unit -&gt; unit) = closure0(v4, v230)
-    let v240 : unit = (fun () -&gt; v239 (); v238) ()
-    let v246 : string = v4.l0
-    v246
+and method4 (v0 : string, v1 : int32) : string =
+    let v2 : string = method5()
+    let v3 : Mut0 = {l0 = v2} : Mut0
+    let v6 : string = "{ "
+    let v7 : string = $"{v6}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v3, v7)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v25 : string = "name"
+    let v26 : string = $"{v25}"
+    let v34 : unit = ()
+    let v35 : (unit -&gt; unit) = closure0(v3, v26)
+    let v36 : unit = (fun () -&gt; v35 (); v34) ()
+    let v44 : string = " = "
+    let v45 : string = $"{v44}"
+    let v53 : unit = ()
+    let v54 : (unit -&gt; unit) = closure0(v3, v45)
+    let v55 : unit = (fun () -&gt; v54 (); v53) ()
+    let v62 : string = $"{v0}"
+    let v70 : unit = ()
+    let v71 : (unit -&gt; unit) = closure0(v3, v62)
+    let v72 : unit = (fun () -&gt; v71 (); v70) ()
+    let v80 : string = "; "
+    let v81 : string = $"{v80}"
+    let v89 : unit = ()
+    let v90 : (unit -&gt; unit) = closure0(v3, v81)
+    let v91 : unit = (fun () -&gt; v90 (); v89) ()
+    let v99 : string = "expected"
+    let v100 : string = $"{v99}"
+    let v108 : unit = ()
+    let v109 : (unit -&gt; unit) = closure0(v3, v100)
+    let v110 : unit = (fun () -&gt; v109 (); v108) ()
+    let v117 : string = $"{v44}"
+    let v125 : unit = ()
+    let v126 : (unit -&gt; unit) = closure0(v3, v117)
+    let v127 : unit = (fun () -&gt; v126 (); v125) ()
+    let v137 : string = $"{v1}"
+    let v145 : unit = ()
+    let v146 : (unit -&gt; unit) = closure0(v3, v137)
+    let v147 : unit = (fun () -&gt; v146 (); v145) ()
+    let v155 : string = " }"
+    let v156 : string = $"{v155}"
+    let v164 : unit = ()
+    let v165 : (unit -&gt; unit) = closure0(v3, v156)
+    let v166 : unit = (fun () -&gt; v165 (); v164) ()
+    let v172 : string = v3.l0
+    v172
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -9446,7 +9303,7 @@ and method0 () : unit =
             method3(v5)
     let v8 : string = "__assert_eq"
     let v9 : int32 = 15
-    let v10 : string = method4(v8, v4, v9)
+    let v10 : string = method4(v8, v9)
     let v12 : unit = ()
     let v13 : (unit -&gt; unit) = closure1(v10)
     let v14 : unit = (fun () -&gt; v13 (); v12) ()
@@ -9468,7 +9325,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_166dab08 {
+mod module_f09ea6e9 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::LrcPtr;
@@ -9504,72 +9361,56 @@ mod module_166dab08 {
             v0.l0.set(v4);
             ()
         }
-        pub fn method4(v0: string, v1: i32, v2: i32) -&gt; string {
-            let v4: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+        pub fn method4(v0: string, v1: i32) -&gt; string {
+            let v3: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
                 l0: MutCell::new(Spiral::method5()),
             });
-            let v18: () = {
-                Spiral::closure0(v4.clone(), string("{ "), ());
+            let v17: () = {
+                Spiral::closure0(v3.clone(), string("{ "), ());
                 ()
             };
-            let v37: () = {
-                Spiral::closure0(v4.clone(), string("name"), ());
+            let v36: () = {
+                Spiral::closure0(v3.clone(), string("name"), ());
                 ()
             };
-            let v56: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
+            let v55: () = {
+                Spiral::closure0(v3.clone(), string(" = "), ());
                 ()
             };
-            let v73: () = {
-                Spiral::closure0(v4.clone(), v0, ());
+            let v72: () = {
+                Spiral::closure0(v3.clone(), v0, ());
                 ()
             };
-            let v92: () = {
-                Spiral::closure0(v4.clone(), string("; "), ());
+            let v91: () = {
+                Spiral::closure0(v3.clone(), string("; "), ());
                 ()
             };
-            let v111: () = {
-                Spiral::closure0(v4.clone(), string("actual"), ());
+            let v110: () = {
+                Spiral::closure0(v3.clone(), string("expected"), ());
                 ()
             };
-            let v128: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
+            let v127: () = {
+                Spiral::closure0(v3.clone(), string(" = "), ());
                 ()
             };
-            let v148: () = {
-                Spiral::closure0(v4.clone(), sprintf!("{}", v1), ());
+            let v147: () = {
+                Spiral::closure0(v3.clone(), sprintf!("{}", v1), ());
                 ()
             };
-            let v165: () = {
-                Spiral::closure0(v4.clone(), string("; "), ());
+            let v166: () = {
+                Spiral::closure0(v3.clone(), string(" }"), ());
                 ()
             };
-            let v184: () = {
-                Spiral::closure0(v4.clone(), string("expected"), ());
-                ()
-            };
-            let v201: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
-                ()
-            };
-            let v221: () = {
-                Spiral::closure0(v4.clone(), sprintf!("{}", v2), ());
-                ()
-            };
-            let v240: () = {
-                Spiral::closure0(v4.clone(), string(" }"), ());
-                ()
-            };
-            v4.l0.get().clone()
+            v3.l0.get().clone()
         }
         pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
         }
         pub fn method0() {
-            let v4: i32 = ((Spiral::method2(Spiral::method1(), 9_i32)) + 2_i32) + 1_i32;
-            let v5: bool = (v4) == 15_i32;
+            let v5: bool =
+                (((Spiral::method2(Spiral::method1(), 9_i32)) + 2_i32) + 1_i32) == 15_i32;
             let v7: bool = if v5 { true } else { Spiral::method3(v5) };
-            let v10: string = Spiral::method4(string("__assert_eq"), v4, 15_i32);
+            let v10: string = Spiral::method4(string("__assert_eq"), 15_i32);
             let v14: () = {
                 Spiral::closure1(v10.clone(), ());
                 ()
@@ -9581,11 +9422,11 @@ mod module_166dab08 {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_166dab08::*;
+pub use module_f09ea6e9::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -9626,48 +9467,36 @@ export function closure0(v0: Mut0, v1: string, unitVar: void): void {
     v0.l0 = v4;
 }
 
-export function method4(v0: string, v1: int32, v2: int32): string {
-    const v4: Mut0 = new Mut0(method5());
-    let v18: any;
-    closure0(v4, "{ ", undefined);
-    v18 = undefined;
-    let v37: any;
-    closure0(v4, "name", undefined);
-    v37 = undefined;
-    let v56: any;
-    closure0(v4, " = ", undefined);
-    v56 = undefined;
-    let v73: any;
-    closure0(v4, v0, undefined);
-    v73 = undefined;
-    let v92: any;
-    closure0(v4, "; ", undefined);
-    v92 = undefined;
-    let v111: any;
-    closure0(v4, "actual", undefined);
-    v111 = undefined;
-    let v128: any;
-    closure0(v4, " = ", undefined);
-    v128 = undefined;
-    let v148: any;
-    closure0(v4, `${v1}`, undefined);
-    v148 = undefined;
-    let v165: any;
-    closure0(v4, "; ", undefined);
-    v165 = undefined;
-    let v184: any;
-    closure0(v4, "expected", undefined);
-    v184 = undefined;
-    let v201: any;
-    closure0(v4, " = ", undefined);
-    v201 = undefined;
-    let v221: any;
-    closure0(v4, `${v2}`, undefined);
-    v221 = undefined;
-    let v240: any;
-    closure0(v4, " }", undefined);
-    v240 = undefined;
-    return v4.l0;
+export function method4(v0: string, v1: int32): string {
+    const v3: Mut0 = new Mut0(method5());
+    let v17: any;
+    closure0(v3, "{ ", undefined);
+    v17 = undefined;
+    let v36: any;
+    closure0(v3, "name", undefined);
+    v36 = undefined;
+    let v55: any;
+    closure0(v3, " = ", undefined);
+    v55 = undefined;
+    let v72: any;
+    closure0(v3, v0, undefined);
+    v72 = undefined;
+    let v91: any;
+    closure0(v3, "; ", undefined);
+    v91 = undefined;
+    let v110: any;
+    closure0(v3, "expected", undefined);
+    v110 = undefined;
+    let v127: any;
+    closure0(v3, " = ", undefined);
+    v127 = undefined;
+    let v147: any;
+    closure0(v3, `${v1}`, undefined);
+    v147 = undefined;
+    let v166: any;
+    closure0(v3, " }", undefined);
+    v166 = undefined;
+    return v3.l0;
 }
 
 export function closure1(v0: string, unitVar: void): void {
@@ -9675,10 +9504,9 @@ export function closure1(v0: string, unitVar: void): void {
 }
 
 export function method0(): void {
-    const v4: int32 = ((method2(method1(), 9) + 2) + 1) | 0;
-    const v5: boolean = v4 === 15;
+    const v5: boolean = ((method2(method1(), 9) + 2) + 1) === 15;
     const v7: boolean = v5 ? true : method3(v5);
-    const v10: string = method4("__assert_eq", v4, 15);
+    const v10: string = method4("__assert_eq", 15);
     let v14: any;
     closure1(v10, undefined);
     v14 = undefined;
@@ -9689,9 +9517,6 @@ export function method0(): void {
 
 method0();
 
-
-
-// spiral.process_typescript
 
 .py:
 from __future__ import annotations
@@ -9730,48 +9555,36 @@ def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
     v0.l0 = v4
 
 
-def method4(v0: str, v1: int, v2: int) -&gt; str:
-    v4: Mut0 = Mut0(method5())
-    v18: None
-    closure0(v4, "{ ", None)
-    v18 = None
-    v37: None
-    closure0(v4, "name", None)
-    v37 = None
-    v56: None
-    closure0(v4, " = ", None)
-    v56 = None
-    v73: None
-    closure0(v4, v0, None)
-    v73 = None
-    v92: None
-    closure0(v4, "; ", None)
-    v92 = None
-    v111: None
-    closure0(v4, "actual", None)
-    v111 = None
-    v128: None
-    closure0(v4, " = ", None)
-    v128 = None
-    v148: None
-    closure0(v4, ("" + str(v1)) + "", None)
-    v148 = None
-    v165: None
-    closure0(v4, "; ", None)
-    v165 = None
-    v184: None
-    closure0(v4, "expected", None)
-    v184 = None
-    v201: None
-    closure0(v4, " = ", None)
-    v201 = None
-    v221: None
-    closure0(v4, ("" + str(v2)) + "", None)
-    v221 = None
-    v240: None
-    closure0(v4, " }", None)
-    v240 = None
-    return v4.l0
+def method4(v0: str, v1: int) -&gt; str:
+    v3: Mut0 = Mut0(method5())
+    v17: None
+    closure0(v3, "{ ", None)
+    v17 = None
+    v36: None
+    closure0(v3, "name", None)
+    v36 = None
+    v55: None
+    closure0(v3, " = ", None)
+    v55 = None
+    v72: None
+    closure0(v3, v0, None)
+    v72 = None
+    v91: None
+    closure0(v3, "; ", None)
+    v91 = None
+    v110: None
+    closure0(v3, "expected", None)
+    v110 = None
+    v127: None
+    closure0(v3, " = ", None)
+    v127 = None
+    v147: None
+    closure0(v3, ("" + str(v1)) + "", None)
+    v147 = None
+    v166: None
+    closure0(v3, " }", None)
+    v166 = None
+    return v3.l0
 
 
 def closure1(v0: str, unit_var: None) -&gt; None:
@@ -9779,10 +9592,9 @@ def closure1(v0: str, unit_var: None) -&gt; None:
 
 
 def method0(__unit: None=None) -&gt; None:
-    v4: int = ((method2(method1(), 9) + 2) + 1) or 0
-    v5: bool = v4 == 15
+    v5: bool = ((method2(method1(), 9) + 2) + 1) == 15
     v7: bool = True if v5 else method3(v5)
-    v10: str = method4("__assert_eq", v4, 15)
+    v10: str = method4("__assert_eq", 15)
     v14: None
     closure1(v10, None)
     v14 = None
@@ -9793,9 +9605,6 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Python):
 kernels_main = r"""
@@ -9827,108 +9636,81 @@ def method3(v0 : bool) -&gt; bool:
 def method5() -&gt; string:
     v0 = ""
     return v0
-def method4(v0 : string, v1 : i32, v2 : i32) -&gt; string:
-    v3 = method5()
-    v4 = Mut0(v3)
-    del v3
-    v9 = "{ "
-    v10 = f"{v9}"
-    del v9
-    v20 = v4.v0
-    v23 = v20 + v10 
-    del v10, v20
-    v4.v0 = v23
-    del v23
-    v29 = "name"
-    v30 = f"{v29}"
-    del v29
-    v40 = v4.v0
-    v43 = v40 + v30 
-    del v30, v40
-    v4.v0 = v43
-    del v43
-    v49 = " = "
-    v50 = f"{v49}"
-    v60 = v4.v0
-    v63 = v60 + v50 
-    del v50, v60
-    v4.v0 = v63
-    del v63
-    v67 = f"{v0}"
-    del v0
-    v77 = v4.v0
-    v80 = v77 + v67 
-    del v67, v77
-    v4.v0 = v80
-    del v80
-    v86 = "; "
-    v87 = f"{v86}"
-    v97 = v4.v0
-    v100 = v97 + v87 
-    del v87, v97
-    v4.v0 = v100
-    del v100
-    v106 = "actual"
-    v107 = f"{v106}"
-    del v106
-    v117 = v4.v0
-    v120 = v117 + v107 
-    del v107, v117
-    v4.v0 = v120
-    del v120
-    v124 = f"{v49}"
-    v134 = v4.v0
-    v137 = v134 + v124 
-    del v124, v134
-    v4.v0 = v137
-    del v137
-    v144 = f"{v1}"
-    del v1
-    v154 = v4.v0
-    v157 = v154 + v144 
-    del v144, v154
-    v4.v0 = v157
-    del v157
-    v161 = f"{v86}"
-    del v86
-    v171 = v4.v0
-    v174 = v171 + v161 
-    del v161, v171
-    v4.v0 = v174
-    del v174
-    v180 = "expected"
-    v181 = f"{v180}"
-    del v180
-    v191 = v4.v0
-    v194 = v191 + v181 
-    del v181, v191
-    v4.v0 = v194
-    del v194
-    v198 = f"{v49}"
-    del v49
-    v208 = v4.v0
-    v211 = v208 + v198 
-    del v198, v208
-    v4.v0 = v211
-    del v211
-    v218 = f"{v2}"
+def method4(v0 : string, v1 : i32) -&gt; string:
+    v2 = method5()
+    v3 = Mut0(v2)
     del v2
-    v228 = v4.v0
-    v231 = v228 + v218 
-    del v218, v228
-    v4.v0 = v231
-    del v231
-    v237 = " }"
-    v238 = f"{v237}"
-    del v237
-    v248 = v4.v0
-    v251 = v248 + v238 
-    del v238, v248
-    v4.v0 = v251
-    del v251
-    v253 = v4.v0
-    del v4
-    return v253
+    v8 = "{ "
+    v9 = f"{v8}"
+    del v8
+    v19 = v3.v0
+    v22 = v19 + v9 
+    del v9, v19
+    v3.v0 = v22
+    del v22
+    v28 = "name"
+    v29 = f"{v28}"
+    del v28
+    v39 = v3.v0
+    v42 = v39 + v29 
+    del v29, v39
+    v3.v0 = v42
+    del v42
+    v48 = " = "
+    v49 = f"{v48}"
+    v59 = v3.v0
+    v62 = v59 + v49 
+    del v49, v59
+    v3.v0 = v62
+    del v62
+    v66 = f"{v0}"
+    del v0
+    v76 = v3.v0
+    v79 = v76 + v66 
+    del v66, v76
+    v3.v0 = v79
+    del v79
+    v85 = "; "
+    v86 = f"{v85}"
+    del v85
+    v96 = v3.v0
+    v99 = v96 + v86 
+    del v86, v96
+    v3.v0 = v99
+    del v99
+    v105 = "expected"
+    v106 = f"{v105}"
+    del v105
+    v116 = v3.v0
+    v119 = v116 + v106 
+    del v106, v116
+    v3.v0 = v119
+    del v119
+    v123 = f"{v48}"
+    del v48
+    v133 = v3.v0
+    v136 = v133 + v123 
+    del v123, v133
+    v3.v0 = v136
+    del v136
+    v143 = f"{v1}"
+    del v1
+    v153 = v3.v0
+    v156 = v153 + v143 
+    del v143, v153
+    v3.v0 = v156
+    del v156
+    v162 = " }"
+    v163 = f"{v162}"
+    del v162
+    v173 = v3.v0
+    v176 = v173 + v163 
+    del v163, v173
+    v3.v0 = v176
+    del v176
+    v178 = v3.v0
+    del v3
+    return v178
 def method0() -&gt; None:
     v0 = method1()
     v1 = 9
@@ -9939,6 +9721,7 @@ def method0() -&gt; None:
     v4 = v3 + 1
     del v3
     v5 = v4 == 15
+    del v4
     if v5:
         v7 = True
     else:
@@ -9946,8 +9729,8 @@ def method0() -&gt; None:
     del v5
     v8 = "__assert_eq"
     v9 = 15
-    v10 = method4(v8, v4, v9)
-    del v4, v8, v9
+    v10 = method4(v8, v9)
+    del v8, v9
     print(v10)
     v16 = v7 == False
     del v7
@@ -9969,7 +9752,7 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 </pre>
 </div>
 </div>
@@ -10038,19 +9821,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .rs output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .ts output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .py output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 
 
 
@@ -10078,70 +9861,53 @@ pub fn method5 () -&gt; String {
     let v0 = ""
     v0
 }
-pub fn method4 (v0 :    String, v1 :    Int, v2 :    Int) -&gt; String {
-    let v3 = method5()
-    let v4 = Mut0(l0 :  v3)
-    let v5 = "{ "
-    let v6 = v5 
-    let v10 = v4.l0 
-    let v11 = v10 &lt;&gt; v6 
-    let v4 = Mut0(l0: v11)
-    let v23 = "name"
-    let v24 = v23 
-    let v28 = v4.l0 
-    let v29 = v28 &lt;&gt; v24 
-    let v4 = Mut0(l0: v29)
-    let v41 = " = "
-    let v42 = v41 
-    let v46 = v4.l0 
-    let v47 = v46 &lt;&gt; v42 
-    let v4 = Mut0(l0: v47)
-    let v59 = v0 
-    let v63 = v4.l0 
-    let v64 = v63 &lt;&gt; v59 
-    let v4 = Mut0(l0: v64)
-    let v76 = "; "
-    let v77 = v76 
-    let v81 = v4.l0 
-    let v82 = v81 &lt;&gt; v77 
-    let v4 = Mut0(l0: v82)
-    let v94 = "actual"
-    let v95 = v94 
-    let v99 = v4.l0 
-    let v100 = v99 &lt;&gt; v95 
-    let v4 = Mut0(l0: v100)
-    let v112 = v41 
-    let v116 = v4.l0 
-    let v117 = v116 &lt;&gt; v112 
-    let v4 = Mut0(l0: v117)
-    let v129 = string.inspect(v1)
-    let v136 = v4.l0 
-    let v137 = v136 &lt;&gt; v129 
-    let v4 = Mut0(l0: v137)
-    let v149 = v76 
-    let v153 = v4.l0 
+pub fn method4 (v0 :    String, v1 :    Int) -&gt; String {
+    let v2 = method5()
+    let v3 = Mut0(l0 :  v2)
+    let v4 = "{ "
+    let v5 = v4 
+    let v9 = v3.l0 
+    let v10 = v9 &lt;&gt; v5 
+    let v3 = Mut0(l0: v10)
+    let v22 = "name"
+    let v23 = v22 
+    let v27 = v3.l0 
+    let v28 = v27 &lt;&gt; v23 
+    let v3 = Mut0(l0: v28)
+    let v40 = " = "
+    let v41 = v40 
+    let v45 = v3.l0 
+    let v46 = v45 &lt;&gt; v41 
+    let v3 = Mut0(l0: v46)
+    let v58 = v0 
+    let v62 = v3.l0 
+    let v63 = v62 &lt;&gt; v58 
+    let v3 = Mut0(l0: v63)
+    let v75 = "; "
+    let v76 = v75 
+    let v80 = v3.l0 
+    let v81 = v80 &lt;&gt; v76 
+    let v3 = Mut0(l0: v81)
+    let v93 = "expected"
+    let v94 = v93 
+    let v98 = v3.l0 
+    let v99 = v98 &lt;&gt; v94 
+    let v3 = Mut0(l0: v99)
+    let v111 = v40 
+    let v115 = v3.l0 
+    let v116 = v115 &lt;&gt; v111 
+    let v3 = Mut0(l0: v116)
+    let v128 = string.inspect(v1)
+    let v135 = v3.l0 
+    let v136 = v135 &lt;&gt; v128 
+    let v3 = Mut0(l0: v136)
+    let v148 = " }"
+    let v149 = v148 
+    let v153 = v3.l0 
     let v154 = v153 &lt;&gt; v149 
-    let v4 = Mut0(l0: v154)
-    let v166 = "expected"
-    let v167 = v166 
-    let v171 = v4.l0 
-    let v172 = v171 &lt;&gt; v167 
-    let v4 = Mut0(l0: v172)
-    let v184 = v41 
-    let v188 = v4.l0 
-    let v189 = v188 &lt;&gt; v184 
-    let v4 = Mut0(l0: v189)
-    let v201 = string.inspect(v2)
-    let v208 = v4.l0 
-    let v209 = v208 &lt;&gt; v201 
-    let v4 = Mut0(l0: v209)
-    let v221 = " }"
-    let v222 = v221 
-    let v226 = v4.l0 
-    let v227 = v226 &lt;&gt; v222 
-    let v4 = Mut0(l0: v227)
-    let v239 = v4.l0 
-    v239
+    let v3 = Mut0(l0: v154)
+    let v166 = v3.l0 
+    v166
 }
 pub fn method0 () -&gt; Nil   {
     let v0 = method1()
@@ -10160,7 +9926,7 @@ pub fn method0 () -&gt; Nil   {
         }
     let v7 = "__assert_eq"
     let v8 = 15
-    let v9 = method4(v7, v3, v8)
+    let v9 = method4(v7, v8)
     io.println(v9)
     let v15 = v6 == False
     case v15 {
@@ -10191,70 +9957,53 @@ and closure0 (v0 : Mut0, v1 : string) () : unit =
     let v4 : string = v2 + v1 
     v0.l0 &lt;- v4
     ()
-and method4 (v0 : string, v1 : int32, v2 : int32) : string =
-    let v3 : string = method5()
-    let v4 : Mut0 = {l0 = v3} : Mut0
-    let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -&gt; unit) = closure0(v4, v8)
-    let v18 : unit = (fun () -&gt; v17 (); v16) ()
-    let v26 : string = "name"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -&gt; unit) = closure0(v4, v27)
-    let v37 : unit = (fun () -&gt; v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -&gt; unit) = closure0(v4, v46)
-    let v56 : unit = (fun () -&gt; v55 (); v54) ()
-    let v63 : string = $"{v0}"
-    let v71 : unit = ()
-    let v72 : (unit -&gt; unit) = closure0(v4, v63)
-    let v73 : unit = (fun () -&gt; v72 (); v71) ()
-    let v81 : string = "; "
-    let v82 : string = $"{v81}"
-    let v90 : unit = ()
-    let v91 : (unit -&gt; unit) = closure0(v4, v82)
-    let v92 : unit = (fun () -&gt; v91 (); v90) ()
-    let v100 : string = "actual"
-    let v101 : string = $"{v100}"
-    let v109 : unit = ()
-    let v110 : (unit -&gt; unit) = closure0(v4, v101)
-    let v111 : unit = (fun () -&gt; v110 (); v109) ()
-    let v118 : string = $"{v45}"
-    let v126 : unit = ()
-    let v127 : (unit -&gt; unit) = closure0(v4, v118)
-    let v128 : unit = (fun () -&gt; v127 (); v126) ()
-    let v138 : string = $"{v1}"
-    let v146 : unit = ()
-    let v147 : (unit -&gt; unit) = closure0(v4, v138)
-    let v148 : unit = (fun () -&gt; v147 (); v146) ()
-    let v155 : string = $"{v81}"
-    let v163 : unit = ()
-    let v164 : (unit -&gt; unit) = closure0(v4, v155)
-    let v165 : unit = (fun () -&gt; v164 (); v163) ()
-    let v173 : string = "expected"
-    let v174 : string = $"{v173}"
-    let v182 : unit = ()
-    let v183 : (unit -&gt; unit) = closure0(v4, v174)
-    let v184 : unit = (fun () -&gt; v183 (); v182) ()
-    let v191 : string = $"{v45}"
-    let v199 : unit = ()
-    let v200 : (unit -&gt; unit) = closure0(v4, v191)
-    let v201 : unit = (fun () -&gt; v200 (); v199) ()
-    let v211 : string = $"{v2}"
-    let v219 : unit = ()
-    let v220 : (unit -&gt; unit) = closure0(v4, v211)
-    let v221 : unit = (fun () -&gt; v220 (); v219) ()
-    let v229 : string = " }"
-    let v230 : string = $"{v229}"
-    let v238 : unit = ()
-    let v239 : (unit -&gt; unit) = closure0(v4, v230)
-    let v240 : unit = (fun () -&gt; v239 (); v238) ()
-    let v246 : string = v4.l0
-    v246
+and method4 (v0 : string, v1 : int32) : string =
+    let v2 : string = method5()
+    let v3 : Mut0 = {l0 = v2} : Mut0
+    let v6 : string = "{ "
+    let v7 : string = $"{v6}"
+    let v15 : unit = ()
+    let v16 : (unit -&gt; unit) = closure0(v3, v7)
+    let v17 : unit = (fun () -&gt; v16 (); v15) ()
+    let v25 : string = "name"
+    let v26 : string = $"{v25}"
+    let v34 : unit = ()
+    let v35 : (unit -&gt; unit) = closure0(v3, v26)
+    let v36 : unit = (fun () -&gt; v35 (); v34) ()
+    let v44 : string = " = "
+    let v45 : string = $"{v44}"
+    let v53 : unit = ()
+    let v54 : (unit -&gt; unit) = closure0(v3, v45)
+    let v55 : unit = (fun () -&gt; v54 (); v53) ()
+    let v62 : string = $"{v0}"
+    let v70 : unit = ()
+    let v71 : (unit -&gt; unit) = closure0(v3, v62)
+    let v72 : unit = (fun () -&gt; v71 (); v70) ()
+    let v80 : string = "; "
+    let v81 : string = $"{v80}"
+    let v89 : unit = ()
+    let v90 : (unit -&gt; unit) = closure0(v3, v81)
+    let v91 : unit = (fun () -&gt; v90 (); v89) ()
+    let v99 : string = "expected"
+    let v100 : string = $"{v99}"
+    let v108 : unit = ()
+    let v109 : (unit -&gt; unit) = closure0(v3, v100)
+    let v110 : unit = (fun () -&gt; v109 (); v108) ()
+    let v117 : string = $"{v44}"
+    let v125 : unit = ()
+    let v126 : (unit -&gt; unit) = closure0(v3, v117)
+    let v127 : unit = (fun () -&gt; v126 (); v125) ()
+    let v137 : string = $"{v1}"
+    let v145 : unit = ()
+    let v146 : (unit -&gt; unit) = closure0(v3, v137)
+    let v147 : unit = (fun () -&gt; v146 (); v145) ()
+    let v155 : string = " }"
+    let v156 : string = $"{v155}"
+    let v164 : unit = ()
+    let v165 : (unit -&gt; unit) = closure0(v3, v156)
+    let v166 : unit = (fun () -&gt; v165 (); v164) ()
+    let v172 : string = v3.l0
+    v172
 and closure1 (v0 : string) () : unit =
     let v1 : (string -&gt; unit) = System.Console.WriteLine
     v1 v0
@@ -10271,7 +10020,7 @@ and method0 () : unit =
             method3(v4)
     let v7 : string = "__assert_eq"
     let v8 : int32 = 15
-    let v9 : string = method4(v7, v3, v8)
+    let v9 : string = method4(v7, v8)
     let v11 : unit = ()
     let v12 : (unit -&gt; unit) = closure1(v9)
     let v13 : unit = (fun () -&gt; v12 (); v11) ()
@@ -10293,7 +10042,7 @@ method0()
 #![allow(unused_parens)]
 #![allow(unused_variables)]
 #![allow(unused_assignments)]
-mod module_33703968 {
+mod module_af8fb078 {
     pub mod Spiral {
         use super::*;
         use fable_library_rust::Native_::LrcPtr;
@@ -10329,72 +10078,55 @@ mod module_33703968 {
             v0.l0.set(v4);
             ()
         }
-        pub fn method4(v0: string, v1: i32, v2: i32) -&gt; string {
-            let v4: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
+        pub fn method4(v0: string, v1: i32) -&gt; string {
+            let v3: LrcPtr&lt;Spiral::Mut0&gt; = LrcPtr::new(Spiral::Mut0 {
                 l0: MutCell::new(Spiral::method5()),
             });
-            let v18: () = {
-                Spiral::closure0(v4.clone(), string("{ "), ());
+            let v17: () = {
+                Spiral::closure0(v3.clone(), string("{ "), ());
                 ()
             };
-            let v37: () = {
-                Spiral::closure0(v4.clone(), string("name"), ());
+            let v36: () = {
+                Spiral::closure0(v3.clone(), string("name"), ());
                 ()
             };
-            let v56: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
+            let v55: () = {
+                Spiral::closure0(v3.clone(), string(" = "), ());
                 ()
             };
-            let v73: () = {
-                Spiral::closure0(v4.clone(), v0, ());
+            let v72: () = {
+                Spiral::closure0(v3.clone(), v0, ());
                 ()
             };
-            let v92: () = {
-                Spiral::closure0(v4.clone(), string("; "), ());
+            let v91: () = {
+                Spiral::closure0(v3.clone(), string("; "), ());
                 ()
             };
-            let v111: () = {
-                Spiral::closure0(v4.clone(), string("actual"), ());
+            let v110: () = {
+                Spiral::closure0(v3.clone(), string("expected"), ());
                 ()
             };
-            let v128: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
+            let v127: () = {
+                Spiral::closure0(v3.clone(), string(" = "), ());
                 ()
             };
-            let v148: () = {
-                Spiral::closure0(v4.clone(), sprintf!("{}", v1), ());
+            let v147: () = {
+                Spiral::closure0(v3.clone(), sprintf!("{}", v1), ());
                 ()
             };
-            let v165: () = {
-                Spiral::closure0(v4.clone(), string("; "), ());
+            let v166: () = {
+                Spiral::closure0(v3.clone(), string(" }"), ());
                 ()
             };
-            let v184: () = {
-                Spiral::closure0(v4.clone(), string("expected"), ());
-                ()
-            };
-            let v201: () = {
-                Spiral::closure0(v4.clone(), string(" = "), ());
-                ()
-            };
-            let v221: () = {
-                Spiral::closure0(v4.clone(), sprintf!("{}", v2), ());
-                ()
-            };
-            let v240: () = {
-                Spiral::closure0(v4.clone(), string(" }"), ());
-                ()
-            };
-            v4.l0.get().clone()
+            v3.l0.get().clone()
         }
         pub fn closure1(v0: string, unitVar: ()) {
             printfn!("{0}", v0);
         }
         pub fn method0() {
-            let v3: i32 = ((Spiral::method2(Spiral::method1())) + 2_i32) + 1_i32;
-            let v4: bool = (v3) == 15_i32;
+            let v4: bool = (((Spiral::method2(Spiral::method1())) + 2_i32) + 1_i32) == 15_i32;
             let v6: bool = if v4 { true } else { Spiral::method3(v4) };
-            let v9: string = Spiral::method4(string("__assert_eq"), v3, 15_i32);
+            let v9: string = Spiral::method4(string("__assert_eq"), 15_i32);
             let v13: () = {
                 Spiral::closure1(v9.clone(), ());
                 ()
@@ -10406,11 +10138,11 @@ mod module_33703968 {
         // on_startup!(Spiral::method0());
     }
 }
-pub use module_33703968::*;
+pub use module_af8fb078::*;
 
-pub fn main() -&gt; Result&lt;(), String&gt; {
-    Ok(Spiral::method0())
-}
+
+
+pub fn main() -&gt; Result&lt;(), String&gt; { Ok(Spiral::method0()) }
 
 .ts:
 import { Record } from "./fable_modules/fable-library-ts.5.0.0-alpha.9/Types.js";
@@ -10451,48 +10183,36 @@ export function closure0(v0: Mut0, v1: string, unitVar: void): void {
     v0.l0 = v4;
 }
 
-export function method4(v0: string, v1: int32, v2: int32): string {
-    const v4: Mut0 = new Mut0(method5());
-    let v18: any;
-    closure0(v4, "{ ", undefined);
-    v18 = undefined;
-    let v37: any;
-    closure0(v4, "name", undefined);
-    v37 = undefined;
-    let v56: any;
-    closure0(v4, " = ", undefined);
-    v56 = undefined;
-    let v73: any;
-    closure0(v4, v0, undefined);
-    v73 = undefined;
-    let v92: any;
-    closure0(v4, "; ", undefined);
-    v92 = undefined;
-    let v111: any;
-    closure0(v4, "actual", undefined);
-    v111 = undefined;
-    let v128: any;
-    closure0(v4, " = ", undefined);
-    v128 = undefined;
-    let v148: any;
-    closure0(v4, `${v1}`, undefined);
-    v148 = undefined;
-    let v165: any;
-    closure0(v4, "; ", undefined);
-    v165 = undefined;
-    let v184: any;
-    closure0(v4, "expected", undefined);
-    v184 = undefined;
-    let v201: any;
-    closure0(v4, " = ", undefined);
-    v201 = undefined;
-    let v221: any;
-    closure0(v4, `${v2}`, undefined);
-    v221 = undefined;
-    let v240: any;
-    closure0(v4, " }", undefined);
-    v240 = undefined;
-    return v4.l0;
+export function method4(v0: string, v1: int32): string {
+    const v3: Mut0 = new Mut0(method5());
+    let v17: any;
+    closure0(v3, "{ ", undefined);
+    v17 = undefined;
+    let v36: any;
+    closure0(v3, "name", undefined);
+    v36 = undefined;
+    let v55: any;
+    closure0(v3, " = ", undefined);
+    v55 = undefined;
+    let v72: any;
+    closure0(v3, v0, undefined);
+    v72 = undefined;
+    let v91: any;
+    closure0(v3, "; ", undefined);
+    v91 = undefined;
+    let v110: any;
+    closure0(v3, "expected", undefined);
+    v110 = undefined;
+    let v127: any;
+    closure0(v3, " = ", undefined);
+    v127 = undefined;
+    let v147: any;
+    closure0(v3, `${v1}`, undefined);
+    v147 = undefined;
+    let v166: any;
+    closure0(v3, " }", undefined);
+    v166 = undefined;
+    return v3.l0;
 }
 
 export function closure1(v0: string, unitVar: void): void {
@@ -10500,10 +10220,9 @@ export function closure1(v0: string, unitVar: void): void {
 }
 
 export function method0(): void {
-    const v3: int32 = ((method2(method1()) + 2) + 1) | 0;
-    const v4: boolean = v3 === 15;
+    const v4: boolean = ((method2(method1()) + 2) + 1) === 15;
     const v6: boolean = v4 ? true : method3(v4);
-    const v9: string = method4("__assert_eq", v3, 15);
+    const v9: string = method4("__assert_eq", 15);
     let v13: any;
     closure1(v9, undefined);
     v13 = undefined;
@@ -10514,9 +10233,6 @@ export function method0(): void {
 
 method0();
 
-
-
-// spiral.process_typescript
 
 .py:
 from __future__ import annotations
@@ -10555,48 +10271,36 @@ def closure0(v0: Mut0, v1: str, unit_var: None) -&gt; None:
     v0.l0 = v4
 
 
-def method4(v0: str, v1: int, v2: int) -&gt; str:
-    v4: Mut0 = Mut0(method5())
-    v18: None
-    closure0(v4, "{ ", None)
-    v18 = None
-    v37: None
-    closure0(v4, "name", None)
-    v37 = None
-    v56: None
-    closure0(v4, " = ", None)
-    v56 = None
-    v73: None
-    closure0(v4, v0, None)
-    v73 = None
-    v92: None
-    closure0(v4, "; ", None)
-    v92 = None
-    v111: None
-    closure0(v4, "actual", None)
-    v111 = None
-    v128: None
-    closure0(v4, " = ", None)
-    v128 = None
-    v148: None
-    closure0(v4, ("" + str(v1)) + "", None)
-    v148 = None
-    v165: None
-    closure0(v4, "; ", None)
-    v165 = None
-    v184: None
-    closure0(v4, "expected", None)
-    v184 = None
-    v201: None
-    closure0(v4, " = ", None)
-    v201 = None
-    v221: None
-    closure0(v4, ("" + str(v2)) + "", None)
-    v221 = None
-    v240: None
-    closure0(v4, " }", None)
-    v240 = None
-    return v4.l0
+def method4(v0: str, v1: int) -&gt; str:
+    v3: Mut0 = Mut0(method5())
+    v17: None
+    closure0(v3, "{ ", None)
+    v17 = None
+    v36: None
+    closure0(v3, "name", None)
+    v36 = None
+    v55: None
+    closure0(v3, " = ", None)
+    v55 = None
+    v72: None
+    closure0(v3, v0, None)
+    v72 = None
+    v91: None
+    closure0(v3, "; ", None)
+    v91 = None
+    v110: None
+    closure0(v3, "expected", None)
+    v110 = None
+    v127: None
+    closure0(v3, " = ", None)
+    v127 = None
+    v147: None
+    closure0(v3, ("" + str(v1)) + "", None)
+    v147 = None
+    v166: None
+    closure0(v3, " }", None)
+    v166 = None
+    return v3.l0
 
 
 def closure1(v0: str, unit_var: None) -&gt; None:
@@ -10604,10 +10308,9 @@ def closure1(v0: str, unit_var: None) -&gt; None:
 
 
 def method0(__unit: None=None) -&gt; None:
-    v3: int = ((method2(method1()) + 2) + 1) or 0
-    v4: bool = v3 == 15
+    v4: bool = ((method2(method1()) + 2) + 1) == 15
     v6: bool = True if v4 else method3(v4)
-    v9: str = method4("__assert_eq", v3, 15)
+    v9: str = method4("__assert_eq", 15)
     v13: None
     closure1(v9, None)
     v13 = None
@@ -10618,9 +10321,6 @@ def method0(__unit: None=None) -&gt; None:
 
 method0()
 
-
-
-# spiral.process_python
 
 .py (Python):
 kernels_main = r"""
@@ -10652,108 +10352,81 @@ def method3(v0 : bool) -&gt; bool:
 def method5() -&gt; string:
     v0 = ""
     return v0
-def method4(v0 : string, v1 : i32, v2 : i32) -&gt; string:
-    v3 = method5()
-    v4 = Mut0(v3)
-    del v3
-    v9 = "{ "
-    v10 = f"{v9}"
-    del v9
-    v20 = v4.v0
-    v23 = v20 + v10 
-    del v10, v20
-    v4.v0 = v23
-    del v23
-    v29 = "name"
-    v30 = f"{v29}"
-    del v29
-    v40 = v4.v0
-    v43 = v40 + v30 
-    del v30, v40
-    v4.v0 = v43
-    del v43
-    v49 = " = "
-    v50 = f"{v49}"
-    v60 = v4.v0
-    v63 = v60 + v50 
-    del v50, v60
-    v4.v0 = v63
-    del v63
-    v67 = f"{v0}"
-    del v0
-    v77 = v4.v0
-    v80 = v77 + v67 
-    del v67, v77
-    v4.v0 = v80
-    del v80
-    v86 = "; "
-    v87 = f"{v86}"
-    v97 = v4.v0
-    v100 = v97 + v87 
-    del v87, v97
-    v4.v0 = v100
-    del v100
-    v106 = "actual"
-    v107 = f"{v106}"
-    del v106
-    v117 = v4.v0
-    v120 = v117 + v107 
-    del v107, v117
-    v4.v0 = v120
-    del v120
-    v124 = f"{v49}"
-    v134 = v4.v0
-    v137 = v134 + v124 
-    del v124, v134
-    v4.v0 = v137
-    del v137
-    v144 = f"{v1}"
-    del v1
-    v154 = v4.v0
-    v157 = v154 + v144 
-    del v144, v154
-    v4.v0 = v157
-    del v157
-    v161 = f"{v86}"
-    del v86
-    v171 = v4.v0
-    v174 = v171 + v161 
-    del v161, v171
-    v4.v0 = v174
-    del v174
-    v180 = "expected"
-    v181 = f"{v180}"
-    del v180
-    v191 = v4.v0
-    v194 = v191 + v181 
-    del v181, v191
-    v4.v0 = v194
-    del v194
-    v198 = f"{v49}"
-    del v49
-    v208 = v4.v0
-    v211 = v208 + v198 
-    del v198, v208
-    v4.v0 = v211
-    del v211
-    v218 = f"{v2}"
+def method4(v0 : string, v1 : i32) -&gt; string:
+    v2 = method5()
+    v3 = Mut0(v2)
     del v2
-    v228 = v4.v0
-    v231 = v228 + v218 
-    del v218, v228
-    v4.v0 = v231
-    del v231
-    v237 = " }"
-    v238 = f"{v237}"
-    del v237
-    v248 = v4.v0
-    v251 = v248 + v238 
-    del v238, v248
-    v4.v0 = v251
-    del v251
-    v253 = v4.v0
-    del v4
-    return v253
+    v8 = "{ "
+    v9 = f"{v8}"
+    del v8
+    v19 = v3.v0
+    v22 = v19 + v9 
+    del v9, v19
+    v3.v0 = v22
+    del v22
+    v28 = "name"
+    v29 = f"{v28}"
+    del v28
+    v39 = v3.v0
+    v42 = v39 + v29 
+    del v29, v39
+    v3.v0 = v42
+    del v42
+    v48 = " = "
+    v49 = f"{v48}"
+    v59 = v3.v0
+    v62 = v59 + v49 
+    del v49, v59
+    v3.v0 = v62
+    del v62
+    v66 = f"{v0}"
+    del v0
+    v76 = v3.v0
+    v79 = v76 + v66 
+    del v66, v76
+    v3.v0 = v79
+    del v79
+    v85 = "; "
+    v86 = f"{v85}"
+    del v85
+    v96 = v3.v0
+    v99 = v96 + v86 
+    del v86, v96
+    v3.v0 = v99
+    del v99
+    v105 = "expected"
+    v106 = f"{v105}"
+    del v105
+    v116 = v3.v0
+    v119 = v116 + v106 
+    del v106, v116
+    v3.v0 = v119
+    del v119
+    v123 = f"{v48}"
+    del v48
+    v133 = v3.v0
+    v136 = v133 + v123 
+    del v123, v133
+    v3.v0 = v136
+    del v136
+    v143 = f"{v1}"
+    del v1
+    v153 = v3.v0
+    v156 = v153 + v143 
+    del v143, v153
+    v3.v0 = v156
+    del v156
+    v162 = " }"
+    v163 = f"{v162}"
+    del v162
+    v173 = v3.v0
+    v176 = v173 + v163 
+    del v163, v173
+    v3.v0 = v176
+    del v176
+    v178 = v3.v0
+    del v3
+    return v178
 def method0() -&gt; None:
     v0 = method1()
     v1 = method2(v0)
@@ -10763,6 +10436,7 @@ def method0() -&gt; None:
     v3 = v2 + 1
     del v2
     v4 = v3 == 15
+    del v3
     if v4:
         v6 = True
     else:
@@ -10770,8 +10444,8 @@ def method0() -&gt; None:
     del v4
     v7 = "__assert_eq"
     v8 = 15
-    v9 = method4(v7, v3, v8)
-    del v3, v7, v8
+    v9 = method4(v7, v8)
+    del v7, v8
     print(v9)
     v15 = v6 == False
     del v6
@@ -10793,7 +10467,7 @@ def main():
 if __name__ == '__main__': result = main(); None if result is None else print(result)
 
 .fsx output:
-{ name = __assert_eq; actual = 15; expected = 15 }
+{ name = __assert_eq; expected = 15 }
 </pre>
 </div>
 </div>
@@ -10856,19 +10530,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .rs output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .ts output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .py output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 </pre>
 </div>
@@ -10877,7 +10551,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 </pre>
 </div>
 </div>
@@ -10940,19 +10614,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .rs output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .ts output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .py output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 </pre>
 </div>
@@ -10961,7 +10635,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 </pre>
 </div>
 </div>
@@ -11024,19 +10698,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .rs output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .ts output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .py output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 </pre>
 </div>
@@ -11045,7 +10719,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 </pre>
 </div>
 </div>
@@ -11108,19 +10782,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = -3.0; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .rs output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .ts output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .py output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 
 </pre>
 </div>
@@ -11129,7 +10803,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = -3; expected = -3 }
+{ name = __assert_eq; expected = -3 }
 </pre>
 </div>
 </div>
@@ -11196,19 +10870,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .rs output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .ts output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .py output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 </pre>
 </div>
@@ -11217,7 +10891,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 </pre>
 </div>
 </div>
@@ -11284,19 +10958,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .rs output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .ts output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .py output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 </pre>
 </div>
@@ -11305,7 +10979,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 </pre>
 </div>
 </div>
@@ -11371,19 +11045,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .rs output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .ts output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .py output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 
 </pre>
 </div>
@@ -11392,7 +11066,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = true; expected = true }
+{ name = __assert_eq; expected = true }
 </pre>
 </div>
 </div>
@@ -11514,19 +11188,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
+{ name = __assert_eq; expected = 1, 2 }
 
 .rs output:
-{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
+{ name = __assert_eq; expected = 1, 2 }
 
 .ts output:
-{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
+{ name = __assert_eq; expected = 1, 2 }
 
 .py output:
-{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
+{ name = __assert_eq; expected = 1, 2 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
+{ name = __assert_eq; expected = 1, 2 }
 
 </pre>
 </div>
@@ -11535,7 +11209,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1, 2; expected = 1, 2 }
+{ name = __assert_eq; expected = 1, 2 }
 </pre>
 </div>
 </div>
@@ -11642,26 +11316,23 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq'; actual = a, (1, 'b'); expected = a, (1, 'b') }
+{ name = __assert_eq'; expected = a, (1, 'b') }
 
 
 .rs output:
-{ name = __assert_eq'; actual = a, (
-    1,
-    "b",
-); expected = a, (
+{ name = __assert_eq'; expected = a, (
     1,
     "b",
 ) }
 
 .ts output:
-{ name = __assert_eq'; actual = a, 1,b; expected = a, 1,b }
+{ name = __assert_eq'; expected = a, 1,b }
 
 .py output:
-{ name = __assert_eq'; actual = a, (1, 'b'); expected = a, (1, 'b') }
+{ name = __assert_eq'; expected = a, (1, 'b') }
 
 .gleam output (Gleam):
-{ name = __assert_eq'; actual = a, #(1, "b"); expected = a, #(1, "b") }
+{ name = __assert_eq'; expected = a, #(1, "b") }
 
 
 </pre>
@@ -11671,7 +11342,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = a, (1, "b"); expected = a, (1, "b") }
+{ name = __assert_eq'; expected = a, (1, "b") }
 </pre>
 </div>
 </div>
@@ -11746,19 +11417,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .rs output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .ts output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .py output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 
 </pre>
 </div>
@@ -11767,7 +11438,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1; expected = 1 }
+{ name = __assert_eq; expected = 1 }
 </pre>
 </div>
 </div>
@@ -11805,19 +11476,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
+{ name = __assert_eq; expected = 2, 1 }
 
 .rs output:
-{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
+{ name = __assert_eq; expected = 2, 1 }
 
 .ts output:
-{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
+{ name = __assert_eq; expected = 2, 1 }
 
 .py output:
-{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
+{ name = __assert_eq; expected = 2, 1 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
+{ name = __assert_eq; expected = 2, 1 }
 
 </pre>
 </div>
@@ -11826,7 +11497,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 2, 1; expected = 2, 1 }
+{ name = __assert_eq; expected = 2, 1 }
 </pre>
 </div>
 </div>
@@ -12038,22 +11709,9 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .gleam output (Gleam):
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unreachable case clause</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\8009acbe0772ff80f19b61bd980fce8cbbaa8a7fa643974a594a746b52701f0f\src\main.gleam:265:13</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │  </span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">265 │ ╭             _ -&gt; {</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">266 │ │                 False</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">267 │ │             }</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │ ╰─────────────^</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">This case clause cannot be reached as a previous clause matches the same</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">values.</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: It can be safely removed.</span>
-
-{ name = __assert_eq; actual = ; expected =  }
-{ name = __assert_eq; actual = 0; expected = 0 }
-{ name = __assert_eq; actual = Us0i1; expected = Us0i1 }
+{ name = __assert_eq; expected =  }
+{ name = __assert_eq; expected = 0 }
+{ name = __assert_eq; expected = Us0i1 }
 
 </pre>
 </div>
@@ -12062,9 +11720,9 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = ; expected =  }
-{ name = __assert_eq; actual = 0; expected = 0 }
-{ name = __assert_eq; actual = US0_1; expected = US0_1 }
+{ name = __assert_eq; expected =  }
+{ name = __assert_eq; expected = 0 }
+{ name = __assert_eq; expected = US0_1 }
 </pre>
 </div>
 </div>
@@ -12813,16 +12471,16 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = index 1 is out of bounds for axis 0 with size 1; expected = index 1 is out of bounds for axis 0 with size 1 }
+{ name = __assert_eq; expected = index 1 is out of bounds for axis 0 with size 1 }
 
 .rs output:
-{ name = __assert_eq; actual = Exception { message: "index out of bounds: the len is 1 but the index is 1" }; expected = Exception { message: "index out of bounds: the len is 1 but the index is 1" } }
+{ name = __assert_eq; expected = Exception { message: "index out of bounds: the len is 1 but the index is 1" } }
 
 .ts output:
-{ name = __assert_eq; actual = Error: Index was outside the bounds of the array.\nParameter name: index; expected = Error: Index was outside the bounds of the array.\nParameter name: index }
+{ name = __assert_eq; expected = Error: Index was outside the bounds of the array.\nParameter name: index }
 
 .py output:
-{ name = __assert_eq; actual = array index out of range; expected = array index out of range }
+{ name = __assert_eq; expected = array index out of range }
 
 </pre>
 </div>
@@ -12831,7 +12489,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = System.IndexOutOfRangeException: Index was outside the bounds of the array.; expected = System.IndexOutOfRangeException: Index was outside the bounds of the array. }
+{ name = __assert_eq; expected = System.IndexOutOfRangeException: Index was outside the bounds of the array. }
 </pre>
 </div>
 </div>
@@ -12871,29 +12529,19 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 0; expected = 0 }
+{ name = __assert_eq; expected = 0 }
 
 .rs output:
-{ name = __assert_eq; actual = 0; expected = 0 }
+{ name = __assert_eq; expected = 0 }
 
 .ts output:
-{ name = __assert_eq; actual = 0; expected = 0 }
+{ name = __assert_eq; expected = 0 }
 
 .py output:
-{ name = __assert_eq; actual = 0; expected = 0 }
-
+{ name = __assert_eq; expected = 0 }
 
 .gleam output (Gleam):
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">warning: Unused variable</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    ┌─ c:\home\git\polyglot\target\spiral_Eval\packages\40868a6f32f09e98c8a7d2c06a1ce24527688eac89f50bf4677b9c91fe03e2a3\src\main.gleam:112:9</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">112 │     let v2 = fn (x) { closure2()(#(x))(   Nil) }</span>
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">    │         ^^ This variable is never used</span>
-
-<span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">Hint: You can ignore it with an underscore: `_v2`.</span>
-
-{ name = __assert_eq; actual = 0; expected = 0 }
-
+{ name = __assert_eq; expected = 0 }
 
 </pre>
 </div>
@@ -12902,7 +12550,7 @@ if __name__ == '__main__': result = main(); None if result is None else print(re
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 0; expected = 0 }
+{ name = __assert_eq; expected = 0 }
 </pre>
 </div>
 </div>

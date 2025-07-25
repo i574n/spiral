@@ -736,7 +736,7 @@ pub mod Crypto {
         string("")
     }
     pub fn closure7(v0_1: LrcPtr<Crypto::Mut4>, v1_1: string, unitVar: ()) {
-        let v4: string = append((v0_1.l0.get().clone()), (v1_1));
+        let v4: string = append(v0_1.l0.get().clone(), v1_1);
         v0_1.l0.set(v4);
         ()
     }
@@ -754,12 +754,12 @@ pub mod Crypto {
         let v3: &str = inline_colorization::color_bright_black;
         let v10: std::string::String = String::from(v3);
         let v139: string = append(
-            (fable_library_rust::String_::fromString(v10)),
-            (Crypto::method16(getCharAt(toLower(string("Verbose")), 0_i32))),
+            fable_library_rust::String_::fromString(v10),
+            Crypto::method16(getCharAt(toLower(string("Verbose")), 0_i32)),
         );
         let v145: &str = inline_colorization::color_reset;
         let v152: std::string::String = String::from(v145);
-        append((v139), (fable_library_rust::String_::fromString(v152)))
+        append(v139, fable_library_rust::String_::fromString(v152))
     }
     pub fn method19(v0_1: i32, v1_1: string, v2: u16) -> string {
         let v4: LrcPtr<Crypto::Mut4> = LrcPtr::new(Crypto::Mut4 {
@@ -840,20 +840,20 @@ pub mod Crypto {
     ) -> string {
         let v11: string = Crypto::method19(v8, v9, v10);
         Crypto::method20(append(
-            (append(
-                (append(
-                    (append(
-                        (append(
-                            (append((append((append((v6), string(" "))), (v7))), string(" #"))),
-                            (toString(v0_1.l0.get().clone())),
-                        )),
+            append(
+                append(
+                    append(
+                        append(
+                            append(append(append(v6, string(" ")), v7), string(" #")),
+                            toString(v0_1.l0.get().clone()),
+                        ),
                         string(" "),
-                    )),
+                    ),
                     string("crypto.hash_to_port"),
-                )),
+                ),
                 string(" / "),
-            )),
-            (v11),
+            ),
+            v11,
         ))
     }
     pub fn closure8(v0_1: LrcPtr<Crypto::Mut1>, unitVar: ()) {
