@@ -189,8 +189,13 @@ function CopyTarget {
     CopyItem "spiral" "trace"
     CopyItem "spiral" "lib"
 
-    if ($Language -eq "rs" -and $Runtime -eq "contract") {
-        Set-Content "$root/deps/spiral/lib/spiral/date_time_contract.rs" ""
+    if ($Language -eq "rs") {
+        { cargo fix --allow-dirty } | Invoke-Block -location $PSScriptRoot
+        { cargo fmt } | Invoke-Block -location $PSScriptRoot
+
+        if ($Runtime -eq "contract") {
+            Set-Content "$root/deps/spiral/lib/spiral/date_time_contract.rs" ""
+        }
     }
 
     if ($Language -eq "ts") {

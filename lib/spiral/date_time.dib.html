@@ -7850,7 +7850,7 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">date</span> <span class="o">=</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">nominal</span> <span class="n">date_gleam</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7859,7 +7859,7 @@ a.anchor-link {
         <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'calendar.Date'</span>
     <span class="p">)</span>
-<span class="n">nominal</span> <span class="n">time_of_day</span> <span class="o">=</span>
+<span class="n">nominal</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7868,7 +7868,7 @@ a.anchor-link {
         <span class="p">}</span>
         <span class="err">$</span><span class="s1">''</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'calendar.TimeOfDay'</span>
     <span class="p">)</span>
-<span class="n">nominal</span> <span class="n">duration</span> <span class="o">=</span>
+<span class="n">nominal</span> <span class="n">duration_gleam</span> <span class="o">=</span>
     <span class="err">`</span><span class="p">(</span>
         <span class="n">backend_switch</span> <span class="err">`</span><span class="p">(())</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
             <span class="n">Gleam</span> <span class="o">=</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
@@ -7887,7 +7887,7 @@ a.anchor-link {
     <span class="p">)</span>
 <span class="nb">type</span> <span class="n">date_time_switch</span> <span class="o">=</span>
     <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="p">:</span> <span class="n">date</span> <span class="o">*</span> <span class="n">time_of_day</span> <span class="o">*</span> <span class="n">duration</span>
+        <span class="n">Gleam</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">*</span> <span class="n">time_of_day_gleam</span> <span class="o">*</span> <span class="n">duration_gleam</span>
         <span class="n">Fsharp</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'System.DateTime'</span>
         <span class="n">Python</span> <span class="p">:</span> <span class="n">date_time_python</span>
     <span class="p">}</span>
@@ -7982,7 +7982,7 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">year</span> <span class="p">(</span><span class="n">date_time</span> <span class="p">:</span> <span class="n">date_time</span><span class="p">)</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_year</span> <span class="p">(</span><span class="n">date_time</span> <span class="p">:</span> <span class="n">date_time</span><span class="p">)</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'0'</span> <span class="p">:</span> <span class="n">i32</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">date_time</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'_.Year'</span> <span class="p">:</span> <span class="n">i32</span>
@@ -8016,9 +8016,9 @@ a.anchor-link {
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import tempo/datetime"</span>
-            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
-            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
-            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
+            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
+            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
+            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
             <span class="n">inl</span> <span class="n">timestamp</span> <span class="p">:</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'timestamp.from_calendar(!date, !time_of_day, !duration)'</span>
             <span class="n">inl</span> <span class="n">tempo_date_time</span> <span class="p">:</span> <span class="n">tempo_date_time</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; datetime.from_timestamp'</span>
             <span class="n">inl</span> <span class="n">tempo_date_time</span> <span class="p">:</span> <span class="n">tempo_date_time</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!tempo_date_time |&gt; datetime.add(!duration)'</span>
@@ -8038,7 +8038,7 @@ a.anchor-link {
             <span class="n">inl</span> <span class="n">date_time</span> <span class="o">=</span> <span class="n">join</span> <span class="n">date_time</span>
             <span class="k">if</span> <span class="nb">format</span> <span class="o">&lt;&gt;</span> <span class="s2">""</span>
             <span class="n">then</span> <span class="err">$</span><span class="s1">'!date_time.strftime(!format)'</span> <span class="p">:</span> <span class="n">string</span>
-            <span class="k">elif</span> <span class="n">year</span> <span class="n">date_time</span> <span class="o">&lt;</span> <span class="mi">1000</span>
+            <span class="k">elif</span> <span class="n">get_year</span> <span class="n">date_time</span> <span class="o">&lt;</span> <span class="mi">1000</span>
             <span class="n">then</span> <span class="err">$</span><span class="s1">'</span><span class="se">\'</span><span class="si">{dt.month}</span><span class="s1">-</span><span class="si">{dt.day}</span><span class="s1">-</span><span class="si">{dt.year}</span><span class="s1"> {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}</span><span class="se">\'</span><span class="s1">.format(dt=!date_time)'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="k">else</span> <span class="err">$</span><span class="s1">'</span><span class="se">\'</span><span class="si">{dt.month}</span><span class="s1">-</span><span class="si">{dt.day}</span><span class="s1">-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}</span><span class="se">\'</span><span class="s1">.format(dt=!date_time)'</span> <span class="p">:</span> <span class="n">string</span>
     <span class="p">}</span>
@@ -8133,7 +8133,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-1 12:00:00 AM; expected = 1-1-1 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-1 12:00:00 AM }
 
 </pre>
 </div>
@@ -8142,7 +8142,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-1 12:00:00 AM; expected = 1-1-1 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-1 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8205,7 +8205,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 12-31-99 11:59:59 PM; expected = 12-31-99 11:59:59 PM }
+{ name = __assert_eq; expected = 12-31-99 11:59:59 PM }
 
 </pre>
 </div>
@@ -8214,7 +8214,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 12-31-99 11:59:59 PM; expected = 12-31-99 11:59:59 PM }
+{ name = __assert_eq; expected = 12-31-99 11:59:59 PM }
 </pre>
 </div>
 </div>
@@ -8245,8 +8245,8 @@ a.anchor-link {
             <span class="k">global</span> <span class="s2">"import gleam/time/calendar"</span>
             <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
     <span class="p">}</span>
-    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.utc_offset'</span> <span class="p">:</span> <span class="n">duration</span>
-    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
+    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.utc_offset'</span> <span class="p">:</span> <span class="n">duration_gleam</span>
+    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
     <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">to</span>
 </pre></div>
 </div>
@@ -8348,10 +8348,10 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 </pre>
 </div>
@@ -8360,7 +8360,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8427,10 +8427,10 @@ a.anchor-link {
             <span class="o">//</span>     <span class="o">|</span> <span class="n">October</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'calendar.October'</span>
             <span class="o">//</span>     <span class="o">|</span> <span class="n">November</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'calendar.November'</span>
             <span class="o">//</span>     <span class="o">|</span> <span class="n">December</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'calendar.December'</span>
-            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.Date(#year, #calendar_month, #day)'</span>
+            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.Date(#year, #calendar_month, #day)'</span>
             <span class="n">inl</span> <span class="n">nanoseconds</span> <span class="o">=</span> <span class="n">millisecond</span> <span class="o">*</span> <span class="mi">1000000</span>
-            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'</span>
-            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'duration.milliseconds(#millisecond)'</span>
+            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'</span>
+            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'duration.milliseconds(#millisecond)'</span>
             <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">date_time</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)'</span> <span class="p">:</span> <span class="n">date_time</span>
@@ -8471,10 +8471,10 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 </pre>
 </div>
@@ -8483,7 +8483,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8551,7 +8551,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 </pre>
 </div>
@@ -8560,7 +8560,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8688,7 +8688,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 </pre>
 </div>
@@ -8697,7 +8697,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8732,7 +8732,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 </pre>
 </div>
@@ -8741,7 +8741,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8776,7 +8776,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 </pre>
 </div>
@@ -8785,7 +8785,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8820,7 +8820,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 
 </pre>
 </div>
@@ -8829,7 +8829,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 1-1-70 12:00:00 AM; expected = 1-1-70 12:00:00 AM }
+{ name = __assert_eq; expected = 1-1-70 12:00:00 AM }
 </pre>
 </div>
 </div>
@@ -8989,9 +8989,9 @@ a.anchor-link {
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
             <span class="o">//</span> <span class="n">inl</span> <span class="n">date_time</span> <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">=</span> <span class="n">date_time</span>
-            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
-            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
-            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
+            <span class="n">inl</span> <span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.0'</span>
+            <span class="n">inl</span> <span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.1'</span>
+            <span class="n">inl</span> <span class="n">duration</span> <span class="p">:</span> <span class="n">duration_gleam</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!date_time.2'</span>
             <span class="err">$</span><span class="s1">'timestamp.from_calendar(!date, !time_of_day, !duration)'</span> <span class="p">:</span> <span class="n">timestamp</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">run_target</span> <span class="n">function</span>
@@ -9035,10 +9035,10 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq'; actual = 621355968000000000; expected = 621355968000000000 }
+{ name = __assert_eq'; expected = 621355968000000000 }
 
 .rs output:
-{ name = __assert_eq'; actual = 621355968000000000; expected = 621355968000000000 }
+{ name = __assert_eq'; expected = 621355968000000000 }
 
 </pre>
 </div>
@@ -9047,7 +9047,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = 621355968000000000L; expected = 621355968000000000L }
+{ name = __assert_eq'; expected = 621355968000000000L }
 </pre>
 </div>
 </div>
@@ -9115,16 +9115,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 10; expected = 10 }
+{ name = __assert_eq; expected = 10 }
 
 .rs output:
-{ name = __assert_eq; actual = 10; expected = 10 }
+{ name = __assert_eq; expected = 10 }
 
 .ts output:
-{ name = __assert_eq; actual = 10; expected = 10 }
+{ name = __assert_eq; expected = 10 }
 
 .py output:
-{ name = __assert_eq; actual = 10; expected = 10 }
+{ name = __assert_eq; expected = 10 }
 
 </pre>
 </div>
@@ -9133,7 +9133,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 10; expected = 10 }
+{ name = __assert_eq; expected = 10 }
 </pre>
 </div>
 </div>
@@ -9201,16 +9201,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 11; expected = 11 }
+{ name = __assert_eq; expected = 11 }
 
 .rs output:
-{ name = __assert_eq; actual = 11; expected = 11 }
+{ name = __assert_eq; expected = 11 }
 
 .ts output:
-{ name = __assert_eq; actual = 11; expected = 11 }
+{ name = __assert_eq; expected = 11 }
 
 .py output:
-{ name = __assert_eq; actual = 11; expected = 11 }
+{ name = __assert_eq; expected = 11 }
 
 </pre>
 </div>
@@ -9219,7 +9219,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 11; expected = 11 }
+{ name = __assert_eq; expected = 11 }
 </pre>
 </div>
 </div>
@@ -9287,16 +9287,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 12; expected = 12 }
+{ name = __assert_eq; expected = 12 }
 
 .rs output:
-{ name = __assert_eq; actual = 12; expected = 12 }
+{ name = __assert_eq; expected = 12 }
 
 .ts output:
-{ name = __assert_eq; actual = 12; expected = 12 }
+{ name = __assert_eq; expected = 12 }
 
 .py output:
-{ name = __assert_eq; actual = 12; expected = 12 }
+{ name = __assert_eq; expected = 12 }
 
 </pre>
 </div>
@@ -9305,7 +9305,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 12; expected = 12 }
+{ name = __assert_eq; expected = 12 }
 </pre>
 </div>
 </div>
@@ -9373,16 +9373,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 13; expected = 13 }
+{ name = __assert_eq; expected = 13 }
 
 .rs output:
-{ name = __assert_eq; actual = 13; expected = 13 }
+{ name = __assert_eq; expected = 13 }
 
 .ts output:
-{ name = __assert_eq; actual = 13; expected = 13 }
+{ name = __assert_eq; expected = 13 }
 
 .py output:
-{ name = __assert_eq; actual = 13; expected = 13 }
+{ name = __assert_eq; expected = 13 }
 
 </pre>
 </div>
@@ -9391,7 +9391,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 13; expected = 13 }
+{ name = __assert_eq; expected = 13 }
 </pre>
 </div>
 </div>
@@ -9487,16 +9487,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 39710:11:120130000; expected = 39710:11:120130000 }
+{ name = __assert_eq; expected = 39710:11:120130000 }
 
 .rs output:
-{ name = __assert_eq; actual = 397.10:11:12.0130000; expected = 397.10:11:12.0130000 }
+{ name = __assert_eq; expected = 397.10:11:12.0130000 }
 
 .ts output:
-{ name = __assert_eq; actual = 397.10:11:12.0130000; expected = 397.10:11:12.0130000 }
+{ name = __assert_eq; expected = 397.10:11:12.0130000 }
 
 .py output:
-{ name = __assert_eq; actual = 397.10:11:12.0130000; expected = 397.10:11:12.0130000 }
+{ name = __assert_eq; expected = 397.10:11:12.0130000 }
 
 </pre>
 </div>
@@ -9505,7 +9505,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 397.10:11:12.0130000; expected = 397.10:11:12.0130000 }
+{ name = __assert_eq; expected = 397.10:11:12.0130000 }
 </pre>
 </div>
 </div>
@@ -9543,16 +9543,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 10:11:12; expected = 10:11:12 }
+{ name = __assert_eq; expected = 10:11:12 }
 
 .rs output:
-{ name = __assert_eq; actual = 10:11:12; expected = 10:11:12 }
+{ name = __assert_eq; expected = 10:11:12 }
 
 .ts output:
-{ name = __assert_eq; actual = 10:11:12; expected = 10:11:12 }
+{ name = __assert_eq; expected = 10:11:12 }
 
 .py output:
-{ name = __assert_eq; actual = 10:11:12; expected = 10:11:12 }
+{ name = __assert_eq; expected = 10:11:12 }
 
 </pre>
 </div>
@@ -9561,7 +9561,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 10:11:12; expected = 10:11:12 }
+{ name = __assert_eq; expected = 10:11:12 }
 </pre>
 </div>
 </div>
@@ -9602,16 +9602,16 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = 10:11:129990000; expected = 10:11:129990000 }
+{ name = __assert_eq; expected = 10:11:129990000 }
 
 .rs output:
-{ name = __assert_eq; actual = 10:11:12.9990000; expected = 10:11:12.9990000 }
+{ name = __assert_eq; expected = 10:11:12.9990000 }
 
 .ts output:
-{ name = __assert_eq; actual = 10:11:12.9990000; expected = 10:11:12.9990000 }
+{ name = __assert_eq; expected = 10:11:12.9990000 }
 
 .py output:
-{ name = __assert_eq; actual = 10:11:12.9990000; expected = 10:11:12.9990000 }
+{ name = __assert_eq; expected = 10:11:12.9990000 }
 
 </pre>
 </div>
@@ -9620,7 +9620,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 10:11:12.9990000; expected = 10:11:12.9990000 }
+{ name = __assert_eq; expected = 10:11:12.9990000 }
 </pre>
 </div>
 </div>
@@ -9702,8 +9702,8 @@ a.anchor-link {
             <span class="k">global</span> <span class="s2">"import gleam/time/timestamp"</span>
             <span class="k">global</span> <span class="s2">"import gleam/time/calendar"</span>
     <span class="p">}</span>
-    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.local_offset()'</span> <span class="p">:</span> <span class="n">duration</span>
-    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
+    <span class="n">inl</span> <span class="n">duration</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'calendar.local_offset()'</span> <span class="p">:</span> <span class="n">duration_gleam</span>
+    <span class="n">inl</span> <span class="p">(</span><span class="n">date</span> <span class="p">:</span> <span class="n">date_gleam</span><span class="p">),</span> <span class="p">(</span><span class="n">time_of_day</span> <span class="p">:</span> <span class="n">time_of_day_gleam</span><span class="p">)</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'!timestamp |&gt; timestamp.to_calendar(!duration)'</span>
     <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time_of_day</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">to</span>
 </pre></div>
 </div>
@@ -10383,7 +10383,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 19700101-0000-0000-0000-000000cba987; expected = 19700101-0000-0000-0000-000000cba987 }
+<pre>{ name = __assert_eq'; expected = 19700101-0000-0000-0000-000000cba987 }
 </pre>
 </div>
 </div>
@@ -10420,7 +10420,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output (rust -d chrono):
-{ name = __assert_eq'; actual = 00010101-0000-0000-0000-000000cba987; expected = 00010101-0000-0000-0000-000000cba987 }
+{ name = __assert_eq'; expected = 00010101-0000-0000-0000-000000cba987 }
 
 </pre>
 </div>
@@ -10429,7 +10429,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq'; actual = 00010101-0000-0000-0000-000000cba987; expected = 00010101-0000-0000-0000-000000cba987 }
+{ name = __assert_eq'; expected = 00010101-0000-0000-0000-000000cba987 }
 </pre>
 </div>
 </div>
@@ -10465,7 +10465,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = 99991230-2359-5999-9999-900000cba987; expected = 99991230-2359-5999-9999-900000cba987 }
+<pre>{ name = __assert_eq; expected = 99991230-2359-5999-9999-900000cba987 }
 </pre>
 </div>
 </div>
@@ -10501,7 +10501,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = 99991230-2359-5999-9999-000000cba987; expected = 99991230-2359-5999-9999-000000cba987 }
+<pre>{ name = __assert_eq; expected = 99991230-2359-5999-9999-000000cba987 }
 </pre>
 </div>
 </div>
@@ -10539,7 +10539,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.rs output (rust -d chrono):
-{ name = __assert_eq; actual = 19700102-0000-0000-0000-000000cba987; expected = 19700102-0000-0000-0000-000000cba987 }
+{ name = __assert_eq; expected = 19700102-0000-0000-0000-000000cba987 }
 
 </pre>
 </div>
@@ -10548,7 +10548,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = 19700102-0000-0000-0000-000000cba987; expected = 19700102-0000-0000-0000-000000cba987 }
+{ name = __assert_eq; expected = 19700102-0000-0000-0000-000000cba987 }
 </pre>
 </div>
 </div>
@@ -10609,7 +10609,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 01/01/0001 00:00:00; expected = 01/01/0001 00:00:00 }
+<pre>{ name = __assert_eq'; expected = 01/01/0001 00:00:00 }
 </pre>
 </div>
 </div>
@@ -10639,7 +10639,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 12/31/9999 23:59:59; expected = 12/31/9999 23:59:59 }
+<pre>{ name = __assert_eq'; expected = 12/31/9999 23:59:59 }
 </pre>
 </div>
 </div>
@@ -10669,7 +10669,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 01/01/1970 00:00:00; expected = 01/01/1970 00:00:00 }
+<pre>{ name = __assert_eq'; expected = 01/01/1970 00:00:00 }
 </pre>
 </div>
 </div>
@@ -10727,7 +10727,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 00000000-0000-0000-0043-210fedcba987; expected = 00000000-0000-0000-0043-210fedcba987 }
+<pre>{ name = __assert_eq'; expected = 00000000-0000-0000-0043-210fedcba987 }
 </pre>
 </div>
 </div>
@@ -10757,7 +10757,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 99999999-9999-9999-9943-210fedcba987; expected = 99999999-9999-9999-9943-210fedcba987 }
+<pre>{ name = __assert_eq'; expected = 99999999-9999-9999-9943-210fedcba987 }
 </pre>
 </div>
 </div>
@@ -10814,7 +10814,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 0L; expected = 0L }
+<pre>{ name = __assert_eq'; expected = 0L }
 </pre>
 </div>
 </div>
@@ -10844,7 +10844,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = 999999999999999999L; expected = 999999999999999999L }
+<pre>{ name = __assert_eq'; expected = 999999999999999999L }
 </pre>
 </div>
 </div>
@@ -10904,7 +10904,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = 0; expected = 0 }
+<pre>{ name = __assert_eq; expected = 0 }
 </pre>
 </div>
 </div>
@@ -10965,7 +10965,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = 0; expected = 0 }
+<pre>{ name = __assert_eq; expected = 0 }
 </pre>
 </div>
 </div>

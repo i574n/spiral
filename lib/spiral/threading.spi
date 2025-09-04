@@ -4,11 +4,6 @@ open rust_operators
 
 /// ## rust
 
-/// ### sleep
-inl sleep (duration : date_time.duration) : () =
-    inl duration = join duration
-    !\($'"std::thread::sleep(!duration)"')
-
 /// ### join_handle
 nominal join_handle t =
     `(
@@ -259,8 +254,8 @@ inl channel_send forall t. (line : t) (sender : rust.ref (channel_sender t)) : r
 
 /// ## fsharp
 
-/// ### sleep'
-inl sleep' (n : i32) : () =
+/// ### sleep
+inl sleep (n : i32) : () =
     run_target function
         | Fsharp (Native)
         | Rust _

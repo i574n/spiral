@@ -7663,13 +7663,13 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options / { file_name = cargo; arguments = ["test", "--", "--show-output"]; options = { command = cargo test -- --show-output; cancellation_token = None; environment_variables = Array(MutCell([("TEST", "1")])); on_line = None; stdin = None; trace = true; working_directory = Some(
-    "/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6",
+    "/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77",
 ); stderr = true } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #2 ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+00:00:00 <span class="ansi-black-intense-fg">v</span> #2 ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 00:00:00 <span class="ansi-black-intense-fg">v</span> #3 !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6)
-00:00:00 <span class="ansi-black-intense-fg">v</span> #5 ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.46s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6-cf352876c5045c1a)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #4 ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #5 ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.42s
+00:00:00 <span class="ansi-black-intense-fg">v</span> #6 ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77-b5234dec97035c77)
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt; running 1 test
 00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt; test module_6ff740fe::Spiral::a ... ok
@@ -7677,7 +7677,7 @@ a.anchor-link {
 00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; successes:
 00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt; ---- module_6ff740fe::Spiral::a stdout ----
-00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; { name = __assert_eq; actual = a; expected = a }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; { name = __assert_eq; expected = a }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #15 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #16 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #17 &gt; successes:
@@ -7685,13 +7685,13 @@ a.anchor-link {
 00:00:00 <span class="ansi-black-intense-fg">v</span> #19 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #20 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 00:00:00 <span class="ansi-black-intense-fg">v</span> #21 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #22 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1326 }
-{ name = __assert_eq; actual = 0; expected = 0 }
-{ name = __assert; actual = test result: ok. 1 passed; 0 failed; 0 ignored;; expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+00:00:00 <span class="ansi-black-intense-fg">v</span> #22 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1314 }
+{ name = __assert_eq; expected = 0 }
+{ name = __assert; expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.</span>
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6)
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.46s
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6-cf352876c5045c1a)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.42s
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77-b5234dec97035c77)
 
 running 1 test
 test module_6ff740fe::Spiral::a ... ok
@@ -7699,7 +7699,7 @@ test module_6ff740fe::Spiral::a ... ok
 successes:
 
 ---- module_6ff740fe::Spiral::a stdout ----
-{ name = __assert_eq; actual = a; expected = a }
+{ name = __assert_eq; expected = a }
 
 
 successes:
@@ -7773,13 +7773,13 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options / { file_name = cargo; arguments = ["test", "--", "--show-output"]; options = { command = cargo test -- --show-output; cancellation_token = None; environment_variables = Array(MutCell([("TEST", "1")])); on_line = None; stdin = None; trace = true; working_directory = Some(
-    "/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6",
+    "/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77",
 ); stderr = true } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #2 ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+00:00:00 <span class="ansi-black-intense-fg">v</span> #2 ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 00:00:00 <span class="ansi-black-intense-fg">v</span> #3 !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #4 ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77)
 00:00:00 <span class="ansi-black-intense-fg">v</span> #5 ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.43s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6-cf352876c5045c1a)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #6 ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77-b5234dec97035c77)
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt; running 1 test
 00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt; test module_6ff740fe::Spiral::a ... ok
@@ -7787,7 +7787,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; successes:
 00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt; ---- module_6ff740fe::Spiral::a stdout ----
-00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; { name = __assert_eq; actual = a; expected = a }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; { name = __assert_eq; expected = a }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #15 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #16 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #17 &gt; successes:
@@ -7795,13 +7795,13 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 00:00:00 <span class="ansi-black-intense-fg">v</span> #19 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #20 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 00:00:00 <span class="ansi-black-intense-fg">v</span> #21 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #22 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1326 }
-{ name = __assert_eq; actual = 0; expected = 0 }
-{ name = __assert; actual = test result: ok. 1 passed; 0 failed; 0 ignored;; expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+00:00:00 <span class="ansi-black-intense-fg">v</span> #22 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1314 }
+{ name = __assert_eq; expected = 0 }
+{ name = __assert; expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.</span>
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77)
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.43s
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_9d8f82825bbaec1dd364510cc488e6b760cde037fce6404566545d5502bf4db6-cf352876c5045c1a)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_327b3cc680e16fce3a1b6f68b5144337ae00f26a61ec1672bd47e0bef49a2f77-b5234dec97035c77)
 
 running 1 test
 test module_6ff740fe::Spiral::a ... ok
@@ -7809,7 +7809,7 @@ test module_6ff740fe::Spiral::a ... ok
 successes:
 
 ---- module_6ff740fe::Spiral::a stdout ----
-{ name = __assert_eq; actual = a; expected = a }
+{ name = __assert_eq; expected = a }
 
 
 successes:
@@ -7883,13 +7883,13 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>00:00:00 <span class="ansi-blue-intense-fg">d</span> #1 runtime.execute_with_options / { file_name = cargo; arguments = ["test", "--", "--show-output"]; options = { command = cargo test -- --show-output; cancellation_token = None; environment_variables = Array(MutCell([("TEST", "1")])); on_line = None; stdin = None; trace = true; working_directory = Some(
-    "/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123",
+    "/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56",
 ); stderr = true } }
-00:00:00 <span class="ansi-black-intense-fg">v</span> #2 ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+00:00:00 <span class="ansi-black-intense-fg">v</span> #2 ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 00:00:00 <span class="ansi-black-intense-fg">v</span> #3 !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
-00:00:00 <span class="ansi-black-intense-fg">v</span> #4 ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123)
-00:00:00 <span class="ansi-black-intense-fg">v</span> #5 ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.44s
-00:00:00 <span class="ansi-black-intense-fg">v</span> #6 ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123-229d17a7d68db2cc)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #4 ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56)
+00:00:00 <span class="ansi-black-intense-fg">v</span> #5 ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.41s
+00:00:00 <span class="ansi-black-intense-fg">v</span> #6 ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56-a4c4617c8ed9d18e)
 00:00:00 <span class="ansi-black-intense-fg">v</span> #7 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #8 &gt; running 1 test
 00:00:00 <span class="ansi-black-intense-fg">v</span> #9 &gt; test module_6ff740fe::Spiral::a ... ok
@@ -7897,7 +7897,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 00:00:00 <span class="ansi-black-intense-fg">v</span> #11 &gt; successes:
 00:00:00 <span class="ansi-black-intense-fg">v</span> #12 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #13 &gt; ---- module_6ff740fe::Spiral::a stdout ----
-00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; { name = __assert_eq; actual = false; expected = false }
+00:00:00 <span class="ansi-black-intense-fg">v</span> #14 &gt; { name = __assert_eq; expected = false }
 00:00:00 <span class="ansi-black-intense-fg">v</span> #15 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #16 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #17 &gt; successes:
@@ -7905,13 +7905,13 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 00:00:00 <span class="ansi-black-intense-fg">v</span> #19 &gt;
 00:00:00 <span class="ansi-black-intense-fg">v</span> #20 &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 00:00:00 <span class="ansi-black-intense-fg">v</span> #21 &gt;
-00:00:00 <span class="ansi-black-intense-fg">v</span> #22 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1334 }
-{ name = __assert_eq; actual = 0; expected = 0 }
-{ name = __assert; actual = test result: ok. 1 passed; 0 failed; 0 ignored;; expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+00:00:00 <span class="ansi-black-intense-fg">v</span> #22 runtime.execute_with_options / result / { exit_code = 0; std_trace_length = 1318 }
+{ name = __assert_eq; expected = 0 }
+{ name = __assert; expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span><span class="ansi-bold">:</span> /home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.</span>
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123)
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.44s
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_5d241e31be19c2b086c0db133673eb30ce90b8b095e9d926bf82cbb5a6f03123-229d17a7d68db2cc)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56 v0.0.1 (/home/runner/work/spiral/polyglot/target/spiral/spiral/packages/Rust/5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 0.41s
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/polyglot/target/spiral/spiral/target/debug/deps/spiral_5515e84490ba8c9d27532182f82a9b7bf2b8098d2b0811a77ff0ad0753f49f56-a4c4617c8ed9d18e)
 
 running 1 test
 test module_6ff740fe::Spiral::a ... ok
@@ -7919,7 +7919,7 @@ test module_6ff740fe::Spiral::a ... ok
 successes:
 
 ---- module_6ff740fe::Spiral::a stdout ----
-{ name = __assert_eq; actual = false; expected = false }
+{ name = __assert_eq; expected = false }
 
 
 successes:

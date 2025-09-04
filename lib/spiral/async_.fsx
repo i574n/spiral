@@ -1,4 +1,4 @@
-let rec method0 (v0 : System.Threading.CancellationToken) : Async<System.Threading.CancellationToken> =
+let rec method1 (v0 : System.Threading.CancellationToken) : Async<System.Threading.CancellationToken> =
     (* run_target_args'
     let v5 : unit = ()
     run_target_args' *)
@@ -243,6 +243,8 @@ let rec method0 (v0 : System.Threading.CancellationToken) : Async<System.Threadi
     #endif
     let v4790 : Async<System.Threading.CancellationToken> = _run_target_args'_v5 
     v4790
+and method0 (v0 : System.Threading.CancellationToken) : Async<System.Threading.CancellationToken> =
+    method1(v0)
 and closure0 () (v0 : System.Threading.CancellationToken) : Async<System.Threading.CancellationToken> =
     method0(v0)
 let v0 : (System.Threading.CancellationToken -> Async<System.Threading.CancellationToken>) = closure0()

@@ -6,6 +6,7 @@ members = [
     "../apps/spiral",
     "../apps/wasm",
     "../lib/spiral/near/wallet",
+    "../lib/spiral",
 ]
 
 [workspace.package]

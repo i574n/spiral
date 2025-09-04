@@ -80,7 +80,7 @@ class Mut1(Record):
 
 Mut1_reflection = _expr8
 
-def _expr9() -> TypeInfo:
+def _expr10() -> TypeInfo:
     return record_type("Common.Mut2", [], Mut2, lambda: [("l0", bool_type)])
 
 
@@ -88,7 +88,7 @@ def _expr9() -> TypeInfo:
 class Mut2(Record):
     l0: bool
 
-Mut2_reflection = _expr9
+Mut2_reflection = _expr10
 
 def _expr11() -> TypeInfo:
     return record_type("Common.Mut3", [], Mut3, lambda: [("l0", string_type)])
@@ -164,7 +164,7 @@ class US3(Union):
 
 US3_reflection = _expr15
 
-def _expr16() -> TypeInfo:
+def _expr18() -> TypeInfo:
     return union_type("Common.US4", [], US4, lambda: [[("f0_0", US3_reflection())], [("f1_0", US3_reflection())], [("f2_0", US3_reflection())], [("f3_0", US3_reflection())], [("f4_0", US3_reflection())], [("f5_0", US3_reflection())], [("f6_0", US3_reflection())]])
 
 
@@ -180,9 +180,9 @@ class US4(Union):
         return ["US4_0", "US4_1", "US4_2", "US4_3", "US4_4", "US4_5", "US4_6"]
 
 
-US4_reflection = _expr16
+US4_reflection = _expr18
 
-def _expr19() -> TypeInfo:
+def _expr20() -> TypeInfo:
     return union_type("Common.US5", [], US5, lambda: [[("f0_0", string_type)], []])
 
 
@@ -198,9 +198,9 @@ class US5(Union):
         return ["US5_0", "US5_1"]
 
 
-US5_reflection = _expr19
+US5_reflection = _expr20
 
-def _expr21() -> TypeInfo:
+def _expr24() -> TypeInfo:
     return union_type("Common.US6", [], US6, lambda: [[], []])
 
 
@@ -216,9 +216,9 @@ class US6(Union):
         return ["US6_0", "US6_1"]
 
 
-US6_reflection = _expr21
+US6_reflection = _expr24
 
-def _expr24() -> TypeInfo:
+def _expr25() -> TypeInfo:
     return union_type("Common.US7", [], US7, lambda: [[("f0_0", US6_reflection())], []])
 
 
@@ -234,9 +234,9 @@ class US7(Union):
         return ["US7_0", "US7_1"]
 
 
-US7_reflection = _expr24
+US7_reflection = _expr25
 
-def _expr26() -> TypeInfo:
+def _expr28() -> TypeInfo:
     return union_type("Common.US8", [], US8, lambda: [[("f0_0", Mut0_reflection()), ("f0_1", Mut1_reflection()), ("f0_2", Mut2_reflection()), ("f0_3", Mut3_reflection()), ("f0_4", Mut4_reflection()), ("f0_5", option_type(int64_type))], []])
 
 
@@ -252,7 +252,7 @@ class US8(Union):
         return ["US8_0", "US8_1"]
 
 
-US8_reflection = _expr26
+US8_reflection = _expr28
 
 def method3(v0: str) -> str:
     return v0
@@ -390,11 +390,11 @@ def method7(v0: Callable[[], None]) -> Callable[[], None]:
 
 def closure3(unit_var: None, v0: Callable[[], None]) -> IDisposable:
     v14_1: Callable[[], None] = method7(v0)
-    class ObjectExpr49(IDisposable):
+    class ObjectExpr56(IDisposable):
         def Dispose(self, __unit: None=None, unit_var: Any=unit_var, v0: Any=v0) -> None:
             v14_1(None)
 
-    return ObjectExpr49()
+    return ObjectExpr56()
 
 
 def closure6(unit_var: None, v0: US6) -> US7:
@@ -416,10 +416,10 @@ def closure10(unit_var: None, v0: int64) -> US2:
 
 
 def method10(__unit: None=None) -> Callable[[int64], US2]:
-    def _arrow53(v: int64) -> US2:
+    def _arrow62(v: int64) -> US2:
         return closure10(None, v)
 
-    return _arrow53
+    return _arrow62
 
 
 def method11(__unit: None=None) -> str:
@@ -461,16 +461,12 @@ def method14(v0: str) -> str:
     return v2.l0
 
 
-def method16(__unit: None=None) -> str:
-    return "\u001b[0m"
-
-
 def method13(__unit: None=None) -> str:
-    v4: str = "Warning".lower()
-    return ("\u001b[93m" + method14(v4[0])) + method16()
+    v133: str = "Warning".lower()
+    return ("\u001b[93m" + method14(v133[0])) + "\u001b[0m"
 
 
-def method18(v0: int, v1: Exception) -> str:
+def method17(v0: int, v1: Exception) -> str:
     v3: Mut3 = Mut3(method15())
     v17: None
     closure11(v3, "{ ", None)
@@ -502,13 +498,13 @@ def method18(v0: int, v1: Exception) -> str:
     return v3.l0
 
 
-def method19(v0: str) -> str:
+def method18(v0: str) -> str:
     return trim_end(trim_start(v0, *to_array(empty())), *to_array(of_array([" ", "/"])))
 
 
-def method17(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: int, v9: Exception) -> str:
-    v10: str = method18(v8, v9)
-    return method19((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + "common.retry_fn") + " / ") + v10)
+def method16(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: int, v9: Exception) -> str:
+    v10: str = method17(v8, v9)
+    return method18((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + "common.retry_fn") + " / ") + v10)
 
 
 def closure12(v0: Mut0, unit_var: None) -> None:
@@ -555,7 +551,7 @@ def closure9(v0: int, v1: Exception, unit_var: None) -> None:
         v107: Mut2 = pattern_input_1[2]
         v106: Mut1 = pattern_input_1[1]
         v105: Mut0 = pattern_input_1[0]
-        v125: str = method17(v105, v106, v107, v108, v109, v110, method9(v105, v106, v107, v108, v109, v110), method13(), v0, v1)
+        v125: str = method16(v105, v106, v107, v108, v109, v110, method9(v105, v106, v107, v108, v109, v110), method13(), v0, v1)
         v141: None
         v17(None)
         v141 = None

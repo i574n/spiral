@@ -278,17 +278,17 @@ inl new_async_unit forall t. (fn : () -> ()) : async t =
             // | Rust _
             | TypeScript _
             | Python _ => fun fn =>
+                fun () =>
+                    $'async {'
                     fun () =>
-                        $'async {'
-                        fun () =>
-                            fn ()
-                            real
-                                typecase t with
-                                | () => $'()' : ()
-                                | _ => ()
-                        |> indent
-                        $'}' : ()
-                    |> base_let'
+                        fn ()
+                        real
+                            typecase t with
+                            | () => $'()' : ()
+                            | _ => ()
+                    |> indent
+                    $'}' : ()
+                |> base_let'
             | Cuda _ => fun fn =>
                 $'async def __new_async_unit__():'
                 fun () =>
@@ -437,7 +437,7 @@ inl return_await' forall t. (a : async t) : t =
     }
 
 /// ### map
-inl map forall t u. (fn : t -> u) (a : async t) : async u =
+let map forall t u. (fn : t -> u) (a : async t) : async u =
     fun () =>
         inl x = a |> let'
         fn x |> return
@@ -504,7 +504,7 @@ inl default_cancellation_token () : threading.cancellation_token =
     $'Async.DefaultCancellationToken'
 
 /// ### merge_cancellation_token_with_default_async
-inl merge_cancellation_token_with_default_async
+let merge_cancellation_token_with_default_async
     (token : threading.cancellation_token)
     : async threading.cancellation_token
     =
@@ -519,16 +519,18 @@ inl merge_cancellation_token_with_default_async
     |> new_async_unit
 
 /// ### with_trace_level
-inl with_trace_level forall t. level fn : _ t = new_async fun () =>
-    inl trace_state = get_trace_state_or_init None
-    inl old_trace_level = *trace_state.level
-    inl trace_level = trace_state.level
-    try_finally
-        fun () =>
-            trace_level <- level
-            fn |> return_await
-        fun () =>
-            trace_level <- old_trace_level
+let with_trace_level forall t. level fn : _ t =
+    fun () =>
+        inl trace_state = get_trace_state_or_init None
+        inl old_trace_level = *trace_state.level
+        inl trace_level = trace_state.level
+        try_finally
+            fun () =>
+                trace_level <- level
+                fn |> return_await
+            fun () =>
+                trace_level <- old_trace_level
+    |> new_async
 
 /// ### value_task
 nominal value_task = $'System.Threading.Tasks.ValueTask'

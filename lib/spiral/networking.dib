@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"name":"spiral"}]}}
 
 #!markdown
 
@@ -386,7 +386,7 @@ fun () =>
 
 //// test
 
-inl lock_port host port = async.new_async_unit fun () =>
+let lock_port host port = async.new_async_unit fun () =>
     trace Debug (fun () => "_1") id
     async.sleep 500 |> async.do
     inl listener = new_tcp_listener (ip_address_parse host) port |> use
@@ -457,7 +457,7 @@ let get_available_port timeout host initial_port : _ i32 =
 
 //// test
 
-inl lock_ports host port = async.new_async_unit fun () =>
+let lock_ports host port = async.new_async_unit fun () =>
     trace Debug (fun () => "_1") id
     inl listener1 = new_tcp_listener (ip_address_parse host) port |> use
     inl listener2 = new_tcp_listener (ip_address_parse host) (port + 1) |> use
@@ -506,7 +506,7 @@ fun () =>
 
 //// test
 
-inl lock_ports host port = async.new_async_unit fun () =>
+let lock_ports host port = async.new_async_unit fun () =>
     trace Debug (fun () => "_1") id
     inl listener1 = new_tcp_listener (ip_address_parse host) port |> use
     inl listener2 = new_tcp_listener (ip_address_parse host) (port + 1) |> use

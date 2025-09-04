@@ -375,51 +375,47 @@ def method11(v0: str) -> str:
     return v2.l0
 
 
-def method13(__unit: None=None) -> str:
-    return "\u001b[0m"
-
-
 def method10(v0: US0) -> str:
-    v5: US5 = US5(0, "Verbose") if (True if (v0.tag == 0) else False) else US5(1)
-    v46: US5
-    if v5.tag == 0:
-        v46 = US5(0, v5.fields[0])
+    v650: str = "\u001b[94m" if (v0.tag == 1) else ("\u001b[92m" if (v0.tag == 2) else ("\u001b[90m" if (v0.tag == 0) else ("\u001b[93m" if (v0.tag == 3) else "\u001b[91m")))
+    v655: US5 = US5(0, "Verbose") if (True if (v0.tag == 0) else False) else US5(1)
+    v696: US5
+    if v655.tag == 0:
+        v696 = US5(0, v655.fields[0])
 
     else: 
-        v12: US5 = US5(0, "Debug") if (True if (v0.tag == 1) else False) else US5(1)
-        if v12.tag == 0:
-            v46 = US5(0, v12.fields[0])
+        v662: US5 = US5(0, "Debug") if (True if (v0.tag == 1) else False) else US5(1)
+        if v662.tag == 0:
+            v696 = US5(0, v662.fields[0])
 
         else: 
-            v19: US5 = US5(0, "Info") if (True if (v0.tag == 2) else False) else US5(1)
-            if v19.tag == 0:
-                v46 = US5(0, v19.fields[0])
+            v669: US5 = US5(0, "Info") if (True if (v0.tag == 2) else False) else US5(1)
+            if v669.tag == 0:
+                v696 = US5(0, v669.fields[0])
 
             else: 
-                v26: US5 = US5(0, "Warning") if (True if (v0.tag == 3) else False) else US5(1)
-                if v26.tag == 0:
-                    v46 = US5(0, v26.fields[0])
+                v676: US5 = US5(0, "Warning") if (True if (v0.tag == 3) else False) else US5(1)
+                if v676.tag == 0:
+                    v696 = US5(0, v676.fields[0])
 
                 else: 
-                    v33: US5 = US5(0, "Critical") if (True if (v0.tag == 4) else False) else US5(1)
-                    v46 = US5(0, v33.fields[0]) if (v33.tag == 0) else US5(1)
+                    v683: US5 = US5(0, "Critical") if (True if (v0.tag == 4) else False) else US5(1)
+                    v696 = US5(0, v683.fields[0]) if (v683.tag == 0) else US5(1)
 
 
 
 
-    v50: str
-    if v46.tag == 0:
-        v50 = v46.fields[0]
+    v700: str
+    if v696.tag == 0:
+        v700 = v696.fields[0]
 
     else: 
         raise Exception("Option does not have a value.")
 
-    v53: str = v50.lower()
-    v57: str = method11(v53[0])
-    return (("\u001b[94m" if (v0.tag == 1) else ("\u001b[92m" if (v0.tag == 2) else ("\u001b[90m" if (v0.tag == 0) else ("\u001b[93m" if (v0.tag == 3) else "\u001b[91m")))) + v57) + method13()
+    v703: str = v700.lower()
+    return (v650 + method11(v703[0])) + "\u001b[0m"
 
 
-def method15(v0: str) -> str:
+def method14(v0: str) -> str:
     v2: Mut3 = Mut3(method12())
     v14_1: None
     closure8(v2, v0, None)
@@ -427,13 +423,13 @@ def method15(v0: str) -> str:
     return v2.l0
 
 
-def method16(v0: str) -> str:
+def method15(v0: str) -> str:
     return trim_end(trim_start(v0, *to_array(empty())), *to_array(of_array([" ", "/"])))
 
 
-def method14(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: str, v9: str) -> str:
-    v10: str = method15(v9)
-    return method16((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + v8) + " / ") + v10)
+def method13(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: int64 | None, v6: str, v7: str, v8: str, v9: str) -> str:
+    v10: str = method14(v9)
+    return method15((((((((v6 + " ") + v7) + " #") + int64_to_string(v0.l0)) + " ") + v8) + " / ") + v10)
 
 
 def closure9(v0: Mut0, unit_var: None) -> None:
@@ -488,7 +484,7 @@ def closure6(v0: US0, v1: Callable[[], str], v2: Callable[[], str], unit_var: No
         v125: str = method6(v107, v108, v109, v110, v111, v112)
         v126: str = method10(v0)
         v127: str = v1(None)
-        v132: str = "" if (v127 == "") else method14(v107, v108, v109, v110, v111, v112, v125, v126, v127, v2(None))
+        v132: str = "" if (v127 == "") else method13(v107, v108, v109, v110, v111, v112, v125, v126, v127, v2(None))
         v148: None
         v18(None)
         v148 = None

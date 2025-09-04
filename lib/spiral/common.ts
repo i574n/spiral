@@ -549,16 +549,12 @@ export function method14(v0: string): string {
     return v2.l0;
 }
 
-export function method16(): string {
-    return "\u001b[0m";
-}
-
 export function method13(): string {
-    const v4: string = "Warning".toLocaleLowerCase();
-    return ("\u001b[93m" + method14(v4[0])) + method16();
+    const v133: string = "Warning".toLocaleLowerCase();
+    return ("\u001b[93m" + method14(v133[0])) + "\u001b[0m";
 }
 
-export function method18(v0: int32, v1: Error): string {
+export function method17(v0: int32, v1: Error): string {
     const v3: Mut3 = new Mut3(method15());
     let v17: any;
     closure11(v3, "{ ", undefined);
@@ -590,13 +586,13 @@ export function method18(v0: int32, v1: Error): string {
     return v3.l0;
 }
 
-export function method19(v0: string): string {
+export function method18(v0: string): string {
     return trimEnd(trimStart(v0, ...[]), ...[" ", "/"]);
 }
 
-export function method17(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: Error): string {
-    const v10: string = method18(v8, v9);
-    return method19((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "common.retry_fn") + " / ") + v10);
+export function method16(v0: Mut0, v1: Mut1, v2: Mut2, v3: Mut3, v4: Mut4, v5: Option<int64>, v6: string, v7: string, v8: int32, v9: Error): string {
+    const v10: string = method17(v8, v9);
+    return method18((((((((v6 + " ") + v7) + " #") + int64ToString(v0.l0)) + " ") + "common.retry_fn") + " / ") + v10);
 }
 
 export function closure12(v0: Mut0, unitVar: void): void {
@@ -640,7 +636,7 @@ export function closure9(v0: int32, v1: Error, unitVar: void): void {
         const v107: Mut2 = patternInput_1[2];
         const v106: Mut1 = patternInput_1[1];
         const v105: Mut0 = patternInput_1[0];
-        const v125: string = method17(v105, v106, v107, v108, v109, v110, method9(v105, v106, v107, v108, v109, v110), method13(), v0, v1);
+        const v125: string = method16(v105, v106, v107, v108, v109, v110, method9(v105, v106, v107, v108, v109, v110), method13(), v0, v1);
         let v141: any;
         v17();
         v141 = undefined;

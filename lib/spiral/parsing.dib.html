@@ -7892,39 +7892,38 @@ a.anchor-link {
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 input: a b c
-{ name = __assert_eq'; actual = [|"a"; "b"; "c"|]; expected = [|"a"; "b"; "c"|] }
+{ name = __assert_eq'; expected = [|"a"; "b"; "c"|] }
 
 input: e f "g h" i
-{ name = __assert_eq'; actual = [|"e"; "f"; "g h"; "i"|]; expected = [|"e"; "f"; "g h"; "i"|] }
+{ name = __assert_eq'; expected = [|"e"; "f"; "g h"; "i"|] }
 
 input: "j k" "l" "m"
-{ name = __assert_eq'; actual = [|"j k"; "l"; "m"|]; expected = [|"j k"; "l"; "m"|] }
+{ name = __assert_eq'; expected = [|"j k"; "l"; "m"|] }
 
 input: s -t "u `"v`" w"
-{ name = __assert_eq'; actual = [|"s"; "-t"; "u `"v`" w"|]; expected = [|"s"; "-t"; "u `"v`" w"|] }
+{ name = __assert_eq'; expected = [|"s"; "-t"; "u `"v`" w"|] }
 
 input: n -o "p \"q\" r"
-{ name = __assert_eq'; actual = [|"n"; "-o"; "p \"q\" r"|]; expected = [|"n"; "-o"; "p \"q\" r"|] }
+{ name = __assert_eq'; expected = [|"n"; "-o"; "p \"q\" r"|] }
 
 input: r -s "t \"u\""
-{ name = __assert_eq'; actual = [|"r"; "-s"; "t \"u\""|]; expected = [|"r"; "-s"; "t \"u\""|] }
+{ name = __assert_eq'; expected = [|"r"; "-s"; "t \"u\""|] }
 
 input: x -y "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"
-{ name = __assert_eq'; actual = [|"x"; "-y"; "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"|]; expected = [|"x"; "-y"; "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"|] }
+{ name = __assert_eq'; expected = [|"x"; "-y"; "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"|] }
 
 input: e -f "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"
-{ name = __assert_eq'; actual = [|"e"; "-f"; "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"|]; expected = [|"e"; "-f"; "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"|] }
+{ name = __assert_eq'; expected = [|"e"; "-f"; "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"|] }
 
 input: --l \"''' m '''\" 
-{ name = __assert_eq'; actual = [|"--l"; "''' m '''"|]; expected = [|"--l"; "''' m '''"|] }
+{ name = __assert_eq'; expected = [|"--l"; "''' m '''"|] }
 
 input: n --o --p q --r "s:/t u/v.w" --x "y:/z.a" --b c.d "\e{f-g}" h.i "j (k)"
-{ name = __assert_eq'; actual = [|"n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d";
-  "\e{f-g}"; "h.i"; "j (k)"|]; expected = [|"n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d";
+{ name = __assert_eq'; expected = [|"n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d";
   "\e{f-g}"; "h.i"; "j (k)"|] }
 
 input: l "m n:\o.p"
-{ name = __assert_eq'; actual = [|"l"; "m n:\o.p"|]; expected = [|"l"; "m n:\o.p"|] }
+{ name = __assert_eq'; expected = [|"l"; "m n:\o.p"|] }
 </pre>
 </div>
 </div>
@@ -8212,13 +8211,13 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('a', 'bc', a, 1, 2); expected = ('a', 'bc', a, 1, 2) }
+{ name = __assert_eq; expected = ('a', 'bc', a, 1, 2) }
 
 .ts output:
-{ name = __assert_eq; actual = a,bc,a,1,2; expected = a,bc,a,1,2 }
+{ name = __assert_eq; expected = a,bc,a,1,2 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("a", "bc", "a", 1, 2); expected = #("a", "bc", "a", 1, 2) }
+{ name = __assert_eq; expected = #("a", "bc", "a", 1, 2) }
 
 </pre>
 </div>
@@ -8227,7 +8226,7 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ('a', "bc", a, 1, 2); expected = struct ('a', "bc", a, 1, 2) }
+{ name = __assert_eq; expected = struct ('a', "bc", a, 1, 2) }
 </pre>
 </div>
 </div>
@@ -8260,7 +8259,7 @@ input: l "m n:\o.p"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = struct ('a', (Ln: 1, Col: 2)); expected = struct ('a', (Ln: 1, Col: 2)) }
+<pre>{ name = __assert_eq'; expected = struct ('a', (Ln: 1, Col: 2)) }
 </pre>
 </div>
 </div>
@@ -8360,13 +8359,13 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('a', 'bc', a, 1, 2); expected = ('a', 'bc', a, 1, 2) }
+{ name = __assert_eq; expected = ('a', 'bc', a, 1, 2) }
 
 .ts output:
-{ name = __assert_eq; actual = a,bc,a,1,2; expected = a,bc,a,1,2 }
+{ name = __assert_eq; expected = a,bc,a,1,2 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("a", "bc", "a", 1, 2); expected = #("a", "bc", "a", 1, 2) }
+{ name = __assert_eq; expected = #("a", "bc", "a", 1, 2) }
 
 </pre>
 </div>
@@ -8375,7 +8374,7 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ('a', "bc", a, 1, 2); expected = struct ('a', "bc", a, 1, 2) }
+{ name = __assert_eq; expected = struct ('a', "bc", a, 1, 2) }
 </pre>
 </div>
 </div>
@@ -8408,7 +8407,7 @@ input: l "m n:\o.p"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = struct ('a', (Ln: 1, Col: 2)); expected = struct ('a', (Ln: 1, Col: 2)) }
+<pre>{ name = __assert_eq'; expected = struct ('a', (Ln: 1, Col: 2)) }
 </pre>
 </div>
 </div>
@@ -8483,13 +8482,13 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('abc', 'def', abc, 1, 4); expected = ('abc', 'def', abc, 1, 4) }
+{ name = __assert_eq; expected = ('abc', 'def', abc, 1, 4) }
 
 .ts output:
-{ name = __assert_eq; actual = abc,def,abc,1,4; expected = abc,def,abc,1,4 }
+{ name = __assert_eq; expected = abc,def,abc,1,4 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("abc", "def", "abc", 1, 4); expected = #("abc", "def", "abc", 1, 4) }
+{ name = __assert_eq; expected = #("abc", "def", "abc", 1, 4) }
 
 </pre>
 </div>
@@ -8498,7 +8497,7 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ("abc", "def", abc, 1, 4); expected = struct ("abc", "def", abc, 1, 4) }
+{ name = __assert_eq; expected = struct ("abc", "def", abc, 1, 4) }
 </pre>
 </div>
 </div>
@@ -8531,7 +8530,7 @@ input: l "m n:\o.p"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = (abc, (Ln: 1, Col: 4)); expected = (abc, (Ln: 1, Col: 4)) }
+<pre>{ name = __assert_eq'; expected = (abc, (Ln: 1, Col: 4)) }
 </pre>
 </div>
 </div>
@@ -8605,13 +8604,13 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('def', abc, 1, 4); expected = ('def', abc, 1, 4) }
+{ name = __assert_eq; expected = ('def', abc, 1, 4) }
 
 .ts output:
-{ name = __assert_eq; actual = def,abc,1,4; expected = def,abc,1,4 }
+{ name = __assert_eq; expected = def,abc,1,4 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("def", "abc", 1, 4); expected = #("def", "abc", 1, 4) }
+{ name = __assert_eq; expected = #("def", "abc", 1, 4) }
 
 </pre>
 </div>
@@ -8620,7 +8619,7 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ("def", abc, 1, 4); expected = struct ("def", abc, 1, 4) }
+{ name = __assert_eq; expected = struct ("def", abc, 1, 4) }
 </pre>
 </div>
 </div>
@@ -8684,20 +8683,17 @@ input: l "m n:\o.p"
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = US1_1(v0='parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n'); expected = US1_1(v0='parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n') }
+{ name = __assert_eq; expected = US1_1(v0='parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n') }
 
 
 .ts output:
-{ name = __assert_eq; actual = US1_1 (parsing.p_char / { expected = a; line = 2; col = 2 }
-def
- ^
-); expected = US1_1 (parsing.p_char / { expected = a; line = 2; col = 2 }
+{ name = __assert_eq; expected = US1_1 (parsing.p_char / { expected = a; line = 2; col = 2 }
 def
  ^
 ) }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = Us1i1("parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n"); expected = Us1i1("parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n") }
+{ name = __assert_eq; expected = Us1i1("parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n") }
 
 
 </pre>
@@ -8707,10 +8703,7 @@ def
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = US1_1 "parsing.p_char / { expected = a; line = 2; col = 2 }
-def
- ^
-"; expected = US1_1 "parsing.p_char / { expected = a; line = 2; col = 2 }
+{ name = __assert_eq; expected = US1_1 "parsing.p_char / { expected = a; line = 2; col = 2 }
 def
  ^
 " }
@@ -8843,13 +8836,13 @@ def
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('b', 'c', ab, 1, 3); expected = ('b', 'c', ab, 1, 3) }
+{ name = __assert_eq; expected = ('b', 'c', ab, 1, 3) }
 
 .ts output:
-{ name = __assert_eq; actual = b,c,ab,1,3; expected = b,c,ab,1,3 }
+{ name = __assert_eq; expected = b,c,ab,1,3 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("b", "c", "ab", 1, 3); expected = #("b", "c", "ab", 1, 3) }
+{ name = __assert_eq; expected = #("b", "c", "ab", 1, 3) }
 
 </pre>
 </div>
@@ -8858,7 +8851,7 @@ def
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ('b', "c", ab, 1, 3); expected = struct ('b', "c", ab, 1, 3) }
+{ name = __assert_eq; expected = struct ('b', "c", ab, 1, 3) }
 </pre>
 </div>
 </div>
@@ -8891,7 +8884,7 @@ def
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq'; actual = (b, (Ln: 1, Col: 3)); expected = (b, (Ln: 1, Col: 3)) }
+<pre>{ name = __assert_eq'; expected = (b, (Ln: 1, Col: 3)) }
 </pre>
 </div>
 </div>
@@ -8925,13 +8918,7 @@ def
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = (Error in Ln: 2 Col: 2
-def
- ^
-Expecting: 'a'
-, Error in Ln: 2 Col: 2
-Expecting: 'a'
-); expected = (Error in Ln: 2 Col: 2
+<pre>{ name = __assert_eq; expected = (Error in Ln: 2 Col: 2
 def
  ^
 Expecting: 'a'
@@ -9048,18 +9035,18 @@ Expecting: 'a'
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .py output (Python):
-{ name = __assert_eq; actual = US0_1(v0="parsing.none_of / unexpected char / { first_char = a; chars = ['a' 'b' 'c']; s = (, 1, 1) }"); expected = US0_1(v0="parsing.none_of / unexpected char / { first_char = a; chars = ['a' 'b' 'c']; s = (, 1, 1) }") }
-{ name = __assert_eq; actual = ('d', 'ef', d, 1, 2); expected = ('d', 'ef', d, 1, 2) }
+{ name = __assert_eq; expected = US0_1(v0="parsing.none_of / unexpected char / { first_char = a; chars = ['a' 'b' 'c']; s = (, 1, 1) }") }
+{ name = __assert_eq; expected = ('d', 'ef', d, 1, 2) }
 
 
 .ts output:
-{ name = __assert_eq; actual = US0_1 (parsing.none_of / unexpected char / { first_char = a; chars = a,b,c; s = ,1,1 }); expected = US0_1 (parsing.none_of / unexpected char / { first_char = a; chars = a,b,c; s = ,1,1 }) }
-{ name = __assert_eq; actual = d,ef,d,1,2; expected = d,ef,d,1,2 }
+{ name = __assert_eq; expected = US0_1 (parsing.none_of / unexpected char / { first_char = a; chars = a,b,c; s = ,1,1 }) }
+{ name = __assert_eq; expected = d,ef,d,1,2 }
 
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = Us0i1("parsing.none_of / unexpected char / { first_char = a; chars = [\"a\", \"b\", \"c\"]; s = #(\"\", 1, 1) }"); expected = Us0i1("parsing.none_of / unexpected char / { first_char = a; chars = [\"a\", \"b\", \"c\"]; s = #(\"\", 1, 1) }") }
-{ name = __assert_eq; actual = #("d", "ef", "d", 1, 2); expected = #("d", "ef", "d", 1, 2) }
+{ name = __assert_eq; expected = Us0i1("parsing.none_of / unexpected char / { first_char = a; chars = [\"a\", \"b\", \"c\"]; s = #(\"\", 1, 1) }") }
+{ name = __assert_eq; expected = #("d", "ef", "d", 1, 2) }
 
 
 </pre>
@@ -9069,10 +9056,9 @@ Expecting: 'a'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = US0_1
-  "parsing.none_of / unexpected char / { first_char = a; chars = [|'a'; 'b'; 'c'|]; s = struct (, 1, 1) }"; expected = US0_1
+{ name = __assert_eq; expected = US0_1
   "parsing.none_of / unexpected char / { first_char = a; chars = [|'a'; 'b'; 'c'|]; s = struct (, 1, 1) }" }
-{ name = __assert_eq; actual = struct ('d', "ef", d, 1, 2); expected = struct ('d', "ef", d, 1, 2) }
+{ name = __assert_eq; expected = struct ('d', "ef", d, 1, 2) }
 </pre>
 </div>
 </div>
@@ -9112,20 +9098,14 @@ Expecting: 'a'
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{ name = __assert_eq; actual = (Error in Ln: 1 Col: 1
-abc
-^
-Expecting: any char not in ‘abc’
-, Error in Ln: 1 Col: 1
-Expecting: any char not in ‘abc’
-); expected = (Error in Ln: 1 Col: 1
+<pre>{ name = __assert_eq; expected = (Error in Ln: 1 Col: 1
 abc
 ^
 Expecting: any char not in ‘abc’
 , Error in Ln: 1 Col: 1
 Expecting: any char not in ‘abc’
 ) }
-{ name = __assert_eq'; actual = (d, (Ln: 1, Col: 2)); expected = (d, (Ln: 1, Col: 2)) }
+{ name = __assert_eq'; expected = (d, (Ln: 1, Col: 2)) }
 </pre>
 </div>
 </div>
@@ -9199,24 +9179,21 @@ Expecting: any char not in ‘abc’
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .py output (Python):
-{ name = __assert_eq; actual = ('a', 'bc', a, 1, 2); expected = ('a', 'bc', a, 1, 2) }
-{ name = __assert_eq; actual = US0_1(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n'); expected = US0_1(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n') }
+{ name = __assert_eq; expected = ('a', 'bc', a, 1, 2) }
+{ name = __assert_eq; expected = US0_1(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n') }
 
 
 .ts output:
-{ name = __assert_eq; actual = a,bc,a,1,2; expected = a,bc,a,1,2 }
-{ name = __assert_eq; actual = US0_1 (parsing.p_char / { expected = b; line = 1; col = 1 }
-cba
-^
-); expected = US0_1 (parsing.p_char / { expected = b; line = 1; col = 1 }
+{ name = __assert_eq; expected = a,bc,a,1,2 }
+{ name = __assert_eq; expected = US0_1 (parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
 ) }
 
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("a", "bc", "a", 1, 2); expected = #("a", "bc", "a", 1, 2) }
-{ name = __assert_eq; actual = Us0i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n"); expected = Us0i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
+{ name = __assert_eq; expected = #("a", "bc", "a", 1, 2) }
+{ name = __assert_eq; expected = Us0i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
 
 
 </pre>
@@ -9226,11 +9203,8 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ('a', "bc", a, 1, 2); expected = struct ('a', "bc", a, 1, 2) }
-{ name = __assert_eq; actual = US0_1 "parsing.p_char / { expected = b; line = 1; col = 1 }
-cba
-^
-"; expected = US0_1 "parsing.p_char / { expected = b; line = 1; col = 1 }
+{ name = __assert_eq; expected = struct ('a', "bc", a, 1, 2) }
+{ name = __assert_eq; expected = US0_1 "parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
 " }
@@ -9301,13 +9275,13 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('A', 'bc', a, 1, 2); expected = ('A', 'bc', a, 1, 2) }
+{ name = __assert_eq; expected = ('A', 'bc', a, 1, 2) }
 
 .ts output:
-{ name = __assert_eq; actual = A,bc,a,1,2; expected = A,bc,a,1,2 }
+{ name = __assert_eq; expected = A,bc,a,1,2 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("A", "bc", "a", 1, 2); expected = #("A", "bc", "a", 1, 2) }
+{ name = __assert_eq; expected = #("A", "bc", "a", 1, 2) }
 
 </pre>
 </div>
@@ -9316,7 +9290,7 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ('A', "bc", a, 1, 2); expected = struct ('A', "bc", a, 1, 2) }
+{ name = __assert_eq; expected = struct ('A', "bc", a, 1, 2) }
 </pre>
 </div>
 </div>
@@ -9397,13 +9371,13 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = (UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='b', v1=UH0_0()))))), 'c', aaabb, 1, 6); expected = (UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='b', v1=UH0_0()))))), 'c', aaabb, 1, 6) }
+{ name = __assert_eq; expected = (UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='b', v1=UH0_0()))))), 'c', aaabb, 1, 6) }
 
 .ts output:
-{ name = __assert_eq; actual = UH0_1 (a, UH0_1 (a, UH0_1 (a, UH0_1 (b, UH0_1 (b, UH0_0))))),c,aaabb,1,6; expected = UH0_1 (a, UH0_1 (a, UH0_1 (a, UH0_1 (b, UH0_1 (b, UH0_0))))),c,aaabb,1,6 }
+{ name = __assert_eq; expected = UH0_1 (a, UH0_1 (a, UH0_1 (a, UH0_1 (b, UH0_1 (b, UH0_0))))),c,aaabb,1,6 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6); expected = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6) }
+{ name = __assert_eq; expected = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6) }
 
 </pre>
 </div>
@@ -9412,8 +9386,7 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct (UH0_1 ('a', UH0_1 ('a', UH0_1 ('a', UH0_1 ('b', UH0_1 ('b', UH0_0))))),
-        "c", aaabb, 1, 6); expected = struct (UH0_1 ('a', UH0_1 ('a', UH0_1 ('a', UH0_1 ('b', UH0_1 ('b', UH0_0))))),
+{ name = __assert_eq; expected = struct (UH0_1 ('a', UH0_1 ('a', UH0_1 ('a', UH0_1 ('b', UH0_1 ('b', UH0_0))))),
         "c", aaabb, 1, 6) }
 </pre>
 </div>
@@ -9486,13 +9459,13 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('aaabb', 'c', aaabb, 1, 6); expected = ('aaabb', 'c', aaabb, 1, 6) }
+{ name = __assert_eq; expected = ('aaabb', 'c', aaabb, 1, 6) }
 
 .ts output:
-{ name = __assert_eq; actual = aaabb,c,aaabb,1,6; expected = aaabb,c,aaabb,1,6 }
+{ name = __assert_eq; expected = aaabb,c,aaabb,1,6 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("aaabb", "c", "aaabb", 1, 6); expected = #("aaabb", "c", "aaabb", 1, 6) }
+{ name = __assert_eq; expected = #("aaabb", "c", "aaabb", 1, 6) }
 
 </pre>
 </div>
@@ -9501,7 +9474,7 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ("aaabb", "c", aaabb, 1, 6); expected = struct ("aaabb", "c", aaabb, 1, 6) }
+{ name = __assert_eq; expected = struct ("aaabb", "c", aaabb, 1, 6) }
 </pre>
 </div>
 </div>
@@ -9647,27 +9620,24 @@ cba
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .py output (Python):
-{ name = __assert_eq; actual = (UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='b', v1=UH0_0()))))), 'c', aaabb, 1, 6); expected = (UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='b', v1=UH0_0()))))), 'c', aaabb, 1, 6) }
-{ name = __assert_eq; actual = (UH0_1(v0='b', v1=UH0_0()), 'cc', b, 1, 2); expected = (UH0_1(v0='b', v1=UH0_0()), 'cc', b, 1, 2) }
-{ name = __assert_eq; actual = US1_1(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n'); expected = US1_1(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n') }
+{ name = __assert_eq; expected = (UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='a', v1=UH0_1(v0='b', v1=UH0_1(v0='b', v1=UH0_0()))))), 'c', aaabb, 1, 6) }
+{ name = __assert_eq; expected = (UH0_1(v0='b', v1=UH0_0()), 'cc', b, 1, 2) }
+{ name = __assert_eq; expected = US1_1(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n') }
 
 
 .ts output:
-{ name = __assert_eq; actual = UH0_1 (a, UH0_1 (a, UH0_1 (a, UH0_1 (b, UH0_1 (b, UH0_0))))),c,aaabb,1,6; expected = UH0_1 (a, UH0_1 (a, UH0_1 (a, UH0_1 (b, UH0_1 (b, UH0_0))))),c,aaabb,1,6 }
-{ name = __assert_eq; actual = UH0_1 (b, UH0_0),cc,b,1,2; expected = UH0_1 (b, UH0_0),cc,b,1,2 }
-{ name = __assert_eq; actual = US1_1 (parsing.p_char / { expected = b; line = 1; col = 1 }
-cba
-^
-); expected = US1_1 (parsing.p_char / { expected = b; line = 1; col = 1 }
+{ name = __assert_eq; expected = UH0_1 (a, UH0_1 (a, UH0_1 (a, UH0_1 (b, UH0_1 (b, UH0_0))))),c,aaabb,1,6 }
+{ name = __assert_eq; expected = UH0_1 (b, UH0_0),cc,b,1,2 }
+{ name = __assert_eq; expected = US1_1 (parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
 ) }
 
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6); expected = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6) }
-{ name = __assert_eq; actual = #(Uh0i1("b", Uh0i0), "cc", "b", 1, 2); expected = #(Uh0i1("b", Uh0i0), "cc", "b", 1, 2) }
-{ name = __assert_eq; actual = Us1i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n"); expected = Us1i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
+{ name = __assert_eq; expected = #(Uh0i1("a", Uh0i1("a", Uh0i1("a", Uh0i1("b", Uh0i1("b", Uh0i0))))), "c", "aaabb", 1, 6) }
+{ name = __assert_eq; expected = #(Uh0i1("b", Uh0i0), "cc", "b", 1, 2) }
+{ name = __assert_eq; expected = Us1i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
 
 
 </pre>
@@ -9677,14 +9647,10 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct (UH0_1 ('a', UH0_1 ('a', UH0_1 ('a', UH0_1 ('b', UH0_1 ('b', UH0_0))))),
-        "c", aaabb, 1, 6); expected = struct (UH0_1 ('a', UH0_1 ('a', UH0_1 ('a', UH0_1 ('b', UH0_1 ('b', UH0_0))))),
+{ name = __assert_eq; expected = struct (UH0_1 ('a', UH0_1 ('a', UH0_1 ('a', UH0_1 ('b', UH0_1 ('b', UH0_0))))),
         "c", aaabb, 1, 6) }
-{ name = __assert_eq; actual = struct (UH0_1 ('b', UH0_0), "cc", b, 1, 2); expected = struct (UH0_1 ('b', UH0_0), "cc", b, 1, 2) }
-{ name = __assert_eq; actual = US1_1 "parsing.p_char / { expected = b; line = 1; col = 1 }
-cba
-^
-"; expected = US1_1 "parsing.p_char / { expected = b; line = 1; col = 1 }
+{ name = __assert_eq; expected = struct (UH0_1 ('b', UH0_0), "cc", b, 1, 2) }
+{ name = __assert_eq; expected = US1_1 "parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
 " }
@@ -9760,13 +9726,13 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = ('aaabb', 'c', aaabb, 1, 6); expected = ('aaabb', 'c', aaabb, 1, 6) }
+{ name = __assert_eq; expected = ('aaabb', 'c', aaabb, 1, 6) }
 
 .ts output:
-{ name = __assert_eq; actual = aaabb,c,aaabb,1,6; expected = aaabb,c,aaabb,1,6 }
+{ name = __assert_eq; expected = aaabb,c,aaabb,1,6 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("aaabb", "c", "aaabb", 1, 6); expected = #("aaabb", "c", "aaabb", 1, 6) }
+{ name = __assert_eq; expected = #("aaabb", "c", "aaabb", 1, 6) }
 
 </pre>
 </div>
@@ -9775,7 +9741,7 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ("aaabb", "c", aaabb, 1, 6); expected = struct ("aaabb", "c", aaabb, 1, 6) }
+{ name = __assert_eq; expected = struct ("aaabb", "c", aaabb, 1, 6) }
 </pre>
 </div>
 </div>
@@ -9890,18 +9856,18 @@ cba
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .py output (Python):
-{ name = __assert_eq; actual = ('b', 'ca', b, 1, 2); expected = ('b', 'ca', b, 1, 2) }
-{ name = __assert_eq; actual = ('c', 'ba', c, 1, 2); expected = ('c', 'ba', c, 1, 2) }
+{ name = __assert_eq; expected = ('b', 'ca', b, 1, 2) }
+{ name = __assert_eq; expected = ('c', 'ba', c, 1, 2) }
 
 
 .ts output:
-{ name = __assert_eq; actual = b,ca,b,1,2; expected = b,ca,b,1,2 }
-{ name = __assert_eq; actual = c,ba,c,1,2; expected = c,ba,c,1,2 }
+{ name = __assert_eq; expected = b,ca,b,1,2 }
+{ name = __assert_eq; expected = c,ba,c,1,2 }
 
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("b", "ca", "b", 1, 2); expected = #("b", "ca", "b", 1, 2) }
-{ name = __assert_eq; actual = #("c", "ba", "c", 1, 2); expected = #("c", "ba", "c", 1, 2) }
+{ name = __assert_eq; expected = #("b", "ca", "b", 1, 2) }
+{ name = __assert_eq; expected = #("c", "ba", "c", 1, 2) }
 
 
 </pre>
@@ -9911,8 +9877,8 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ('b', "ca", b, 1, 2); expected = struct ('b', "ca", b, 1, 2) }
-{ name = __assert_eq; actual = struct ('c', "ba", c, 1, 2); expected = struct ('c', "ba", c, 1, 2) }
+{ name = __assert_eq; expected = struct ('b', "ca", b, 1, 2) }
+{ name = __assert_eq; expected = struct ('c', "ba", c, 1, 2) }
 </pre>
 </div>
 </div>
@@ -10058,18 +10024,18 @@ Expecting: ']', 'a' or 'b'
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 .py output (Python):
-{ name = __assert_eq; actual = ('aaabb', '', [aaabb], 1, 8); expected = ('aaabb', '', [aaabb], 1, 8) }
-{ name = __assert_eq; actual = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = ([aaabb, 1, 7) }; input = [aaabb, ([aaabb, 1, 1); rest1 = aaabb, ([aaabb, 1, 2); rest2 = , ([aaabb, 1, 7) }; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = ([aaabb, 1, 7) }; input = [aaabb, ([aaabb, 1, 1); rest1 = aaabb, ([aaabb, 1, 2); rest2 = , ([aaabb, 1, 7) } }
+{ name = __assert_eq; expected = ('aaabb', '', [aaabb], 1, 8) }
+{ name = __assert_eq; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = ([aaabb, 1, 7) }; input = [aaabb, ([aaabb, 1, 1); rest1 = aaabb, ([aaabb, 1, 2); rest2 = , ([aaabb, 1, 7) } }
 
 
 .ts output:
-{ name = __assert_eq; actual = aaabb,,[aaabb],1,8; expected = aaabb,,[aaabb],1,8 }
-{ name = __assert_eq; actual = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = [aaabb,1,7 }; input = [aaabb, [aaabb,1,1; rest1 = aaabb, [aaabb,1,2; rest2 = , [aaabb,1,7 }; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = [aaabb,1,7 }; input = [aaabb, [aaabb,1,1; rest1 = aaabb, [aaabb,1,2; rest2 = , [aaabb,1,7 } }
+{ name = __assert_eq; expected = aaabb,,[aaabb],1,8 }
+{ name = __assert_eq; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = [aaabb,1,7 }; input = [aaabb, [aaabb,1,1; rest1 = aaabb, [aaabb,1,2; rest2 = , [aaabb,1,7 } }
 
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #("aaabb", "", "[aaabb]", 1, 8); expected = #("aaabb", "", "[aaabb]", 1, 8) }
-{ name = __assert_eq; actual = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = #("[aaabb", 1, 7) }; input = [aaabb, #("", 1, 1); rest1 = aaabb, #("[", 1, 2); rest2 = , #("[aaabb", 1, 7) }; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = #("[aaabb", 1, 7) }; input = [aaabb, #("", 1, 1); rest1 = aaabb, #("[", 1, 2); rest2 = , #("[aaabb", 1, 7) } }
+{ name = __assert_eq; expected = #("aaabb", "", "[aaabb]", 1, 8) }
+{ name = __assert_eq; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = #("[aaabb", 1, 7) }; input = [aaabb, #("", 1, 1); rest1 = aaabb, #("[", 1, 2); rest2 = , #("[aaabb", 1, 7) } }
 
 
 </pre>
@@ -10079,8 +10045,8 @@ Expecting: ']', 'a' or 'b'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct ("aaabb", "", [aaabb], 1, 8); expected = struct ("aaabb", "", [aaabb], 1, 8) }
-{ name = __assert_eq; actual = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = struct ([aaabb, 1, 7) }; input = [aaabb, struct ([aaabb, 1, 1); rest1 = aaabb, struct ([aaabb, 1, 2); rest2 = , struct ([aaabb, 1, 7) }; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = struct ([aaabb, 1, 7) }; input = [aaabb, struct ([aaabb, 1, 1); rest1 = aaabb, struct ([aaabb, 1, 2); rest2 = , struct ([aaabb, 1, 7) } }
+{ name = __assert_eq; expected = struct ("aaabb", "", [aaabb], 1, 8) }
+{ name = __assert_eq; expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of input / { c = ]; s = struct ([aaabb, 1, 7) }; input = [aaabb, struct ([aaabb, 1, 1); rest1 = aaabb, struct ([aaabb, 1, 2); rest2 = , struct ([aaabb, 1, 7) } }
 </pre>
 </div>
 </div>
@@ -10280,13 +10246,13 @@ Expecting: ']', 'a' or 'b'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = (UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))), '', , 1, 1); expected = (UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))), '', , 1, 1) }
+{ name = __assert_eq; expected = (UH0_1(v0='1', v1=UH0_1(v0='2', v1=UH0_1(v0='3', v1=UH0_0()))), '', , 1, 1) }
 
 .ts output:
-{ name = __assert_eq; actual = UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0))),,,1,1; expected = UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0))),,,1,1 }
+{ name = __assert_eq; expected = UH0_1 (1, UH0_1 (2, UH0_1 (3, UH0_0))),,,1,1 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #(Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))), "", "", 1, 1); expected = #(Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))), "", "", 1, 1) }
+{ name = __assert_eq; expected = #(Uh0i1("1", Uh0i1("2", Uh0i1("3", Uh0i0))), "", "", 1, 1) }
 
 </pre>
 </div>
@@ -10295,7 +10261,7 @@ Expecting: ']', 'a' or 'b'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct (UH0_1 ('1', UH0_1 ('2', UH0_1 ('3', UH0_0))), "", , 1, 1); expected = struct (UH0_1 ('1', UH0_1 ('2', UH0_1 ('3', UH0_0))), "", , 1, 1) }
+{ name = __assert_eq; expected = struct (UH0_1 ('1', UH0_1 ('2', UH0_1 ('3', UH0_0))), "", , 1, 1) }
 </pre>
 </div>
 </div>
@@ -10337,13 +10303,13 @@ Expecting: ']', 'a' or 'b'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.py output (Python):
-{ name = __assert_eq; actual = (UH0_1(v0='1', v1=UH0_0()), 'a 2', , 1, 1); expected = (UH0_1(v0='1', v1=UH0_0()), 'a 2', , 1, 1) }
+{ name = __assert_eq; expected = (UH0_1(v0='1', v1=UH0_0()), 'a 2', , 1, 1) }
 
 .ts output:
-{ name = __assert_eq; actual = UH0_1 (1, UH0_0),a 2,,1,1; expected = UH0_1 (1, UH0_0),a 2,,1,1 }
+{ name = __assert_eq; expected = UH0_1 (1, UH0_0),a 2,,1,1 }
 
 .gleam output (Gleam):
-{ name = __assert_eq; actual = #(Uh0i1("1", Uh0i0), "a 2", "", 1, 1); expected = #(Uh0i1("1", Uh0i0), "a 2", "", 1, 1) }
+{ name = __assert_eq; expected = #(Uh0i1("1", Uh0i0), "a 2", "", 1, 1) }
 
 </pre>
 </div>
@@ -10352,7 +10318,7 @@ Expecting: ']', 'a' or 'b'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx output:
-{ name = __assert_eq; actual = struct (UH0_1 ('1', UH0_0), "a 2", , 1, 1); expected = struct (UH0_1 ('1', UH0_0), "a 2", , 1, 1) }
+{ name = __assert_eq; expected = struct (UH0_1 ('1', UH0_0), "a 2", , 1, 1) }
 </pre>
 </div>
 </div>

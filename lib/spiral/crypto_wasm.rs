@@ -646,18 +646,18 @@ pub mod Crypto {
         };
         v2.l0.get().clone()
     }
-    pub fn method18() -> string {
-        string("\u{001b}[0m")
-    }
     pub fn method15() -> string {
-        let v8: string = Crypto::method16(getCharAt(toLower(string("Verbose")), 0_i32));
-        let v71: &str = inline_colorization::color_bright_black;
-        let v80: &str = &*v8;
-        let v109: &str = inline_colorization::color_reset;
-        let v111: std::string::String = format!("{}{}{}", v71, v80, v109);
-        fable_library_rust::String_::fromString(v111)
+        let v43: &str = inline_colorization::color_bright_black;
+        let v52: std::string::String = String::from(v43);
+        let v139: string = append(
+            (fable_library_rust::String_::fromString(v52)),
+            (Crypto::method16(getCharAt(toLower(string("Verbose")), 0_i32))),
+        );
+        let v185: &str = inline_colorization::color_reset;
+        let v194: std::string::String = String::from(v185);
+        append((v139), (fable_library_rust::String_::fromString(v194)))
     }
-    pub fn method20(v0_1: i32, v1_1: string, v2: u16) -> string {
+    pub fn method19(v0_1: i32, v1_1: string, v2: u16) -> string {
         let v4: LrcPtr<Crypto::Mut4> = LrcPtr::new(Crypto::Mut4 {
             l0: MutCell::new(Crypto::method17()),
         });
@@ -715,13 +715,13 @@ pub mod Crypto {
         };
         v4.l0.get().clone()
     }
-    pub fn method21(v0_1: string) -> string {
+    pub fn method20(v0_1: string) -> string {
         trimEndChars(
             trimStartChars(v0_1, toArray(empty::<char>())),
             toArray(ofArray(new_array(&[' ', '/']))),
         )
     }
-    pub fn method19(
+    pub fn method18(
         v0_1: LrcPtr<Crypto::Mut1>,
         v1_1: LrcPtr<Crypto::Mut2>,
         v2: LrcPtr<Crypto::Mut3>,
@@ -734,8 +734,8 @@ pub mod Crypto {
         v9: string,
         v10: u16,
     ) -> string {
-        let v11: string = Crypto::method20(v8, v9, v10);
-        Crypto::method21(append(
+        let v11: string = Crypto::method19(v8, v9, v10);
+        Crypto::method20(append(
             (append(
                 (append(
                     (append(
@@ -820,7 +820,7 @@ pub mod Crypto {
             let v108: LrcPtr<Crypto::Mut3> = patternInput_1.2.clone();
             let v107: LrcPtr<Crypto::Mut2> = patternInput_1.1.clone();
             let v106: LrcPtr<Crypto::Mut1> = patternInput_1.0.clone();
-            let v126: string = Crypto::method19(
+            let v126: string = Crypto::method18(
                 v106.clone(),
                 v107.clone(),
                 v108.clone(),

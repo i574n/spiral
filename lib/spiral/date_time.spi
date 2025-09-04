@@ -69,7 +69,7 @@ nominal year = int
 /// ## fsharp
 
 /// ### date_time
-nominal date =
+nominal date_gleam =
     `(
         backend_switch `(()) `({}) {
             Gleam = (fun () =>
@@ -78,7 +78,7 @@ nominal date =
         }
         $'' : $'calendar.Date'
     )
-nominal time_of_day =
+nominal time_of_day_gleam =
     `(
         backend_switch `(()) `({}) {
             Gleam = (fun () =>
@@ -87,7 +87,7 @@ nominal time_of_day =
         }
         $'' : $'calendar.TimeOfDay'
     )
-nominal duration =
+nominal duration_gleam =
     `(
         backend_switch `(()) `({}) {
             Gleam = (fun () =>
@@ -106,7 +106,7 @@ nominal date_time_python =
     )
 type date_time_switch =
     {
-        Gleam : date * time_of_day * duration
+        Gleam : date_gleam * time_of_day_gleam * duration_gleam
         Fsharp : $'System.DateTime'
         Python : date_time_python
     }
@@ -135,7 +135,7 @@ nominal tempo_date_time =
     )
 
 /// ### year
-inl year (date_time : date_time) : i32 =
+inl get_year (date_time : date_time) : i32 =
     backend_switch {
         Gleam = fun () => $'0' : i32
         Fsharp = fun () => date_time |> $'_.Year' : i32
@@ -147,9 +147,9 @@ inl format (format : string) (date_time : date_time) : string =
     backend_switch {
         Gleam = fun () =>
             global "import tempo/datetime"
-            inl date : date = $'!date_time.0'
-            inl time_of_day : time_of_day = $'!date_time.1'
-            inl duration : duration = $'!date_time.2'
+            inl date : date_gleam = $'!date_time.0'
+            inl time_of_day : time_of_day_gleam = $'!date_time.1'
+            inl duration : duration_gleam = $'!date_time.2'
             inl timestamp : timestamp = $'timestamp.from_calendar(!date, !time_of_day, !duration)'
             inl tempo_date_time : tempo_date_time = $'!timestamp |> datetime.from_timestamp'
             inl tempo_date_time : tempo_date_time = $'!tempo_date_time |> datetime.add(!duration)'
@@ -169,7 +169,7 @@ inl format (format : string) (date_time : date_time) : string =
             inl date_time = join date_time
             if format <> ""
             then $'!date_time.strftime(!format)' : string
-            elif year date_time < 1000
+            elif get_year date_time < 1000
             then $'\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
             else $'\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
     }
@@ -202,8 +202,8 @@ inl to_calendar_utc (timestamp : timestamp) : date_time =
             global "import gleam/time/calendar"
             global "import gleam/time/timestamp"
     }
-    inl duration = $'calendar.utc_offset' : duration
-    inl (date : date), (time_of_day : time_of_day) = $'!timestamp |> timestamp.to_calendar(!duration)'
+    inl duration = $'calendar.utc_offset' : duration_gleam
+    inl (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
     (date, time_of_day, duration) |> to
 
 /// ### tempo_date_time
@@ -271,10 +271,10 @@ inl date_time_milliseconds
             //     | October => $'calendar.October'
             //     | November => $'calendar.November'
             //     | December => $'calendar.December'
-            inl date : date = $'calendar.Date(#year, #calendar_month, #day)'
+            inl date : date_gleam = $'calendar.Date(#year, #calendar_month, #day)'
             inl nanoseconds = millisecond * 1000000
-            inl time_of_day : time_of_day = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
-            inl duration : duration = $'duration.milliseconds(#millisecond)'
+            inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
+            inl duration : duration_gleam = $'duration.milliseconds(#millisecond)'
             (date, time_of_day, duration) |> to : date_time
         Fsharp = fun () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
@@ -368,9 +368,9 @@ inl ticks (date_time : date_time) : timestamp =
         Gleam = fun () =>
             global "import gleam/time/timestamp"
             // inl date_time (date, time_of_day, duration) = date_time
-            inl date : date = $'!date_time.0'
-            inl time_of_day : time_of_day = $'!date_time.1'
-            inl duration : duration = $'!date_time.2'
+            inl date : date_gleam = $'!date_time.0'
+            inl time_of_day : time_of_day_gleam = $'!date_time.1'
+            inl duration : duration_gleam = $'!date_time.2'
             $'timestamp.from_calendar(!date, !time_of_day, !duration)' : timestamp
         Fsharp = fun () =>
             run_target function
@@ -460,8 +460,8 @@ inl to_calendar (timestamp : timestamp) : date_time =
             global "import gleam/time/timestamp"
             global "import gleam/time/calendar"
     }
-    inl duration = $'calendar.local_offset()' : duration
-    inl (date : date), (time_of_day : time_of_day) = $'!timestamp |> timestamp.to_calendar(!duration)'
+    inl duration = $'calendar.local_offset()' : duration_gleam
+    inl (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
     (date, time_of_day, duration) |> to
 
 /// ### now

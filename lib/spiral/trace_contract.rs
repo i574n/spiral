@@ -590,11 +590,35 @@ pub mod Trace {
         };
         v2.l0.get().clone()
     }
-    pub fn method13() -> string {
-        string("\u{001b}[0m")
-    }
     pub fn method10(v0: Trace::US0) -> string {
-        let v5: Trace::US5 = if if let Trace::US0::US0_0 = &v0 {
+        let v650: string = match &v0 {
+            Trace::US0::US0_1 => {
+                let v213: &str = inline_colorization::color_bright_blue;
+                let v224: std::string::String = String::from(v213);
+                fable_library_rust::String_::fromString(v224)
+            }
+            Trace::US0::US0_2 => {
+                let v342: &str = inline_colorization::color_bright_green;
+                let v353: std::string::String = String::from(v342);
+                fable_library_rust::String_::fromString(v353)
+            }
+            Trace::US0::US0_0 => {
+                let v84: &str = inline_colorization::color_bright_black;
+                let v95: std::string::String = String::from(v84);
+                fable_library_rust::String_::fromString(v95)
+            }
+            Trace::US0::US0_3 => {
+                let v471: &str = inline_colorization::color_yellow;
+                let v482: std::string::String = String::from(v471);
+                fable_library_rust::String_::fromString(v482)
+            }
+            _ => {
+                let v600: &str = inline_colorization::color_bright_red;
+                let v611: std::string::String = String::from(v600);
+                fable_library_rust::String_::fromString(v611)
+            }
+        };
+        let v655: Trace::US5 = if if let Trace::US0::US0_0 = &v0 {
             true
         } else {
             false
@@ -603,16 +627,16 @@ pub mod Trace {
         } else {
             Trace::US5::US5_1
         };
-        let v46: Trace::US5 = match &v5 {
-            Trace::US5::US5_0(v5_0_0) => Trace::US5::US5_0(
-                match &v5 {
+        let v696: Trace::US5 = match &v655 {
+            Trace::US5::US5_0(v655_0_0) => Trace::US5::US5_0(
+                match &v655 {
                     Trace::US5::US5_0(x) => x.clone(),
                     _ => unreachable!(),
                 }
                 .clone(),
             ),
             _ => {
-                let v12: Trace::US5 = if if let Trace::US0::US0_1 = &v0 {
+                let v662: Trace::US5 = if if let Trace::US0::US0_1 = &v0 {
                     true
                 } else {
                     false
@@ -621,16 +645,16 @@ pub mod Trace {
                 } else {
                     Trace::US5::US5_1
                 };
-                match &v12 {
-                    Trace::US5::US5_0(v12_0_0) => Trace::US5::US5_0(
-                        match &v12 {
+                match &v662 {
+                    Trace::US5::US5_0(v662_0_0) => Trace::US5::US5_0(
+                        match &v662 {
                             Trace::US5::US5_0(x) => x.clone(),
                             _ => unreachable!(),
                         }
                         .clone(),
                     ),
                     _ => {
-                        let v19: Trace::US5 = if if let Trace::US0::US0_2 = &v0 {
+                        let v669: Trace::US5 = if if let Trace::US0::US0_2 = &v0 {
                             true
                         } else {
                             false
@@ -639,16 +663,16 @@ pub mod Trace {
                         } else {
                             Trace::US5::US5_1
                         };
-                        match &v19 {
-                            Trace::US5::US5_0(v19_0_0) => Trace::US5::US5_0(
-                                match &v19 {
+                        match &v669 {
+                            Trace::US5::US5_0(v669_0_0) => Trace::US5::US5_0(
+                                match &v669 {
                                     Trace::US5::US5_0(x) => x.clone(),
                                     _ => unreachable!(),
                                 }
                                 .clone(),
                             ),
                             _ => {
-                                let v26: Trace::US5 = if if let Trace::US0::US0_3 = &v0 {
+                                let v676: Trace::US5 = if if let Trace::US0::US0_3 = &v0 {
                                     true
                                 } else {
                                     false
@@ -657,16 +681,16 @@ pub mod Trace {
                                 } else {
                                     Trace::US5::US5_1
                                 };
-                                match &v26 {
-                                    Trace::US5::US5_0(v26_0_0) => Trace::US5::US5_0(
-                                        match &v26 {
+                                match &v676 {
+                                    Trace::US5::US5_0(v676_0_0) => Trace::US5::US5_0(
+                                        match &v676 {
                                             Trace::US5::US5_0(x) => x.clone(),
                                             _ => unreachable!(),
                                         }
                                         .clone(),
                                     ),
                                     _ => {
-                                        let v33: Trace::US5 = if if let Trace::US0::US0_4 = &v0 {
+                                        let v683: Trace::US5 = if if let Trace::US0::US0_4 = &v0 {
                                             true
                                         } else {
                                             false
@@ -675,9 +699,9 @@ pub mod Trace {
                                         } else {
                                             Trace::US5::US5_1
                                         };
-                                        match &v33 {
-                                            Trace::US5::US5_0(v33_0_0) => Trace::US5::US5_0(
-                                                match &v33 {
+                                        match &v683 {
+                                            Trace::US5::US5_0(v683_0_0) => Trace::US5::US5_0(
+                                                match &v683 {
                                                     Trace::US5::US5_0(x) => x.clone(),
                                                     _ => unreachable!(),
                                                 }
@@ -693,30 +717,25 @@ pub mod Trace {
                 }
             }
         };
-        let v57: string = Trace::method11(getCharAt(
-            toLower(match &v46 {
-                Trace::US5::US5_0(v46_0_0) => match &v46 {
-                    Trace::US5::US5_0(x) => x.clone(),
-                    _ => unreachable!(),
-                }
-                .clone(),
-                _ => panic!("{}", string("Option does not have a value."),),
-            }),
-            0_i32,
-        ));
-        let v230: &str = match &v0 {
-            Trace::US0::US0_1 => inline_colorization::color_bright_blue,
-            Trace::US0::US0_2 => inline_colorization::color_bright_green,
-            Trace::US0::US0_0 => inline_colorization::color_bright_black,
-            Trace::US0::US0_3 => inline_colorization::color_yellow,
-            _ => inline_colorization::color_bright_red,
-        };
-        let v241: &str = &*v57;
-        let v268: &str = inline_colorization::color_reset;
-        let v270: std::string::String = format!("{}{}{}", v230, v241, v268);
-        fable_library_rust::String_::fromString(v270)
+        let v709: string = append(
+            (v650),
+            (Trace::method11(getCharAt(
+                toLower(match &v696 {
+                    Trace::US5::US5_0(v696_0_0) => match &v696 {
+                        Trace::US5::US5_0(x) => x.clone(),
+                        _ => unreachable!(),
+                    }
+                    .clone(),
+                    _ => panic!("{}", string("Option does not have a value."),),
+                }),
+                0_i32,
+            ))),
+        );
+        let v795: &str = inline_colorization::color_reset;
+        let v806: std::string::String = String::from(v795);
+        append((v709), (fable_library_rust::String_::fromString(v806)))
     }
-    pub fn method15(v0: string) -> string {
+    pub fn method14(v0: string) -> string {
         let v2: LrcPtr<Trace::Mut3> = LrcPtr::new(Trace::Mut3 {
             l0: MutCell::new(Trace::method12()),
         });
@@ -726,13 +745,13 @@ pub mod Trace {
         };
         v2.l0.get().clone()
     }
-    pub fn method16(v0: string) -> string {
+    pub fn method15(v0: string) -> string {
         trimEndChars(
             trimStartChars(v0, toArray(empty::<char>())),
             toArray(ofArray(new_array(&[' ', '/']))),
         )
     }
-    pub fn method14(
+    pub fn method13(
         v0: LrcPtr<Trace::Mut0>,
         v1: LrcPtr<Trace::Mut1>,
         v2: LrcPtr<Trace::Mut2>,
@@ -744,8 +763,8 @@ pub mod Trace {
         v8: string,
         v9: string,
     ) -> string {
-        let v10: string = Trace::method15(v9);
-        Trace::method16(append(
+        let v10: string = Trace::method14(v9);
+        Trace::method15(append(
             (append(
                 (append(
                     (append(
@@ -851,7 +870,7 @@ pub mod Trace {
             let v132: string = if (v127.clone()) == string("") {
                 string("")
             } else {
-                Trace::method14(v107, v108, v109, v110, v111, v112, v125, v126, v127, v2())
+                Trace::method13(v107, v108, v109, v110, v111, v112, v125, v126, v127, v2())
             };
             let v148: () = {
                 v18();
