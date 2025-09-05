@@ -1154,7 +1154,7 @@ inl process_dib { path retries working_directory } =
         fun () => { exit_code result_length = result |> sm'.length : i32 }
 
     if exit_code <>. 0
-    then failwith $'$"spiral.run / dib / exit_code: {!exit_code} / result: {!result}"'
+    then $'$"spiral.run / dib / exit_code: {!exit_code} / result: {!result}"' |> failwith
     ;[
         "stdio",
         result

@@ -843,7 +843,7 @@ module spiral_compiler =
     type MacroEnum = MTerm | MType | MTypeLit | MTermInline
 
     /// ### Literal
-    type Literal = 
+    type Literal =
         | LitUInt8 of uint8
         | LitUInt16 of uint16
         | LitUInt32 of uint32
@@ -1136,7 +1136,7 @@ module spiral_compiler =
         (skip_string "@\"" >>. chars_till_string "\"" |>> f .>> spaces) s
 
     /// ### char_quoted
-    let char_quoted s = 
+    let char_quoted s =
         let char_quoted_body (s: Tokenizer) =
             let inline read on_succ =
                 let x = peek s
@@ -1198,7 +1198,7 @@ module spiral_compiler =
         | Var of TokenizerRange * string * MacroEnum
 
     /// ### range
-    let inline range p s = 
+    let inline range p s =
         let from = s.from
         match p s with
         | Ok x -> Ok({from=from; nearTo=s.from}, x)
@@ -2214,7 +2214,7 @@ module spiral_compiler =
     let rec kind d = (sepBy1 ((skip_op "*" >>% RawKindStar) <|> rounds kind) (skip_op "->") |>> List.reduceBack (fun a b -> RawKindFun (a,b))) d
 
     /// ### duplicates
-    let duplicates er x = 
+    let duplicates er x =
         let h = Collections.Generic.HashSet()
         x |> List.choose (fun (r : VSCRange,n : string) -> if h.Add n = false then Some(r,er) else None)
 
@@ -2348,7 +2348,7 @@ module spiral_compiler =
     let forall_var d : Result<TypeVar,_> = (ho_var .>>. (curlies (sepBy (read_small_type_var' <|> rounds read_op_type) (skip_op ";")) <|>% [])) d
 
     /// ### forall
-    let forall d = 
+    let forall d =
         (skip_keyword SpecForall >>. many1 forall_var .>> skip_op "."
         >>= fun q _ ->
             let x' = q |> List.collect (fun (_,l) -> duplicates DuplicateConstraint l)
@@ -2357,14 +2357,14 @@ module spiral_compiler =
             ) d
 
     /// ### pat_exists'
-    let pat_exists' d = 
+    let pat_exists' d =
         (skip_keyword SpecExists >>. many (blockParsingRange read_small_type_var) .>> skip_op "."
         >>= fun q _ ->
             match duplicates DuplicateExistsVar q with [] -> Ok q | er -> Error er
             ) d
 
     /// ### exists
-    let exists d = 
+    let exists d =
         (skip_keyword SpecExists >>. many forall_var .>> skip_op "."
         >>= fun q _ ->
             let x' = q |> List.collect (fun (_,l) -> duplicates DuplicateConstraint l)
@@ -3023,7 +3023,7 @@ module spiral_compiler =
     let top_union d = ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>. ((skip_keyword SpecRec >>% UHeap) <|>% UStack)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
 
     /// ### top_nominal
-    let top_nominal d = 
+    let top_nominal d =
         (blockParsingRange (tuple3 (skip_keyword SpecNominal >>. read_small_type_var') (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
         |>> fun (r,(n,a,b)) -> TopNominal(r,n,a,b)) d
 
@@ -3031,7 +3031,7 @@ module spiral_compiler =
     let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d
 
     /// ### top_prototype
-    let top_prototype d = 
+    let top_prototype d =
         (blockParsingRange
             (tuple5 comments
                 (skip_keyword SpecPrototype >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var)
@@ -3387,7 +3387,7 @@ module spiral_compiler =
     let add_line_to_range line ((a,b) : VSCRange) = {|a with line=line+a.line|}, {|b with line=line+b.line|}
 
     /// ### process_error
-    let process_error v = 
+    let process_error v =
         let messages, expecteds = v |> List.distinct |> List.partition (fun x -> System.Char.IsUpper(x,0))
         let ex () = match expecteds with [x] -> sprintf "Expected: %s" x | x -> sprintf "Expected one of: %s" (String.concat ", " x)
         let f l = String.concat "\n" l
@@ -3646,7 +3646,7 @@ module spiral_compiler =
         | a -> a
 
     /// ### visit_t
-    let rec visit_t x = 
+    let rec visit_t x =
         match visit_t_mvar x with
         | TyVar(_,{contents=Some x}) -> visit_t x
         | x -> x
@@ -7091,7 +7091,7 @@ module spiral_compiler =
     type Trace = Range list
 
     /// ### JoinPointKey
-    type JoinPointKey = 
+    type JoinPointKey =
         | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty []>
         | JPClosure of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
 
@@ -14871,15 +14871,6 @@ module spiral_compiler =
         List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
 
     /// ## SignalRSupervisor
-    // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.app.ref/7.0.11/ref/net7.0/Microsoft.AspNetCore.SignalR.Core.dll"
-    // #r @"../../../../../../../.nuget/packages/argu/6.2.4/lib/netstandard2.0/Argu.dll"
-    // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.http.connections.common/7.0.0/lib/net7.0/Microsoft.AspNetCore.Http.Connections.Common.dll"
-    // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.http.connections.client/7.0.0/lib/net7.0/Microsoft.AspNetCore.Http.Connections.Client.dll"
-    // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.common/7.0.0/lib/net7.0/Microsoft.AspNetCore.SignalR.Common.dll"
-    // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.client/7.0.0/lib/net7.0/Microsoft.AspNetCore.SignalR.Client.dll"
-    // #r @"../../../../../../../.nuget/packages/microsoft.aspnetcore.signalr.client.core/7.0.0/lib/net7.0/Microsoft.AspNetCore.SignalR.Client.Core.dll"
-    // #r @"../../../../../../../.nuget/packages/fsharp.json/0.4.1/lib/netstandard2.0/FSharp.Json.dll"
-
     // open System
     open System.IO
     open System.Collections.Generic
