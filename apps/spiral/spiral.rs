@@ -12599,7 +12599,7 @@ mod module_1216f6c3 {
             let v302: Spiral::US6 = if (if ((patternInput.2.clone()).l0.get().clone()) == false {
                 false
             } else {
-                1_i32
+                3_i32
                     >= (find(
                         v61,
                         ofSeq(ofList(ofArray(new_array(&[
@@ -12640,7 +12640,7 @@ mod module_1216f6c3 {
                     v111.clone(),
                     v112.clone(),
                     Spiral::method7(v107, v108, v109, v110, v111, v112),
-                    Spiral::method11(),
+                    Spiral::method40(),
                     v3,
                     v2,
                     sprintf!("{}/{}", v1_1, v0_1),
@@ -20161,7 +20161,7 @@ mod module_1216f6c3 {
                                             panic!(
                                                 "{}",
                                                 sprintf!(
-                                                    "spiral.run / dib / exit_code: {} / result: {}",
+                                                    "spiral.run / dib / exit_code: {} / result: \'{}\'",
                                                     v8489,
                                                     v8490.clone()
                                                 )

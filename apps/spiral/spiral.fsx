@@ -25649,7 +25649,7 @@ and closure84 (v0 : uint8, v1 : uint8, v2 : string, v3 : int32) () : unit =
             false
         else
             let v64 : int32 = [ US0_0, 0; US0_1, 1; US0_2, 2; US0_3, 3; US0_4, 4 ] |> Map |> Map.find v61
-            let v65 : bool = 1 >= v64
+            let v65 : bool = 3 >= v64
             v65
     let v67 : bool = v66 = false
     let v302 : US6 =
@@ -25660,7 +25660,7 @@ and closure84 (v0 : uint8, v1 : uint8, v2 : string, v3 : int32) () : unit =
             let v84 : unit = (fun () -> v19 (); v83) ()
             let struct (v107 : Mut0, v108 : Mut1, v109 : Mut2, v110 : Mut3, v111 : Mut4, v112 : int64 option) = TraceState.trace_state.Value
             let v125 : string = method7(v107, v108, v109, v110, v111, v112)
-            let v126 : string = method11()
+            let v126 : string = method40()
             let v127 : string = $"{v1}/{v0}"
             let v128 : string = method207(v107, v108, v109, v110, v111, v112, v125, v126, v3, v2, v127)
             let v143 : unit = ()
@@ -39470,7 +39470,7 @@ pwsh_replace_html_result: {v7622}"
                             let v8805 : unit = (fun () -> v8804 (); v8803) ()
                             let v9122 : bool = v8489 <> 0 
                             if v9122 then
-                                let v9125 : string = $"spiral.run / dib / exit_code: {v8489} / result: {v8490}"
+                                let v9125 : string = $"spiral.run / dib / exit_code: {v8489} / result: '{v8490}'"
                                 failwith<unit> v9125
                             let v9126 : string = "stdio"
                             [|struct (v9126, v8490)|]

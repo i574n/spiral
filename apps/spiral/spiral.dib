@@ -1102,7 +1102,7 @@ inl process_dib { path retries working_directory } =
             if exit_code = 0 || retry >= retries
             then exit_code, repl_result
             else
-                trace Warn
+                trace Warning
                     fun () => "spiral.run / repl error"
                     fun () => { exit_code repl_result retry = $'$"{!retry}/{!retries}"' : string }
                 루프 (retry + 1)
