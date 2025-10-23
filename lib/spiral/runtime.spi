@@ -159,6 +159,14 @@ nominal process_exit_status =
 inl process_output_status (output : process_output) : process_exit_status =
     !\\(output, $'"$0.status"')
 
+/// ### process_output_stdout
+inl process_output_stdout (output : process_output) : am'.vec u8 =
+    !\\(output, $'"$0.stdout"')
+
+/// ### process_output_stderr
+inl process_output_stderr (output : process_output) : am'.vec u8 =
+    !\\(output, $'"$0.stderr"')
+
 /// ### process_exit_status_code
 inl process_exit_status_code (status : process_exit_status) : optionm'.option' i32 =
     !\\(status, $'"$0.code()"')
@@ -922,10 +930,29 @@ let execute_with_options (options : execution_options) : i32 * string =
                                     |> process_exit_status_code
                                     |> optionm'.unbox
                                 match exit_code with
-                                | Some exit_code => exit_code, None, Some channel_receiver'
+                                | Some exit_code =>
+                                    inl stdout =
+                                        output
+                                        |> process_output_stdout
+                                        |> sm'.string_from_utf8
+                                        |> resultm.unwrap'
+                                    inl stderr =
+                                        output
+                                        |> process_output_stderr
+                                        |> sm'.string_from_utf8
+                                        |> resultm.unwrap'
+                                    inl output =
+                                        [ stdout; stderr ]
+                                        |> listm.map sm'.from_std_string
+                                        |> sm'.concat_list "\n"
+                                        |> sm'.to_std_string
+                                        |> Some
+                                    exit_code, output, Some channel_receiver'
                                 | None =>
                                     -1,
-                                    ("runtime.execute_with_options / exit_code=None" |> sm'.to_std_string |> Some),
+                                    ("runtime.execute_with_options / exit_code=None"
+                                        |> sm'.to_std_string 
+                                        |> Some),
                                     Some channel_receiver'
                             | Error error =>
                                 trace Critical
@@ -964,7 +991,9 @@ let execute_with_options (options : execution_options) : i32 * string =
                                 )
                             trace Verbose
                                 fun () => "runtime.execute_with_options / result"
-                                fun () => { exit_code std_trace_length = std_trace |> sm'.length : i32 }
+                                fun () => {
+                                    file_name exit_code std_trace_length = std_trace |> sm'.length : i32
+                                }
                             new_pair exit_code std_trace
                 |> capture
             // |> async.new_future_move
