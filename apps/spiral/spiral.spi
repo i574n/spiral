@@ -946,7 +946,7 @@ inl process_dib { path retries working_directory } =
                         "TRACE_LEVEL", "Verbose"
                         "AUTOMATION", "True"
                     ]
-                    trace = false
+                    trace = retries > 1 && retry = retries
                     working_directory = working_directory |> optionm'.box
                 }
                 |> runtime.execute_with_options

@@ -12760,7 +12760,11 @@ mod module_1216f6c3 {
                         ]),
                         None::<Func1<(i32, string, bool), Arc<Async<()>>>>,
                         None::<Func1<std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>, ()>>,
-                        false,
+                        if (v1_1.get().clone()) > 1_u8 {
+                            (v3.get().clone()) == (v1_1.get().clone())
+                        } else {
+                            false
+                        },
                         match &v0_1.get().clone() {
                             Spiral::US5::US5_0(v0_1_0_0) => Some(
                                 match &v0_1.get().clone() {
@@ -12773,17 +12777,17 @@ mod module_1216f6c3 {
                         },
                         true,
                     );
-                    let v41: string = patternInput.1.clone();
-                    let v40: i32 = patternInput.0.clone();
-                    if if (v40) == 0_i32 {
+                    let v43: string = patternInput.1.clone();
+                    let v42: i32 = patternInput.0.clone();
+                    if if (v42) == 0_i32 {
                         true
                     } else {
                         (v3.get().clone()) >= (v1_1.get().clone())
                     } {
-                        (v40, v41.clone())
+                        (v42, v43.clone())
                     } else {
-                        let v359: () = {
-                            Spiral::closure84(v1_1.get().clone(), v3.get().clone(), v41, v40, ());
+                        let v361: () = {
+                            Spiral::closure84(v1_1.get().clone(), v3.get().clone(), v43, v42, ());
                             ()
                         };
                         {
