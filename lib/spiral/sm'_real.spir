@@ -40,6 +40,8 @@ inl symbol_to_string forall t {symbol}. : string =
 
 /// ### is_empty
 
+/// ### to_option
+
 /// ### slice
 
 /// ### append_real

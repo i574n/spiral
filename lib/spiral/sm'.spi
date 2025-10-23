@@ -38,6 +38,12 @@ inl to_char_list (str : string) : list char =
 inl is_empty (input : string) : bool =
     length input = 0i32
 
+/// ### to_option
+inl to_option s =
+    if s |> is_empty
+    then None
+    else s |> Some
+
 /// ### slice
 inl slice forall t {number; int}. (from : t) (to : t) s : string =
     backend_switch {

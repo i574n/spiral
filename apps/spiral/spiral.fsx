@@ -486,47 +486,47 @@ and [<Struct>] US34 =
     | US34_0 of f0_0 : int32
     | US34_1
 and [<Struct>] US35 =
-    | US35_0 of f0_0 : (struct (int32 * string * bool) -> Async<unit>)
+    | US35_0 of f0_0 : US5
     | US35_1
 and [<Struct>] US36 =
-    | US36_0 of f0_0 : System.Threading.CancellationToken
+    | US36_0 of f0_0 : (struct (int32 * string * bool) -> Async<unit>)
     | US36_1
+and [<Struct>] US37 =
+    | US37_0 of f0_0 : System.Threading.CancellationToken
+    | US37_1
+and [<Struct>] US40 =
+    | US40_0
+    | US40_1
 and [<Struct>] US39 =
-    | US39_0
+    | US39_0 of f0_0 : US40
     | US39_1
 and [<Struct>] US38 =
     | US38_0 of f0_0 : US39
     | US38_1
-and [<Struct>] US37 =
-    | US37_0 of f0_0 : US38
-    | US37_1
-and [<Struct>] US41 =
-    | US41_0 of f0_0 : string
-    | US41_1 of f1_0 : string
-and [<Struct>] US40 =
-    | US40_0 of f0_0 : US41
-    | US40_1
 and [<Struct>] US42 =
-    | US42_0
-    | US42_1
-    | US42_2
+    | US42_0 of f0_0 : string
+    | US42_1 of f1_0 : string
+and [<Struct>] US41 =
+    | US41_0 of f0_0 : US42
+    | US41_1
 and [<Struct>] US43 =
-    | US43_0 of f0_0 : US42
+    | US43_0
     | US43_1
+    | US43_2
+and [<Struct>] US44 =
+    | US44_0 of f0_0 : US43
+    | US44_1
 and UH4 =
     | UH4_0
     | UH4_1 of string * string * UH4
-and [<Struct>] US44 =
-    | US44_0 of f0_0 : chrono_DateTime<chrono_Utc>
-    | US44_1
 and [<Struct>] US45 =
-    | US45_0 of f0_0 : int32 * f0_1 : string
-    | US45_1 of f1_0 : int32 * f1_1 : string
+    | US45_0 of f0_0 : chrono_DateTime<chrono_Utc>
+    | US45_1
 and [<Struct>] US46 =
-    | US46_0 of f0_0 : std_collections_HashMap<string, string>
-    | US46_1
+    | US46_0 of f0_0 : int32 * f0_1 : string
+    | US46_1 of f1_0 : int32 * f1_1 : string
 and [<Struct>] US47 =
-    | US47_0 of f0_0 : US5
+    | US47_0 of f0_0 : std_collections_HashMap<string, string>
     | US47_1
 and UH5 =
     | UH5_0
@@ -18288,9 +18288,9 @@ and method168 (v0 : System.Diagnostics.DataReceivedEventArgs) : string =
     #endif
     let v32 : string = _run_target_args'_v5 
     v32
-and closure62 () (v0 : (struct (int32 * string * bool) -> Async<unit>)) : US35 =
-    US35_0(v0)
-and method169 () : ((struct (int32 * string * bool) -> Async<unit>) -> US35) =
+and closure62 () (v0 : (struct (int32 * string * bool) -> Async<unit>)) : US36 =
+    US36_0(v0)
+and method169 () : ((struct (int32 * string * bool) -> Async<unit>) -> US36) =
     closure62()
 and method170 (v0 : System.Diagnostics.Process) : int32 =
     (* run_target_args'
@@ -18530,14 +18530,14 @@ and method167 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             let v8965 : bool = v8960 = v8962
             let v8966 : bool = v8965 <> true
             if v8966 then
-                let v8969 : ((struct (int32 * string * bool) -> Async<unit>) -> US35) = method169()
-                let v8970 : US35 option = v3 |> Option.map v8969 
-                let v8990 : US35 = US35_1
-                let v8991 : US35 = v8970 |> Option.defaultValue v8990 
+                let v8969 : ((struct (int32 * string * bool) -> Async<unit>) -> US36) = method169()
+                let v8970 : US36 option = v3 |> Option.map v8969 
+                let v8990 : US36 = US36_1
+                let v8991 : US36 = v8970 |> Option.defaultValue v8990 
                 match v8991 with
-                | US35_1 -> (* None *)
+                | US36_1 -> (* None *)
                     ()
-                | US35_0(v8995) -> (* Some *)
+                | US36_0(v8995) -> (* Some *)
                     let v8996 : int32 = method170(v8)
                     let v8997 : Async<unit> = v8995 struct (v8996, v8960, v10)
                     do! v8997 
@@ -18618,14 +18618,14 @@ and method167 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             let v27519 : bool = v27514 = v27516
             let v27520 : bool = v27519 <> true
             if v27520 then
-                let v27523 : ((struct (int32 * string * bool) -> Async<unit>) -> US35) = method169()
-                let v27524 : US35 option = v3 |> Option.map v27523 
-                let v27544 : US35 = US35_1
-                let v27545 : US35 = v27524 |> Option.defaultValue v27544 
+                let v27523 : ((struct (int32 * string * bool) -> Async<unit>) -> US36) = method169()
+                let v27524 : US36 option = v3 |> Option.map v27523 
+                let v27544 : US36 = US36_1
+                let v27545 : US36 = v27524 |> Option.defaultValue v27544 
                 match v27545 with
-                | US35_1 -> (* None *)
+                | US36_1 -> (* None *)
                     ()
-                | US35_0(v27549) -> (* Some *)
+                | US36_0(v27549) -> (* Some *)
                     let v27550 : int32 = method170(v8)
                     let v27551 : Async<unit> = v27549 struct (v27550, v27514, v10)
                     do! v27551 
@@ -18706,14 +18706,14 @@ and method167 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             let v46073 : bool = v46068 = v46070
             let v46074 : bool = v46073 <> true
             if v46074 then
-                let v46077 : ((struct (int32 * string * bool) -> Async<unit>) -> US35) = method169()
-                let v46078 : US35 option = v3 |> Option.map v46077 
-                let v46098 : US35 = US35_1
-                let v46099 : US35 = v46078 |> Option.defaultValue v46098 
+                let v46077 : ((struct (int32 * string * bool) -> Async<unit>) -> US36) = method169()
+                let v46078 : US36 option = v3 |> Option.map v46077 
+                let v46098 : US36 = US36_1
+                let v46099 : US36 = v46078 |> Option.defaultValue v46098 
                 match v46099 with
-                | US35_1 -> (* None *)
+                | US36_1 -> (* None *)
                     ()
-                | US35_0(v46103) -> (* Some *)
+                | US36_0(v46103) -> (* Some *)
                     let v46104 : int32 = method170(v8)
                     let v46105 : Async<unit> = v46103 struct (v46104, v46068, v10)
                     do! v46105 
@@ -18794,14 +18794,14 @@ and method167 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             let v64627 : bool = v64622 = v64624
             let v64628 : bool = v64627 <> true
             if v64628 then
-                let v64631 : ((struct (int32 * string * bool) -> Async<unit>) -> US35) = method169()
-                let v64632 : US35 option = v3 |> Option.map v64631 
-                let v64652 : US35 = US35_1
-                let v64653 : US35 = v64632 |> Option.defaultValue v64652 
+                let v64631 : ((struct (int32 * string * bool) -> Async<unit>) -> US36) = method169()
+                let v64632 : US36 option = v3 |> Option.map v64631 
+                let v64652 : US36 = US36_1
+                let v64653 : US36 = v64632 |> Option.defaultValue v64652 
                 match v64653 with
-                | US35_1 -> (* None *)
+                | US36_1 -> (* None *)
                     ()
-                | US35_0(v64657) -> (* Some *)
+                | US36_0(v64657) -> (* Some *)
                     let v64658 : int32 = method170(v8)
                     let v64659 : Async<unit> = v64657 struct (v64658, v64622, v10)
                     do! v64659 
@@ -18912,9 +18912,9 @@ and closure61 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
     #endif
     // run_target_args' is_unit
     ()
-and closure64 () (v0 : System.Threading.CancellationToken) : US36 =
-    US36_0(v0)
-and method171 () : (System.Threading.CancellationToken -> US36) =
+and closure64 () (v0 : System.Threading.CancellationToken) : US37 =
+    US37_0(v0)
+and method171 () : (System.Threading.CancellationToken -> US37) =
     closure64()
 and method173 (v0 : System.Threading.CancellationToken) : Async<System.Threading.CancellationToken> =
     (* run_target_args'
@@ -21009,16 +21009,16 @@ and method162 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             v19818 v19807
             let v19819 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
             v19819 v19807
-            let v19822 : (System.Threading.CancellationToken -> US36) = method171()
-            let v19823 : US36 option = v1 |> Option.map v19822 
-            let v19843 : US36 = US36_1
-            let v19844 : US36 = v19823 |> Option.defaultValue v19843 
+            let v19822 : (System.Threading.CancellationToken -> US37) = method171()
+            let v19823 : US37 option = v1 |> Option.map v19822 
+            let v19843 : US37 = US37_1
+            let v19844 : US37 = v19823 |> Option.defaultValue v19843 
             let v19851 : System.Threading.CancellationToken =
                 match v19844 with
-                | US36_1 -> (* None *)
+                | US37_1 -> (* None *)
                     let v19849 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
                     v19849
-                | US36_0(v19848) -> (* Some *)
+                | US37_0(v19848) -> (* Some *)
                     v19848
             let v19852 : Async<System.Threading.CancellationToken> = method172(v19851)
             let! v19852 = v19852 
@@ -21164,16 +21164,16 @@ and method162 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             v59351 v59340
             let v59352 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
             v59352 v59340
-            let v59355 : (System.Threading.CancellationToken -> US36) = method171()
-            let v59356 : US36 option = v1 |> Option.map v59355 
-            let v59376 : US36 = US36_1
-            let v59377 : US36 = v59356 |> Option.defaultValue v59376 
+            let v59355 : (System.Threading.CancellationToken -> US37) = method171()
+            let v59356 : US37 option = v1 |> Option.map v59355 
+            let v59376 : US37 = US37_1
+            let v59377 : US37 = v59356 |> Option.defaultValue v59376 
             let v59384 : System.Threading.CancellationToken =
                 match v59377 with
-                | US36_1 -> (* None *)
+                | US37_1 -> (* None *)
                     let v59382 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
                     v59382
-                | US36_0(v59381) -> (* Some *)
+                | US37_0(v59381) -> (* Some *)
                     v59381
             let v59385 : Async<System.Threading.CancellationToken> = method172(v59384)
             let! v59385 = v59385 
@@ -21319,16 +21319,16 @@ and method162 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             v98884 v98873
             let v98885 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
             v98885 v98873
-            let v98888 : (System.Threading.CancellationToken -> US36) = method171()
-            let v98889 : US36 option = v1 |> Option.map v98888 
-            let v98909 : US36 = US36_1
-            let v98910 : US36 = v98889 |> Option.defaultValue v98909 
+            let v98888 : (System.Threading.CancellationToken -> US37) = method171()
+            let v98889 : US37 option = v1 |> Option.map v98888 
+            let v98909 : US37 = US37_1
+            let v98910 : US37 = v98889 |> Option.defaultValue v98909 
             let v98917 : System.Threading.CancellationToken =
                 match v98910 with
-                | US36_1 -> (* None *)
+                | US37_1 -> (* None *)
                     let v98915 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
                     v98915
-                | US36_0(v98914) -> (* Some *)
+                | US37_0(v98914) -> (* Some *)
                     v98914
             let v98918 : Async<System.Threading.CancellationToken> = method172(v98917)
             let! v98918 = v98918 
@@ -21474,16 +21474,16 @@ and method162 (v0 : string, v1 : System.Threading.CancellationToken option, v2 :
             v138417 v138406
             let v138418 : (System.Diagnostics.Process -> unit) = _.BeginOutputReadLine()
             v138418 v138406
-            let v138421 : (System.Threading.CancellationToken -> US36) = method171()
-            let v138422 : US36 option = v1 |> Option.map v138421 
-            let v138442 : US36 = US36_1
-            let v138443 : US36 = v138422 |> Option.defaultValue v138442 
+            let v138421 : (System.Threading.CancellationToken -> US37) = method171()
+            let v138422 : US37 option = v1 |> Option.map v138421 
+            let v138442 : US37 = US37_1
+            let v138443 : US37 = v138422 |> Option.defaultValue v138442 
             let v138450 : System.Threading.CancellationToken =
                 match v138443 with
-                | US36_1 -> (* None *)
+                | US37_1 -> (* None *)
                     let v138448 : System.Threading.CancellationToken = System.Threading.CancellationToken.None
                     v138448
-                | US36_0(v138447) -> (* Some *)
+                | US37_0(v138447) -> (* Some *)
                     v138447
             let v138451 : Async<System.Threading.CancellationToken> = method172(v138450)
             let! v138451 = v138451 
@@ -23529,101 +23529,135 @@ and method98 (v0 : string, v1 : System.Threading.CancellationToken option, v2 : 
     let v5956 : bool = Fable.Core.RustInterop.emitRustExpr v5951 v5955 
     let v5957 : string = "_optionm_map_"
     let v5958 : string option = Fable.Core.RustInterop.emitRustExpr () v5957 
-    let v5965 : US5 =
+    let v5961 : (string -> US5) = method6()
+    let v5962 : US5 option = v5958 |> Option.map v5961 
+    let v5982 : US5 = US5_1
+    let v5983 : US5 = v5962 |> Option.defaultValue v5982 
+    let v6001 : US35 =
+        match v5983 with
+        | US5_1 -> (* None *)
+            US35_1
+        | US5_0(v5987) -> (* Some *)
+            let v5989 : (unit -> string) = v5987.Trim
+            let v5990 : string = v5989 ()
+            let v5993 : int32 = v5990.Length
+            let v5994 : bool = v5993 = 0
+            let v5997 : US5 =
+                if v5994 then
+                    US5_1
+                else
+                    US5_0(v5990)
+            US35_0(v5997)
+    let v6008 : US5 =
+        match v6001 with
+        | US35_0(v6002) -> (* Some *)
+            match v6002 with
+            | US5_0(v6003) -> (* Some *)
+                US5_0(v6003)
+            | _ ->
+                US5_1
+        | _ ->
+            US5_1
+    let v6015 : US5 =
         match v5890 with
         | US8_1 -> (* None *)
             US5_1
-        | US8_0(v5959) -> (* Some *)
-            let v5960 : string = "fable_library_rust::String_::fromString($0)"
-            let v5961 : string = Fable.Core.RustInterop.emitRustExpr v5959 v5960 
-            US5_0(v5961)
-    let v5969 : string =
-        match v5965 with
+        | US8_0(v6009) -> (* Some *)
+            let v6010 : string = "fable_library_rust::String_::fromString($0)"
+            let v6011 : string = Fable.Core.RustInterop.emitRustExpr v6009 v6010 
+            US5_0(v6011)
+    let v6019 : string =
+        match v6015 with
         | US5_1 -> (* None *)
-            let v5967 : string = ""
-            v5967
-        | US5_0(v5966) -> (* Some *)
-            v5966
-    let v5971 : string = v5958 |> Option.defaultValue v5969 
-    let v6286 : unit = ()
-    let v6287 : (unit -> unit) = closure59(v30, v5889, v5971)
-    let v6288 : unit = (fun () -> v6287 (); v6286) ()
-    let v6605 : (int32 * string) = v5889, v5971 
-    v6605 
+            let v6017 : string = ""
+            v6017
+        | US5_0(v6016) -> (* Some *)
+            v6016
+    let v6022 : string =
+        match v6008 with
+        | US5_1 -> (* None *)
+            v6019
+        | US5_0(v6020) -> (* Some *)
+            v6020
+    let v6335 : unit = ()
+    let v6336 : (unit -> unit) = closure59(v30, v5889, v6022)
+    let v6337 : unit = (fun () -> v6336 (); v6335) ()
+    let v6654 : (int32 * string) = v5889, v6022 
+    v6654 
     )
     |> fun x -> x ()
     ) () )
     |> fun x -> _capture_v765 <- Some x
-    let v6608 : (int32 * string) = match _capture_v765 with Some x -> x | None -> failwith "base.capture / _capture_v765=None"
-    let (a, b) = v6608 
-    let v12450 : int32 = a
-    let v12451 : string = b
-    let _run_target_args'_v16 = struct (v12450, v12451) 
+    let v6657 : (int32 * string) = match _capture_v765 with Some x -> x | None -> failwith "base.capture / _capture_v765=None"
+    let (a, b) = v6657 
+    let v12548 : int32 = a
+    let v12549 : string = b
+    let _run_target_args'_v16 = struct (v12548, v12549) 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let struct (v12458 : int32, v12459 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v16 = struct (v12458, v12459) 
+    let struct (v12556 : int32, v12557 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v16 = struct (v12556, v12557) 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let struct (v12466 : int32, v12467 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v16 = struct (v12466, v12467) 
+    let struct (v12564 : int32, v12565 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v16 = struct (v12564, v12565) 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let struct (v12474 : int32, v12475 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v16 = struct (v12474, v12475) 
+    let struct (v12572 : int32, v12573 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v16 = struct (v12572, v12573) 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let struct (v12482 : int32, v12483 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v16 = struct (v12482, v12483) 
+    let struct (v12580 : int32, v12581 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v16 = struct (v12580, v12581) 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let struct (v12490 : int32, v12491 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v16 = struct (v12490, v12491) 
+    let struct (v12588 : int32, v12589 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v16 = struct (v12588, v12589) 
     #endif
 #else
-    let v12496 : Async<struct (int32 * string)> = method161(v0, v1, v2, v3, v4, v5, v6, v7)
+    let v12594 : Async<struct (int32 * string)> = method161(v0, v1, v2, v3, v4, v5, v6, v7)
     (* run_target_args'
-    let v12505 : unit = ()
+    let v12603 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let struct (v12508 : int32, v12509 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v12505 = struct (v12508, v12509) 
+    let struct (v12606 : int32, v12607 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v12603 = struct (v12606, v12607) 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let struct (v12516 : int32, v12517 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v12505 = struct (v12516, v12517) 
+    let struct (v12614 : int32, v12615 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v12603 = struct (v12614, v12615) 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let struct (v12524 : int32, v12525 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v12505 = struct (v12524, v12525) 
+    let struct (v12622 : int32, v12623 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v12603 = struct (v12622, v12623) 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let struct (v12532 : int32, v12533 : string) = null |> unbox<struct (int32 * string)>
-    let _run_target_args'_v12505 = struct (v12532, v12533) 
+    let struct (v12630 : int32, v12631 : string) = null |> unbox<struct (int32 * string)>
+    let _run_target_args'_v12603 = struct (v12630, v12631) 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v12538 : (Async<struct (int32 * string)> -> struct (int32 * string)) = Async.RunSynchronously
-    let struct (v12539 : int32, v12540 : string) = v12538 v12496
-    let _run_target_args'_v12505 = struct (v12539, v12540) 
+    let v12636 : (Async<struct (int32 * string)> -> struct (int32 * string)) = Async.RunSynchronously
+    let struct (v12637 : int32, v12638 : string) = v12636 v12594
+    let _run_target_args'_v12603 = struct (v12637, v12638) 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v12541 : (Async<struct (int32 * string)> -> struct (int32 * string)) = Async.RunSynchronously
-    let struct (v12542 : int32, v12543 : string) = v12541 v12496
-    let _run_target_args'_v12505 = struct (v12542, v12543) 
+    let v12639 : (Async<struct (int32 * string)> -> struct (int32 * string)) = Async.RunSynchronously
+    let struct (v12640 : int32, v12641 : string) = v12639 v12594
+    let _run_target_args'_v12603 = struct (v12640, v12641) 
     #endif
 #else
-    let v12544 : (Async<struct (int32 * string)> -> struct (int32 * string)) = Async.RunSynchronously
-    let struct (v12545 : int32, v12546 : string) = v12544 v12496
-    let _run_target_args'_v12505 = struct (v12545, v12546) 
+    let v12642 : (Async<struct (int32 * string)> -> struct (int32 * string)) = Async.RunSynchronously
+    let struct (v12643 : int32, v12644 : string) = v12642 v12594
+    let _run_target_args'_v12603 = struct (v12643, v12644) 
     #endif
-    let struct (v12547 : int32, v12548 : string) = _run_target_args'_v12505 
-    let _run_target_args'_v16 = struct (v12547, v12548) 
+    let struct (v12645 : int32, v12646 : string) = _run_target_args'_v12603 
+    let _run_target_args'_v16 = struct (v12645, v12646) 
     #endif
-    let struct (v12559 : int32, v12560 : string) = _run_target_args'_v16 
-    struct (v12559, v12560)
+    let struct (v12657 : int32, v12658 : string) = _run_target_args'_v16 
+    struct (v12657, v12658)
 and method182 (v0 : int32, v1 : string, v2 : string) : string =
     let v3 : string = method13()
     let v4 : Mut3 = {l0 = v3} : Mut3
@@ -24959,7 +24993,7 @@ and method192 () : string =
 and method193 () : string =
     let v0 : string = "env"
     v0
-and method195 (v0 : US39, v1 : int32, v2 : string, v3 : string) : string =
+and method195 (v0 : US40, v1 : int32, v2 : string, v3 : string) : string =
     let v4 : string = method13()
     let v5 : Mut3 = {l0 = v4} : Mut3
     let v8 : string = "{ "
@@ -25041,7 +25075,7 @@ and method195 (v0 : US39, v1 : int32, v2 : string, v3 : string) : string =
     let v312 : unit = (fun () -> v311 (); v310) ()
     let v318 : string = v5.l0
     v318
-and method194 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : US39, v9 : int32, v10 : string, v11 : string) : string =
+and method194 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : US40, v9 : int32, v10 : string, v11 : string) : string =
     let v12 : string = method195(v8, v9, v10, v11)
     let v13 : int64 = v0.l0
     let v16 : string = " "
@@ -25059,7 +25093,7 @@ and method194 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64
     let v52 : string = v46 + v51 
     let v56 : string = v52 + v12 
     method16(v56)
-and closure78 (v0 : US39, v1 : string, v2 : string, v3 : int32) () : unit =
+and closure78 (v0 : US40, v1 : string, v2 : string, v3 : int32) () : unit =
     let v18 : unit = ()
     let v19 : (unit -> unit) = closure2()
     let v20 : unit = (fun () -> v19 (); v18) ()
@@ -25832,7 +25866,7 @@ and method207 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64
     let v31 : string = v30 v12
     let v35 : string = v26 + v31 
     let v39 : string = v35 + v15 
-    let v44 : string = "spiral.run / repl error"
+    let v44 : string = "spiral.process_dib / repl error"
     let v45 : string = v39 + v44 
     let v50 : string = " / "
     let v51 : string = v45 + v50 
@@ -26108,7 +26142,7 @@ and method209 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64
     let v30 : string = v29 v11
     let v34 : string = v25 + v30 
     let v38 : string = v34 + v14 
-    let v43 : string = "spiral.run / dib / jupyter nbconvert"
+    let v43 : string = "spiral.process_dib / dib / jupyter nbconvert"
     let v44 : string = v38 + v43 
     let v49 : string = " / "
     let v50 : string = v44 + v49 
@@ -26572,7 +26606,7 @@ and method213 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64
     let v30 : string = v29 v11
     let v34 : string = v25 + v30 
     let v38 : string = v34 + v14 
-    let v43 : string = "spiral.run / dib"
+    let v43 : string = "spiral.process_dib / dib"
     let v44 : string = v38 + v43 
     let v49 : string = " / "
     let v50 : string = v44 + v49 
@@ -26754,7 +26788,7 @@ and method216 () : string =
 and method217 () : string =
     let v0 : string = "contract"
     v0
-and method218 (v0 : string, v1 : string, v2 : US40) : string =
+and method218 (v0 : string, v1 : string, v2 : US41) : string =
     let v3 : string = method13()
     let v4 : Mut3 = {l0 = v3} : Mut3
     let v7 : string = "{ "
@@ -26819,14 +26853,14 @@ and method218 (v0 : string, v1 : string, v2 : US40) : string =
     let v238 : unit = (fun () -> v237 (); v236) ()
     let v244 : string = v4.l0
     v244
-and method219 (v0 : US5, v1 : string, v2 : US43, v3 : string) : string =
+and method219 (v0 : US5, v1 : string, v2 : US44, v3 : string) : string =
     let v4 : string = "target/spiral"
     let v5 : string = method33(v3, v4)
     let v6 : string = method33(v5, v1)
     match v0 with
     | US5_0(v7) -> (* Some *)
         match v2 with
-        | US43_0(v8) -> (* Some *)
+        | US44_0(v8) -> (* Some *)
             let v9 : string = "packages"
             let v10 : string = method33(v6, v9)
             
@@ -26834,7 +26868,7 @@ and method219 (v0 : US5, v1 : string, v2 : US43, v3 : string) : string =
             
             let v11 : bool =
                 match v8 with
-                | US42_0 -> (* Rust *)
+                | US43_0 -> (* Rust *)
                     true
                 | _ ->
                     false
@@ -26849,7 +26883,7 @@ and method219 (v0 : US5, v1 : string, v2 : US43, v3 : string) : string =
                 | US5_1 -> (* None *)
                     let v18 : bool =
                         match v8 with
-                        | US42_1 -> (* TypeScript *)
+                        | US43_1 -> (* TypeScript *)
                             true
                         | _ ->
                             false
@@ -26863,7 +26897,7 @@ and method219 (v0 : US5, v1 : string, v2 : US43, v3 : string) : string =
                     | US5_1 -> (* None *)
                         let v25 : bool =
                             match v8 with
-                            | US42_2 -> (* Python *)
+                            | US43_2 -> (* Python *)
                                 true
                             | _ ->
                                 false
@@ -27065,9 +27099,9 @@ and method220 (v0 : string, v1 : string, v2 : UH2, v3 : UH4, v4 : string, v5 : s
     let v367 : string = v363 + v361 
     method73(v60, v367)
     v60
-and closure88 () (v0 : chrono_DateTime<chrono_Utc>) : US44 =
-    US44_0(v0)
-and method224 () : (chrono_DateTime<chrono_Utc> -> US44) =
+and closure88 () (v0 : chrono_DateTime<chrono_Utc>) : US45 =
+    US45_0(v0)
+and method224 () : (chrono_DateTime<chrono_Utc> -> US45) =
     closure88()
 and method225 () : string =
     let v0 : string = "hh:mm"
@@ -27181,15 +27215,15 @@ and method223 (v0 : System.Guid, v1 : System.DateTime) : System.Guid =
     let v862 : int64 = v861 / 10L
     let v863 : string = "chrono::DateTime::from_timestamp_micros($0)"
     let v864 : chrono_DateTime<chrono_Utc> option = Fable.Core.RustInterop.emitRustExpr v862 v863 
-    let v867 : (chrono_DateTime<chrono_Utc> -> US44) = method224()
-    let v868 : US44 option = v864 |> Option.map v867 
-    let v888 : US44 = US44_1
-    let v889 : US44 = v868 |> Option.defaultValue v888 
+    let v867 : (chrono_DateTime<chrono_Utc> -> US45) = method224()
+    let v868 : US45 option = v864 |> Option.map v867 
+    let v888 : US45 = US45_1
+    let v889 : US45 = v868 |> Option.defaultValue v888 
     let v909 : US5 =
         match v889 with
-        | US44_1 -> (* None *)
+        | US45_1 -> (* None *)
             US5_1
-        | US44_0(v893) -> (* Some *)
+        | US45_0(v893) -> (* Some *)
             let v894 : string = "$0.naive_utc()"
             let v895 : chrono_NaiveDateTime = Fable.Core.RustInterop.emitRustExpr v893 v894 
             let v896 : string = "chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &$0)"
@@ -27646,15 +27680,15 @@ and method223 (v0 : System.Guid, v1 : System.DateTime) : System.Guid =
     let v1745 : int64 = v1744 / 10L
     let v1746 : string = "chrono::DateTime::from_timestamp_micros($0)"
     let v1747 : chrono_DateTime<chrono_Utc> option = Fable.Core.RustInterop.emitRustExpr v1745 v1746 
-    let v1750 : (chrono_DateTime<chrono_Utc> -> US44) = method224()
-    let v1751 : US44 option = v1747 |> Option.map v1750 
-    let v1771 : US44 = US44_1
-    let v1772 : US44 = v1751 |> Option.defaultValue v1771 
+    let v1750 : (chrono_DateTime<chrono_Utc> -> US45) = method224()
+    let v1751 : US45 option = v1747 |> Option.map v1750 
+    let v1771 : US45 = US45_1
+    let v1772 : US45 = v1751 |> Option.defaultValue v1771 
     let v1792 : US5 =
         match v1772 with
-        | US44_1 -> (* None *)
+        | US45_1 -> (* None *)
             US5_1
-        | US44_0(v1776) -> (* Some *)
+        | US45_0(v1776) -> (* Some *)
             let v1777 : string = "$0.naive_utc()"
             let v1778 : chrono_NaiveDateTime = Fable.Core.RustInterop.emitRustExpr v1776 v1777 
             let v1779 : string = "chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &$0)"
@@ -29519,7 +29553,7 @@ and method230 () : string =
 and method231 () : string =
     let v0 : string = " "
     v0
-and method232 (v0 : US41) : string =
+and method232 (v0 : US42) : string =
     let v1 : string = method13()
     let v2 : Mut3 = {l0 = v1} : Mut3
     let v4 : string = $"%A{v0}"
@@ -29797,16 +29831,16 @@ and closure89 (v0 : uint8, v1 : uint8, v2 : int32, v3 : string, v4 : bool) () : 
 and method234 (v0 : uint8, v1 : string, v2 : System.Threading.CancellationToken option, v3 : (struct (string * string) []), v4 : (struct (int32 * string * bool) -> Async<unit>) option, v5 : (std_sync_Arc<std_sync_Mutex<std_process_ChildStdin>> -> unit) option, v6 : bool, v7 : string option, v8 : bool, v9 : uint8) : struct (int32 * string) =
     let struct (v10 : int32, v11 : string) = method98(v1, v2, v3, v4, v5, v6, v7, v8)
     let v12 : bool = v10 = 0
-    let v15 : US45 =
+    let v15 : US46 =
         if v12 then
-            US45_0(v10, v11)
+            US46_0(v10, v11)
         else
-            US45_1(v10, v11)
+            US46_1(v10, v11)
     let struct (v23 : bool, v24 : int32, v25 : string) =
         match v15 with
-        | US45_1(v18, v19) -> (* Error *)
+        | US46_1(v18, v19) -> (* Error *)
             struct (true, v18, v19)
-        | US45_0(v16, v17) -> (* Ok *)
+        | US46_0(v16, v17) -> (* Ok *)
             struct (false, v16, v17)
     let v26 : bool = v23 = false
     let v28 : bool =
@@ -29826,7 +29860,7 @@ and method234 (v0 : uint8, v1 : string, v2 : System.Threading.CancellationToken 
 and method233 (v0 : uint8, v1 : string, v2 : System.Threading.CancellationToken option, v3 : (struct (string * string) []), v4 : (struct (int32 * string * bool) -> Async<unit>) option, v5 : (std_sync_Arc<std_sync_Mutex<std_process_ChildStdin>> -> unit) option, v6 : bool, v7 : string option, v8 : bool) : struct (int32 * string) =
     let v9 : uint8 = 1uy
     method234(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9)
-and method229 (v0 : US40, v1 : string, v2 : string, v3 : string, v4 : US14) : struct (int32 * string) =
+and method229 (v0 : US41, v1 : string, v2 : string, v3 : string, v4 : US14) : struct (int32 * string) =
     let v6 : System.Threading.CancellationToken option = None
     let v9 : (struct (string * string) []) = [||]
     let v11 : (struct (int32 * string * bool) -> Async<unit>) option = None
@@ -29890,15 +29924,15 @@ and method229 (v0 : US40, v1 : string, v2 : string, v3 : string, v4 : US14) : st
     let v56 : string = $" --define {v55}"
     let v178 : string =
         match v0 with
-        | US40_1 -> (* None *)
+        | US41_1 -> (* None *)
             let v176 : string = ""
             v176
-        | US40_0(v57) -> (* Some *)
+        | US41_0(v57) -> (* Some *)
             let v59 : string = Unchecked.defaultof<_>
             let v63 : string = Unchecked.defaultof<_>
             let v68 : bool =
                 match v57 with
-                | US41_0(v66) -> (* Wasm *)
+                | US42_0(v66) -> (* Wasm *)
                     let v67 : bool = v59 = v66
                     v67
                 | _ ->
@@ -29943,7 +29977,7 @@ and method229 (v0 : US40, v1 : string, v2 : string, v3 : string, v4 : US14) : st
                     let _run_target_args'_v73 = v80 
                     #endif
                     let v81 : string = _run_target_args'_v73 
-                    let v85 : US41 = US41_0(v59)
+                    let v85 : US42 = US42_0(v59)
                     let v86 : string = method232(v85)
                     let v96 : (string []) = v86.Split v81 
                     let v100 : string = v96.[int 0]
@@ -29959,7 +29993,7 @@ and method229 (v0 : US40, v1 : string, v2 : string, v3 : string, v4 : US14) : st
                 | US5_1 -> (* None *)
                     let v117 : bool =
                         match v57 with
-                        | US41_1(v115) -> (* Contract *)
+                        | US42_1(v115) -> (* Contract *)
                             let v116 : bool = v63 = v115
                             v116
                         | _ ->
@@ -30004,7 +30038,7 @@ and method229 (v0 : US40, v1 : string, v2 : string, v3 : string, v4 : US14) : st
                             let _run_target_args'_v122 = v129 
                             #endif
                             let v130 : string = _run_target_args'_v122 
-                            let v134 : US41 = US41_1(v63)
+                            let v134 : US42 = US42_1(v63)
                             let v135 : string = method232(v134)
                             let v145 : (string []) = v135.Split v130 
                             let v149 : string = v145.[int 0]
@@ -30449,9 +30483,9 @@ and method244 (v0 : string, v1 : regex_Regex) : Vec<std_collections_HashMap<stri
     let v116 : string = "_capture_move"
     let v117 : Vec<std_collections_HashMap<string, string>> = Fable.Core.RustInterop.emitRustExpr () v116 
     v117
-and closure92 () (v0 : std_collections_HashMap<string, string>) : US46 =
-    US46_0(v0)
-and method245 () : (std_collections_HashMap<string, string> -> US46) =
+and closure92 () (v0 : std_collections_HashMap<string, string>) : US47 =
+    US47_0(v0)
+and method245 () : (std_collections_HashMap<string, string> -> US47) =
     closure92()
 and method246 () : string =
     let v0 : string = "a"
@@ -30682,13 +30716,13 @@ and method243 (v0 : US14, v1 : string, v2 : uint8) : struct (int32 * string) =
     let v54 : string = "failed to load manifest for workspace member"
     let v55 : bool = v51.Contains v54 
     let v58 : bool = v55 = false
-    let v275 : US45 =
+    let v275 : US46 =
         if v58 then
             let v59 : bool = v50 = 0
             if v59 then
-                US45_0(v50, v51)
+                US46_0(v50, v51)
             else
-                US45_1(v50, v51)
+                US46_1(v50, v51)
         else
             let v63 : string = $"regex::Regex::new(&$0)"
             let v64 : string = "failed to read `(?<a>.*?Cargo.toml)`"
@@ -30735,15 +30769,15 @@ and method243 (v0 : US14, v1 : string, v2 : uint8) : struct (int32 * string) =
             let v82 : string = "fable_library_rust::NativeArray_::array_from($0.clone())"
             let v83 : (std_collections_HashMap<string, string> []) = Fable.Core.RustInterop.emitRustExpr v81 v82 
             let v84 : std_collections_HashMap<string, string> option = v83 |> Array.tryItem 0 
-            let v87 : (std_collections_HashMap<string, string> -> US46) = method245()
-            let v88 : US46 option = v84 |> Option.map v87 
-            let v108 : US46 = US46_1
-            let v109 : US46 = v88 |> Option.defaultValue v108 
-            let v148 : US47 =
+            let v87 : (std_collections_HashMap<string, string> -> US47) = method245()
+            let v88 : US47 option = v84 |> Option.map v87 
+            let v108 : US47 = US47_1
+            let v109 : US47 = v88 |> Option.defaultValue v108 
+            let v148 : US35 =
                 match v109 with
-                | US46_1 -> (* None *)
-                    US47_1
-                | US46_0(v113) -> (* Some *)
+                | US47_1 -> (* None *)
+                    US35_1
+                | US47_0(v113) -> (* Some *)
                     let v114 : string = method246()
                     let v115 : string = "std::collections::HashMap::get(&$0, &v114).map(|x| x).cloned()"
                     let v116 : string option = Fable.Core.RustInterop.emitRustExpr v113 v115 
@@ -30751,10 +30785,10 @@ and method243 (v0 : US14, v1 : string, v2 : uint8) : struct (int32 * string) =
                     let v120 : US5 option = v116 |> Option.map v119 
                     let v140 : US5 = US5_1
                     let v141 : US5 = v120 |> Option.defaultValue v140 
-                    US47_0(v141)
+                    US35_0(v141)
             let v155 : US5 =
                 match v148 with
-                | US47_0(v149) -> (* Some *)
+                | US35_0(v149) -> (* Some *)
                     match v149 with
                     | US5_0(v150) -> (* Some *)
                         US5_0(v150)
@@ -30764,7 +30798,7 @@ and method243 (v0 : US14, v1 : string, v2 : uint8) : struct (int32 * string) =
                     US5_1
             match v155 with
             | US5_1 -> (* None *)
-                US45_1(v50, v51)
+                US46_1(v50, v51)
             | US5_0(v157) -> (* Some *)
                 let v158 : bool = method35(v157)
                 let v159 : bool = v158 = false
@@ -30863,14 +30897,14 @@ and method243 (v0 : US14, v1 : string, v2 : uint8) : struct (int32 * string) =
                     ()
                 let v269 : bool = v50 = 0
                 if v269 then
-                    US45_0(v50, v51)
+                    US46_0(v50, v51)
                 else
-                    US45_1(v50, v51)
+                    US46_1(v50, v51)
     let struct (v283 : bool, v284 : int32, v285 : string) =
         match v275 with
-        | US45_1(v278, v279) -> (* Error *)
+        | US46_1(v278, v279) -> (* Error *)
             struct (true, v278, v279)
-        | US45_0(v276, v277) -> (* Ok *)
+        | US46_0(v276, v277) -> (* Ok *)
             struct (false, v276, v277)
     let v286 : bool = v283 = false
     let v288 : bool =
@@ -33990,15 +34024,15 @@ and closure112 (v0 : string) (v1 : Result<async_walkdir_DirEntry, async_walkdir_
             let v120 : string = "fable_library_rust::NativeArray_::array_from($0.clone())"
             let v121 : (std_collections_HashMap<string, string> []) = Fable.Core.RustInterop.emitRustExpr v119 v120 
             let v122 : std_collections_HashMap<string, string> option = v121 |> Array.tryItem 0 
-            let v125 : (std_collections_HashMap<string, string> -> US46) = method245()
-            let v126 : US46 option = v122 |> Option.map v125 
-            let v146 : US46 = US46_1
-            let v147 : US46 = v126 |> Option.defaultValue v146 
-            let v186 : US47 =
+            let v125 : (std_collections_HashMap<string, string> -> US47) = method245()
+            let v126 : US47 option = v122 |> Option.map v125 
+            let v146 : US47 = US47_1
+            let v147 : US47 = v126 |> Option.defaultValue v146 
+            let v186 : US35 =
                 match v147 with
-                | US46_1 -> (* None *)
-                    US47_1
-                | US46_0(v151) -> (* Some *)
+                | US47_1 -> (* None *)
+                    US35_1
+                | US47_0(v151) -> (* Some *)
                     let v152 : string = method246()
                     let v153 : string = "std::collections::HashMap::get(&$0, &v152).map(|x| x).cloned()"
                     let v154 : string option = Fable.Core.RustInterop.emitRustExpr v151 v153 
@@ -34006,10 +34040,10 @@ and closure112 (v0 : string) (v1 : Result<async_walkdir_DirEntry, async_walkdir_
                     let v158 : US5 option = v154 |> Option.map v157 
                     let v178 : US5 = US5_1
                     let v179 : US5 = v158 |> Option.defaultValue v178 
-                    US47_0(v179)
+                    US35_0(v179)
             let v193 : US5 =
                 match v186 with
-                | US47_0(v187) -> (* Some *)
+                | US35_0(v187) -> (* Some *)
                     match v187 with
                     | US5_0(v188) -> (* Some *)
                         US5_0(v188)
@@ -38046,10 +38080,10 @@ main()"
                     let v4360 : US8 option = v4356 |> Option.map v4359 
                     let v4380 : US8 = US8_1
                     let v4381 : US8 = v4360 |> Option.defaultValue v4380 
-                    let v4442 : US37 =
+                    let v4442 : US38 =
                         match v4381 with
                         | US8_1 -> (* None *)
-                            US37_1
+                            US38_1
                         | US8_0(v4385) -> (* Some *)
                             let v4386 : string = "fable_library_rust::String_::fromString($0)"
                             let v4387 : string = Fable.Core.RustInterop.emitRustExpr v4385 v4386 
@@ -38064,67 +38098,67 @@ main()"
                             let v4398 : (unit -> string) = v4397.ToLower
                             let v4399 : string = v4398 ()
                             let v4402 : bool = "Pip" = v4387
-                            let v4406 : US38 =
+                            let v4406 : US39 =
                                 if v4402 then
-                                    let v4403 : US39 = US39_0
-                                    US38_0(v4403)
+                                    let v4403 : US40 = US40_0
+                                    US39_0(v4403)
                                 else
-                                    US38_1
-                            let v4438 : US38 =
+                                    US39_1
+                            let v4438 : US39 =
                                 match v4406 with
-                                | US38_1 -> (* None *)
+                                | US39_1 -> (* None *)
                                     let v4409 : bool = "Poetry" = v4387
-                                    let v4413 : US38 =
+                                    let v4413 : US39 =
                                         if v4409 then
-                                            let v4410 : US39 = US39_1
-                                            US38_0(v4410)
+                                            let v4410 : US40 = US40_1
+                                            US39_0(v4410)
                                         else
-                                            US38_1
+                                            US39_1
                                     match v4413 with
-                                    | US38_1 -> (* None *)
+                                    | US39_1 -> (* None *)
                                         let v4416 : bool = v4399 = v4387
-                                        let v4420 : US38 =
+                                        let v4420 : US39 =
                                             if v4416 then
-                                                let v4417 : US39 = US39_0
-                                                US38_0(v4417)
+                                                let v4417 : US40 = US40_0
+                                                US39_0(v4417)
                                             else
-                                                US38_1
+                                                US39_1
                                         match v4420 with
-                                        | US38_1 -> (* None *)
+                                        | US39_1 -> (* None *)
                                             let v4423 : bool = v4392 = v4387
-                                            let v4427 : US38 =
+                                            let v4427 : US39 =
                                                 if v4423 then
-                                                    let v4424 : US39 = US39_1
-                                                    US38_0(v4424)
+                                                    let v4424 : US40 = US40_1
+                                                    US39_0(v4424)
                                                 else
-                                                    US38_1
+                                                    US39_1
                                             match v4427 with
-                                            | US38_1 -> (* None *)
-                                                US38_1
-                                            | US38_0(v4428) -> (* Some *)
-                                                US38_0(v4428)
-                                        | US38_0(v4421) -> (* Some *)
-                                            US38_0(v4421)
-                                    | US38_0(v4414) -> (* Some *)
-                                        US38_0(v4414)
-                                | US38_0(v4407) -> (* Some *)
-                                    US38_0(v4407)
-                            US37_0(v4438)
-                    let v4449 : US38 =
+                                            | US39_1 -> (* None *)
+                                                US39_1
+                                            | US39_0(v4428) -> (* Some *)
+                                                US39_0(v4428)
+                                        | US39_0(v4421) -> (* Some *)
+                                            US39_0(v4421)
+                                    | US39_0(v4414) -> (* Some *)
+                                        US39_0(v4414)
+                                | US39_0(v4407) -> (* Some *)
+                                    US39_0(v4407)
+                            US38_0(v4438)
+                    let v4449 : US39 =
                         match v4442 with
-                        | US37_0(v4443) -> (* Some *)
+                        | US38_0(v4443) -> (* Some *)
                             match v4443 with
-                            | US38_0(v4444) -> (* Some *)
-                                US38_0(v4444)
+                            | US39_0(v4444) -> (* Some *)
+                                US39_0(v4444)
                             | _ ->
-                                US38_1
+                                US39_1
                         | _ ->
-                            US38_1
-                    let v4453 : US39 =
+                            US39_1
+                    let v4453 : US40 =
                         match v4449 with
-                        | US38_1 -> (* None *)
-                            US39_0
-                        | US38_0(v4450) -> (* Some *)
+                        | US39_1 -> (* None *)
+                            US40_0
+                        | US39_0(v4450) -> (* Some *)
                             v4450
                     let v4454 : string = method22()
                     (* run_target_args'
@@ -38403,10 +38437,10 @@ main()"
                     let v4711 : string = v4707 |> Option.defaultValue v4710 
                     let v4719 : string =
                         match v4453 with
-                        | US39_0 -> (* Pip *)
+                        | US40_0 -> (* Pip *)
                             let v4714 : string = "requirements.txt"
                             method33(v4711, v4714)
-                        | US39_1 -> (* Poetry *)
+                        | US40_1 -> (* Poetry *)
                             let v4716 : string = "pyproject.toml"
                             method33(v4711, v4716)
                     let v4720 : string = "true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"
@@ -38461,9 +38495,9 @@ main()"
                         else
                             let v4886 : string =
                                 match v4453 with
-                                | US39_0 -> (* Pip *)
+                                | US40_0 -> (* Pip *)
                                     v4769
-                                | US39_1 -> (* Poetry *)
+                                | US40_1 -> (* Poetry *)
                                     let v4774 : string = $"[tool.poetry]"
                                     let v4775 : string = $"name = \"test\""
                                     let v4778 : string = "\n"
@@ -38511,10 +38545,10 @@ main()"
                             let v4901 : string option = None
                             let v4907 : string =
                                 match v4453 with
-                                | US39_0 -> (* Pip *)
+                                | US40_0 -> (* Pip *)
                                     let v4904 : string = $"pip install -r requirements.txt"
                                     v4904
-                                | US39_1 -> (* Poetry *)
+                                | US40_1 -> (* Poetry *)
                                     let v4905 : string = $"poetry install"
                                     v4905
                             let v4909 : string option = Some v4711 
@@ -38536,10 +38570,10 @@ main()"
                         else
                             let v5554 : string =
                                 match v4453 with
-                                | US39_0 -> (* Pip *)
+                                | US40_0 -> (* Pip *)
                                     let v5551 : string = $"python \"{v4317}\""
                                     v5551
-                                | US39_1 -> (* Poetry *)
+                                | US40_1 -> (* Poetry *)
                                     let v5552 : string = $"poetry run python \"{v4317}\""
                                     v5552
                             let v5555 : string = "TRACE_LEVEL"
@@ -39678,7 +39712,7 @@ pwsh_replace_html_result: {v7622}"
                             let v8805 : unit = (fun () -> v8804 (); v8803) ()
                             let v9122 : bool = v8489 <> 0 
                             if v9122 then
-                                let v9125 : string = $"spiral.run / dib / exit_code: {v8489} / result: '{v8490}'"
+                                let v9125 : string = $"spiral.process_dib / dib / exit_code: {v8489} / result: '{v8490}'"
                                 failwith<unit> v9125
                             let v9126 : string = "stdio"
                             [|struct (v9126, v8490)|]
@@ -39942,18 +39976,18 @@ pwsh_replace_html_result: {v7622}"
                                             let v9458 : string = "fable_library_rust::String_::fromString($0)"
                                             let v9459 : string = Fable.Core.RustInterop.emitRustExpr v9457 v9458 
                                             US5_0(v9459)
-                                    let v9472 : US40 =
+                                    let v9472 : US41 =
                                         match v9389 with
                                         | US5_0(v9464) -> (* Some *)
-                                            let v9465 : US41 = US41_0(v9464)
-                                            US40_0(v9465)
+                                            let v9465 : US42 = US42_0(v9464)
+                                            US41_0(v9465)
                                         | _ ->
                                             match v9463 with
                                             | US5_0(v9467) -> (* Some *)
-                                                let v9468 : US41 = US41_1(v9467)
-                                                US40_0(v9468)
+                                                let v9468 : US42 = US42_1(v9467)
+                                                US41_0(v9468)
                                             | _ ->
-                                                US40_1
+                                                US41_1
                                     (* run_target_args'
                                     let v9477 : unit = ()
                                     run_target_args' *)
@@ -40176,8 +40210,8 @@ pwsh_replace_html_result: {v7622}"
                                     let v9654 : string = "_result_unwrap_or_else"
                                     let v9655 : string = Fable.Core.RustInterop.emitRustExpr () v9654 
                                     let v9656 : string = "spiral"
-                                    let v9657 : US42 = US42_0
-                                    let v9658 : US43 = US43_0(v9657)
+                                    let v9657 : US43 = US43_0
+                                    let v9658 : US44 = US44_0(v9657)
                                     let v9659 : US5 = US5_0(v9584)
                                     let v9660 : string = method219(v9659, v9656, v9658, v9655)
                                     let v9661 : string = "Fable.Core"
@@ -40393,7 +40427,7 @@ pwsh_replace_html_result: {v7622}"
                                         else
                                             let v10520 : bool =
                                                 match v9472 with
-                                                | US40_1 -> (* None *)
+                                                | US41_1 -> (* None *)
                                                     true
                                                 | _ ->
                                                     false
@@ -40738,7 +40772,7 @@ pwsh_replace_html_result: {v7622}"
                                             let v10872 : string = $"[dependencies]"
                                             let v10874 : string = v10869 + v10819 
                                             let v10878 : string = v10874 + v10872 
-                                            let v10883 : US40 = US40_1
+                                            let v10883 : US41 = US41_1
                                             let v10884 : bool = v9472 <> v10883 
                                             let v10902 : string =
                                                 if v10884 then
@@ -40776,7 +40810,7 @@ pwsh_replace_html_result: {v7622}"
                                             let v10935 : string = v10931 + v10929 
                                             let v10938 : bool =
                                                 match v9472 with
-                                                | US40_1 -> (* None *)
+                                                | US41_1 -> (* None *)
                                                     true
                                                 | _ ->
                                                     false
@@ -41195,7 +41229,7 @@ pwsh_replace_html_result: {v7622}"
                                             let v12030 : string = v12029 + v12026 
                                             let v12033 : bool =
                                                 match v9472 with
-                                                | US40_1 -> (* None *)
+                                                | US41_1 -> (* None *)
                                                     true
                                                 | _ ->
                                                     false
@@ -41238,7 +41272,7 @@ pwsh_replace_html_result: {v7622}"
                                                     v12123
                                             let v12127 : bool =
                                                 match v9472 with
-                                                | US40_1 -> (* None *)
+                                                | US41_1 -> (* None *)
                                                     true
                                                 | _ ->
                                                     false
@@ -41267,9 +41301,9 @@ pwsh_replace_html_result: {v7622}"
                                                 else
                                                     let v12158 : bool =
                                                         match v9472 with
-                                                        | US40_0(v12155) -> (* Some *)
+                                                        | US41_0(v12155) -> (* Some *)
                                                             match v12155 with
-                                                            | US41_1(v12156) -> (* Contract *)
+                                                            | US42_1(v12156) -> (* Contract *)
                                                                 true
                                                             | _ ->
                                                                 false
@@ -41415,7 +41449,7 @@ pwsh_replace_html_result: {v7622}"
                                                 method73(v10681, v12347)
                                             let v12349 : bool =
                                                 match v9472 with
-                                                | US40_1 -> (* None *)
+                                                | US41_1 -> (* None *)
                                                     true
                                                 | _ ->
                                                     false
@@ -41429,7 +41463,7 @@ pwsh_replace_html_result: {v7622}"
                                                     v12352
                                             let v12354 : bool =
                                                 match v9472 with
-                                                | US40_1 -> (* None *)
+                                                | US41_1 -> (* None *)
                                                     true
                                                 | _ ->
                                                     false
@@ -41503,7 +41537,7 @@ pwsh_replace_html_result: {v7622}"
                                             let struct (v12413 : int32, v12414 : string) = method98(v12353, v12368, v12366, v12373, v12377, v12411, v12408, v12412)
                                             let v12415 : bool =
                                                 match v9472 with
-                                                | US40_1 -> (* None *)
+                                                | US41_1 -> (* None *)
                                                     true
                                                 | _ ->
                                                     false
@@ -41573,11 +41607,11 @@ pwsh_replace_html_result: {v7622}"
                                                     let v13112 : string = $"target/spiral/{v9656}/target/wasm32-unknown-unknown/release/spiral_{v9584}.wasm"
                                                     let v13119 : string =
                                                         match v9472 with
-                                                        | US40_0(v13113) -> (* Some *)
+                                                        | US41_0(v13113) -> (* Some *)
                                                             match v13113 with
-                                                            | US41_1(v13115) -> (* Contract *)
+                                                            | US42_1(v13115) -> (* Contract *)
                                                                 v13115
-                                                            | US41_0(v13114) -> (* Wasm *)
+                                                            | US42_0(v13114) -> (* Wasm *)
                                                                 v13114
                                                         | _ ->
                                                             let v13118 : string = ""
@@ -41641,7 +41675,7 @@ pwsh_replace_html_result: {v7622}"
                                                 method86(v14433, v9660)
                                                 let v14434 : bool =
                                                     match v9472 with
-                                                    | US40_1 -> (* None *)
+                                                    | US41_1 -> (* None *)
                                                         true
                                                     | _ ->
                                                         false
@@ -42040,8 +42074,8 @@ pwsh_replace_html_result: {v7622}"
                                             let v15429 : string = "_result_unwrap_or_else"
                                             let v15430 : string = Fable.Core.RustInterop.emitRustExpr () v15429 
                                             let v15431 : string = "spiral"
-                                            let v15432 : US42 = US42_1
-                                            let v15433 : US43 = US43_0(v15432)
+                                            let v15432 : US43 = US43_1
+                                            let v15433 : US44 = US44_0(v15432)
                                             let v15434 : US5 = US5_0(v15359)
                                             let v15435 : string = method219(v15434, v15431, v15433, v15430)
                                             let v15436 : string = "Fable.Core"
@@ -42084,7 +42118,7 @@ pwsh_replace_html_result: {v7622}"
                                             let v15809 : (unit -> unit) = closure119(v15493)
                                             let v15810 : unit = (fun () -> v15809 (); v15808) ()
                                             method278(v15435, v15443, v15493)
-                                            let v16125 : US40 = US40_1
+                                            let v16125 : US41 = US41_1
                                             let struct (v16126 : int32, v16127 : string) = method229(v16125, v15435, v15355, v15441, v15410)
                                             method278(v15435, v15443, v15493)
                                             let v16129 : bool = v16126 <> 0 
@@ -42864,8 +42898,8 @@ pwsh_replace_html_result: {v7622}"
                                                     let v18713 : string = "_result_unwrap_or_else"
                                                     let v18714 : string = Fable.Core.RustInterop.emitRustExpr () v18713 
                                                     let v18715 : string = "spiral"
-                                                    let v18716 : US42 = US42_2
-                                                    let v18717 : US43 = US43_0(v18716)
+                                                    let v18716 : US43 = US43_2
+                                                    let v18717 : US44 = US44_0(v18716)
                                                     let v18718 : US5 = US5_0(v18643)
                                                     let v18719 : string = method219(v18718, v18715, v18717, v18714)
                                                     let v18720 : string = "Fable.Core"
@@ -42881,7 +42915,7 @@ pwsh_replace_html_result: {v7622}"
                                                     let v18730 : string = $"fable_modules/fable_library"
                                                     let v18731 : string = method33(v18719, v18730)
                                                     method228(v18729, v18731)
-                                                    let v18732 : US40 = US40_1
+                                                    let v18732 : US41 = US41_1
                                                     let struct (v18733 : int32, v18734 : string) = method229(v18732, v18719, v18639, v18725, v18694)
                                                     let v18736 : bool = v18733 <> 0 
                                                     let struct (v20919 : US5, v20920 : US5, v20921 : US5, v20922 : US5) =

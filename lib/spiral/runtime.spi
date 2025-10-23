@@ -984,7 +984,10 @@ let execute_with_options (options : execution_options) : i32 * string =
                                     |> fun x => x : _ i32 _
                                     |> seq.of_array
                                     |> sm'.concat "\n"
-                                |> optionm'.default_value' (
+                                |> optionm'.unbox
+                                |> optionm.map (sm'.trim >> sm'.to_option)
+                                |> optionm'.flatten
+                                |> optionm'.default_value (
                                     std_trace
                                     |> optionm.map sm'.from_std_string
                                     |> optionm'.default_value ""
