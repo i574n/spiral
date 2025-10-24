@@ -752,10 +752,10 @@ let current_process_kill () =
                 run_target function
                     | Fsharp (Native) => fun () =>
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 3") id
-                        $'System.Threading.Thread.Sleep 300'
+                        $'System.Threading.Thread.Sleep 500'
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 2") id
                         $'System.Console.Out.Flush ()'
-                        $'System.Threading.Thread.Sleep 60'
+                        $'System.Threading.Thread.Sleep 1000'
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 1") id
                         $'System.Diagnostics.Process.GetCurrentProcess().Kill ()' : ()
                     | _ => fun () => ()
@@ -943,7 +943,8 @@ let execute_with_options (options : execution_options) : i32 * string =
                                         |> resultm.unwrap'
                                     inl output =
                                         [ stdout; stderr ]
-                                        |> listm.map sm'.from_std_string
+                                        |> listm.map (sm'.from_std_string >> sm'.trim)
+                                        |> listm'.filter (sm'.is_empty >> not)
                                         |> sm'.concat_list "\n"
                                         |> sm'.to_std_string
                                         |> Some
@@ -951,7 +952,7 @@ let execute_with_options (options : execution_options) : i32 * string =
                                 | None =>
                                     -1,
                                     ("runtime.execute_with_options / exit_code=None"
-                                        |> sm'.to_std_string 
+                                        |> sm'.to_std_string
                                         |> Some),
                                     Some channel_receiver'
                             | Error error =>
