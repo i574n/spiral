@@ -618,7 +618,6 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                         |> am'.try_item 0
                         |> optionm.map (mapm.get "a" >> optionm'.unbox)
                         |> optionm'.flatten
-
                     match missing_toml_path with
                     | None => Error (exit_code, result)
                     | Some missing_toml_path =>
@@ -628,7 +627,6 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                             |> optionm'.default_value' ""
                             |> file_system.create_dir
                             |> ignore
-
                             get_empty_cargo_toml_content ()
                             |> file_system.write_all_text missing_toml_path
                         return ()
@@ -947,7 +945,7 @@ inl process_dib { path retries working_directory } =
                         "TRACE_LEVEL", "Verbose"
                         "AUTOMATION", "True"
                     ]
-                    trace = retries > 1 && retry = retries
+                    trace = false
                     working_directory = working_directory |> optionm'.box
                 }
                 |> runtime.execute_with_options
