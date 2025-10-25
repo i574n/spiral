@@ -180,6 +180,17 @@ inl is_empty (input : string) : bool =
 
 #!markdown
 
+### to_option
+
+#!spiral
+
+inl to_option s =
+    if s |> is_empty
+    then None
+    else s |> Some
+
+#!markdown
+
 ### slice
 
 #!spiral

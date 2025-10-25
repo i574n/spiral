@@ -946,7 +946,7 @@ inl process_dib { path retries working_directory } =
                         "TRACE_LEVEL", "Verbose"
                         "AUTOMATION", "True"
                     ]
-                    trace = false
+                    trace = retries > 1 && retry = retries
                     working_directory = working_directory |> optionm'.box
                 }
                 |> runtime.execute_with_options
@@ -954,8 +954,8 @@ inl process_dib { path retries working_directory } =
             if exit_code = 0 || retry >= retries
             then exit_code, repl_result
             else
-                trace Debug
-                    fun () => "spiral.run / repl error"
+                trace Warning
+                    fun () => "spiral.process_dib / repl error"
                     fun () => { exit_code repl_result retry = $'$"{!retry}/{!retries}"' : string }
                 루프 (retry + 1)
         루프 1
@@ -971,7 +971,7 @@ inl process_dib { path retries working_directory } =
                 |> runtime.execute_with_options
 
             trace Debug
-                fun () => "spiral.run / dib / jupyter nbconvert"
+                fun () => "spiral.process_dib / dib / jupyter nbconvert"
                 fun () => { exit_code jupyter_result_length = jupyter_result |> sm'.length : i32 }
 
             if exit_code <>. 0
@@ -1002,11 +1002,11 @@ inl process_dib { path retries working_directory } =
                 exit_code, $'$"repl_result: {!repl_result}\n\njupyter_result: {!jupyter_result}\n\npwsh_replace_html_result: {!pwsh_replace_html_result}"'
 
     trace Debug
-        fun () => "spiral.run / dib"
+        fun () => "spiral.process_dib / dib"
         fun () => { exit_code result_length = result |> sm'.length : i32 }
 
     if exit_code <>. 0
-    then failwith $'$"spiral.run / dib / exit_code: {!exit_code} / result: {!result}"'
+    then $'$"spiral.process_dib / dib / exit_code: {!exit_code} / result: \'{!result}\'"' |> failwith
     ;[
         "stdio",
         result

@@ -333,6 +333,24 @@ inl process_output_status (output : process_output) : process_exit_status =
 
 #!markdown
 
+### process_output_stdout
+
+#!spiral
+
+inl process_output_stdout (output : process_output) : am'.vec u8 =
+    !\\(output, $'"$0.stdout"')
+
+#!markdown
+
+### process_output_stderr
+
+#!spiral
+
+inl process_output_stderr (output : process_output) : am'.vec u8 =
+    !\\(output, $'"$0.stderr"')
+
+#!markdown
+
 ### process_exit_status_code
 
 #!spiral
@@ -1409,10 +1427,10 @@ let current_process_kill () =
                 run_target function
                     | Fsharp (Native) => fun () =>
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 3") id
-                        $'System.Threading.Thread.Sleep 300'
+                        $'System.Threading.Thread.Sleep 500'
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 2") id
                         $'System.Console.Out.Flush ()'
-                        $'System.Threading.Thread.Sleep 60'
+                        $'System.Threading.Thread.Sleep 1000'
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 1") id
                         $'System.Diagnostics.Process.GetCurrentProcess().Kill ()' : ()
                     | _ => fun () => ()
@@ -1599,10 +1617,30 @@ let execute_with_options (options : execution_options) : i32 * string =
                                     |> process_exit_status_code
                                     |> optionm'.unbox
                                 match exit_code with
-                                | Some exit_code => exit_code, None, Some channel_receiver'
+                                | Some exit_code =>
+                                    inl stdout =
+                                        output
+                                        |> process_output_stdout
+                                        |> sm'.string_from_utf8
+                                        |> resultm.unwrap'
+                                    inl stderr =
+                                        output
+                                        |> process_output_stderr
+                                        |> sm'.string_from_utf8
+                                        |> resultm.unwrap'
+                                    inl output =
+                                        [ stdout; stderr ]
+                                        |> listm.map (sm'.from_std_string >> sm'.trim)
+                                        |> listm'.filter (sm'.is_empty >> not)
+                                        |> sm'.concat_list "\n"
+                                        |> sm'.to_std_string
+                                        |> Some
+                                    exit_code, output, Some channel_receiver'
                                 | None =>
                                     -1,
-                                    ("runtime.execute_with_options / exit_code=None" |> sm'.to_std_string |> Some),
+                                    ("runtime.execute_with_options / exit_code=None"
+                                        |> sm'.to_std_string
+                                        |> Some),
                                     Some channel_receiver'
                             | Error error =>
                                 trace Critical
@@ -1634,14 +1672,19 @@ let execute_with_options (options : execution_options) : i32 * string =
                                     |> fun x => x : _ i32 _
                                     |> seq.of_array
                                     |> sm'.concat "\n"
-                                |> optionm'.default_value' (
+                                |> optionm'.unbox
+                                |> optionm.map (sm'.trim >> sm'.to_option)
+                                |> optionm'.flatten
+                                |> optionm'.default_value (
                                     std_trace
                                     |> optionm.map sm'.from_std_string
                                     |> optionm'.default_value ""
                                 )
                             trace Verbose
                                 fun () => "runtime.execute_with_options / result"
-                                fun () => { exit_code std_trace_length = std_trace |> sm'.length : i32 }
+                                fun () => {
+                                    file_name exit_code std_trace_length = std_trace |> sm'.length : i32
+                                }
                             new_pair exit_code std_trace
                 |> capture
             // |> async.new_future_move
