@@ -26071,38 +26071,32 @@ and method206 (v0 : US5, v1 : uint8, v2 : string, v3 : uint8) : struct (int32 * 
     let v24 : string = "AUTOMATION"
     let v25 : string = "True"
     let v26 : (struct (string * string) []) = [|struct (v22, v23); struct (v24, v25)|]
-    let v27 : bool = v1 > 1uy
-    let v29 : bool =
-        if v27 then
-            let v28 : bool = v3 = v1
-            v28
-        else
-            false
-    let v40 : string option =
+    let v37 : string option =
         match v0 with
         | US5_1 -> (* None *)
-            let v36 : string option = None
-            v36
-        | US5_0(v30) -> (* Some *)
-            let v32 : string option = Some v30 
-            v32
-    let v41 : bool = true
-    let struct (v42 : int32, v43 : string) = method98(v21, v5, v26, v10, v14, v29, v40, v41)
-    let v44 : bool = v42 = 0
-    let v46 : bool =
-        if v44 then
+            let v33 : string option = None
+            v33
+        | US5_0(v27) -> (* Some *)
+            let v29 : string option = Some v27 
+            v29
+    let v38 : bool = false
+    let v39 : bool = true
+    let struct (v40 : int32, v41 : string) = method98(v21, v5, v26, v10, v14, v38, v37, v39)
+    let v42 : bool = v40 = 0
+    let v44 : bool =
+        if v42 then
             true
         else
-            let v45 : bool = v3 >= v1
-            v45
-    if v46 then
-        struct (v42, v43)
+            let v43 : bool = v3 >= v1
+            v43
+    if v44 then
+        struct (v40, v41)
     else
-        let v359 : unit = ()
-        let v360 : (unit -> unit) = closure84(v1, v3, v43, v42)
-        let v361 : unit = (fun () -> v360 (); v359) ()
-        let v677 : uint8 = v3 + 1uy
-        method206(v0, v1, v2, v677)
+        let v357 : unit = ()
+        let v358 : (unit -> unit) = closure84(v1, v3, v41, v40)
+        let v359 : unit = (fun () -> v358 (); v357) ()
+        let v675 : uint8 = v3 + 1uy
+        method206(v0, v1, v2, v675)
 and method210 (v0 : int32, v1 : int32) : string =
     let v2 : string = method13()
     let v3 : Mut3 = {l0 = v2} : Mut3
