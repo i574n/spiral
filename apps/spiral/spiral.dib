@@ -559,11 +559,11 @@ inl get_workspace_cargo_toml_content { workspace_root } : string =
 
 #!spiral
 
-inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string =
+inl get_cargo_toml_content { hash runtime deps static_do_bindings } : string =
     $'$"cargo-features = [\\\"edition2024\\\"]"'
     ++\# $'$""'
     ++\# $'$"[package]"'
-    ++\# $'$"name = \\\"spiral_{!hash_hex}\\\""'
+    ++\# $'$"name = \\\"spiral_{!hash}\\\""'
     ++\# $'$"version = \\\"0.0.1\\\""'
     ++\# $'$"edition = \\\"2024\\\""'
     ++\# $'$""'
@@ -589,7 +589,7 @@ inl get_cargo_toml_content { hash_hex runtime deps static_do_bindings } : string
     ++\# (
         if runtime = None then
             $'$"[[bin]]"'
-            ++\# $'$"name = \\\"spiral_{!hash_hex}\\\""'
+            ++\# $'$"name = \\\"spiral_{!hash}\\\""'
         else
             $'$"[lib]"'
             ++\# $'$"crate-type = [\\\"cdylib\\\"]"'
@@ -625,7 +625,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
     inl extension = "rs"
     inl code = fs_path |> file_system.read_all_text
 
-    inl hash_hex = { extension code runtime } |> sm'.format |> crypto.hash_text
+    inl hash = { extension code runtime } |> sm'.format |> crypto.hash_text
 
     inl workspace_name = "spiral"
 
@@ -633,7 +633,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
     inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
 
     inl package_dir =
-        get_package_dir { workspace_root name = workspace_name; target = Some Rust; hash = Some hash_hex }
+        get_package_dir { workspace_root name = workspace_name; target = Some Rust; hash = hash |> Some }
 
     inl fsproj_path =
         persist_code_project {
@@ -695,6 +695,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                     if has_near_sdk
                     then deps
                     else deps |> am'.vec_extend (;[ "near-sdk" |> sm'.to_std_string ] |> am'.to_vec)
+                    |> am'.vec_extend (;[ "indexmap=\"=2.11.4\"" |> sm'.to_std_string ] |> am'.to_vec)
             deps
             |> am'.vec_map fun dep =>
                 inl dep = dep |> sm'.from_std_string
@@ -717,7 +718,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
             (new_code |> sm'.contains on_startup_text)
             && (new_code |> sm'.contains method0_fn_text |> not)
         inl cargo_toml_content =
-            get_cargo_toml_content { hash_hex runtime deps static_do_bindings }
+            get_cargo_toml_content { hash runtime deps static_do_bindings }
         inl workspace_cargo_toml_content = get_workspace_cargo_toml_content { workspace_root }
 
         cargo_toml_content |> file_system.write_all_text_exists cargo_toml_path
@@ -1003,7 +1004,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                     }
             else
                 inl wasm_path : string =
-                    $'$"target/spiral/{!workspace_name}/target/wasm32-unknown-unknown/release/spiral_{!hash_hex}.wasm"'
+                    $'$"target/spiral/{!workspace_name}/target/wasm32-unknown-unknown/release/spiral_{!hash}.wasm"'
 
                 inl command =
                     inl invoke_block_path = "scripts/invoke-block.ps1"
@@ -1061,7 +1062,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
 
                 [ ".d"; ".exe"; ".pdb"; ".wasm"; "" ]
                 |> listm.map fun ext =>
-                    workspace_dir </> $'$"target/{!build_target}/spiral_{!hash_hex}{!ext}"'
+                    workspace_dir </> $'$"target/{!build_target}/spiral_{!hash}{!ext}"'
                 |> listm.map fun path => path, path |> file_system.file_exists
 
             trace Verbose
@@ -1175,7 +1176,7 @@ inl process_typescript { fs_path deps trace_level } =
 
     inl code = fs_path |> file_system.read_all_text
 
-    inl hash_hex = (extension, code) |> sm'.format_debug |> crypto.hash_text
+    inl hash = { extension code } |> sm'.format |> crypto.hash_text
 
     inl workspace_name = "spiral"
 
@@ -1184,7 +1185,7 @@ inl process_typescript { fs_path deps trace_level } =
 
     inl package_dir =
         get_package_dir
-            { workspace_root name = workspace_name; target = Some TypeScript; hash = Some hash_hex }
+            { workspace_root name = workspace_name; target = Some TypeScript; hash = hash |> Some }
 
     inl fsproj_path =
         persist_code_project {
@@ -1307,7 +1308,7 @@ inl process_typescript { fs_path deps trace_level } =
 
         inl package_json_content =
             $'$"{{"'
-            +. $'$"  \\\"name\\\": \\\"spiral_{!hash_hex}\\\","'
+            +. $'$"  \\\"name\\\": \\\"spiral_{!hash}\\\","'
             +. $'$"  \\\"dependencies\\\": {{"'
             +. deps
             +. $'$"  }},"'
@@ -1430,7 +1431,7 @@ inl process_python { fs_path deps trace_level } =
 
     inl code = fs_path |> file_system.read_all_text
 
-    inl hash_hex = (extension, code) |> sm'.format_debug |> crypto.hash_text
+    inl hash = { extension code } |> sm'.format |> crypto.hash_text
 
     inl workspace_name = "spiral"
 
@@ -1438,7 +1439,7 @@ inl process_python { fs_path deps trace_level } =
     inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
 
     inl package_dir =
-        get_package_dir { workspace_root name = workspace_name; target = Some Python; hash = Some hash_hex }
+        get_package_dir { workspace_root name = workspace_name; target = Some Python; hash = hash |> Some }
 
     inl fsproj_path =
         persist_code_project {
@@ -1480,7 +1481,7 @@ inl process_python { fs_path deps trace_level } =
 
         inl package_json_content =
             $'$"{{"'
-            +. $'$"  \\\"name\\\": \\\"spiral_{!hash_hex}\\\","'
+            +. $'$"  \\\"name\\\": \\\"spiral_{!hash}\\\","'
             +. $'$"  \\\"dependencies\\\": {{"'
             +. deps
             +. $'$"  }},"'
@@ -1595,7 +1596,7 @@ inl process_gleam { gleam_path target deps } =
     inl new_code_path = gleam_path
     inl new_code = new_code_path |> file_system.read_all_text
 
-    inl hash_hex = { extension new_code } |> sm'.format |> crypto.hash_text
+    inl hash = { extension new_code } |> sm'.format |> crypto.hash_text
 
     inl workspace_root_external = file_system.get_workspace_root_external ()
     inl workspace_root =
@@ -1702,7 +1703,7 @@ inl process_gleam { gleam_path target deps } =
                 else
                     inl js_path = $'$"{!package_dir}/build/dev/javascript/main/main.mjs"'
                     inl js_text = js_path |> file_system.read_all_text
-                    inl js_text = js_text |> sm'.replace $'$"\#app_"' $'$"\#app_{!hash_hex}"'
+                    inl js_text = js_text |> sm'.replace $'$"\#app_"' $'$"\#app_{!hash}"'
                     if js_text |> sm'.ends_with "main()" |> not then
                         $'$"{!js_text}\nmain()"'
                         |> file_system.write_all_text_exists js_path
@@ -1744,24 +1745,24 @@ inl process_gleam { gleam_path target deps } =
                             ++\# $'$"    />"'
                             ++\# $'$"  </head>"'
                             ++\# $'$"  <body>"'
-                            ++\# $'$"    <div id=\\\"app_{!hash_hex}\\\"></div>"'
+                            ++\# $'$"    <div id=\\\"app_{!hash}\\\"></div>"'
                             ++\# $'$"  </body>"'
                             ++\# $'$"</html>"'
 
                         inl html_path = $'$"{!src_dir}/index.html"'
                         html |> file_system.write_all_text_exists html_path
 
-                        "" |> file_system.write_all_text_exists $'$"{!src_dir}/spiral_{!hash_hex}.rs"'
+                        "" |> file_system.write_all_text_exists $'$"{!src_dir}/spiral_{!hash}.rs"'
 
                         inl manifest =
                             $'$"[package]"'
-                            ++\# $'$"name = \\\"spiral_{!hash_hex}\\\""'
+                            ++\# $'$"name = \\\"spiral_{!hash}\\\""'
                             ++\# $'$""'
                             ++\# $'$"[workspace]"'
                             ++\# $'$""'
                             ++\# $'$"[lib]"'
                             ++\# $'$"crate-type = [\\\"cdylib\\\", \\\"rlib\\\"]"'
-                            ++\# $'$"path = \\\"spiral_{!hash_hex}.rs\\\""'
+                            ++\# $'$"path = \\\"spiral_{!hash}.rs\\\""'
                             ++\# $'$""'
                             ++\# $'$"[dependencies]"'
 
