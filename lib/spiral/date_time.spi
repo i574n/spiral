@@ -690,12 +690,12 @@ inl timestamp_from_guid (guid : date_time_guid) : timestamp =
 /// ### new_guid_from_date_time
 inl new_guid_from_date_time (date_time : date_time) =
     inl guid = guid.new_raw_guid ()
-    date_time_guid_from_date_time guid date_time
+    date_time |> date_time_guid_from_date_time guid
 
 /// ### new_guid_from_timestamp
 inl new_guid_from_timestamp (timestamp : timestamp) =
     inl guid = guid.new_raw_guid ()
-    timestamp_guid_from_timestamp guid timestamp
+    timestamp |> timestamp_guid_from_timestamp guid
 
 /// ## main
 inl main () =

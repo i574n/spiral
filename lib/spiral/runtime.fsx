@@ -2597,12 +2597,12 @@ and closure4 () () : unit =
     let v312 : unit = ()
     let v313 : (unit -> unit) = closure5()
     let v314 : unit = (fun () -> v313 (); v312) ()
-    System.Threading.Thread.Sleep 300
+    System.Threading.Thread.Sleep 500
     let v940 : unit = ()
     let v941 : (unit -> unit) = closure11()
     let v942 : unit = (fun () -> v941 (); v940) ()
     System.Console.Out.Flush ()
-    System.Threading.Thread.Sleep 60
+    System.Threading.Thread.Sleep 1000
     let v1568 : unit = ()
     let v1569 : (unit -> unit) = closure12()
     let v1570 : unit = (fun () -> v1569 (); v1568) ()

@@ -1148,10 +1148,10 @@ def method32(v0_mut: str, v1_mut: int64) -> bool:
                     v11 = US10(1)
 
 
-            def _arrow260(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
+            def _arrow255(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0 == (v11.fields[0] if (v11.tag == 0) else _arrow260()):
+            if v0 == (v11.fields[0] if (v11.tag == 0) else _arrow255()):
                 return True
 
             else: 
@@ -1373,10 +1373,10 @@ def method37(v0_mut: str, v1_mut: int64) -> bool:
 
 
 
-            def _arrow265(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
+            def _arrow263(__unit: None=None, v0: Any=v0, v1: Any=v1) -> str:
                 raise Exception("Option does not have a value.")
 
-            if v0 == (v15_1.fields[0] if (v15_1.tag == 0) else _arrow265()):
+            if v0 == (v15_1.fields[0] if (v15_1.tag == 0) else _arrow263()):
                 return True
 
             else: 
@@ -1519,10 +1519,10 @@ def method42(v0_mut: str, v1_mut: str, v2_mut: Any, v3_mut: int, v4_mut: int) ->
 def method22(v0: str) -> US7:
     _v0: (str | None) | None = None
     _v0 = some(v0)
-    def _arrow287(__unit: None=None, v0: Any=v0) -> str | None:
+    def _arrow271(__unit: None=None, v0: Any=v0) -> str | None:
         raise Exception("optionm\'.of_obj / _v0=None")
 
-    v10: str = default_arg(_arrow287() if (_v0 is None) else value_12(_v0), "")
+    v10: str = default_arg(_arrow271() if (_v0 is None) else value_12(_v0), "")
     v16_1: Any = StringBuilder__ctor_Z721C83C5(method23())
     def v19(_arg10: tuple[str, Any, int, int], v0: Any=v0) -> US8:
         return closure14(None, _arg10)
