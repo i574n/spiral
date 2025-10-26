@@ -1084,11 +1084,14 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
 #!spiral
 
 inl process_dib { path retries working_directory } =
+    inl html_path = $'$"{!path}.html"'
+    inl ipynb_path = $'$"{!path}.ipynb"'
+
     inl exit_code, repl_result =
         let rec 루프 retry =
             inl exit_code, repl_result =
                 runtime.execution_options fun x => { x with
-                    command = $'$"dotnet repl --exit-after-run --run \\\"{!path}\\\" --output-path \\\"{!path}.ipynb\\\""'
+                    command = $'$"dotnet repl --exit-after-run --run \\\"{!path}\\\" --output-path \\\"{!ipynb_path}\\\""'
                     environment_variables = ;[
                         "TRACE_LEVEL", "Verbose"
                         "AUTOMATION", "True"
@@ -1098,8 +1101,14 @@ inl process_dib { path retries working_directory } =
                 }
                 |> runtime.execute_with_options
 
-            if exit_code = 0 || retry >= retries
-            then exit_code, repl_result
+            if exit_code = 0 || retry >= retries then 
+                ipynb_path
+                |> file_system.read_all_text
+                |> sm'.replace "\r\n" "\n"
+                |> sm'.replace "\\r\\n" "\\n"
+                |> file_system.write_all_text ipynb_path
+
+                exit_code, repl_result
             else
                 trace Warning
                     fun () => "spiral.process_dib / repl error"
@@ -1113,7 +1122,7 @@ inl process_dib { path retries working_directory } =
         else
             inl exit_code, jupyter_result =
                 runtime.execution_options fun x => { x with
-                    command = $'$"jupyter nbconvert \\\"{!path}.ipynb\\\" --to html --HTMLExporter.theme=dark"'
+                    command = $'$"jupyter nbconvert \\\"{!ipynb_path}\\\" --to html --HTMLExporter.theme=dark"'
                 }
                 |> runtime.execute_with_options
 
@@ -1124,10 +1133,15 @@ inl process_dib { path retries working_directory } =
             if exit_code <>. 0
             then exit_code, $'$"repl_result: {!repl_result}\n\njupyter_result: {!jupyter_result}"'
             else
+                html_path
+                |> file_system.read_all_text
+                |> sm'.replace "\r\n" "\n"
+                |> file_system.write_all_text html_path
+
                 inl exit_code, pwsh_replace_html_result =
                     inl path = path |> sm'.replace "'" "''"
                     runtime.execution_options fun x => { x with
-                        command = $'$"pwsh -c \\\"$counter = 1; $path = \'{!path}.html\'; (Get-Content $path -Raw) -replace \'(id=\\\\\\"cell-id=)[a-fA-F0-9]{{8}}\', {{ $_.Groups[1].Value + $counter++ }} | Set-Content $path\\\""'
+                        command = $'$"pwsh -c \\\"$counter = 1; $path = \'{!html_path}\'; (Get-Content $path -Raw) -replace \'(id=\\\\\\"cell-id=)[a-fA-F0-9]{{8}}\', {{ $_.Groups[1].Value + $counter++ }} | Set-Content $path\\\""'
                     }
                     |> runtime.execute_with_options
 
@@ -1135,18 +1149,13 @@ inl process_dib { path retries working_directory } =
                     fun () => "spiral.run / dib / html cell ids"
                     fun () => { exit_code pwsh_replace_html_result_length = pwsh_replace_html_result |> sm'.length : i32 }
 
-                $'$"{!path}.html"'
-                |> file_system.read_all_text
-                |> sm'.replace "\r\n" "\n"
-                |> file_system.write_all_text $'$"{!path}.html"'
-
-                $'$"{!path}.ipynb"'
-                |> file_system.read_all_text
-                |> sm'.replace "\r\n" "\n"
-                |> sm'.replace "\\r\\n" "\\n"
-                |> file_system.write_all_text $'$"{!path}.ipynb"'
-
                 exit_code, $'$"repl_result: {!repl_result}\n\njupyter_result: {!jupyter_result}\n\npwsh_replace_html_result: {!pwsh_replace_html_result}"'
+
+    inl ci = "CI" |> env.get_environment_variable
+
+    if ci = "" then
+        ipynb_path |> file_system.file_delete
+        html_path |> file_system.file_delete
 
     trace Debug
         fun () => "spiral.process_dib / dib"
