@@ -1345,7 +1345,7 @@ timestamp_from_guid (guid.new_guid $'$"99999999-9999-9999-99{(!test_guid () |> s
 
 inl new_guid_from_date_time (date_time : date_time) =
     inl guid = guid.new_raw_guid ()
-    date_time_guid_from_date_time guid date_time
+    date_time |> date_time_guid_from_date_time guid
 
 #!spiral
 
@@ -1365,7 +1365,7 @@ utc_now ()
 
 inl new_guid_from_timestamp (timestamp : timestamp) =
     inl guid = guid.new_raw_guid ()
-    timestamp_guid_from_timestamp guid timestamp
+    timestamp |> timestamp_guid_from_timestamp guid
 
 #!spiral
 
