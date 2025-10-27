@@ -1139,9 +1139,8 @@ inl process_dib { path retries working_directory } =
                 |> file_system.write_all_text html_path
 
                 inl exit_code, pwsh_replace_html_result =
-                    inl path = path |> sm'.replace "'" "''"
                     runtime.execution_options fun x => { x with
-                        command = $'$"pwsh -c \\\"$counter = 1; $path = \'{!html_path}\'; (Get-Content $path -Raw) -replace \'(id=\\\\\\"cell-id=)[a-fA-F0-9]{{8}}\', {{ $_.Groups[1].Value + $counter++ }} | Set-Content $path\\\""'
+                        command = $'$"pwsh -c \\\"$counter = 1; $path = \'{!(html_path |> sm'.replace "'" "''")}\'; (Get-Content $path -Raw) -replace \'(id=\\\\\\"cell-id=)[a-fA-F0-9]{{8}}\', {{ $_.Groups[1].Value + $counter++ }} | Set-Content $path\\\""'
                     }
                     |> runtime.execute_with_options
 

@@ -20182,7 +20182,7 @@ mod module_1216f6c3 {
                                         let patternInput_14: (i32, string) = Spiral::method206(
                                             v6933,
                                             v6857,
-                                            v6816.clone(),
+                                            v6816,
                                             v6935.clone(),
                                             1_u8,
                                         );
@@ -20249,15 +20249,12 @@ mod module_1216f6c3 {
                                                 );
                                                 std::fs::write(&*v6934.clone(), &*v7711).unwrap();
                                                 {
-                                                    let v7716: string = replace(
-                                                        v6816,
-                                                        string("\'"),
-                                                        string("\'\'"),
-                                                    );
                                                     let patternInput_16:
                                                             (i32, string) =
                                                         Spiral::method98(concat(new_array(&[string("pwsh -c \"$counter = 1; $path = \'"),
-                                                                                            v6934.clone(),
+                                                                                            replace(v6934.clone(),
+                                                                                                    string("\'"),
+                                                                                                    string("\'\'")),
                                                                                             string("\'; (Get-Content $path -Raw) -replace \'(id=\\\"cell-id=)[a-fA-F0-9]{8}\', { $_.Groups[1].Value + $counter++ } | Set-Content $path\"")])),
                                                                          None::<CancellationToken>,
                                                                          new_empty::<(string,
