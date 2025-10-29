@@ -30,7 +30,7 @@ variables:
 build:linux:
   stage: build
   image: ubuntu:24.04
-  tags: ["linux"]     # <-- adjust to your Linux runner tag(s)
+  tags: ["gitlab-org-docker"]     # <-- adjust to your Linux runner tag(s)
   timeout: 420m
   before_script:
     - set -euxo pipefail
@@ -77,7 +77,7 @@ build:linux:
 # --- Windows build (Windows 2025) ---
 build:windows:
   stage: build
-  tags: ["windows-2025"]   # <-- adjust to your Windows runner tag(s)
+  tags: ["saas-windows-medium-amd64"]   # <-- adjust to your Windows runner tag(s)
   timeout: 420m
   before_script:
     - '$ErrorActionPreference = "Stop"'
