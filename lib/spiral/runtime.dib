@@ -1208,214 +1208,6 @@ let event_data (e : data_received_event_args) : string =
 
 #!markdown
 
-### execute_with_options_async
-
-#!spiral
-
-let execute_with_options_async (options : execution_options) : _ (int * string) =
-    fun () =>
-        run_target_args (fun () => options) function
-            | Fsharp (Native) => fun options =>
-                inl file_name, arguments = options.command |> split_command |> resultm.get
-                inl working_directory =
-                    options.working_directory |> optionm'.unbox |> optionm'.default_value ""
-                trace Debug
-                    fun () => "runtime.execute_with_options_async"
-                    fun () => { file_name arguments options }
-                inl utf8 = sm'.encoding_utf8 ()
-                inl arguments = arguments |> optionm'.default_value ""
-                $'let start_info = System.Diagnostics.ProcessStartInfo ('
-                $'  Arguments = !arguments,'
-                $'  StandardOutputEncoding = !utf8,'
-                $'  WorkingDirectory = !working_directory,'
-                $'  FileName = !file_name,'
-                $'  CreateNoWindow = true,'
-                $'  RedirectStandardError = true,'
-                $'  RedirectStandardOutput = true,'
-                $'  UseShellExecute = false'
-                $')'
-                inl start_info : process_start_info = $'start_info'
-                inl environment_variables = join options.environment_variables
-                (a environment_variables : _ i32 _)
-                |> am.iter fun key, value =>
-                    $'!start_info.EnvironmentVariables.[!key] <- !value '
-                inl proc = start_info |> new_process |> use
-                inl output : _ string = threading.new_concurrent_stack ()
-                let event error (e : data_received_event_args) =
-                    fun () =>
-                        inl data = e |> event_data
-                        if data <> null () then
-                            match options.on_line |> optionm'.unbox with
-                            | Some on_line =>
-                                on_line {
-                                    process_id = proc |> process_id
-                                    line = data
-                                    error = error
-                                }
-                                |> async.do
-                            | None => ()
-                            inl text =
-                                if error
-                                then $'$"\! {!data}"'
-                                else $'$"> {!data}"'
-                            if options.trace
-                            then trace Verbose (fun () => text) id
-                            else text |> console.write_line
-                            inl l = if error then $'"\\u001b[7;4m"' else ""
-                            inl r = if error then $'"\\u001b[0m"' else ""
-                            output |> threading.concurrent_stack_push $'$"{!l}{!data}{!r}"'
-                    |> async.new_async
-                proc |> process_add_output_data_received (event false >> async.start_immediate)
-                if options.stderr
-                then proc |> process_add_error_data_received (event true >> async.start_immediate)
-                if proc |> process_start |> not
-                then failwith $'$"runtime.execute_with_options_async / process_start error"'
-                proc |> process_begin_error_read_line
-                proc |> process_begin_output_read_line
-                inl ct =
-                    options.cancellation_token
-                    |> optionm'.unbox
-                    |> optionm'.default_with threading.token_none
-                    |> async.merge_cancellation_token_with_default_async
-                    |> async.let'
-                ct |> threading.token_register fun () =>
-                    if proc |> process_has_exited |> not
-                    then proc |> process_kill
-                |> use
-                |> ignore
-                inl exit_code : i32 =
-                    fun () =>
-                        try_unit
-                            fun () =>
-                                proc
-                                |> process_wait_for_exit_async ct
-                                |> async.await_task
-                                |> async.do
-                                proc |> process_exit_code |> return
-                            fun ex =>
-                                // with :? System.Threading.Tasks.TaskCanceledException as ex =>
-                                inl ex = ex ()
-                                inl ex' = ex |> sm'.format_exception
-                                output |> threading.concurrent_stack_push ex'
-                                inl ex : async.task_canceled_exception = ex |> unbox
-                                trace Warning
-                                    fun () => "runtime.execute_with_options_async / WaitForExitAsync"
-                                    fun () => { ex }
-                                (limit.min : i32) |> return
-                    |> async.new_async_unit
-                    |> async.let'
-                inl output =
-                    output
-                    |> seq.cast'
-                    |> seq.rev''
-                    |> fun x => x : seq.seq' string
-                    |> sm'.concat "\n"
-                trace Debug
-                    fun () => "runtime.execute_with_options_async"
-                    fun () => { exit_code output_length = output |> sm'.length : i32; options }
-                (exit_code, output) |> return
-            | _ => fun _ =>
-                global "#if FABLE_COMPILER\n[<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]\nmodule System =\n module Diagnostics =\n  type Process = bool\n  type DataReceivedEventArgs = bool\n#endif"
-                (null () : int * string) |> return
-    |> async.new_async_unit
-
-#!markdown
-
-### execute_async
-
-#!spiral
-
-let execute_async command =
-    execution_options fun x => { x with
-        command = command
-    }
-    |> execute_with_options_async
-
-#!spiral
-
-//// test
-
-inl content = "╭─[ 你好，世界！こんにちは世界！ ]─╮"
-fun () =>
-    inl file_name = "test.txt"
-    inl temp_dir, disposable =
-        (file_name, content)
-        |> sm'.format_debug
-        |> crypto.hash_text
-        |> file_system.create_temp_dir'
-    disposable |> use |> ignore
-
-    inl path = temp_dir </> file_name
-
-    inl exit_code, result = execute_async $'\@$"pwsh -c ""Get-Content {!path}"""' |> async.let'
-    exit_code |> join _assert_eq 1
-    result |> _assert sm'.contains "not exist"
-
-    content |> file_system.write_all_text_async path |> async.do
-
-    execution_options fun x => { x with
-        command = $'\@$"pwsh -c ""[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content {!file_name}"""'
-        working_directory = Some temp_dir |> optionm'.box
-    }
-    |> execute_with_options_async
-    |> async.return_await
-|> async.new_async_unit
-|> async.run_with_timeout 10000
-|> function
-    | Some (exit_code, output) =>
-        exit_code |> join _assert_eq 0i32
-        output |> join _assert_eq content
-        true
-    | _ => false
-|> _assert_eq true
-
-#!spiral
-
-//// test
-
-fun () =>
-    inl file_name = "test.txt"
-    inl text = "0"
-
-    inl temp_dir, disposable =
-        (file_name, text)
-        |> sm'.format_debug
-        |> crypto.hash_text
-        |> file_system.create_temp_dir'
-    disposable |> use |> ignore
-    inl path = temp_dir </> file_name
-    text |> file_system.write_all_text_async path |> async.do
-
-    inl cts = threading.new_cancellation_token_source ()
-    trace Debug (fun () => "1") id
-    inl result =
-        execution_options fun x => { x with
-            command = $'\@$"pwsh -c ""Get-Content {!path}"""'
-            cancellation_token = cts |> threading.cancellation_source_token |> Some |> optionm'.box
-        }
-        |> execute_with_options_async
-        |> async.start_child
-        |> async.let'
-    trace Debug (fun () => "2") id
-    async.sleep 100 |> async.do
-    trace Debug (fun () => "3") id
-    cts |> threading.cancellation_source_cancel
-    trace Debug (fun () => "4") id
-    inl exit_code, output = result |> async.let'
-    trace Debug (fun () => "5") id
-    (exit_code, output) |> return
-|> async.new_async_unit
-|> async.run_with_timeout 10000
-|> function
-    | Some (exit_code, output) =>
-        exit_code |> _assert_eq -2147483648i32
-        output |> _assert_eq (join "System.Threading.Tasks.TaskCanceledException: A task was canceled.")
-        true
-    | _ => false
-|> _assert_eq true
-
-#!markdown
-
 ### current_process_kill
 
 #!spiral
@@ -1465,233 +1257,228 @@ inl gc_collect () =
 #!spiral
 
 let execute_with_options (options : execution_options) : i32 * string =
-    run_target_args' options function
-        | Fsharp (Native) => fun options =>
-            options |> execute_with_options_async |> async.run_synchronously
-        | Rust (Native) => fun options =>
-            inl command = join options.command
-            inl file_name, arguments = command |> split_command |> resultm.get
-            inl arguments =
-                arguments
-                |> optionm'.default_value ""
-                |> split_args
-                |> resultm.get
-                |> am'.to_vec
-                |> am'.vec_map sm'.to_std_string
-            trace Debug
-                fun () => "runtime.execute_with_options"
-                fun () => { file_name arguments = arguments |> sm'.format_debug; options }
-            fun () =>
-                fun () =>
-                    // inl new_command_mutex (command : rust.ref (rust.mut' process_command)) : threading.arc (threading.mutex process_command) =
-                        // ()
-                    file_name
-                    |> new_process_command
-                    |> process_command_args arguments
-                    |> process_command_stdout (process_stdio_piped ())
-                    |> process_command_stderr (process_stdio_piped ())
-                    |> process_command_stdin (process_stdio_piped ())
-                    // |> new_command_mutex
-                    |> fun command =>
-                        match options.working_directory |> optionm'.unbox with
-                        | Some working_directory => command |> process_command_current_dir working_directory
-                        | None => !\($'$"!command"') |> rust.emit
-                    |> fun command =>
-                        match options.environment_variables with
-                        | ;[] => command
-                        | vars =>
-                            (command, vars |> am'.to_vec)
-                            ||> am'.vec_fold' fun command (key, value) =>
-                                command |> process_command_env key value
-                    |> process_command_spawn
-                    |> resultm.map_error' sm'.format'
-                    |> resultm.map' (optionm'.some' >> (join id) >> threading.new_arc_mutex)
-                    |> resultm.unbox'
-                    |> function
-                        | Ok child =>
-                            inl stdout =
-                                fun () =>
-                                    child
-                                    |> threading.arc_mutex_lock
-                                    |> resultm.unwrap'
-                                    |> threading.mutex_guard_ref_mut
-                                    |> optionm'.as_mut
-                                    |> optionm'.unwrap
-                                    |> process_child_stdout
-                                    |> optionm'.take_ref_mut
-                                    |> optionm'.unwrap
-                                |> rust.capture
-                            inl stderr =
-                                fun () =>
-                                    child
-                                    |> threading.arc_mutex_lock
-                                    |> resultm.unwrap'
-                                    |> threading.mutex_guard_ref_mut
-                                    |> optionm'.as_mut
-                                    |> optionm'.unwrap
-                                    |> process_child_stderr
-                                    |> optionm'.take_ref_mut
-                                    |> optionm'.unwrap
-                                |> rust.capture
-                            inl stdin =
-                                fun () =>
-                                    child
-                                    |> threading.arc_mutex_lock
-                                    |> resultm.unwrap'
-                                    |> threading.mutex_guard_ref_mut
-                                    |> optionm'.as_mut
-                                    |> optionm'.unwrap
-                                    |> process_child_stdin
-                                    |> optionm'.take_ref_mut
-                                    |> optionm'.unwrap
-                                    |> optionm'.some'
-                                    |> join id
-                                    |> threading.new_arc_mutex
-                                |> rust.capture
-                            inl channel_sender, channel_receiver = threading.new_channel ()
-                            inl channel_sender'' = channel_sender |> (join id) |> threading.new_arc_mutex
-                            inl channel_sender' = channel_sender |> (join id) |> threading.new_arc_mutex
-                            inl channel_receiver' = channel_receiver |> (join id) |> threading.new_arc_mutex
-                            inl stdout_handle =
-                                fun () =>
-                                    stdout
-                                    |> stream.decode_reader_bytes_build
-                                    |> stream.new_buf_reader
-                                    |> stream.buf_read_lines
-                                    |> iter.try_for_each fun lines =>
-                                        inl channel_sender'' = channel_sender'' |> rust.clone
-                                        lines
-                                        |> stdio_line (Ok ()) options.trace channel_sender''
-                                        |> resultm.to_try
-                                |> threading.spawn (1, 0) 1
-                            inl stderr_handle =
-                                fun () =>
-                                    stderr
-                                    |> stream.decode_reader_bytes_build
-                                    |> stream.new_buf_reader
-                                    |> stream.buf_read_lines
-                                    |> iter.try_for_each fun lines =>
-                                        if options.stderr |> not
-                                        then Ok () |> resultm.box
-                                        else
-                                            inl channel_sender' = channel_sender' |> rust.clone
-                                            lines
-                                            |> stdio_line (Error ()) options.trace channel_sender'
-                                        |> resultm.to_try
-                                |> threading.spawn (1, 0) 1
-                            match options.stdin |> optionm'.unbox with
-                            | Some stdin' =>
+    inl command = join options.command
+    inl file_name, arguments = command |> split_command |> resultm.get
+    inl arguments =
+        arguments
+        |> optionm'.default_value ""
+        |> split_args
+        |> resultm.get
+        |> am'.to_vec
+        |> am'.vec_map sm'.to_std_string
+    trace Debug
+        fun () => "runtime.execute_with_options"
+        fun () => { file_name arguments = arguments |> sm'.format_debug; options }
+    fun () =>
+        fun () =>
+            // inl new_command_mutex (command : rust.ref (rust.mut' process_command)) : threading.arc (threading.mutex process_command) =
+                // ()
+            file_name
+            |> new_process_command
+            |> process_command_args arguments
+            |> process_command_stdout (process_stdio_piped ())
+            |> process_command_stderr (process_stdio_piped ())
+            |> process_command_stdin (process_stdio_piped ())
+            // |> new_command_mutex
+            |> fun command =>
+                match options.working_directory |> optionm'.unbox with
+                | Some working_directory => command |> process_command_current_dir working_directory
+                | None => !\($'$"!command"') |> rust.emit
+            |> fun command =>
+                match options.environment_variables with
+                | ;[] => command
+                | vars =>
+                    (command, vars |> am'.to_vec)
+                    ||> am'.vec_fold' fun command (key, value) =>
+                        command |> process_command_env key value
+            |> process_command_spawn
+            |> resultm.map_error' sm'.format'
+            |> resultm.map' (optionm'.some' >> (join id) >> threading.new_arc_mutex)
+            |> resultm.unbox'
+            |> function
+                | Ok child =>
+                    inl stdout =
+                        fun () =>
+                            child
+                            |> threading.arc_mutex_lock
+                            |> resultm.unwrap'
+                            |> threading.mutex_guard_ref_mut
+                            |> optionm'.as_mut
+                            |> optionm'.unwrap
+                            |> process_child_stdout
+                            |> optionm'.take_ref_mut
+                            |> optionm'.unwrap
+                        |> rust.capture
+                    inl stderr =
+                        fun () =>
+                            child
+                            |> threading.arc_mutex_lock
+                            |> resultm.unwrap'
+                            |> threading.mutex_guard_ref_mut
+                            |> optionm'.as_mut
+                            |> optionm'.unwrap
+                            |> process_child_stderr
+                            |> optionm'.take_ref_mut
+                            |> optionm'.unwrap
+                        |> rust.capture
+                    inl stdin =
+                        fun () =>
+                            child
+                            |> threading.arc_mutex_lock
+                            |> resultm.unwrap'
+                            |> threading.mutex_guard_ref_mut
+                            |> optionm'.as_mut
+                            |> optionm'.unwrap
+                            |> process_child_stdin
+                            |> optionm'.take_ref_mut
+                            |> optionm'.unwrap
+                            |> optionm'.some'
+                            |> join id
+                            |> threading.new_arc_mutex
+                        |> rust.capture
+                    inl channel_sender, channel_receiver = threading.new_channel ()
+                    inl channel_sender'' = channel_sender |> (join id) |> threading.new_arc_mutex
+                    inl channel_sender' = channel_sender |> (join id) |> threading.new_arc_mutex
+                    inl channel_receiver' = channel_receiver |> (join id) |> threading.new_arc_mutex
+                    inl stdout_handle =
+                        fun () =>
+                            stdout
+                            |> stream.decode_reader_bytes_build
+                            |> stream.new_buf_reader
+                            |> stream.buf_read_lines
+                            |> iter.try_for_each fun lines =>
+                                inl channel_sender'' = channel_sender'' |> rust.clone
+                                lines
+                                |> stdio_line (Ok ()) options.trace channel_sender''
+                                |> resultm.to_try
+                        |> threading.spawn (1, 0) 1
+                    inl stderr_handle =
+                        fun () =>
+                            stderr
+                            |> stream.decode_reader_bytes_build
+                            |> stream.new_buf_reader
+                            |> stream.buf_read_lines
+                            |> iter.try_for_each fun lines =>
+                                if options.stderr |> not
+                                then Ok () |> resultm.box
+                                else
+                                    inl channel_sender' = channel_sender' |> rust.clone
+                                    lines
+                                    |> stdio_line (Error ()) options.trace channel_sender'
+                                |> resultm.to_try
+                        |> threading.spawn (1, 0) 1
+                    match options.stdin |> optionm'.unbox with
+                    | Some stdin' =>
+                        stdin
+                        |> threading.arc_mutex_lock
+                        |> resultm.unwrap'
+                        |> threading.mutex_guard_ref_mut
+                        |> optionm'.take_ref_mut
+                        |> optionm'.map' threading.new_arc_mutex
+                        |> optionm'.unbox
+                        |> function
+                            | Some stdin =>
+                                stdin |> stdin'
                                 stdin
                                 |> threading.arc_mutex_lock
                                 |> resultm.unwrap'
-                                |> threading.mutex_guard_ref_mut
-                                |> optionm'.take_ref_mut
-                                |> optionm'.map' threading.new_arc_mutex
-                                |> optionm'.unbox
-                                |> function
-                                    | Some stdin =>
-                                        stdin |> stdin'
-                                        stdin
-                                        |> threading.arc_mutex_lock
-                                        |> resultm.unwrap'
-                                        |> stdin_flush
-                                    | None => ()
+                                |> stdin_flush
                             | None => ()
-                            inl output =
-                                child
-                                |> threading.arc_mutex_lock
+                    | None => ()
+                    inl output =
+                        child
+                        |> threading.arc_mutex_lock
+                        |> resultm.unwrap'
+                        |> threading.mutex_guard_ref_mut
+                        |> optionm'.take_ref_mut
+                        |> optionm'.unwrap
+                        |> child_wait_with_output
+                        |> resultm.map_error' sm'.format'
+                    [ stdout_handle; stderr_handle ]
+                    |> am'.new_vec
+                    |> am'.vec_for_each' (threading.join' >> resultm.unwrap' >> resultm.unwrap')
+                    match output |> resultm.unbox with
+                    | Ok output =>
+                        inl exit_code =
+                            output
+                            |> process_output_status
+                            |> process_exit_status_code
+                            |> optionm'.unbox
+                        match exit_code with
+                        | Some exit_code =>
+                            inl stdout =
+                                output
+                                |> process_output_stdout
+                                |> sm'.string_from_utf8
                                 |> resultm.unwrap'
-                                |> threading.mutex_guard_ref_mut
-                                |> optionm'.take_ref_mut
-                                |> optionm'.unwrap
-                                |> child_wait_with_output
-                                |> resultm.map_error' sm'.format'
-                            [ stdout_handle; stderr_handle ]
-                            |> am'.new_vec
-                            |> am'.vec_for_each' (threading.join' >> resultm.unwrap' >> resultm.unwrap')
-                            match output |> resultm.unbox with
-                            | Ok output =>
-                                inl exit_code =
-                                    output
-                                    |> process_output_status
-                                    |> process_exit_status_code
-                                    |> optionm'.unbox
-                                match exit_code with
-                                | Some exit_code =>
-                                    inl stdout =
-                                        output
-                                        |> process_output_stdout
-                                        |> sm'.string_from_utf8
-                                        |> resultm.unwrap'
-                                    inl stderr =
-                                        output
-                                        |> process_output_stderr
-                                        |> sm'.string_from_utf8
-                                        |> resultm.unwrap'
-                                    inl output =
-                                        [ stdout; stderr ]
-                                        |> listm.map (sm'.from_std_string >> sm'.trim)
-                                        |> listm'.filter (sm'.is_empty >> not)
-                                        |> sm'.concat_list "\n"
-                                        |> sm'.to_std_string
-                                        |> Some
-                                    exit_code, output, Some channel_receiver'
-                                | None =>
-                                    -1,
-                                    ("runtime.execute_with_options / exit_code=None"
-                                        |> sm'.to_std_string
-                                        |> Some),
-                                    Some channel_receiver'
-                            | Error error =>
-                                trace Critical
-                                    fun () => "runtime.execute_with_options / output error"
-                                    fun () => {
-                                        error file_name arguments = arguments |> sm'.format_debug; options
-                                    }
-                                -2i32, error |> Some, None
-                        | Error error =>
-                            trace Critical
-                                fun () => "runtime.execute_with_options / child error"
-                                fun () => {
-                                    error file_name arguments = arguments |> sm'.format_debug; options
-                                }
-                            -1i32, error |> Some, None
-                    |> function
-                        | exit_code, std_trace, channel_receiver =>
-                            inl std_trace =
-                                channel_receiver
-                                |> optionm'.box
-                                |> optionm'.map' fun channel_receiver =>
-                                    channel_receiver
-                                    |> threading.arc_mutex_lock
-                                    |> resultm.unwrap'
-                                    |> iter.iter
-                                    |> iter_collect''
-                                    |> am'.vec_map sm'.from_std_string
-                                    |> am'.from_vec
-                                    |> fun x => x : _ i32 _
-                                    |> seq.of_array
-                                    |> sm'.concat "\n"
-                                |> optionm'.unbox
-                                |> optionm.map (sm'.trim >> sm'.to_option)
-                                |> optionm'.flatten
-                                |> optionm'.default_value (
-                                    std_trace
-                                    |> optionm.map sm'.from_std_string
-                                    |> optionm'.default_value ""
-                                )
-                            trace Verbose
-                                fun () => "runtime.execute_with_options / result"
-                                fun () => {
-                                    file_name exit_code std_trace_length = std_trace |> sm'.length : i32
-                                }
-                            new_pair exit_code std_trace
-                |> capture
-            // |> async.new_future_move
-            // |> async.block_on
-            |> fun x => x ()
-            |> from_pair
-        | _ => fun _ => null ()
+                            inl stderr =
+                                output
+                                |> process_output_stderr
+                                |> sm'.string_from_utf8
+                                |> resultm.unwrap'
+                            inl output =
+                                [ stdout; stderr ]
+                                |> listm.map (sm'.from_std_string >> sm'.trim)
+                                |> listm'.filter (sm'.is_empty >> not)
+                                |> sm'.concat_list "\n"
+                                |> sm'.to_std_string
+                                |> Some
+                            exit_code, output, Some channel_receiver'
+                        | None =>
+                            -1,
+                            ("runtime.execute_with_options / exit_code=None"
+                                |> sm'.to_std_string
+                                |> Some),
+                            Some channel_receiver'
+                    | Error error =>
+                        trace Critical
+                            fun () => "runtime.execute_with_options / output error"
+                            fun () => {
+                                error file_name arguments = arguments |> sm'.format_debug; options
+                            }
+                        -2i32, error |> Some, None
+                | Error error =>
+                    trace Critical
+                        fun () => "runtime.execute_with_options / child error"
+                        fun () => {
+                            error file_name arguments = arguments |> sm'.format_debug; options
+                        }
+                    -1i32, error |> Some, None
+            |> function
+                | exit_code, std_trace, channel_receiver =>
+                    inl std_trace =
+                        channel_receiver
+                        |> optionm'.box
+                        |> optionm'.map' fun channel_receiver =>
+                            channel_receiver
+                            |> threading.arc_mutex_lock
+                            |> resultm.unwrap'
+                            |> iter.iter
+                            |> iter_collect''
+                            |> am'.vec_map sm'.from_std_string
+                            |> am'.from_vec
+                            |> fun x => x : _ i32 _
+                            |> seq.of_array
+                            |> sm'.concat "\n"
+                        |> optionm'.unbox
+                        |> optionm.map (sm'.trim >> sm'.to_option)
+                        |> optionm'.flatten
+                        |> optionm'.default_value (
+                            std_trace
+                            |> optionm.map sm'.from_std_string
+                            |> optionm'.default_value ""
+                        )
+                    trace Verbose
+                        fun () => "runtime.execute_with_options / result"
+                        fun () => {
+                            file_name exit_code std_trace_length = std_trace |> sm'.length : i32
+                        }
+                    new_pair exit_code std_trace
+        |> capture
+    // |> async.new_future_move
+    // |> async.block_on
+    |> fun x => x ()
+    |> from_pair
 
 #!markdown
 
@@ -1741,6 +1528,22 @@ inl exit_code, output =
 exit_code |> _assert_eq 0i32
 output |> _assert_eq content
 
+#!spiral
+
+//// test
+///! rust -d chrono encoding_rs encoding_rs_io regex sha2
+
+/// task: write a script to test the real time capabilities of std capturing
+
+inl exit_code, output =
+    execution_options fun x => { x with
+        command = $'\@$"pwsh -c ""[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) {{ Write-Output ``""Line$i``""; Start-Sleep -Milliseconds 200 }}"""'
+        // trace = true
+    }
+    |> execute_with_options
+exit_code |> _assert_eq 0i32
+output |> _assert sm'.contains "Line4"
+
 #!markdown
 
 ### execute_retry
@@ -1764,8 +1567,6 @@ let execute_retry retries options =
 inl main () =
     init_trace_state None
     $'let current_process_kill () = !current_process_kill ()' : ()
-    $'let execute_async x = !execute_async x' : ()
-    $'let execute_with_options_async x = !execute_with_options_async x' : ()
     inl execution_options fn =
         execution_options fun x =>
             x

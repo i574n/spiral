@@ -66,26 +66,6 @@ inl get_file_hash' (path : string) : result string string =
 #!spiral
 
 //// test
-
-inl file_name = "test.txt"
-inl text = "\n"
-
-inl temp_dir, disposable =
-    (file_name, text)
-    |> sm'.format_debug
-    |> crypto.hash_text
-    |> file_system.create_temp_dir'
-disposable |> use |> ignore
-inl path = temp_dir </> file_name
-text |> file_system.write_all_text_async path |> async.run_synchronously
-path
-|> get_file_hash'
-|> resultm.get
-|> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
-
-#!spiral
-
-//// test
 ///! rust -d chrono encoding_rs encoding_rs_io regex sha2
 
 inl file_name = "test.txt"

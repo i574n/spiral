@@ -634,11 +634,12 @@ inl new_disposable_token (merge_token : optionm'.option' cancellation_token) =
 
 inl run fn =
     inl token, disposable = new_disposable_token (None |> optionm'.box)
-    disposable |> use |> ignore
     fn token
+    $'!disposable.Dispose()'
     fun () =>
         fn token
-    |> async.new_async
+    |> async.new_task
+    |> async.await_task
     |> async.start
 
 fun () =>
@@ -649,8 +650,10 @@ fun () =>
 
     join run fn
     async.sleep 10 |> async.do
-    return *counter
-|> async.new_async_unit
+    return_in *counter
+|> async.new_task
+|> fun x => x : _ int
+|> async.await_task
 |> async.run_synchronously
 |> _assert_eq 11i32
 

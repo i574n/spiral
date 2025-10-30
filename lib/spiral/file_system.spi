@@ -161,36 +161,6 @@ let file_move (new_path : string) (old_path : string) : () =
         | Fsharp (Native) => fun () => $'System.IO.File.Move (!old_path, !new_path)'
         | _ => fun () => ()
 
-/// ### read_all_text_async
-let read_all_text_async (path : string) : _ string =
-    let rec 루프 (retry : i64) : _ string =
-        fun () =>
-            try_unit
-                fun () =>
-                    run_target function
-                        | Fsharp (Native) => fun () =>
-                            path
-                            |> $'System.IO.File.ReadAllTextAsync'
-                        | _ => fun () => null ()
-                        |> async.await_task
-                        |> fun x => x : _ string
-                        |> async.return_await
-                fun ex =>
-                    trace Verbose
-                        fun () => "file_system.read_all_text_async"
-                        fun () => {
-                            retry
-                            path
-                            ex = ex ()
-                        }
-                    async.sleep 10i32 |> async.do
-                    if retry < 3
-                    then 루프 (retry + 1)
-                    else failwith $'$"file_system.read_all_text_async / retry: {!retry} / path: {!path}"'
-                    |> async.return_await
-        |> async.new_async
-    루프 0
-
 /// ### write_all_text_async
 let write_all_text_async (path : string) (text : string) : _ () =
     run_target function
@@ -912,52 +882,6 @@ inl new_file_uri (path : string) : string =
 
 /// ## fsharp
 
-/// ### file_exists_content_async
-let file_exists_content_async path content : async.async bool =
-    run_target function
-        | Fsharp (Native) => fun () =>
-            fun () =>
-                fix_condition
-                    fun () => path |> file_exists |> not
-                    fun () => false |> return
-                    fun () =>
-                        inl existing_content = path |> read_all_text_async |> async.let'
-                        content = existing_content |> return
-            |> async.new_async_unit
-        | _ => fun () => null ()
-
-/// ### write_all_text_exists_async
-let write_all_text_exists_async path contents =
-    fun () =>
-        inl exists' = contents |> file_exists_content_async path |> async.let'
-        if not exists'
-        then contents |> write_all_text_async path |> async.do
-    |> async.new_async
-
-/// ### delete_directory_async
-let delete_directory_async path : _ i64 =
-    let rec 루프 (retry : i64) : _ i64 =
-        run_target function
-            | Fsharp (Native) => fun () =>
-                fun () =>
-                    try_unit
-                        fun () =>
-                            path |> directory_delete true
-                            retry |> return
-                        fun ex =>
-                            if retry % 100i64 = 0 then
-                                trace Debug
-                                    fun () => "file_system.delete_directory_async"
-                                    fun () => {
-                                        ex = ex () |> sm'.format_exception
-                                        path = path |> get_file_name
-                                    }
-                            async.sleep 10i32 |> async.do
-                            루프 (retry + 1) |> async.return_await
-                |> async.new_async
-            | _ => fun () => null ()
-    루프 0
-
 /// ### trace_file
 let rec trace_file text =
     run_target function
@@ -1004,21 +928,7 @@ let create_dir dir =
                 dir
                 |> directory_delete true
             disposable
-        | _ => fun dir =>
-            inl directory_info = dir |> create_directory
-            inl exists' = directory_info |> directory_info_exists
-            if not exists' then
-                inl creation_time = directory_info |> directory_info_creation_time
-                inl result = ($'{| Exists = !exists'; CreationTime = !creation_time |}' : infer) |> sm'.format_debug
-                trace Debug
-                    fun () => "file_system.create_dir"
-                    fun () => { dir result }
-            inl disposable : _ () = new_disposable fun () =>
-                dir
-                |> delete_directory_async
-                |> async.ignore
-                |> async.run_synchronously
-            disposable
+        | _ => fun _ => null ()
 
 /// ### create_temp_dir
 inl create_temp_dir () =
@@ -1077,142 +987,11 @@ let write_all_text_exists path contents =
         then dir |> create_dir |> ignore
         contents |> write_all_text path
 
-/// ## fsharp
-
-/// ### wait_for_file_access
-let wait_for_file_access access path =
-    let rec 루프 (retry : i64) : _ i64 =
-        run_target function
-            | Fsharp (Native) => fun () =>
-                inl file_access, file_share =
-                    access
-                    |> optionm'.default_value (AccessReadWrite, ShareRead)
-                fun () =>
-                    try_unit
-                        fun () =>
-                            file_stream
-                                path
-                                ModeOpen
-                                file_access
-                                file_share
-                            |> use
-                            |> ignore
-                            retry |> return
-                        fun ex =>
-                            if retry > 0 && retry % 100i64 = 0 then
-                                trace Debug
-                                    fun () => "file_system.wait_for_file_access"
-                                    fun () => {
-                                        path = path |> get_file_name
-                                        retry
-                                        ex = ex () |> sm'.format_exception
-                                    }
-                            async.sleep 10i32 |> async.do
-                            루프 (retry + 1) |> async.return_await
-                |> async.new_async
-            | _ => fun () => null ()
-    루프 0
-
-/// ### wait_for_file_access_read
-let wait_for_file_access_read path =
-    path
-    |> wait_for_file_access (Some (
-        AccessRead,
-        ShareRead
-    ))
-
-/// ### read_all_text_retry_async
-let read_all_text_retry_async full_path : async.async (optionm'.option' string) =
-    let rec 루프 (retry : i64) : _ (optionm'.option' string) =
-        fun () =>
-            try_unit
-                fun () =>
-                    if retry > 0
-                    then
-                        full_path
-                        |> wait_for_file_access_read
-                        |> async.run_with_timeout_async 1000
-                        |> async.ignore
-                        |> async.do
-                    full_path |> read_all_text_async |> async.map (Some >> optionm'.box) |> async.return_await
-                fun ex =>
-                    fix_condition
-                        fun () => retry <> 0
-                        fun () =>
-                            trace Debug
-                                fun () => "file_system.read_all_text_retry_async"
-                                fun () => {
-                                    retry
-                                    ex = ex () |> sm'.format_exception
-                                }
-                            (None : _ string) |> optionm'.box |> return
-                        fun () =>
-                            루프 (retry + 1) |> async.return_await
-        |> async.new_async
-    루프 0
-
-/// ### move_file_async
-let move_file_async new_path old_path : _ i64 =
-    let rec 루프 (retry : i64) : _ i64 =
-        run_target function
-            | Fsharp (Native) => fun () =>
-                fun () =>
-                    try_unit
-                        fun () =>
-                            old_path |> file_move new_path
-                            return retry
-                        fun ex =>
-                            if retry % 100 = 0 then
-                                trace Warning
-                                    fun () => "move_file_async"
-                                    fun () => {
-                                        old_path = old_path |> get_file_name
-                                        new_path = new_path |> get_file_name
-                                        ex = ex () |> sm'.format_exception
-                                    }
-                            async.sleep 10 |> async.do
-                            루프 (retry + 1) |> async.return_await
-                |> async.new_async_unit
-            | _ => fun () => null ()
-    루프 0
-
-/// ### delete_file_async
-let delete_file_async path : _ i64 =
-    let rec 루프 (retry : i64) : _ i64 =
-        run_target function
-            | Fsharp (Native) => fun () =>
-                fun () =>
-                    try_unit
-                        fun () =>
-                            path |> file_delete
-                            return retry
-                        fun ex =>
-                            if retry % 100 = 0 then
-                                trace Warning
-                                    fun () => "delete_file_async"
-                                    fun () => {
-                                        path = path |> get_file_name
-                                        ex = ex () |> sm'.format_exception
-                                    }
-                            async.sleep 10 |> async.do
-                            루프 (retry + 1) |> async.return_await
-                |> async.new_async
-            | _ => fun () => null ()
-    루프 0
-
 /// ## main
 inl main () =
     init_trace_state None
-    $'let delete_directory_async x = !delete_directory_async x' : ()
-    $'let wait_for_file_access x = !wait_for_file_access x' : ()
-    $'let wait_for_file_access_read x = !wait_for_file_access_read x' : ()
-    $'let read_all_text_async x = !read_all_text_async x' : ()
     $'let file_exists_content x = !file_exists_content x' : ()
     $'let write_all_text_async x = !write_all_text_async x' : ()
-    $'let write_all_text_exists x = !write_all_text_exists_async x' : ()
-    $'let delete_file_async x = !delete_file_async x' : ()
-    $'let move_file_async x = !move_file_async x' : ()
-    $'let read_all_text_retry_async x = !read_all_text_retry_async x' : ()
     $'let create_temp_path () = !create_temp_path ()' : ()
     $'let create_temp_dir () = !create_temp_dir ()' : ()
     $'let create_temp_dir\' x = !create_temp_dir' x' : ()

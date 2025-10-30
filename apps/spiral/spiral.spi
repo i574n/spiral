@@ -1447,6 +1447,16 @@ inl process_gleam { gleam_path target deps } =
 
     inl package_dir = src_dir </> ".." |> file_system.standardize_path
 
+    fun () =>
+        inl ci = "CI" |> env.get_environment_variable
+        if ci <> "" then
+            package_dir
+            |> file_system.directory_delete true
+    |> new_disposable
+    |> fun x => x : _ ()
+    |> use
+    |> ignore
+
     inl manifest_path = package_dir </> "gleam.toml"
 
     inl deps =

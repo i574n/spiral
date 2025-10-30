@@ -71,3 +71,7 @@ if (!$fast) {
     { cargo test --release -- --show-output } | Invoke-Block
 }
 { cargo build --release } | Invoke-Block -OnError Continue
+
+if ($env:CI) {
+    Remove-Item ../../deps/polyglot/target/spiral/spiral/target -Recurse -Force -ErrorAction Ignore
+}

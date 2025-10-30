@@ -66,6 +66,10 @@ inl return forall t. (x : t) : () =
 inl return' forall t. (x : t) : t =
     $'return !x '
 
+/// ### return_in
+inl return_in forall t. (x : t) : t =
+    $'!x in return !x '
+
 /// ### retry_fn
 inl retry_fn forall t. retries (fn : () -> t) : option t =
     let rec 루프 retry =

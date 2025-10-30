@@ -1,7 +1,6 @@
 param(
     $fast,
     $sequential,
-    $SkipFsx,
     $ScriptDir = $PSScriptRoot
 )
 Set-Location $ScriptDir
@@ -64,13 +63,10 @@ if (!$fast) {
 
 { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) testing.dib spi async.dib spi runtime.dib spi trace.dib spi threading.dib spi networking.dib spi crypto.dib spi common.dib spi base.dib spi resultm.dib spi iter.dib spi env.dib spi parsing.dib spi console.dib spi date_time.dib spi file_system.dib spi guid.dib spi math.dib spi mapm.dib spi "optionm'.dib" spi "am'.dib" spi "sm'.dib" spi "sm'.dib" spir "listm'.dib" spi reflection.dib spi python.dib spi typescript.dib spi benchmark.dib spi stream.dib spi seq.dib spi util.dib spi platform.dib spi rust/rust.dib spi rust/testing.dib spi rust/near.dib spi rust/near_workspaces.dib spi physics.dib spi leptos/leptos.dib spi lustre.dib spi wasm.dib spi } | Invoke-Block
 
-if (!$SkipFsx) {
-    { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --parallel --build-file async.spi async_.fsx --build-file runtime.spi runtime.fsx --build-file trace.spi trace.fsx --build-file threading.spi threading.fsx --build-file networking.spi networking.fsx --build-file crypto.spi crypto.fsx --build-file common.spi common.fsx --build-file date_time.spi date_time.fsx --build-file platform.spi platform.fsx --build-file file_system.spi file_system.fsx --build-file guid.spi guid.fsx --build-file "sm'.spi" sm.fsx } | Invoke-Block -Retries 3 -OnError Continue
-}
-
-Remove-Item "async.fsx" -Force -ErrorAction Ignore
-Remove-Item "sm'.fsx" -Force -ErrorAction Ignore
-
 if (!$fast) {
     { pwsh near/wallet/build.ps1 } | Invoke-Block
+}
+
+if ($env:CI) {
+    Remove-Item ../../deps/polyglot/target/spiral/spiral/target -Recurse -Force -ErrorAction Ignore
 }

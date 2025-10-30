@@ -41,17 +41,22 @@ inl rec __expect
     : ()
     =
     inl result = fn a b
+    inl get_data () =
+        if result
+        then { expected = b } |> sm'.format
+        else { actual = a; expected = b } |> sm'.format
+    inl get_raw_text () =
+        inl data = get_data ()
+        name ++# " " ++# get_data ()
     inl result =
         result || join result
-    inl get_raw_text () =
-        { name expected = b } |> sm'.format
     match trace' with
     | Console =>
         inl text = get_raw_text ()
         text |> console.write_line
         text
     | Trace =>
-        trace Info (fun () => name) fun () => { expected = b }
+        trace Info (fun () => name) get_data
         get_raw_text ()
     | TraceRaw =>
         inl text = get_raw_text ()
