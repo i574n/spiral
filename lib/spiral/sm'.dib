@@ -127,7 +127,7 @@ _assert_eq `string "test" x
 #!spiral
 
 inl index i (str : string) : char =
-    sm.index str i
+    i |> sm.index str
 
 #!markdown
 
@@ -176,7 +176,7 @@ inl to_char_list (str : string) : list char =
 #!spiral
 
 inl is_empty (input : string) : bool =
-    length input = 0i32
+    (input |> length) = 0i32
 
 #!markdown
 
@@ -285,6 +285,48 @@ inl (++\#) a b =
 
 #!markdown
 
+### string_builder
+
+#!spiral
+
+//// real
+
+nominal string_builder_python =
+    `(
+        global "import io"
+        $'' : $'io.StringIO'
+    )
+type string_builder_switch =
+    {
+        Gleam : string
+        Fsharp : $'System.Text.StringBuilder'
+        Python : string_builder_python
+    }
+nominal string_builder = $'backend_switch `(string_builder_switch)'
+
+#!spiral
+
+type string_builder = sm'_real.string_builder
+
+#!spiral
+
+inl string_builder (initial : string) : string_builder =
+    inl initial =
+        if initial = ""
+        then join initial
+        else initial
+
+    backend_switch {
+        Gleam = fun () => $'!initial ' : string_builder
+        Fsharp = fun () => initial |> $'`string_builder ' : string_builder
+        Python = fun () =>
+            global "import io"
+            global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
+            $'CustomStringIO(!initial)' : string_builder
+    }
+
+#!markdown
+
 ### format_debug
 
 #!spiral
@@ -296,25 +338,39 @@ inl format_debug forall t. (x : t) : string =
     | string => x
     | _ =>
         backend_switch `string `({}) {
-            Gleam = (fun () =>
-                typecase t with
-                | char => to `t `string x
-                | _ =>
-                    global "import gleam/string"
-                    inl x =
-                        typecase t with
-                        | array_base _ => $'!x |> array.to_list' : t
-                        | _ => x
-                    $'string.inspect(!x)' : string
+            Gleam =
+                (fun () =>
+                    typecase t with
+                    | char => to `(`x) `string x
+                    | string_builder => to `(`x) `string x
+                    | _ =>
+                        global "import gleam/string"
+                        inl x =
+                            typecase t with
+                            | array_base _ => $'!x |> array.to_list' : t
+                            | _ => x
+                        $'string.inspect(!x)' : string
                     ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
-            Python = (fun () => $'f"{!x}"' : string) : () -> string
+            Python =
+                (fun () =>
+                    $'f"{!x}"' : string
+                ) : () -> string
         }
 
 #!spiral
 
 inl format_debug forall t. (x : t) : string =
     real format_debug `t x
+
+#!markdown
+
+### (~$$)
+
+#!spiral
+
+inl (~$$) s =
+    s |> format_debug
 
 #!spiral
 
@@ -323,8 +379,23 @@ inl format_debug forall t. (x : t) : string =
 ///! fsharp
 ///! cuda
 
-{ c = "1"; a = "2"; b = "3" }
-|> format_debug
+$$("1", "2", "3")
+|> _assert_eq (
+    backend_switch {
+        Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
+        Fsharp = fun () => "struct (\"1\", \"2\", \"3\")" : string
+        Python = fun () => "('1', '2', '3')" : string
+    }
+)
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+///! cuda
+
+$${ c = "1"; a = "2"; b = "3" }
 |> _assert_eq (
     backend_switch {
         Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
@@ -387,7 +458,22 @@ prototype printable t : t -> ()
 //// real
 
 let format_real forall t. (x : t) : string =
-    inl result = mut `string (join "")
+    inl empty : string =
+        backend_switch `string `({}) {
+            Gleam =
+                (fun () =>
+                    ""
+                ) : () -> string
+            Fsharp =
+                (fun () =>
+                    join ""
+                ) : () -> string
+            Python =
+                (fun () =>
+                    ""
+                ) : () -> string
+        }
+    inl result = mut `string empty
     inl rec write x =
         inl p ((a : string), b) =
             inl s : string =
@@ -395,7 +481,7 @@ let format_real forall t. (x : t) : string =
                     Gleam =
                         (fun () =>
                             match b with
-                            | (_ : string) => $'!b ' : string
+                            | (_ : string) => b : string
                             // | (_ : f32) | (_ : f64) => format_debug `(`b) b
                             | _ => format_debug `(`b) b
                         ) : () -> string
@@ -403,16 +489,33 @@ let format_real forall t. (x : t) : string =
                         (fun () =>
                             match b with
                             | (_ : f32) | (_ : f64) => $'$"%+.6f{!b}"' : string
+                            | (_ : string) => b : string
                             | _ => $'$"{!b}"' : string
                         ) : () -> string
                     Python =
                         (fun () =>
                             match b with
                             | (_ : f32) | (_ : f64) => $'"{:.6f}".format(!b)' : string
+                            | (_ : string) => b : string
                             | _ => $'f"{!b}"' : string
                         ) : () -> string
                 }
-            exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+            backend_switch `(()) `({}) {
+                Gleam =
+                    (fun () =>
+                        exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+                    ) : () -> ()
+                Fsharp =
+                    (fun () =>
+                        join
+                            result <- (++#) ((~*) `string result) s
+                    ) : () -> ()
+                Python =
+                    (fun () =>
+                        join
+                            result <- (++#) ((~*) `string result) s
+                    ) : () -> ()
+            }
 
         match x with // According to Bing it shouldn't matter whether these are %d or %lld in printf.
         | () => ()
@@ -465,16 +568,28 @@ inl format forall t. (x : t) : string =
 #!spiral
 
 //// test
-////! gleam
+///! gleam
 ///! fsharp
-////! cuda
-////! rust
-////! typescript
-////! python
+///! cuda
+///! rust
+///! typescript
+///! python
 
-("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" })
+("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
 |> format
-|> _assert_eq "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }"
+|> _assert_eq (
+    backend_switch {
+        Fsharp = fun () =>
+            run_target function
+                | Rust _ => fun () => join "1, 2, UH0_1(\"3\", UH0_1(\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, Array(MutCell([8]))"
+                | TypeScript _ => fun () => join "1, 2, UH0_1 (3, UH0_1 (4, UH0_0)), { b = 5; c = 6; a = 7 }, 8"
+                | Python _ => fun () => join "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, array('l', [8])"
+                | _ => fun () => join "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]"
+            : string
+        Gleam = fun () => "1, 2, Uh0i1(\"3\", Uh0i1(\"4\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
+        Python = fun () => "1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]" : string
+    }
+)
 
 #!markdown
 
@@ -608,6 +723,40 @@ inl last_index_of (search : string) (s : string) : i32 =
 
 #!markdown
 
+### index_of_char
+
+#!spiral
+
+inl index_of_char (search : char) (s : string) : int =
+    $'!s.IndexOf !search '
+
+#!markdown
+
+### index_of_char_from
+
+#!spiral
+
+inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
+    inl len = s |> length
+    inl rec body i =
+        if i >= len
+        then -1i32
+        elif c = (s |> index i)
+        then i - from
+        else 루프 (i + 1i32)
+    and inl 루프 i = join_body_unit body i i
+    from |> 루프
+
+#!spiral
+
+//// test
+
+"abcdefabc"
+|> index_of_char_from 2i32 'a'
+|> _assert_eq 4i32
+
+#!markdown
+
 ### index_of
 
 #!spiral
@@ -697,56 +846,13 @@ inl replicate (n : int) (s : string) : string =
 
 #!markdown
 
-### string_builder
-
-#!spiral
-
-nominal string_builder_python =
-    `(
-        global "import io"
-        $'' : $'io.StringIO'
-    )
-type string_builder_switch =
-    {
-        Gleam : $'String'
-        Fsharp : $'System.Text.StringBuilder'
-        Python : string_builder_python
-    }
-nominal string_builder = $'backend_switch `(string_builder_switch)'
-
-inl string_builder (initial : string) : string_builder =
-    inl initial =
-        if initial = ""
-        then join initial
-        else initial
-
-    backend_switch {
-        Gleam = fun () => $'!initial ' : string_builder
-        Fsharp = fun () => initial |> $'`string_builder ' : string_builder
-        Python = fun () =>
-            global "import io"
-            global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
-            $'CustomStringIO(!initial)' : string_builder
-    }
-
-#!markdown
-
 ### obj_to_string
 
 #!spiral
 
 inl obj_to_string x : string =
     backend_switch {
-        Gleam = fun () =>
-            real
-                typecase `x with
-                | string => x
-                | char => to `(`x) `string x
-                | string_builder => to `(`x) `string x
-                | _ =>
-                    global "import gleam/string"
-                    $'string.inspect( !x)' : string
-            : string
+        Gleam = fun () => $$x : string
         Fsharp = fun () => x |> $'_.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }

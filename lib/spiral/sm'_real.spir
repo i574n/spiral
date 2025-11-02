@@ -62,26 +62,47 @@ inl (++#) (a : string) (b : string) : string =
 
 /// ### (++\#)
 
+/// ### string_builder
+nominal string_builder_python =
+    `(
+        global "import io"
+        $'' : $'io.StringIO'
+    )
+type string_builder_switch =
+    {
+        Gleam : string
+        Fsharp : $'System.Text.StringBuilder'
+        Python : string_builder_python
+    }
+nominal string_builder = $'backend_switch `(string_builder_switch)'
+
 /// ### format_debug
 inl format_debug forall t. (x : t) : string =
     typecase t with
     | string => x
     | _ =>
         backend_switch `string `({}) {
-            Gleam = (fun () =>
-                typecase t with
-                | char => to `t `string x
-                | _ =>
-                    global "import gleam/string"
-                    inl x =
-                        typecase t with
-                        | array_base _ => $'!x |> array.to_list' : t
-                        | _ => x
-                    $'string.inspect(!x)' : string
+            Gleam =
+                (fun () =>
+                    typecase t with
+                    | char => to `(`x) `string x
+                    | string_builder => to `(`x) `string x
+                    | _ =>
+                        global "import gleam/string"
+                        inl x =
+                            typecase t with
+                            | array_base _ => $'!x |> array.to_list' : t
+                            | _ => x
+                        $'string.inspect(!x)' : string
                     ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
-            Python = (fun () => $'f"{!x}"' : string) : () -> string
+            Python =
+                (fun () =>
+                    $'f"{!x}"' : string
+                ) : () -> string
         }
+
+/// ### (~$$)
 
 /// ### format_pretty
 inl format_pretty forall t. (x : t) : string =
@@ -99,7 +120,22 @@ prototype printable t : t -> ()
 
 /// ### format_real
 let format_real forall t. (x : t) : string =
-    inl result = mut `string (join "")
+    inl empty : string =
+        backend_switch `string `({}) {
+            Gleam =
+                (fun () =>
+                    ""
+                ) : () -> string
+            Fsharp =
+                (fun () =>
+                    join ""
+                ) : () -> string
+            Python =
+                (fun () =>
+                    ""
+                ) : () -> string
+        }
+    inl result = mut `string empty
     inl rec write x =
         inl p ((a : string), b) =
             inl s : string =
@@ -107,7 +143,7 @@ let format_real forall t. (x : t) : string =
                     Gleam =
                         (fun () =>
                             match b with
-                            | (_ : string) => $'!b ' : string
+                            | (_ : string) => b : string
                             // | (_ : f32) | (_ : f64) => format_debug `(`b) b
                             | _ => format_debug `(`b) b
                         ) : () -> string
@@ -115,16 +151,33 @@ let format_real forall t. (x : t) : string =
                         (fun () =>
                             match b with
                             | (_ : f32) | (_ : f64) => $'$"%+.6f{!b}"' : string
+                            | (_ : string) => b : string
                             | _ => $'$"{!b}"' : string
                         ) : () -> string
                     Python =
                         (fun () =>
                             match b with
                             | (_ : f32) | (_ : f64) => $'"{:.6f}".format(!b)' : string
+                            | (_ : string) => b : string
                             | _ => $'f"{!b}"' : string
                         ) : () -> string
                 }
-            exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+            backend_switch `(()) `({}) {
+                Gleam =
+                    (fun () =>
+                        exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+                    ) : () -> ()
+                Fsharp =
+                    (fun () =>
+                        join
+                            result <- (++#) ((~*) `string result) s
+                    ) : () -> ()
+                Python =
+                    (fun () =>
+                        join
+                            result <- (++#) ((~*) `string result) s
+                    ) : () -> ()
+            }
 
         match x with // According to Bing it shouldn't matter whether these are %d or %lld in printf.
         | () => ()
@@ -179,11 +232,13 @@ let format_real forall t. (x : t) : string =
 
 /// ### last_index_of
 
+/// ### index_of_char
+
+/// ### index_of_char_from
+
 /// ### index_of
 
 /// ### replicate
-
-/// ### string_builder
 
 /// ### obj_to_string
 

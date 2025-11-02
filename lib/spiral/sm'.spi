@@ -24,7 +24,7 @@ inl symbol_to_string forall t {symbol}. (x : t) : string =
 
 /// ### index
 inl index i (str : string) : char =
-    sm.index str i
+    i |> sm.index str
 
 /// ### length
 inl length forall dim {int}. (input : string) : dim =
@@ -36,7 +36,7 @@ inl to_char_list (str : string) : list char =
 
 /// ### is_empty
 inl is_empty (input : string) : bool =
-    length input = 0i32
+    (input |> length) = 0i32
 
 /// ### to_option
 inl to_option s =
@@ -70,9 +70,31 @@ inl (++\\#) a b =
 inl (++\#) a b =
     a ++# "\n" ++# b
 
+/// ### string_builder
+type string_builder = sm'_real.string_builder
+
+inl string_builder (initial : string) : string_builder =
+    inl initial =
+        if initial = ""
+        then join initial
+        else initial
+
+    backend_switch {
+        Gleam = fun () => $'!initial ' : string_builder
+        Fsharp = fun () => initial |> $'`string_builder ' : string_builder
+        Python = fun () =>
+            global "import io"
+            global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
+            $'CustomStringIO(!initial)' : string_builder
+    }
+
 /// ### format_debug
 inl format_debug forall t. (x : t) : string =
     real format_debug `t x
+
+/// ### (~$$)
+inl (~$$) s =
+    s |> format_debug
 
 /// ### format_pretty
 inl format_pretty forall t. (x : t) : string =
@@ -128,6 +150,22 @@ inl ellipsis (max : i32) (s : string) =
 inl last_index_of (search : string) (s : string) : i32 =
     $'!s.LastIndexOf !search '
 
+/// ### index_of_char
+inl index_of_char (search : char) (s : string) : int =
+    $'!s.IndexOf !search '
+
+/// ### index_of_char_from
+inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
+    inl len = s |> length
+    inl rec body i =
+        if i >= len
+        then -1i32
+        elif c = (s |> index i)
+        then i - from
+        else 루프 (i + 1i32)
+    and inl 루프 i = join_body_unit body i i
+    from |> 루프
+
 /// ### index_of
 inl index_of (search : string) (s : string) : int =
     backend_switch {
@@ -158,48 +196,10 @@ inl replicate (n : int) (s : string) : string =
     and inl 루프 i = join_body_unit body n i
     루프 0 ""
 
-/// ### string_builder
-nominal string_builder_python =
-    `(
-        global "import io"
-        $'' : $'io.StringIO'
-    )
-type string_builder_switch =
-    {
-        Gleam : $'String'
-        Fsharp : $'System.Text.StringBuilder'
-        Python : string_builder_python
-    }
-nominal string_builder = $'backend_switch `(string_builder_switch)'
-
-inl string_builder (initial : string) : string_builder =
-    inl initial =
-        if initial = ""
-        then join initial
-        else initial
-
-    backend_switch {
-        Gleam = fun () => $'!initial ' : string_builder
-        Fsharp = fun () => initial |> $'`string_builder ' : string_builder
-        Python = fun () =>
-            global "import io"
-            global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
-            $'CustomStringIO(!initial)' : string_builder
-    }
-
 /// ### obj_to_string
 inl obj_to_string x : string =
     backend_switch {
-        Gleam = fun () =>
-            real
-                typecase `x with
-                | string => x
-                | char => to `(`x) `string x
-                | string_builder => to `(`x) `string x
-                | _ =>
-                    global "import gleam/string"
-                    $'string.inspect( !x)' : string
-            : string
+        Gleam = fun () => $$x : string
         Fsharp = fun () => x |> $'_.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }

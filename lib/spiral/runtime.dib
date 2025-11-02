@@ -46,7 +46,7 @@ let split_args (args : string) : result (array_base string) string =
     inl p_content = p_plain <|> p_quoted_all <|> p_esc_root
     inl p_args = spaces1 () |> sep_by p_content
     args
-    |> parse p_args
+    |> run_parser p_args
     |> resultm.map (fst >> listm'.box >> listm'.to_array')
 
 #!spiral
@@ -112,7 +112,7 @@ let split_command (command : string) : result (string * option string) string =
     inl p_args = p_char ' ' |> opt >>. (any_char () |> many1_chars)
     inl p_command = p_path .>>. (p_args |> opt)
     command
-    |> parse p_command
+    |> run_parser p_command
     |> resultm.map fst
 
 #!spiral
