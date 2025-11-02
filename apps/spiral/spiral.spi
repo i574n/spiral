@@ -15,6 +15,9 @@ inl get_args () =
             target = "target", 't'
             deps = "deps", 'd'
         }
+        lua = "lua", {
+            lua_path = "lua-path", 'l'
+        }
         cuda = "cuda", {
             py_path = "py-path", 'p'
             env = "env", 'e'
@@ -210,6 +213,14 @@ let get_command () =
         |> runtime.command_init_arg ((get_args () .dib |> snd).cleanup) (
             runtime.arg_default_value "true"
             >> runtime.arg_action runtime.SetFalse
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .lua |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (
+            runtime.arg_required true
+            // >> runtime.arg_value_parser (runtime.value_parser_path_buf ())
         )
     )
 
@@ -1677,6 +1688,48 @@ inl process_gleam { gleam_path target deps } =
                 output = Some output
             }
 
+/// ## lua
+
+/// ### process_lua
+inl process_lua { lua_path } =
+    inl extension = "lua"
+
+    inl new_code_path = lua_path
+    inl new_code = new_code_path |> file_system.read_all_text
+
+    inl hash = { extension new_code } |> sm'.format |> crypto.hash_text
+
+    inl workspace_root_external = file_system.get_workspace_root_external ()
+    inl workspace_root =
+        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path
+
+    inl src_dir =
+        new_code_path
+        |> file_system.directory_get_parent
+        |> optionm'.default_value' ""
+        |> file_system.standardize_path
+
+    inl package_dir = src_dir </> ".." |> file_system.standardize_path
+
+    fun () =>
+        inl ci = "CI" |> env.get_environment_variable
+        if ci <> "" then
+            package_dir
+            |> file_system.directory_delete true
+    |> new_disposable
+    |> fun x => x : _ ()
+    |> use
+    |> ignore
+    
+    inl output = "spiral.process_lua / output"
+
+    {
+        extension = Some extension
+        code = Some new_code
+        code_path = Some new_code_path
+        output = Some output
+    }
+
 /// ## cuda
 
 /// ### process_cuda
@@ -1903,6 +1956,37 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
 
             inl command_result =
                 process_gleam { gleam_path target deps }
+                |> fun { extension code output } =>
+                    ;[
+                        "extension", extension |> optionm'.default_value ""
+                        "code", code |> optionm'.default_value ""
+                        "output", output |> optionm'.default_value ""
+                    ]
+
+            ;[
+                "command_result",
+                command_result
+                |> am'.to_vec
+                |> am'.vec_map' fun k, v =>
+                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+                |> mapm.b_tree_map_from_vec_pairs
+                |> sm'.serialize
+                |> resultm.unwrap'
+                |> sm'.from_std_string
+            ]
+
+        | Some (subcommand, arg_matches)
+                when (subcommand |> sm'.from_std_string) = (get_args () .lua |> fst) =>
+
+            inl lua_path =
+                arg_matches
+                |> runtime.matches_get_one ((get_args () .lua |> snd).lua_path |> fst)
+                |> optionm'.unbox
+                |> optionm.value
+                |> sm'.from_std_string
+
+            inl command_result =
+                process_lua { lua_path }
                 |> fun { extension code output } =>
                     ;[
                         "extension", extension |> optionm'.default_value ""

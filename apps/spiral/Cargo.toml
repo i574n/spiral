@@ -8,6 +8,11 @@ edition.workspace = true
 license-file.workspace = true
 repository.workspace = true
 
+build = "build.rs"
+
+[build-dependencies]
+winres = "0.1"
+
 [[bin]]
 name = "spiral"
 path = "spiral.rs"
@@ -26,3 +31,4 @@ encoding_rs_io = ">=0.1,<1"
 rand = "~0.9.0-alpha.2"
 async-walkdir = "2.0"
 rayon = "1.10"
+mlua = { version = ">=0.11.4", features = ["lua51", "vendored"] }

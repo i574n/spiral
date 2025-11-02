@@ -390,8 +390,16 @@ inl (~$) s =
     s |> obj_to_string
 
 /// ### replace
-inl replace (old_value : string) (new_value : string) (s : string) : string =
-    $'!s.Replace (!old_value, !new_value)'
+inl replace (old : string) (new : string) (s : string) : string =
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/string"
+            $'!s |> string.replace(!old, !new)' : string
+        Fsharp = fun () =>
+            $'!s.Replace (!old, !new)' : string
+        Python = fun () =>
+            $'!s.replace(!old, !new)' : string
+    }
 
 /// ### split
 inl split (separator : string) (str : string) : array_base string =

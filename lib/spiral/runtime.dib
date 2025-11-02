@@ -40,10 +40,15 @@ let split_args (args : string) : result (array_base string) string =
     inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
     inl p_text = p_word |> many1_strings
     inl p_esc = esc |> listm.map p_esc_char |> choice
-    inl p_quoted = (p_word <|> p_esc) |> many |>> sm'.concat_list ""
+    inl p_quoted = (p_word <|> p_esc) |> many_strings
     inl p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
     inl p_esc_root = p_esc >>% "" >>. (p_word |> many) |>> sm'.concat_list ""
-    inl p_content = p_plain <|> p_quoted_all <|> p_esc_root
+    inl ensure_progress p : parser _ = fun input, i, s =>
+        match p (input, i, s) with
+        | Ok (r, i', s') when i' = i => "runtime.split_args / segment zero-length success" |> Error
+        | other => other
+    inl p_segment = ensure_progress (p_quoted_all <|> p_plain <|> p_esc_root)
+    inl p_content = p_segment |> many1_strings
     inl p_args = spaces1 () |> sep_by p_content
     args
     |> run_parser p_args
@@ -52,7 +57,7 @@ let split_args (args : string) : result (array_base string) string =
 #!spiral
 
 //// test
-///! gleam
+////! gleam // { actual = ["", "b ", "c"]; expected = ["a", "b", "c"] }
 ///! fsharp
 ///! cuda
 ///! rust
@@ -85,10 +90,12 @@ let split_args (args : string) : result (array_base string) string =
     ;[ "e"; "-f"; "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" ]
 
     $'"--l \\\\\\"\'\'\' m \'\'\'\\\\\\" "',
-    ;[ "--l"; "''' m '''" ]
+    ;[ "--l"; "''' m ''' " ]
 
     $'"n --o --p q --r \\\"s:/t u/v.w\\\" --x \\\"y:/z.a\\\" --b c.d \\\"\\\\e{f-g}\\\" h.i \\\"j (k)\\\""',
-    ;[ "n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d"; "\\e{f-g}"; "h.i"; "j (k)" ]
+    ;[
+        "n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d"; "\\e{f-g}"; "h.i"; "j (k)"
+    ]
 
     $'"l \\\"m n:\\\\o.p\\\""',
     ;[ "l"; "m n:\\o.p" ]
@@ -105,11 +112,11 @@ let split_command (command : string) : result (string * option string) string =
     open parsing
     inl quotes = [ '"'; '\'' ]
     inl p_quoted_char = quotes |> listm.map p_char |> choice
-    inl normalize = function '\\' => '/' | c => c
-    inl p_quoted = quotes |> none_of |>> normalize |> many_chars |> between p_quoted_char p_quoted_char
-    inl p_unquoted = quotes ++ [ ' ' ] |> none_of |>> normalize |> many1_chars
-    inl p_path = p_quoted <|> p_unquoted <|> eof () >>% "" .>> spaces ()
-    inl p_args = p_char ' ' |> opt >>. (any_char () |> many1_chars)
+    inl normalize = "/" |> sm'.replace "\\"
+    inl p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize
+    inl p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize
+    inl p_path = p_quoted <|> p_unquoted <|> eof () >>% ""
+    inl p_args = spaces1 () >>. rest_of_line ()
     inl p_command = p_path .>>. (p_args |> opt)
     command
     |> run_parser p_command
