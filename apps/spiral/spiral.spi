@@ -43,6 +43,7 @@ inl get_args () =
             path = "path", 'p'
             retries = "retries", 'r'
             working_directory = "working-directory", 'w'
+            cleanup = "cleanup", 'l'
         }
     }
 
@@ -205,6 +206,10 @@ let get_command () =
         )
         |> runtime.command_init_arg ((get_args () .dib |> snd).working_directory) (
             id
+        )
+        |> runtime.command_init_arg ((get_args () .dib |> snd).cleanup) (
+            runtime.arg_default_value "true"
+            >> runtime.arg_action runtime.SetFalse
         )
     )
 
@@ -935,7 +940,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
 /// ## dib
 
 /// ### process_dib
-inl process_dib { path retries working_directory } =
+inl process_dib { path retries working_directory cleanup } =
     inl html_path = $'$"{!path}.html"'
     inl ipynb_path = $'$"{!path}.ipynb"'
 
@@ -1004,7 +1009,7 @@ inl process_dib { path retries working_directory } =
 
     inl ci = "CI" |> env.get_environment_variable
 
-    if ci = "" then
+    if cleanup && ci = "" then
         ipynb_path |> file_system.file_delete
         html_path |> file_system.file_delete
 
@@ -2021,7 +2026,11 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 |> optionm'.unbox
                 |> optionm.map sm'.from_std_string
 
-            process_dib { path retries working_directory }
+            inl cleanup =
+                arg_matches
+                |> runtime.matches_get_flag ((get_args () .dib |> snd).cleanup |> fst)
+
+            process_dib { path retries working_directory cleanup }
 
         | matches =>
             match matches with

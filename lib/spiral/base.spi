@@ -402,110 +402,6 @@ inl ref_set_value forall t. (value : t) (ref : ref t) : ref t =
     $'!ref.Value <- !value '
     ref
 
-/// ### to
-inl to forall t u. (x : t) : u =
-    $'!x ' : u
-
-/// ### convert
-inl convert forall t u. (x : t) : u =
-    backend_switch {
-        Gleam = fun () => $'!x ' : u
-        Fsharp = fun () => $'!x |> `u ' : u
-        Python = fun () => $'`u(!x)' : u
-    }
-
-/// ### unbox
-inl unbox forall t u. (x : t) : u =
-    backend_switch {
-        Gleam = fun () => x |> to : u
-        Fsharp = fun () => $'!x |> unbox<`u>' : u
-        Python = fun () => x |> to : u
-    }
-
-/// ### u8
-inl u8 forall t. (x : t) : u8 =
-    backend_switch {
-        Gleam = fun () => x |> to : u8
-        Fsharp = fun () => x |> $'uint8' : u8
-        Python = fun () => x |> to : u8
-    }
-
-/// ### u16
-inl u16 forall t. (x : t) : u16 =
-    backend_switch {
-        Gleam = fun () => x |> to : u16
-        Fsharp = fun () => x |> $'uint16' : u16
-        Python = fun () => $'!x & 0xFFFF' : u16
-    }
-
-/// ### u64
-inl u64 forall t. (x : t) : u64 =
-    backend_switch {
-        Gleam = fun () => x |> to : u64
-        Fsharp = fun () => x |> $'uint64' : u64
-        Python = fun () => x |> to : u64
-    }
-
-/// ### i32
-inl i32 forall t. (x : t) : i32 =
-    backend_switch {
-        Gleam = fun () => x |> convert : i32
-        Fsharp = fun () => x |> convert : i32
-        Python = fun () => x |> convert : i32
-    }
-
-/// ### i64
-inl i64 forall t. (x : t) : i64 =
-    backend_switch {
-        Gleam = fun () => x |> to : i64
-        Fsharp = fun () => x |> $'int64' : i64
-        Python = fun () => x |> to : i64
-    }
-
-/// ### f32
-inl f32 forall t. (x : t) : f32 =
-    backend_switch {
-        Gleam = fun () => x |> to : f32
-        Fsharp = fun () => x |> $'float32' : f32
-        Python = fun () => x |> to : f32
-    }
-
-/// ### f64
-inl f64 forall t. (x : t) : f64 =
-    backend_switch {
-        Gleam = fun () => x |> to : f64
-        Fsharp = fun () => x |> $'float' : f64
-        Python = fun () => x |> to : f64
-    }
-
-/// ### unativeint
-nominal unativeint = $'unativeint'
-
-/// ### convert_i32
-inl convert_i32 forall t. (x : t) : i32 =
-    backend_switch {
-        Gleam = fun () => x |> to : i32
-        Fsharp = fun () => x |> $'System.Convert.ToInt32' : i32
-        Python = fun () => x |> to : i32
-    }
-
-/// ### convert_i32_base
-inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
-    backend_switch {
-        Fsharp = fun () => $'System.Convert.ToInt32 (!x, !base)' : i32
-        Python = fun () => $'int (!x, !base)' : i32
-    }
-
-/// ### (:>)
-prototype (~:>) r : forall t. t -> r
-
-/// ### to_any
-inl to_any forall t. (obj : t) : any =
-    obj |> to
-
-/// ### (~:>) any
-instance (~:>) any = to_any
-
 /// ### exn
 type exn_switch =
     {
@@ -567,7 +463,7 @@ inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
         Fsharp = fun () =>
             $'(* try_unit'
             $'try_unit *)' : t
-        Python = fun () => $'' : t
+        Python = fun () => $'None' : t
     }
 
 /// ### try_unit'
@@ -593,3 +489,145 @@ inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
             ()
         Python = fun () => ()
     }
+
+/// ### to
+inl to forall t u. (x : t) : u =
+    $'!x ' : u
+
+/// ### convert
+inl convert forall t u. (x : t) : u =
+    backend_switch {
+        Gleam = fun () => $'!x ' : u
+        Fsharp = fun () => $'!x |> `u ' : u
+        Python = fun () => $'`u(!x)' : u
+    }
+
+/// ### try_convert
+inl try_convert forall t u. (x : t) : option u =
+    if real typecase t * u with ~x * ~x => true | _ => false
+    then x |> to |> Some
+    else
+        inl is_int = real typecase u with int => true | _ => false
+        if is_int |> not
+        then x |> convert |> Some
+        else
+            backend_switch {
+                Gleam = fun () =>
+                    global "import gleam/int"
+                    inl (n : int), (err : int) =
+                        $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+                    if err = 0
+                    then n |> Some
+                    else None
+                Fsharp = fun () =>
+                    try
+                        fun () => x |> convert : u
+                        fun e => None
+                Python = fun () =>
+                    inl result = mut None
+                    try_unit
+                        fun () => result <- x |> convert |> Some
+                        ignore
+                    *result
+                    : _ u
+            }
+
+/// ### unbox
+inl unbox forall t u. (x : t) : u =
+    backend_switch {
+        Gleam = fun () => x |> to : u
+        Fsharp = fun () => $'!x |> unbox<`u>' : u
+        Python = fun () => x |> to : u
+    }
+
+/// ### u8
+inl u8 forall t. (x : t) : u8 =
+    backend_switch {
+        Gleam = fun () => x |> to : u8
+        Fsharp = fun () => x |> $'uint8' : u8
+        Python = fun () => x |> to : u8
+    }
+
+/// ### u16
+inl u16 forall t. (x : t) : u16 =
+    backend_switch {
+        Gleam = fun () => x |> to : u16
+        Fsharp = fun () => x |> $'uint16' : u16
+        Python = fun () => $'!x & 0xFFFF' : u16
+    }
+
+/// ### u64
+inl u64 forall t. (x : t) : u64 =
+    backend_switch {
+        Gleam = fun () => x |> to : u64
+        Fsharp = fun () => x |> $'uint64' : u64
+        Python = fun () => x |> to : u64
+    }
+
+/// ### i32
+inl i32 forall t. (x : t) : i32 =
+    backend_switch {
+        Gleam = fun () => x |> try_convert |> optionm.value : i32
+        Fsharp = fun () => x |> convert : i32
+        Python = fun () => x |> convert : i32
+    }
+
+/// ### i64
+inl i64 forall t. (x : t) : i64 =
+    backend_switch {
+        Gleam = fun () => x |> to : i64
+        Fsharp = fun () => x |> $'int64' : i64
+        Python = fun () => x |> to : i64
+    }
+
+/// ### f32
+inl f32 forall t. (x : t) : f32 =
+    backend_switch {
+        Gleam = fun () => x |> to : f32
+        Fsharp = fun () => x |> $'float32' : f32
+        Python = fun () => x |> to : f32
+    }
+
+/// ### f64
+inl f64 forall t. (x : t) : f64 =
+    backend_switch {
+        Gleam = fun () => x |> to : f64
+        Fsharp = fun () => x |> $'float' : f64
+        Python = fun () => x |> to : f64
+    }
+
+/// ### unativeint
+nominal unativeint = $'unativeint'
+
+/// ### convert_i32
+inl convert_i32 forall t. (x : t) : i32 =
+    backend_switch {
+        Gleam = fun () => x |> to : i32
+        Fsharp = fun () => x |> $'System.Convert.ToInt32' : i32
+        Python = fun () => x |> to : i32
+    }
+
+/// ### convert_i32_base
+inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/int"
+            inl (n : int), (err : int) =
+                $'case int.base_parse(!x, !base) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+            if err = 0
+            then n |> Some
+            else None
+            |> optionm.value
+        Fsharp = fun () => $'System.Convert.ToInt32 (!x, !base)' : i32
+        Python = fun () => $'int (!x, !base)' : i32
+    }
+
+/// ### (:>)
+prototype (~:>) r : forall t. t -> r
+
+/// ### to_any
+inl to_any forall t. (obj : t) : any =
+    obj |> to
+
+/// ### (~:>) any
+instance (~:>) any = to_any

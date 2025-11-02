@@ -415,8 +415,11 @@ inl update_char (parser_state s as s') (c : char) : parser_state =
 #!spiral
 
 inl update result s =
-    (s, result |> sm'.to_char_list)
-    ||> listm.fold update_char
+    let rec 루프 (i : int) s =
+        if i >= (result |> sm'.length)
+        then s
+        else result |> sm'.index i |> update_char s |> 루프 (i + 1)
+    s |> 루프 0
 
 #!markdown
 
@@ -468,6 +471,15 @@ inl any_char () : parser char = fun input, i, s =>
 
 #!markdown
 
+### get_max_context
+
+#!spiral
+
+inl get_max_context () =
+    120
+
+#!markdown
+
 ### p_char
 
 #!spiral
@@ -482,10 +494,11 @@ inl p_char (c : char) : parser char =
             then Ok (got, i + 1, got |> update_char s')
             else
                 inl total_len = input |> sm'.length
-                inl end =
+                inl end_line =
                     match input |> sm'.index_of_char_from i '\n' with
                     | -1 => total_len
                     | j  => (if j >= i then j else i + j) |> min total_len
+                inl end = (i + get_max_context ()) |> min end_line |> min total_len
                 inl rest = input |> sm'.range (am'.Start i) (am'.End fun _ => end)
                 inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
                 "parsing.p_char / "
@@ -859,16 +872,25 @@ inl many forall b c. (p : _ * _ * _ -> _ (b * _ * _) c) : parser (list _) = fun 
 inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
     match p (input, i0, s0) with
     | Ok (first, i1, s1) =>
-        let rec 루프 (acc : string) (i : int) (s : parser_state)
+        let rec 루프 (acc : list char) (i : int) (s : parser_state)
             : result (string * int * parser_state) string
             =
             match p (input, i, s) with
             | Ok (c, i', s') =>
                 if i' = i
                 then "parsing.many1_chars / inner parser succeeded without consuming input" |> Error
-                else s' |> 루프 (acc ++# $c) i'
-            | Error _ => Ok (acc, i, s)
-        s1 |> 루프 $first i1
+                else s' |> 루프 (c :: acc) i'
+            | Error _ =>
+                Ok (
+                    first :: (acc |> listm.rev)
+                    |> listm.map sm'.obj_to_string
+                    |> listm'.box
+                    |> seq.of_list'
+                    |> sm'.concat "",
+                    i,
+                    s
+                )
+        s1 |> 루프 [] i1
     | Error e => Error e
 
 #!spiral
@@ -903,17 +925,27 @@ inl many_chars (p : parser char) : parser string = fun input, i, s =>
 #!spiral
 
 inl many_chars_till (p : parser char) (end_p : parser _) : parser string = fun input, i0, s0 =>
-    let rec 루프 (acc : string) (i : int) (s : parser_state) : result (string * int * parser_state) string =
+    let rec 루프 (acc : list char) (i : int) (s : parser_state) : result (string * int * parser_state) string =
+        inl ok i s =
+            Ok (
+                acc
+                |> listm.rev
+                |> listm.map sm'.obj_to_string
+                |> listm'.box
+                |> seq.of_list'
+                |> sm'.concat "",
+                i,
+                s
+            )
         match end_p (input, i, s) with
-        | Ok _ => Ok (acc, i, s)
+        | Ok _ => ok i s
         | Error _ =>
             match p (input, i, s) with
-            | Ok (c, i', s') =>
-                if i' = i
-                then "parsing.many_chars_till / inner parser succeeded without consuming input" |> Error
-                else s' |> 루프 (acc ++# $c) i'
-            | Error _ => Ok (acc, i, s)
-    s0 |> 루프 "" i0
+            | Ok (_, i', _) when i' = i =>
+                "parsing.many_chars_till / inner parser succeeded without consuming input" |> Error
+            | Ok (c, i', s') => s' |> 루프 (c :: acc) i'
+            | Error _ => ok i s
+    s0 |> 루프 [] i0
 
 #!markdown
 
@@ -1020,7 +1052,7 @@ inl many_strings (p : parser _) : parser string = fun input, i, s =>
 
 inl choice forall t. parsers : parser t = fun input, i, s =>
     let rec 루프 = function
-        | [] => "parsing.choice / no parsers succeeded" |> Error 
+        | [] => "parsing.choice / no parsers succeeded" |> Error
         | (p : _ -> _ (t * int * parser_state) _) :: ps =>
             match p (input, i, s) with
             | Ok _ as r => r
@@ -1061,12 +1093,15 @@ inl between p_open p_close p_content : parser _ = fun input, i0, s0 =>
             match p_close (input, i2, s2) with
             | Ok (_, i3, s3) => Ok (result, i3, s3)
             | Error e =>
-                inl rest1 = input |> sm'.range (am'.Start i1) (am'.End eval)
-                inl rest2 = input |> sm'.range (am'.Start i2) (am'.End eval)
+                inl total_len = input |> sm'.length
+                inl end1 = (i1 + get_max_context ()) |> min total_len
+                inl end2 = (i2 + get_max_context ()) |> min total_len
+                inl rest1 = input |> sm'.range (am'.Start i1) (am'.End fun _ => end1)
+                inl rest2 = input |> sm'.range (am'.Start i2) (am'.End fun _ => end2)
                 "parsing.between / expected closing delimiter / "
                 ++# ({ e input rest1 rest2 } |> sm'.format)
                 |> Error
-        | Error _ => "parsing.between / expected content" |> Error 
+        | Error _ => "parsing.between / expected content" |> Error
     | Error e => e |> Error
 
 #!spiral
@@ -1114,10 +1149,10 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
         match p (input, i, s) with
         | Ok (result, i1, s1) =>
             match sep (input, i1, s1) with
-            | Ok (_, i2, s2) => 루프 (result :: acc) i2 s2
+            | Ok (_, i2, s2) => s2 |> 루프 (result :: acc) i2
             | Error _ => Ok ((result :: acc) |> listm.rev, i1, s1)
         | Error _ => Ok (acc |> listm.rev, i, s)
-    루프 [] i0 s0
+    s0 |> 루프 [] i0
 
 #!markdown
 
@@ -1126,7 +1161,7 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
 #!spiral
 
 inl span_from pred str i0 =
-    let rec 루프 i =
+    let rec 루프 (i : int) =
         if i >= (str |> sm'.length)
         then i
         elif pred (str |> sm'.index i)
@@ -1165,9 +1200,11 @@ inl p_digit () : parser char = fun input, i, s =>
     if i >= (input |> sm'.length)
     then "parsing.p_digit / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else
-        match input |> sm'.index i with
-        | ('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9') as c => Ok (c, i + 1, s)
-        | c => "parsing.p_digit / unexpected char / " ++# ({ c } |> sm'.format) |> Error
+        inl c = input |> sm'.index i
+        inl cn = c |> try_convert |> optionm'.default_value -1
+        if cn >= i32 '0' && cn <= i32 '9'
+        then Ok (c, i + 1, s)
+        else "parsing.p_digit / unexpected char / " ++# ({ c } |> sm'.format) |> Error
 
 #!spiral
 
@@ -1190,7 +1227,6 @@ inl p_digit () : parser char = fun input, i, s =>
 ///! fsharp
 ///! cuda
 ///! typescript
-////! python // assert_eq { actual = (UH0_1 ("1", UH0_0), 'a 2', <fable_modules.fable_library.system_text.StringBuilder object at 0x000000000168B5F0>, 1, 1); expected = (UH0_1 ("1", UH0_0), 'a 2', <fable_modules.fable_library.system_text.StringBuilder object at 0x000000000168B110>, 1, 1) }
 
 "1 a 2"
 |> run_parser (sep_by (p_digit ()) (spaces1 ()))
