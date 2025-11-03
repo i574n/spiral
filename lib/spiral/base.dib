@@ -9,6 +9,7 @@
 #!spiral
 
 //// test
+//// test_force
 
 open testing
 
@@ -827,7 +828,8 @@ inl defaultof forall t. () : t =
         real
             typecase t with
             | string => ""
-            | i32 => 0
+            | int => 0
+            | char => '\0'
             | option ~u => None `u
             | _ => default ()
     backend_switch {
@@ -1069,7 +1071,10 @@ inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
 #!spiral
 
 inl to forall t u. (x : t) : u =
-    $'!x ' : u
+    real
+        typecase t * u with
+        | ~x * ~x => x : u
+        | _ => $'!x ' : u
 
 #!markdown
 
@@ -1079,7 +1084,7 @@ inl to forall t u. (x : t) : u =
 
 inl convert forall t u. (x : t) : u =
     backend_switch {
-        Gleam = fun () => $'!x ' : u
+        Gleam = fun () => x |> to : u
         Fsharp = fun () => $'!x |> `u ' : u
         Python = fun () => $'`u(!x)' : u
     }
@@ -1091,33 +1096,32 @@ inl convert forall t u. (x : t) : u =
 #!spiral
 
 inl try_convert forall t u. (x : t) : option u =
-    if real typecase t * u with ~x * ~x => true | _ => false
-    then x |> to |> Some
-    else
-        inl is_int = real typecase u with int => true | _ => false
-        if is_int |> not
-        then x |> convert |> Some
-        else
-            backend_switch {
-                Gleam = fun () =>
-                    global "import gleam/int"
-                    inl (n : int), (err : int) =
-                        $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
-                    if err = 0
-                    then n |> Some
-                    else None
-                Fsharp = fun () =>
-                    try
-                        fun () => x |> convert : u
-                        fun e => None
-                Python = fun () =>
-                    inl result = mut None
-                    try_unit
-                        fun () => result <- x |> convert |> Some
-                        ignore
-                    *result
-                    : _ u
-            }
+    inl run () =
+        backend_switch {
+            Gleam = fun () =>
+                global "import gleam/int"
+                inl (n : int), (err : int) =
+                    $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+                if err = 0
+                then n |> Some
+                else None
+            Fsharp = fun () =>
+                try
+                    fun () => x |> convert : u
+                    fun e => None
+            Python = fun () =>
+                inl result = mut None
+                try_unit
+                    fun () => result <- x |> convert |> Some
+                    ignore
+                *result
+                : _ u
+        }
+    real
+        typecase t * u with
+        | ~x * ~x => Some `u x
+        | int * int => Some `u (conv `t `u x)
+        | _ => run `(option u) ()
 
 #!spiral
 

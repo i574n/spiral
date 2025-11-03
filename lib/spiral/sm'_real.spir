@@ -276,7 +276,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### concat
 
-/// ### length'
+/// ### length\\'
 
 /// ### to_string any
 
@@ -288,7 +288,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### split_string
 
-/// ### join'
+/// ### join\\'
 
 /// ### encoding
 
@@ -368,15 +368,15 @@ let format_real forall t. (x : t) : string =
 
 /// ### from_os_str_ref
 
-/// ### format_custom'
+/// ### format_custom\\'
 
-/// ### format_debug'
+/// ### format_debug\\'
 
-/// ### format'
+/// ### format\\'
 
-/// ### format_hex'
+/// ### format_hex\\'
 
-/// ### format''
+/// ### format\\''
 
 /// ### regex
 
@@ -390,13 +390,13 @@ let format_real forall t. (x : t) : string =
 
 /// ### regex_capture_names
 
-/// ### match'
+/// ### match\\'
 
 /// ### regex_captures_iter
 
 /// ### regex_captures
 
-/// ### replace_regex'
+/// ### replace_regex\\'
 
 /// ### serialize
 
@@ -418,9 +418,9 @@ let format_real forall t. (x : t) : string =
 
 /// ### base64_decode
 
-/// ### encoding'
+/// ### encoding\\'
 
-/// ### encoding_utf8'
+/// ### encoding_utf8\\'
 
 /// ### encoding_1252
 
@@ -442,7 +442,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### encode_utf8
 
-/// ## sm'
+/// ## sm\\'
 
 /// ### contains
 

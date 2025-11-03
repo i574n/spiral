@@ -371,7 +371,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
             $'!a.join(!b)' : string
     }
 
-/// ### length'
+/// ### length\\'
 inl length' forall dim. (input : string) : dim =
     backend_switch {
         Gleam = fun () =>
@@ -418,7 +418,7 @@ inl split_string (separator : array_base string) (str : string) : array_base str
         | Fsharp (Native) => fun str, separator => $'!str.Split (!separator, System.StringSplitOptions.None)'
         | _ => fun str, separator => str |> split ((a separator : _ int _) |> seq.of_array |> concat (join ""))
 
-/// ### join'
+/// ### join\\'
 inl join' (concat : string) (s : a int string) : string =
     $'System.String.Join (!concat, !s)'
 
@@ -631,32 +631,32 @@ inl from_os_str_ref s =
     |> ref_to_std_string
     |> from_std_string
 
-/// ### format_custom'
+/// ### format_custom\\'
 inl format_custom' (f : string) x : std_string =
     run_target function
         | Rust _ => fun () =>
             !\\(x, $'"format\!(\\\"" + !f + "\\\", $0)"')
         | _ => fun () => null ()
 
-/// ### format_debug'
+/// ### format_debug\\'
 inl format_debug' x : std_string =
     run_target function
         | Rust _ => fun () =>
             !\\(x, $'"format\!(\\\"{:?}\\\", $0)"')
         | _ => fun () => null ()
 
-/// ### format'
+/// ### format\\'
 inl format' x : std_string =
     run_target_args (fun () => x) function
         | Rust _ => fun x =>
             !\\(x, $'"format\!(\\\"{}\\\", $0)"')
         | _ => fun _ => null ()
 
-/// ### format_hex'
+/// ### format_hex\\'
 inl format_hex' x : std_string =
     !\\(x, $'"format\!(\\\"{:02x}\\\", $0)"')
 
-/// ### format''
+/// ### format\\''
 inl format'' (format : string) : std_string =
     !\($'@@$"format\!(" + !format + ")"')
 
@@ -706,7 +706,7 @@ nominal regex_capture_names =
 inl regex_capture_names (regex : regex) : regex_capture_names =
     !\\(regex, $'$"$0.capture_names()"')
 
-/// ### match'
+/// ### match\\'
 nominal match' =
     `(
         global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Match\")>]\n#endif\ntype regex_Match = class end"
@@ -757,7 +757,7 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
     |> rust.capture_move
 
-/// ### replace_regex'
+/// ### replace_regex\\'
 inl replace_regex' (pattern : string) (replacement : a i32 string) (s : string) : string =
     run_target_args (fun () => s, pattern, replacement) function
         | Rust (Native) => fun s, pattern, replacement =>
@@ -831,14 +831,14 @@ inl base64_decode (s : std_string) : result std_string std_string =
         join x ()
         |> resultm.unbox
 
-/// ### encoding'
+/// ### encoding\\'
 nominal encoding' =
     `(
         global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"encoding_rs::Encoding\")>]\n#endif\ntype encoding_rs_Encoding = class end"
         $'' : $'encoding_rs_Encoding'
     )
 
-/// ### encoding_utf8'
+/// ### encoding_utf8\\'
 inl encoding_utf8' () : rust.ref encoding' =
     !\($'"encoding_rs::UTF_8"')
 
@@ -911,7 +911,7 @@ inl encode_utf8 (s : string) : string =
             $'!s.encode(!encoding)' : string
     }
 
-/// ## sm'
+/// ## sm\\'
 
 /// ### contains
 inl contains (value : string) (s : string) : bool =
@@ -953,33 +953,38 @@ inl concat_list s list =
 
 /// ### range
 inl range forall t. (start : am'.range t) (end : am'.range t) s =
-    inl start, end =
-        inl len () =
-            s |> length'
+    inl is_start, start, end =
+        inl len () : i32 =
+            if real typecase t with int => true | _ => false
+            then s |> length
+            else s |> length'
         match start, end with
-        | Start start, End fn => start, len |> fn
-        | End start_fn, End end_fn => start_fn len, end_fn len
+        | Start start, End fn => true, start, len >> to |> fn
+        | End start_fn, End end_fn => false, start_fn (len >> to), end_fn (len >> to)
     inl end' =
         backend_switch {
-            Gleam = fun () =>
-                // [
-                    // "sm'.range"
-                    // " / s: "; s
-                    // " / s |> var_is: "; s |> var_is |> obj_to_string
-                    // " / start |> var_is: "; start |> var_is |> obj_to_string
-                    // " / end |> var_is: "; end |> var_is |> obj_to_string
-                // ]
-                // |> concat_list ""
-                // |> console.write_line
-                if
-                    (end |> var_is |> not)
-                    && (start |> var_is |> not)
-                    && (s |> var_is)
-                    || (start |> var_is |> not) && (end |> var_is)
-                then 0i32 else 1
+            Gleam = fun () => 0i32
             Fsharp = fun () => 1i32
             Python = fun () => 1i32
         }
+    backend_switch {
+        Gleam = fun () =>
+            [
+                "sm'.range"
+                " / s: "; s
+                " / is_start: "; is_start |> obj_to_string
+                " / start: "; start |> obj_to_string
+                " / end: "; end |> obj_to_string
+                " / s |> var_is: "; s |> var_is |> obj_to_string
+                " / start |> var_is: "; start |> var_is |> obj_to_string
+                " / end |> var_is: "; end |> var_is |> obj_to_string
+                " / end': "; end' |> obj_to_string
+            ]
+            |> concat_list ""
+            |> fun x =>
+                global "import gleam/io"
+                $'io.println(!x)' : ()
+    }
     s |> slice (start |> i32) ((end |> i32) - end')
 
 /// ### trim_end

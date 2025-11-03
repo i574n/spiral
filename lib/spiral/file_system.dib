@@ -15,6 +15,7 @@ open rust_operators
 #!spiral
 
 //// test
+//// test_force
 
 open testing
 

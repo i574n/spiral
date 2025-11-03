@@ -8,13 +8,14 @@
 
 #!spiral
 
-open rust.rust_operators
+//// test
+//// test_force
+
+open testing
 
 #!spiral
 
-//// test
-
-open testing
+open rust.rust_operators
 
 #!markdown
 

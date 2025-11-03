@@ -9,6 +9,7 @@
 #!spiral
 
 //// test
+//// test_force
 
 open testing
 
@@ -1194,7 +1195,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
 
 #!markdown
 
-### length'
+### length\\'
 
 #!spiral
 
@@ -1281,7 +1282,7 @@ inl split_string (separator : array_base string) (str : string) : array_base str
 
 #!markdown
 
-### join'
+### join\\'
 
 #!spiral
 
@@ -1691,7 +1692,7 @@ inl from_os_str_ref s =
 
 #!markdown
 
-### format_custom'
+### format_custom\\'
 
 #!spiral
 
@@ -1703,7 +1704,7 @@ inl format_custom' (f : string) x : std_string =
 
 #!markdown
 
-### format_debug'
+### format_debug\\'
 
 #!spiral
 
@@ -1715,7 +1716,7 @@ inl format_debug' x : std_string =
 
 #!markdown
 
-### format'
+### format\\'
 
 #!spiral
 
@@ -1727,7 +1728,7 @@ inl format' x : std_string =
 
 #!markdown
 
-### format_hex'
+### format_hex\\'
 
 #!spiral
 
@@ -1736,7 +1737,7 @@ inl format_hex' x : std_string =
 
 #!markdown
 
-### format''
+### format\\''
 
 #!spiral
 
@@ -1821,7 +1822,7 @@ inl regex_capture_names (regex : regex) : regex_capture_names =
 
 #!markdown
 
-### match'
+### match\\'
 
 #!spiral
 
@@ -1907,7 +1908,7 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
 #!markdown
 
-### replace_regex'
+### replace_regex\\'
 
 #!spiral
 
@@ -2036,7 +2037,7 @@ inl base64_decode (s : std_string) : result std_string std_string =
 
 #!markdown
 
-### encoding'
+### encoding\\'
 
 #!spiral
 
@@ -2048,7 +2049,7 @@ nominal encoding' =
 
 #!markdown
 
-### encoding_utf8'
+### encoding_utf8\\'
 
 #!spiral
 
@@ -2173,7 +2174,7 @@ inl encode_utf8 (s : string) : string =
 
 #!markdown
 
-## sm'
+## sm\\'
 
 #!markdown
 
@@ -2262,33 +2263,38 @@ inl concat_list s list =
 #!spiral
 
 inl range forall t. (start : am'.range t) (end : am'.range t) s =
-    inl start, end =
-        inl len () =
-            s |> length'
+    inl is_start, start, end =
+        inl len () : i32 =
+            if real typecase t with int => true | _ => false
+            then s |> length
+            else s |> length'
         match start, end with
-        | Start start, End fn => start, len |> fn
-        | End start_fn, End end_fn => start_fn len, end_fn len
+        | Start start, End fn => true, start, len >> to |> fn
+        | End start_fn, End end_fn => false, start_fn (len >> to), end_fn (len >> to)
     inl end' =
         backend_switch {
-            Gleam = fun () =>
-                // [
-                    // "sm'.range"
-                    // " / s: "; s
-                    // " / s |> var_is: "; s |> var_is |> obj_to_string
-                    // " / start |> var_is: "; start |> var_is |> obj_to_string
-                    // " / end |> var_is: "; end |> var_is |> obj_to_string
-                // ]
-                // |> concat_list ""
-                // |> console.write_line
-                if
-                    (end |> var_is |> not)
-                    && (start |> var_is |> not)
-                    && (s |> var_is)
-                    || (start |> var_is |> not) && (end |> var_is)
-                then 0i32 else 1
+            Gleam = fun () => 0i32
             Fsharp = fun () => 1i32
             Python = fun () => 1i32
         }
+    backend_switch {
+        Gleam = fun () =>
+            [
+                "sm'.range"
+                " / s: "; s
+                " / is_start: "; is_start |> obj_to_string
+                " / start: "; start |> obj_to_string
+                " / end: "; end |> obj_to_string
+                " / s |> var_is: "; s |> var_is |> obj_to_string
+                " / start |> var_is: "; start |> var_is |> obj_to_string
+                " / end |> var_is: "; end |> var_is |> obj_to_string
+                " / end': "; end' |> obj_to_string
+            ]
+            |> concat_list ""
+            |> fun x =>
+                global "import gleam/io"
+                $'io.println(!x)' : ()
+    }
     s |> slice (start |> i32) ((end |> i32) - end')
 
 #!spiral
@@ -2310,7 +2316,27 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 |> _assert_eq "bcde"
 
 (join "abcde")
-|> range (am'.Start 1i32) (am'.End fun x => 5)
+|> range (am'.Start 1i32) (am'.End fun _ => 1)
+|> _assert_eq ""
+
+"abcde"
+|> range (am'.Start 1i32) (am'.End fun _ => 1)
+|> _assert_eq ""
+
+"abcde"
+|> range (am'.Start (dyn 1i32)) (am'.End fun _ => 1)
+|> _assert_eq ""
+
+"abcde"
+|> range (am'.Start (dyn 1i32)) (am'.End fun _ => dyn 1)
+|> _assert_eq ""
+
+(join "abcde")
+|> range (am'.Start 1i32) (am'.End fun _ => 5)
+|> _assert_eq "bcde"
+
+"abcde"
+|> range (am'.End fun x => 1i32) (am'.End fun _ => 5 |> dyn)
 |> _assert_eq "bcde"
 
 "abcde"
@@ -2322,30 +2348,27 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 |> _assert_eq "bcd"
 
 (join "abcde")
-|> range (am'.End fun x => x () - 4i32) (am'.End fun x => 4)
-|> _assert_eq "bcd"
-
-#!spiral
-
-//// test
-///! gleam
-///! fsharp
-///! cuda
-
-"abcde"
-|> range (am'.Start 1i32) (am'.End eval)
-|> _assert_eq "bcde"
-
-"abcde"
-|> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
-|> _assert_eq "bcd"
+|> range (am'.Start (dyn 2i32)) (am'.End fun x => x () - 2)
+|> _assert_eq "c"
 
 (join "abcde")
-|> range (am'.Start 1i32) (am'.End eval)
-|> _assert_eq "bcde"
+|> range (am'.Start (dyn 2i32)) (am'.End fun x => x () - 3)
+|> _assert_eq ""
 
 (join "abcde")
-|> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
+|> range (am'.Start (dyn 1i32)) (am'.End fun x => x () - 3)
+|> _assert_eq "b"
+
+(join "abcde")
+|> range (am'.Start (dyn 1i32)) (am'.End fun x => x () - 4)
+|> _assert_eq ""
+
+(join "abcde")
+|> range (am'.End fun x => x () - 4i32) (am'.End fun _ => 4)
+|> _assert_eq "bcd"
+
+"abcde"
+|> range (am'.End fun ~x => x () - 4i32) (am'.End fun _ => 4)
 |> _assert_eq "bcd"
 
 #!markdown

@@ -15,6 +15,7 @@ open sm'_operators
 #!spiral
 
 //// test
+//// test_force
 
 open testing
 open file_system_operators
@@ -57,7 +58,7 @@ let split_args (args : string) : result (array_base string) string =
 #!spiral
 
 //// test
-////! gleam // { actual = ["", "b ", "c"]; expected = ["a", "b", "c"] }
+///! gleam
 ///! fsharp
 ///! cuda
 ///! rust

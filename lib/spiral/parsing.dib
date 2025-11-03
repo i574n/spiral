@@ -13,6 +13,7 @@ open sm'_operators
 #!spiral
 
 //// test
+//// test_force
 
 open testing
 
@@ -34,6 +35,7 @@ open testing
 #!spiral
 
 //// test
+//// test_force
 
 nominal position_ = $'FParsec.Position'
 nominal parser_error_ = $'FParsec.Error.ParserError'
@@ -373,15 +375,6 @@ inl slice (i0 : int) (i1 : int) (input : string) : string =
 
 #!markdown
 
-### slice_len
-
-#!spiral
-
-inl slice_len (i0 : int) (len : int) (input : string) : string =
-    input |> slice i0 (i0 + len)
-
-#!markdown
-
 ### parse
 
 #!spiral
@@ -513,6 +506,21 @@ inl get_max_context () =
 
 #!markdown
 
+### span_from
+
+#!spiral
+
+inl span_from pred str i0 =
+    let rec 루프 (i : int) =
+        if i >= (str |> sm'.length)
+        then i
+        elif str |> sm'.index i |> pred
+        then 루프 (i + 1)
+        else i
+    루프 i0
+
+#!markdown
+
 ### p_char
 
 #!spiral
@@ -526,12 +534,8 @@ inl p_char (c : char) : parser char =
             if got = c
             then Ok (got, i + 1, got |> update_char s')
             else
-                inl total_len = input |> sm'.length
-                inl end_line =
-                    match input |> sm'.index_of_char_from i '\n' with
-                    | -1 => total_len
-                    | j  => (if j >= i then j else i + j) |> min total_len
-                inl end = (i + get_max_context ()) |> min end_line |> min total_len
+                inl line_end = i |> span_from ((<>) '\n') input
+                inl end = (i + get_max_context ()) |> min line_end
                 inl line_slice = input |> slice line_start end
                 inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
                 "parsing.p_char / "
@@ -573,12 +577,12 @@ inl p_char (c : char) : parser char =
 inl any_string length : parser string = fun input, i, s =>
     if (input |> sm'.length) - i < length
     then "parsing.any_string / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
-    else Ok (input |> slice_len i length, i + length, s |> update_span input i length)
+    else Ok (input |> slice i (i + length), i + length, s |> update_span input i length)
 
 #!spiral
 
 //// test
-////! gleam // { actual = #("ab", "def", 0, 1, 4); expected = #("abc", "def", 0, 1, 4) }
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -639,7 +643,7 @@ inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s
 #!spiral
 
 //// test
-////! gleam // { actual = Us0i1("parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\ngh\n ^\n"); expected = Us0i1("parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n") }
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -728,16 +732,10 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 #!spiral
 
 inl none_of (chars : list char) : parser char = fun input, i, s =>
-    inl chars' () : string =
-        backend_switch {
-            Gleam = fun () => chars |> listm'.box |> sm'.format
-            Fsharp = fun () => chars |> listm'.box |> listm'.to_array' |> sm'.format
-            Python = fun () => chars |> listm'.box |> listm'.to_array' |> sm'.format
-        }
-    if i >= (input |> sm'.length) then
-        "parsing.none_of / unexpected end of input / "
-        ++# ({ chars' = chars' (); s } |> sm'.format)
-        |> Error
+    inl chars' () =
+        chars |> listm'.box |> listm'.to_array' |> sm'.format
+    if i >= (input |> sm'.length)
+    then "parsing.none_of / unexpected end of input / " ++# ({ chars' = chars' (); s } |> sm'.format) |> Error
     else
         inl ch = input |> sm'.index i
         if chars |> listm'.exists' ((=) ch) |> not
@@ -816,7 +814,7 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, i, s =
 #!spiral
 
 //// test
-////! gleam // { actual = Us0i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncb\n^\n"); expected = Us0i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -942,14 +940,14 @@ inl many_chars (p : parser char) : parser string = fun input, i, s =>
 inl many_chars_till (p : parser char) (end_p : parser _) : parser string = fun input, i0, s0 =>
     let rec 루프 (i : int) (s : parser_state) : result (string * int * parser_state) string =
         match end_p (input, i, s) with
-        | Ok _ => Ok (input |> slice i0 i, i, s)
+        | Ok _ => Ok ((if i > i0 then input |> slice i0 i else ""), i, s)
         | Error _ =>
             match p (input, i, s) with
             | Ok (_, i', s') =>
                 if i' = i
                 then "parsing.many_chars_till / inner parser succeeded without consuming input" |> Error
                 else s' |> 루프 i'
-            | Error _ => Ok (input |> slice i0 i, i, s)
+            | Error _ => Ok ((if i > i0 then input |> slice i0 i else ""), i, s)
     s0 |> 루프 i0
 
 #!markdown
@@ -978,7 +976,7 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
 #!spiral
 
 //// test
-////! gleam // { actual = Us2i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncb\n^\n"); expected = Us2i1("parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n") }
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -1134,7 +1132,7 @@ inl between p_open p_close p_content : parser _ = fun input, i0, s0 =>
 #!spiral
 
 //// test
-////! gleam // { actual = #("aaabb]", "", 0, 1, 8); expected = #("aaabb", "", 0, 1, 8) }
+///! gleam
 ///! fsharp
 ///! cuda
 ///! typescript
@@ -1182,21 +1180,6 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
                     | Error _ => Ok (acc |> listm.rev, i, s)
             | Error _ => Ok (acc |> listm.rev, i, s)
         s1 |> 루프 [ first ] i1
-
-#!markdown
-
-### span_from
-
-#!spiral
-
-inl span_from pred str i0 =
-    let rec 루프 (i : int) =
-        if i >= (str |> sm'.length)
-        then i
-        elif str |> sm'.index i |> pred
-        then 루프 (i + 1)
-        else i
-    루프 i0
 
 #!markdown
 
@@ -1291,12 +1274,11 @@ inl opt p : parser (option _) = fun input, i, s =>
 #!spiral
 
 inl rest_of_line () : parser string = fun input, i0, s =>
-    inl total_len = input |> sm'.length
     inl j =
         match input |> sm'.index_of_char_from i0 '\n' with
-        | -1 => total_len
-        | k  => (if k >= i0 then k else i0 + k) |> min total_len
-    Ok (input |> slice i0 j, j, s)
+        | -1 => input |> sm'.length
+        | k => if k >= i0 then k else i0 + k
+    Ok (input |> slice i0 j, j, s |> update_span input i0 (j - i0))
 
 #!markdown
 

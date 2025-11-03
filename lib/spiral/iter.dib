@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"spiral","items":[{"aliases":[],"name":"spiral"}]}}
+{"kernelInfo":{"defaultKernelName":"spiral","items":[{"name":"spiral"}]}}
 
 #!markdown
 
@@ -14,6 +14,7 @@ open rust_operators
 #!spiral
 
 //// test
+//// test_force
 
 open testing
 
