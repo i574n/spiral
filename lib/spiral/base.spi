@@ -496,6 +496,7 @@ inl to forall t u. (x : t) : u =
     real
         typecase t * u with
         | ~x * ~x => x : u
+        | int * int => conv `t `u x
         | _ => $'!x ' : u
 
 /// ### convert
@@ -570,7 +571,7 @@ inl u64 forall t. (x : t) : u64 =
 /// ### i32
 inl i32 forall t. (x : t) : i32 =
     backend_switch {
-        Gleam = fun () => x |> try_convert |> optionm.value : i32
+        Gleam = fun () => x |> convert : i32
         Fsharp = fun () => x |> convert : i32
         Python = fun () => x |> convert : i32
     }

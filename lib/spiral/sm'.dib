@@ -2252,7 +2252,7 @@ fun () => failwith "test"
 
 inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl is_start, start, end =
-        inl len () : i32 =
+        inl len () : int =
             if real typecase t with int => true | _ => false
             then s |> length
             else s |> length'
@@ -2283,7 +2283,7 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
                 global "import gleam/io"
                 $'io.println(!x)' : ()
     }
-    s |> slice (start |> i32) ((end |> i32) - end')
+    s |> slice (start |> try_convert |> optionm.value : int) ((end |> try_convert |> optionm.value) - end')
 
 #!spiral
 

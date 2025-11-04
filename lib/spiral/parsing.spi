@@ -56,11 +56,6 @@ inl parse forall t.
         input |> slice i (input |> sm'.length),
         s'
 
-/// ### inc
-inl inc (parser_state s) = function
-    | '\n' => { line = s.position.line + 1; col = 1 }
-    | _ => { s.position with col = s.position.col + 1 }.position
-
 /// ### update_char
 inl update_char (parser_state s) (c : char) : parser_state =
     match c with
@@ -128,10 +123,10 @@ inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : par
     s |> 루프 i0
 
 /// ### run_parser
-inl run_parser parser input =
+inl run_parser p input =
     input
-    |> parse parser
-    |> fun parser => parser (new_parser_state' (input |> sm'.length))
+    |> parse p
+    |> fun run => run (new_parser_state' (input |> sm'.length))
 
 /// ### any_char
 inl any_char () : parser char = fun input, i, (parser_state st as s) =>
@@ -143,7 +138,7 @@ inl any_char () : parser char = fun input, i, (parser_state st as s) =>
 
 /// ### get_max_context
 inl get_max_context () =
-    120
+    80
 
 /// ### span_from
 inl span_from pred str i0 =
@@ -412,11 +407,15 @@ inl is_space c =
     c = ' ' || c = '\t' || c = '\r'
 
 /// ### spaces1
-inl spaces1 () : parser () = fun input, i, s =>
+inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
     inl j = i |> span_from is_space input
-    if j = i
-    then "parsing.spaces1 / expected at least one space" |> Error
-    else Ok ((), j, s |> update_span input i (j - i))
+    if j <> i
+    then Ok ((), j, s |> update_span input i (j - i))
+    else
+        inl preview_end = (i + get_max_context ()) |> min st.input_len
+        "parsing.spaces1 / expected at least one space / "
+        ++# ({ rest = input |> slice i preview_end } |> sm'.format)
+        |> Error
 
 /// ### spaces
 inl spaces () : parser () = fun input, i, s =>

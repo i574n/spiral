@@ -394,16 +394,6 @@ inl parse forall t.
 
 #!markdown
 
-### inc
-
-#!spiral
-
-inl inc (parser_state s) = function
-    | '\n' => { line = s.position.line + 1; col = 1 }
-    | _ => { s.position with col = s.position.col + 1 }.position
-
-#!markdown
-
 ### update_char
 
 #!spiral
@@ -489,10 +479,10 @@ inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : par
 
 #!spiral
 
-inl run_parser parser input =
+inl run_parser p input =
     input
-    |> parse parser
-    |> fun parser => parser (new_parser_state' (input |> sm'.length))
+    |> parse p
+    |> fun run => run (new_parser_state' (input |> sm'.length))
 
 #!markdown
 
@@ -538,7 +528,7 @@ inl any_char () : parser char = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl get_max_context () =
-    120
+    80
 
 #!markdown
 
@@ -1238,11 +1228,15 @@ inl is_space c =
 
 #!spiral
 
-inl spaces1 () : parser () = fun input, i, s =>
+inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
     inl j = i |> span_from is_space input
-    if j = i
-    then "parsing.spaces1 / expected at least one space" |> Error
-    else Ok ((), j, s |> update_span input i (j - i))
+    if j <> i
+    then Ok ((), j, s |> update_span input i (j - i))
+    else
+        inl preview_end = (i + get_max_context ()) |> min st.input_len
+        "parsing.spaces1 / expected at least one space / "
+        ++# ({ rest = input |> slice i preview_end } |> sm'.format)
+        |> Error
 
 #!markdown
 
