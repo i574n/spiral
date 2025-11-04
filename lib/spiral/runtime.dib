@@ -141,22 +141,22 @@ let split_command (command : string) : result (string * option string) string =
     ("/a/b/c", None)
 
     "d e.f",
-    ("d", Some "e.f")
+    ("d", "e.f" |> Some)
 
     "..\\..\\g.h i.j k.l",
-    ("../../g.h", Some "i.j k.l")
+    ("../../g.h", "i.j k.l" |> Some)
 
     "m:\\n\\o.p \"q.r s.t\"",
-    ("m:/n/o.p", Some "\"q.r s.t\"")
+    ("m:/n/o.p", "\"q.r s.t\"" |> Some)
 
     "\"..\\..\\u v\\w.x\" \"y z.a\" b.c",
-    ("../../u v/w.x", Some "\"y z.a\" b.c")
+    ("../../u v/w.x", "\"y z.a\" b.c" |> Some)
 
     "\"..\\..\\d e.f\" -g \\\\\"h i\\\\\"",
-    ("../../d e.f", Some "-g \\\\\"h i\\\\\"")
+    ("../../d e.f", "-g \\\\\"h i\\\\\"" |> Some)
 
     "..\\..\\j k.l -m \\\\\"n o\\\\\"",
-    ("../../j", Some "k.l -m \\\\\"n o\\\\\"")
+    ("../../j", "k.l -m \\\\\"n o\\\\\"" |> Some)
 ]
 |> _assert_fn split_command
 

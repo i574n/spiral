@@ -944,13 +944,6 @@ inl format_exception (ex : exn) : string =
         | Fsharp (Native) => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
         | _ => fun () => ex |> format_debug
 
-/// ### concat_list
-inl concat_list s list =
-    list
-    |> listm'.box
-    |> seq.of_list'
-    |> concat s
-
 /// ### range
 inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl is_start, start, end =

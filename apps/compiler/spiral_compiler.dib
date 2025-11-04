@@ -12945,14 +12945,14 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
             ) x
     and tup x =
         match data_term_vars x with
-        | [||] -> "Nil "
+        | [||] -> "Nil      "
         | [|x|] -> show_w x
-        | x -> Array.map show_w x |> String.concat ", " |> sprintf "#(%s) "
+        | x -> $"""#({x |> Array.map show_w |> String.concat ", "})      """
     and tup_ty x =
         match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,x)) -> tyv x) with
-        | [||] -> "Nil  "
+        | [||] -> "Nil       "
         | [|x|] -> x
-        | x -> String.concat ", " x |> sprintf "#(%s)  "
+        | x -> String.concat ", " x |> sprintf "#(%s)       "
     and op s d a =
         let a'' = a
         let jp (a, b) =
@@ -12967,7 +12967,7 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                         "closure"
                         (a, b) |> closure |> _.tag |> string
                         "("
-                        if args = "" then "" else $")(#({args})"
+                        if args = "" then "" else $")(#({args})        "
                         ")"
                         // if args = "" || args |> SpiralSm.contains ", "
                         // then ""
@@ -12987,9 +12987,9 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
         let free_vars do_annot x =
             let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
             match data_free_vars x with
-            | [||] -> "Nil   "
+            | [||] -> "Nil         "
             | [|x|] -> f x
-            | x -> Array.map f x |> String.concat ", " |> sprintf "#(%s)   "
+            | x -> Array.map f x |> String.concat ", " |> sprintf "#(%s)         "
         let simple x =
             match d with
             | None -> x
@@ -13069,11 +13069,11 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
             binds (indent s) a
         | TyIntSwitch(L(i,_),on_succ,on_fail) ->
             complex <| fun s ->
-            line s (sprintf "case v%i {" i)
+            line s (sprintf "case v%i   {" i)
             Array.iteri (fun i x ->
-                line (indent s) (sprintf "%i -> {" i)
+                line (indent s) (sprintf "%i ->   {" i)
                 binds (indent (indent s)) x
-                line (indent s) "}"
+                line (indent s) "}   "
                 ) on_succ
             line (indent s) "_ -> {"
             binds (indent (indent s)) on_fail
@@ -13081,7 +13081,7 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
         | TyUnionUnbox(is,x,on_succs,on_fail) ->
             complex <| fun s ->
             let case_tags = x.Item.tags
-            line s (sprintf "case %s {" (is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "))
+            line s ($"""case {is |> List.map (fun (L(i,_)) -> $"v{i}  ") |> String.concat ",  "}  {{""")
             let prefix =
                 let x = x.Item
                 match x.layout with
@@ -13096,16 +13096,22 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                         | x -> sprintf "(%s)" (args x)
                         |> sprintf "%si%i%s" prefix i
                         )
-                    |> String.concat ", "
-                line (indent s) (sprintf "%s -> { // %s" cases k)
+                    |> String.concat ",  "
+                line (indent s) (sprintf "%s ->  { // %s" cases k)
                 binds (indent (indent s)) b
-                line (indent s) "}"
+                line (indent s) "}  "
                 ) on_succs
-            on_fail |> Option.iter (fun b ->
+            match on_fail with
+            | Some on_fail -> on_fail |> Some
+            | None ->
+                if on_succs |> Map.count = 1
+                then on_succs |> Map.values |> Seq.tryHead |> Option.map snd
+                else None
+            |> Option.iter (fun b ->
                 line (indent s) "_ -> {"
                 binds (indent (indent s)) b
                 line (indent s) "}"
-                )
+            )
             line s "}"
         | TyUnionBox(a,b,c) ->
             let c = c.Item
@@ -13266,7 +13272,7 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                 let items =
                     h.cases
                     |> Seq.map (fun (KeyValue ((i, _), _)) ->
-                        $"#({ty}i{i}, {i})"
+                        $"#({ty}i{i}, {i})          "
                     )
                     |> String.concat ", "
                 global' "import gleam/dict"
@@ -13341,20 +13347,20 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                         |> Array.map (fun (L(_,t)) -> $"{tyv t}")
                         |> String.concat ", "
                     if x.domain_args |> Array.length > 1 then
-                        [| $"x : #(#( {t ()}))" |], false
+                        [| $"x : #(#({t ()}))           " |], false
                     elif x.free_vars |> Array.length > 1 then
                         let t =
                             x.free_vars
                             |> Array.map (fun (L(_,t)) -> $"{tyv t}")
                             |> String.concat ", "
-                        [| $"x : #(  {t})" |], false
+                        [| $"x : #({t})            " |], false
                     elif x.domain_args |> Array.length = 0
                     then [||], false
                     else
                         let t = t ()
                         if t = "Nil" && x.free_vars |> Array.length = 1
                         then [||], true
-                        else [| $"x : #(   {t})" |], false
+                        else [| $"x : #({t})             " |], false
                 match domain_args with
                 | [||] -> ""
                 | [|x|] -> x
@@ -13380,10 +13386,10 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                         if t = ""
                         then "Nil    "
                         else t
-                    $"x : #(  {t})"
+                    $"x : #({t})              "
                 elif nil && x.free_vars |> Array.length = 1 then
                     match x.free_vars.[0] with
-                    | L(i,t) -> $"v{i} :    #({tup_ty t}) "
+                    | L(i,t) -> $"v{i} : #({tup_ty t})               "
                 else args_tys x.free_vars
             let args =
                 [| free_vars_tys; domain |]
@@ -13401,10 +13407,10 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
                     then "Nil     "
                     else args
                 if x.domain_args |> Array.length > 1
-                then $"let #(#(   {args} )) = x"
+                then $"let #(#(       {args})) = x"
                 elif nil
                 then $"let #(v0) = v0 let {args} = Nil"
-                else $"let #(   {args} ) = x"
+                else $"let #(      {args}) = x"
             let domain'' =
                 if x.domain_args |> Array.length <> 1 || x.free_vars |> Array.length <= 1
                 then "_"

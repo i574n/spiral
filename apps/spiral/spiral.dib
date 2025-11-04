@@ -1831,9 +1831,8 @@ inl process_gleam { gleam_path target deps } =
                         |> am'.to_vec
                         |> am'.vec_filter fun x =>
                             (x |> sm'.starts_with "{compiling,\"" |> not)
-                            && (x |> sm'.starts_with "{compiled,main" |> not)
-                            && (x |> sm'.ends_with "main.beam\"}" |> not)
-                            && (x |> sm'.ends_with "main_real.beam\"}" |> not)
+                            && (x |> sm'.starts_with "{compiled," |> not)
+                            && (x |> sm'.ends_with ".beam\"}" |> not)
                             && (x |> sm'.starts_with "src\\main.gleam:" |> not)
                             && (x |> sm'.starts_with "src\\main_real.gleam:" |> not)
                             && (x |> sm'.starts_with "src/main.gleam:" |> not)

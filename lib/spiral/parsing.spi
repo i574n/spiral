@@ -85,10 +85,31 @@ inl update result s =
 
 /// ### update_span
 inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : parser_state =
-    let rec 루프 (j : int) (s' : parser_state) =
-        if j >= i0 + len
-        then s'
-        else input |> sm'.index j |> update_char s' |> 루프 (j + 1)
+    inl endi = i0 + len
+    let rec 루프 (j : int) (st : parser_state) : parser_state =
+        if j >= endi
+        then st
+        else
+            inl k =
+                match input |> sm'.index_of_char_from j '\n' with
+                | -1 => -1
+                | k when k >= j => k
+                | k => j + k
+            if k = -1 || k >= endi then
+                {
+                    line_start = st.line_start
+                    position = { line = st.position.line; col = st.position.col + (endi - j) }
+                } |> parser_state
+            else
+                inl st' =
+                    if k <= j
+                    then st
+                    else
+                        {
+                            line_start = st.line_start
+                            position = { line = st.position.line; col = st.position.col + (k - j) }
+                        } |> parser_state
+                '\n' |> update_char st' |> 루프 (k + 1)
     s |> 루프 i0
 
 /// ### run_parser
@@ -280,17 +301,17 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
     | Error e => e |> Error
     | Ok (r0, i1, s1) =>
         inl fuel_max = (input |> sm'.length) - i1 + 2
-        let rec 루프 (acc : string) (i : int) (fuel : int) s : result (string * int * parser_state) string =
+        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) string =
             if fuel <= 0
             then "parsing.many1_strings / out of fuel (probable zero-length loop)" |> Error
             else
                 match p (input, i, s) with
-                | Error _ => Ok (acc, i, s)
+                | Error _ => Ok (acc |> listm.rev |> sm'.concat_list "", i, s)
                 | Ok (r, i', s') =>
                     if i' = i
                     then "parsing.many1_strings / inner parser succeeded without consuming input" |> Error
-                    else s' |> 루프 (acc ++# $r) i' (fuel - 1)
-        s1 |> 루프 $r0 i1 fuel_max
+                    else s' |> 루프 ($r :: acc) i' (fuel - 1)
+        s1 |> 루프 [ $r0 ] i1 fuel_max
 
 /// ### many_strings
 inl many_strings (p : parser _) : parser string = fun input, i0, s0 =>
@@ -299,16 +320,16 @@ inl many_strings (p : parser _) : parser string = fun input, i0, s0 =>
     | Ok (r0, i1, s1) when i1 = i0 => "parsing.many_strings / first inner parser consumed no input" |> Error
     | Ok (r0, i1, s1) =>
         inl fuel_max = (input |> sm'.length) - i0 + 2
-        let rec 루프 (acc : string) (i : int) (fuel : int) s : result (string * int * parser_state) string =
+        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) string =
             if fuel <= 0
             then "parsing.many_strings / out of fuel (probable zero-length loop)" |> Error
             else
                 match p (input, i, s) with
                 | Ok (r, i', s') when i' = i =>
                     "parsing.many_strings / inner parser succeeded without consuming input" |> Error
-                | Ok (r, i', s') => s' |> 루프 (acc ++# $r) i' (fuel - 1)
-                | Error _ => Ok (acc, i, s)
-        s1 |> 루프 $r0 i1 fuel_max
+                | Ok (r, i', s') => s' |> 루프 ($r :: acc) i' (fuel - 1)
+                | Error _ => Ok ($r0 :: (acc |> listm.rev) |> sm'.concat_list "", i, s)
+        s1 |> 루프 [] i1 fuel_max
 
 /// ### choice
 inl choice forall t. parsers : parser t = fun input, i, s =>

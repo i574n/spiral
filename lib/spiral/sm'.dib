@@ -2246,18 +2246,6 @@ fun () => failwith "test"
 
 #!markdown
 
-### concat_list
-
-#!spiral
-
-inl concat_list s list =
-    list
-    |> listm'.box
-    |> seq.of_list'
-    |> concat s
-
-#!markdown
-
 ### range
 
 #!spiral

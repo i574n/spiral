@@ -450,8 +450,6 @@ let format_real forall t. (x : t) : string =
 
 /// ### format_exception
 
-/// ### concat_list
-
 /// ### range
 
 /// ### trim_end
