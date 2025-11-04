@@ -10651,7 +10651,7 @@ module spiral_compiler =
                     sprintf "%s |> string.slice(%s, 1)" (tup a) (tup b)
                 | StringSlice, [a;b;c] ->
                     global' "import gleam/string"
-                    sprintf "%s |> string.slice(%s, %s - %s)" (tup a) (tup b) (tup c) (tup b)
+                    sprintf "%s |> string.slice(%s, %s - %s + 1)" (tup a) (tup b) (tup c) (tup b)
                 | ArrayIndex, [a;b] ->
                     global' "import gary/array"
                     $"{tup a} " +

@@ -42,26 +42,6 @@ inl symbol_to_string forall t {symbol}. : string =
 
 /// ### to_option
 
-/// ### slice
-
-/// ### append_real
-inl append_real (x : string) (s : string) : string =
-    backend_switch `string `({}) {
-        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
-        Fsharp = (fun () => (+.) `string s x) : () -> string
-        Python = (fun () => (+.) `string s x) : () -> string
-    }
-
-/// ### append
-
-/// ### (++#)
-inl (++#) (a : string) (b : string) : string =
-    append_real b a
-
-/// ### (++\\#)
-
-/// ### (++\#)
-
 /// ### string_builder
 nominal string_builder_python =
     `(
@@ -103,6 +83,32 @@ inl format_debug forall t. (x : t) : string =
         }
 
 /// ### (~$$)
+
+/// ### obj_to_string
+
+/// ### (~$)
+
+/// ### append_real
+inl append_real (x : string) (s : string) : string =
+    backend_switch `string `({}) {
+        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
+        Fsharp = (fun () => (+.) `string s x) : () -> string
+        Python = (fun () => (+.) `string s x) : () -> string
+    }
+
+/// ### append
+
+/// ### (++#)
+inl (++#) (a : string) (b : string) : string =
+    append_real b a
+
+/// ### (++\\#)
+
+/// ### (++\#)
+
+/// ### concat_list
+
+/// ### slice
 
 /// ### format_pretty
 inl format_pretty forall t. (x : t) : string =
@@ -224,8 +230,6 @@ let format_real forall t. (x : t) : string =
 
 /// ### concat_array
 
-/// ### concat_list
-
 /// ### ellipsis
 
 /// ## fsharp
@@ -239,8 +243,6 @@ let format_real forall t. (x : t) : string =
 /// ### index_of
 
 /// ### replicate
-
-/// ### obj_to_string
 
 /// ### pad_left
 
@@ -279,8 +281,6 @@ let format_real forall t. (x : t) : string =
 /// ### length\\'
 
 /// ### to_string any
-
-/// ### (~$)
 
 /// ### replace
 

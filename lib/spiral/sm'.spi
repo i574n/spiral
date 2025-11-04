@@ -44,32 +44,6 @@ inl to_option s =
     then None
     else s |> Some
 
-/// ### slice
-inl slice forall t {number; int}. (from : t) (to : t) s : string =
-    backend_switch {
-        Gleam = fun () => sm.slice s { from to } : string
-        Fsharp = fun () => sm.slice s { from to } : string
-        Python = fun () => sm.slice s { from to = if var_is s || var_is to then to + 1 else to } : string
-    }
-
-/// ### append_real
-
-/// ### append
-inl append (x : string) (s : string) : string =
-    real append_real x s
-
-/// ### (++#)
-inl (++#) (a : string) (b : string) : string =
-    real (++#) a b
-
-/// ### (++\\#)
-inl (++\\#) a b =
-    a ++# "\\n" ++# b
-
-/// ### (++\#)
-inl (++\#) a b =
-    a ++# "\n" ++# b
-
 /// ### string_builder
 type string_builder = sm'_real.string_builder
 
@@ -95,6 +69,71 @@ inl format_debug forall t. (x : t) : string =
 /// ### (~$$)
 inl (~$$) s =
     s |> format_debug
+
+/// ### obj_to_string
+inl obj_to_string x : string =
+    backend_switch {
+        Gleam = fun () => $$x : string
+        Fsharp = fun () => x |> $'_.ToString()' : string
+        Python = fun () => $'str(!x)' : string
+    }
+
+/// ### (~$)
+inl (~$) s =
+    s |> obj_to_string
+
+/// ### append_real
+
+/// ### append
+inl append (x : string) (s : string) : string =
+    real append_real x s
+
+/// ### (++#)
+inl (++#) (a : string) (b : string) : string =
+    real (++#) a b
+
+/// ### (++\\#)
+inl (++\\#) a b =
+    a ++# "\\n" ++# b
+
+/// ### (++\#)
+inl (++\#) a b =
+    a ++# "\n" ++# b
+
+/// ### concat_list
+inl concat_list separator input =
+    (input, { acc = ""; sep = "" })
+    ||> listm.foldBack fun (x : string) { acc sep } => {
+        acc = x ++# sep ++# acc
+        sep = separator
+    }
+    |> fun { acc } => acc
+
+/// ### slice
+inl slice forall t {number; int}. (from : t) (to : t) s : string =
+    inl to_py () =
+        if (s |> var_is) || (to |> var_is) || (from |> var_is) then to + 1 else to
+    backend_switch {
+        Gleam = fun () =>
+            [
+                "sm'.slice"
+                " / s: "; s
+                " / from: "; from |> obj_to_string
+                " / to: "; to |> obj_to_string
+                " / s |> var_is: "; s |> var_is |> obj_to_string
+                " / from |> var_is: "; from |> var_is |> obj_to_string
+                " / to |> var_is: "; to |> var_is |> obj_to_string
+                " / to_py (): "; to_py () |> obj_to_string
+                " / to_py () |> var_is: "; to_py () |> var_is |> obj_to_string
+            ]
+            |> concat_list ""
+            |> fun x =>
+                global "import gleam/io"
+                $'io.println(!x)' : ()
+            sm.slice s { from to } : string
+        Fsharp = fun () => sm.slice s { from to } : string
+        Python = fun () => sm.slice s { from to = to_py () } : string
+    }
 
 /// ### format_pretty
 inl format_pretty forall t. (x : t) : string =
@@ -127,15 +166,6 @@ inl concat_array (separator : string) (input : a int string) =
     (input, { acc = ""; sep = "" })
     ||> am.foldBack fun (x : string) { acc sep } =>
             { acc = x ++# sep ++# acc; sep = separator }
-    |> fun { acc } => acc
-
-/// ### concat_list
-inl concat_list separator input =
-    (input, { acc = ""; sep = "" })
-    ||> listm.foldBack fun (x : string) { acc sep } => {
-        acc = x ++# sep ++# acc
-        sep = separator
-    }
     |> fun { acc } => acc
 
 /// ### ellipsis
@@ -195,14 +225,6 @@ inl replicate (n : int) (s : string) : string =
         else 루프 (i + 1) (acc ++# s)
     and inl 루프 i = join_body_unit body n i
     루프 0 ""
-
-/// ### obj_to_string
-inl obj_to_string x : string =
-    backend_switch {
-        Gleam = fun () => $$x : string
-        Fsharp = fun () => x |> $'_.ToString()' : string
-        Python = fun () => $'str(!x)' : string
-    }
 
 /// ### pad_left
 inl pad_left (total_width : int) (padding_char : char) (s : string) : string =
@@ -333,8 +355,8 @@ inl builder_clear (sb : string_builder) : string_builder =
 inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
-            inl sb = sb |> obj_to_string
-            inl a = sb |> slice 0 i
+            inl sb = $sb
+            inl a = sb |> slice 0 (i - 1)
             inl b = sb |> slice i (length sb)
             [ a; s; b ] |> concat_list "" |> string_builder
         Fsharp = fun () =>
@@ -384,10 +406,6 @@ inl length' forall dim. (input : string) : dim =
 /// ### to_string any
 instance to_string any =
     obj_to_string
-
-/// ### (~$)
-inl (~$) s =
-    s |> obj_to_string
 
 /// ### replace
 inl replace (old : string) (new : string) (s : string) : string =
@@ -948,37 +966,38 @@ inl format_exception (ex : exn) : string =
 inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl is_start, start, end =
         inl len () : int =
-            if real typecase t with int => true | _ => false
-            then s |> length
-            else s |> length'
+            real
+                typecase t with 
+                | int => length `t s
+                | _ => length' `t s
         match start, end with
         | Start start, End fn => true, start, len >> to |> fn
         | End start_fn, End end_fn => false, start_fn (len >> to), end_fn (len >> to)
-    inl end' =
+    inl start' = start |> try_convert |> optionm.value : int
+    inl end' = end |> try_convert |> optionm.value : int
+    inl start_is_var = start |> var_is
+    inl same_fixed = start = end && (start_is_var |> not) && (end |> var_is |> not)
+    inl start_var_s_fixed = start_is_var && (s |> var_is |> not)
+    [
+        "sm'.range"
+        " / s |> var_is: "; s |> var_is |> obj_to_string
+        " / start |> var_is: "; start_is_var |> obj_to_string
+        " / end |> var_is: "; end |> var_is |> obj_to_string
+        " / same_fixed: "; same_fixed |> obj_to_string
+        " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
+    ]
+    |> concat_list ""
+    |> fun x =>
         backend_switch {
-            Gleam = fun () => 0i32
-            Fsharp = fun () => 1i32
-            Python = fun () => 1i32
-        }
-    backend_switch {
-        Gleam = fun () =>
-            [
-                "sm'.range"
-                " / s: "; s
-                " / is_start: "; is_start |> obj_to_string
-                " / start: "; start |> obj_to_string
-                " / end: "; end |> obj_to_string
-                " / s |> var_is: "; s |> var_is |> obj_to_string
-                " / start |> var_is: "; start |> var_is |> obj_to_string
-                " / end |> var_is: "; end |> var_is |> obj_to_string
-                " / end': "; end' |> obj_to_string
-            ]
-            |> concat_list ""
-            |> fun x =>
+            Gleam = fun () =>
                 global "import gleam/io"
                 $'io.println(!x)' : ()
-    }
-    s |> slice (start |> try_convert |> optionm.value : int) ((end |> try_convert |> optionm.value) - end')
+            Fsharp = fun () =>
+                $'System.Console.WriteLine(!x)' : ()
+            Python = fun () =>
+                $'print(!x)' : ()
+        }
+    s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
 
 /// ### trim_end
 inl trim_end (trim_chars : list char) (input : string) : string =
