@@ -429,10 +429,25 @@ inl update_char (parser_state s) (c : char) : parser_state =
 
 inl update result s =
     inl len = result |> sm'.length
-    let rec 루프 (i : int) s =
-        if i >= len
-        then s
-        else result |> sm'.index i |> update_char s |> 루프 (i + 1)
+    let rec 루프 (j : int) (parser_state st) =
+        if j >= len
+        then st |> parser_state
+        else
+            inl k =
+                match result |> sm'.index_of_char_from j '\n' with
+                | -1 => -1
+                | kk when kk >= j => kk
+                | kk => j + kk
+            if k = -1 then
+                { st with position = { line = st.position.line; col = st.position.col + (len - j) } }
+                |> parser_state
+            else
+                inl st' =
+                    if k > j
+                    then { st with position = { line = st.position.line; col = st.position.col + (k - j) } }
+                    else st
+                    |> parser_state
+                '\n' |> update_char st' |> 루프 (k + 1)
     s |> 루프 0
 
 #!markdown
@@ -1071,7 +1086,7 @@ inl many_strings (p : parser _) : parser string = fun input, i0, (parser_state s
     | Error _ => Ok ("", i0, s0)
     | Ok (r0, i1, s1) when i1 = i0 => "parsing.many_strings / first inner parser consumed no input" |> Error
     | Ok (r0, i1, s1) =>
-        inl fuel_max = st.input_len - i0 + 2
+        inl fuel_max = st.input_len - i1 + 2
         let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) string =
             if fuel <= 0
             then "parsing.many_strings / out of fuel (probable zero-length loop)" |> Error
@@ -1143,7 +1158,13 @@ inl between p_open p_close p_content : parser _ = fun input, i0, s0 =>
         | Error _ =>
             match p_close (input, i1, s1) with
             | Ok (_, i3, s3) => Ok ("", i3, s3)
-            | Error e => "parsing.between / expected content or closing delimiter" |> Error
+            | Error _ =>
+                inl total_len = input |> sm'.length
+                inl end1 = (i1 + get_max_context ()) |> min total_len
+                inl rest1 = input |> slice i1 end1
+                "parsing.between / expected content or closing delimiter / "
+                ++# ({ rest1 } |> sm'.format)
+                |> Error
     | Error e => e |> Error
 
 #!spiral
@@ -1187,12 +1208,7 @@ inl between p_open p_close p_content : parser _ = fun input, i0, s0 =>
 #!spiral
 
 inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
-    let rec skip_seps (i : int) (s : parser_state) =
-        match sep (input, i, s) with
-        | Ok (_, j, s') when j > i => s' |> skip_seps j
-        | _ => i, s
-    inl i0', s0' = s0 |> skip_seps i0
-    match p (input, i0', s0') with
+    match p (input, i0, s0) with
     | Error _ => Ok ([], i0, s0)
     | Ok (first, i1, s1) =>
         let rec 루프 (acc : list b) (i : int) s : result (list b * int * parser_state) string =
@@ -1214,7 +1230,7 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
 #!spiral
 
 inl is_space c =
-    c = ' ' || c = '\t'
+    c = ' ' || c = '\t' || c = '\r'
 
 #!markdown
 
@@ -1248,11 +1264,9 @@ inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
     if i >= st.input_len
     then "parsing.p_digit / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else
-        inl c = input |> sm'.index i
-        inl cn = c |> try_convert |> optionm'.default_value -1
-        if cn >= i32 '0' && cn <= i32 '9'
-        then Ok (c, i + 1, c |> update_char s)
-        else "parsing.p_digit / unexpected char / " ++# ({ c } |> sm'.format) |> Error
+        match input |> sm'.index i with
+        | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c => Ok (c, i + 1, c |> update_char s)
+        | c => "parsing.p_digit / unexpected char / " ++# ({ c } |> sm'.format) |> Error
 
 #!spiral
 
