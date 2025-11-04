@@ -336,6 +336,7 @@ nominal parser_state =
     {
         line_start : int
         position : position
+        input_len : int
     }
 
 #!markdown
@@ -344,8 +345,8 @@ nominal parser_state =
 
 #!spiral
 
-inl new_parser_state (line_start : i32) (line : i32) (col : i32) =
-    { line_start position = { line col } }
+inl new_parser_state (line_start : i32) (line : i32) (col : i32) (input_len : i32) =
+    { line_start position = { line col }; input_len }
 
 #!markdown
 
@@ -353,8 +354,8 @@ inl new_parser_state (line_start : i32) (line : i32) (col : i32) =
 
 #!spiral
 
-inl new_parser_state' () =
-    new_parser_state 0 1 1 |> parser_state
+inl new_parser_state' input_len =
+    new_parser_state 0 1 1 input_len |> parser_state
 
 #!markdown
 
@@ -410,13 +411,12 @@ inl inc (parser_state s) = function
 inl update_char (parser_state s) (c : char) : parser_state =
     match c with
     | '\n' =>
-        {
+        { s with
             line_start = s.line_start + s.position.col
             position = { line = s.position.line + 1; col = 1 }
         }
     | _ =>
-        {
-            line_start = s.line_start
+        { s with
             position = { line = s.position.line; col = s.position.col + 1 }
         }
     |> parser_state
@@ -428,8 +428,9 @@ inl update_char (parser_state s) (c : char) : parser_state =
 #!spiral
 
 inl update result s =
+    inl len = result |> sm'.length
     let rec 루프 (i : int) s =
-        if i >= (result |> sm'.length)
+        if i >= len
         then s
         else result |> sm'.index i |> update_char s |> 루프 (i + 1)
     s |> 루프 0
@@ -442,9 +443,9 @@ inl update result s =
 
 inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : parser_state =
     inl endi = i0 + len
-    let rec 루프 (j : int) (st : parser_state) : parser_state =
+    let rec 루프 (j : int) (parser_state st) : parser_state =
         if j >= endi
-        then st
+        then st |> parser_state
         else
             inl k =
                 match input |> sm'.index_of_char_from j '\n' with
@@ -452,8 +453,7 @@ inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : par
                 | k when k >= j => k
                 | k => j + k
             if k = -1 || k >= endi then
-                {
-                    line_start = st.line_start
+                { st with
                     position = { line = st.position.line; col = st.position.col + (endi - j) }
                 } |> parser_state
             else
@@ -461,10 +461,10 @@ inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : par
                     if k <= j
                     then st
                     else
-                        {
-                            line_start = st.line_start
+                        { st with
                             position = { line = st.position.line; col = st.position.col + (k - j) }
-                        } |> parser_state
+                        }
+                    |> parser_state
                 '\n' |> update_char st' |> 루프 (k + 1)
     s |> 루프 i0
 
@@ -477,7 +477,7 @@ inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : par
 inl run_parser parser input =
     input
     |> parse parser
-    |> fun parser => parser (new_parser_state' ())
+    |> fun parser => parser (new_parser_state' (input |> sm'.length))
 
 #!markdown
 
@@ -485,8 +485,8 @@ inl run_parser parser input =
 
 #!spiral
 
-inl any_char () : parser char = fun input, i, s =>
-    if i >= (input |> sm'.length)
+inl any_char () : parser char = fun input, i, (parser_state st as s) =>
+    if i >= st.input_len
     then "parsing.any_char / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else
         inl c = input |> sm'.index i
@@ -504,7 +504,7 @@ inl any_char () : parser char = fun input, i, s =>
 |> run_parser (any_char ())
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('a', "bc", new_parser_state 0 1 2)
+|> _assert_eq $$('a', "bc", new_parser_state 0 1 2 3)
 
 #!spiral
 
@@ -532,8 +532,9 @@ inl get_max_context () =
 #!spiral
 
 inl span_from pred str i0 =
+    inl len = str |> sm'.length
     let rec 루프 (i : int) =
-        if i >= (str |> sm'.length)
+        if i >= len
         then i
         elif str |> sm'.index i |> pred
         then 루프 (i + 1)
@@ -547,13 +548,13 @@ inl span_from pred str i0 =
 #!spiral
 
 inl p_char (c : char) : parser char =
-    fun input, i, (parser_state ({ line_start position = { line col } } as s) as s') =>
-        if i >= (input |> sm'.length)
-        then "parsing.p_char / unexpected end of input / " ++# ({ c s } |> sm'.format) |> Error
+    fun input, i, (parser_state ({ line_start position = { line col } } as st) as s) =>
+        if i >= st.input_len
+        then "parsing.p_char / unexpected end of input / " ++# ({ c st } |> sm'.format) |> Error
         else
             inl got = input |> sm'.index i
             if got = c
-            then Ok (got, i + 1, got |> update_char s')
+            then Ok (got, i + 1, got |> update_char s)
             else
                 inl line_end = i |> span_from ((<>) '\n') input
                 inl end = (i + get_max_context ()) |> min line_end
@@ -577,7 +578,7 @@ inl p_char (c : char) : parser char =
 |> run_parser (p_char 'a')
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('a', "bc", new_parser_state 0 1 2)
+|> _assert_eq $$('a', "bc", new_parser_state 0 1 2 3)
 
 #!spiral
 
@@ -595,8 +596,8 @@ inl p_char (c : char) : parser char =
 
 #!spiral
 
-inl any_string length : parser string = fun input, i, s =>
-    if (input |> sm'.length) - i < length
+inl any_string length : parser string = fun input, i, (parser_state st as s) =>
+    if st.input_len - i < length
     then "parsing.any_string / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else Ok (input |> slice i (i + length), i + length, s |> update_span input i length)
 
@@ -612,7 +613,7 @@ inl any_string length : parser string = fun input, i, s =>
 |> run_parser (any_string 3)
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$("abc", "def", new_parser_state 0 1 4)
+|> _assert_eq $$("abc", "def", new_parser_state 0 1 4 6)
 
 #!spiral
 
@@ -630,8 +631,8 @@ inl any_string length : parser string = fun input, i, s =>
 
 #!spiral
 
-inl skip_any_string length : parser () = fun input, i, s =>
-    if (input |> sm'.length) - i < length
+inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
+    if st.input_len - i < length
     then "parsing.skip_any_string / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else
         Ok ((), i + length, s |> update_span input i length)
@@ -648,7 +649,7 @@ inl skip_any_string length : parser () = fun input, i, s =>
 |> run_parser (skip_any_string 3)
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$((), "def", new_parser_state 0 1 4)
+|> _assert_eq $$((), "def", new_parser_state 0 1 4 6)
 
 #!markdown
 
@@ -723,7 +724,7 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 |> run_parser (p_char 'a' >>. p_char 'b')
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('b', "c", new_parser_state 0 1 3)
+|> _assert_eq $$('b', "c", new_parser_state 0 1 3 3)
 
 #!spiral
 
@@ -752,10 +753,10 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 
 #!spiral
 
-inl none_of (chars : list char) : parser char = fun input, i, s =>
+inl none_of (chars : list char) : parser char = fun input, i, (parser_state st as s) =>
     inl chars' () =
         chars |> listm'.box |> listm'.to_array' |> sm'.format
-    if i >= (input |> sm'.length)
+    if i >= st.input_len
     then "parsing.none_of / unexpected end of input / " ++# ({ chars' = chars' (); s } |> sm'.format) |> Error
     else
         inl ch = input |> sm'.index i
@@ -780,20 +781,20 @@ inl none_of (chars : list char) : parser char = fun input, i, s =>
     backend_switch {
         Gleam = fun () =>
             "parsing.none_of / unexpected char / "
-            ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1) }"
+            ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
         Fsharp = fun () =>
             run_target function
             | TypeScript _ => fun () =>
                 join
                     "parsing.none_of / unexpected char / "
-                    ++# "{ first_char = a; chars' = a,b,c; s = 0,1,1 }"
+                    ++# "{ first_char = a; chars' = a,b,c; s = 0,1,1,3 }"
             | _ => fun () =>
                 join
                     "parsing.none_of / unexpected char / "
-                    ++# "{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1) }"
+                    ++# "{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }"
         Python = fun () =>
             "parsing.none_of / unexpected char / "
-            ++# "{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1) }"
+            ++# "{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }"
     }
     |> Error
 )
@@ -802,7 +803,7 @@ inl none_of (chars : list char) : parser char = fun input, i, s =>
 |> run_parser (none_of ['a'; 'b'; 'c'])
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('d', "ef", new_parser_state 0 1 2)
+|> _assert_eq $$('d', "ef", new_parser_state 0 1 2 3)
 
 #!spiral
 
@@ -844,7 +845,7 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, i, s =
 |> run_parser (p_char 'a' <|> p_char 'b')
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('a', "bc", new_parser_state 0 1 2)
+|> _assert_eq $$('a', "bc", new_parser_state 0 1 2 3)
 
 "cba"
 |> run_parser (p_char 'a' <|> p_char 'b')
@@ -872,7 +873,7 @@ inl (|>>) p f : parser _ =
 |> run_parser (p_char 'a' |>> sm'.char_to_upper)
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('A', "bc", new_parser_state 0 1 2)
+|> _assert_eq $$('A', "bc", new_parser_state 0 1 2 3)
 
 #!markdown
 
@@ -880,19 +881,23 @@ inl (|>>) p f : parser _ =
 
 #!spiral
 
-inl many forall b c. (p : _ * _ * _ -> _ (b * _ * _) c) : parser (list _) = fun input, i0, s0 =>
-    let rec 루프 (acc : list b) (i : int) (fuel : int) (s : parser_state)
-        : result (list b * int * parser_state) string
-        =
-        if fuel <= 0
-        then "parsing.many / out of fuel (probable zero-length loop)" |> Error
-        else
-            match p (input, i, s) with
-            | Ok (x, i', s') when i' = i =>
-                "parsing.many / inner parser succeeded without consuming input" |> Error
-            | Ok (x, i', s') => s' |> 루프 (x :: acc) i' (fuel - 1)
-            | Error _ => Ok (acc |> listm.rev, i, s)
-    s0 |> 루프 [] i0 ((input |> sm'.length) - i0 + 2)
+inl many forall b c.
+    (p : _ * _ * _ -> _ (b * _ * _) c)
+    : parser (list _)
+    =
+    fun input, i0, (parser_state st as s0) =>
+        let rec 루프 (acc : list b) (i : int) (fuel : int) (s : parser_state)
+            : result (list b * int * parser_state) string
+            =
+            if fuel <= 0
+            then "parsing.many / out of fuel (probable zero-length loop)" |> Error
+            else
+                match p (input, i, s) with
+                | Ok (x, i', s') when i' = i =>
+                    "parsing.many / inner parser succeeded without consuming input" |> Error
+                | Ok (x, i', s') => s' |> 루프 (x :: acc) i' (fuel - 1)
+                | Error _ => Ok (acc |> listm.rev, i, s)
+        s0 |> 루프 [] i0 (st.input_len - i0 + 2)
 
 #!spiral
 
@@ -906,7 +911,7 @@ inl many forall b c. (p : _ * _ * _ -> _ (b * _ * _) c) : parser (list _) = fun 
 |> run_parser (many (p_char 'a' <|> p_char 'b'))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$(['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6)
+|> _assert_eq $$(['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6 6)
 
 #!markdown
 
@@ -939,7 +944,7 @@ inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
 |> run_parser (many1_chars (p_char 'a' <|> p_char 'b'))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$("aaabb", "c", new_parser_state 0 1 6)
+|> _assert_eq $$("aaabb", "c", new_parser_state 0 1 6 6)
 
 #!markdown
 
@@ -977,11 +982,11 @@ inl many_chars_till (p : parser char) (end_p : parser _) : parser string = fun i
 
 #!spiral
 
-inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
+inl many1 (p : parser _) : parser (list _) = fun input, i0, (parser_state st as s0) =>
     match p (input, i0, s0) with
     | Error e => e |> Error
     | Ok (first, i1, s1) =>
-        inl fuel_max = (input |> sm'.length) - i1 + 2
+        inl fuel_max = st.input_len - i1 + 2
         let rec 루프 acc (i : int) (fuel : int) s : result (list _ * int * parser_state) string =
             if fuel <= 0
             then "parsing.many1 / out of fuel (probable zero-length loop)" |> Error
@@ -1006,13 +1011,13 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6)
+|> _assert_eq $$([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6)
 
 "bcc"
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$([ 'b' ], "cc", new_parser_state 0 1 2)
+|> _assert_eq $$([ 'b' ], "cc", new_parser_state 0 1 2 3)
 
 "cba"
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
@@ -1024,11 +1029,11 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
 
 #!spiral
 
-inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
+inl many1_strings (p : parser _) : parser string = fun input, i0, (parser_state st as s0) =>
     match p (input, i0, s0) with
     | Error e => e |> Error
     | Ok (r0, i1, s1) =>
-        inl fuel_max = (input |> sm'.length) - i1 + 2
+        inl fuel_max = st.input_len - i1 + 2
         let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) string =
             if fuel <= 0
             then "parsing.many1_strings / out of fuel (probable zero-length loop)" |> Error
@@ -1053,7 +1058,7 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
 |> run_parser (many1_strings (p_char 'a' <|> p_char 'b'))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$("aaabb", "c", new_parser_state 0 1 6)
+|> _assert_eq $$("aaabb", "c", new_parser_state 0 1 6 6)
 
 #!markdown
 
@@ -1061,12 +1066,12 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
 
 #!spiral
 
-inl many_strings (p : parser _) : parser string = fun input, i0, s0 =>
+inl many_strings (p : parser _) : parser string = fun input, i0, (parser_state st as s0) =>
     match p (input, i0, s0) with
     | Error _ => Ok ("", i0, s0)
     | Ok (r0, i1, s1) when i1 = i0 => "parsing.many_strings / first inner parser consumed no input" |> Error
     | Ok (r0, i1, s1) =>
-        inl fuel_max = (input |> sm'.length) - i0 + 2
+        inl fuel_max = st.input_len - i0 + 2
         let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) string =
             if fuel <= 0
             then "parsing.many_strings / out of fuel (probable zero-length loop)" |> Error
@@ -1105,13 +1110,13 @@ inl choice forall t. parsers : parser t = fun input, i, s =>
 |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('b', "ca", new_parser_state 0 1 2)
+|> _assert_eq $$('b', "ca", new_parser_state 0 1 2 3)
 
 "cba"
 |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$('c', "ba", new_parser_state 0 1 2)
+|> _assert_eq $$('c', "ba", new_parser_state 0 1 2 3)
 
 #!markdown
 
@@ -1162,7 +1167,7 @@ inl between p_open p_close p_content : parser _ = fun input, i0, s0 =>
 |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$("aaabb", "", new_parser_state 0 1 8)
+|> _assert_eq $$("aaabb", "", new_parser_state 0 1 8 7)
 
 "[aaabb"
 |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
@@ -1171,7 +1176,7 @@ inl between p_open p_close p_content : parser _ = fun input, i0, s0 =>
 |> _assert_eq (
     "parsing.between / expected closing delimiter / "
     ++# "{ e = parsing.p_char / unexpected end of input / { c = ]; "
-    ++# "s = " ++# ((new_parser_state 0 1 7) |> sm'.format) ++# " }; "
+    ++# "st = " ++# ((new_parser_state 0 1 7 6) |> sm'.format) ++# " }; "
     ++# "input = [aaabb; rest1 = aaabb; rest2 =  }"
 )
 
@@ -1239,8 +1244,8 @@ inl spaces () : parser () = fun input, i, s =>
 
 #!spiral
 
-inl p_digit () : parser char = fun input, i, s =>
-    if i >= (input |> sm'.length)
+inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
+    if i >= st.input_len
     then "parsing.p_digit / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
     else
         inl c = input |> sm'.index i
@@ -1261,7 +1266,7 @@ inl p_digit () : parser char = fun input, i, s =>
 |> run_parser (sep_by (p_digit ()) (spaces1 ()))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$([ '1'; '2'; '3' ], "", new_parser_state 0 1 6)
+|> _assert_eq $$([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5)
 
 #!spiral
 
@@ -1275,7 +1280,7 @@ inl p_digit () : parser char = fun input, i, s =>
 |> run_parser (sep_by (p_digit ()) (spaces1 ()))
 |> resultm.get
 |> sm'.format_debug
-|> _assert_eq $$([ '1' ], " a 2", new_parser_state 0 1 2)
+|> _assert_eq $$([ '1' ], " a 2", new_parser_state 0 1 2 5)
 
 #!markdown
 
@@ -1294,10 +1299,10 @@ inl opt p : parser (option _) = fun input, i, s =>
 
 #!spiral
 
-inl rest_of_line () : parser string = fun input, i0, s =>
+inl rest_of_line () : parser string = fun input, i0, (parser_state st as s) =>
     inl j =
         match input |> sm'.index_of_char_from i0 '\n' with
-        | -1 => input |> sm'.length
+        | -1 => st.input_len
         | k => if k >= i0 then k else i0 + k
     Ok (input |> slice i0 j, j, s |> update_span input i0 (j - i0))
 
@@ -1307,10 +1312,10 @@ inl rest_of_line () : parser string = fun input, i0, s =>
 
 #!spiral
 
-inl eof () : parser () = fun input, i, s =>
-    if (input |> sm'.length) = i
+inl eof () : parser () = fun input, i, (parser_state st as s) =>
+    if st.input_len = i
     then Ok ((), i, s)
     else
         "parsing.eof / expected end of input / "
-        ++# ({ rest = input |> slice i (input |> sm'.length) } |> sm'.format)
+        ++# ({ rest = input |> slice i st.input_len } |> sm'.format)
         |> Error
