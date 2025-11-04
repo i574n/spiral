@@ -218,6 +218,7 @@ inl position_ft dt : position_ft =
 #!spiral
 
 //// test
+//// test_force
 
 inl pedal_coast (t : time) : force =
     inl t_cycle = 20
@@ -226,6 +227,10 @@ inl pedal_coast (t : time) : force =
     if remainder > 0 && remainder < 10
     then 10
     else 0
+
+#!spiral
+
+//// test
 
 inl x = am'.init_series -5f64 45 0.1
 inl y = x |> am'.map_base pedal_coast

@@ -887,7 +887,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v58: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v336: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v298: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -1050,7 +1050,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v58: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v336: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v298: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -1223,7 +1223,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v60: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v338: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v300: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -1378,7 +1378,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v59: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v337: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v299: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -1494,7 +1494,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v57: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v277: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v239: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -1628,7 +1628,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v60: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v338: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v300: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -1805,7 +1805,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v62: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v340: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v302: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -1901,7 +1901,7 @@ mod module_e3e534c3 {
             let v13: f64 = ((v6 as f64) / 10000000000000000.0_f64) * 6.68_f64;
             let v15: near_workspaces::types::NearToken = v0_1.tokens_burnt;
             let v17: u128 = v15.as_yoctonear();
-            let v373: () = {
+            let v335: () = {
                 Spiral_wasm::closure20(
                     v2,
                     v6,
@@ -1991,7 +1991,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v58: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v336: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v298: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -2153,7 +2153,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v59: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v337: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v299: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -2316,7 +2316,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v59: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v337: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v299: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -2470,7 +2470,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v58: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v336: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v298: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -2623,7 +2623,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v58: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v336: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v298: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -2768,16 +2768,16 @@ mod module_e3e534c3 {
                     let v17: Result<near_workspaces::Contract, near_workspaces::error::Error> =
                         v15.await;
                     let v19: near_workspaces::Contract = v17?;
-                    let v371: () = {
+                    let v333: () = {
                         Spiral_wasm::closure13(v1, v11, v19.clone(), ());
                         ()
                     };
-                    let v726: near_workspaces::operations::CallTransaction =
+                    let v650: near_workspaces::operations::CallTransaction =
                         v19.call(&*string("state_main"));
-                    let v728: near_workspaces::types::Gas =
+                    let v652: near_workspaces::types::Gas =
                         near_workspaces::types::Gas::from_tgas(300);
-                    let v730: near_workspaces::operations::CallTransaction = v726.gas(v728);
-                    let v732: std::pin::Pin<
+                    let v654: near_workspaces::operations::CallTransaction = v650.gas(v652);
+                    let v656: std::pin::Pin<
                         Box<
                             dyn std::future::Future<
                                     Output = Result<
@@ -2786,123 +2786,123 @@ mod module_e3e534c3 {
                                     >,
                                 >,
                         >,
-                    > = Box::pin(v730.transact());
-                    let v734: Result<
+                    > = Box::pin(v654.transact());
+                    let v658: Result<
                         near_workspaces::result::ExecutionFinalResult,
                         near_workspaces::error::Error,
-                    > = v732.await;
-                    let v736: near_workspaces::result::ExecutionFinalResult = v734?;
-                    let v1088: () = {
-                        Spiral_wasm::closure14(v1, v736.clone(), ());
+                    > = v656.await;
+                    let v660: near_workspaces::result::ExecutionFinalResult = v658?;
+                    let v974: () = {
+                        Spiral_wasm::closure14(v1, v660.clone(), ());
                         ()
                     };
-                    let v1442: Vec<&str> = v736.logs();
-                    let v1444: bool = true;
-                    let _vec_map: Vec<_> = v1442
+                    let v1290: Vec<&str> = v660.logs();
+                    let v1292: bool = true;
+                    let _vec_map: Vec<_> = v1290
                         .into_iter()
                         .map(|x| {
                             //;
-                            let v1446: &str = x;
-                            let v1453: std::string::String = String::from(v1446);
-                            let v1484: bool = true;
-                            v1453
+                            let v1294: &str = x;
+                            let v1301: std::string::String = String::from(v1294);
+                            let v1332: bool = true;
+                            v1301
                         })
                         .collect::<Vec<_>>();
-                    let v1486: Vec<std::string::String> = _vec_map;
-                    let v1489: bool = true;
-                    v1486.iter().for_each(|x| {
+                    let v1334: Vec<std::string::String> = _vec_map;
+                    let v1337: bool = true;
+                    v1334.iter().for_each(|x| {
                         Func1::new(move |v: std::string::String| Spiral_wasm::closure15((), v))(
                             x.clone(),
                         );
                     }); //;
-                    let v1784: () = {
+                    let v1594: () = {
                         Spiral_wasm::closure17((), ());
                         ()
                     };
-                    let v2080: near_workspaces::types::Gas = v736.clone().total_gas_burnt;
-                    let v2082: u64 = v2080.as_gas();
-                    let v2441: () = {
+                    let v1852: near_workspaces::types::Gas = v660.clone().total_gas_burnt;
+                    let v1854: u64 = v1852.as_gas();
+                    let v2175: () = {
                         Spiral_wasm::closure18(
                             v1,
-                            v2082,
-                            ((v2082 as f64) / 10000000000000000.0_f64) * 6.68_f64,
+                            v1854,
+                            ((v1854 as f64) / 10000000000000000.0_f64) * 6.68_f64,
                             (),
                         );
                         ()
                     };
-                    let v2795: near_workspaces::result::ExecutionFinalResult = v736.clone();
-                    let v2797: Vec<&near_workspaces::result::ExecutionOutcome> = v2795.outcomes();
-                    let v2799 = v2797.into_iter();
-                    let v2801 = v2799.cloned();
-                    let v2804: bool = true;
-                    v2801.for_each(|x| {
+                    let v2491: near_workspaces::result::ExecutionFinalResult = v660.clone();
+                    let v2493: Vec<&near_workspaces::result::ExecutionOutcome> = v2491.outcomes();
+                    let v2495 = v2493.into_iter();
+                    let v2497 = v2495.cloned();
+                    let v2500: bool = true;
+                    v2497.for_each(|x| {
                         Func1::new(move |v_1: near_workspaces::result::ExecutionOutcome| {
                             Spiral_wasm::closure19((), v_1)
                         })(x)
                     });
-                    let v3158: () = {
-                        Spiral_wasm::closure21(v736.clone().into_result(), ());
+                    let v2816: () = {
+                        Spiral_wasm::closure21(v660.clone().into_result(), ());
                         ()
                     };
-                    let v3511: near_workspaces::result::ExecutionFinalResult =
-                        Spiral_wasm::method39(v736.clone());
-                    let v3513: Vec<&near_workspaces::result::ExecutionOutcome> =
-                        v3511.receipt_failures();
-                    let v3559: i32 = v3513.clone().len() as i32;
-                    let v3918: () = {
-                        Spiral_wasm::closure22(v3513.clone(), v3559, ());
+                    let v3131: near_workspaces::result::ExecutionFinalResult =
+                        Spiral_wasm::method39(v660.clone());
+                    let v3133: Vec<&near_workspaces::result::ExecutionOutcome> =
+                        v3131.receipt_failures();
+                    let v3141: i32 = v3133.clone().len() as i32;
+                    let v3462: () = {
+                        Spiral_wasm::closure22(v3133.clone(), v3141, ());
                         ()
                     };
-                    let v4271: near_workspaces::result::ExecutionFinalResult =
-                        Spiral_wasm::method42(v736.clone());
-                    let v4273: &[near_workspaces::result::ExecutionOutcome] =
-                        v4271.receipt_outcomes();
-                    let v4275: Vec<near_workspaces::result::ExecutionOutcome> = v4273.into();
-                    let v4321: i32 = v4275.clone().len() as i32;
-                    let v4680: () = {
-                        Spiral_wasm::closure23(v4275, v4321, ());
+                    let v3777: near_workspaces::result::ExecutionFinalResult =
+                        Spiral_wasm::method42(v660.clone());
+                    let v3779: &[near_workspaces::result::ExecutionOutcome] =
+                        v3777.receipt_outcomes();
+                    let v3781: Vec<near_workspaces::result::ExecutionOutcome> = v3779.into();
+                    let v3789: i32 = v3781.clone().len() as i32;
+                    let v4110: () = {
+                        Spiral_wasm::closure23(v3781, v3789, ());
                         ()
                     };
-                    let v5386: () = {
-                        Spiral_wasm::closure24(v736.clone().json(), ());
+                    let v4740: () = {
+                        Spiral_wasm::closure24(v660.clone().json(), ());
                         ()
                     };
-                    let v6092: () = {
-                        Spiral_wasm::closure25(v736.borsh(), ());
+                    let v5370: () = {
+                        Spiral_wasm::closure25(v660.borsh(), ());
                         ()
                     };
-                    let v6445: string = Spiral_wasm::method49(v4321, v1, v3513);
-                    let v6480: Result<Spiral_wasm::US7, anyhow::Error> = if (v3559) > 0_i32 {
+                    let v5685: string = Spiral_wasm::method49(v3789, v1, v3133);
+                    let v5720: Result<Spiral_wasm::US7, anyhow::Error> = if (v3141) > 0_i32 {
                         Ok::<Spiral_wasm::US7, anyhow::Error>(Spiral_wasm::US7::US7_0(
-                            v6445.clone(),
+                            v5685.clone(),
                         ))
                     } else {
-                        if (v4321) > 1_i32 {
+                        if (v3789) > 1_i32 {
                             Ok::<Spiral_wasm::US7, anyhow::Error>(Spiral_wasm::US7::US7_1)
                         } else {
-                            let v6463: anyhow::Error = anyhow::anyhow!(v6445);
-                            Err(v6463)
+                            let v5703: anyhow::Error = anyhow::anyhow!(v5685);
+                            Err(v5703)
                         }
                     };
-                    let v6483: string = string("}");
-                    let v6488: bool = true;
-                    let _fix_closure_v6485 = v6480;
-                    let v6494: string = append(
+                    let v5723: string = string("}");
+                    let v5728: bool = true;
+                    let _fix_closure_v5725 = v5720;
+                    let v5734: string = append(
                         (append(
                             (append(
-                                (append(string("true; _fix_closure_v6485 "), (v6483))),
+                                (append(string("true; _fix_closure_v5725 "), (v5723))),
                                 string("); "),
                             )),
                             string(""),
                         )),
                         string(" // rust.fix_closure\'"),
                     );
-                    let v6495: bool = true;
-                    _fix_closure_v6485
+                    let v5735: bool = true;
+                    _fix_closure_v5725
                 },
             ); // rust.fix_closure';
-            let v6497 = __future_init;
-            v6497
+            let v5737 = __future_init;
+            v5737
         }
         pub fn closure26(unitVar: (), v0_1: anyhow::Error) -> std::string::String {
             format!("{}", v0_1)
@@ -3001,7 +3001,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v59: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v337: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v299: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -3107,7 +3107,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v57: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v275: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v237: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -3180,7 +3180,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v59: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v337: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v299: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -3286,7 +3286,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v57: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v275: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v237: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -3415,7 +3415,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v59: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v337: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v299: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -3530,7 +3530,7 @@ mod module_e3e534c3 {
                         Err(v24_1_0) => v28(v24_1_0.clone()),
                         Ok(v24_0_0) => v27(v24_0_0.clone()),
                     };
-                    let v3417: Spiral_wasm::US9 = match &v30 {
+                    let v3037: Spiral_wasm::US9 = match &v30 {
                         Spiral_wasm::US10::US10_0(v30_0_0) => {
                             let v33: Spiral_wasm::US7 = v30_0_0.clone();
                             match &v33 {
@@ -3540,28 +3540,28 @@ mod module_e3e534c3 {
                                         _ => unreachable!(),
                                     }
                                     .clone();
-                                    let v416: () = {
+                                    let v378: () = {
                                         Spiral_wasm::closure33(v1, v64.clone(), ());
                                         ()
                                     };
-                                    let v770: bool = true;
+                                    let v694: bool = true;
                                     let __future_init = Box::pin(
                                         /*;
-                                        let v772: bool = */
+                                        let v696: bool = */
                                         async move {
                                             /*;
-                                            let v774: bool = */
+                                            let v698: bool = */
                                             ();
-                                            let v777: string = string("}");
-                                            let v783: bool = true;
-                                            let _fix_closure_v780 =
+                                            let v701: string = string("}");
+                                            let v707: bool = true;
+                                            let _fix_closure_v704 =
                                                 (v1, Spiral_wasm::US7::US7_0(v64));
-                                            let v789: string = append(
+                                            let v713: string = append(
                                                 (append(
                                                     (append(
                                                         (append(
-                                                            string("true; _fix_closure_v780 "),
-                                                            (v777),
+                                                            string("true; _fix_closure_v704 "),
+                                                            (v701),
                                                         )),
                                                         string("); "),
                                                     )),
@@ -3569,17 +3569,17 @@ mod module_e3e534c3 {
                                                 )),
                                                 string(" // rust.fix_closure\'"),
                                             );
-                                            let v790: bool = true;
-                                            _fix_closure_v780
+                                            let v714: bool = true;
+                                            _fix_closure_v704
                                         },
                                     ); // rust.fix_closure';
-                                    let v792 = __future_init;
-                                    let v794: std::pin::Pin<
+                                    let v716 = __future_init;
+                                    let v718: std::pin::Pin<
                                         Box<
                                             dyn std::future::Future<Output = (u8, Spiral_wasm::US7)>,
                                         >,
-                                    > = v792;
-                                    let patternInput_2: (u8, Spiral_wasm::US7) = v794.await;
+                                    > = v716;
+                                    let patternInput_2: (u8, Spiral_wasm::US7) = v718.await;
                                     Spiral_wasm::US9::US9_1(
                                         patternInput_2.0.clone(),
                                         patternInput_2.1.clone(),
@@ -3629,33 +3629,33 @@ mod module_e3e534c3 {
                             }
                         }
                         Spiral_wasm::US10::US10_1(v30_1_0) => {
-                            let v801: std::string::String = v30_1_0.clone();
+                            let v725: std::string::String = v30_1_0.clone();
                             if (v1) >= 15_u8 {
-                                let v1154: () = {
-                                    Spiral_wasm::closure29(v1, v801.clone(), ());
+                                let v1040: () = {
+                                    Spiral_wasm::closure29(v1, v725.clone(), ());
                                     ()
                                 };
-                                let v1799: () = {
+                                let v1609: () = {
                                     Spiral_wasm::closure30((), ());
                                     ()
                                 };
-                                let v2093: bool = true;
+                                let v1865: bool = true;
                                 let __future_init = Box::pin(
                                     /*;
-                                    let v2095: bool = */
+                                    let v1867: bool = */
                                     async move {
                                         /*;
-                                        let v2097: bool = */
+                                        let v1869: bool = */
                                         ();
-                                        let v2100: string = string("}");
-                                        let v2106: bool = true;
-                                        let _fix_closure_v2103 = (v1, Spiral_wasm::US7::US7_1);
-                                        let v2112: string = append(
+                                        let v1872: string = string("}");
+                                        let v1878: bool = true;
+                                        let _fix_closure_v1875 = (v1, Spiral_wasm::US7::US7_1);
+                                        let v1884: string = append(
                                             (append(
                                                 (append(
                                                     (append(
-                                                        string("true; _fix_closure_v2103 "),
-                                                        (v2100),
+                                                        string("true; _fix_closure_v1875 "),
+                                                        (v1872),
                                                     )),
                                                     string("); "),
                                                 )),
@@ -3663,54 +3663,54 @@ mod module_e3e534c3 {
                                             )),
                                             string(" // rust.fix_closure\'"),
                                         );
-                                        let v2113: bool = true;
-                                        _fix_closure_v2103
+                                        let v1885: bool = true;
+                                        _fix_closure_v1875
                                     },
                                 ); // rust.fix_closure';
-                                let v2115 = __future_init;
-                                let v2117: std::pin::Pin<
+                                let v1887 = __future_init;
+                                let v1889: std::pin::Pin<
                                     Box<dyn std::future::Future<Output = (u8, Spiral_wasm::US7)>>,
-                                > = v2115;
-                                let patternInput: (u8, Spiral_wasm::US7) = v2117.await;
+                                > = v1887;
+                                let patternInput: (u8, Spiral_wasm::US7) = v1889.await;
                                 Spiral_wasm::US9::US9_0(
                                     patternInput.0.clone(),
                                     patternInput.1.clone(),
                                 )
                             } else {
-                                let v2473: () = {
-                                    Spiral_wasm::closure31(v1, v801, ());
+                                let v2207: () = {
+                                    Spiral_wasm::closure31(v1, v725, ());
                                     ()
                                 };
-                                let v3118: () = {
+                                let v2776: () = {
                                     Spiral_wasm::closure32((), ());
                                     ()
                                 };
-                                let v3412: std::pin::Pin<
+                                let v3032: std::pin::Pin<
                                     Box<dyn std::future::Future<Output = Spiral_wasm::US9>>,
                                 > = Spiral_wasm::method26(v0_1.clone(), (v1) + 1_u8);
-                                v3412.await
+                                v3032.await
                             }
                         }
                     };
-                    let v3420: string = string("}");
-                    let v3425: bool = true;
-                    let _fix_closure_v3422 = v3417;
-                    let v3431: string = append(
+                    let v3040: string = string("}");
+                    let v3045: bool = true;
+                    let _fix_closure_v3042 = v3037;
+                    let v3051: string = append(
                         (append(
                             (append(
-                                (append(string("true; _fix_closure_v3422 "), (v3420))),
+                                (append(string("true; _fix_closure_v3042 "), (v3040))),
                                 string("); "),
                             )),
                             string(""),
                         )),
                         string(" // rust.fix_closure\'"),
                     );
-                    let v3432: bool = true;
-                    _fix_closure_v3422
+                    let v3052: bool = true;
+                    _fix_closure_v3042
                 },
             ); // rust.fix_closure';
-            let v3434 = __future_init;
-            v3434
+            let v3054 = __future_init;
+            v3054
         }
         pub fn method60(v0_1: Spiral_wasm::US9) -> string {
             let v3: LrcPtr<Spiral_wasm::Mut3> = LrcPtr::new(Spiral_wasm::Mut3 {
@@ -3772,7 +3772,7 @@ mod module_e3e534c3 {
                 .clone()
                 .unwrap();
             let v58: Spiral_wasm::US3 = (patternInput.4.clone()).l0.get().clone();
-            let v336: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
+            let v298: Spiral_wasm::US8 = if (if ((patternInput.2.clone()).l0.get().clone()) == false
             {
                 false
             } else {
@@ -3899,49 +3899,49 @@ mod module_e3e534c3 {
                         _ => panic!("{}", string("Option does not have a value."),),
                     };
                     let v79: string = fable_library_rust::String_::fromString(v77);
-                    let v431: () = {
+                    let v393: () = {
                         Spiral_wasm::closure12(v79.clone(), ());
                         ()
                     };
-                    let v785: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v79);
-                    let v789: std::pin::Pin<
+                    let v709: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v79);
+                    let v713: std::pin::Pin<
                         Box<dyn std::future::Future<Output = Spiral_wasm::US9>>,
-                    > = Spiral_wasm::method26(v785?, 1_u8);
-                    let v791: Spiral_wasm::US9 = v789.await;
-                    let v1143: () = {
-                        Spiral_wasm::closure34(v791.clone(), ());
+                    > = Spiral_wasm::method26(v709?, 1_u8);
+                    let v715: Spiral_wasm::US9 = v713.await;
+                    let v1029: () = {
+                        Spiral_wasm::closure34(v715.clone(), ());
                         ()
                     };
-                    let v1523: Result<u8, anyhow::Error> = match &v791 {
-                        Spiral_wasm::US9::US9_0(v791_0_0, v791_0_1) => {
-                            Ok::<u8, anyhow::Error>(v791_0_0.clone())
+                    let v1371: Result<u8, anyhow::Error> = match &v715 {
+                        Spiral_wasm::US9::US9_0(v715_0_0, v715_0_1) => {
+                            Ok::<u8, anyhow::Error>(v715_0_0.clone())
                         }
-                        Spiral_wasm::US9::US9_1(v791_1_0, v791_1_1) => {
-                            let v1504: string =
-                                Spiral_wasm::method61(v791.clone(), v791_1_1.clone());
-                            let v1506: anyhow::Error = anyhow::anyhow!(v1504);
-                            Err(v1506)
+                        Spiral_wasm::US9::US9_1(v715_1_0, v715_1_1) => {
+                            let v1352: string =
+                                Spiral_wasm::method61(v715.clone(), v715_1_1.clone());
+                            let v1354: anyhow::Error = anyhow::anyhow!(v1352);
+                            Err(v1354)
                         }
                     };
-                    let v1526: string = string("}");
-                    let v1531: bool = true;
-                    let _fix_closure_v1528 = v1523;
-                    let v1537: string = append(
+                    let v1374: string = string("}");
+                    let v1379: bool = true;
+                    let _fix_closure_v1376 = v1371;
+                    let v1385: string = append(
                         (append(
                             (append(
-                                (append(string("true; _fix_closure_v1528 "), (v1526))),
+                                (append(string("true; _fix_closure_v1376 "), (v1374))),
                                 string("); "),
                             )),
                             string(""),
                         )),
                         string(" // rust.fix_closure\'"),
                     );
-                    let v1538: bool = true;
-                    _fix_closure_v1528
+                    let v1386: bool = true;
+                    _fix_closure_v1376
                 },
             ); // rust.fix_closure';
-            let v1540 = __future_init;
-            v1540
+            let v1388 = __future_init;
+            v1388
         }
         pub fn closure35(unitVar: (), v0_1: u8) -> Spiral_wasm::US11 {
             Spiral_wasm::US11::US11_0(v0_1)
@@ -4243,71 +4243,71 @@ mod module_e3e534c3 {
                 .get()
                 .clone()
                 .unwrap();
-            let v618: () = {
+            let v580: () = {
                 Spiral_wasm::closure5(v0_1, ());
                 ()
             };
-            let v971: string = Spiral_wasm::method20();
-            let v978: &str = &*v971;
-            let v1009: Option<std::string::String> =
-                clap::ArgMatches::get_one(&v3.clone(), v978).cloned();
-            let v1013: Option<string> = map(Spiral_wasm::method21(), v1009);
-            let v1148: Spiral_wasm::US7 =
-                defaultValue(Spiral_wasm::US7::US7_1, map(Spiral_wasm::method8(), v1013));
-            let v1152: std::pin::Pin<
+            let v895: string = Spiral_wasm::method20();
+            let v902: &str = &*v895;
+            let v933: Option<std::string::String> =
+                clap::ArgMatches::get_one(&v3.clone(), v902).cloned();
+            let v937: Option<string> = map(Spiral_wasm::method21(), v933);
+            let v1072: Spiral_wasm::US7 =
+                defaultValue(Spiral_wasm::US7::US7_1, map(Spiral_wasm::method8(), v937));
+            let v1076: std::pin::Pin<
                 Box<dyn std::future::Future<Output = Result<u8, anyhow::Error>>>,
             > = Spiral_wasm::method22(v3);
-            let v1154 = tokio::runtime::Builder::new_multi_thread()
+            let v1078 = tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
                 .unwrap();
-            let v1156: Result<u8, anyhow::Error> = v1154.handle().block_on(v1152);
-            let v1157 = Spiral_wasm::method50();
-            let v1170: Result<u8, std::string::String> = v1156.map_err(|x| v1157(x));
-            let v1173 = Spiral_wasm::method62();
-            let v1174 = Spiral_wasm::method63();
-            let v1176: Spiral_wasm::US11 = match &v1170 {
-                Err(v1170_1_0) => v1174(v1170_1_0.clone()),
-                Ok(v1170_0_0) => v1173(v1170_0_0.clone()),
+            let v1080: Result<u8, anyhow::Error> = v1078.handle().block_on(v1076);
+            let v1081 = Spiral_wasm::method50();
+            let v1094: Result<u8, std::string::String> = v1080.map_err(|x| v1081(x));
+            let v1097 = Spiral_wasm::method62();
+            let v1098 = Spiral_wasm::method63();
+            let v1100: Spiral_wasm::US11 = match &v1094 {
+                Err(v1094_1_0) => v1098(v1094_1_0.clone()),
+                Ok(v1094_0_0) => v1097(v1094_0_0.clone()),
             };
-            match &v1176 {
-                Spiral_wasm::US11::US11_0(v1176_0_0) => {
-                    if let Spiral_wasm::US7::US7_0(v1148_0_0) = &v1148 {
-                        let v1181: string = sprintf!(
+            match &v1100 {
+                Spiral_wasm::US11::US11_0(v1100_0_0) => {
+                    if let Spiral_wasm::US7::US7_0(v1072_0_0) = &v1072 {
+                        let v1105: string = sprintf!(
                             "spiral_wasm.main / retries: {} / exception: \'{}\'",
-                            v1176_0_0.clone(),
-                            v1148_0_0.clone()
+                            v1100_0_0.clone(),
+                            v1072_0_0.clone()
                         );
-                        let v1185: Result<(), string> = Err(v1181);
-                        v1185.unwrap();
+                        let v1109: Result<(), string> = Err(v1105);
+                        v1109.unwrap();
                         ()
                     }
                 }
-                Spiral_wasm::US11::US11_1(v1176_1_0) => {
-                    let v1201: std::string::String = v1176_1_0.clone();
-                    if let Spiral_wasm::US7::US7_0(v1148_0_0) = &v1148 {
-                        let v1202: string = v1148_0_0.clone();
-                        if string("") == (v1202.clone()) {
+                Spiral_wasm::US11::US11_1(v1100_1_0) => {
+                    let v1125: std::string::String = v1100_1_0.clone();
+                    if let Spiral_wasm::US7::US7_0(v1072_0_0) = &v1072 {
+                        let v1126: string = v1072_0_0.clone();
+                        if string("") == (v1126.clone()) {
                             ()
                         } else {
                             if contains(
-                                fable_library_rust::String_::fromString(v1201.clone()),
-                                v1202.clone(),
+                                fable_library_rust::String_::fromString(v1125.clone()),
+                                v1126.clone(),
                             ) {
                                 ()
                             } else {
-                                let v1210: string = sprintf!(
+                                let v1134: string = sprintf!(
                                     "spiral_wasm.main / exception: \'{}\' / error: {}",
-                                    v1202,
-                                    v1201
+                                    v1126,
+                                    v1125
                                 );
-                                let v1214: Result<(), string> = Err(v1210);
-                                v1214.unwrap();
+                                let v1138: Result<(), string> = Err(v1134);
+                                v1138.unwrap();
                                 ()
                             }
                         }
                     } else {
-                        let v1233: u8 = v1170.clone().unwrap();
+                        let v1157: u8 = v1094.clone().unwrap();
                         ()
                     }
                 }
