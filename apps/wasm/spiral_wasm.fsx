@@ -1916,20 +1916,18 @@ and method9 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 o
 and method15 () : string =
     let v0 : string = ""
     v0
-and closure8 (v0 : Mut3, v1 : string) () : unit =
+and method16 (v0 : Mut3, v1 : string) : unit =
     let v2 : string = v0.l0
     let v4 : string = v2 + v1 
     v0.l0 <- v4
     ()
 and method14 (v0 : char) : string =
     let v1 : string = method15()
-    let v2 : Mut3 = {l0 = v1} : Mut3
-    let v7 : string = $"{v0}"
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure8(v2, v7)
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let v23 : string = v2.l0
-    v23
+    let v3 : Mut3 = {l0 = v1} : Mut3
+    let v8 : string = $"{v0}"
+    method16(v3, v8)
+    let v24 : string = v3.l0
+    v24
 and method13 () : string =
     (* run_target_args'
     let v1 : unit = ()
@@ -2260,77 +2258,62 @@ and method13 () : string =
     let v268 : string = _run_target_args'_v143 
     let v272 : string = v139 + v268 
     v272
-and method17 (v0 : (string [])) : string =
+and method18 (v0 : (string [])) : string =
     let v1 : string = method15()
-    let v2 : Mut3 = {l0 = v1} : Mut3
+    let v3 : Mut3 = {l0 = v1} : Mut3
     let v5 : string = "{ "
-    let v6 : string = $"{v5}"
-    let v14 : unit = ()
-    let v15 : (unit -> unit) = closure8(v2, v6)
-    let v16 : unit = (fun () -> v15 (); v14) ()
-    let v24 : string = "args"
-    let v25 : string = $"{v24}"
-    let v33 : unit = ()
-    let v34 : (unit -> unit) = closure8(v2, v25)
-    let v35 : unit = (fun () -> v34 (); v33) ()
-    let v43 : string = " = "
-    let v44 : string = $"{v43}"
-    let v52 : unit = ()
-    let v53 : (unit -> unit) = closure8(v2, v44)
-    let v54 : unit = (fun () -> v53 (); v52) ()
-    let v62 : string = $"%A{v0}"
-    let v66 : string = $"{v62}"
-    let v74 : unit = ()
-    let v75 : (unit -> unit) = closure8(v2, v66)
-    let v76 : unit = (fun () -> v75 (); v74) ()
-    let v84 : string = " }"
-    let v85 : string = $"{v84}"
-    let v93 : unit = ()
-    let v94 : (unit -> unit) = closure8(v2, v85)
-    let v95 : unit = (fun () -> v94 (); v93) ()
-    let v101 : string = v2.l0
-    v101
-and method18 (v0 : string) : string =
+    method16(v3, v5)
+    let v20 : string = "args"
+    method16(v3, v20)
+    let v35 : string = " = "
+    method16(v3, v35)
+    let v51 : string = $"%A{v0}"
+    method16(v3, v51)
+    let v69 : string = " }"
+    method16(v3, v69)
+    let v83 : string = v3.l0
+    v83
+and method19 (v0 : string) : string =
     let v1 : char list = []
-    let v8 : (char list -> (char [])) = List.toArray
-    let v9 : (char []) = v8 v1
-    let v12 : string = v0.TrimStart v9 
-    let v46 : char list = []
-    let v48 : char list = '/' :: v46 
-    let v52 : char list = ' ' :: v48 
-    let v61 : (char list -> (char [])) = List.toArray
-    let v62 : (char []) = v61 v52
-    let v65 : string = v12.TrimEnd v62 
-    v65
-and method16 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : (string [])) : string =
-    let v9 : string = method17(v8)
+    let v7 : (char list -> (char [])) = List.toArray
+    let v8 : (char []) = v7 v1
+    let v11 : string = v0.TrimStart v8 
+    let v45 : char list = []
+    let v47 : char list = '/' :: v45 
+    let v51 : char list = ' ' :: v47 
+    let v59 : (char list -> (char [])) = List.toArray
+    let v60 : (char []) = v59 v51
+    let v63 : string = v11.TrimEnd v60 
+    v63
+and method17 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : (string [])) : string =
+    let v9 : string = method18(v8)
     let v10 : int64 = v0.l0
     let v13 : string = " "
     let v14 : string = v6 + v13 
     let v18 : string = v14 + v7 
     let v23 : string = " #"
     let v24 : string = v18 + v23 
-    let v28 : (int64 -> string) = _.ToString()
-    let v29 : string = v28 v10
-    let v33 : string = v24 + v29 
-    let v37 : string = v33 + v13 
-    let v42 : string = "spiral_wasm.main"
-    let v43 : string = v37 + v42 
-    let v48 : string = " / "
-    let v49 : string = v43 + v48 
-    let v53 : string = v49 + v9 
-    method18(v53)
-and closure9 (v0 : Mut0) () : unit =
+    let v31 : (int64 -> string) = _.ToString()
+    let v32 : string = v31 v10
+    let v36 : string = v24 + v32 
+    let v40 : string = v36 + v13 
+    let v45 : string = "spiral_wasm.main"
+    let v46 : string = v40 + v45 
+    let v51 : string = " / "
+    let v52 : string = v46 + v51 
+    let v56 : string = v52 + v9 
+    method19(v56)
+and closure8 (v0 : Mut0) () : unit =
     let v1 : int64 = v0.l0
     let v2 : int64 = v1 + 1L
     v0.l0 <- v2
     ()
-and closure11 (v0 : string) () : unit =
+and closure10 (v0 : string) () : unit =
     let v1 : (string -> unit) = System.Console.WriteLine
     v1 v0
-and closure10 () (v0 : string) : unit =
+and closure9 () (v0 : string) : unit =
     let v2 : unit = ()
-    let v3 : (unit -> unit) = closure11(v0)
+    let v3 : (unit -> unit) = closure10(v0)
     let v4 : unit = (fun () -> v3 (); v2) ()
     ()
 and closure5 (v0 : (string [])) () : unit =
@@ -2349,7 +2332,7 @@ and closure5 (v0 : (string [])) () : unit =
             let v62 : bool = 0 >= v61
             v62
     let v64 : bool = v63 = false
-    let v298 : US8 =
+    let v336 : US8 =
         if v64 then
             US8_1
         else
@@ -2358,14 +2341,14 @@ and closure5 (v0 : (string [])) () : unit =
             let struct (v104 : Mut0, v105 : Mut1, v106 : Mut2, v107 : Mut3, v108 : Mut4, v109 : int64 option) = TraceState.trace_state.Value
             let v122 : string = method9(v104, v105, v106, v107, v108, v109)
             let v123 : string = method13()
-            let v124 : string = method16(v104, v105, v106, v107, v108, v109, v122, v123, v0)
+            let v124 : string = method17(v104, v105, v106, v107, v108, v109, v122, v123, v0)
             let v139 : unit = ()
             let v140 : unit = (fun () -> v16 (); v139) ()
             let struct (v163 : Mut0, v164 : Mut1, v165 : Mut2, v166 : Mut3, v167 : Mut4, v168 : int64 option) = TraceState.trace_state.Value
             let v183 : unit = ()
-            let v184 : (unit -> unit) = closure9(v163)
+            let v184 : (unit -> unit) = closure8(v163)
             let v185 : unit = (fun () -> v184 (); v183) ()
-            let v188 : (string -> unit) = closure10()
+            let v188 : (string -> unit) = closure9()
             (* run_target_args'
             let v189 : unit = ()
             run_target_args' *)
@@ -2455,30 +2438,30 @@ and closure5 (v0 : (string [])) () : unit =
             let v262 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v261 
             let v263 : string = "$0.len()"
             let v264 : unativeint = Fable.Core.RustInterop.emitRustExpr v262 v263 
-            let v270 : int32 = v264 |> int32 
-            let v280 : string = ""
-            let v281 : bool = v124 <> v280 
-            let v285 : bool =
-                if v281 then
-                    let v284 : bool = v270 <= 1
-                    v284
+            let v308 : int32 = v264 |> int32 
+            let v318 : string = ""
+            let v319 : bool = v124 <> v318 
+            let v323 : bool =
+                if v319 then
+                    let v322 : bool = v308 <= 1
+                    v322
                 else
                     false
-            if v285 then
+            if v323 then
                 v166.l0 <- v208
                 ()
             else
-                v166.l0 <- v280
-                let v286 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v287 : bool = Fable.Core.RustInterop.emitRustExpr v262 v286 
-                let v288 : string = "x"
-                let v289 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v288 
-                let v290 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v291 : bool = Fable.Core.RustInterop.emitRustExpr v289 v290 
-                let v292 : string = $"true"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr () v292 
-                let v294 : string = "true; }); //"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
+                v166.l0 <- v318
+                let v324 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v325 : bool = Fable.Core.RustInterop.emitRustExpr v262 v324 
+                let v326 : string = "x"
+                let v327 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v326 
+                let v328 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v329 : bool = Fable.Core.RustInterop.emitRustExpr v327 v328 
+                let v330 : string = $"true"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr () v330 
+                let v332 : string = "true; }); //"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -2494,81 +2477,66 @@ and closure5 (v0 : (string [])) () : unit =
             v188 v124
             #endif
             // run_target_args' is_unit
-            let v296 : (string -> unit) = v164.l0
-            v296 v124
+            let v334 : (string -> unit) = v164.l0
+            v334 v124
             US8_0(v163, v164, v165, v166, v167, v168)
     
     ()
-and method19 () : string =
+and method20 () : string =
     let v0 : string = "exception"
     v0
-and closure12 () (v0 : std_string_String) : string =
+and closure11 () (v0 : std_string_String) : string =
     let v1 : string = "fable_library_rust::String_::fromString($0)"
     let v2 : string = Fable.Core.RustInterop.emitRustExpr v0 v1 
     let v3 : char list = []
     let v5 : char list = '\\' :: v3 
-    let v14 : (char list -> (char [])) = List.toArray
-    let v15 : (char []) = v14 v5
-    let v18 : string = v2.TrimStart v15 
-    let v52 : char list = []
-    let v54 : char list = '\\' :: v52 
-    let v63 : (char list -> (char [])) = List.toArray
-    let v64 : (char []) = v63 v54
-    let v67 : string = v18.TrimEnd v64 
-    v67
-and method20 () : (std_string_String -> string) =
-    closure12()
-and method22 () : string =
+    let v13 : (char list -> (char [])) = List.toArray
+    let v14 : (char []) = v13 v5
+    let v17 : string = v2.TrimStart v14 
+    let v51 : char list = []
+    let v53 : char list = '\\' :: v51 
+    let v61 : (char list -> (char [])) = List.toArray
+    let v62 : (char []) = v61 v53
+    let v65 : string = v17.TrimEnd v62 
+    v65
+and method21 () : (std_string_String -> string) =
+    closure11()
+and method23 () : string =
     let v0 : string = "wasm"
     v0
-and method24 (v0 : string) : string =
+and method25 (v0 : string) : string =
     let v1 : string = method15()
-    let v2 : Mut3 = {l0 = v1} : Mut3
+    let v3 : Mut3 = {l0 = v1} : Mut3
     let v5 : string = "{ "
-    let v6 : string = $"{v5}"
-    let v14 : unit = ()
-    let v15 : (unit -> unit) = closure8(v2, v6)
-    let v16 : unit = (fun () -> v15 (); v14) ()
-    let v24 : string = "wasm_path"
-    let v25 : string = $"{v24}"
-    let v33 : unit = ()
-    let v34 : (unit -> unit) = closure8(v2, v25)
-    let v35 : unit = (fun () -> v34 (); v33) ()
-    let v43 : string = " = "
-    let v44 : string = $"{v43}"
-    let v52 : unit = ()
-    let v53 : (unit -> unit) = closure8(v2, v44)
-    let v54 : unit = (fun () -> v53 (); v52) ()
-    let v61 : string = $"{v0}"
-    let v69 : unit = ()
-    let v70 : (unit -> unit) = closure8(v2, v61)
-    let v71 : unit = (fun () -> v70 (); v69) ()
-    let v79 : string = " }"
-    let v80 : string = $"{v79}"
-    let v88 : unit = ()
-    let v89 : (unit -> unit) = closure8(v2, v80)
-    let v90 : unit = (fun () -> v89 (); v88) ()
-    let v96 : string = v2.l0
-    v96
-and method23 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
-    let v9 : string = method24(v8)
+    method16(v3, v5)
+    let v20 : string = "wasm_path"
+    method16(v3, v20)
+    let v35 : string = " = "
+    method16(v3, v35)
+    method16(v3, v0)
+    let v64 : string = " }"
+    method16(v3, v64)
+    let v78 : string = v3.l0
+    v78
+and method24 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : string) : string =
+    let v9 : string = method25(v8)
     let v10 : int64 = v0.l0
     let v13 : string = " "
     let v14 : string = v6 + v13 
     let v18 : string = v14 + v7 
     let v23 : string = " #"
     let v24 : string = v18 + v23 
-    let v28 : (int64 -> string) = _.ToString()
-    let v29 : string = v28 v10
-    let v33 : string = v24 + v29 
-    let v37 : string = v33 + v13 
-    let v42 : string = "spiral_wasm.run"
-    let v43 : string = v37 + v42 
-    let v48 : string = " / "
-    let v49 : string = v43 + v48 
-    let v53 : string = v49 + v9 
-    method18(v53)
-and closure13 (v0 : string) () : unit =
+    let v31 : (int64 -> string) = _.ToString()
+    let v32 : string = v31 v10
+    let v36 : string = v24 + v32 
+    let v40 : string = v36 + v13 
+    let v45 : string = "spiral_wasm.run"
+    let v46 : string = v40 + v45 
+    let v51 : string = " / "
+    let v52 : string = v46 + v51 
+    let v56 : string = v52 + v9 
+    method19(v56)
+and closure12 (v0 : string) () : unit =
     let v15 : unit = ()
     let v16 : (unit -> unit) = closure6()
     let v17 : unit = (fun () -> v16 (); v15) ()
@@ -2584,7 +2552,7 @@ and closure13 (v0 : string) () : unit =
             let v62 : bool = 0 >= v61
             v62
     let v64 : bool = v63 = false
-    let v298 : US8 =
+    let v336 : US8 =
         if v64 then
             US8_1
         else
@@ -2593,14 +2561,14 @@ and closure13 (v0 : string) () : unit =
             let struct (v104 : Mut0, v105 : Mut1, v106 : Mut2, v107 : Mut3, v108 : Mut4, v109 : int64 option) = TraceState.trace_state.Value
             let v122 : string = method9(v104, v105, v106, v107, v108, v109)
             let v123 : string = method13()
-            let v124 : string = method23(v104, v105, v106, v107, v108, v109, v122, v123, v0)
+            let v124 : string = method24(v104, v105, v106, v107, v108, v109, v122, v123, v0)
             let v139 : unit = ()
             let v140 : unit = (fun () -> v16 (); v139) ()
             let struct (v163 : Mut0, v164 : Mut1, v165 : Mut2, v166 : Mut3, v167 : Mut4, v168 : int64 option) = TraceState.trace_state.Value
             let v183 : unit = ()
-            let v184 : (unit -> unit) = closure9(v163)
+            let v184 : (unit -> unit) = closure8(v163)
             let v185 : unit = (fun () -> v184 (); v183) ()
-            let v188 : (string -> unit) = closure10()
+            let v188 : (string -> unit) = closure9()
             (* run_target_args'
             let v189 : unit = ()
             run_target_args' *)
@@ -2690,30 +2658,30 @@ and closure13 (v0 : string) () : unit =
             let v262 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v261 
             let v263 : string = "$0.len()"
             let v264 : unativeint = Fable.Core.RustInterop.emitRustExpr v262 v263 
-            let v270 : int32 = v264 |> int32 
-            let v280 : string = ""
-            let v281 : bool = v124 <> v280 
-            let v285 : bool =
-                if v281 then
-                    let v284 : bool = v270 <= 1
-                    v284
+            let v308 : int32 = v264 |> int32 
+            let v318 : string = ""
+            let v319 : bool = v124 <> v318 
+            let v323 : bool =
+                if v319 then
+                    let v322 : bool = v308 <= 1
+                    v322
                 else
                     false
-            if v285 then
+            if v323 then
                 v166.l0 <- v208
                 ()
             else
-                v166.l0 <- v280
-                let v286 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v287 : bool = Fable.Core.RustInterop.emitRustExpr v262 v286 
-                let v288 : string = "x"
-                let v289 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v288 
-                let v290 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v291 : bool = Fable.Core.RustInterop.emitRustExpr v289 v290 
-                let v292 : string = $"true"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr () v292 
-                let v294 : string = "true; }); //"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
+                v166.l0 <- v318
+                let v324 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v325 : bool = Fable.Core.RustInterop.emitRustExpr v262 v324 
+                let v326 : string = "x"
+                let v327 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v326 
+                let v328 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v329 : bool = Fable.Core.RustInterop.emitRustExpr v327 v328 
+                let v330 : string = $"true"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr () v330 
+                let v332 : string = "true; }); //"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -2729,182 +2697,144 @@ and closure13 (v0 : string) () : unit =
             v188 v124
             #endif
             // run_target_args' is_unit
-            let v296 : (string -> unit) = v164.l0
-            v296 v124
+            let v334 : (string -> unit) = v164.l0
+            v334 v124
             US8_0(v163, v164, v165, v166, v167, v168)
     
     ()
-and method28 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_Sandbox>, v2 : near_workspaces_Contract) : string =
+and method29 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_Sandbox>, v2 : near_workspaces_Contract) : string =
     let v3 : string = method15()
-    let v4 : Mut3 = {l0 = v3} : Mut3
+    let v5 : Mut3 = {l0 = v3} : Mut3
     let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -> unit) = closure8(v4, v8)
-    let v18 : unit = (fun () -> v17 (); v16) ()
-    let v26 : string = "retry"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -> unit) = closure8(v4, v27)
-    let v37 : unit = (fun () -> v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -> unit) = closure8(v4, v46)
-    let v56 : unit = (fun () -> v55 (); v54) ()
-    let v66 : string = $"{v0}"
-    let v74 : unit = ()
-    let v75 : (unit -> unit) = closure8(v4, v66)
-    let v76 : unit = (fun () -> v75 (); v74) ()
-    let v84 : string = "; "
-    let v85 : string = $"{v84}"
-    let v93 : unit = ()
-    let v94 : (unit -> unit) = closure8(v4, v85)
-    let v95 : unit = (fun () -> v94 (); v93) ()
-    let v103 : string = "worker"
-    let v104 : string = $"{v103}"
-    let v112 : unit = ()
-    let v113 : (unit -> unit) = closure8(v4, v104)
-    let v114 : unit = (fun () -> v113 (); v112) ()
-    let v121 : string = $"{v45}"
-    let v129 : unit = ()
-    let v130 : (unit -> unit) = closure8(v4, v121)
-    let v131 : unit = (fun () -> v130 (); v129) ()
+    method16(v5, v7)
+    let v22 : string = "retry"
+    method16(v5, v22)
+    let v37 : string = " = "
+    method16(v5, v37)
+    let v55 : string = $"{v0}"
+    method16(v5, v55)
+    let v72 : string = "; "
+    method16(v5, v72)
+    let v87 : string = "worker"
+    method16(v5, v87)
+    method16(v5, v37)
     (* run_target_args'
-    let v141 : unit = ()
+    let v119 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v142 : string = "format!(\"{:#?}\", $0)"
-    let v143 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v142 
-    let v144 : string = "fable_library_rust::String_::fromString($0)"
-    let v145 : string = Fable.Core.RustInterop.emitRustExpr v143 v144 
-    let _run_target_args'_v141 = v145 
+    let v120 : string = "format!(\"{:#?}\", $0)"
+    let v121 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v120 
+    let v122 : string = "fable_library_rust::String_::fromString($0)"
+    let v123 : string = Fable.Core.RustInterop.emitRustExpr v121 v122 
+    let _run_target_args'_v119 = v123 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v146 : string = "format!(\"{:#?}\", $0)"
-    let v147 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v146 
-    let v148 : string = "fable_library_rust::String_::fromString($0)"
-    let v149 : string = Fable.Core.RustInterop.emitRustExpr v147 v148 
-    let _run_target_args'_v141 = v149 
+    let v124 : string = "format!(\"{:#?}\", $0)"
+    let v125 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v124 
+    let v126 : string = "fable_library_rust::String_::fromString($0)"
+    let v127 : string = Fable.Core.RustInterop.emitRustExpr v125 v126 
+    let _run_target_args'_v119 = v127 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v150 : string = "format!(\"{:#?}\", $0)"
-    let v151 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v150 
-    let v152 : string = "fable_library_rust::String_::fromString($0)"
-    let v153 : string = Fable.Core.RustInterop.emitRustExpr v151 v152 
-    let _run_target_args'_v141 = v153 
+    let v128 : string = "format!(\"{:#?}\", $0)"
+    let v129 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v128 
+    let v130 : string = "fable_library_rust::String_::fromString($0)"
+    let v131 : string = Fable.Core.RustInterop.emitRustExpr v129 v130 
+    let _run_target_args'_v119 = v131 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v155 : string = $"%A{v1}"
-    let _run_target_args'_v141 = v155 
+    let v133 : string = $"%A{v1}"
+    let _run_target_args'_v119 = v133 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v159 : string = $"%A{v1}"
-    let _run_target_args'_v141 = v159 
+    let v137 : string = $"%A{v1}"
+    let _run_target_args'_v119 = v137 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v163 : string = $"%A{v1}"
-    let _run_target_args'_v141 = v163 
+    let v141 : string = $"%A{v1}"
+    let _run_target_args'_v119 = v141 
     #endif
 #else
-    let v167 : string = $"%A{v1}"
-    let _run_target_args'_v141 = v167 
+    let v145 : string = $"%A{v1}"
+    let _run_target_args'_v119 = v145 
     #endif
-    let v170 : string = _run_target_args'_v141 
-    let v180 : string = $"{v170}"
-    let v188 : unit = ()
-    let v189 : (unit -> unit) = closure8(v4, v180)
-    let v190 : unit = (fun () -> v189 (); v188) ()
-    let v197 : string = $"{v84}"
-    let v205 : unit = ()
-    let v206 : (unit -> unit) = closure8(v4, v197)
-    let v207 : unit = (fun () -> v206 (); v205) ()
-    let v215 : string = "contract"
-    let v216 : string = $"{v215}"
-    let v224 : unit = ()
-    let v225 : (unit -> unit) = closure8(v4, v216)
-    let v226 : unit = (fun () -> v225 (); v224) ()
-    let v233 : string = $"{v45}"
-    let v241 : unit = ()
-    let v242 : (unit -> unit) = closure8(v4, v233)
-    let v243 : unit = (fun () -> v242 (); v241) ()
+    let v148 : string = _run_target_args'_v119 
+    method16(v5, v148)
+    method16(v5, v72)
+    let v186 : string = "contract"
+    method16(v5, v186)
+    method16(v5, v37)
     (* run_target_args'
-    let v253 : unit = ()
+    let v218 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v254 : string = "format!(\"{:#?}\", $0)"
-    let v255 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v254 
-    let v256 : string = "fable_library_rust::String_::fromString($0)"
-    let v257 : string = Fable.Core.RustInterop.emitRustExpr v255 v256 
-    let _run_target_args'_v253 = v257 
+    let v219 : string = "format!(\"{:#?}\", $0)"
+    let v220 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v219 
+    let v221 : string = "fable_library_rust::String_::fromString($0)"
+    let v222 : string = Fable.Core.RustInterop.emitRustExpr v220 v221 
+    let _run_target_args'_v218 = v222 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v258 : string = "format!(\"{:#?}\", $0)"
-    let v259 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v258 
-    let v260 : string = "fable_library_rust::String_::fromString($0)"
-    let v261 : string = Fable.Core.RustInterop.emitRustExpr v259 v260 
-    let _run_target_args'_v253 = v261 
+    let v223 : string = "format!(\"{:#?}\", $0)"
+    let v224 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v223 
+    let v225 : string = "fable_library_rust::String_::fromString($0)"
+    let v226 : string = Fable.Core.RustInterop.emitRustExpr v224 v225 
+    let _run_target_args'_v218 = v226 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v262 : string = "format!(\"{:#?}\", $0)"
-    let v263 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v262 
-    let v264 : string = "fable_library_rust::String_::fromString($0)"
-    let v265 : string = Fable.Core.RustInterop.emitRustExpr v263 v264 
-    let _run_target_args'_v253 = v265 
+    let v227 : string = "format!(\"{:#?}\", $0)"
+    let v228 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v227 
+    let v229 : string = "fable_library_rust::String_::fromString($0)"
+    let v230 : string = Fable.Core.RustInterop.emitRustExpr v228 v229 
+    let _run_target_args'_v218 = v230 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v267 : string = $"%A{v2}"
-    let _run_target_args'_v253 = v267 
+    let v232 : string = $"%A{v2}"
+    let _run_target_args'_v218 = v232 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v271 : string = $"%A{v2}"
-    let _run_target_args'_v253 = v271 
+    let v236 : string = $"%A{v2}"
+    let _run_target_args'_v218 = v236 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v275 : string = $"%A{v2}"
-    let _run_target_args'_v253 = v275 
+    let v240 : string = $"%A{v2}"
+    let _run_target_args'_v218 = v240 
     #endif
 #else
-    let v279 : string = $"%A{v2}"
-    let _run_target_args'_v253 = v279 
+    let v244 : string = $"%A{v2}"
+    let _run_target_args'_v218 = v244 
     #endif
-    let v282 : string = _run_target_args'_v253 
-    let v292 : string = $"{v282}"
-    let v300 : unit = ()
-    let v301 : (unit -> unit) = closure8(v4, v292)
-    let v302 : unit = (fun () -> v301 (); v300) ()
-    let v310 : string = " }"
-    let v311 : string = $"{v310}"
-    let v319 : unit = ()
-    let v320 : (unit -> unit) = closure8(v4, v311)
-    let v321 : unit = (fun () -> v320 (); v319) ()
-    let v327 : string = v4.l0
-    v327
-and method27 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : near_workspaces_Worker<near_workspaces_network_Sandbox>, v10 : near_workspaces_Contract) : string =
-    let v11 : string = method28(v8, v9, v10)
+    let v247 : string = _run_target_args'_v218 
+    method16(v5, v247)
+    let v271 : string = " }"
+    method16(v5, v271)
+    let v285 : string = v5.l0
+    v285
+and method28 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : near_workspaces_Worker<near_workspaces_network_Sandbox>, v10 : near_workspaces_Contract) : string =
+    let v11 : string = method29(v8, v9, v10)
     let v12 : int64 = v0.l0
     let v15 : string = " "
     let v16 : string = v6 + v15 
     let v20 : string = v16 + v7 
     let v25 : string = " #"
     let v26 : string = v20 + v25 
-    let v30 : (int64 -> string) = _.ToString()
-    let v31 : string = v30 v12
-    let v35 : string = v26 + v31 
-    let v39 : string = v35 + v15 
-    let v44 : string = "spiral_wasm.run"
-    let v45 : string = v39 + v44 
-    let v50 : string = " / "
-    let v51 : string = v45 + v50 
-    let v55 : string = v51 + v11 
-    method18(v55)
-and closure14 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_Sandbox>, v2 : near_workspaces_Contract) () : unit =
+    let v33 : (int64 -> string) = _.ToString()
+    let v34 : string = v33 v12
+    let v38 : string = v26 + v34 
+    let v42 : string = v38 + v15 
+    let v47 : string = "spiral_wasm.run"
+    let v48 : string = v42 + v47 
+    let v53 : string = " / "
+    let v54 : string = v48 + v53 
+    let v58 : string = v54 + v11 
+    method19(v58)
+and closure13 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_Sandbox>, v2 : near_workspaces_Contract) () : unit =
     let v17 : unit = ()
     let v18 : (unit -> unit) = closure6()
     let v19 : unit = (fun () -> v18 (); v17) ()
@@ -2920,7 +2850,7 @@ and closure14 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_S
             let v64 : bool = 0 >= v63
             v64
     let v66 : bool = v65 = false
-    let v300 : US8 =
+    let v338 : US8 =
         if v66 then
             US8_1
         else
@@ -2929,14 +2859,14 @@ and closure14 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_S
             let struct (v106 : Mut0, v107 : Mut1, v108 : Mut2, v109 : Mut3, v110 : Mut4, v111 : int64 option) = TraceState.trace_state.Value
             let v124 : string = method9(v106, v107, v108, v109, v110, v111)
             let v125 : string = method13()
-            let v126 : string = method27(v106, v107, v108, v109, v110, v111, v124, v125, v0, v1, v2)
+            let v126 : string = method28(v106, v107, v108, v109, v110, v111, v124, v125, v0, v1, v2)
             let v141 : unit = ()
             let v142 : unit = (fun () -> v18 (); v141) ()
             let struct (v165 : Mut0, v166 : Mut1, v167 : Mut2, v168 : Mut3, v169 : Mut4, v170 : int64 option) = TraceState.trace_state.Value
             let v185 : unit = ()
-            let v186 : (unit -> unit) = closure9(v165)
+            let v186 : (unit -> unit) = closure8(v165)
             let v187 : unit = (fun () -> v186 (); v185) ()
-            let v190 : (string -> unit) = closure10()
+            let v190 : (string -> unit) = closure9()
             (* run_target_args'
             let v191 : unit = ()
             run_target_args' *)
@@ -3026,30 +2956,30 @@ and closure14 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_S
             let v264 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v263 
             let v265 : string = "$0.len()"
             let v266 : unativeint = Fable.Core.RustInterop.emitRustExpr v264 v265 
-            let v272 : int32 = v266 |> int32 
-            let v282 : string = ""
-            let v283 : bool = v126 <> v282 
-            let v287 : bool =
-                if v283 then
-                    let v286 : bool = v272 <= 1
-                    v286
+            let v310 : int32 = v266 |> int32 
+            let v320 : string = ""
+            let v321 : bool = v126 <> v320 
+            let v325 : bool =
+                if v321 then
+                    let v324 : bool = v310 <= 1
+                    v324
                 else
                     false
-            if v287 then
+            if v325 then
                 v168.l0 <- v210
                 ()
             else
-                v168.l0 <- v282
-                let v288 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v289 : bool = Fable.Core.RustInterop.emitRustExpr v264 v288 
-                let v290 : string = "x"
-                let v291 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v290 
-                let v292 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr v291 v292 
-                let v294 : string = $"true"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
-                let v296 : string = "true; }); //"
-                let v297 : bool = Fable.Core.RustInterop.emitRustExpr () v296 
+                v168.l0 <- v320
+                let v326 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v327 : bool = Fable.Core.RustInterop.emitRustExpr v264 v326 
+                let v328 : string = "x"
+                let v329 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v328 
+                let v330 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr v329 v330 
+                let v332 : string = $"true"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
+                let v334 : string = "true; }); //"
+                let v335 : bool = Fable.Core.RustInterop.emitRustExpr () v334 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -3065,121 +2995,95 @@ and closure14 (v0 : uint8, v1 : near_workspaces_Worker<near_workspaces_network_S
             v190 v126
             #endif
             // run_target_args' is_unit
-            let v298 : (string -> unit) = v166.l0
-            v298 v126
+            let v336 : (string -> unit) = v166.l0
+            v336 v126
             US8_0(v165, v166, v167, v168, v169, v170)
     
     ()
-and method30 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) : string =
+and method31 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) : string =
     let v2 : string = method15()
-    let v3 : Mut3 = {l0 = v2} : Mut3
+    let v4 : Mut3 = {l0 = v2} : Mut3
     let v6 : string = "{ "
-    let v7 : string = $"{v6}"
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure8(v3, v7)
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let v25 : string = "retry"
-    let v26 : string = $"{v25}"
-    let v34 : unit = ()
-    let v35 : (unit -> unit) = closure8(v3, v26)
-    let v36 : unit = (fun () -> v35 (); v34) ()
-    let v44 : string = " = "
-    let v45 : string = $"{v44}"
-    let v53 : unit = ()
-    let v54 : (unit -> unit) = closure8(v3, v45)
-    let v55 : unit = (fun () -> v54 (); v53) ()
-    let v65 : string = $"{v0}"
-    let v73 : unit = ()
-    let v74 : (unit -> unit) = closure8(v3, v65)
-    let v75 : unit = (fun () -> v74 (); v73) ()
-    let v83 : string = "; "
-    let v84 : string = $"{v83}"
-    let v92 : unit = ()
-    let v93 : (unit -> unit) = closure8(v3, v84)
-    let v94 : unit = (fun () -> v93 (); v92) ()
-    let v102 : string = "result"
-    let v103 : string = $"{v102}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v3, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v120 : string = $"{v44}"
-    let v128 : unit = ()
-    let v129 : (unit -> unit) = closure8(v3, v120)
-    let v130 : unit = (fun () -> v129 (); v128) ()
+    method16(v4, v6)
+    let v21 : string = "retry"
+    method16(v4, v21)
+    let v36 : string = " = "
+    method16(v4, v36)
+    let v54 : string = $"{v0}"
+    method16(v4, v54)
+    let v71 : string = "; "
+    method16(v4, v71)
+    let v86 : string = "result"
+    method16(v4, v86)
+    method16(v4, v36)
     (* run_target_args'
-    let v140 : unit = ()
+    let v118 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v141 : string = "format!(\"{:#?}\", $0)"
-    let v142 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v141 
-    let v143 : string = "fable_library_rust::String_::fromString($0)"
-    let v144 : string = Fable.Core.RustInterop.emitRustExpr v142 v143 
-    let _run_target_args'_v140 = v144 
+    let v119 : string = "format!(\"{:#?}\", $0)"
+    let v120 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v119 
+    let v121 : string = "fable_library_rust::String_::fromString($0)"
+    let v122 : string = Fable.Core.RustInterop.emitRustExpr v120 v121 
+    let _run_target_args'_v118 = v122 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v145 : string = "format!(\"{:#?}\", $0)"
-    let v146 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v145 
-    let v147 : string = "fable_library_rust::String_::fromString($0)"
-    let v148 : string = Fable.Core.RustInterop.emitRustExpr v146 v147 
-    let _run_target_args'_v140 = v148 
+    let v123 : string = "format!(\"{:#?}\", $0)"
+    let v124 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v123 
+    let v125 : string = "fable_library_rust::String_::fromString($0)"
+    let v126 : string = Fable.Core.RustInterop.emitRustExpr v124 v125 
+    let _run_target_args'_v118 = v126 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v149 : string = "format!(\"{:#?}\", $0)"
-    let v150 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v149 
-    let v151 : string = "fable_library_rust::String_::fromString($0)"
-    let v152 : string = Fable.Core.RustInterop.emitRustExpr v150 v151 
-    let _run_target_args'_v140 = v152 
+    let v127 : string = "format!(\"{:#?}\", $0)"
+    let v128 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v127 
+    let v129 : string = "fable_library_rust::String_::fromString($0)"
+    let v130 : string = Fable.Core.RustInterop.emitRustExpr v128 v129 
+    let _run_target_args'_v118 = v130 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v154 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v154 
+    let v132 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v132 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v158 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v158 
+    let v136 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v136 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v162 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v162 
+    let v140 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v140 
     #endif
 #else
-    let v166 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v166 
+    let v144 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v144 
     #endif
-    let v169 : string = _run_target_args'_v140 
-    let v179 : string = $"{v169}"
-    let v187 : unit = ()
-    let v188 : (unit -> unit) = closure8(v3, v179)
-    let v189 : unit = (fun () -> v188 (); v187) ()
-    let v197 : string = " }"
-    let v198 : string = $"{v197}"
-    let v206 : unit = ()
-    let v207 : (unit -> unit) = closure8(v3, v198)
-    let v208 : unit = (fun () -> v207 (); v206) ()
-    let v214 : string = v3.l0
-    v214
-and method29 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : near_workspaces_result_ExecutionFinalResult) : string =
-    let v10 : string = method30(v8, v9)
+    let v147 : string = _run_target_args'_v118 
+    method16(v4, v147)
+    let v171 : string = " }"
+    method16(v4, v171)
+    let v185 : string = v4.l0
+    v185
+and method30 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : near_workspaces_result_ExecutionFinalResult) : string =
+    let v10 : string = method31(v8, v9)
     let v11 : int64 = v0.l0
     let v14 : string = " "
     let v15 : string = v6 + v14 
     let v19 : string = v15 + v7 
     let v24 : string = " #"
     let v25 : string = v19 + v24 
-    let v29 : (int64 -> string) = _.ToString()
-    let v30 : string = v29 v11
-    let v34 : string = v25 + v30 
-    let v38 : string = v34 + v14 
-    let v43 : string = "spiral_wasm.run"
-    let v44 : string = v38 + v43 
-    let v49 : string = " / "
-    let v50 : string = v44 + v49 
-    let v54 : string = v50 + v10 
-    method18(v54)
-and closure15 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) () : unit =
+    let v32 : (int64 -> string) = _.ToString()
+    let v33 : string = v32 v11
+    let v37 : string = v25 + v33 
+    let v41 : string = v37 + v14 
+    let v46 : string = "spiral_wasm.run"
+    let v47 : string = v41 + v46 
+    let v52 : string = " / "
+    let v53 : string = v47 + v52 
+    let v57 : string = v53 + v10 
+    method19(v57)
+and closure14 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) () : unit =
     let v16 : unit = ()
     let v17 : (unit -> unit) = closure6()
     let v18 : unit = (fun () -> v17 (); v16) ()
@@ -3195,7 +3099,7 @@ and closure15 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) () 
             let v63 : bool = 0 >= v62
             v63
     let v65 : bool = v64 = false
-    let v299 : US8 =
+    let v337 : US8 =
         if v65 then
             US8_1
         else
@@ -3204,14 +3108,14 @@ and closure15 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) () 
             let struct (v105 : Mut0, v106 : Mut1, v107 : Mut2, v108 : Mut3, v109 : Mut4, v110 : int64 option) = TraceState.trace_state.Value
             let v123 : string = method9(v105, v106, v107, v108, v109, v110)
             let v124 : string = method13()
-            let v125 : string = method29(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
+            let v125 : string = method30(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
             let v140 : unit = ()
             let v141 : unit = (fun () -> v17 (); v140) ()
             let struct (v164 : Mut0, v165 : Mut1, v166 : Mut2, v167 : Mut3, v168 : Mut4, v169 : int64 option) = TraceState.trace_state.Value
             let v184 : unit = ()
-            let v185 : (unit -> unit) = closure9(v164)
+            let v185 : (unit -> unit) = closure8(v164)
             let v186 : unit = (fun () -> v185 (); v184) ()
-            let v189 : (string -> unit) = closure10()
+            let v189 : (string -> unit) = closure9()
             (* run_target_args'
             let v190 : unit = ()
             run_target_args' *)
@@ -3301,30 +3205,30 @@ and closure15 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) () 
             let v263 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v262 
             let v264 : string = "$0.len()"
             let v265 : unativeint = Fable.Core.RustInterop.emitRustExpr v263 v264 
-            let v271 : int32 = v265 |> int32 
-            let v281 : string = ""
-            let v282 : bool = v125 <> v281 
-            let v286 : bool =
-                if v282 then
-                    let v285 : bool = v271 <= 1
-                    v285
+            let v309 : int32 = v265 |> int32 
+            let v319 : string = ""
+            let v320 : bool = v125 <> v319 
+            let v324 : bool =
+                if v320 then
+                    let v323 : bool = v309 <= 1
+                    v323
                 else
                     false
-            if v286 then
+            if v324 then
                 v167.l0 <- v209
                 ()
             else
-                v167.l0 <- v281
-                let v287 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v288 : bool = Fable.Core.RustInterop.emitRustExpr v263 v287 
-                let v289 : string = "x"
-                let v290 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v289 
-                let v291 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v292 : bool = Fable.Core.RustInterop.emitRustExpr v290 v291 
-                let v293 : string = $"true"
-                let v294 : bool = Fable.Core.RustInterop.emitRustExpr () v293 
-                let v295 : string = "true; }); //"
-                let v296 : bool = Fable.Core.RustInterop.emitRustExpr () v295 
+                v167.l0 <- v319
+                let v325 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v326 : bool = Fable.Core.RustInterop.emitRustExpr v263 v325 
+                let v327 : string = "x"
+                let v328 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v327 
+                let v329 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v330 : bool = Fable.Core.RustInterop.emitRustExpr v328 v329 
+                let v331 : string = $"true"
+                let v332 : bool = Fable.Core.RustInterop.emitRustExpr () v331 
+                let v333 : string = "true; }); //"
+                let v334 : bool = Fable.Core.RustInterop.emitRustExpr () v333 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -3340,20 +3244,20 @@ and closure15 (v0 : uint8, v1 : near_workspaces_result_ExecutionFinalResult) () 
             v189 v125
             #endif
             // run_target_args' is_unit
-            let v297 : (string -> unit) = v165.l0
-            v297 v125
+            let v335 : (string -> unit) = v165.l0
+            v335 v125
             US8_0(v164, v165, v166, v167, v168, v169)
     
     ()
-and closure17 (v0 : std_string_String) () : unit =
+and closure16 (v0 : std_string_String) () : unit =
     let v1 : (std_string_String -> unit) = System.Console.WriteLine
     v1 v0
-and closure16 () (v0 : std_string_String) : unit =
+and closure15 () (v0 : std_string_String) : unit =
     let v2 : unit = ()
-    let v3 : (unit -> unit) = closure17(v0)
+    let v3 : (unit -> unit) = closure16(v0)
     let v4 : unit = (fun () -> v3 (); v2) ()
     ()
-and closure18 () () : unit =
+and closure17 () () : unit =
     let v14 : unit = ()
     let v15 : (unit -> unit) = closure6()
     let v16 : unit = (fun () -> v15 (); v14) ()
@@ -3369,7 +3273,7 @@ and closure18 () () : unit =
             let v61 : bool = 2 >= v60
             v61
     let v63 : bool = v62 = false
-    let v239 : US8 =
+    let v277 : US8 =
         if v63 then
             US8_1
         else
@@ -3377,10 +3281,10 @@ and closure18 () () : unit =
             let v80 : unit = (fun () -> v15 (); v79) ()
             let struct (v103 : Mut0, v104 : Mut1, v105 : Mut2, v106 : Mut3, v107 : Mut4, v108 : int64 option) = TraceState.trace_state.Value
             let v123 : unit = ()
-            let v124 : (unit -> unit) = closure9(v103)
+            let v124 : (unit -> unit) = closure8(v103)
             let v125 : unit = (fun () -> v124 (); v123) ()
             let v128 : string = " "
-            let v129 : (string -> unit) = closure10()
+            let v129 : (string -> unit) = closure9()
             (* run_target_args'
             let v130 : unit = ()
             run_target_args' *)
@@ -3470,30 +3374,30 @@ and closure18 () () : unit =
             let v203 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v202 
             let v204 : string = "$0.len()"
             let v205 : unativeint = Fable.Core.RustInterop.emitRustExpr v203 v204 
-            let v211 : int32 = v205 |> int32 
-            let v221 : string = ""
-            let v222 : bool = v128 <> v221 
-            let v226 : bool =
-                if v222 then
-                    let v225 : bool = v211 <= 1
-                    v225
+            let v249 : int32 = v205 |> int32 
+            let v259 : string = ""
+            let v260 : bool = v128 <> v259 
+            let v264 : bool =
+                if v260 then
+                    let v263 : bool = v249 <= 1
+                    v263
                 else
                     false
-            if v226 then
+            if v264 then
                 v106.l0 <- v149
                 ()
             else
-                v106.l0 <- v221
-                let v227 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v228 : bool = Fable.Core.RustInterop.emitRustExpr v203 v227 
-                let v229 : string = "x"
-                let v230 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v229 
-                let v231 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v232 : bool = Fable.Core.RustInterop.emitRustExpr v230 v231 
-                let v233 : string = $"true"
-                let v234 : bool = Fable.Core.RustInterop.emitRustExpr () v233 
-                let v235 : string = "true; }); //"
-                let v236 : bool = Fable.Core.RustInterop.emitRustExpr () v235 
+                v106.l0 <- v259
+                let v265 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v266 : bool = Fable.Core.RustInterop.emitRustExpr v203 v265 
+                let v267 : string = "x"
+                let v268 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v267 
+                let v269 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v270 : bool = Fable.Core.RustInterop.emitRustExpr v268 v269 
+                let v271 : string = $"true"
+                let v272 : bool = Fable.Core.RustInterop.emitRustExpr () v271 
+                let v273 : string = "true; }); //"
+                let v274 : bool = Fable.Core.RustInterop.emitRustExpr () v273 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -3509,12 +3413,12 @@ and closure18 () () : unit =
             v129 v128
             #endif
             // run_target_args' is_unit
-            let v237 : (string -> unit) = v104.l0
-            v237 v128
+            let v275 : (string -> unit) = v104.l0
+            v275 v128
             US8_0(v103, v104, v105, v106, v107, v108)
     
     ()
-and method31 () : string =
+and method32 () : string =
     (* run_target_args'
     let v1 : unit = ()
     run_target_args' *)
@@ -3844,89 +3748,53 @@ and method31 () : string =
     let v268 : string = _run_target_args'_v143 
     let v272 : string = v139 + v268 
     v272
-and method33 (v0 : uint8, v1 : float, v2 : uint64) : string =
+and method34 (v0 : uint8, v1 : float, v2 : uint64) : string =
     let v3 : string = method15()
-    let v4 : Mut3 = {l0 = v3} : Mut3
+    let v5 : Mut3 = {l0 = v3} : Mut3
     let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -> unit) = closure8(v4, v8)
-    let v18 : unit = (fun () -> v17 (); v16) ()
-    let v26 : string = "retry"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -> unit) = closure8(v4, v27)
-    let v37 : unit = (fun () -> v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -> unit) = closure8(v4, v46)
-    let v56 : unit = (fun () -> v55 (); v54) ()
-    let v66 : string = $"{v0}"
-    let v74 : unit = ()
-    let v75 : (unit -> unit) = closure8(v4, v66)
-    let v76 : unit = (fun () -> v75 (); v74) ()
-    let v84 : string = "; "
-    let v85 : string = $"{v84}"
-    let v93 : unit = ()
-    let v94 : (unit -> unit) = closure8(v4, v85)
-    let v95 : unit = (fun () -> v94 (); v93) ()
-    let v103 : string = "total_gas_burnt_usd"
-    let v104 : string = $"{v103}"
-    let v112 : unit = ()
-    let v113 : (unit -> unit) = closure8(v4, v104)
-    let v114 : unit = (fun () -> v113 (); v112) ()
-    let v121 : string = $"{v45}"
-    let v129 : unit = ()
-    let v130 : (unit -> unit) = closure8(v4, v121)
-    let v131 : unit = (fun () -> v130 (); v129) ()
-    let v141 : string = $"%+.6f{v1}"
-    let v149 : unit = ()
-    let v150 : (unit -> unit) = closure8(v4, v141)
-    let v151 : unit = (fun () -> v150 (); v149) ()
-    let v158 : string = $"{v84}"
-    let v166 : unit = ()
-    let v167 : (unit -> unit) = closure8(v4, v158)
-    let v168 : unit = (fun () -> v167 (); v166) ()
-    let v176 : string = "total_gas_burnt"
-    let v177 : string = $"{v176}"
-    let v185 : unit = ()
-    let v186 : (unit -> unit) = closure8(v4, v177)
-    let v187 : unit = (fun () -> v186 (); v185) ()
-    let v194 : string = $"{v45}"
-    let v202 : unit = ()
-    let v203 : (unit -> unit) = closure8(v4, v194)
-    let v204 : unit = (fun () -> v203 (); v202) ()
-    let v214 : string = $"{v2}"
-    let v222 : unit = ()
-    let v223 : (unit -> unit) = closure8(v4, v214)
-    let v224 : unit = (fun () -> v223 (); v222) ()
-    let v232 : string = " }"
-    let v233 : string = $"{v232}"
-    let v241 : unit = ()
-    let v242 : (unit -> unit) = closure8(v4, v233)
-    let v243 : unit = (fun () -> v242 (); v241) ()
-    let v249 : string = v4.l0
-    v249
-and method32 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : float, v10 : uint64) : string =
-    let v11 : string = method33(v8, v9, v10)
+    method16(v5, v7)
+    let v22 : string = "retry"
+    method16(v5, v22)
+    let v37 : string = " = "
+    method16(v5, v37)
+    let v55 : string = $"{v0}"
+    method16(v5, v55)
+    let v72 : string = "; "
+    method16(v5, v72)
+    let v87 : string = "total_gas_burnt_usd"
+    method16(v5, v87)
+    method16(v5, v37)
+    let v119 : string = $"%+.6f{v1}"
+    method16(v5, v119)
+    method16(v5, v72)
+    let v150 : string = "total_gas_burnt"
+    method16(v5, v150)
+    method16(v5, v37)
+    let v182 : string = $"{v2}"
+    method16(v5, v182)
+    let v199 : string = " }"
+    method16(v5, v199)
+    let v213 : string = v5.l0
+    v213
+and method33 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : float, v10 : uint64) : string =
+    let v11 : string = method34(v8, v9, v10)
     let v12 : int64 = v0.l0
     let v15 : string = " "
     let v16 : string = v6 + v15 
     let v20 : string = v16 + v7 
     let v25 : string = " #"
     let v26 : string = v20 + v25 
-    let v30 : (int64 -> string) = _.ToString()
-    let v31 : string = v30 v12
-    let v35 : string = v26 + v31 
-    let v39 : string = v35 + v15 
-    let v44 : string = "near_workspaces.print_usd"
-    let v45 : string = v39 + v44 
-    let v50 : string = " / "
-    let v51 : string = v45 + v50 
-    let v55 : string = v51 + v11 
-    method18(v55)
-and closure19 (v0 : uint8, v1 : uint64, v2 : float) () : unit =
+    let v33 : (int64 -> string) = _.ToString()
+    let v34 : string = v33 v12
+    let v38 : string = v26 + v34 
+    let v42 : string = v38 + v15 
+    let v47 : string = "near_workspaces.print_usd"
+    let v48 : string = v42 + v47 
+    let v53 : string = " / "
+    let v54 : string = v48 + v53 
+    let v58 : string = v54 + v11 
+    method19(v58)
+and closure18 (v0 : uint8, v1 : uint64, v2 : float) () : unit =
     let v17 : unit = ()
     let v18 : (unit -> unit) = closure6()
     let v19 : unit = (fun () -> v18 (); v17) ()
@@ -3942,7 +3810,7 @@ and closure19 (v0 : uint8, v1 : uint64, v2 : float) () : unit =
             let v64 : bool = 2 >= v63
             v64
     let v66 : bool = v65 = false
-    let v300 : US8 =
+    let v338 : US8 =
         if v66 then
             US8_1
         else
@@ -3950,15 +3818,15 @@ and closure19 (v0 : uint8, v1 : uint64, v2 : float) () : unit =
             let v83 : unit = (fun () -> v18 (); v82) ()
             let struct (v106 : Mut0, v107 : Mut1, v108 : Mut2, v109 : Mut3, v110 : Mut4, v111 : int64 option) = TraceState.trace_state.Value
             let v124 : string = method9(v106, v107, v108, v109, v110, v111)
-            let v125 : string = method31()
-            let v126 : string = method32(v106, v107, v108, v109, v110, v111, v124, v125, v0, v2, v1)
+            let v125 : string = method32()
+            let v126 : string = method33(v106, v107, v108, v109, v110, v111, v124, v125, v0, v2, v1)
             let v141 : unit = ()
             let v142 : unit = (fun () -> v18 (); v141) ()
             let struct (v165 : Mut0, v166 : Mut1, v167 : Mut2, v168 : Mut3, v169 : Mut4, v170 : int64 option) = TraceState.trace_state.Value
             let v185 : unit = ()
-            let v186 : (unit -> unit) = closure9(v165)
+            let v186 : (unit -> unit) = closure8(v165)
             let v187 : unit = (fun () -> v186 (); v185) ()
-            let v190 : (string -> unit) = closure10()
+            let v190 : (string -> unit) = closure9()
             (* run_target_args'
             let v191 : unit = ()
             run_target_args' *)
@@ -4048,30 +3916,30 @@ and closure19 (v0 : uint8, v1 : uint64, v2 : float) () : unit =
             let v264 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v263 
             let v265 : string = "$0.len()"
             let v266 : unativeint = Fable.Core.RustInterop.emitRustExpr v264 v265 
-            let v272 : int32 = v266 |> int32 
-            let v282 : string = ""
-            let v283 : bool = v126 <> v282 
-            let v287 : bool =
-                if v283 then
-                    let v286 : bool = v272 <= 1
-                    v286
+            let v310 : int32 = v266 |> int32 
+            let v320 : string = ""
+            let v321 : bool = v126 <> v320 
+            let v325 : bool =
+                if v321 then
+                    let v324 : bool = v310 <= 1
+                    v324
                 else
                     false
-            if v287 then
+            if v325 then
                 v168.l0 <- v210
                 ()
             else
-                v168.l0 <- v282
-                let v288 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v289 : bool = Fable.Core.RustInterop.emitRustExpr v264 v288 
-                let v290 : string = "x"
-                let v291 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v290 
-                let v292 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr v291 v292 
-                let v294 : string = $"true"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
-                let v296 : string = "true; }); //"
-                let v297 : bool = Fable.Core.RustInterop.emitRustExpr () v296 
+                v168.l0 <- v320
+                let v326 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v327 : bool = Fable.Core.RustInterop.emitRustExpr v264 v326 
+                let v328 : string = "x"
+                let v329 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v328 
+                let v330 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr v329 v330 
+                let v332 : string = $"true"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
+                let v334 : string = "true; }); //"
+                let v335 : bool = Fable.Core.RustInterop.emitRustExpr () v334 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -4087,179 +3955,119 @@ and closure19 (v0 : uint8, v1 : uint64, v2 : float) () : unit =
             v190 v126
             #endif
             // run_target_args' is_unit
-            let v298 : (string -> unit) = v166.l0
-            v298 v126
+            let v336 : (string -> unit) = v166.l0
+            v336 v126
             US8_0(v165, v166, v167, v168, v169, v170)
     
     ()
-and method35 (v0 : bool, v1 : float, v2 : float, v3 : uint64, v4 : u128) : string =
+and method36 (v0 : bool, v1 : float, v2 : float, v3 : uint64, v4 : u128) : string =
     let v5 : string = method15()
-    let v6 : Mut3 = {l0 = v5} : Mut3
+    let v7 : Mut3 = {l0 = v5} : Mut3
     let v9 : string = "{ "
-    let v10 : string = $"{v9}"
-    let v18 : unit = ()
-    let v19 : (unit -> unit) = closure8(v6, v10)
-    let v20 : unit = (fun () -> v19 (); v18) ()
-    let v28 : string = "is_success"
-    let v29 : string = $"{v28}"
-    let v37 : unit = ()
-    let v38 : (unit -> unit) = closure8(v6, v29)
-    let v39 : unit = (fun () -> v38 (); v37) ()
-    let v47 : string = " = "
-    let v48 : string = $"{v47}"
-    let v56 : unit = ()
-    let v57 : (unit -> unit) = closure8(v6, v48)
-    let v58 : unit = (fun () -> v57 (); v56) ()
-    let v66 : string =
+    method16(v7, v9)
+    let v24 : string = "is_success"
+    method16(v7, v24)
+    let v39 : string = " = "
+    method16(v7, v39)
+    let v55 : string =
         if v0 then
-            let v64 : string = "true"
-            v64
+            let v53 : string = "true"
+            v53
         else
-            let v65 : string = "false"
-            v65
-    let v68 : string = $"{v66}"
-    let v76 : unit = ()
-    let v77 : (unit -> unit) = closure8(v6, v68)
-    let v78 : unit = (fun () -> v77 (); v76) ()
-    let v86 : string = "; "
-    let v87 : string = $"{v86}"
-    let v95 : unit = ()
-    let v96 : (unit -> unit) = closure8(v6, v87)
-    let v97 : unit = (fun () -> v96 (); v95) ()
-    let v105 : string = "gas_burnt_usd"
-    let v106 : string = $"{v105}"
-    let v114 : unit = ()
-    let v115 : (unit -> unit) = closure8(v6, v106)
-    let v116 : unit = (fun () -> v115 (); v114) ()
-    let v123 : string = $"{v47}"
-    let v131 : unit = ()
-    let v132 : (unit -> unit) = closure8(v6, v123)
-    let v133 : unit = (fun () -> v132 (); v131) ()
-    let v143 : string = $"%+.6f{v1}"
-    let v151 : unit = ()
-    let v152 : (unit -> unit) = closure8(v6, v143)
-    let v153 : unit = (fun () -> v152 (); v151) ()
-    let v160 : string = $"{v86}"
-    let v168 : unit = ()
-    let v169 : (unit -> unit) = closure8(v6, v160)
-    let v170 : unit = (fun () -> v169 (); v168) ()
-    let v178 : string = "tokens_burnt_usd"
-    let v179 : string = $"{v178}"
-    let v187 : unit = ()
-    let v188 : (unit -> unit) = closure8(v6, v179)
-    let v189 : unit = (fun () -> v188 (); v187) ()
-    let v196 : string = $"{v47}"
-    let v204 : unit = ()
-    let v205 : (unit -> unit) = closure8(v6, v196)
-    let v206 : unit = (fun () -> v205 (); v204) ()
-    let v216 : string = $"%+.6f{v2}"
-    let v224 : unit = ()
-    let v225 : (unit -> unit) = closure8(v6, v216)
-    let v226 : unit = (fun () -> v225 (); v224) ()
-    let v233 : string = $"{v86}"
-    let v241 : unit = ()
-    let v242 : (unit -> unit) = closure8(v6, v233)
-    let v243 : unit = (fun () -> v242 (); v241) ()
-    let v251 : string = "gas_burnt"
-    let v252 : string = $"{v251}"
-    let v260 : unit = ()
-    let v261 : (unit -> unit) = closure8(v6, v252)
-    let v262 : unit = (fun () -> v261 (); v260) ()
-    let v269 : string = $"{v47}"
-    let v277 : unit = ()
-    let v278 : (unit -> unit) = closure8(v6, v269)
-    let v279 : unit = (fun () -> v278 (); v277) ()
-    let v289 : string = $"{v3}"
-    let v297 : unit = ()
-    let v298 : (unit -> unit) = closure8(v6, v289)
-    let v299 : unit = (fun () -> v298 (); v297) ()
-    let v306 : string = $"{v86}"
-    let v314 : unit = ()
-    let v315 : (unit -> unit) = closure8(v6, v306)
-    let v316 : unit = (fun () -> v315 (); v314) ()
-    let v324 : string = "tokens_burnt"
-    let v325 : string = $"{v324}"
-    let v333 : unit = ()
-    let v334 : (unit -> unit) = closure8(v6, v325)
-    let v335 : unit = (fun () -> v334 (); v333) ()
-    let v342 : string = $"{v47}"
-    let v350 : unit = ()
-    let v351 : (unit -> unit) = closure8(v6, v342)
-    let v352 : unit = (fun () -> v351 (); v350) ()
+            let v54 : string = "false"
+            v54
+    method16(v7, v55)
+    let v71 : string = "; "
+    method16(v7, v71)
+    let v86 : string = "gas_burnt_usd"
+    method16(v7, v86)
+    method16(v7, v39)
+    let v118 : string = $"%+.6f{v1}"
+    method16(v7, v118)
+    method16(v7, v71)
+    let v149 : string = "tokens_burnt_usd"
+    method16(v7, v149)
+    method16(v7, v39)
+    let v181 : string = $"%+.6f{v2}"
+    method16(v7, v181)
+    method16(v7, v71)
+    let v212 : string = "gas_burnt"
+    method16(v7, v212)
+    method16(v7, v39)
+    let v244 : string = $"{v3}"
+    method16(v7, v244)
+    method16(v7, v71)
+    let v275 : string = "tokens_burnt"
+    method16(v7, v275)
+    method16(v7, v39)
     (* run_target_args'
-    let v362 : unit = ()
+    let v307 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v363 : string = "format!(\"{:#?}\", $0)"
-    let v364 : std_string_String = Fable.Core.RustInterop.emitRustExpr v4 v363 
-    let v365 : string = "fable_library_rust::String_::fromString($0)"
-    let v366 : string = Fable.Core.RustInterop.emitRustExpr v364 v365 
-    let _run_target_args'_v362 = v366 
+    let v308 : string = "format!(\"{:#?}\", $0)"
+    let v309 : std_string_String = Fable.Core.RustInterop.emitRustExpr v4 v308 
+    let v310 : string = "fable_library_rust::String_::fromString($0)"
+    let v311 : string = Fable.Core.RustInterop.emitRustExpr v309 v310 
+    let _run_target_args'_v307 = v311 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v367 : string = "format!(\"{:#?}\", $0)"
-    let v368 : std_string_String = Fable.Core.RustInterop.emitRustExpr v4 v367 
-    let v369 : string = "fable_library_rust::String_::fromString($0)"
-    let v370 : string = Fable.Core.RustInterop.emitRustExpr v368 v369 
-    let _run_target_args'_v362 = v370 
+    let v312 : string = "format!(\"{:#?}\", $0)"
+    let v313 : std_string_String = Fable.Core.RustInterop.emitRustExpr v4 v312 
+    let v314 : string = "fable_library_rust::String_::fromString($0)"
+    let v315 : string = Fable.Core.RustInterop.emitRustExpr v313 v314 
+    let _run_target_args'_v307 = v315 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v371 : string = "format!(\"{:#?}\", $0)"
-    let v372 : std_string_String = Fable.Core.RustInterop.emitRustExpr v4 v371 
-    let v373 : string = "fable_library_rust::String_::fromString($0)"
-    let v374 : string = Fable.Core.RustInterop.emitRustExpr v372 v373 
-    let _run_target_args'_v362 = v374 
+    let v316 : string = "format!(\"{:#?}\", $0)"
+    let v317 : std_string_String = Fable.Core.RustInterop.emitRustExpr v4 v316 
+    let v318 : string = "fable_library_rust::String_::fromString($0)"
+    let v319 : string = Fable.Core.RustInterop.emitRustExpr v317 v318 
+    let _run_target_args'_v307 = v319 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v376 : string = $"%A{v4}"
-    let _run_target_args'_v362 = v376 
+    let v321 : string = $"%A{v4}"
+    let _run_target_args'_v307 = v321 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v380 : string = $"%A{v4}"
-    let _run_target_args'_v362 = v380 
+    let v325 : string = $"%A{v4}"
+    let _run_target_args'_v307 = v325 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v384 : string = $"%A{v4}"
-    let _run_target_args'_v362 = v384 
+    let v329 : string = $"%A{v4}"
+    let _run_target_args'_v307 = v329 
     #endif
 #else
-    let v388 : string = $"%A{v4}"
-    let _run_target_args'_v362 = v388 
+    let v333 : string = $"%A{v4}"
+    let _run_target_args'_v307 = v333 
     #endif
-    let v391 : string = _run_target_args'_v362 
-    let v401 : string = $"{v391}"
-    let v409 : unit = ()
-    let v410 : (unit -> unit) = closure8(v6, v401)
-    let v411 : unit = (fun () -> v410 (); v409) ()
-    let v419 : string = " }"
-    let v420 : string = $"{v419}"
-    let v428 : unit = ()
-    let v429 : (unit -> unit) = closure8(v6, v420)
-    let v430 : unit = (fun () -> v429 (); v428) ()
-    let v436 : string = v6.l0
-    v436
-and method34 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : bool, v9 : float, v10 : float, v11 : uint64, v12 : u128) : string =
-    let v13 : string = method35(v8, v9, v10, v11, v12)
+    let v336 : string = _run_target_args'_v307 
+    method16(v7, v336)
+    let v360 : string = " }"
+    method16(v7, v360)
+    let v374 : string = v7.l0
+    v374
+and method35 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : bool, v9 : float, v10 : float, v11 : uint64, v12 : u128) : string =
+    let v13 : string = method36(v8, v9, v10, v11, v12)
     let v14 : int64 = v0.l0
     let v17 : string = " "
     let v18 : string = v6 + v17 
     let v22 : string = v18 + v7 
     let v27 : string = " #"
     let v28 : string = v22 + v27 
-    let v32 : (int64 -> string) = _.ToString()
-    let v33 : string = v32 v14
-    let v37 : string = v28 + v33 
-    let v41 : string = v37 + v17 
-    let v46 : string = "near_workspaces.print_usd / outcome"
-    let v47 : string = v41 + v46 
-    let v52 : string = " / "
-    let v53 : string = v47 + v52 
-    let v57 : string = v53 + v13 
-    method18(v57)
-and closure21 (v0 : bool, v1 : uint64, v2 : float, v3 : u128, v4 : float) () : unit =
+    let v35 : (int64 -> string) = _.ToString()
+    let v36 : string = v35 v14
+    let v40 : string = v28 + v36 
+    let v44 : string = v40 + v17 
+    let v49 : string = "near_workspaces.print_usd / outcome"
+    let v50 : string = v44 + v49 
+    let v55 : string = " / "
+    let v56 : string = v50 + v55 
+    let v60 : string = v56 + v13 
+    method19(v60)
+and closure20 (v0 : bool, v1 : uint64, v2 : float, v3 : u128, v4 : float) () : unit =
     let v19 : unit = ()
     let v20 : (unit -> unit) = closure6()
     let v21 : unit = (fun () -> v20 (); v19) ()
@@ -4275,7 +4083,7 @@ and closure21 (v0 : bool, v1 : uint64, v2 : float, v3 : u128, v4 : float) () : u
             let v66 : bool = 2 >= v65
             v66
     let v68 : bool = v67 = false
-    let v302 : US8 =
+    let v340 : US8 =
         if v68 then
             US8_1
         else
@@ -4283,15 +4091,15 @@ and closure21 (v0 : bool, v1 : uint64, v2 : float, v3 : u128, v4 : float) () : u
             let v85 : unit = (fun () -> v20 (); v84) ()
             let struct (v108 : Mut0, v109 : Mut1, v110 : Mut2, v111 : Mut3, v112 : Mut4, v113 : int64 option) = TraceState.trace_state.Value
             let v126 : string = method9(v108, v109, v110, v111, v112, v113)
-            let v127 : string = method31()
-            let v128 : string = method34(v108, v109, v110, v111, v112, v113, v126, v127, v0, v2, v4, v1, v3)
+            let v127 : string = method32()
+            let v128 : string = method35(v108, v109, v110, v111, v112, v113, v126, v127, v0, v2, v4, v1, v3)
             let v143 : unit = ()
             let v144 : unit = (fun () -> v20 (); v143) ()
             let struct (v167 : Mut0, v168 : Mut1, v169 : Mut2, v170 : Mut3, v171 : Mut4, v172 : int64 option) = TraceState.trace_state.Value
             let v187 : unit = ()
-            let v188 : (unit -> unit) = closure9(v167)
+            let v188 : (unit -> unit) = closure8(v167)
             let v189 : unit = (fun () -> v188 (); v187) ()
-            let v192 : (string -> unit) = closure10()
+            let v192 : (string -> unit) = closure9()
             (* run_target_args'
             let v193 : unit = ()
             run_target_args' *)
@@ -4381,30 +4189,30 @@ and closure21 (v0 : bool, v1 : uint64, v2 : float, v3 : u128, v4 : float) () : u
             let v266 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v265 
             let v267 : string = "$0.len()"
             let v268 : unativeint = Fable.Core.RustInterop.emitRustExpr v266 v267 
-            let v274 : int32 = v268 |> int32 
-            let v284 : string = ""
-            let v285 : bool = v128 <> v284 
-            let v289 : bool =
-                if v285 then
-                    let v288 : bool = v274 <= 1
-                    v288
+            let v312 : int32 = v268 |> int32 
+            let v322 : string = ""
+            let v323 : bool = v128 <> v322 
+            let v327 : bool =
+                if v323 then
+                    let v326 : bool = v312 <= 1
+                    v326
                 else
                     false
-            if v289 then
+            if v327 then
                 v170.l0 <- v212
                 ()
             else
-                v170.l0 <- v284
-                let v290 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v291 : bool = Fable.Core.RustInterop.emitRustExpr v266 v290 
-                let v292 : string = "x"
-                let v293 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v292 
-                let v294 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr v293 v294 
-                let v296 : string = $"true"
-                let v297 : bool = Fable.Core.RustInterop.emitRustExpr () v296 
-                let v298 : string = "true; }); //"
-                let v299 : bool = Fable.Core.RustInterop.emitRustExpr () v298 
+                v170.l0 <- v322
+                let v328 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v329 : bool = Fable.Core.RustInterop.emitRustExpr v266 v328 
+                let v330 : string = "x"
+                let v331 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v330 
+                let v332 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr v331 v332 
+                let v334 : string = $"true"
+                let v335 : bool = Fable.Core.RustInterop.emitRustExpr () v334 
+                let v336 : string = "true; }); //"
+                let v337 : bool = Fable.Core.RustInterop.emitRustExpr () v336 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -4420,12 +4228,12 @@ and closure21 (v0 : bool, v1 : uint64, v2 : float, v3 : u128, v4 : float) () : u
             v192 v128
             #endif
             // run_target_args' is_unit
-            let v300 : (string -> unit) = v168.l0
-            v300 v128
+            let v338 : (string -> unit) = v168.l0
+            v338 v128
             US8_0(v167, v168, v169, v170, v171, v172)
     
     ()
-and closure20 () (v0 : near_workspaces_result_ExecutionOutcome) : unit =
+and closure19 () (v0 : near_workspaces_result_ExecutionOutcome) : unit =
     let v1 : string = "$0.is_success()"
     let v2 : bool = Fable.Core.RustInterop.emitRustExpr v0 v1 
     let v3 : string = "$0.gas_burnt"
@@ -4444,102 +4252,87 @@ and closure20 () (v0 : near_workspaces_result_ExecutionOutcome) : unit =
     let v19 : float = Fable.Core.RustInterop.emitRustExpr v17 v18 
     let v20 : float = v19 / 1E+24
     let v21 : float = v20 * 6.68
-    let v333 : unit = ()
-    let v334 : (unit -> unit) = closure21(v2, v6, v13, v17, v21)
-    let v335 : unit = (fun () -> v334 (); v333) ()
+    let v371 : unit = ()
+    let v372 : (unit -> unit) = closure20(v2, v6, v13, v17, v21)
+    let v373 : unit = (fun () -> v372 (); v371) ()
     ()
-and method37 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure>) : string =
+and method38 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure>) : string =
     let v1 : string = method15()
-    let v2 : Mut3 = {l0 = v1} : Mut3
+    let v3 : Mut3 = {l0 = v1} : Mut3
     let v5 : string = "{ "
-    let v6 : string = $"{v5}"
-    let v14 : unit = ()
-    let v15 : (unit -> unit) = closure8(v2, v6)
-    let v16 : unit = (fun () -> v15 (); v14) ()
-    let v24 : string = "result2"
-    let v25 : string = $"{v24}"
-    let v33 : unit = ()
-    let v34 : (unit -> unit) = closure8(v2, v25)
-    let v35 : unit = (fun () -> v34 (); v33) ()
-    let v43 : string = " = "
-    let v44 : string = $"{v43}"
-    let v52 : unit = ()
-    let v53 : (unit -> unit) = closure8(v2, v44)
-    let v54 : unit = (fun () -> v53 (); v52) ()
+    method16(v3, v5)
+    let v20 : string = "result2"
+    method16(v3, v20)
+    let v35 : string = " = "
+    method16(v3, v35)
     (* run_target_args'
-    let v64 : unit = ()
+    let v53 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v65 : string = "format!(\"{:#?}\", $0)"
-    let v66 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v65 
-    let v67 : string = "fable_library_rust::String_::fromString($0)"
-    let v68 : string = Fable.Core.RustInterop.emitRustExpr v66 v67 
-    let _run_target_args'_v64 = v68 
+    let v54 : string = "format!(\"{:#?}\", $0)"
+    let v55 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v54 
+    let v56 : string = "fable_library_rust::String_::fromString($0)"
+    let v57 : string = Fable.Core.RustInterop.emitRustExpr v55 v56 
+    let _run_target_args'_v53 = v57 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v69 : string = "format!(\"{:#?}\", $0)"
-    let v70 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v69 
-    let v71 : string = "fable_library_rust::String_::fromString($0)"
-    let v72 : string = Fable.Core.RustInterop.emitRustExpr v70 v71 
-    let _run_target_args'_v64 = v72 
+    let v58 : string = "format!(\"{:#?}\", $0)"
+    let v59 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v58 
+    let v60 : string = "fable_library_rust::String_::fromString($0)"
+    let v61 : string = Fable.Core.RustInterop.emitRustExpr v59 v60 
+    let _run_target_args'_v53 = v61 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v73 : string = "format!(\"{:#?}\", $0)"
-    let v74 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v73 
-    let v75 : string = "fable_library_rust::String_::fromString($0)"
-    let v76 : string = Fable.Core.RustInterop.emitRustExpr v74 v75 
-    let _run_target_args'_v64 = v76 
+    let v62 : string = "format!(\"{:#?}\", $0)"
+    let v63 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v62 
+    let v64 : string = "fable_library_rust::String_::fromString($0)"
+    let v65 : string = Fable.Core.RustInterop.emitRustExpr v63 v64 
+    let _run_target_args'_v53 = v65 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v78 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v78 
+    let v67 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v67 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v82 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v82 
+    let v71 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v71 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v86 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v86 
+    let v75 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v75 
     #endif
 #else
-    let v90 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v90 
+    let v79 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v79 
     #endif
-    let v93 : string = _run_target_args'_v64 
-    let v103 : string = $"{v93}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v2, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v121 : string = " }"
-    let v122 : string = $"{v121}"
-    let v130 : unit = ()
-    let v131 : (unit -> unit) = closure8(v2, v122)
-    let v132 : unit = (fun () -> v131 (); v130) ()
-    let v138 : string = v2.l0
-    v138
-and method36 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure>) : string =
-    let v9 : string = method37(v8)
+    let v82 : string = _run_target_args'_v53 
+    method16(v3, v82)
+    let v106 : string = " }"
+    method16(v3, v106)
+    let v120 : string = v3.l0
+    v120
+and method37 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure>) : string =
+    let v9 : string = method38(v8)
     let v10 : int64 = v0.l0
     let v13 : string = " "
     let v14 : string = v6 + v13 
     let v18 : string = v14 + v7 
     let v23 : string = " #"
     let v24 : string = v18 + v23 
-    let v28 : (int64 -> string) = _.ToString()
-    let v29 : string = v28 v10
-    let v33 : string = v24 + v29 
-    let v37 : string = v33 + v13 
-    let v42 : string = "spiral_wasm.run"
-    let v43 : string = v37 + v42 
-    let v48 : string = " / "
-    let v49 : string = v43 + v48 
-    let v53 : string = v49 + v9 
-    method18(v53)
-and closure22 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure>) () : unit =
+    let v31 : (int64 -> string) = _.ToString()
+    let v32 : string = v31 v10
+    let v36 : string = v24 + v32 
+    let v40 : string = v36 + v13 
+    let v45 : string = "spiral_wasm.run"
+    let v46 : string = v40 + v45 
+    let v51 : string = " / "
+    let v52 : string = v46 + v51 
+    let v56 : string = v52 + v9 
+    method19(v56)
+and closure21 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure>) () : unit =
     let v15 : unit = ()
     let v16 : (unit -> unit) = closure6()
     let v17 : unit = (fun () -> v16 (); v15) ()
@@ -4555,7 +4348,7 @@ and closure22 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspa
             let v62 : bool = 0 >= v61
             v62
     let v64 : bool = v63 = false
-    let v298 : US8 =
+    let v336 : US8 =
         if v64 then
             US8_1
         else
@@ -4564,14 +4357,14 @@ and closure22 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspa
             let struct (v104 : Mut0, v105 : Mut1, v106 : Mut2, v107 : Mut3, v108 : Mut4, v109 : int64 option) = TraceState.trace_state.Value
             let v122 : string = method9(v104, v105, v106, v107, v108, v109)
             let v123 : string = method13()
-            let v124 : string = method36(v104, v105, v106, v107, v108, v109, v122, v123, v0)
+            let v124 : string = method37(v104, v105, v106, v107, v108, v109, v122, v123, v0)
             let v139 : unit = ()
             let v140 : unit = (fun () -> v16 (); v139) ()
             let struct (v163 : Mut0, v164 : Mut1, v165 : Mut2, v166 : Mut3, v167 : Mut4, v168 : int64 option) = TraceState.trace_state.Value
             let v183 : unit = ()
-            let v184 : (unit -> unit) = closure9(v163)
+            let v184 : (unit -> unit) = closure8(v163)
             let v185 : unit = (fun () -> v184 (); v183) ()
-            let v188 : (string -> unit) = closure10()
+            let v188 : (string -> unit) = closure9()
             (* run_target_args'
             let v189 : unit = ()
             run_target_args' *)
@@ -4661,30 +4454,30 @@ and closure22 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspa
             let v262 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v261 
             let v263 : string = "$0.len()"
             let v264 : unativeint = Fable.Core.RustInterop.emitRustExpr v262 v263 
-            let v270 : int32 = v264 |> int32 
-            let v280 : string = ""
-            let v281 : bool = v124 <> v280 
-            let v285 : bool =
-                if v281 then
-                    let v284 : bool = v270 <= 1
-                    v284
+            let v308 : int32 = v264 |> int32 
+            let v318 : string = ""
+            let v319 : bool = v124 <> v318 
+            let v323 : bool =
+                if v319 then
+                    let v322 : bool = v308 <= 1
+                    v322
                 else
                     false
-            if v285 then
+            if v323 then
                 v166.l0 <- v208
                 ()
             else
-                v166.l0 <- v280
-                let v286 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v287 : bool = Fable.Core.RustInterop.emitRustExpr v262 v286 
-                let v288 : string = "x"
-                let v289 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v288 
-                let v290 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v291 : bool = Fable.Core.RustInterop.emitRustExpr v289 v290 
-                let v292 : string = $"true"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr () v292 
-                let v294 : string = "true; }); //"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
+                v166.l0 <- v318
+                let v324 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v325 : bool = Fable.Core.RustInterop.emitRustExpr v262 v324 
+                let v326 : string = "x"
+                let v327 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v326 
+                let v328 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v329 : bool = Fable.Core.RustInterop.emitRustExpr v327 v328 
+                let v330 : string = $"true"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr () v330 
+                let v332 : string = "true; }); //"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -4700,123 +4493,97 @@ and closure22 (v0 : Result<near_workspaces_result_ExecutionSuccess, near_workspa
             v188 v124
             #endif
             // run_target_args' is_unit
-            let v296 : (string -> unit) = v164.l0
-            v296 v124
+            let v334 : (string -> unit) = v164.l0
+            v334 v124
             US8_0(v163, v164, v165, v166, v167, v168)
     
     ()
-and method38 (v0 : near_workspaces_result_ExecutionFinalResult) : near_workspaces_result_ExecutionFinalResult =
+and method39 (v0 : near_workspaces_result_ExecutionFinalResult) : near_workspaces_result_ExecutionFinalResult =
     v0
-and method40 (v0 : int32, v1 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>) : string =
+and method41 (v0 : int32, v1 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>) : string =
     let v2 : string = method15()
-    let v3 : Mut3 = {l0 = v2} : Mut3
+    let v4 : Mut3 = {l0 = v2} : Mut3
     let v6 : string = "{ "
-    let v7 : string = $"{v6}"
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure8(v3, v7)
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let v25 : string = "receipt_failures_len"
-    let v26 : string = $"{v25}"
-    let v34 : unit = ()
-    let v35 : (unit -> unit) = closure8(v3, v26)
-    let v36 : unit = (fun () -> v35 (); v34) ()
-    let v44 : string = " = "
-    let v45 : string = $"{v44}"
-    let v53 : unit = ()
-    let v54 : (unit -> unit) = closure8(v3, v45)
-    let v55 : unit = (fun () -> v54 (); v53) ()
-    let v65 : string = $"{v0}"
-    let v73 : unit = ()
-    let v74 : (unit -> unit) = closure8(v3, v65)
-    let v75 : unit = (fun () -> v74 (); v73) ()
-    let v83 : string = "; "
-    let v84 : string = $"{v83}"
-    let v92 : unit = ()
-    let v93 : (unit -> unit) = closure8(v3, v84)
-    let v94 : unit = (fun () -> v93 (); v92) ()
-    let v102 : string = "receipt_failures"
-    let v103 : string = $"{v102}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v3, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v120 : string = $"{v44}"
-    let v128 : unit = ()
-    let v129 : (unit -> unit) = closure8(v3, v120)
-    let v130 : unit = (fun () -> v129 (); v128) ()
+    method16(v4, v6)
+    let v21 : string = "receipt_failures_len"
+    method16(v4, v21)
+    let v36 : string = " = "
+    method16(v4, v36)
+    let v54 : string = $"{v0}"
+    method16(v4, v54)
+    let v71 : string = "; "
+    method16(v4, v71)
+    let v86 : string = "receipt_failures"
+    method16(v4, v86)
+    method16(v4, v36)
     (* run_target_args'
-    let v140 : unit = ()
+    let v118 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v141 : string = "format!(\"{:#?}\", $0)"
-    let v142 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v141 
-    let v143 : string = "fable_library_rust::String_::fromString($0)"
-    let v144 : string = Fable.Core.RustInterop.emitRustExpr v142 v143 
-    let _run_target_args'_v140 = v144 
+    let v119 : string = "format!(\"{:#?}\", $0)"
+    let v120 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v119 
+    let v121 : string = "fable_library_rust::String_::fromString($0)"
+    let v122 : string = Fable.Core.RustInterop.emitRustExpr v120 v121 
+    let _run_target_args'_v118 = v122 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v145 : string = "format!(\"{:#?}\", $0)"
-    let v146 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v145 
-    let v147 : string = "fable_library_rust::String_::fromString($0)"
-    let v148 : string = Fable.Core.RustInterop.emitRustExpr v146 v147 
-    let _run_target_args'_v140 = v148 
+    let v123 : string = "format!(\"{:#?}\", $0)"
+    let v124 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v123 
+    let v125 : string = "fable_library_rust::String_::fromString($0)"
+    let v126 : string = Fable.Core.RustInterop.emitRustExpr v124 v125 
+    let _run_target_args'_v118 = v126 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v149 : string = "format!(\"{:#?}\", $0)"
-    let v150 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v149 
-    let v151 : string = "fable_library_rust::String_::fromString($0)"
-    let v152 : string = Fable.Core.RustInterop.emitRustExpr v150 v151 
-    let _run_target_args'_v140 = v152 
+    let v127 : string = "format!(\"{:#?}\", $0)"
+    let v128 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v127 
+    let v129 : string = "fable_library_rust::String_::fromString($0)"
+    let v130 : string = Fable.Core.RustInterop.emitRustExpr v128 v129 
+    let _run_target_args'_v118 = v130 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v154 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v154 
+    let v132 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v132 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v158 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v158 
+    let v136 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v136 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v162 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v162 
+    let v140 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v140 
     #endif
 #else
-    let v166 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v166 
+    let v144 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v144 
     #endif
-    let v169 : string = _run_target_args'_v140 
-    let v179 : string = $"{v169}"
-    let v187 : unit = ()
-    let v188 : (unit -> unit) = closure8(v3, v179)
-    let v189 : unit = (fun () -> v188 (); v187) ()
-    let v197 : string = " }"
-    let v198 : string = $"{v197}"
-    let v206 : unit = ()
-    let v207 : (unit -> unit) = closure8(v3, v198)
-    let v208 : unit = (fun () -> v207 (); v206) ()
-    let v214 : string = v3.l0
-    v214
-and method39 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>) : string =
-    let v10 : string = method40(v8, v9)
+    let v147 : string = _run_target_args'_v118 
+    method16(v4, v147)
+    let v171 : string = " }"
+    method16(v4, v171)
+    let v185 : string = v4.l0
+    v185
+and method40 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>) : string =
+    let v10 : string = method41(v8, v9)
     let v11 : int64 = v0.l0
     let v14 : string = " "
     let v15 : string = v6 + v14 
     let v19 : string = v15 + v7 
     let v24 : string = " #"
     let v25 : string = v19 + v24 
-    let v29 : (int64 -> string) = _.ToString()
-    let v30 : string = v29 v11
-    let v34 : string = v25 + v30 
-    let v38 : string = v34 + v14 
-    let v43 : string = "spiral_wasm.run"
-    let v44 : string = v38 + v43 
-    let v49 : string = " / "
-    let v50 : string = v44 + v49 
-    let v54 : string = v50 + v10 
-    method18(v54)
-and closure23 (v0 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>, v1 : int32) () : unit =
+    let v32 : (int64 -> string) = _.ToString()
+    let v33 : string = v32 v11
+    let v37 : string = v25 + v33 
+    let v41 : string = v37 + v14 
+    let v46 : string = "spiral_wasm.run"
+    let v47 : string = v41 + v46 
+    let v52 : string = " / "
+    let v53 : string = v47 + v52 
+    let v57 : string = v53 + v10 
+    method19(v57)
+and closure22 (v0 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>, v1 : int32) () : unit =
     let v16 : unit = ()
     let v17 : (unit -> unit) = closure6()
     let v18 : unit = (fun () -> v17 (); v16) ()
@@ -4832,7 +4599,7 @@ and closure23 (v0 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>, v1 : int3
             let v63 : bool = 0 >= v62
             v63
     let v65 : bool = v64 = false
-    let v299 : US8 =
+    let v337 : US8 =
         if v65 then
             US8_1
         else
@@ -4841,14 +4608,14 @@ and closure23 (v0 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>, v1 : int3
             let struct (v105 : Mut0, v106 : Mut1, v107 : Mut2, v108 : Mut3, v109 : Mut4, v110 : int64 option) = TraceState.trace_state.Value
             let v123 : string = method9(v105, v106, v107, v108, v109, v110)
             let v124 : string = method13()
-            let v125 : string = method39(v105, v106, v107, v108, v109, v110, v123, v124, v1, v0)
+            let v125 : string = method40(v105, v106, v107, v108, v109, v110, v123, v124, v1, v0)
             let v140 : unit = ()
             let v141 : unit = (fun () -> v17 (); v140) ()
             let struct (v164 : Mut0, v165 : Mut1, v166 : Mut2, v167 : Mut3, v168 : Mut4, v169 : int64 option) = TraceState.trace_state.Value
             let v184 : unit = ()
-            let v185 : (unit -> unit) = closure9(v164)
+            let v185 : (unit -> unit) = closure8(v164)
             let v186 : unit = (fun () -> v185 (); v184) ()
-            let v189 : (string -> unit) = closure10()
+            let v189 : (string -> unit) = closure9()
             (* run_target_args'
             let v190 : unit = ()
             run_target_args' *)
@@ -4938,30 +4705,30 @@ and closure23 (v0 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>, v1 : int3
             let v263 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v262 
             let v264 : string = "$0.len()"
             let v265 : unativeint = Fable.Core.RustInterop.emitRustExpr v263 v264 
-            let v271 : int32 = v265 |> int32 
-            let v281 : string = ""
-            let v282 : bool = v125 <> v281 
-            let v286 : bool =
-                if v282 then
-                    let v285 : bool = v271 <= 1
-                    v285
+            let v309 : int32 = v265 |> int32 
+            let v319 : string = ""
+            let v320 : bool = v125 <> v319 
+            let v324 : bool =
+                if v320 then
+                    let v323 : bool = v309 <= 1
+                    v323
                 else
                     false
-            if v286 then
+            if v324 then
                 v167.l0 <- v209
                 ()
             else
-                v167.l0 <- v281
-                let v287 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v288 : bool = Fable.Core.RustInterop.emitRustExpr v263 v287 
-                let v289 : string = "x"
-                let v290 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v289 
-                let v291 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v292 : bool = Fable.Core.RustInterop.emitRustExpr v290 v291 
-                let v293 : string = $"true"
-                let v294 : bool = Fable.Core.RustInterop.emitRustExpr () v293 
-                let v295 : string = "true; }); //"
-                let v296 : bool = Fable.Core.RustInterop.emitRustExpr () v295 
+                v167.l0 <- v319
+                let v325 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v326 : bool = Fable.Core.RustInterop.emitRustExpr v263 v325 
+                let v327 : string = "x"
+                let v328 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v327 
+                let v329 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v330 : bool = Fable.Core.RustInterop.emitRustExpr v328 v329 
+                let v331 : string = $"true"
+                let v332 : bool = Fable.Core.RustInterop.emitRustExpr () v331 
+                let v333 : string = "true; }); //"
+                let v334 : bool = Fable.Core.RustInterop.emitRustExpr () v333 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -4977,123 +4744,97 @@ and closure23 (v0 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>, v1 : int3
             v189 v125
             #endif
             // run_target_args' is_unit
-            let v297 : (string -> unit) = v165.l0
-            v297 v125
+            let v335 : (string -> unit) = v165.l0
+            v335 v125
             US8_0(v164, v165, v166, v167, v168, v169)
     
     ()
-and method41 (v0 : near_workspaces_result_ExecutionFinalResult) : near_workspaces_result_ExecutionFinalResult =
+and method42 (v0 : near_workspaces_result_ExecutionFinalResult) : near_workspaces_result_ExecutionFinalResult =
     v0
-and method43 (v0 : int32, v1 : Vec<near_workspaces_result_ExecutionOutcome>) : string =
+and method44 (v0 : int32, v1 : Vec<near_workspaces_result_ExecutionOutcome>) : string =
     let v2 : string = method15()
-    let v3 : Mut3 = {l0 = v2} : Mut3
+    let v4 : Mut3 = {l0 = v2} : Mut3
     let v6 : string = "{ "
-    let v7 : string = $"{v6}"
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure8(v3, v7)
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let v25 : string = "receipt_outcomes_len"
-    let v26 : string = $"{v25}"
-    let v34 : unit = ()
-    let v35 : (unit -> unit) = closure8(v3, v26)
-    let v36 : unit = (fun () -> v35 (); v34) ()
-    let v44 : string = " = "
-    let v45 : string = $"{v44}"
-    let v53 : unit = ()
-    let v54 : (unit -> unit) = closure8(v3, v45)
-    let v55 : unit = (fun () -> v54 (); v53) ()
-    let v65 : string = $"{v0}"
-    let v73 : unit = ()
-    let v74 : (unit -> unit) = closure8(v3, v65)
-    let v75 : unit = (fun () -> v74 (); v73) ()
-    let v83 : string = "; "
-    let v84 : string = $"{v83}"
-    let v92 : unit = ()
-    let v93 : (unit -> unit) = closure8(v3, v84)
-    let v94 : unit = (fun () -> v93 (); v92) ()
-    let v102 : string = "receipt_outcomes"
-    let v103 : string = $"{v102}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v3, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v120 : string = $"{v44}"
-    let v128 : unit = ()
-    let v129 : (unit -> unit) = closure8(v3, v120)
-    let v130 : unit = (fun () -> v129 (); v128) ()
+    method16(v4, v6)
+    let v21 : string = "receipt_outcomes_len"
+    method16(v4, v21)
+    let v36 : string = " = "
+    method16(v4, v36)
+    let v54 : string = $"{v0}"
+    method16(v4, v54)
+    let v71 : string = "; "
+    method16(v4, v71)
+    let v86 : string = "receipt_outcomes"
+    method16(v4, v86)
+    method16(v4, v36)
     (* run_target_args'
-    let v140 : unit = ()
+    let v118 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v141 : string = "format!(\"{:#?}\", $0)"
-    let v142 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v141 
-    let v143 : string = "fable_library_rust::String_::fromString($0)"
-    let v144 : string = Fable.Core.RustInterop.emitRustExpr v142 v143 
-    let _run_target_args'_v140 = v144 
+    let v119 : string = "format!(\"{:#?}\", $0)"
+    let v120 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v119 
+    let v121 : string = "fable_library_rust::String_::fromString($0)"
+    let v122 : string = Fable.Core.RustInterop.emitRustExpr v120 v121 
+    let _run_target_args'_v118 = v122 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v145 : string = "format!(\"{:#?}\", $0)"
-    let v146 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v145 
-    let v147 : string = "fable_library_rust::String_::fromString($0)"
-    let v148 : string = Fable.Core.RustInterop.emitRustExpr v146 v147 
-    let _run_target_args'_v140 = v148 
+    let v123 : string = "format!(\"{:#?}\", $0)"
+    let v124 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v123 
+    let v125 : string = "fable_library_rust::String_::fromString($0)"
+    let v126 : string = Fable.Core.RustInterop.emitRustExpr v124 v125 
+    let _run_target_args'_v118 = v126 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v149 : string = "format!(\"{:#?}\", $0)"
-    let v150 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v149 
-    let v151 : string = "fable_library_rust::String_::fromString($0)"
-    let v152 : string = Fable.Core.RustInterop.emitRustExpr v150 v151 
-    let _run_target_args'_v140 = v152 
+    let v127 : string = "format!(\"{:#?}\", $0)"
+    let v128 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v127 
+    let v129 : string = "fable_library_rust::String_::fromString($0)"
+    let v130 : string = Fable.Core.RustInterop.emitRustExpr v128 v129 
+    let _run_target_args'_v118 = v130 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v154 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v154 
+    let v132 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v132 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v158 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v158 
+    let v136 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v136 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v162 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v162 
+    let v140 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v140 
     #endif
 #else
-    let v166 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v166 
+    let v144 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v144 
     #endif
-    let v169 : string = _run_target_args'_v140 
-    let v179 : string = $"{v169}"
-    let v187 : unit = ()
-    let v188 : (unit -> unit) = closure8(v3, v179)
-    let v189 : unit = (fun () -> v188 (); v187) ()
-    let v197 : string = " }"
-    let v198 : string = $"{v197}"
-    let v206 : unit = ()
-    let v207 : (unit -> unit) = closure8(v3, v198)
-    let v208 : unit = (fun () -> v207 (); v206) ()
-    let v214 : string = v3.l0
-    v214
-and method42 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : Vec<near_workspaces_result_ExecutionOutcome>) : string =
-    let v10 : string = method43(v8, v9)
+    let v147 : string = _run_target_args'_v118 
+    method16(v4, v147)
+    let v171 : string = " }"
+    method16(v4, v171)
+    let v185 : string = v4.l0
+    v185
+and method43 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : int32, v9 : Vec<near_workspaces_result_ExecutionOutcome>) : string =
+    let v10 : string = method44(v8, v9)
     let v11 : int64 = v0.l0
     let v14 : string = " "
     let v15 : string = v6 + v14 
     let v19 : string = v15 + v7 
     let v24 : string = " #"
     let v25 : string = v19 + v24 
-    let v29 : (int64 -> string) = _.ToString()
-    let v30 : string = v29 v11
-    let v34 : string = v25 + v30 
-    let v38 : string = v34 + v14 
-    let v43 : string = "spiral_wasm.run"
-    let v44 : string = v38 + v43 
-    let v49 : string = " / "
-    let v50 : string = v44 + v49 
-    let v54 : string = v50 + v10 
-    method18(v54)
-and closure24 (v0 : Vec<near_workspaces_result_ExecutionOutcome>, v1 : int32) () : unit =
+    let v32 : (int64 -> string) = _.ToString()
+    let v33 : string = v32 v11
+    let v37 : string = v25 + v33 
+    let v41 : string = v37 + v14 
+    let v46 : string = "spiral_wasm.run"
+    let v47 : string = v41 + v46 
+    let v52 : string = " / "
+    let v53 : string = v47 + v52 
+    let v57 : string = v53 + v10 
+    method19(v57)
+and closure23 (v0 : Vec<near_workspaces_result_ExecutionOutcome>, v1 : int32) () : unit =
     let v16 : unit = ()
     let v17 : (unit -> unit) = closure6()
     let v18 : unit = (fun () -> v17 (); v16) ()
@@ -5109,7 +4850,7 @@ and closure24 (v0 : Vec<near_workspaces_result_ExecutionOutcome>, v1 : int32) ()
             let v63 : bool = 0 >= v62
             v63
     let v65 : bool = v64 = false
-    let v299 : US8 =
+    let v337 : US8 =
         if v65 then
             US8_1
         else
@@ -5118,14 +4859,14 @@ and closure24 (v0 : Vec<near_workspaces_result_ExecutionOutcome>, v1 : int32) ()
             let struct (v105 : Mut0, v106 : Mut1, v107 : Mut2, v108 : Mut3, v109 : Mut4, v110 : int64 option) = TraceState.trace_state.Value
             let v123 : string = method9(v105, v106, v107, v108, v109, v110)
             let v124 : string = method13()
-            let v125 : string = method42(v105, v106, v107, v108, v109, v110, v123, v124, v1, v0)
+            let v125 : string = method43(v105, v106, v107, v108, v109, v110, v123, v124, v1, v0)
             let v140 : unit = ()
             let v141 : unit = (fun () -> v17 (); v140) ()
             let struct (v164 : Mut0, v165 : Mut1, v166 : Mut2, v167 : Mut3, v168 : Mut4, v169 : int64 option) = TraceState.trace_state.Value
             let v184 : unit = ()
-            let v185 : (unit -> unit) = closure9(v164)
+            let v185 : (unit -> unit) = closure8(v164)
             let v186 : unit = (fun () -> v185 (); v184) ()
-            let v189 : (string -> unit) = closure10()
+            let v189 : (string -> unit) = closure9()
             (* run_target_args'
             let v190 : unit = ()
             run_target_args' *)
@@ -5215,30 +4956,30 @@ and closure24 (v0 : Vec<near_workspaces_result_ExecutionOutcome>, v1 : int32) ()
             let v263 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v262 
             let v264 : string = "$0.len()"
             let v265 : unativeint = Fable.Core.RustInterop.emitRustExpr v263 v264 
-            let v271 : int32 = v265 |> int32 
-            let v281 : string = ""
-            let v282 : bool = v125 <> v281 
-            let v286 : bool =
-                if v282 then
-                    let v285 : bool = v271 <= 1
-                    v285
+            let v309 : int32 = v265 |> int32 
+            let v319 : string = ""
+            let v320 : bool = v125 <> v319 
+            let v324 : bool =
+                if v320 then
+                    let v323 : bool = v309 <= 1
+                    v323
                 else
                     false
-            if v286 then
+            if v324 then
                 v167.l0 <- v209
                 ()
             else
-                v167.l0 <- v281
-                let v287 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v288 : bool = Fable.Core.RustInterop.emitRustExpr v263 v287 
-                let v289 : string = "x"
-                let v290 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v289 
-                let v291 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v292 : bool = Fable.Core.RustInterop.emitRustExpr v290 v291 
-                let v293 : string = $"true"
-                let v294 : bool = Fable.Core.RustInterop.emitRustExpr () v293 
-                let v295 : string = "true; }); //"
-                let v296 : bool = Fable.Core.RustInterop.emitRustExpr () v295 
+                v167.l0 <- v319
+                let v325 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v326 : bool = Fable.Core.RustInterop.emitRustExpr v263 v325 
+                let v327 : string = "x"
+                let v328 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v327 
+                let v329 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v330 : bool = Fable.Core.RustInterop.emitRustExpr v328 v329 
+                let v331 : string = $"true"
+                let v332 : bool = Fable.Core.RustInterop.emitRustExpr () v331 
+                let v333 : string = "true; }); //"
+                let v334 : bool = Fable.Core.RustInterop.emitRustExpr () v333 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -5254,102 +4995,329 @@ and closure24 (v0 : Vec<near_workspaces_result_ExecutionOutcome>, v1 : int32) ()
             v189 v125
             #endif
             // run_target_args' is_unit
-            let v297 : (string -> unit) = v165.l0
-            v297 v125
+            let v335 : (string -> unit) = v165.l0
+            v335 v125
             US8_0(v164, v165, v166, v167, v168, v169)
     
     ()
-and method45 (v0 : Result<std_string_String, near_workspaces_error_Error>) : string =
+and method46 (v0 : Result<std_string_String, near_workspaces_error_Error>) : string =
     let v1 : string = method15()
-    let v2 : Mut3 = {l0 = v1} : Mut3
+    let v3 : Mut3 = {l0 = v1} : Mut3
     let v5 : string = "{ "
-    let v6 : string = $"{v5}"
-    let v14 : unit = ()
-    let v15 : (unit -> unit) = closure8(v2, v6)
-    let v16 : unit = (fun () -> v15 (); v14) ()
-    let v24 : string = "json"
-    let v25 : string = $"{v24}"
-    let v33 : unit = ()
-    let v34 : (unit -> unit) = closure8(v2, v25)
-    let v35 : unit = (fun () -> v34 (); v33) ()
-    let v43 : string = " = "
-    let v44 : string = $"{v43}"
-    let v52 : unit = ()
-    let v53 : (unit -> unit) = closure8(v2, v44)
-    let v54 : unit = (fun () -> v53 (); v52) ()
+    method16(v3, v5)
+    let v20 : string = "json"
+    method16(v3, v20)
+    let v35 : string = " = "
+    method16(v3, v35)
     (* run_target_args'
-    let v64 : unit = ()
+    let v53 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v65 : string = "format!(\"{:#?}\", $0)"
-    let v66 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v65 
-    let v67 : string = "fable_library_rust::String_::fromString($0)"
-    let v68 : string = Fable.Core.RustInterop.emitRustExpr v66 v67 
-    let _run_target_args'_v64 = v68 
+    let v54 : string = "format!(\"{:#?}\", $0)"
+    let v55 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v54 
+    let v56 : string = "fable_library_rust::String_::fromString($0)"
+    let v57 : string = Fable.Core.RustInterop.emitRustExpr v55 v56 
+    let _run_target_args'_v53 = v57 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v69 : string = "format!(\"{:#?}\", $0)"
-    let v70 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v69 
-    let v71 : string = "fable_library_rust::String_::fromString($0)"
-    let v72 : string = Fable.Core.RustInterop.emitRustExpr v70 v71 
-    let _run_target_args'_v64 = v72 
+    let v58 : string = "format!(\"{:#?}\", $0)"
+    let v59 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v58 
+    let v60 : string = "fable_library_rust::String_::fromString($0)"
+    let v61 : string = Fable.Core.RustInterop.emitRustExpr v59 v60 
+    let _run_target_args'_v53 = v61 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v73 : string = "format!(\"{:#?}\", $0)"
-    let v74 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v73 
-    let v75 : string = "fable_library_rust::String_::fromString($0)"
-    let v76 : string = Fable.Core.RustInterop.emitRustExpr v74 v75 
-    let _run_target_args'_v64 = v76 
+    let v62 : string = "format!(\"{:#?}\", $0)"
+    let v63 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v62 
+    let v64 : string = "fable_library_rust::String_::fromString($0)"
+    let v65 : string = Fable.Core.RustInterop.emitRustExpr v63 v64 
+    let _run_target_args'_v53 = v65 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v78 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v78 
+    let v67 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v67 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v82 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v82 
+    let v71 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v71 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v86 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v86 
+    let v75 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v75 
     #endif
 #else
-    let v90 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v90 
+    let v79 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v79 
     #endif
-    let v93 : string = _run_target_args'_v64 
-    let v103 : string = $"{v93}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v2, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v121 : string = " }"
-    let v122 : string = $"{v121}"
-    let v130 : unit = ()
-    let v131 : (unit -> unit) = closure8(v2, v122)
-    let v132 : unit = (fun () -> v131 (); v130) ()
-    let v138 : string = v2.l0
-    v138
-and method44 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : Result<std_string_String, near_workspaces_error_Error>) : string =
-    let v9 : string = method45(v8)
+    let v82 : string = _run_target_args'_v53 
+    method16(v3, v82)
+    let v106 : string = " }"
+    method16(v3, v106)
+    let v120 : string = v3.l0
+    v120
+and method45 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : Result<std_string_String, near_workspaces_error_Error>) : string =
+    let v9 : string = method46(v8)
     let v10 : int64 = v0.l0
     let v13 : string = " "
     let v14 : string = v6 + v13 
     let v18 : string = v14 + v7 
     let v23 : string = " #"
     let v24 : string = v18 + v23 
-    let v28 : (int64 -> string) = _.ToString()
-    let v29 : string = v28 v10
-    let v33 : string = v24 + v29 
-    let v37 : string = v33 + v13 
-    let v42 : string = "spiral_wasm.run"
-    let v43 : string = v37 + v42 
-    let v48 : string = " / "
-    let v49 : string = v43 + v48 
-    let v53 : string = v49 + v9 
-    method18(v53)
+    let v31 : (int64 -> string) = _.ToString()
+    let v32 : string = v31 v10
+    let v36 : string = v24 + v32 
+    let v40 : string = v36 + v13 
+    let v45 : string = "spiral_wasm.run"
+    let v46 : string = v40 + v45 
+    let v51 : string = " / "
+    let v52 : string = v46 + v51 
+    let v56 : string = v52 + v9 
+    method19(v56)
+and closure24 (v0 : Result<std_string_String, near_workspaces_error_Error>) () : unit =
+    let v15 : unit = ()
+    let v16 : (unit -> unit) = closure6()
+    let v17 : unit = (fun () -> v16 (); v15) ()
+    let struct (v40 : Mut0, v41 : Mut1, v42 : Mut2, v43 : Mut3, v44 : Mut4, v45 : int64 option) = TraceState.trace_state.Value
+    let v58 : US3 = v44.l0
+    let v59 : bool = v42.l0
+    let v60 : bool = v59 = false
+    let v63 : bool =
+        if v60 then
+            false
+        else
+            let v61 : int32 = [ US3_0, 0; US3_1, 1; US3_2, 2; US3_3, 3; US3_4, 4 ] |> Map |> Map.find v58
+            let v62 : bool = 0 >= v61
+            v62
+    let v64 : bool = v63 = false
+    let v336 : US8 =
+        if v64 then
+            US8_1
+        else
+            let v80 : unit = ()
+            let v81 : unit = (fun () -> v16 (); v80) ()
+            let struct (v104 : Mut0, v105 : Mut1, v106 : Mut2, v107 : Mut3, v108 : Mut4, v109 : int64 option) = TraceState.trace_state.Value
+            let v122 : string = method9(v104, v105, v106, v107, v108, v109)
+            let v123 : string = method13()
+            let v124 : string = method45(v104, v105, v106, v107, v108, v109, v122, v123, v0)
+            let v139 : unit = ()
+            let v140 : unit = (fun () -> v16 (); v139) ()
+            let struct (v163 : Mut0, v164 : Mut1, v165 : Mut2, v166 : Mut3, v167 : Mut4, v168 : int64 option) = TraceState.trace_state.Value
+            let v183 : unit = ()
+            let v184 : (unit -> unit) = closure8(v163)
+            let v185 : unit = (fun () -> v184 (); v183) ()
+            let v188 : (string -> unit) = closure9()
+            (* run_target_args'
+            let v189 : unit = ()
+            run_target_args' *)
+            
+#if FABLE_COMPILER || WASM || CONTRACT
+            
+#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
+            let v190 : string = @"println!(""{}"", $0)"
+            Fable.Core.RustInterop.emitRustExpr v124 v190 
+            #endif
+#if FABLE_COMPILER_RUST && WASM
+            let v191 : string = @"println!(""{}"", $0)"
+            Fable.Core.RustInterop.emitRustExpr v124 v191 
+            #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+            let v192 : string = v166.l0
+            let v193 : bool = v192 = ""
+            let v208 : string =
+                if v193 then
+                    v124
+                else
+                    let v194 : bool = v124 = ""
+                    if v194 then
+                        let v195 : string = v166.l0
+                        v195
+                    else
+                        let v196 : string = v166.l0
+                        let v199 : string = "\n"
+                        let v200 : string = v196 + v199 
+                        let v204 : string = v200 + v124 
+                        v204
+            (* run_target_args'
+            let v213 : unit = ()
+            run_target_args' *)
+            
+#if FABLE_COMPILER || WASM || CONTRACT
+            
+#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
+            let v214 : string = "&*$0"
+            let v215 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v208 v214 
+            let _run_target_args'_v213 = v215 
+            #endif
+#if FABLE_COMPILER_RUST && WASM
+            let v216 : string = "&*$0"
+            let v217 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v208 v216 
+            let _run_target_args'_v213 = v217 
+            #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+            let v218 : string = "&*$0"
+            let v219 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v208 v218 
+            let _run_target_args'_v213 = v219 
+            #endif
+#if FABLE_COMPILER_TYPESCRIPT
+            let v221 : Ref<Str> = v208 |> unbox<Ref<Str>>
+            let _run_target_args'_v213 = v221 
+            #endif
+#if FABLE_COMPILER_PYTHON
+            let v225 : Ref<Str> = v208 |> unbox<Ref<Str>>
+            let _run_target_args'_v213 = v225 
+            #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+            let v229 : Ref<Str> = v208 |> unbox<Ref<Str>>
+            let _run_target_args'_v213 = v229 
+            #endif
+#else
+            let v233 : Ref<Str> = v208 |> unbox<Ref<Str>>
+            let _run_target_args'_v213 = v233 
+            #endif
+            let v236 : Ref<Str> = _run_target_args'_v213 
+            let v245 : string = $"$0.chars()"
+            let v246 : Mut<_> = Fable.Core.RustInterop.emitRustExpr v236 v245 
+            let v247 : string = "$0"
+            let v248 : _ = Fable.Core.RustInterop.emitRustExpr v246 v247 
+            let v249 : string = "$0.collect::<Vec<_>>()"
+            let v250 : Vec<char> = Fable.Core.RustInterop.emitRustExpr v248 v249 
+            let v251 : string = "$0.chunks(15000).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"
+            let v252 : Vec<Vec<char>> = Fable.Core.RustInterop.emitRustExpr v250 v251 
+            let v253 : string = "true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"
+            let v254 : bool = Fable.Core.RustInterop.emitRustExpr v252 v253 
+            let v255 : string = "x"
+            let v256 : Vec<char> = Fable.Core.RustInterop.emitRustExpr () v255 
+            let v257 : string = "String::from_iter($0)"
+            let v258 : std_string_String = Fable.Core.RustInterop.emitRustExpr v256 v257 
+            let v259 : string = "true; $0 }).collect::<Vec<_>>()"
+            let v260 : bool = Fable.Core.RustInterop.emitRustExpr v258 v259 
+            let v261 : string = "_vec_map"
+            let v262 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v261 
+            let v263 : string = "$0.len()"
+            let v264 : unativeint = Fable.Core.RustInterop.emitRustExpr v262 v263 
+            let v308 : int32 = v264 |> int32 
+            let v318 : string = ""
+            let v319 : bool = v124 <> v318 
+            let v323 : bool =
+                if v319 then
+                    let v322 : bool = v308 <= 1
+                    v322
+                else
+                    false
+            if v323 then
+                v166.l0 <- v208
+                ()
+            else
+                v166.l0 <- v318
+                let v324 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v325 : bool = Fable.Core.RustInterop.emitRustExpr v262 v324 
+                let v326 : string = "x"
+                let v327 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v326 
+                let v328 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v329 : bool = Fable.Core.RustInterop.emitRustExpr v327 v328 
+                let v330 : string = $"true"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr () v330 
+                let v332 : string = "true; }); //"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
+                ()
+            #endif
+#if FABLE_COMPILER_TYPESCRIPT
+            v188 v124
+            #endif
+#if FABLE_COMPILER_PYTHON
+            v188 v124
+            #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+            v188 v124
+            #endif
+#else
+            v188 v124
+            #endif
+            // run_target_args' is_unit
+            let v334 : (string -> unit) = v164.l0
+            v334 v124
+            US8_0(v163, v164, v165, v166, v167, v168)
+    
+    ()
+and method48 (v0 : Result<std_string_String, near_workspaces_error_Error>) : string =
+    let v1 : string = method15()
+    let v3 : Mut3 = {l0 = v1} : Mut3
+    let v5 : string = "{ "
+    method16(v3, v5)
+    let v20 : string = "borsh"
+    method16(v3, v20)
+    let v35 : string = " = "
+    method16(v3, v35)
+    (* run_target_args'
+    let v53 : unit = ()
+    run_target_args' *)
+    
+#if FABLE_COMPILER || WASM || CONTRACT
+    
+#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
+    let v54 : string = "format!(\"{:#?}\", $0)"
+    let v55 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v54 
+    let v56 : string = "fable_library_rust::String_::fromString($0)"
+    let v57 : string = Fable.Core.RustInterop.emitRustExpr v55 v56 
+    let _run_target_args'_v53 = v57 
+    #endif
+#if FABLE_COMPILER_RUST && WASM
+    let v58 : string = "format!(\"{:#?}\", $0)"
+    let v59 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v58 
+    let v60 : string = "fable_library_rust::String_::fromString($0)"
+    let v61 : string = Fable.Core.RustInterop.emitRustExpr v59 v60 
+    let _run_target_args'_v53 = v61 
+    #endif
+#if FABLE_COMPILER_RUST && CONTRACT
+    let v62 : string = "format!(\"{:#?}\", $0)"
+    let v63 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v62 
+    let v64 : string = "fable_library_rust::String_::fromString($0)"
+    let v65 : string = Fable.Core.RustInterop.emitRustExpr v63 v64 
+    let _run_target_args'_v53 = v65 
+    #endif
+#if FABLE_COMPILER_TYPESCRIPT
+    let v67 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v67 
+    #endif
+#if FABLE_COMPILER_PYTHON
+    let v71 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v71 
+    #endif
+#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
+    let v75 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v75 
+    #endif
+#else
+    let v79 : string = $"%A{v0}"
+    let _run_target_args'_v53 = v79 
+    #endif
+    let v82 : string = _run_target_args'_v53 
+    method16(v3, v82)
+    let v106 : string = " }"
+    method16(v3, v106)
+    let v120 : string = v3.l0
+    v120
+and method47 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : Result<std_string_String, near_workspaces_error_Error>) : string =
+    let v9 : string = method48(v8)
+    let v10 : int64 = v0.l0
+    let v13 : string = " "
+    let v14 : string = v6 + v13 
+    let v18 : string = v14 + v7 
+    let v23 : string = " #"
+    let v24 : string = v18 + v23 
+    let v31 : (int64 -> string) = _.ToString()
+    let v32 : string = v31 v10
+    let v36 : string = v24 + v32 
+    let v40 : string = v36 + v13 
+    let v45 : string = "spiral_wasm.run"
+    let v46 : string = v40 + v45 
+    let v51 : string = " / "
+    let v52 : string = v46 + v51 
+    let v56 : string = v52 + v9 
+    method19(v56)
 and closure25 (v0 : Result<std_string_String, near_workspaces_error_Error>) () : unit =
     let v15 : unit = ()
     let v16 : (unit -> unit) = closure6()
@@ -5366,7 +5334,7 @@ and closure25 (v0 : Result<std_string_String, near_workspaces_error_Error>) () :
             let v62 : bool = 0 >= v61
             v62
     let v64 : bool = v63 = false
-    let v298 : US8 =
+    let v336 : US8 =
         if v64 then
             US8_1
         else
@@ -5375,14 +5343,14 @@ and closure25 (v0 : Result<std_string_String, near_workspaces_error_Error>) () :
             let struct (v104 : Mut0, v105 : Mut1, v106 : Mut2, v107 : Mut3, v108 : Mut4, v109 : int64 option) = TraceState.trace_state.Value
             let v122 : string = method9(v104, v105, v106, v107, v108, v109)
             let v123 : string = method13()
-            let v124 : string = method44(v104, v105, v106, v107, v108, v109, v122, v123, v0)
+            let v124 : string = method47(v104, v105, v106, v107, v108, v109, v122, v123, v0)
             let v139 : unit = ()
             let v140 : unit = (fun () -> v16 (); v139) ()
             let struct (v163 : Mut0, v164 : Mut1, v165 : Mut2, v166 : Mut3, v167 : Mut4, v168 : int64 option) = TraceState.trace_state.Value
             let v183 : unit = ()
-            let v184 : (unit -> unit) = closure9(v163)
+            let v184 : (unit -> unit) = closure8(v163)
             let v185 : unit = (fun () -> v184 (); v183) ()
-            let v188 : (string -> unit) = closure10()
+            let v188 : (string -> unit) = closure9()
             (* run_target_args'
             let v189 : unit = ()
             run_target_args' *)
@@ -5472,30 +5440,30 @@ and closure25 (v0 : Result<std_string_String, near_workspaces_error_Error>) () :
             let v262 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v261 
             let v263 : string = "$0.len()"
             let v264 : unativeint = Fable.Core.RustInterop.emitRustExpr v262 v263 
-            let v270 : int32 = v264 |> int32 
-            let v280 : string = ""
-            let v281 : bool = v124 <> v280 
-            let v285 : bool =
-                if v281 then
-                    let v284 : bool = v270 <= 1
-                    v284
+            let v308 : int32 = v264 |> int32 
+            let v318 : string = ""
+            let v319 : bool = v124 <> v318 
+            let v323 : bool =
+                if v319 then
+                    let v322 : bool = v308 <= 1
+                    v322
                 else
                     false
-            if v285 then
+            if v323 then
                 v166.l0 <- v208
                 ()
             else
-                v166.l0 <- v280
-                let v286 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v287 : bool = Fable.Core.RustInterop.emitRustExpr v262 v286 
-                let v288 : string = "x"
-                let v289 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v288 
-                let v290 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v291 : bool = Fable.Core.RustInterop.emitRustExpr v289 v290 
-                let v292 : string = $"true"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr () v292 
-                let v294 : string = "true; }); //"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
+                v166.l0 <- v318
+                let v324 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v325 : bool = Fable.Core.RustInterop.emitRustExpr v262 v324 
+                let v326 : string = "x"
+                let v327 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v326 
+                let v328 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v329 : bool = Fable.Core.RustInterop.emitRustExpr v327 v328 
+                let v330 : string = $"true"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr () v330 
+                let v332 : string = "true; }); //"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -5511,377 +5479,83 @@ and closure25 (v0 : Result<std_string_String, near_workspaces_error_Error>) () :
             v188 v124
             #endif
             // run_target_args' is_unit
-            let v296 : (string -> unit) = v164.l0
-            v296 v124
+            let v334 : (string -> unit) = v164.l0
+            v334 v124
             US8_0(v163, v164, v165, v166, v167, v168)
     
     ()
-and method47 (v0 : Result<std_string_String, near_workspaces_error_Error>) : string =
-    let v1 : string = method15()
-    let v2 : Mut3 = {l0 = v1} : Mut3
-    let v5 : string = "{ "
-    let v6 : string = $"{v5}"
-    let v14 : unit = ()
-    let v15 : (unit -> unit) = closure8(v2, v6)
-    let v16 : unit = (fun () -> v15 (); v14) ()
-    let v24 : string = "borsh"
-    let v25 : string = $"{v24}"
-    let v33 : unit = ()
-    let v34 : (unit -> unit) = closure8(v2, v25)
-    let v35 : unit = (fun () -> v34 (); v33) ()
-    let v43 : string = " = "
-    let v44 : string = $"{v43}"
-    let v52 : unit = ()
-    let v53 : (unit -> unit) = closure8(v2, v44)
-    let v54 : unit = (fun () -> v53 (); v52) ()
-    (* run_target_args'
-    let v64 : unit = ()
-    run_target_args' *)
-    
-#if FABLE_COMPILER || WASM || CONTRACT
-    
-#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v65 : string = "format!(\"{:#?}\", $0)"
-    let v66 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v65 
-    let v67 : string = "fable_library_rust::String_::fromString($0)"
-    let v68 : string = Fable.Core.RustInterop.emitRustExpr v66 v67 
-    let _run_target_args'_v64 = v68 
-    #endif
-#if FABLE_COMPILER_RUST && WASM
-    let v69 : string = "format!(\"{:#?}\", $0)"
-    let v70 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v69 
-    let v71 : string = "fable_library_rust::String_::fromString($0)"
-    let v72 : string = Fable.Core.RustInterop.emitRustExpr v70 v71 
-    let _run_target_args'_v64 = v72 
-    #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-    let v73 : string = "format!(\"{:#?}\", $0)"
-    let v74 : std_string_String = Fable.Core.RustInterop.emitRustExpr v0 v73 
-    let v75 : string = "fable_library_rust::String_::fromString($0)"
-    let v76 : string = Fable.Core.RustInterop.emitRustExpr v74 v75 
-    let _run_target_args'_v64 = v76 
-    #endif
-#if FABLE_COMPILER_TYPESCRIPT
-    let v78 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v78 
-    #endif
-#if FABLE_COMPILER_PYTHON
-    let v82 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v82 
-    #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v86 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v86 
-    #endif
-#else
-    let v90 : string = $"%A{v0}"
-    let _run_target_args'_v64 = v90 
-    #endif
-    let v93 : string = _run_target_args'_v64 
-    let v103 : string = $"{v93}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v2, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v121 : string = " }"
-    let v122 : string = $"{v121}"
-    let v130 : unit = ()
-    let v131 : (unit -> unit) = closure8(v2, v122)
-    let v132 : unit = (fun () -> v131 (); v130) ()
-    let v138 : string = v2.l0
-    v138
-and method46 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : Result<std_string_String, near_workspaces_error_Error>) : string =
-    let v9 : string = method47(v8)
-    let v10 : int64 = v0.l0
-    let v13 : string = " "
-    let v14 : string = v6 + v13 
-    let v18 : string = v14 + v7 
-    let v23 : string = " #"
-    let v24 : string = v18 + v23 
-    let v28 : (int64 -> string) = _.ToString()
-    let v29 : string = v28 v10
-    let v33 : string = v24 + v29 
-    let v37 : string = v33 + v13 
-    let v42 : string = "spiral_wasm.run"
-    let v43 : string = v37 + v42 
-    let v48 : string = " / "
-    let v49 : string = v43 + v48 
-    let v53 : string = v49 + v9 
-    method18(v53)
-and closure26 (v0 : Result<std_string_String, near_workspaces_error_Error>) () : unit =
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure6()
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let struct (v40 : Mut0, v41 : Mut1, v42 : Mut2, v43 : Mut3, v44 : Mut4, v45 : int64 option) = TraceState.trace_state.Value
-    let v58 : US3 = v44.l0
-    let v59 : bool = v42.l0
-    let v60 : bool = v59 = false
-    let v63 : bool =
-        if v60 then
-            false
-        else
-            let v61 : int32 = [ US3_0, 0; US3_1, 1; US3_2, 2; US3_3, 3; US3_4, 4 ] |> Map |> Map.find v58
-            let v62 : bool = 0 >= v61
-            v62
-    let v64 : bool = v63 = false
-    let v298 : US8 =
-        if v64 then
-            US8_1
-        else
-            let v80 : unit = ()
-            let v81 : unit = (fun () -> v16 (); v80) ()
-            let struct (v104 : Mut0, v105 : Mut1, v106 : Mut2, v107 : Mut3, v108 : Mut4, v109 : int64 option) = TraceState.trace_state.Value
-            let v122 : string = method9(v104, v105, v106, v107, v108, v109)
-            let v123 : string = method13()
-            let v124 : string = method46(v104, v105, v106, v107, v108, v109, v122, v123, v0)
-            let v139 : unit = ()
-            let v140 : unit = (fun () -> v16 (); v139) ()
-            let struct (v163 : Mut0, v164 : Mut1, v165 : Mut2, v166 : Mut3, v167 : Mut4, v168 : int64 option) = TraceState.trace_state.Value
-            let v183 : unit = ()
-            let v184 : (unit -> unit) = closure9(v163)
-            let v185 : unit = (fun () -> v184 (); v183) ()
-            let v188 : (string -> unit) = closure10()
-            (* run_target_args'
-            let v189 : unit = ()
-            run_target_args' *)
-            
-#if FABLE_COMPILER || WASM || CONTRACT
-            
-#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v190 : string = @"println!(""{}"", $0)"
-            Fable.Core.RustInterop.emitRustExpr v124 v190 
-            #endif
-#if FABLE_COMPILER_RUST && WASM
-            let v191 : string = @"println!(""{}"", $0)"
-            Fable.Core.RustInterop.emitRustExpr v124 v191 
-            #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-            let v192 : string = v166.l0
-            let v193 : bool = v192 = ""
-            let v208 : string =
-                if v193 then
-                    v124
-                else
-                    let v194 : bool = v124 = ""
-                    if v194 then
-                        let v195 : string = v166.l0
-                        v195
-                    else
-                        let v196 : string = v166.l0
-                        let v199 : string = "\n"
-                        let v200 : string = v196 + v199 
-                        let v204 : string = v200 + v124 
-                        v204
-            (* run_target_args'
-            let v213 : unit = ()
-            run_target_args' *)
-            
-#if FABLE_COMPILER || WASM || CONTRACT
-            
-#if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v214 : string = "&*$0"
-            let v215 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v208 v214 
-            let _run_target_args'_v213 = v215 
-            #endif
-#if FABLE_COMPILER_RUST && WASM
-            let v216 : string = "&*$0"
-            let v217 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v208 v216 
-            let _run_target_args'_v213 = v217 
-            #endif
-#if FABLE_COMPILER_RUST && CONTRACT
-            let v218 : string = "&*$0"
-            let v219 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v208 v218 
-            let _run_target_args'_v213 = v219 
-            #endif
-#if FABLE_COMPILER_TYPESCRIPT
-            let v221 : Ref<Str> = v208 |> unbox<Ref<Str>>
-            let _run_target_args'_v213 = v221 
-            #endif
-#if FABLE_COMPILER_PYTHON
-            let v225 : Ref<Str> = v208 |> unbox<Ref<Str>>
-            let _run_target_args'_v213 = v225 
-            #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v229 : Ref<Str> = v208 |> unbox<Ref<Str>>
-            let _run_target_args'_v213 = v229 
-            #endif
-#else
-            let v233 : Ref<Str> = v208 |> unbox<Ref<Str>>
-            let _run_target_args'_v213 = v233 
-            #endif
-            let v236 : Ref<Str> = _run_target_args'_v213 
-            let v245 : string = $"$0.chars()"
-            let v246 : Mut<_> = Fable.Core.RustInterop.emitRustExpr v236 v245 
-            let v247 : string = "$0"
-            let v248 : _ = Fable.Core.RustInterop.emitRustExpr v246 v247 
-            let v249 : string = "$0.collect::<Vec<_>>()"
-            let v250 : Vec<char> = Fable.Core.RustInterop.emitRustExpr v248 v249 
-            let v251 : string = "$0.chunks(15000).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"
-            let v252 : Vec<Vec<char>> = Fable.Core.RustInterop.emitRustExpr v250 v251 
-            let v253 : string = "true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"
-            let v254 : bool = Fable.Core.RustInterop.emitRustExpr v252 v253 
-            let v255 : string = "x"
-            let v256 : Vec<char> = Fable.Core.RustInterop.emitRustExpr () v255 
-            let v257 : string = "String::from_iter($0)"
-            let v258 : std_string_String = Fable.Core.RustInterop.emitRustExpr v256 v257 
-            let v259 : string = "true; $0 }).collect::<Vec<_>>()"
-            let v260 : bool = Fable.Core.RustInterop.emitRustExpr v258 v259 
-            let v261 : string = "_vec_map"
-            let v262 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v261 
-            let v263 : string = "$0.len()"
-            let v264 : unativeint = Fable.Core.RustInterop.emitRustExpr v262 v263 
-            let v270 : int32 = v264 |> int32 
-            let v280 : string = ""
-            let v281 : bool = v124 <> v280 
-            let v285 : bool =
-                if v281 then
-                    let v284 : bool = v270 <= 1
-                    v284
-                else
-                    false
-            if v285 then
-                v166.l0 <- v208
-                ()
-            else
-                v166.l0 <- v280
-                let v286 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v287 : bool = Fable.Core.RustInterop.emitRustExpr v262 v286 
-                let v288 : string = "x"
-                let v289 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v288 
-                let v290 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v291 : bool = Fable.Core.RustInterop.emitRustExpr v289 v290 
-                let v292 : string = $"true"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr () v292 
-                let v294 : string = "true; }); //"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
-                ()
-            #endif
-#if FABLE_COMPILER_TYPESCRIPT
-            v188 v124
-            #endif
-#if FABLE_COMPILER_PYTHON
-            v188 v124
-            #endif
-#if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            v188 v124
-            #endif
-#else
-            v188 v124
-            #endif
-            // run_target_args' is_unit
-            let v296 : (string -> unit) = v164.l0
-            v296 v124
-            US8_0(v163, v164, v165, v166, v167, v168)
-    
-    ()
-and method48 (v0 : int32, v1 : uint8, v2 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>) : string =
+and method49 (v0 : int32, v1 : uint8, v2 : Vec<Ref<near_workspaces_result_ExecutionOutcome>>) : string =
     let v3 : string = method15()
-    let v4 : Mut3 = {l0 = v3} : Mut3
+    let v5 : Mut3 = {l0 = v3} : Mut3
     let v7 : string = "{ "
-    let v8 : string = $"{v7}"
-    let v16 : unit = ()
-    let v17 : (unit -> unit) = closure8(v4, v8)
-    let v18 : unit = (fun () -> v17 (); v16) ()
-    let v26 : string = "receipt_outcomes_len"
-    let v27 : string = $"{v26}"
-    let v35 : unit = ()
-    let v36 : (unit -> unit) = closure8(v4, v27)
-    let v37 : unit = (fun () -> v36 (); v35) ()
-    let v45 : string = " = "
-    let v46 : string = $"{v45}"
-    let v54 : unit = ()
-    let v55 : (unit -> unit) = closure8(v4, v46)
-    let v56 : unit = (fun () -> v55 (); v54) ()
-    let v66 : string = $"{v0}"
-    let v74 : unit = ()
-    let v75 : (unit -> unit) = closure8(v4, v66)
-    let v76 : unit = (fun () -> v75 (); v74) ()
-    let v84 : string = "; "
-    let v85 : string = $"{v84}"
-    let v93 : unit = ()
-    let v94 : (unit -> unit) = closure8(v4, v85)
-    let v95 : unit = (fun () -> v94 (); v93) ()
-    let v103 : string = "retry"
-    let v104 : string = $"{v103}"
-    let v112 : unit = ()
-    let v113 : (unit -> unit) = closure8(v4, v104)
-    let v114 : unit = (fun () -> v113 (); v112) ()
-    let v121 : string = $"{v45}"
-    let v129 : unit = ()
-    let v130 : (unit -> unit) = closure8(v4, v121)
-    let v131 : unit = (fun () -> v130 (); v129) ()
-    let v141 : string = $"{v1}"
-    let v149 : unit = ()
-    let v150 : (unit -> unit) = closure8(v4, v141)
-    let v151 : unit = (fun () -> v150 (); v149) ()
-    let v158 : string = $"{v84}"
-    let v166 : unit = ()
-    let v167 : (unit -> unit) = closure8(v4, v158)
-    let v168 : unit = (fun () -> v167 (); v166) ()
-    let v176 : string = "receipt_failures"
-    let v177 : string = $"{v176}"
-    let v185 : unit = ()
-    let v186 : (unit -> unit) = closure8(v4, v177)
-    let v187 : unit = (fun () -> v186 (); v185) ()
-    let v194 : string = $"{v45}"
-    let v202 : unit = ()
-    let v203 : (unit -> unit) = closure8(v4, v194)
-    let v204 : unit = (fun () -> v203 (); v202) ()
+    method16(v5, v7)
+    let v22 : string = "receipt_outcomes_len"
+    method16(v5, v22)
+    let v37 : string = " = "
+    method16(v5, v37)
+    let v55 : string = $"{v0}"
+    method16(v5, v55)
+    let v72 : string = "; "
+    method16(v5, v72)
+    let v87 : string = "retry"
+    method16(v5, v87)
+    method16(v5, v37)
+    let v119 : string = $"{v1}"
+    method16(v5, v119)
+    method16(v5, v72)
+    let v150 : string = "receipt_failures"
+    method16(v5, v150)
+    method16(v5, v37)
     (* run_target_args'
-    let v214 : unit = ()
+    let v182 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v215 : string = "format!(\"{:#?}\", $0)"
-    let v216 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v215 
-    let v217 : string = "fable_library_rust::String_::fromString($0)"
-    let v218 : string = Fable.Core.RustInterop.emitRustExpr v216 v217 
-    let _run_target_args'_v214 = v218 
+    let v183 : string = "format!(\"{:#?}\", $0)"
+    let v184 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v183 
+    let v185 : string = "fable_library_rust::String_::fromString($0)"
+    let v186 : string = Fable.Core.RustInterop.emitRustExpr v184 v185 
+    let _run_target_args'_v182 = v186 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v219 : string = "format!(\"{:#?}\", $0)"
-    let v220 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v219 
-    let v221 : string = "fable_library_rust::String_::fromString($0)"
-    let v222 : string = Fable.Core.RustInterop.emitRustExpr v220 v221 
-    let _run_target_args'_v214 = v222 
+    let v187 : string = "format!(\"{:#?}\", $0)"
+    let v188 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v187 
+    let v189 : string = "fable_library_rust::String_::fromString($0)"
+    let v190 : string = Fable.Core.RustInterop.emitRustExpr v188 v189 
+    let _run_target_args'_v182 = v190 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v223 : string = "format!(\"{:#?}\", $0)"
-    let v224 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v223 
-    let v225 : string = "fable_library_rust::String_::fromString($0)"
-    let v226 : string = Fable.Core.RustInterop.emitRustExpr v224 v225 
-    let _run_target_args'_v214 = v226 
+    let v191 : string = "format!(\"{:#?}\", $0)"
+    let v192 : std_string_String = Fable.Core.RustInterop.emitRustExpr v2 v191 
+    let v193 : string = "fable_library_rust::String_::fromString($0)"
+    let v194 : string = Fable.Core.RustInterop.emitRustExpr v192 v193 
+    let _run_target_args'_v182 = v194 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v228 : string = $"%A{v2}"
-    let _run_target_args'_v214 = v228 
+    let v196 : string = $"%A{v2}"
+    let _run_target_args'_v182 = v196 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v232 : string = $"%A{v2}"
-    let _run_target_args'_v214 = v232 
+    let v200 : string = $"%A{v2}"
+    let _run_target_args'_v182 = v200 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v236 : string = $"%A{v2}"
-    let _run_target_args'_v214 = v236 
+    let v204 : string = $"%A{v2}"
+    let _run_target_args'_v182 = v204 
     #endif
 #else
-    let v240 : string = $"%A{v2}"
-    let _run_target_args'_v214 = v240 
+    let v208 : string = $"%A{v2}"
+    let _run_target_args'_v182 = v208 
     #endif
-    let v243 : string = _run_target_args'_v214 
-    let v253 : string = $"{v243}"
-    let v261 : unit = ()
-    let v262 : (unit -> unit) = closure8(v4, v253)
-    let v263 : unit = (fun () -> v262 (); v261) ()
-    let v271 : string = " }"
-    let v272 : string = $"{v271}"
-    let v280 : unit = ()
-    let v281 : (unit -> unit) = closure8(v4, v272)
-    let v282 : unit = (fun () -> v281 (); v280) ()
-    let v288 : string = v4.l0
-    v288
-and method26 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Future<Result<US7, anyhow_Error>>>>> =
+    let v211 : string = _run_target_args'_v182 
+    method16(v5, v211)
+    let v235 : string = " }"
+    method16(v5, v235)
+    let v249 : string = v5.l0
+    v249
+and method27 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Future<Result<US7, anyhow_Error>>>>> =
     let v2 : string = "true; let __future_init = Box::pin(/*"
     let v3 : bool = Fable.Core.RustInterop.emitRustExpr () v2 
     let v4 : string = "*/ async move { /*"
@@ -5900,239 +5574,239 @@ and method26 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
     let v17 : Result<near_workspaces_Contract, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr () v16 
     let v18 : string = "$0?"
     let v19 : near_workspaces_Contract = Fable.Core.RustInterop.emitRustExpr v17 v18 
-    let v331 : unit = ()
-    let v332 : (unit -> unit) = closure14(v1, v11, v19)
-    let v333 : unit = (fun () -> v332 (); v331) ()
-    let v648 : string = "$0.call(&*$1)"
-    let v649 : string = "state_main"
-    let v650 : near_workspaces_operations_CallTransaction = Fable.Core.RustInterop.emitRustExpr struct (v19, v649) v648 
-    let v651 : string = "near_workspaces::types::Gas::from_tgas(300)"
-    let v652 : near_workspaces_types_Gas = Fable.Core.RustInterop.emitRustExpr () v651 
-    let v653 : string = "v650.gas(v652)"
-    let v654 : near_workspaces_operations_CallTransaction = Fable.Core.RustInterop.emitRustExpr () v653 
-    let v655 : string = "Box::pin(v654.transact())"
-    let v656 : std_pin_Pin<Box<Dyn<std_future_Future<Result<near_workspaces_result_ExecutionFinalResult, near_workspaces_error_Error>>>>> = Fable.Core.RustInterop.emitRustExpr () v655 
-    let v657 : string = "v656.await"
-    let v658 : Result<near_workspaces_result_ExecutionFinalResult, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr () v657 
-    let v659 : string = "$0?"
-    let v660 : near_workspaces_result_ExecutionFinalResult = Fable.Core.RustInterop.emitRustExpr v658 v659 
-    let v972 : unit = ()
-    let v973 : (unit -> unit) = closure15(v1, v660)
-    let v974 : unit = (fun () -> v973 (); v972) ()
-    let v1289 : string = "v660.logs()"
-    let v1290 : Vec<Ref<Str>> = Fable.Core.RustInterop.emitRustExpr () v1289 
-    let v1291 : string = "true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"
-    let v1292 : bool = Fable.Core.RustInterop.emitRustExpr v1290 v1291 
-    let v1293 : string = "x"
-    let v1294 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v1293 
+    let v369 : unit = ()
+    let v370 : (unit -> unit) = closure13(v1, v11, v19)
+    let v371 : unit = (fun () -> v370 (); v369) ()
+    let v724 : string = "$0.call(&*$1)"
+    let v725 : string = "state_main"
+    let v726 : near_workspaces_operations_CallTransaction = Fable.Core.RustInterop.emitRustExpr struct (v19, v725) v724 
+    let v727 : string = "near_workspaces::types::Gas::from_tgas(300)"
+    let v728 : near_workspaces_types_Gas = Fable.Core.RustInterop.emitRustExpr () v727 
+    let v729 : string = "v726.gas(v728)"
+    let v730 : near_workspaces_operations_CallTransaction = Fable.Core.RustInterop.emitRustExpr () v729 
+    let v731 : string = "Box::pin(v730.transact())"
+    let v732 : std_pin_Pin<Box<Dyn<std_future_Future<Result<near_workspaces_result_ExecutionFinalResult, near_workspaces_error_Error>>>>> = Fable.Core.RustInterop.emitRustExpr () v731 
+    let v733 : string = "v732.await"
+    let v734 : Result<near_workspaces_result_ExecutionFinalResult, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr () v733 
+    let v735 : string = "$0?"
+    let v736 : near_workspaces_result_ExecutionFinalResult = Fable.Core.RustInterop.emitRustExpr v734 v735 
+    let v1086 : unit = ()
+    let v1087 : (unit -> unit) = closure14(v1, v736)
+    let v1088 : unit = (fun () -> v1087 (); v1086) ()
+    let v1441 : string = "v736.logs()"
+    let v1442 : Vec<Ref<Str>> = Fable.Core.RustInterop.emitRustExpr () v1441 
+    let v1443 : string = "true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"
+    let v1444 : bool = Fable.Core.RustInterop.emitRustExpr v1442 v1443 
+    let v1445 : string = "x"
+    let v1446 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr () v1445 
     (* run_target_args'
-    let v1299 : unit = ()
+    let v1451 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v1300 : string = "String::from($0)"
-    let v1301 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1294 v1300 
-    let _run_target_args'_v1299 = v1301 
+    let v1452 : string = "String::from($0)"
+    let v1453 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1446 v1452 
+    let _run_target_args'_v1451 = v1453 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v1302 : string = "String::from($0)"
-    let v1303 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1294 v1302 
-    let _run_target_args'_v1299 = v1303 
+    let v1454 : string = "String::from($0)"
+    let v1455 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1446 v1454 
+    let _run_target_args'_v1451 = v1455 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v1304 : string = "String::from($0)"
-    let v1305 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1294 v1304 
-    let _run_target_args'_v1299 = v1305 
+    let v1456 : string = "String::from($0)"
+    let v1457 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1446 v1456 
+    let _run_target_args'_v1451 = v1457 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v1307 : std_string_String = v1294 |> unbox<std_string_String>
-    let _run_target_args'_v1299 = v1307 
+    let v1459 : std_string_String = v1446 |> unbox<std_string_String>
+    let _run_target_args'_v1451 = v1459 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v1311 : std_string_String = v1294 |> unbox<std_string_String>
-    let _run_target_args'_v1299 = v1311 
+    let v1463 : std_string_String = v1446 |> unbox<std_string_String>
+    let _run_target_args'_v1451 = v1463 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v1315 : std_string_String = v1294 |> unbox<std_string_String>
-    let _run_target_args'_v1299 = v1315 
+    let v1467 : std_string_String = v1446 |> unbox<std_string_String>
+    let _run_target_args'_v1451 = v1467 
     #endif
 #else
-    let v1319 : std_string_String = v1294 |> unbox<std_string_String>
-    let _run_target_args'_v1299 = v1319 
+    let v1471 : std_string_String = v1446 |> unbox<std_string_String>
+    let _run_target_args'_v1451 = v1471 
     #endif
-    let v1322 : std_string_String = _run_target_args'_v1299 
-    let v1331 : string = "true; $0 }).collect::<Vec<_>>()"
-    let v1332 : bool = Fable.Core.RustInterop.emitRustExpr v1322 v1331 
-    let v1333 : string = "_vec_map"
-    let v1334 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v1333 
-    let v1335 : string = "true; $0.iter().for_each(|x| { $1(x.clone()); }); //"
-    let v1336 : (std_string_String -> unit) = closure16()
-    let v1337 : bool = Fable.Core.RustInterop.emitRustExpr struct (v1334, v1336) v1335 
-    let v1592 : unit = ()
-    let v1593 : (unit -> unit) = closure18()
-    let v1594 : unit = (fun () -> v1593 (); v1592) ()
-    let v1851 : string = "$0.total_gas_burnt"
-    let v1852 : near_workspaces_types_Gas = Fable.Core.RustInterop.emitRustExpr v660 v1851 
-    let v1853 : string = "$0.as_gas()"
-    let v1854 : uint64 = Fable.Core.RustInterop.emitRustExpr v1852 v1853 
-    let v1856 : (uint64 -> float) = float
-    let v1857 : float = v1856 v1854
-    let v1860 : float = v1857 / 10000000000000000.0
-    let v1861 : float = v1860 * 6.68
-    let v2173 : unit = ()
-    let v2174 : (unit -> unit) = closure19(v1, v1854, v1861)
-    let v2175 : unit = (fun () -> v2174 (); v2173) ()
-    let v2490 : string = "$0"
-    let v2491 : near_workspaces_result_ExecutionFinalResult = Fable.Core.RustInterop.emitRustExpr v660 v2490 
-    let v2492 : string = "v2491.outcomes()"
-    let v2493 : Vec<Ref<near_workspaces_result_ExecutionOutcome>> = Fable.Core.RustInterop.emitRustExpr () v2492 
-    let v2494 : string = "v2493.into_iter()"
-    let v2495 : _ = Fable.Core.RustInterop.emitRustExpr () v2494 
-    let v2496 : string = "v2495.cloned()"
-    let v2497 : _ = Fable.Core.RustInterop.emitRustExpr () v2496 
-    let v2498 : string = "true; v2497.for_each(|x| $0(x))"
-    let v2499 : (near_workspaces_result_ExecutionOutcome -> unit) = closure20()
-    let v2500 : bool = Fable.Core.RustInterop.emitRustExpr v2499 v2498 
-    let v2501 : string = "$0.into_result()"
-    let v2502 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure> = Fable.Core.RustInterop.emitRustExpr v660 v2501 
-    let v2814 : unit = ()
-    let v2815 : (unit -> unit) = closure22(v2502)
-    let v2816 : unit = (fun () -> v2815 (); v2814) ()
-    let v3131 : near_workspaces_result_ExecutionFinalResult = method38(v660)
-    let v3132 : string = "v3131.receipt_failures()"
-    let v3133 : Vec<Ref<near_workspaces_result_ExecutionOutcome>> = Fable.Core.RustInterop.emitRustExpr () v3132 
-    let v3134 : string = "$0.len()"
-    let v3135 : unativeint = Fable.Core.RustInterop.emitRustExpr v3133 v3134 
-    let v3141 : int32 = v3135 |> int32 
-    let v3460 : unit = ()
-    let v3461 : (unit -> unit) = closure23(v3133, v3141)
-    let v3462 : unit = (fun () -> v3461 (); v3460) ()
-    let v3777 : near_workspaces_result_ExecutionFinalResult = method41(v660)
-    let v3778 : string = "v3777.receipt_outcomes()"
-    let v3779 : Ref<Slice<near_workspaces_result_ExecutionOutcome>> = Fable.Core.RustInterop.emitRustExpr () v3778 
-    let v3780 : string = "v3779.into()"
-    let v3781 : Vec<near_workspaces_result_ExecutionOutcome> = Fable.Core.RustInterop.emitRustExpr () v3780 
-    let v3782 : string = "$0.len()"
-    let v3783 : unativeint = Fable.Core.RustInterop.emitRustExpr v3781 v3782 
-    let v3789 : int32 = v3783 |> int32 
-    let v4108 : unit = ()
-    let v4109 : (unit -> unit) = closure24(v3781, v3789)
-    let v4110 : unit = (fun () -> v4109 (); v4108) ()
-    let v4425 : string = "$0.json()"
-    let v4426 : Result<std_string_String, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr v660 v4425 
-    let v4738 : unit = ()
-    let v4739 : (unit -> unit) = closure25(v4426)
-    let v4740 : unit = (fun () -> v4739 (); v4738) ()
-    let v5055 : string = "$0.borsh()"
-    let v5056 : Result<std_string_String, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr v660 v5055 
-    let v5368 : unit = ()
-    let v5369 : (unit -> unit) = closure26(v5056)
-    let v5370 : unit = (fun () -> v5369 (); v5368) ()
-    let v5685 : string = method48(v3789, v1, v3133)
-    let v5686 : bool = v3141 > 0
-    let v5720 : Result<US7, anyhow_Error> =
-        if v5686 then
-            let v5689 : US7 = US7_0(v5685)
-            let v5690 : Result<US7, anyhow_Error> = Ok v5689 
-            v5690
+    let v1474 : std_string_String = _run_target_args'_v1451 
+    let v1483 : string = "true; $0 }).collect::<Vec<_>>()"
+    let v1484 : bool = Fable.Core.RustInterop.emitRustExpr v1474 v1483 
+    let v1485 : string = "_vec_map"
+    let v1486 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v1485 
+    let v1487 : string = "true; $0.iter().for_each(|x| { $1(x.clone()); }); //"
+    let v1488 : (std_string_String -> unit) = closure15()
+    let v1489 : bool = Fable.Core.RustInterop.emitRustExpr struct (v1486, v1488) v1487 
+    let v1782 : unit = ()
+    let v1783 : (unit -> unit) = closure17()
+    let v1784 : unit = (fun () -> v1783 (); v1782) ()
+    let v2079 : string = "$0.total_gas_burnt"
+    let v2080 : near_workspaces_types_Gas = Fable.Core.RustInterop.emitRustExpr v736 v2079 
+    let v2081 : string = "$0.as_gas()"
+    let v2082 : uint64 = Fable.Core.RustInterop.emitRustExpr v2080 v2081 
+    let v2084 : (uint64 -> float) = float
+    let v2085 : float = v2084 v2082
+    let v2088 : float = v2085 / 10000000000000000.0
+    let v2089 : float = v2088 * 6.68
+    let v2439 : unit = ()
+    let v2440 : (unit -> unit) = closure18(v1, v2082, v2089)
+    let v2441 : unit = (fun () -> v2440 (); v2439) ()
+    let v2794 : string = "$0"
+    let v2795 : near_workspaces_result_ExecutionFinalResult = Fable.Core.RustInterop.emitRustExpr v736 v2794 
+    let v2796 : string = "v2795.outcomes()"
+    let v2797 : Vec<Ref<near_workspaces_result_ExecutionOutcome>> = Fable.Core.RustInterop.emitRustExpr () v2796 
+    let v2798 : string = "v2797.into_iter()"
+    let v2799 : _ = Fable.Core.RustInterop.emitRustExpr () v2798 
+    let v2800 : string = "v2799.cloned()"
+    let v2801 : _ = Fable.Core.RustInterop.emitRustExpr () v2800 
+    let v2802 : string = "true; v2801.for_each(|x| $0(x))"
+    let v2803 : (near_workspaces_result_ExecutionOutcome -> unit) = closure19()
+    let v2804 : bool = Fable.Core.RustInterop.emitRustExpr v2803 v2802 
+    let v2805 : string = "$0.into_result()"
+    let v2806 : Result<near_workspaces_result_ExecutionSuccess, near_workspaces_result_ExecutionFailure> = Fable.Core.RustInterop.emitRustExpr v736 v2805 
+    let v3156 : unit = ()
+    let v3157 : (unit -> unit) = closure21(v2806)
+    let v3158 : unit = (fun () -> v3157 (); v3156) ()
+    let v3511 : near_workspaces_result_ExecutionFinalResult = method39(v736)
+    let v3512 : string = "v3511.receipt_failures()"
+    let v3513 : Vec<Ref<near_workspaces_result_ExecutionOutcome>> = Fable.Core.RustInterop.emitRustExpr () v3512 
+    let v3514 : string = "$0.len()"
+    let v3515 : unativeint = Fable.Core.RustInterop.emitRustExpr v3513 v3514 
+    let v3559 : int32 = v3515 |> int32 
+    let v3916 : unit = ()
+    let v3917 : (unit -> unit) = closure22(v3513, v3559)
+    let v3918 : unit = (fun () -> v3917 (); v3916) ()
+    let v4271 : near_workspaces_result_ExecutionFinalResult = method42(v736)
+    let v4272 : string = "v4271.receipt_outcomes()"
+    let v4273 : Ref<Slice<near_workspaces_result_ExecutionOutcome>> = Fable.Core.RustInterop.emitRustExpr () v4272 
+    let v4274 : string = "v4273.into()"
+    let v4275 : Vec<near_workspaces_result_ExecutionOutcome> = Fable.Core.RustInterop.emitRustExpr () v4274 
+    let v4276 : string = "$0.len()"
+    let v4277 : unativeint = Fable.Core.RustInterop.emitRustExpr v4275 v4276 
+    let v4321 : int32 = v4277 |> int32 
+    let v4678 : unit = ()
+    let v4679 : (unit -> unit) = closure23(v4275, v4321)
+    let v4680 : unit = (fun () -> v4679 (); v4678) ()
+    let v5033 : string = "$0.json()"
+    let v5034 : Result<std_string_String, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr v736 v5033 
+    let v5384 : unit = ()
+    let v5385 : (unit -> unit) = closure24(v5034)
+    let v5386 : unit = (fun () -> v5385 (); v5384) ()
+    let v5739 : string = "$0.borsh()"
+    let v5740 : Result<std_string_String, near_workspaces_error_Error> = Fable.Core.RustInterop.emitRustExpr v736 v5739 
+    let v6090 : unit = ()
+    let v6091 : (unit -> unit) = closure25(v5740)
+    let v6092 : unit = (fun () -> v6091 (); v6090) ()
+    let v6445 : string = method49(v4321, v1, v3513)
+    let v6446 : bool = v3559 > 0
+    let v6480 : Result<US7, anyhow_Error> =
+        if v6446 then
+            let v6449 : US7 = US7_0(v6445)
+            let v6450 : Result<US7, anyhow_Error> = Ok v6449 
+            v6450
         else
-            let v5694 : bool = v3789 > 1
-            if v5694 then
-                let v5697 : US7 = US7_1
-                let v5698 : Result<US7, anyhow_Error> = Ok v5697 
-                v5698
+            let v6454 : bool = v4321 > 1
+            if v6454 then
+                let v6457 : US7 = US7_1
+                let v6458 : Result<US7, anyhow_Error> = Ok v6457 
+                v6458
             else
-                let v5702 : string = "anyhow::anyhow!($0)"
-                let v5703 : anyhow_Error = Fable.Core.RustInterop.emitRustExpr v5685 v5702 
+                let v6462 : string = "anyhow::anyhow!($0)"
+                let v6463 : anyhow_Error = Fable.Core.RustInterop.emitRustExpr v6445 v6462 
                 (* run_target_args'
-                let v5705 : unit = ()
+                let v6465 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v5706 : string = "Err($0)"
-                let v5707 : Result<US7, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v5703 v5706 
-                let _run_target_args'_v5705 = v5707 
+                let v6466 : string = "Err($0)"
+                let v6467 : Result<US7, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v6463 v6466 
+                let _run_target_args'_v6465 = v6467 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v5708 : string = "Err($0)"
-                let v5709 : Result<US7, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v5703 v5708 
-                let _run_target_args'_v5705 = v5709 
+                let v6468 : string = "Err($0)"
+                let v6469 : Result<US7, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v6463 v6468 
+                let _run_target_args'_v6465 = v6469 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v5710 : string = "Err($0)"
-                let v5711 : Result<US7, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v5703 v5710 
-                let _run_target_args'_v5705 = v5711 
+                let v6470 : string = "Err($0)"
+                let v6471 : Result<US7, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v6463 v6470 
+                let _run_target_args'_v6465 = v6471 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let v5712 : Result<US7, anyhow_Error> = v5703 |> Error
-                let _run_target_args'_v5705 = v5712 
+                let v6472 : Result<US7, anyhow_Error> = v6463 |> Error
+                let _run_target_args'_v6465 = v6472 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let v5713 : Result<US7, anyhow_Error> = v5703 |> Error
-                let _run_target_args'_v5705 = v5713 
+                let v6473 : Result<US7, anyhow_Error> = v6463 |> Error
+                let _run_target_args'_v6465 = v6473 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let v5714 : Result<US7, anyhow_Error> = v5703 |> Error
-                let _run_target_args'_v5705 = v5714 
+                let v6474 : Result<US7, anyhow_Error> = v6463 |> Error
+                let _run_target_args'_v6465 = v6474 
                 #endif
 #else
-                let v5715 : Result<US7, anyhow_Error> = v5703 |> Error
-                let _run_target_args'_v5705 = v5715 
+                let v6475 : Result<US7, anyhow_Error> = v6463 |> Error
+                let _run_target_args'_v6465 = v6475 
                 #endif
-                let v5716 : Result<US7, anyhow_Error> = _run_target_args'_v5705 
-                v5716
-    let v5721 : string = ""
-    let v5722 : string = "}"
-    let v5723 : string = v5721 + v5722 
-    let x = v5720 //
-    let v5724 : _ = x
-    let v5725 : unit = ()
+                let v6476 : Result<US7, anyhow_Error> = _run_target_args'_v6465 
+                v6476
+    let v6481 : string = ""
+    let v6482 : string = "}"
+    let v6483 : string = v6481 + v6482 
+    let x = v6480 //
+    let v6484 : _ = x
+    let v6485 : unit = ()
     (* run_target_args'
-    let v5726 : unit = ()
+    let v6486 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v5727 : string = $"true; let _fix_closure_v5725 = $0"
-    let v5728 : bool = Fable.Core.RustInterop.emitRustExpr v5724 v5727 
-    let _run_target_args'_v5726 = true 
+    let v6487 : string = $"true; let _fix_closure_v6485 = $0"
+    let v6488 : bool = Fable.Core.RustInterop.emitRustExpr v6484 v6487 
+    let _run_target_args'_v6486 = true 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v5729 : string = $"true; let _fix_closure_v5725 = $0"
-    let v5730 : bool = Fable.Core.RustInterop.emitRustExpr v5724 v5729 
-    let _run_target_args'_v5726 = true 
+    let v6489 : string = $"true; let _fix_closure_v6485 = $0"
+    let v6490 : bool = Fable.Core.RustInterop.emitRustExpr v6484 v6489 
+    let _run_target_args'_v6486 = true 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v5731 : string = $"true; let _fix_closure_v5725 = $0"
-    let v5732 : bool = Fable.Core.RustInterop.emitRustExpr v5724 v5731 
-    let _run_target_args'_v5726 = true 
+    let v6491 : string = $"true; let _fix_closure_v6485 = $0"
+    let v6492 : bool = Fable.Core.RustInterop.emitRustExpr v6484 v6491 
+    let _run_target_args'_v6486 = true 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let _run_target_args'_v5726 = false 
+    let _run_target_args'_v6486 = false 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let _run_target_args'_v5726 = false 
+    let _run_target_args'_v6486 = false 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let _run_target_args'_v5726 = false 
+    let _run_target_args'_v6486 = false 
     #endif
 #else
-    let _run_target_args'_v5726 = false 
+    let _run_target_args'_v6486 = false 
     #endif
-    let v5733 : bool = _run_target_args'_v5726 
-    let v5734 : string = $"true; _fix_closure_v5725 " + v5723 + "); " + v5721 + " // rust.fix_closure'"
-    let v5735 : bool = Fable.Core.RustInterop.emitRustExpr () v5734 
-    let v5736 : string = "__future_init"
-    let v5737 : _ = Fable.Core.RustInterop.emitRustExpr () v5736 
-    let v5738 : string = "v5737"
-    let v5739 : std_pin_Pin<Box<Dyn<std_future_Future<Result<US7, anyhow_Error>>>>> = Fable.Core.RustInterop.emitRustExpr () v5738 
-    v5739
-and closure27 () (v0 : anyhow_Error) : std_string_String =
+    let v6493 : bool = _run_target_args'_v6486 
+    let v6494 : string = $"true; _fix_closure_v6485 " + v6483 + "); " + v6481 + " // rust.fix_closure'"
+    let v6495 : bool = Fable.Core.RustInterop.emitRustExpr () v6494 
+    let v6496 : string = "__future_init"
+    let v6497 : _ = Fable.Core.RustInterop.emitRustExpr () v6496 
+    let v6498 : string = "v6497"
+    let v6499 : std_pin_Pin<Box<Dyn<std_future_Future<Result<US7, anyhow_Error>>>>> = Fable.Core.RustInterop.emitRustExpr () v6498 
+    v6499
+and closure26 () (v0 : anyhow_Error) : std_string_String =
     (* run_target_args'
     let v5 : unit = ()
     run_target_args' *)
@@ -6172,17 +5846,17 @@ and closure27 () (v0 : anyhow_Error) : std_string_String =
     #endif
     let v28 : std_string_String = _run_target_args'_v5 
     v28
-and method49 () : (anyhow_Error -> std_string_String) =
-    closure27()
-and closure28 () (v0 : US7) : US10 =
+and method50 () : (anyhow_Error -> std_string_String) =
+    closure26()
+and closure27 () (v0 : US7) : US10 =
     US10_0(v0)
-and method50 () : (US7 -> US10) =
-    closure28()
-and closure29 () (v0 : std_string_String) : US10 =
+and method51 () : (US7 -> US10) =
+    closure27()
+and closure28 () (v0 : std_string_String) : US10 =
     US10_1(v0)
-and method51 () : (std_string_String -> US10) =
-    closure29()
-and method52 () : string =
+and method52 () : (std_string_String -> US10) =
+    closure28()
+and method53 () : string =
     (* run_target_args'
     let v1 : unit = ()
     run_target_args' *)
@@ -6512,116 +6186,90 @@ and method52 () : string =
     let v268 : string = _run_target_args'_v143 
     let v272 : string = v139 + v268 
     v272
-and method54 (v0 : uint8, v1 : std_string_String) : string =
+and method55 (v0 : uint8, v1 : std_string_String) : string =
     let v2 : string = method15()
-    let v3 : Mut3 = {l0 = v2} : Mut3
+    let v4 : Mut3 = {l0 = v2} : Mut3
     let v6 : string = "{ "
-    let v7 : string = $"{v6}"
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure8(v3, v7)
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let v25 : string = "retry"
-    let v26 : string = $"{v25}"
-    let v34 : unit = ()
-    let v35 : (unit -> unit) = closure8(v3, v26)
-    let v36 : unit = (fun () -> v35 (); v34) ()
-    let v44 : string = " = "
-    let v45 : string = $"{v44}"
-    let v53 : unit = ()
-    let v54 : (unit -> unit) = closure8(v3, v45)
-    let v55 : unit = (fun () -> v54 (); v53) ()
-    let v65 : string = $"{v0}"
-    let v73 : unit = ()
-    let v74 : (unit -> unit) = closure8(v3, v65)
-    let v75 : unit = (fun () -> v74 (); v73) ()
-    let v83 : string = "; "
-    let v84 : string = $"{v83}"
-    let v92 : unit = ()
-    let v93 : (unit -> unit) = closure8(v3, v84)
-    let v94 : unit = (fun () -> v93 (); v92) ()
-    let v102 : string = "error"
-    let v103 : string = $"{v102}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v3, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v120 : string = $"{v44}"
-    let v128 : unit = ()
-    let v129 : (unit -> unit) = closure8(v3, v120)
-    let v130 : unit = (fun () -> v129 (); v128) ()
+    method16(v4, v6)
+    let v21 : string = "retry"
+    method16(v4, v21)
+    let v36 : string = " = "
+    method16(v4, v36)
+    let v54 : string = $"{v0}"
+    method16(v4, v54)
+    let v71 : string = "; "
+    method16(v4, v71)
+    let v86 : string = "error"
+    method16(v4, v86)
+    method16(v4, v36)
     (* run_target_args'
-    let v140 : unit = ()
+    let v118 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v141 : string = "format!(\"{:#?}\", $0)"
-    let v142 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v141 
-    let v143 : string = "fable_library_rust::String_::fromString($0)"
-    let v144 : string = Fable.Core.RustInterop.emitRustExpr v142 v143 
-    let _run_target_args'_v140 = v144 
+    let v119 : string = "format!(\"{:#?}\", $0)"
+    let v120 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v119 
+    let v121 : string = "fable_library_rust::String_::fromString($0)"
+    let v122 : string = Fable.Core.RustInterop.emitRustExpr v120 v121 
+    let _run_target_args'_v118 = v122 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v145 : string = "format!(\"{:#?}\", $0)"
-    let v146 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v145 
-    let v147 : string = "fable_library_rust::String_::fromString($0)"
-    let v148 : string = Fable.Core.RustInterop.emitRustExpr v146 v147 
-    let _run_target_args'_v140 = v148 
+    let v123 : string = "format!(\"{:#?}\", $0)"
+    let v124 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v123 
+    let v125 : string = "fable_library_rust::String_::fromString($0)"
+    let v126 : string = Fable.Core.RustInterop.emitRustExpr v124 v125 
+    let _run_target_args'_v118 = v126 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v149 : string = "format!(\"{:#?}\", $0)"
-    let v150 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v149 
-    let v151 : string = "fable_library_rust::String_::fromString($0)"
-    let v152 : string = Fable.Core.RustInterop.emitRustExpr v150 v151 
-    let _run_target_args'_v140 = v152 
+    let v127 : string = "format!(\"{:#?}\", $0)"
+    let v128 : std_string_String = Fable.Core.RustInterop.emitRustExpr v1 v127 
+    let v129 : string = "fable_library_rust::String_::fromString($0)"
+    let v130 : string = Fable.Core.RustInterop.emitRustExpr v128 v129 
+    let _run_target_args'_v118 = v130 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v154 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v154 
+    let v132 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v132 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v158 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v158 
+    let v136 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v136 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v162 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v162 
+    let v140 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v140 
     #endif
 #else
-    let v166 : string = $"%A{v1}"
-    let _run_target_args'_v140 = v166 
+    let v144 : string = $"%A{v1}"
+    let _run_target_args'_v118 = v144 
     #endif
-    let v169 : string = _run_target_args'_v140 
-    let v179 : string = $"{v169}"
-    let v187 : unit = ()
-    let v188 : (unit -> unit) = closure8(v3, v179)
-    let v189 : unit = (fun () -> v188 (); v187) ()
-    let v197 : string = " }"
-    let v198 : string = $"{v197}"
-    let v206 : unit = ()
-    let v207 : (unit -> unit) = closure8(v3, v198)
-    let v208 : unit = (fun () -> v207 (); v206) ()
-    let v214 : string = v3.l0
-    v214
-and method53 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : std_string_String) : string =
-    let v10 : string = method54(v8, v9)
+    let v147 : string = _run_target_args'_v118 
+    method16(v4, v147)
+    let v171 : string = " }"
+    method16(v4, v171)
+    let v185 : string = v4.l0
+    v185
+and method54 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : std_string_String) : string =
+    let v10 : string = method55(v8, v9)
     let v11 : int64 = v0.l0
     let v14 : string = " "
     let v15 : string = v6 + v14 
     let v19 : string = v15 + v7 
     let v24 : string = " #"
     let v25 : string = v19 + v24 
-    let v29 : (int64 -> string) = _.ToString()
-    let v30 : string = v29 v11
-    let v34 : string = v25 + v30 
-    let v38 : string = v34 + v14 
-    let v43 : string = "spiral_wasm.run / Error error"
-    let v44 : string = v38 + v43 
-    let v49 : string = " / "
-    let v50 : string = v44 + v49 
-    let v54 : string = v50 + v10 
-    method18(v54)
-and closure30 (v0 : uint8, v1 : std_string_String) () : unit =
+    let v32 : (int64 -> string) = _.ToString()
+    let v33 : string = v32 v11
+    let v37 : string = v25 + v33 
+    let v41 : string = v37 + v14 
+    let v46 : string = "spiral_wasm.run / Error error"
+    let v47 : string = v41 + v46 
+    let v52 : string = " / "
+    let v53 : string = v47 + v52 
+    let v57 : string = v53 + v10 
+    method19(v57)
+and closure29 (v0 : uint8, v1 : std_string_String) () : unit =
     let v16 : unit = ()
     let v17 : (unit -> unit) = closure6()
     let v18 : unit = (fun () -> v17 (); v16) ()
@@ -6637,7 +6285,7 @@ and closure30 (v0 : uint8, v1 : std_string_String) () : unit =
             let v63 : bool = 3 >= v62
             v63
     let v65 : bool = v64 = false
-    let v299 : US8 =
+    let v337 : US8 =
         if v65 then
             US8_1
         else
@@ -6645,15 +6293,15 @@ and closure30 (v0 : uint8, v1 : std_string_String) () : unit =
             let v82 : unit = (fun () -> v17 (); v81) ()
             let struct (v105 : Mut0, v106 : Mut1, v107 : Mut2, v108 : Mut3, v109 : Mut4, v110 : int64 option) = TraceState.trace_state.Value
             let v123 : string = method9(v105, v106, v107, v108, v109, v110)
-            let v124 : string = method52()
-            let v125 : string = method53(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
+            let v124 : string = method53()
+            let v125 : string = method54(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
             let v140 : unit = ()
             let v141 : unit = (fun () -> v17 (); v140) ()
             let struct (v164 : Mut0, v165 : Mut1, v166 : Mut2, v167 : Mut3, v168 : Mut4, v169 : int64 option) = TraceState.trace_state.Value
             let v184 : unit = ()
-            let v185 : (unit -> unit) = closure9(v164)
+            let v185 : (unit -> unit) = closure8(v164)
             let v186 : unit = (fun () -> v185 (); v184) ()
-            let v189 : (string -> unit) = closure10()
+            let v189 : (string -> unit) = closure9()
             (* run_target_args'
             let v190 : unit = ()
             run_target_args' *)
@@ -6743,30 +6391,30 @@ and closure30 (v0 : uint8, v1 : std_string_String) () : unit =
             let v263 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v262 
             let v264 : string = "$0.len()"
             let v265 : unativeint = Fable.Core.RustInterop.emitRustExpr v263 v264 
-            let v271 : int32 = v265 |> int32 
-            let v281 : string = ""
-            let v282 : bool = v125 <> v281 
-            let v286 : bool =
-                if v282 then
-                    let v285 : bool = v271 <= 1
-                    v285
+            let v309 : int32 = v265 |> int32 
+            let v319 : string = ""
+            let v320 : bool = v125 <> v319 
+            let v324 : bool =
+                if v320 then
+                    let v323 : bool = v309 <= 1
+                    v323
                 else
                     false
-            if v286 then
+            if v324 then
                 v167.l0 <- v209
                 ()
             else
-                v167.l0 <- v281
-                let v287 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v288 : bool = Fable.Core.RustInterop.emitRustExpr v263 v287 
-                let v289 : string = "x"
-                let v290 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v289 
-                let v291 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v292 : bool = Fable.Core.RustInterop.emitRustExpr v290 v291 
-                let v293 : string = $"true"
-                let v294 : bool = Fable.Core.RustInterop.emitRustExpr () v293 
-                let v295 : string = "true; }); //"
-                let v296 : bool = Fable.Core.RustInterop.emitRustExpr () v295 
+                v167.l0 <- v319
+                let v325 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v326 : bool = Fable.Core.RustInterop.emitRustExpr v263 v325 
+                let v327 : string = "x"
+                let v328 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v327 
+                let v329 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v330 : bool = Fable.Core.RustInterop.emitRustExpr v328 v329 
+                let v331 : string = $"true"
+                let v332 : bool = Fable.Core.RustInterop.emitRustExpr () v331 
+                let v333 : string = "true; }); //"
+                let v334 : bool = Fable.Core.RustInterop.emitRustExpr () v333 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -6782,12 +6430,12 @@ and closure30 (v0 : uint8, v1 : std_string_String) () : unit =
             v189 v125
             #endif
             // run_target_args' is_unit
-            let v297 : (string -> unit) = v165.l0
-            v297 v125
+            let v335 : (string -> unit) = v165.l0
+            v335 v125
             US8_0(v164, v165, v166, v167, v168, v169)
     
     ()
-and closure31 () () : unit =
+and closure30 () () : unit =
     let v14 : unit = ()
     let v15 : (unit -> unit) = closure6()
     let v16 : unit = (fun () -> v15 (); v14) ()
@@ -6803,7 +6451,7 @@ and closure31 () () : unit =
             let v61 : bool = 3 >= v60
             v61
     let v63 : bool = v62 = false
-    let v237 : US8 =
+    let v275 : US8 =
         if v63 then
             US8_1
         else
@@ -6811,10 +6459,10 @@ and closure31 () () : unit =
             let v80 : unit = (fun () -> v15 (); v79) ()
             let struct (v103 : Mut0, v104 : Mut1, v105 : Mut2, v106 : Mut3, v107 : Mut4, v108 : int64 option) = TraceState.trace_state.Value
             let v123 : unit = ()
-            let v124 : (unit -> unit) = closure9(v103)
+            let v124 : (unit -> unit) = closure8(v103)
             let v125 : unit = (fun () -> v124 (); v123) ()
             let v128 : string = "\n"
-            let v129 : (string -> unit) = closure10()
+            let v129 : (string -> unit) = closure9()
             (* run_target_args'
             let v130 : unit = ()
             run_target_args' *)
@@ -6903,30 +6551,30 @@ and closure31 () () : unit =
             let v201 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v200 
             let v202 : string = "$0.len()"
             let v203 : unativeint = Fable.Core.RustInterop.emitRustExpr v201 v202 
-            let v209 : int32 = v203 |> int32 
-            let v219 : string = ""
-            let v220 : bool = v128 <> v219 
-            let v224 : bool =
-                if v220 then
-                    let v223 : bool = v209 <= 1
-                    v223
+            let v247 : int32 = v203 |> int32 
+            let v257 : string = ""
+            let v258 : bool = v128 <> v257 
+            let v262 : bool =
+                if v258 then
+                    let v261 : bool = v247 <= 1
+                    v261
                 else
                     false
-            if v224 then
+            if v262 then
                 v106.l0 <- v147
                 ()
             else
-                v106.l0 <- v219
-                let v225 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v226 : bool = Fable.Core.RustInterop.emitRustExpr v201 v225 
-                let v227 : string = "x"
-                let v228 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v227 
-                let v229 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v230 : bool = Fable.Core.RustInterop.emitRustExpr v228 v229 
-                let v231 : string = $"true"
-                let v232 : bool = Fable.Core.RustInterop.emitRustExpr () v231 
-                let v233 : string = "true; }); //"
-                let v234 : bool = Fable.Core.RustInterop.emitRustExpr () v233 
+                v106.l0 <- v257
+                let v263 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v264 : bool = Fable.Core.RustInterop.emitRustExpr v201 v263 
+                let v265 : string = "x"
+                let v266 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v265 
+                let v267 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v268 : bool = Fable.Core.RustInterop.emitRustExpr v266 v267 
+                let v269 : string = $"true"
+                let v270 : bool = Fable.Core.RustInterop.emitRustExpr () v269 
+                let v271 : string = "true; }); //"
+                let v272 : bool = Fable.Core.RustInterop.emitRustExpr () v271 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -6942,12 +6590,12 @@ and closure31 () () : unit =
             v129 v128
             #endif
             // run_target_args' is_unit
-            let v235 : (string -> unit) = v104.l0
-            v235 v128
+            let v273 : (string -> unit) = v104.l0
+            v273 v128
             US8_0(v103, v104, v105, v106, v107, v108)
     
     ()
-and closure32 (v0 : uint8, v1 : std_string_String) () : unit =
+and closure31 (v0 : uint8, v1 : std_string_String) () : unit =
     let v16 : unit = ()
     let v17 : (unit -> unit) = closure6()
     let v18 : unit = (fun () -> v17 (); v16) ()
@@ -6963,7 +6611,7 @@ and closure32 (v0 : uint8, v1 : std_string_String) () : unit =
             let v63 : bool = 3 >= v62
             v63
     let v65 : bool = v64 = false
-    let v299 : US8 =
+    let v337 : US8 =
         if v65 then
             US8_1
         else
@@ -6971,15 +6619,15 @@ and closure32 (v0 : uint8, v1 : std_string_String) () : unit =
             let v82 : unit = (fun () -> v17 (); v81) ()
             let struct (v105 : Mut0, v106 : Mut1, v107 : Mut2, v108 : Mut3, v109 : Mut4, v110 : int64 option) = TraceState.trace_state.Value
             let v123 : string = method9(v105, v106, v107, v108, v109, v110)
-            let v124 : string = method52()
-            let v125 : string = method53(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
+            let v124 : string = method53()
+            let v125 : string = method54(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
             let v140 : unit = ()
             let v141 : unit = (fun () -> v17 (); v140) ()
             let struct (v164 : Mut0, v165 : Mut1, v166 : Mut2, v167 : Mut3, v168 : Mut4, v169 : int64 option) = TraceState.trace_state.Value
             let v184 : unit = ()
-            let v185 : (unit -> unit) = closure9(v164)
+            let v185 : (unit -> unit) = closure8(v164)
             let v186 : unit = (fun () -> v185 (); v184) ()
-            let v189 : (string -> unit) = closure10()
+            let v189 : (string -> unit) = closure9()
             (* run_target_args'
             let v190 : unit = ()
             run_target_args' *)
@@ -7069,30 +6717,30 @@ and closure32 (v0 : uint8, v1 : std_string_String) () : unit =
             let v263 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v262 
             let v264 : string = "$0.len()"
             let v265 : unativeint = Fable.Core.RustInterop.emitRustExpr v263 v264 
-            let v271 : int32 = v265 |> int32 
-            let v281 : string = ""
-            let v282 : bool = v125 <> v281 
-            let v286 : bool =
-                if v282 then
-                    let v285 : bool = v271 <= 1
-                    v285
+            let v309 : int32 = v265 |> int32 
+            let v319 : string = ""
+            let v320 : bool = v125 <> v319 
+            let v324 : bool =
+                if v320 then
+                    let v323 : bool = v309 <= 1
+                    v323
                 else
                     false
-            if v286 then
+            if v324 then
                 v167.l0 <- v209
                 ()
             else
-                v167.l0 <- v281
-                let v287 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v288 : bool = Fable.Core.RustInterop.emitRustExpr v263 v287 
-                let v289 : string = "x"
-                let v290 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v289 
-                let v291 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v292 : bool = Fable.Core.RustInterop.emitRustExpr v290 v291 
-                let v293 : string = $"true"
-                let v294 : bool = Fable.Core.RustInterop.emitRustExpr () v293 
-                let v295 : string = "true; }); //"
-                let v296 : bool = Fable.Core.RustInterop.emitRustExpr () v295 
+                v167.l0 <- v319
+                let v325 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v326 : bool = Fable.Core.RustInterop.emitRustExpr v263 v325 
+                let v327 : string = "x"
+                let v328 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v327 
+                let v329 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v330 : bool = Fable.Core.RustInterop.emitRustExpr v328 v329 
+                let v331 : string = $"true"
+                let v332 : bool = Fable.Core.RustInterop.emitRustExpr () v331 
+                let v333 : string = "true; }); //"
+                let v334 : bool = Fable.Core.RustInterop.emitRustExpr () v333 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -7108,12 +6756,12 @@ and closure32 (v0 : uint8, v1 : std_string_String) () : unit =
             v189 v125
             #endif
             // run_target_args' is_unit
-            let v297 : (string -> unit) = v165.l0
-            v297 v125
+            let v335 : (string -> unit) = v165.l0
+            v335 v125
             US8_0(v164, v165, v166, v167, v168, v169)
     
     ()
-and closure33 () () : unit =
+and closure32 () () : unit =
     let v14 : unit = ()
     let v15 : (unit -> unit) = closure6()
     let v16 : unit = (fun () -> v15 (); v14) ()
@@ -7129,7 +6777,7 @@ and closure33 () () : unit =
             let v61 : bool = 3 >= v60
             v61
     let v63 : bool = v62 = false
-    let v237 : US8 =
+    let v275 : US8 =
         if v63 then
             US8_1
         else
@@ -7137,10 +6785,10 @@ and closure33 () () : unit =
             let v80 : unit = (fun () -> v15 (); v79) ()
             let struct (v103 : Mut0, v104 : Mut1, v105 : Mut2, v106 : Mut3, v107 : Mut4, v108 : int64 option) = TraceState.trace_state.Value
             let v123 : unit = ()
-            let v124 : (unit -> unit) = closure9(v103)
+            let v124 : (unit -> unit) = closure8(v103)
             let v125 : unit = (fun () -> v124 (); v123) ()
             let v128 : string = "\n"
-            let v129 : (string -> unit) = closure10()
+            let v129 : (string -> unit) = closure9()
             (* run_target_args'
             let v130 : unit = ()
             run_target_args' *)
@@ -7229,30 +6877,30 @@ and closure33 () () : unit =
             let v201 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v200 
             let v202 : string = "$0.len()"
             let v203 : unativeint = Fable.Core.RustInterop.emitRustExpr v201 v202 
-            let v209 : int32 = v203 |> int32 
-            let v219 : string = ""
-            let v220 : bool = v128 <> v219 
-            let v224 : bool =
-                if v220 then
-                    let v223 : bool = v209 <= 1
-                    v223
+            let v247 : int32 = v203 |> int32 
+            let v257 : string = ""
+            let v258 : bool = v128 <> v257 
+            let v262 : bool =
+                if v258 then
+                    let v261 : bool = v247 <= 1
+                    v261
                 else
                     false
-            if v224 then
+            if v262 then
                 v106.l0 <- v147
                 ()
             else
-                v106.l0 <- v219
-                let v225 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v226 : bool = Fable.Core.RustInterop.emitRustExpr v201 v225 
-                let v227 : string = "x"
-                let v228 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v227 
-                let v229 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v230 : bool = Fable.Core.RustInterop.emitRustExpr v228 v229 
-                let v231 : string = $"true"
-                let v232 : bool = Fable.Core.RustInterop.emitRustExpr () v231 
-                let v233 : string = "true; }); //"
-                let v234 : bool = Fable.Core.RustInterop.emitRustExpr () v233 
+                v106.l0 <- v257
+                let v263 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v264 : bool = Fable.Core.RustInterop.emitRustExpr v201 v263 
+                let v265 : string = "x"
+                let v266 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v265 
+                let v267 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v268 : bool = Fable.Core.RustInterop.emitRustExpr v266 v267 
+                let v269 : string = $"true"
+                let v270 : bool = Fable.Core.RustInterop.emitRustExpr () v269 
+                let v271 : string = "true; }); //"
+                let v272 : bool = Fable.Core.RustInterop.emitRustExpr () v271 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -7268,12 +6916,12 @@ and closure33 () () : unit =
             v129 v128
             #endif
             // run_target_args' is_unit
-            let v235 : (string -> unit) = v104.l0
-            v235 v128
+            let v273 : (string -> unit) = v104.l0
+            v273 v128
             US8_0(v103, v104, v105, v106, v107, v108)
     
     ()
-and method55 () : string =
+and method56 () : string =
     (* run_target_args'
     let v1 : unit = ()
     run_target_args' *)
@@ -7603,72 +7251,46 @@ and method55 () : string =
     let v268 : string = _run_target_args'_v143 
     let v272 : string = v139 + v268 
     v272
-and method57 (v0 : uint8, v1 : string) : string =
+and method58 (v0 : uint8, v1 : string) : string =
     let v2 : string = method15()
-    let v3 : Mut3 = {l0 = v2} : Mut3
+    let v4 : Mut3 = {l0 = v2} : Mut3
     let v6 : string = "{ "
-    let v7 : string = $"{v6}"
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure8(v3, v7)
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let v25 : string = "retry"
-    let v26 : string = $"{v25}"
-    let v34 : unit = ()
-    let v35 : (unit -> unit) = closure8(v3, v26)
-    let v36 : unit = (fun () -> v35 (); v34) ()
-    let v44 : string = " = "
-    let v45 : string = $"{v44}"
-    let v53 : unit = ()
-    let v54 : (unit -> unit) = closure8(v3, v45)
-    let v55 : unit = (fun () -> v54 (); v53) ()
-    let v65 : string = $"{v0}"
-    let v73 : unit = ()
-    let v74 : (unit -> unit) = closure8(v3, v65)
-    let v75 : unit = (fun () -> v74 (); v73) ()
-    let v83 : string = "; "
-    let v84 : string = $"{v83}"
-    let v92 : unit = ()
-    let v93 : (unit -> unit) = closure8(v3, v84)
-    let v94 : unit = (fun () -> v93 (); v92) ()
-    let v102 : string = "error"
-    let v103 : string = $"{v102}"
-    let v111 : unit = ()
-    let v112 : (unit -> unit) = closure8(v3, v103)
-    let v113 : unit = (fun () -> v112 (); v111) ()
-    let v120 : string = $"{v44}"
-    let v128 : unit = ()
-    let v129 : (unit -> unit) = closure8(v3, v120)
-    let v130 : unit = (fun () -> v129 (); v128) ()
-    let v137 : string = $"{v1}"
-    let v145 : unit = ()
-    let v146 : (unit -> unit) = closure8(v3, v137)
-    let v147 : unit = (fun () -> v146 (); v145) ()
-    let v155 : string = " }"
-    let v156 : string = $"{v155}"
-    let v164 : unit = ()
-    let v165 : (unit -> unit) = closure8(v3, v156)
-    let v166 : unit = (fun () -> v165 (); v164) ()
-    let v172 : string = v3.l0
-    v172
-and method56 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : string) : string =
-    let v10 : string = method57(v8, v9)
+    method16(v4, v6)
+    let v21 : string = "retry"
+    method16(v4, v21)
+    let v36 : string = " = "
+    method16(v4, v36)
+    let v54 : string = $"{v0}"
+    method16(v4, v54)
+    let v71 : string = "; "
+    method16(v4, v71)
+    let v86 : string = "error"
+    method16(v4, v86)
+    method16(v4, v36)
+    method16(v4, v1)
+    let v129 : string = " }"
+    method16(v4, v129)
+    let v143 : string = v4.l0
+    v143
+and method57 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : uint8, v9 : string) : string =
+    let v10 : string = method58(v8, v9)
     let v11 : int64 = v0.l0
     let v14 : string = " "
     let v15 : string = v6 + v14 
     let v19 : string = v15 + v7 
     let v24 : string = " #"
     let v25 : string = v19 + v24 
-    let v29 : (int64 -> string) = _.ToString()
-    let v30 : string = v29 v11
-    let v34 : string = v25 + v30 
-    let v38 : string = v34 + v14 
-    let v43 : string = "spiral_wasm.run / Ok (Some error)"
-    let v44 : string = v38 + v43 
-    let v49 : string = " / "
-    let v50 : string = v44 + v49 
-    let v54 : string = v50 + v10 
-    method18(v54)
-and closure34 (v0 : uint8, v1 : string) () : unit =
+    let v32 : (int64 -> string) = _.ToString()
+    let v33 : string = v32 v11
+    let v37 : string = v25 + v33 
+    let v41 : string = v37 + v14 
+    let v46 : string = "spiral_wasm.run / Ok (Some error)"
+    let v47 : string = v41 + v46 
+    let v52 : string = " / "
+    let v53 : string = v47 + v52 
+    let v57 : string = v53 + v10 
+    method19(v57)
+and closure33 (v0 : uint8, v1 : string) () : unit =
     let v16 : unit = ()
     let v17 : (unit -> unit) = closure6()
     let v18 : unit = (fun () -> v17 (); v16) ()
@@ -7684,7 +7306,7 @@ and closure34 (v0 : uint8, v1 : string) () : unit =
             let v63 : bool = 4 >= v62
             v63
     let v65 : bool = v64 = false
-    let v299 : US8 =
+    let v337 : US8 =
         if v65 then
             US8_1
         else
@@ -7692,15 +7314,15 @@ and closure34 (v0 : uint8, v1 : string) () : unit =
             let v82 : unit = (fun () -> v17 (); v81) ()
             let struct (v105 : Mut0, v106 : Mut1, v107 : Mut2, v108 : Mut3, v109 : Mut4, v110 : int64 option) = TraceState.trace_state.Value
             let v123 : string = method9(v105, v106, v107, v108, v109, v110)
-            let v124 : string = method55()
-            let v125 : string = method56(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
+            let v124 : string = method56()
+            let v125 : string = method57(v105, v106, v107, v108, v109, v110, v123, v124, v0, v1)
             let v140 : unit = ()
             let v141 : unit = (fun () -> v17 (); v140) ()
             let struct (v164 : Mut0, v165 : Mut1, v166 : Mut2, v167 : Mut3, v168 : Mut4, v169 : int64 option) = TraceState.trace_state.Value
             let v184 : unit = ()
-            let v185 : (unit -> unit) = closure9(v164)
+            let v185 : (unit -> unit) = closure8(v164)
             let v186 : unit = (fun () -> v185 (); v184) ()
-            let v189 : (string -> unit) = closure10()
+            let v189 : (string -> unit) = closure9()
             (* run_target_args'
             let v190 : unit = ()
             run_target_args' *)
@@ -7790,30 +7412,30 @@ and closure34 (v0 : uint8, v1 : string) () : unit =
             let v263 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v262 
             let v264 : string = "$0.len()"
             let v265 : unativeint = Fable.Core.RustInterop.emitRustExpr v263 v264 
-            let v271 : int32 = v265 |> int32 
-            let v281 : string = ""
-            let v282 : bool = v125 <> v281 
-            let v286 : bool =
-                if v282 then
-                    let v285 : bool = v271 <= 1
-                    v285
+            let v309 : int32 = v265 |> int32 
+            let v319 : string = ""
+            let v320 : bool = v125 <> v319 
+            let v324 : bool =
+                if v320 then
+                    let v323 : bool = v309 <= 1
+                    v323
                 else
                     false
-            if v286 then
+            if v324 then
                 v167.l0 <- v209
                 ()
             else
-                v167.l0 <- v281
-                let v287 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v288 : bool = Fable.Core.RustInterop.emitRustExpr v263 v287 
-                let v289 : string = "x"
-                let v290 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v289 
-                let v291 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v292 : bool = Fable.Core.RustInterop.emitRustExpr v290 v291 
-                let v293 : string = $"true"
-                let v294 : bool = Fable.Core.RustInterop.emitRustExpr () v293 
-                let v295 : string = "true; }); //"
-                let v296 : bool = Fable.Core.RustInterop.emitRustExpr () v295 
+                v167.l0 <- v319
+                let v325 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v326 : bool = Fable.Core.RustInterop.emitRustExpr v263 v325 
+                let v327 : string = "x"
+                let v328 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v327 
+                let v329 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v330 : bool = Fable.Core.RustInterop.emitRustExpr v328 v329 
+                let v331 : string = $"true"
+                let v332 : bool = Fable.Core.RustInterop.emitRustExpr () v331 
+                let v333 : string = "true; }); //"
+                let v334 : bool = Fable.Core.RustInterop.emitRustExpr () v333 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -7829,22 +7451,22 @@ and closure34 (v0 : uint8, v1 : string) () : unit =
             v189 v125
             #endif
             // run_target_args' is_unit
-            let v297 : (string -> unit) = v165.l0
-            v297 v125
+            let v335 : (string -> unit) = v165.l0
+            v335 v125
             US8_0(v164, v165, v166, v167, v168, v169)
     
     ()
-and method25 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> =
+and method26 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> =
     let v2 : string = "true; let __future_init = Box::pin(/*"
     let v3 : bool = Fable.Core.RustInterop.emitRustExpr () v2 
     let v4 : string = "*/ async move { /*"
     let v5 : bool = Fable.Core.RustInterop.emitRustExpr () v4 
     let v6 : string = "*/ ()"
     let v7 : bool = Fable.Core.RustInterop.emitRustExpr () v6 
-    let v8 : std_pin_Pin<Box<Dyn<std_future_Future<Result<US7, anyhow_Error>>>>> = method26(v0, v1)
+    let v8 : std_pin_Pin<Box<Dyn<std_future_Future<Result<US7, anyhow_Error>>>>> = method27(v0, v1)
     let v9 : string = "v8.await"
     let v10 : Result<US7, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr () v9 
-    let v11 : (anyhow_Error -> std_string_String) = method49()
+    let v11 : (anyhow_Error -> std_string_String) = method50()
     (* run_target_args'
     let v13 : unit = ()
     run_target_args' *)
@@ -7883,88 +7505,88 @@ and method25 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
     let _run_target_args'_v13 = v23 
     #endif
     let v24 : Result<US7, std_string_String> = _run_target_args'_v13 
-    let v27 : (US7 -> US10) = method50()
-    let v28 : (std_string_String -> US10) = method51()
+    let v27 : (US7 -> US10) = method51()
+    let v28 : (std_string_String -> US10) = method52()
     let v30 : US10 = match v24 with Ok x -> v27 x | Error x -> v28 x
-    let v3037 : US9 =
+    let v3417 : US9 =
         match v30 with
-        | US10_1(v725) -> (* Error *)
-            let v726 : bool = v1 >= 15uy
-            if v726 then
-                let v1038 : unit = ()
-                let v1039 : (unit -> unit) = closure30(v1, v725)
-                let v1040 : unit = (fun () -> v1039 (); v1038) ()
-                let v1607 : unit = ()
-                let v1608 : (unit -> unit) = closure31()
-                let v1609 : unit = (fun () -> v1608 (); v1607) ()
-                let v1864 : string = "true; let __future_init = Box::pin(/*"
-                let v1865 : bool = Fable.Core.RustInterop.emitRustExpr () v1864 
-                let v1866 : string = "*/ async move { /*"
-                let v1867 : bool = Fable.Core.RustInterop.emitRustExpr () v1866 
-                let v1868 : string = "*/ ()"
-                let v1869 : bool = Fable.Core.RustInterop.emitRustExpr () v1868 
-                let v1870 : string = ""
-                let v1871 : string = "}"
-                let v1872 : string = v1870 + v1871 
-                let v1873 : US7 = US7_1
-                let x = struct (v1, v1873) //
-                let v1874 : _ = x
-                let v1875 : unit = ()
+        | US10_1(v801) -> (* Error *)
+            let v802 : bool = v1 >= 15uy
+            if v802 then
+                let v1152 : unit = ()
+                let v1153 : (unit -> unit) = closure29(v1, v801)
+                let v1154 : unit = (fun () -> v1153 (); v1152) ()
+                let v1797 : unit = ()
+                let v1798 : (unit -> unit) = closure30()
+                let v1799 : unit = (fun () -> v1798 (); v1797) ()
+                let v2092 : string = "true; let __future_init = Box::pin(/*"
+                let v2093 : bool = Fable.Core.RustInterop.emitRustExpr () v2092 
+                let v2094 : string = "*/ async move { /*"
+                let v2095 : bool = Fable.Core.RustInterop.emitRustExpr () v2094 
+                let v2096 : string = "*/ ()"
+                let v2097 : bool = Fable.Core.RustInterop.emitRustExpr () v2096 
+                let v2098 : string = ""
+                let v2099 : string = "}"
+                let v2100 : string = v2098 + v2099 
+                let v2101 : US7 = US7_1
+                let x = struct (v1, v2101) //
+                let v2102 : _ = x
+                let v2103 : unit = ()
                 (* run_target_args'
-                let v1876 : unit = ()
+                let v2104 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v1877 : string = $"true; let _fix_closure_v1875 = $0"
-                let v1878 : bool = Fable.Core.RustInterop.emitRustExpr v1874 v1877 
-                let _run_target_args'_v1876 = true 
+                let v2105 : string = $"true; let _fix_closure_v2103 = $0"
+                let v2106 : bool = Fable.Core.RustInterop.emitRustExpr v2102 v2105 
+                let _run_target_args'_v2104 = true 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v1879 : string = $"true; let _fix_closure_v1875 = $0"
-                let v1880 : bool = Fable.Core.RustInterop.emitRustExpr v1874 v1879 
-                let _run_target_args'_v1876 = true 
+                let v2107 : string = $"true; let _fix_closure_v2103 = $0"
+                let v2108 : bool = Fable.Core.RustInterop.emitRustExpr v2102 v2107 
+                let _run_target_args'_v2104 = true 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v1881 : string = $"true; let _fix_closure_v1875 = $0"
-                let v1882 : bool = Fable.Core.RustInterop.emitRustExpr v1874 v1881 
-                let _run_target_args'_v1876 = true 
+                let v2109 : string = $"true; let _fix_closure_v2103 = $0"
+                let v2110 : bool = Fable.Core.RustInterop.emitRustExpr v2102 v2109 
+                let _run_target_args'_v2104 = true 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let _run_target_args'_v1876 = false 
+                let _run_target_args'_v2104 = false 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let _run_target_args'_v1876 = false 
+                let _run_target_args'_v2104 = false 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let _run_target_args'_v1876 = false 
+                let _run_target_args'_v2104 = false 
                 #endif
 #else
-                let _run_target_args'_v1876 = false 
+                let _run_target_args'_v2104 = false 
                 #endif
-                let v1883 : bool = _run_target_args'_v1876 
-                let v1884 : string = $"true; _fix_closure_v1875 " + v1872 + "); " + v1870 + " // rust.fix_closure'"
-                let v1885 : bool = Fable.Core.RustInterop.emitRustExpr () v1884 
-                let v1886 : string = "__future_init"
-                let v1887 : _ = Fable.Core.RustInterop.emitRustExpr () v1886 
-                let v1888 : string = "v1887"
-                let v1889 : std_pin_Pin<Box<Dyn<std_future_Future<struct (uint8 * US7)>>>> = Fable.Core.RustInterop.emitRustExpr () v1888 
-                let v1890 : string = "v1889.await"
-                let struct (v1891 : uint8, v1892 : US7) = Fable.Core.RustInterop.emitRustExpr () v1890 
-                US9_0(v1891, v1892)
+                let v2111 : bool = _run_target_args'_v2104 
+                let v2112 : string = $"true; _fix_closure_v2103 " + v2100 + "); " + v2098 + " // rust.fix_closure'"
+                let v2113 : bool = Fable.Core.RustInterop.emitRustExpr () v2112 
+                let v2114 : string = "__future_init"
+                let v2115 : _ = Fable.Core.RustInterop.emitRustExpr () v2114 
+                let v2116 : string = "v2115"
+                let v2117 : std_pin_Pin<Box<Dyn<std_future_Future<struct (uint8 * US7)>>>> = Fable.Core.RustInterop.emitRustExpr () v2116 
+                let v2118 : string = "v2117.await"
+                let struct (v2119 : uint8, v2120 : US7) = Fable.Core.RustInterop.emitRustExpr () v2118 
+                US9_0(v2119, v2120)
             else
-                let v2205 : unit = ()
-                let v2206 : (unit -> unit) = closure32(v1, v725)
-                let v2207 : unit = (fun () -> v2206 (); v2205) ()
-                let v2774 : unit = ()
-                let v2775 : (unit -> unit) = closure33()
-                let v2776 : unit = (fun () -> v2775 (); v2774) ()
-                let v3031 : uint8 = v1 + 1uy
-                let v3032 : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> = method25(v0, v3031)
-                let v3033 : string = "v3032.await"
-                let v3034 : US9 = Fable.Core.RustInterop.emitRustExpr () v3033 
-                v3034
+                let v2471 : unit = ()
+                let v2472 : (unit -> unit) = closure31(v1, v801)
+                let v2473 : unit = (fun () -> v2472 (); v2471) ()
+                let v3116 : unit = ()
+                let v3117 : (unit -> unit) = closure32()
+                let v3118 : unit = (fun () -> v3117 (); v3116) ()
+                let v3411 : uint8 = v1 + 1uy
+                let v3412 : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> = method26(v0, v3411)
+                let v3413 : string = "v3412.await"
+                let v3414 : US9 = Fable.Core.RustInterop.emitRustExpr () v3413 
+                v3414
         | US10_0(v33) -> (* Ok *)
             match v33 with
             | US7_1 -> (* None *)
@@ -8025,161 +7647,146 @@ and method25 (v0 : Vec<uint8>, v1 : uint8) : std_pin_Pin<Box<Dyn<std_future_Futu
                 let struct (v61 : uint8, v62 : US7) = Fable.Core.RustInterop.emitRustExpr () v60 
                 US9_0(v61, v62)
             | US7_0(v64) -> (* Some *)
-                let v376 : unit = ()
-                let v377 : (unit -> unit) = closure34(v1, v64)
-                let v378 : unit = (fun () -> v377 (); v376) ()
-                let v693 : string = "true; let __future_init = Box::pin(/*"
-                let v694 : bool = Fable.Core.RustInterop.emitRustExpr () v693 
-                let v695 : string = "*/ async move { /*"
-                let v696 : bool = Fable.Core.RustInterop.emitRustExpr () v695 
-                let v697 : string = "*/ ()"
-                let v698 : bool = Fable.Core.RustInterop.emitRustExpr () v697 
-                let v699 : string = ""
-                let v700 : string = "}"
-                let v701 : string = v699 + v700 
-                let v702 : US7 = US7_0(v64)
-                let x = struct (v1, v702) //
-                let v703 : _ = x
-                let v704 : unit = ()
+                let v414 : unit = ()
+                let v415 : (unit -> unit) = closure33(v1, v64)
+                let v416 : unit = (fun () -> v415 (); v414) ()
+                let v769 : string = "true; let __future_init = Box::pin(/*"
+                let v770 : bool = Fable.Core.RustInterop.emitRustExpr () v769 
+                let v771 : string = "*/ async move { /*"
+                let v772 : bool = Fable.Core.RustInterop.emitRustExpr () v771 
+                let v773 : string = "*/ ()"
+                let v774 : bool = Fable.Core.RustInterop.emitRustExpr () v773 
+                let v775 : string = ""
+                let v776 : string = "}"
+                let v777 : string = v775 + v776 
+                let v778 : US7 = US7_0(v64)
+                let x = struct (v1, v778) //
+                let v779 : _ = x
+                let v780 : unit = ()
                 (* run_target_args'
-                let v705 : unit = ()
+                let v781 : unit = ()
                 run_target_args' *)
                 
 #if FABLE_COMPILER || WASM || CONTRACT
                 
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                let v706 : string = $"true; let _fix_closure_v704 = $0"
-                let v707 : bool = Fable.Core.RustInterop.emitRustExpr v703 v706 
-                let _run_target_args'_v705 = true 
+                let v782 : string = $"true; let _fix_closure_v780 = $0"
+                let v783 : bool = Fable.Core.RustInterop.emitRustExpr v779 v782 
+                let _run_target_args'_v781 = true 
                 #endif
 #if FABLE_COMPILER_RUST && WASM
-                let v708 : string = $"true; let _fix_closure_v704 = $0"
-                let v709 : bool = Fable.Core.RustInterop.emitRustExpr v703 v708 
-                let _run_target_args'_v705 = true 
+                let v784 : string = $"true; let _fix_closure_v780 = $0"
+                let v785 : bool = Fable.Core.RustInterop.emitRustExpr v779 v784 
+                let _run_target_args'_v781 = true 
                 #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                let v710 : string = $"true; let _fix_closure_v704 = $0"
-                let v711 : bool = Fable.Core.RustInterop.emitRustExpr v703 v710 
-                let _run_target_args'_v705 = true 
+                let v786 : string = $"true; let _fix_closure_v780 = $0"
+                let v787 : bool = Fable.Core.RustInterop.emitRustExpr v779 v786 
+                let _run_target_args'_v781 = true 
                 #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                let _run_target_args'_v705 = false 
+                let _run_target_args'_v781 = false 
                 #endif
 #if FABLE_COMPILER_PYTHON
-                let _run_target_args'_v705 = false 
+                let _run_target_args'_v781 = false 
                 #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                let _run_target_args'_v705 = false 
+                let _run_target_args'_v781 = false 
                 #endif
 #else
-                let _run_target_args'_v705 = false 
+                let _run_target_args'_v781 = false 
                 #endif
-                let v712 : bool = _run_target_args'_v705 
-                let v713 : string = $"true; _fix_closure_v704 " + v701 + "); " + v699 + " // rust.fix_closure'"
-                let v714 : bool = Fable.Core.RustInterop.emitRustExpr () v713 
-                let v715 : string = "__future_init"
-                let v716 : _ = Fable.Core.RustInterop.emitRustExpr () v715 
-                let v717 : string = "v716"
-                let v718 : std_pin_Pin<Box<Dyn<std_future_Future<struct (uint8 * US7)>>>> = Fable.Core.RustInterop.emitRustExpr () v717 
-                let v719 : string = "v718.await"
-                let struct (v720 : uint8, v721 : US7) = Fable.Core.RustInterop.emitRustExpr () v719 
-                US9_1(v720, v721)
-    let v3038 : string = ""
-    let v3039 : string = "}"
-    let v3040 : string = v3038 + v3039 
-    let x = v3037 //
-    let v3041 : _ = x
-    let v3042 : unit = ()
+                let v788 : bool = _run_target_args'_v781 
+                let v789 : string = $"true; _fix_closure_v780 " + v777 + "); " + v775 + " // rust.fix_closure'"
+                let v790 : bool = Fable.Core.RustInterop.emitRustExpr () v789 
+                let v791 : string = "__future_init"
+                let v792 : _ = Fable.Core.RustInterop.emitRustExpr () v791 
+                let v793 : string = "v792"
+                let v794 : std_pin_Pin<Box<Dyn<std_future_Future<struct (uint8 * US7)>>>> = Fable.Core.RustInterop.emitRustExpr () v793 
+                let v795 : string = "v794.await"
+                let struct (v796 : uint8, v797 : US7) = Fable.Core.RustInterop.emitRustExpr () v795 
+                US9_1(v796, v797)
+    let v3418 : string = ""
+    let v3419 : string = "}"
+    let v3420 : string = v3418 + v3419 
+    let x = v3417 //
+    let v3421 : _ = x
+    let v3422 : unit = ()
     (* run_target_args'
-    let v3043 : unit = ()
+    let v3423 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v3044 : string = $"true; let _fix_closure_v3042 = $0"
-    let v3045 : bool = Fable.Core.RustInterop.emitRustExpr v3041 v3044 
-    let _run_target_args'_v3043 = true 
+    let v3424 : string = $"true; let _fix_closure_v3422 = $0"
+    let v3425 : bool = Fable.Core.RustInterop.emitRustExpr v3421 v3424 
+    let _run_target_args'_v3423 = true 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v3046 : string = $"true; let _fix_closure_v3042 = $0"
-    let v3047 : bool = Fable.Core.RustInterop.emitRustExpr v3041 v3046 
-    let _run_target_args'_v3043 = true 
+    let v3426 : string = $"true; let _fix_closure_v3422 = $0"
+    let v3427 : bool = Fable.Core.RustInterop.emitRustExpr v3421 v3426 
+    let _run_target_args'_v3423 = true 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v3048 : string = $"true; let _fix_closure_v3042 = $0"
-    let v3049 : bool = Fable.Core.RustInterop.emitRustExpr v3041 v3048 
-    let _run_target_args'_v3043 = true 
+    let v3428 : string = $"true; let _fix_closure_v3422 = $0"
+    let v3429 : bool = Fable.Core.RustInterop.emitRustExpr v3421 v3428 
+    let _run_target_args'_v3423 = true 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let _run_target_args'_v3043 = false 
+    let _run_target_args'_v3423 = false 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let _run_target_args'_v3043 = false 
+    let _run_target_args'_v3423 = false 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let _run_target_args'_v3043 = false 
+    let _run_target_args'_v3423 = false 
     #endif
 #else
-    let _run_target_args'_v3043 = false 
+    let _run_target_args'_v3423 = false 
     #endif
-    let v3050 : bool = _run_target_args'_v3043 
-    let v3051 : string = $"true; _fix_closure_v3042 " + v3040 + "); " + v3038 + " // rust.fix_closure'"
-    let v3052 : bool = Fable.Core.RustInterop.emitRustExpr () v3051 
-    let v3053 : string = "__future_init"
-    let v3054 : _ = Fable.Core.RustInterop.emitRustExpr () v3053 
-    let v3055 : string = "v3054"
-    let v3056 : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> = Fable.Core.RustInterop.emitRustExpr () v3055 
-    v3056
-and method59 (v0 : US9) : string =
+    let v3430 : bool = _run_target_args'_v3423 
+    let v3431 : string = $"true; _fix_closure_v3422 " + v3420 + "); " + v3418 + " // rust.fix_closure'"
+    let v3432 : bool = Fable.Core.RustInterop.emitRustExpr () v3431 
+    let v3433 : string = "__future_init"
+    let v3434 : _ = Fable.Core.RustInterop.emitRustExpr () v3433 
+    let v3435 : string = "v3434"
+    let v3436 : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> = Fable.Core.RustInterop.emitRustExpr () v3435 
+    v3436
+and method60 (v0 : US9) : string =
     let v1 : string = method15()
-    let v2 : Mut3 = {l0 = v1} : Mut3
+    let v3 : Mut3 = {l0 = v1} : Mut3
     let v5 : string = "{ "
-    let v6 : string = $"{v5}"
-    let v14 : unit = ()
-    let v15 : (unit -> unit) = closure8(v2, v6)
-    let v16 : unit = (fun () -> v15 (); v14) ()
-    let v24 : string = "retries"
-    let v25 : string = $"{v24}"
-    let v33 : unit = ()
-    let v34 : (unit -> unit) = closure8(v2, v25)
-    let v35 : unit = (fun () -> v34 (); v33) ()
-    let v43 : string = " = "
-    let v44 : string = $"{v43}"
-    let v52 : unit = ()
-    let v53 : (unit -> unit) = closure8(v2, v44)
-    let v54 : unit = (fun () -> v53 (); v52) ()
-    let v61 : string = $"%A{v0}"
-    let v65 : string = $"{v61}"
-    let v73 : unit = ()
-    let v74 : (unit -> unit) = closure8(v2, v65)
-    let v75 : unit = (fun () -> v74 (); v73) ()
-    let v83 : string = " }"
-    let v84 : string = $"{v83}"
-    let v92 : unit = ()
-    let v93 : (unit -> unit) = closure8(v2, v84)
-    let v94 : unit = (fun () -> v93 (); v92) ()
-    let v100 : string = v2.l0
-    v100
-and method58 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : US9) : string =
-    let v9 : string = method59(v8)
+    method16(v3, v5)
+    let v20 : string = "retries"
+    method16(v3, v20)
+    let v35 : string = " = "
+    method16(v3, v35)
+    let v50 : string = $"%A{v0}"
+    method16(v3, v50)
+    let v68 : string = " }"
+    method16(v3, v68)
+    let v82 : string = v3.l0
+    v82
+and method59 (v0 : Mut0, v1 : Mut1, v2 : Mut2, v3 : Mut3, v4 : Mut4, v5 : int64 option, v6 : string, v7 : string, v8 : US9) : string =
+    let v9 : string = method60(v8)
     let v10 : int64 = v0.l0
     let v13 : string = " "
     let v14 : string = v6 + v13 
     let v18 : string = v14 + v7 
     let v23 : string = " #"
     let v24 : string = v18 + v23 
-    let v28 : (int64 -> string) = _.ToString()
-    let v29 : string = v28 v10
-    let v33 : string = v24 + v29 
-    let v37 : string = v33 + v13 
-    let v42 : string = "spiral_wasm.run"
-    let v43 : string = v37 + v42 
-    let v48 : string = " / "
-    let v49 : string = v43 + v48 
-    let v53 : string = v49 + v9 
-    method18(v53)
-and closure35 (v0 : US9) () : unit =
+    let v31 : (int64 -> string) = _.ToString()
+    let v32 : string = v31 v10
+    let v36 : string = v24 + v32 
+    let v40 : string = v36 + v13 
+    let v45 : string = "spiral_wasm.run"
+    let v46 : string = v40 + v45 
+    let v51 : string = " / "
+    let v52 : string = v46 + v51 
+    let v56 : string = v52 + v9 
+    method19(v56)
+and closure34 (v0 : US9) () : unit =
     let v15 : unit = ()
     let v16 : (unit -> unit) = closure6()
     let v17 : unit = (fun () -> v16 (); v15) ()
@@ -8195,7 +7802,7 @@ and closure35 (v0 : US9) () : unit =
             let v62 : bool = 0 >= v61
             v62
     let v64 : bool = v63 = false
-    let v298 : US8 =
+    let v336 : US8 =
         if v64 then
             US8_1
         else
@@ -8204,14 +7811,14 @@ and closure35 (v0 : US9) () : unit =
             let struct (v104 : Mut0, v105 : Mut1, v106 : Mut2, v107 : Mut3, v108 : Mut4, v109 : int64 option) = TraceState.trace_state.Value
             let v122 : string = method9(v104, v105, v106, v107, v108, v109)
             let v123 : string = method13()
-            let v124 : string = method58(v104, v105, v106, v107, v108, v109, v122, v123, v0)
+            let v124 : string = method59(v104, v105, v106, v107, v108, v109, v122, v123, v0)
             let v139 : unit = ()
             let v140 : unit = (fun () -> v16 (); v139) ()
             let struct (v163 : Mut0, v164 : Mut1, v165 : Mut2, v166 : Mut3, v167 : Mut4, v168 : int64 option) = TraceState.trace_state.Value
             let v183 : unit = ()
-            let v184 : (unit -> unit) = closure9(v163)
+            let v184 : (unit -> unit) = closure8(v163)
             let v185 : unit = (fun () -> v184 (); v183) ()
-            let v188 : (string -> unit) = closure10()
+            let v188 : (string -> unit) = closure9()
             (* run_target_args'
             let v189 : unit = ()
             run_target_args' *)
@@ -8301,30 +7908,30 @@ and closure35 (v0 : US9) () : unit =
             let v262 : Vec<std_string_String> = Fable.Core.RustInterop.emitRustExpr () v261 
             let v263 : string = "$0.len()"
             let v264 : unativeint = Fable.Core.RustInterop.emitRustExpr v262 v263 
-            let v270 : int32 = v264 |> int32 
-            let v280 : string = ""
-            let v281 : bool = v124 <> v280 
-            let v285 : bool =
-                if v281 then
-                    let v284 : bool = v270 <= 1
-                    v284
+            let v308 : int32 = v264 |> int32 
+            let v318 : string = ""
+            let v319 : bool = v124 <> v318 
+            let v323 : bool =
+                if v319 then
+                    let v322 : bool = v308 <= 1
+                    v322
                 else
                     false
-            if v285 then
+            if v323 then
                 v166.l0 <- v208
                 ()
             else
-                v166.l0 <- v280
-                let v286 : string = "true; $0.into_iter().for_each(|x| { //"
-                let v287 : bool = Fable.Core.RustInterop.emitRustExpr v262 v286 
-                let v288 : string = "x"
-                let v289 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v288 
-                let v290 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
-                let v291 : bool = Fable.Core.RustInterop.emitRustExpr v289 v290 
-                let v292 : string = $"true"
-                let v293 : bool = Fable.Core.RustInterop.emitRustExpr () v292 
-                let v294 : string = "true; }); //"
-                let v295 : bool = Fable.Core.RustInterop.emitRustExpr () v294 
+                v166.l0 <- v318
+                let v324 : string = "true; $0.into_iter().for_each(|x| { //"
+                let v325 : bool = Fable.Core.RustInterop.emitRustExpr v262 v324 
+                let v326 : string = "x"
+                let v327 : std_string_String = Fable.Core.RustInterop.emitRustExpr () v326 
+                let v328 : string = $"true; near_sdk::log!(\"{{}}\", $0)"
+                let v329 : bool = Fable.Core.RustInterop.emitRustExpr v327 v328 
+                let v330 : string = $"true"
+                let v331 : bool = Fable.Core.RustInterop.emitRustExpr () v330 
+                let v332 : string = "true; }); //"
+                let v333 : bool = Fable.Core.RustInterop.emitRustExpr () v332 
                 ()
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
@@ -8340,68 +7947,41 @@ and closure35 (v0 : US9) () : unit =
             v188 v124
             #endif
             // run_target_args' is_unit
-            let v296 : (string -> unit) = v164.l0
-            v296 v124
+            let v334 : (string -> unit) = v164.l0
+            v334 v124
             US8_0(v163, v164, v165, v166, v167, v168)
     
     ()
-and method60 (v0 : US9, v1 : US7) : string =
+and method61 (v0 : US9, v1 : US7) : string =
     let v2 : string = method15()
-    let v3 : Mut3 = {l0 = v2} : Mut3
+    let v4 : Mut3 = {l0 = v2} : Mut3
     let v6 : string = "{ "
-    let v7 : string = $"{v6}"
-    let v15 : unit = ()
-    let v16 : (unit -> unit) = closure8(v3, v7)
-    let v17 : unit = (fun () -> v16 (); v15) ()
-    let v25 : string = "retries"
-    let v26 : string = $"{v25}"
-    let v34 : unit = ()
-    let v35 : (unit -> unit) = closure8(v3, v26)
-    let v36 : unit = (fun () -> v35 (); v34) ()
-    let v44 : string = " = "
-    let v45 : string = $"{v44}"
-    let v53 : unit = ()
-    let v54 : (unit -> unit) = closure8(v3, v45)
-    let v55 : unit = (fun () -> v54 (); v53) ()
-    let v62 : string = $"%A{v0}"
-    let v66 : string = $"{v62}"
-    let v74 : unit = ()
-    let v75 : (unit -> unit) = closure8(v3, v66)
-    let v76 : unit = (fun () -> v75 (); v74) ()
-    let v84 : string = "; "
-    let v85 : string = $"{v84}"
-    let v93 : unit = ()
-    let v94 : (unit -> unit) = closure8(v3, v85)
-    let v95 : unit = (fun () -> v94 (); v93) ()
-    let v103 : string = "error"
-    let v104 : string = $"{v103}"
-    let v112 : unit = ()
-    let v113 : (unit -> unit) = closure8(v3, v104)
-    let v114 : unit = (fun () -> v113 (); v112) ()
-    let v121 : string = $"{v44}"
-    let v129 : unit = ()
-    let v130 : (unit -> unit) = closure8(v3, v121)
-    let v131 : unit = (fun () -> v130 (); v129) ()
-    let v138 : string = $"%A{v1}"
-    let v142 : string = $"{v138}"
-    let v150 : unit = ()
-    let v151 : (unit -> unit) = closure8(v3, v142)
-    let v152 : unit = (fun () -> v151 (); v150) ()
-    let v160 : string = " }"
-    let v161 : string = $"{v160}"
-    let v169 : unit = ()
-    let v170 : (unit -> unit) = closure8(v3, v161)
-    let v171 : unit = (fun () -> v170 (); v169) ()
-    let v177 : string = v3.l0
-    v177
-and method21 (v0 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_Future<Result<uint8, anyhow_Error>>>>> =
+    method16(v4, v6)
+    let v21 : string = "retries"
+    method16(v4, v21)
+    let v36 : string = " = "
+    method16(v4, v36)
+    let v51 : string = $"%A{v0}"
+    method16(v4, v51)
+    let v69 : string = "; "
+    method16(v4, v69)
+    let v84 : string = "error"
+    method16(v4, v84)
+    method16(v4, v36)
+    let v113 : string = $"%A{v1}"
+    method16(v4, v113)
+    let v131 : string = " }"
+    method16(v4, v131)
+    let v145 : string = v4.l0
+    v145
+and method22 (v0 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_Future<Result<uint8, anyhow_Error>>>>> =
     let v1 : string = "true; let __future_init = Box::pin(/*"
     let v2 : bool = Fable.Core.RustInterop.emitRustExpr () v1 
     let v3 : string = "*/ async move { /*"
     let v4 : bool = Fable.Core.RustInterop.emitRustExpr () v3 
     let v5 : string = "*/ ()"
     let v6 : bool = Fable.Core.RustInterop.emitRustExpr () v5 
-    let v7 : string = method22()
+    let v7 : string = method23()
     (* run_target_args'
     let v12 : unit = ()
     run_target_args' *)
@@ -8454,123 +8034,123 @@ and method21 (v0 : clap_ArgMatches) : std_pin_Pin<Box<Dyn<std_future_Future<Resu
             v74
     let v78 : string = "fable_library_rust::String_::fromString($0)"
     let v79 : string = Fable.Core.RustInterop.emitRustExpr v77 v78 
-    let v391 : unit = ()
-    let v392 : (unit -> unit) = closure13(v79)
-    let v393 : unit = (fun () -> v392 (); v391) ()
-    let v708 : string = "std::fs::read(&*$0)"
-    let v709 : Result<Vec<uint8>, std_io_Error> = Fable.Core.RustInterop.emitRustExpr v79 v708 
-    let v710 : string = "$0?"
-    let v711 : Vec<uint8> = Fable.Core.RustInterop.emitRustExpr v709 v710 
-    let v712 : uint8 = 1uy
-    let v713 : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> = method25(v711, v712)
-    let v714 : string = "v713.await"
-    let v715 : US9 = Fable.Core.RustInterop.emitRustExpr () v714 
-    let v1027 : unit = ()
-    let v1028 : (unit -> unit) = closure35(v715)
-    let v1029 : unit = (fun () -> v1028 (); v1027) ()
-    let v1371 : Result<uint8, anyhow_Error> =
-        match v715 with
-        | US9_1(v1350, v1351) -> (* Error *)
-            let v1352 : string = method60(v715, v1351)
-            let v1353 : string = "anyhow::anyhow!($0)"
-            let v1354 : anyhow_Error = Fable.Core.RustInterop.emitRustExpr v1352 v1353 
+    let v429 : unit = ()
+    let v430 : (unit -> unit) = closure12(v79)
+    let v431 : unit = (fun () -> v430 (); v429) ()
+    let v784 : string = "std::fs::read(&*$0)"
+    let v785 : Result<Vec<uint8>, std_io_Error> = Fable.Core.RustInterop.emitRustExpr v79 v784 
+    let v786 : string = "$0?"
+    let v787 : Vec<uint8> = Fable.Core.RustInterop.emitRustExpr v785 v786 
+    let v788 : uint8 = 1uy
+    let v789 : std_pin_Pin<Box<Dyn<std_future_Future<US9>>>> = method26(v787, v788)
+    let v790 : string = "v789.await"
+    let v791 : US9 = Fable.Core.RustInterop.emitRustExpr () v790 
+    let v1141 : unit = ()
+    let v1142 : (unit -> unit) = closure34(v791)
+    let v1143 : unit = (fun () -> v1142 (); v1141) ()
+    let v1523 : Result<uint8, anyhow_Error> =
+        match v791 with
+        | US9_1(v1502, v1503) -> (* Error *)
+            let v1504 : string = method61(v791, v1503)
+            let v1505 : string = "anyhow::anyhow!($0)"
+            let v1506 : anyhow_Error = Fable.Core.RustInterop.emitRustExpr v1504 v1505 
             (* run_target_args'
-            let v1356 : unit = ()
+            let v1508 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1357 : string = "Err($0)"
-            let v1358 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1354 v1357 
-            let _run_target_args'_v1356 = v1358 
+            let v1509 : string = "Err($0)"
+            let v1510 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1506 v1509 
+            let _run_target_args'_v1508 = v1510 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1359 : string = "Err($0)"
-            let v1360 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1354 v1359 
-            let _run_target_args'_v1356 = v1360 
+            let v1511 : string = "Err($0)"
+            let v1512 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1506 v1511 
+            let _run_target_args'_v1508 = v1512 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1361 : string = "Err($0)"
-            let v1362 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1354 v1361 
-            let _run_target_args'_v1356 = v1362 
+            let v1513 : string = "Err($0)"
+            let v1514 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1506 v1513 
+            let _run_target_args'_v1508 = v1514 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1363 : Result<uint8, anyhow_Error> = v1354 |> Error
-            let _run_target_args'_v1356 = v1363 
+            let v1515 : Result<uint8, anyhow_Error> = v1506 |> Error
+            let _run_target_args'_v1508 = v1515 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1364 : Result<uint8, anyhow_Error> = v1354 |> Error
-            let _run_target_args'_v1356 = v1364 
+            let v1516 : Result<uint8, anyhow_Error> = v1506 |> Error
+            let _run_target_args'_v1508 = v1516 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1365 : Result<uint8, anyhow_Error> = v1354 |> Error
-            let _run_target_args'_v1356 = v1365 
+            let v1517 : Result<uint8, anyhow_Error> = v1506 |> Error
+            let _run_target_args'_v1508 = v1517 
             #endif
 #else
-            let v1366 : Result<uint8, anyhow_Error> = v1354 |> Error
-            let _run_target_args'_v1356 = v1366 
+            let v1518 : Result<uint8, anyhow_Error> = v1506 |> Error
+            let _run_target_args'_v1508 = v1518 
             #endif
-            let v1367 : Result<uint8, anyhow_Error> = _run_target_args'_v1356 
-            v1367
-        | US9_0(v1344, v1345) -> (* Ok *)
-            let v1347 : Result<uint8, anyhow_Error> = Ok v1344 
-            v1347
-    let v1372 : string = ""
-    let v1373 : string = "}"
-    let v1374 : string = v1372 + v1373 
-    let x = v1371 //
-    let v1375 : _ = x
-    let v1376 : unit = ()
+            let v1519 : Result<uint8, anyhow_Error> = _run_target_args'_v1508 
+            v1519
+        | US9_0(v1496, v1497) -> (* Ok *)
+            let v1499 : Result<uint8, anyhow_Error> = Ok v1496 
+            v1499
+    let v1524 : string = ""
+    let v1525 : string = "}"
+    let v1526 : string = v1524 + v1525 
+    let x = v1523 //
+    let v1527 : _ = x
+    let v1528 : unit = ()
     (* run_target_args'
-    let v1377 : unit = ()
+    let v1529 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v1378 : string = $"true; let _fix_closure_v1376 = $0"
-    let v1379 : bool = Fable.Core.RustInterop.emitRustExpr v1375 v1378 
-    let _run_target_args'_v1377 = true 
+    let v1530 : string = $"true; let _fix_closure_v1528 = $0"
+    let v1531 : bool = Fable.Core.RustInterop.emitRustExpr v1527 v1530 
+    let _run_target_args'_v1529 = true 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v1380 : string = $"true; let _fix_closure_v1376 = $0"
-    let v1381 : bool = Fable.Core.RustInterop.emitRustExpr v1375 v1380 
-    let _run_target_args'_v1377 = true 
+    let v1532 : string = $"true; let _fix_closure_v1528 = $0"
+    let v1533 : bool = Fable.Core.RustInterop.emitRustExpr v1527 v1532 
+    let _run_target_args'_v1529 = true 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v1382 : string = $"true; let _fix_closure_v1376 = $0"
-    let v1383 : bool = Fable.Core.RustInterop.emitRustExpr v1375 v1382 
-    let _run_target_args'_v1377 = true 
+    let v1534 : string = $"true; let _fix_closure_v1528 = $0"
+    let v1535 : bool = Fable.Core.RustInterop.emitRustExpr v1527 v1534 
+    let _run_target_args'_v1529 = true 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let _run_target_args'_v1377 = false 
+    let _run_target_args'_v1529 = false 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let _run_target_args'_v1377 = false 
+    let _run_target_args'_v1529 = false 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let _run_target_args'_v1377 = false 
+    let _run_target_args'_v1529 = false 
     #endif
 #else
-    let _run_target_args'_v1377 = false 
+    let _run_target_args'_v1529 = false 
     #endif
-    let v1384 : bool = _run_target_args'_v1377 
-    let v1385 : string = $"true; _fix_closure_v1376 " + v1374 + "); " + v1372 + " // rust.fix_closure'"
-    let v1386 : bool = Fable.Core.RustInterop.emitRustExpr () v1385 
-    let v1387 : string = "__future_init"
-    let v1388 : _ = Fable.Core.RustInterop.emitRustExpr () v1387 
-    let v1389 : string = "v1388"
-    let v1390 : std_pin_Pin<Box<Dyn<std_future_Future<Result<uint8, anyhow_Error>>>>> = Fable.Core.RustInterop.emitRustExpr () v1389 
-    v1390
-and closure36 () (v0 : uint8) : US11 =
+    let v1536 : bool = _run_target_args'_v1529 
+    let v1537 : string = $"true; _fix_closure_v1528 " + v1526 + "); " + v1524 + " // rust.fix_closure'"
+    let v1538 : bool = Fable.Core.RustInterop.emitRustExpr () v1537 
+    let v1539 : string = "__future_init"
+    let v1540 : _ = Fable.Core.RustInterop.emitRustExpr () v1539 
+    let v1541 : string = "v1540"
+    let v1542 : std_pin_Pin<Box<Dyn<std_future_Future<Result<uint8, anyhow_Error>>>>> = Fable.Core.RustInterop.emitRustExpr () v1541 
+    v1542
+and closure35 () (v0 : uint8) : US11 =
     US11_0(v0)
-and method61 () : (uint8 -> US11) =
-    closure36()
-and closure37 () (v0 : std_string_String) : US11 =
+and method62 () : (uint8 -> US11) =
+    closure35()
+and closure36 () (v0 : std_string_String) : US11 =
     US11_1(v0)
-and method62 () : (std_string_String -> US11) =
-    closure37()
+and method63 () : (std_string_String -> US11) =
+    closure36()
 and closure0 () (v0 : (string [])) : int32 =
     let v1 : clap_Command = method0()
     let v2 : string = "clap::Command::get_matches($0)"
@@ -8785,299 +8365,299 @@ and closure0 () (v0 : (string [])) : int32 =
     let v228 : (unit -> unit) = closure2(v214)
     let v229 : unit = (fun () -> v228 (); v227) ()
     let struct (v249 : Mut0, v250 : Mut1, v251 : Mut2, v252 : Mut3, v253 : Mut4, v254 : int64 option) = TraceState.trace_state.Value
-    let v578 : unit = ()
-    let v579 : (unit -> unit) = closure5(v0)
-    let v580 : unit = (fun () -> v579 (); v578) ()
-    let v895 : string = method19()
+    let v616 : unit = ()
+    let v617 : (unit -> unit) = closure5(v0)
+    let v618 : unit = (fun () -> v617 (); v616) ()
+    let v971 : string = method20()
     (* run_target_args'
-    let v900 : unit = ()
+    let v976 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v901 : string = "&*$0"
-    let v902 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v895 v901 
-    let _run_target_args'_v900 = v902 
+    let v977 : string = "&*$0"
+    let v978 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v971 v977 
+    let _run_target_args'_v976 = v978 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v903 : string = "&*$0"
-    let v904 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v895 v903 
-    let _run_target_args'_v900 = v904 
+    let v979 : string = "&*$0"
+    let v980 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v971 v979 
+    let _run_target_args'_v976 = v980 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v905 : string = "&*$0"
-    let v906 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v895 v905 
-    let _run_target_args'_v900 = v906 
+    let v981 : string = "&*$0"
+    let v982 : Ref<Str> = Fable.Core.RustInterop.emitRustExpr v971 v981 
+    let _run_target_args'_v976 = v982 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v908 : Ref<Str> = v895 |> unbox<Ref<Str>>
-    let _run_target_args'_v900 = v908 
+    let v984 : Ref<Str> = v971 |> unbox<Ref<Str>>
+    let _run_target_args'_v976 = v984 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v912 : Ref<Str> = v895 |> unbox<Ref<Str>>
-    let _run_target_args'_v900 = v912 
+    let v988 : Ref<Str> = v971 |> unbox<Ref<Str>>
+    let _run_target_args'_v976 = v988 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v916 : Ref<Str> = v895 |> unbox<Ref<Str>>
-    let _run_target_args'_v900 = v916 
+    let v992 : Ref<Str> = v971 |> unbox<Ref<Str>>
+    let _run_target_args'_v976 = v992 
     #endif
 #else
-    let v920 : Ref<Str> = v895 |> unbox<Ref<Str>>
-    let _run_target_args'_v900 = v920 
+    let v996 : Ref<Str> = v971 |> unbox<Ref<Str>>
+    let _run_target_args'_v976 = v996 
     #endif
-    let v923 : Ref<Str> = _run_target_args'_v900 
-    let v932 : string = "clap::ArgMatches::get_one(&$0, $1).cloned()"
-    let v933 : std_string_String option = Fable.Core.RustInterop.emitRustExpr struct (v3, v923) v932 
-    let v936 : (std_string_String -> string) = method20()
-    let v937 : string option = v933 |> Option.map v936 
-    let v1052 : (string -> US7) = method8()
-    let v1053 : US7 option = v937 |> Option.map v1052 
-    let v1073 : US7 = US7_1
-    let v1074 : US7 = v1053 |> Option.defaultValue v1073 
-    let v1078 : std_pin_Pin<Box<Dyn<std_future_Future<Result<uint8, anyhow_Error>>>>> = method21(v3)
-    let v1079 : string = $"tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap()"
-    let v1080 : _ = Fable.Core.RustInterop.emitRustExpr () v1079 
-    let v1081 : string = "v1080.handle().block_on($0)"
-    let v1082 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1078 v1081 
-    let v1083 : (anyhow_Error -> std_string_String) = method49()
+    let v999 : Ref<Str> = _run_target_args'_v976 
+    let v1008 : string = "clap::ArgMatches::get_one(&$0, $1).cloned()"
+    let v1009 : std_string_String option = Fable.Core.RustInterop.emitRustExpr struct (v3, v999) v1008 
+    let v1012 : (std_string_String -> string) = method21()
+    let v1013 : string option = v1009 |> Option.map v1012 
+    let v1126 : (string -> US7) = method8()
+    let v1127 : US7 option = v1013 |> Option.map v1126 
+    let v1147 : US7 = US7_1
+    let v1148 : US7 = v1127 |> Option.defaultValue v1147 
+    let v1152 : std_pin_Pin<Box<Dyn<std_future_Future<Result<uint8, anyhow_Error>>>>> = method22(v3)
+    let v1153 : string = $"tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap()"
+    let v1154 : _ = Fable.Core.RustInterop.emitRustExpr () v1153 
+    let v1155 : string = "v1154.handle().block_on($0)"
+    let v1156 : Result<uint8, anyhow_Error> = Fable.Core.RustInterop.emitRustExpr v1152 v1155 
+    let v1157 : (anyhow_Error -> std_string_String) = method50()
     (* run_target_args'
-    let v1085 : unit = ()
+    let v1159 : unit = ()
     run_target_args' *)
     
 #if FABLE_COMPILER || WASM || CONTRACT
     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-    let v1086 : string = "$0.map_err(|x| $1(x))"
-    let v1087 : Result<uint8, std_string_String> = Fable.Core.RustInterop.emitRustExpr struct (v1082, v1083) v1086 
-    let _run_target_args'_v1085 = v1087 
+    let v1160 : string = "$0.map_err(|x| $1(x))"
+    let v1161 : Result<uint8, std_string_String> = Fable.Core.RustInterop.emitRustExpr struct (v1156, v1157) v1160 
+    let _run_target_args'_v1159 = v1161 
     #endif
 #if FABLE_COMPILER_RUST && WASM
-    let v1088 : string = "$0.map_err(|x| $1(x))"
-    let v1089 : Result<uint8, std_string_String> = Fable.Core.RustInterop.emitRustExpr struct (v1082, v1083) v1088 
-    let _run_target_args'_v1085 = v1089 
+    let v1162 : string = "$0.map_err(|x| $1(x))"
+    let v1163 : Result<uint8, std_string_String> = Fable.Core.RustInterop.emitRustExpr struct (v1156, v1157) v1162 
+    let _run_target_args'_v1159 = v1163 
     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-    let v1090 : string = "$0.map_err(|x| $1(x))"
-    let v1091 : Result<uint8, std_string_String> = Fable.Core.RustInterop.emitRustExpr struct (v1082, v1083) v1090 
-    let _run_target_args'_v1085 = v1091 
+    let v1164 : string = "$0.map_err(|x| $1(x))"
+    let v1165 : Result<uint8, std_string_String> = Fable.Core.RustInterop.emitRustExpr struct (v1156, v1157) v1164 
+    let _run_target_args'_v1159 = v1165 
     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-    let v1092 : Result<uint8, std_string_String> = match v1082 with Ok x -> Ok x | Error x -> Error (v1083 x)
-    let _run_target_args'_v1085 = v1092 
+    let v1166 : Result<uint8, std_string_String> = match v1156 with Ok x -> Ok x | Error x -> Error (v1157 x)
+    let _run_target_args'_v1159 = v1166 
     #endif
 #if FABLE_COMPILER_PYTHON
-    let v1093 : Result<uint8, std_string_String> = match v1082 with Ok x -> Ok x | Error x -> Error (v1083 x)
-    let _run_target_args'_v1085 = v1093 
+    let v1167 : Result<uint8, std_string_String> = match v1156 with Ok x -> Ok x | Error x -> Error (v1157 x)
+    let _run_target_args'_v1159 = v1167 
     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-    let v1094 : Result<uint8, std_string_String> = match v1082 with Ok x -> Ok x | Error x -> Error (v1083 x)
-    let _run_target_args'_v1085 = v1094 
+    let v1168 : Result<uint8, std_string_String> = match v1156 with Ok x -> Ok x | Error x -> Error (v1157 x)
+    let _run_target_args'_v1159 = v1168 
     #endif
 #else
-    let v1095 : Result<uint8, std_string_String> = match v1082 with Ok x -> Ok x | Error x -> Error (v1083 x)
-    let _run_target_args'_v1085 = v1095 
+    let v1169 : Result<uint8, std_string_String> = match v1156 with Ok x -> Ok x | Error x -> Error (v1157 x)
+    let _run_target_args'_v1159 = v1169 
     #endif
-    let v1096 : Result<uint8, std_string_String> = _run_target_args'_v1085 
-    let v1099 : (uint8 -> US11) = method61()
-    let v1100 : (std_string_String -> US11) = method62()
-    let v1102 : US11 = match v1096 with Ok x -> v1099 x | Error x -> v1100 x
-    match v1102 with
-    | US11_1(v1127) -> (* Error *)
-        match v1074 with
-        | US7_0(v1128) -> (* Some *)
-            let v1129 : bool = "" = v1128
-            if v1129 then
+    let v1170 : Result<uint8, std_string_String> = _run_target_args'_v1159 
+    let v1173 : (uint8 -> US11) = method62()
+    let v1174 : (std_string_String -> US11) = method63()
+    let v1176 : US11 = match v1170 with Ok x -> v1173 x | Error x -> v1174 x
+    match v1176 with
+    | US11_1(v1201) -> (* Error *)
+        match v1148 with
+        | US7_0(v1202) -> (* Some *)
+            let v1203 : bool = "" = v1202
+            if v1203 then
                 ()
             else
-                let v1130 : string = "fable_library_rust::String_::fromString($0)"
-                let v1131 : string = Fable.Core.RustInterop.emitRustExpr v1127 v1130 
-                let v1133 : bool = v1131.Contains v1128 
-                if v1133 then
+                let v1204 : string = "fable_library_rust::String_::fromString($0)"
+                let v1205 : string = Fable.Core.RustInterop.emitRustExpr v1201 v1204 
+                let v1207 : bool = v1205.Contains v1202 
+                if v1207 then
                     ()
                 else
-                    let v1136 : string = $"spiral_wasm.main / exception: '{v1128}' / error: {v1127}"
+                    let v1210 : string = $"spiral_wasm.main / exception: '{v1202}' / error: {v1201}"
                     (* run_target_args'
-                    let v1138 : unit = ()
+                    let v1212 : unit = ()
                     run_target_args' *)
                     
 #if FABLE_COMPILER || WASM || CONTRACT
                     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                    let v1139 : string = "Err($0)"
-                    let v1140 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1136 v1139 
-                    let _run_target_args'_v1138 = v1140 
+                    let v1213 : string = "Err($0)"
+                    let v1214 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1210 v1213 
+                    let _run_target_args'_v1212 = v1214 
                     #endif
 #if FABLE_COMPILER_RUST && WASM
-                    let v1141 : string = "Err($0)"
-                    let v1142 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1136 v1141 
-                    let _run_target_args'_v1138 = v1142 
+                    let v1215 : string = "Err($0)"
+                    let v1216 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1210 v1215 
+                    let _run_target_args'_v1212 = v1216 
                     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                    let v1143 : string = "Err($0)"
-                    let v1144 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1136 v1143 
-                    let _run_target_args'_v1138 = v1144 
+                    let v1217 : string = "Err($0)"
+                    let v1218 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1210 v1217 
+                    let _run_target_args'_v1212 = v1218 
                     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                    let v1145 : Result<unit, string> = v1136 |> Error
-                    let _run_target_args'_v1138 = v1145 
+                    let v1219 : Result<unit, string> = v1210 |> Error
+                    let _run_target_args'_v1212 = v1219 
                     #endif
 #if FABLE_COMPILER_PYTHON
-                    let v1146 : Result<unit, string> = v1136 |> Error
-                    let _run_target_args'_v1138 = v1146 
+                    let v1220 : Result<unit, string> = v1210 |> Error
+                    let _run_target_args'_v1212 = v1220 
                     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                    let v1147 : Result<unit, string> = v1136 |> Error
-                    let _run_target_args'_v1138 = v1147 
+                    let v1221 : Result<unit, string> = v1210 |> Error
+                    let _run_target_args'_v1212 = v1221 
                     #endif
 #else
-                    let v1148 : Result<unit, string> = v1136 |> Error
-                    let _run_target_args'_v1138 = v1148 
+                    let v1222 : Result<unit, string> = v1210 |> Error
+                    let _run_target_args'_v1212 = v1222 
                     #endif
-                    let v1149 : Result<unit, string> = _run_target_args'_v1138 
+                    let v1223 : Result<unit, string> = _run_target_args'_v1212 
                     (* run_target_args'
-                    let v1152 : unit = ()
+                    let v1226 : unit = ()
                     run_target_args' *)
                     
 #if FABLE_COMPILER || WASM || CONTRACT
                     
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-                    let v1153 : string = "$0.unwrap()"
-                    Fable.Core.RustInterop.emitRustExpr v1149 v1153 
+                    let v1227 : string = "$0.unwrap()"
+                    Fable.Core.RustInterop.emitRustExpr v1223 v1227 
                     #endif
 #if FABLE_COMPILER_RUST && WASM
-                    let v1154 : string = "$0.unwrap()"
-                    Fable.Core.RustInterop.emitRustExpr v1149 v1154 
+                    let v1228 : string = "$0.unwrap()"
+                    Fable.Core.RustInterop.emitRustExpr v1223 v1228 
                     #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-                    let v1155 : string = "$0.unwrap()"
-                    Fable.Core.RustInterop.emitRustExpr v1149 v1155 
+                    let v1229 : string = "$0.unwrap()"
+                    Fable.Core.RustInterop.emitRustExpr v1223 v1229 
                     #endif
 #if FABLE_COMPILER_TYPESCRIPT
-                    match v1149 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+                    match v1223 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
                     #endif
 #if FABLE_COMPILER_PYTHON
-                    match v1149 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+                    match v1223 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
                     #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-                    match v1149 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+                    match v1223 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
                     #endif
 #else
-                    match v1149 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+                    match v1223 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
                     #endif
                     // run_target_args' is_unit
                     ()
         | _ ->
             (* run_target_args'
-            let v1157 : unit = ()
+            let v1231 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1158 : string = "$0.unwrap()"
-            let v1159 : uint8 = Fable.Core.RustInterop.emitRustExpr v1096 v1158 
-            let _run_target_args'_v1157 = v1159 
+            let v1232 : string = "$0.unwrap()"
+            let v1233 : uint8 = Fable.Core.RustInterop.emitRustExpr v1170 v1232 
+            let _run_target_args'_v1231 = v1233 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1160 : string = "$0.unwrap()"
-            let v1161 : uint8 = Fable.Core.RustInterop.emitRustExpr v1096 v1160 
-            let _run_target_args'_v1157 = v1161 
+            let v1234 : string = "$0.unwrap()"
+            let v1235 : uint8 = Fable.Core.RustInterop.emitRustExpr v1170 v1234 
+            let _run_target_args'_v1231 = v1235 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1162 : string = "$0.unwrap()"
-            let v1163 : uint8 = Fable.Core.RustInterop.emitRustExpr v1096 v1162 
-            let _run_target_args'_v1157 = v1163 
+            let v1236 : string = "$0.unwrap()"
+            let v1237 : uint8 = Fable.Core.RustInterop.emitRustExpr v1170 v1236 
+            let _run_target_args'_v1231 = v1237 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1164 : uint8 = match v1096 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
-            let _run_target_args'_v1157 = v1164 
+            let v1238 : uint8 = match v1170 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            let _run_target_args'_v1231 = v1238 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1165 : uint8 = match v1096 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
-            let _run_target_args'_v1157 = v1165 
+            let v1239 : uint8 = match v1170 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            let _run_target_args'_v1231 = v1239 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1166 : uint8 = match v1096 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
-            let _run_target_args'_v1157 = v1166 
+            let v1240 : uint8 = match v1170 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            let _run_target_args'_v1231 = v1240 
             #endif
 #else
-            let v1167 : uint8 = match v1096 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
-            let _run_target_args'_v1157 = v1167 
+            let v1241 : uint8 = match v1170 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            let _run_target_args'_v1231 = v1241 
             #endif
-            let v1168 : uint8 = _run_target_args'_v1157 
+            let v1242 : uint8 = _run_target_args'_v1231 
             ()
-    | US11_0(v1105) -> (* Ok *)
-        match v1074 with
-        | US7_0(v1106) -> (* Some *)
-            let v1107 : string = $"spiral_wasm.main / retries: {v1105} / exception: '{v1106}'"
+    | US11_0(v1179) -> (* Ok *)
+        match v1148 with
+        | US7_0(v1180) -> (* Some *)
+            let v1181 : string = $"spiral_wasm.main / retries: {v1179} / exception: '{v1180}'"
             (* run_target_args'
-            let v1109 : unit = ()
+            let v1183 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1110 : string = "Err($0)"
-            let v1111 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1107 v1110 
-            let _run_target_args'_v1109 = v1111 
+            let v1184 : string = "Err($0)"
+            let v1185 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1181 v1184 
+            let _run_target_args'_v1183 = v1185 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1112 : string = "Err($0)"
-            let v1113 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1107 v1112 
-            let _run_target_args'_v1109 = v1113 
+            let v1186 : string = "Err($0)"
+            let v1187 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1181 v1186 
+            let _run_target_args'_v1183 = v1187 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1114 : string = "Err($0)"
-            let v1115 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1107 v1114 
-            let _run_target_args'_v1109 = v1115 
+            let v1188 : string = "Err($0)"
+            let v1189 : Result<unit, string> = Fable.Core.RustInterop.emitRustExpr v1181 v1188 
+            let _run_target_args'_v1183 = v1189 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            let v1116 : Result<unit, string> = v1107 |> Error
-            let _run_target_args'_v1109 = v1116 
+            let v1190 : Result<unit, string> = v1181 |> Error
+            let _run_target_args'_v1183 = v1190 
             #endif
 #if FABLE_COMPILER_PYTHON
-            let v1117 : Result<unit, string> = v1107 |> Error
-            let _run_target_args'_v1109 = v1117 
+            let v1191 : Result<unit, string> = v1181 |> Error
+            let _run_target_args'_v1183 = v1191 
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            let v1118 : Result<unit, string> = v1107 |> Error
-            let _run_target_args'_v1109 = v1118 
+            let v1192 : Result<unit, string> = v1181 |> Error
+            let _run_target_args'_v1183 = v1192 
             #endif
 #else
-            let v1119 : Result<unit, string> = v1107 |> Error
-            let _run_target_args'_v1109 = v1119 
+            let v1193 : Result<unit, string> = v1181 |> Error
+            let _run_target_args'_v1183 = v1193 
             #endif
-            let v1120 : Result<unit, string> = _run_target_args'_v1109 
+            let v1194 : Result<unit, string> = _run_target_args'_v1183 
             (* run_target_args'
-            let v1123 : unit = ()
+            let v1197 : unit = ()
             run_target_args' *)
             
 #if FABLE_COMPILER || WASM || CONTRACT
             
 #if FABLE_COMPILER_RUST && !WASM && !CONTRACT
-            let v1124 : string = "$0.unwrap()"
-            Fable.Core.RustInterop.emitRustExpr v1120 v1124 
+            let v1198 : string = "$0.unwrap()"
+            Fable.Core.RustInterop.emitRustExpr v1194 v1198 
             #endif
 #if FABLE_COMPILER_RUST && WASM
-            let v1125 : string = "$0.unwrap()"
-            Fable.Core.RustInterop.emitRustExpr v1120 v1125 
+            let v1199 : string = "$0.unwrap()"
+            Fable.Core.RustInterop.emitRustExpr v1194 v1199 
             #endif
 #if FABLE_COMPILER_RUST && CONTRACT
-            let v1126 : string = "$0.unwrap()"
-            Fable.Core.RustInterop.emitRustExpr v1120 v1126 
+            let v1200 : string = "$0.unwrap()"
+            Fable.Core.RustInterop.emitRustExpr v1194 v1200 
             #endif
 #if FABLE_COMPILER_TYPESCRIPT
-            match v1120 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            match v1194 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
             #endif
 #if FABLE_COMPILER_PYTHON
-            match v1120 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            match v1194 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
             #endif
 #if !FABLE_COMPILER_RUST && !FABLE_COMPILER_TYPESCRIPT && !FABLE_COMPILER_PYTHON
-            match v1120 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            match v1194 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
             #endif
 #else
-            match v1120 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
+            match v1194 with Ok x -> x | Error e -> failwith $"resultm.unwrap' / e: {e}"
             #endif
             // run_target_args' is_unit
             ()

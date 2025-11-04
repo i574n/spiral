@@ -1156,7 +1156,9 @@ inl file_delete (path : string) : () =
             path |> $'System.IO.File.Delete'
         | Rust (Native) => fun () =>
             inl result : resultm.result' () stream.io_error =
-                !\\(path, $'"std::fs::remove_file(&*$0)"')
+                if path |> file_exists
+                then !\\(path, $'"std::fs::remove_file(&*$0)"')
+                else Ok () |> resultm.box
             match result |> resultm.map_error' sm'.format |> resultm.unbox with
             | Ok () => ()
             | Error error' => trace Critical (fun () => "file_system.file_delete") fun () => { error' }
@@ -1603,11 +1605,11 @@ let link_directory target_path path =
     then lib_dir_path |> create_dir |> ignore
 
     if (path |> directory_exists)
-        && (path |> read_link |> resultm.is_err) then
-        path |> directory_delete true
+        && (path |> read_link |> resultm.is_err)
+    then path |> directory_delete true
 
-    if path |> directory_exists |> not then
-        path |> directory_create_symbolic_link target_path
+    if path |> directory_exists |> not
+    then path |> directory_create_symbolic_link target_path
 
 #!markdown
 
@@ -1617,11 +1619,11 @@ let link_directory target_path path =
 
 let link_file target_path path =
     if (path |> file_exists)
-        && (path |> read_link |> resultm.is_err) then
-        path |> file_delete
+        && (path |> read_link |> resultm.is_err)
+    then path |> file_delete
 
-    if path |> file_exists |> not then
-        path |> file_create_symbolic_link target_path
+    if path |> file_exists |> not
+    then path |> file_create_symbolic_link target_path
 
 #!spiral
 
