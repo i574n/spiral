@@ -65,16 +65,20 @@ inl backend_switch forall t. x : t =
             inl s = real_core.string_lit_to_symbol key
             real_core.record_type_try_find `(`x) s
                 (forall v'. => (x s) ())
-                (fun () => $'// base.backend_switch / record_type_try_find' : t)
-        inl x' = {
+                (fun () =>
+                    !!!!BackendSwitch ({
+                        Gleam = fun () => $'## base.backend_switch / record_type_try_find / key: !key ' : t
+                        Fsharp = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
+                        Python = fun () => $'## base.backend_switch / record_type_try_find / key: !key ' : t
+                        Cpp = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
+                    })
+                )
+        !!!!BackendSwitch ({
             Gleam = fun () => backend "Gleam"
             Fsharp = fun () => backend "Fsharp"
             Python = fun () => backend "Python"
             Cpp = fun () => backend "Cpp"
-        }
-        !!!!BackendSwitch (
-            x'
-        )
+        })
 
 #!markdown
 

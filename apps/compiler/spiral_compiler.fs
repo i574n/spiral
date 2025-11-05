@@ -1190,7 +1190,7 @@ module spiral_compiler =
 
     /// ### TokenizerMacro
     type TokenizerMacro =
-        | Text of TokenizerRange * string
+        | TokenizerText of TokenizerRange * string
         | EscapedChar of TokenizerRange * char
         | EscapedVar of TokenizerRange
         | UnescapedChar of TokenizerRange * char
@@ -1260,7 +1260,7 @@ module spiral_compiler =
             | _ -> error_char s.from "\\"
 
         let p_var s = (many1Satisfy2L is_var_char_starting is_var_char "variable") s
-        let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> Text) s
+        let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> TokenizerText) s
         let p_expr s =
             let start = anyOf ['`'; '!'; '@'; '#']
             let case_paren start_char =
@@ -1291,7 +1291,7 @@ module spiral_compiler =
 
             let mutable er = []
             x |> List.collect (function
-                | Text(r,x) -> [r, TokText x]
+                | TokenizerText(r,x) -> [r, TokText x]
                 | EscapedChar(r,x) ->
                     let x = match x with 'n' -> '\n' | 'r' -> '\r' | 't' -> '\t' | 'b' -> '\b' | x -> x
                     [r, TokEscapedChar x]
@@ -8727,6 +8727,17 @@ module spiral_compiler =
                     | _ -> failwith "impossible"
                 | DV(L(_,YPrim StringT)) & str -> push_typedop s (TyStringLength(t,str)) t
                 | x -> raise_type_error s <| sprintf "Expected a string.\nGot: %s" (show_data x)
+            | EOp(r, StringSlice, [ EOp(_, StringSlice, [ s'; a; b ]); c; d ]) ->
+                let fused =
+                    EOp(r, StringSlice,
+                        [ s'
+                        ; EOp(r, Add, [ a; c ])
+                        ; EOp(r, Add, [ a; d ])
+                        ])
+                term s fused
+
+            | EOp(r, StringIndex, [ EOp(_, StringSlice, [ s'; a; _ ]); i ]) ->
+                term s (EOp(r, StringIndex, [ s'; EOp(r, Add, [ a; i ]) ]))
             | EOp(_,StringIndex,[a;b]) ->
                 match term2 s a b with
                 | DLit(LitString a), DLit b ->

@@ -164,11 +164,15 @@ inl p_char (c : char) : parser char =
                 inl line_end = i |> span_from ((<>) '\n') input
                 inl end = (i + get_max_context ()) |> min line_end
                 inl line_slice = input |> slice line_start end
+                inl new_line =
+                    inl n = line_slice |> sm'.length
+                    if n > 0 && (line_slice |> sm'.index (n - 1i32)) = '\n' then "" else "\n"
                 inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
                 "parsing.p_char / "
                 ++# ({ expected = c; line col } |> sm'.format)
                 ++# "\n" ++# line_slice
-                ++# "\n" ++# pointer_line ++# "\n"
+                ++# new_line
+                ++# pointer_line ++# "\n"
                 |> Error
 
 /// ### any_string
@@ -190,7 +194,7 @@ inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s
     | Ok (_, i', s') => b (input, i', s')
     | Error e => Error e
 
-/// ### (>>.)
+/// ### (.>>)
 inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s =>
     match a (input, i, s) with
     | Ok (ra, i', s') =>

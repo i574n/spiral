@@ -472,6 +472,12 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
 |> slice 2i32 2i32
 |> _assert_eq "d"
 
+"abcdef"
+|> slice 1i32 4i32
+|> slice 2i32 3i32
+|> slice 1i32 1i32
+|> _assert_eq "e"
+
 #!spiral
 
 //// test
