@@ -856,6 +856,7 @@ inl halley_initial () =
 #!spiral
 
 //// test
+//// test_force
 
 inl baseball_forces () =
     inl area = pi * (0.074 / 2) ** 2
@@ -884,6 +885,10 @@ inl baseball_trajectory dt v0 theta_deg =
 inl baseball_range dt v0 theta_deg =
     baseball_trajectory dt v0 theta_deg
     |> listm.fold (fun _ (y, _) => y) 0
+
+#!spiral
+
+//// test
 
 inl x = am'.init_series 10 80 1
 inl y = x |> am'.map_base (baseball_range 0.01 45)
@@ -1032,20 +1037,7 @@ inl relativity_y = relativity_y |> listm'.box |> listm'.to_array'
 #!spiral
 
 //// test
-
-inl central_force f (particle_state st1) (particle_state st2) =
-    inl r1 = st1.pos_vec
-    inl r2 = st2.pos_vec
-    inl r21 = r2 ^-^ r1
-    inl r21mag = magnitude r21
-    f r21mag *^ r21 ^/ r21mag
-
-inl billiard_force k re =
-    inl f r =
-        if r >= re
-        then 0
-        else -k * (r - re)
-    central_force f
+//// test_force
 
 type force_vector = vec
 type two_body_force = particle_state -> particle_state -> force_vector
@@ -1079,11 +1071,11 @@ inl newton_second_mps fs (multi_particle_state sts) : d_multi_particle_state =
         newton_second_ps (forces_on n (multi_particle_state sts) fs) st
     sts |> listm'.indexed |> listm.map deriv |> d_multi_particle_state
 
+inl update_mps (method : numerical_method multi_particle_state d_multi_particle_state) =
+    newton_second_mps >> method
+
 instance (+++) d_multi_particle_state = fun (d_multi_particle_state dsts1) (d_multi_particle_state dsts2) =>
     d_multi_particle_state (listm'.zip_with_ (+++) dsts1 dsts2)
-
-instance scale d_multi_particle_state = fun w (d_multi_particle_state dsts) =>
-    d_multi_particle_state (dsts |> listm.map (scale w))
 
 instance shift multi_particle_state = fun dt dsts (multi_particle_state sts) =>
     inl (d_multi_particle_state dsts) =
@@ -1091,6 +1083,27 @@ instance shift multi_particle_state = fun dt dsts (multi_particle_state sts) =>
             match dsts with
             | d_multi_particle_state _ => dsts
     listm'.zip_with_ (shift dt) dsts sts |> multi_particle_state
+
+#!spiral
+
+//// test
+
+inl central_force f (particle_state st1) (particle_state st2) =
+    inl r1 = st1.pos_vec
+    inl r2 = st2.pos_vec
+    inl r21 = r2 ^-^ r1
+    inl r21mag = magnitude r21
+    f r21mag *^ r21 ^/ r21mag
+
+inl billiard_force k re =
+    inl f r =
+        if r >= re
+        then 0
+        else -k * (r - re)
+    central_force f
+
+instance scale d_multi_particle_state = fun w (d_multi_particle_state dsts) =>
+    d_multi_particle_state (dsts |> listm.map (scale w))
 
 inl euler_cromer_mps dt : numerical_method multi_particle_state d_multi_particle_state =
     fun deriv mpst0 =>
@@ -1107,12 +1120,8 @@ inl euler_cromer_mps dt : numerical_method multi_particle_state d_multi_particle
         )
         |> multi_particle_state
 
-inl update_mps (method : numerical_method multi_particle_state d_multi_particle_state) =
-    newton_second_mps >> method
-
 inl states_mps (method : numerical_method multi_particle_state d_multi_particle_state) =
     newton_second_mps >> method >> seq.iterate_
-
 
 inl kinetic_energy (particle_state st) =
     inl m = st.mass
@@ -1322,6 +1331,13 @@ let main () =
 #!spiral
 
 //// test
+//// test_force
+
+nominal multi_particle_state = stream.stream particle_state
+
+#!spiral
+
+//// test
 
 inl central_force f (particle_state st1) (particle_state st2) =
     inl r1 = st1.pos_vec
@@ -1336,15 +1352,6 @@ inl billiard_force k re =
         then 0
         else -k * (r - re)
     central_force f
-
-type force_vector = vec
-type two_body_force = particle_state -> particle_state -> force_vector
-
-union force t =
-    | ExternalForce : t * one_body_force
-    | InternalForce : t * t * two_body_force
-
-nominal multi_particle_state = stream.stream particle_state
 
 nominal d_multi_particle_state = stream.stream d_particle_state
 
