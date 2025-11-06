@@ -7604,7 +7604,7 @@ module spiral_compiler =
         let join_point_type = Dictionary(HashIdentity.Structural)
         let backend_strings = HashConsTable()
 
-        let def_of = System.Collections.Generic.Dictionary<_,_>(HashIdentity.Structural)
+        let def_of = System.Collections.Generic.Dictionary<Data, TypedOp>(HashIdentity.Reference)
 
         let rec ty_to_data s x =
             let f = ty_to_data s
@@ -7619,13 +7619,6 @@ module spiral_compiler =
             | YLit x -> DTLit x
             | YTypeFunction _ -> raise_type_error s "Cannot turn a type function into a runtime variable."
             | YMetavar _ -> raise_type_error s "Compiler error: Cannot turn a metavar into a runtime variable."
-        and fold_add_idx s (ty: Ty) (a: Data) (b: Data) : Data =
-            match ty, a, b with
-            | YPrim Int32T, DLit (LitInt32 x), DLit (LitInt32 y) -> DLit (LitInt32 (x + y))
-            | YPrim Int64T, DLit (LitInt64 x), DLit (LitInt64 y) -> DLit (LitInt64 (x + y))
-            | YPrim UInt32T, DLit (LitUInt32 x), DLit (LitUInt32 y) -> DLit (LitUInt32 (x + y))
-            | YPrim UInt64T, DLit (LitUInt64 x), DLit (LitUInt64 y) -> DLit (LitUInt64 (x + y))
-            | _ -> push_binop s Add (a, b) ty
         and assert_ty_lit s = function
             | YSymbol _ | YLit _ as x -> x
             | YNominal _ | YApply _ as x -> nominal_type_apply s x |> assert_ty_lit s
@@ -7633,20 +7626,20 @@ module spiral_compiler =
         and push_typedop_no_rewrite d op ret_ty =
             let ret = ty_to_data d ret_ty
             d.seq.Add(TyLet(ret, d.trace, op))
-            match ret with
-            | DV (L(_,_ ) as li) -> def_of.[li] <- op
+            match box ret with
+            | :? Data as k -> def_of.[k] <- op
             | _ -> ()
             ret
         and push_typedop (d: LangEnv) key ret_ty =
             match cse_tryfind d key with
-            | Some x -> x
+            | Some x ->
+                def_of.[x] <- key
+                x
             | None ->
                 let x = ty_to_data d ret_ty
                 d.seq.Add(TyLet(x, d.trace, key))
                 cse_add d key x
-                match x with
-                | DV (L(_,_ ) as li) -> def_of.[li] <- key
-                | _ -> ()
+                def_of.[x] <- key
                 x
         and push_op_no_rewrite' (d: LangEnv) op l ret_ty = push_typedop_no_rewrite d (TyOp(op,l)) ret_ty
         and push_op_no_rewrite d op a ret_ty = push_op_no_rewrite' d op [a] ret_ty
@@ -8157,30 +8150,31 @@ module spiral_compiler =
                     | x -> raise_type_error s <| sprintf "Expected an int convertible to an i32.\nGot: %s" (show_lit x)
                 with :? System.OverflowException -> raise_type_error s <| sprintf "The literal cannot be converted to an i32 as it is either too small or to big.\nGot: %s" (show_lit x)
 
-            let rec try_const_string (d: Data) : string option =
-                match d with
+            let rec try_const_string (dta: Data) : string option =
+                match dta with
                 | DLit (LitString s) -> Some s
-                | DV (L(_, YPrim StringT) as li) ->
-                    match def_of.TryGetValue li with
+                | _ ->
+                    match def_of.TryGetValue dta with
                     | true, TyOp (StringSlice, [a; b; c]) ->
                         match try_const_string a, b, c with
                         | Some b, DLit bi, DLit ci ->
                             let i = to_i32 bi
                             let j = to_i32 ci
-                            if 0 <= i && i <= j && j < b.Length then
-                                Some b.[i..j]
-                            else None
+                            if 0 <= i && i <= j && j < b.Length then Some b.[i..j] else None
                         | _ -> None
                     | true, TyOp (StringIndex, [a; b]) ->
                         match try_const_string a, b with
                         | Some b, DLit bi ->
                             let i = to_i32 bi
-                            if 0 <= i && i < b.Length then
-                                Some (string b.[i])
-                            else None
+                            if 0 <= i && i < b.Length then Some (string b.[i]) else None
                         | _ -> None
                     | _ -> None
+
+            let lit_i32_opt = function
+                | DLit lit -> Some (to_i32 lit)
                 | _ -> None
+
+            let mk_i32 (i:int) = DLit (LitInt32 i)
 
             let record2 (a,b) (a',b') = DRecord(Map.empty |> Map.add a b |> Map.add a' b')
             let record3 (a,b) (a',b') (a'',b'') = DRecord(Map.empty |> Map.add a b |> Map.add a' b' |> Map.add a'' b'')
@@ -8769,87 +8763,52 @@ module spiral_compiler =
                 | x -> raise_type_error s <| sprintf "Expected a string.\nGot: %s" (show_data x)
 
             | EOp(_, StringIndex, [a; b]) ->
-                match term2 s a b with
-                | DLit (LitString s0), DLit bi ->
+                let aD, bD = term2 s a b
+                match try_const_string aD, bD with
+                | Some b, DLit bi ->
                     let i = to_i32 bi
-                    if 0 <= i && i < s0.Length then s0.[i] |> LitChar |> DLit
-                    else raise_type_error s (sprintf "Cannot index into a string of length %i at index %i." s0.Length i)
-                | aD, DLit bi ->
-                    match try_const_string aD with
-                    | Some s0 ->
-                        let i = to_i32 bi
-                        if 0 <= i && i < s0.Length then s0.[i] |> LitChar |> DLit
-                        else raise_type_error s (sprintf "Cannot index into a string of length %i at index %i." s0.Length i)
-                    | None ->
-                        match data_to_ty s aD with
-                        | YPrim StringT -> push_binop s StringIndex (aD, DLit bi) (YPrim CharT)
-                        | aT -> raise_type_error s (sprintf "Expected a string and an int as arguments.\nGot: %s\nAnd: %s" (show_ty aT) "int")
-                | aD, bD ->
+                    if 0 <= i && i < b.Length then b.[i] |> LitChar |> DLit
+                    else raise_type_error s <| sprintf "Cannot index into a string of length %i at index %i." b.Length i
+                | _ ->
                     match data_to_ty s aD, data_to_ty s bD with
                     | YPrim StringT, bt when is_any_int bt -> push_binop s StringIndex (aD, bD) (YPrim CharT)
-                    | aT, bT -> raise_type_error s (sprintf "Expected a string and an int as arguments.\nGot: %s\nAnd: %s" (show_ty aT) (show_ty bT))
+                    | aT, bT -> raise_type_error s <| sprintf "Expected a string and an int as arguments.\nGot: %s\nAnd: %s" (show_ty aT) (show_ty bT)
 
             | EOp(_, StringSlice, [a; b; c]) ->
-                match term3 s a b c with
-                | DLit (LitString b), DLit bi, DLit ci ->
+                let aD, bD, cD = term3 s a b c
+                // First: full constant-fold if base string can be reconstructed
+                match try_const_string aD, bD, cD with
+                | Some b, DLit bi, DLit ci ->
                     let i = to_i32 bi
                     let j = to_i32 ci
-                    if 0 <= i && i <= j && j < b.Length
-                    then b.[i..j] |> LitString |> DLit
-                    else raise_type_error s (sprintf "String of length %i's slice from %i to %i is invalid." b.Length i j)
-
-                | aD, DLit bi, DLit ci ->
-                    match try_const_string aD with
-                    | Some b ->
-                        let i = to_i32 bi
-                        let j = to_i32 ci
-                        if 0 <= i && i <= j && j < b.Length
-                        then b.[i..j] |> LitString |> DLit
-                        else raise_type_error s (sprintf "String of length %i's slice from %i to %i is invalid." b.Length i j)
+                    if 0 <= i && i <= j && j < b.Length then DLit (LitString (b.[i..j]))
+                    else raise_type_error s <| sprintf "String of length %i's slice from %i to %i is invalid." b.Length i j
+                | _ ->
+                    // Second: compose nested slices a.[i1..j1].[i2..j2] -> a.[i1+i2..i1+j2]
+                    let composed =
+                        match def_of.TryGetValue aD with
+                        | true, TyOp (StringSlice, [b; bi1; bj1]) ->
+                            match lit_i32_opt bD, lit_i32_opt cD, lit_i32_opt bi1 with
+                            | Some i2, Some j2, Some i1 ->
+                                let i' = i1 + i2
+                                let j' = i1 + j2
+                                // Try fold all the way if b becomes a literal
+                                match try_const_string b with
+                                | Some s when 0 <= i' && i' <= j' && j' < s.Length ->
+                                    Some (DLit (LitString (s.[i'..j'])))
+                                | _ ->
+                                    Some (push_triop s StringSlice (b, mk_i32 i', mk_i32 j') (YPrim StringT))
+                            | _ -> None
+                        | _ -> None
+                    match composed with
+                    | Some d -> d
                     | None ->
-                        match data_to_ty s aD with
-                        | YPrim StringT -> push_triop s StringSlice (aD, DLit bi, DLit ci) (YPrim StringT)
-                        | aT -> raise_type_error s (sprintf "Expected a string.\nGot: %s" (show_ty aT))
-
-                | aD, bD, cD ->
-                    match data_to_ty s aD, data_to_ty s bD, data_to_ty s cD with
-                    | YPrim StringT, bt, ct when is_any_int bt && is_any_int ct ->
-                        push_triop s StringSlice (aD, bD, cD) (YPrim StringT)
-                    | aT, bT, cT ->
-                        raise_type_error s (sprintf "Expected a string and two ints as arguments.\nGot: %s\nAnd: %s\nAnd: %s" (show_ty aT) (show_ty bT) (show_ty cT))
-
-            | EArray(_,a,b) ->
-                match ty s b with
-                | YArray el as b ->
-                    let a =
-                        List.map (fun x ->
-                            let x = term s x |> dyn false s
-                            let x_ty = data_to_ty s x
-                            if x_ty = el then x
-
-                            ) a
-                    push_typedop_no_rewrite s (TyArrayLiteral(el,a)) b
-                | b -> raise_type_error s $"Expected an array_base.\nGot: {show_ty b}"
-            | EOp(_,ArrayCreate,[EType(_,a);b]) ->
-                let a,b = ty s a, term s b
-                match data_to_ty s b with
-                | bt when is_any_int bt -> push_typedop_no_rewrite s (TyArrayCreate(a,b)) (YArray a)
-                | b -> raise_type_error s <| sprintf "Expected an int as the size of the array.\nGot: %s" (show_ty b)
-            | EOp(_,ArrayLength,[EType(_,t);a]) ->
-                let t = ty s t
-                if is_any_int t = false then raise_type_error s <| sprintf "Expected an int.\nGot: %s" (show_ty t)
-                let a = term s a
-                match data_to_ty s a with
-                | YArray _ -> push_typedop s (TyArrayLength(t,a)) t
-
-            | EOp(_,ArrayIndex,[a;b]) ->
-                match term s a with
-                | DV(L(_,YArray ty)) & a ->
-                    let b = term s b
-                    match data_to_ty s b with
-                    | bt when is_any_int bt -> push_binop_no_rewrite s ArrayIndex (a,b) ty
-                    | b -> raise_type_error s <| sprintf "Expected an int as the index argumet.\nGot: %s" (show_ty b)
-
+                        // Fallback: keep as runtime op
+                        match data_to_ty s aD, data_to_ty s bD, data_to_ty s cD with
+                        | YPrim StringT, bt, ct when is_any_int bt && is_any_int ct ->
+                            push_triop s StringSlice (aD,bD,cD) (YPrim StringT)
+                        | aT,bT,cT ->
+                            raise_type_error s <| sprintf "Expected a string and two ints as arguments.\nGot: %s\nAnd: %s\nAnd: %s" (show_ty aT) (show_ty bT) (show_ty cT)
 
             | EArray(_,a,b) ->
                 match ty s b with
