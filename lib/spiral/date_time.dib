@@ -73,6 +73,7 @@ type date_time_guid = guid.guid
 #!spiral
 
 //// test
+//// test_force
 
 inl test_guid () =
     "6543210F-EDCB-A987-6543-210FEDCBA987" |> guid.new_guid
