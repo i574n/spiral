@@ -50,6 +50,8 @@ open Common
 
 #!fsharp
 
+//// test
+
 SpiralTrace.TraceLevel.US0_0 |> set_trace_level
 
 #!markdown
@@ -10307,7 +10309,7 @@ let peval (env : PartEvalTopEnv) (x : E) =
         | TTerm(_,a) -> term_real_nominal s a
         | TMacro(r,a) ->
             let s = add_trace s r
-            YMacro(a |> List.map (function TMText a -> Text a | TMType a -> Type(ty s a) | TMLitType a -> TypeLit(ty s a |> assert_ty_lit s)))
+            YMacro(a |> List.map (function TMText a -> PartEvalMacro.Text a | TMType a -> Type(ty s a) | TMLitType a -> TypeLit(ty s a |> assert_ty_lit s)))
         | TNominal i -> YNominal env.nominals.[i]
         | TArray a -> YArray(ty s a)
         | TLayout(a,b) -> YLayout(ty s a,b)
@@ -11027,7 +11029,7 @@ let peval (env : PartEvalTopEnv) (x : E) =
                 )
             | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
             match d with
-            | Some cur -> cur |> dyn true s
+            | Some cur -> cur
             | None -> raise_type_error s $"Cannot find the backend {s.backend.node} in the backend switch op."
         | EOp(_,UnsafeBackendSwitch,[a]) ->
             match term s a with // Unsafe version of the backend switch. Shouldn't ever be mixed with type level computations and bottom up inference.
@@ -11964,11 +11966,11 @@ let peval (env : PartEvalTopEnv) (x : E) =
             | a -> raise_type_error s $"Expected a string literal.\nGot: {show_data a}"
         | EOp(_,ToPythonRecord,[a]) ->
             match term s a |> dyn false s with
-            | DRecord _ & a -> push_op_no_rewrite s ToPythonRecord a (YMacro [Text "object"])
+            | DRecord _ & a -> push_op_no_rewrite s ToPythonRecord a (YMacro [PartEvalMacro.Text "object"])
             | a -> raise_type_error s $"Expected a record.\nGot: {show_data a}"
         | EOp(_,ToPythonNamedTuple,[n;a]) ->
             match term s n, term s a |> dyn false s with
-            | (DLit (LitString _) | DV(L(_,YPrim StringT))) & n, DRecord _ & a -> push_binop_no_rewrite s ToPythonNamedTuple (n,a) (YMacro [Text "object"])
+            | (DLit (LitString _) | DV(L(_,YPrim StringT))) & n, DRecord _ & a -> push_binop_no_rewrite s ToPythonNamedTuple (n,a) (YMacro [PartEvalMacro.Text "object"])
             | n, a -> raise_type_error s $"Expected a pair of string and record.\nGot: {show_data n}\nAnd: {show_data a}"
         | EOp(_,VarTag,[a]) ->
             match term s a with
@@ -17473,7 +17475,7 @@ let config text =
         let directory p = (rangeSpiProj (restOfLine false) .>> spacesSpiProj |>> fun (r,x) -> Some(r,x.Trim())) p
 
         let fields = [
-            "version", rangeSpiProj (restOfLine true .>> spacesSpiProj) |>> fun (r,x) s -> {s with version=Some (r,x.TrimEnd())}
+            "version", rangeSpiProj (restOfLine true .>> spacesSpiProj) |>> fun (r,x) s -> ({s with version=Some (r,x.TrimEnd())} : RawSchema)
             "name", fileSpiProj |>> fun x s -> {s with name=Some x}
             "moduleDir", directory |>> fun x s -> {s with moduleDir=x}
             "modules", file_hierarchy |>> fun x s -> {s with modules=x}
@@ -17930,7 +17932,7 @@ let ss_validate_module (packages : SchemaEnv) (modules : ModuleEnv) (x : SchemaS
 let ss_validate_modules (packages : SchemaEnv) modules order =
     Array.fold (fun s x ->
         match Map.tryFind x s with
-        | Some v -> Map.add x {v with errors_modules = ss_validate_module packages modules v} s
+        | Some v -> Map.add x ({v with errors_modules = ss_validate_module packages modules v} : SchemaState) s
         | None -> s
         ) packages order
 
@@ -19332,17 +19334,12 @@ let run_test backendId expected code =
     sm.slice (
         sm.slice (
             !!!!BackendSwitch ({
-                Fsharp = fun () => sm.slice `int `string "dbc" x
+                Fsharp = fun () => sm.slice `int `string "abc" x
             })
         ) x : string
     ) x : string"""
-// |> run_test "Fsharp" """let v0 : string = "a"
-// v0
-// """
-|> run_test "Fsharp" """let v0 : string = "d"
-let v1 : string = v0.[int 0..int 0]
-let v2 : string = v1.[int 0..int 0]
-v2
+|> run_test "Fsharp" """let v0 : string = "a"
+v0
 """
 
 #!fsharp

@@ -7604,8 +7604,6 @@ module spiral_compiler =
         let join_point_type = Dictionary(HashIdentity.Structural)
         let backend_strings = HashConsTable()
 
-        let def_of = System.Collections.Generic.Dictionary<Data, TypedOp>(HashIdentity.Reference)
-
         let rec ty_to_data s x =
             let f = ty_to_data s
             match x with
@@ -7625,21 +7623,15 @@ module spiral_compiler =
             | x -> raise_type_error s <| sprintf "Expected a type literal or a symbol.\nGot: %s" (show_ty x)
         and push_typedop_no_rewrite d op ret_ty =
             let ret = ty_to_data d ret_ty
-            d.seq.Add(TyLet(ret, d.trace, op))
-            match box ret with
-            | :? Data as k -> def_of.[k] <- op
-            | _ -> ()
+            d.seq.Add(TyLet(ret,d.trace,op))
             ret
         and push_typedop (d: LangEnv) key ret_ty =
             match cse_tryfind d key with
-            | Some x ->
-                def_of.[x] <- key
-                x
+            | Some x -> x
             | None ->
                 let x = ty_to_data d ret_ty
-                d.seq.Add(TyLet(x, d.trace, key))
+                d.seq.Add(TyLet(x,d.trace,key))
                 cse_add d key x
-                def_of.[x] <- key
                 x
         and push_op_no_rewrite' (d: LangEnv) op l ret_ty = push_typedop_no_rewrite d (TyOp(op,l)) ret_ty
         and push_op_no_rewrite d op a ret_ty = push_op_no_rewrite' d op [a] ret_ty
@@ -7894,7 +7886,7 @@ module spiral_compiler =
             | TTerm(_,a) -> term_real_nominal s a
             | TMacro(r,a) ->
                 let s = add_trace s r
-                YMacro(a |> List.map (function TMText a -> Text a | TMType a -> Type(ty s a) | TMLitType a -> TypeLit(ty s a |> assert_ty_lit s)))
+                YMacro(a |> List.map (function TMText a -> PartEvalMacro.Text a | TMType a -> Type(ty s a) | TMLitType a -> TypeLit(ty s a |> assert_ty_lit s)))
             | TNominal i -> YNominal env.nominals.[i]
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
@@ -8149,32 +8141,6 @@ module spiral_compiler =
                     | LitInt64 x -> Convert.ToInt32(x)
                     | x -> raise_type_error s <| sprintf "Expected an int convertible to an i32.\nGot: %s" (show_lit x)
                 with :? System.OverflowException -> raise_type_error s <| sprintf "The literal cannot be converted to an i32 as it is either too small or to big.\nGot: %s" (show_lit x)
-
-            let rec try_const_string (dta: Data) : string option =
-                match dta with
-                | DLit (LitString s) -> Some s
-                | _ ->
-                    match def_of.TryGetValue dta with
-                    | true, TyOp (StringSlice, [a; b; c]) ->
-                        match try_const_string a, b, c with
-                        | Some b, DLit bi, DLit ci ->
-                            let i = to_i32 bi
-                            let j = to_i32 ci
-                            if 0 <= i && i <= j && j < b.Length then Some b.[i..j] else None
-                        | _ -> None
-                    | true, TyOp (StringIndex, [a; b]) ->
-                        match try_const_string a, b with
-                        | Some b, DLit bi ->
-                            let i = to_i32 bi
-                            if 0 <= i && i < b.Length then Some (string b.[i]) else None
-                        | _ -> None
-                    | _ -> None
-
-            let lit_i32_opt = function
-                | DLit lit -> Some (to_i32 lit)
-                | _ -> None
-
-            let mk_i32 (i:int) = DLit (LitInt32 i)
 
             let record2 (a,b) (a',b') = DRecord(Map.empty |> Map.add a b |> Map.add a' b')
             let record3 (a,b) (a',b') (a'',b'') = DRecord(Map.empty |> Map.add a b |> Map.add a' b' |> Map.add a'' b'')
@@ -8640,7 +8606,7 @@ module spiral_compiler =
                     )
                 | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
                 match d with
-                | Some cur -> cur |> dyn true s
+                | Some cur -> cur
                 | None -> raise_type_error s $"Cannot find the backend {s.backend.node} in the backend switch op."
             | EOp(_,UnsafeBackendSwitch,[a]) ->
                 match term s a with // Unsafe version of the backend switch. Shouldn't ever be mixed with type level computations and bottom up inference.
@@ -8761,55 +8727,26 @@ module spiral_compiler =
                     | _ -> failwith "impossible"
                 | DV(L(_,YPrim StringT)) & str -> push_typedop s (TyStringLength(t,str)) t
                 | x -> raise_type_error s <| sprintf "Expected a string.\nGot: %s" (show_data x)
-
-            | EOp(_, StringIndex, [a; b]) ->
-                let aD, bD = term2 s a b
-                match try_const_string aD, bD with
-                | Some b, DLit bi ->
-                    let i = to_i32 bi
-                    if 0 <= i && i < b.Length then b.[i] |> LitChar |> DLit
-                    else raise_type_error s <| sprintf "Cannot index into a string of length %i at index %i." b.Length i
-                | _ ->
-                    match data_to_ty s aD, data_to_ty s bD with
-                    | YPrim StringT, bt when is_any_int bt -> push_binop s StringIndex (aD, bD) (YPrim CharT)
-                    | aT, bT -> raise_type_error s <| sprintf "Expected a string and an int as arguments.\nGot: %s\nAnd: %s" (show_ty aT) (show_ty bT)
-
-            | EOp(_, StringSlice, [a; b; c]) ->
-                let aD, bD, cD = term3 s a b c
-                // First: full constant-fold if base string can be reconstructed
-                match try_const_string aD, bD, cD with
-                | Some b, DLit bi, DLit ci ->
-                    let i = to_i32 bi
-                    let j = to_i32 ci
-                    if 0 <= i && i <= j && j < b.Length then DLit (LitString (b.[i..j]))
-                    else raise_type_error s <| sprintf "String of length %i's slice from %i to %i is invalid." b.Length i j
-                | _ ->
-                    // Second: compose nested slices a.[i1..j1].[i2..j2] -> a.[i1+i2..i1+j2]
-                    let composed =
-                        match def_of.TryGetValue aD with
-                        | true, TyOp (StringSlice, [b; bi1; bj1]) ->
-                            match lit_i32_opt bD, lit_i32_opt cD, lit_i32_opt bi1 with
-                            | Some i2, Some j2, Some i1 ->
-                                let i' = i1 + i2
-                                let j' = i1 + j2
-                                // Try fold all the way if b becomes a literal
-                                match try_const_string b with
-                                | Some s when 0 <= i' && i' <= j' && j' < s.Length ->
-                                    Some (DLit (LitString (s.[i'..j'])))
-                                | _ ->
-                                    Some (push_triop s StringSlice (b, mk_i32 i', mk_i32 j') (YPrim StringT))
-                            | _ -> None
-                        | _ -> None
-                    match composed with
-                    | Some d -> d
-                    | None ->
-                        // Fallback: keep as runtime op
-                        match data_to_ty s aD, data_to_ty s bD, data_to_ty s cD with
-                        | YPrim StringT, bt, ct when is_any_int bt && is_any_int ct ->
-                            push_triop s StringSlice (aD,bD,cD) (YPrim StringT)
-                        | aT,bT,cT ->
-                            raise_type_error s <| sprintf "Expected a string and two ints as arguments.\nGot: %s\nAnd: %s\nAnd: %s" (show_ty aT) (show_ty bT) (show_ty cT)
-
+            | EOp(_,StringIndex,[a;b]) ->
+                match term2 s a b with
+                | DLit(LitString a), DLit b ->
+                    let b = to_i32 b
+                    if 0 <= b && b < a.Length then a.[int b] |> LitChar |> DLit
+                    else raise_type_error s <| sprintf "Cannot index into a string of length %i at index %i." a.Length b
+                | a,b ->
+                    match data_to_ty s a, data_to_ty s b with
+                    | YPrim StringT,bt when is_any_int bt -> push_binop s StringIndex (a,b) (YPrim CharT)
+                    | a,b -> raise_type_error s <| sprintf "Expected a string and an int as arguments.\nGot: %s\nAnd: %s" (show_ty a) (show_ty b)
+            | EOp(_,StringSlice,[a;b;c]) ->
+                match term3 s a b c with
+                | DLit(LitString a), DLit b, DLit c ->
+                    let b,c = to_i32 b, to_i32 c
+                    if 0 <= b && b <= c && c < a.Length then a.[int b..int c] |> LitString |> DLit
+                    else raise_type_error s <| sprintf "String of length %i's slice from %i to %i is invalid." a.Length b c
+                | a,b,c ->
+                    match data_to_ty s a, data_to_ty s b, data_to_ty s c with
+                    | YPrim StringT, bt, ct when is_any_int bt && is_any_int ct -> push_triop s StringSlice (a,b,c) (YPrim StringT)
+                    | a,b,c -> raise_type_error s <| sprintf "Expected a string and two ints as arguments.\nGot: %s\nAnd: %s\nAnd: %s" (show_ty a) (show_ty b) (show_ty c)
             | EArray(_,a,b) ->
                 match ty s b with
                 | YArray el as b ->
@@ -9606,11 +9543,11 @@ module spiral_compiler =
                 | a -> raise_type_error s $"Expected a string literal.\nGot: {show_data a}"
             | EOp(_,ToPythonRecord,[a]) ->
                 match term s a |> dyn false s with
-                | DRecord _ & a -> push_op_no_rewrite s ToPythonRecord a (YMacro [Text "object"])
+                | DRecord _ & a -> push_op_no_rewrite s ToPythonRecord a (YMacro [PartEvalMacro.Text "object"])
                 | a -> raise_type_error s $"Expected a record.\nGot: {show_data a}"
             | EOp(_,ToPythonNamedTuple,[n;a]) ->
                 match term s n, term s a |> dyn false s with
-                | (DLit (LitString _) | DV(L(_,YPrim StringT))) & n, DRecord _ & a -> push_binop_no_rewrite s ToPythonNamedTuple (n,a) (YMacro [Text "object"])
+                | (DLit (LitString _) | DV(L(_,YPrim StringT))) & n, DRecord _ & a -> push_binop_no_rewrite s ToPythonNamedTuple (n,a) (YMacro [PartEvalMacro.Text "object"])
                 | n, a -> raise_type_error s $"Expected a pair of string and record.\nGot: {show_data n}\nAnd: {show_data a}"
             | EOp(_,VarTag,[a]) ->
                 match term s a with
@@ -14352,7 +14289,7 @@ module spiral_compiler =
             let directory p = (rangeSpiProj (restOfLine false) .>> spacesSpiProj |>> fun (r,x) -> Some(r,x.Trim())) p
 
             let fields = [
-                "version", rangeSpiProj (restOfLine true .>> spacesSpiProj) |>> fun (r,x) s -> {s with version=Some (r,x.TrimEnd())}
+                "version", rangeSpiProj (restOfLine true .>> spacesSpiProj) |>> fun (r,x) s -> ({s with version=Some (r,x.TrimEnd())} : RawSchema)
                 "name", fileSpiProj |>> fun x s -> {s with name=Some x}
                 "moduleDir", directory |>> fun x s -> {s with moduleDir=x}
                 "modules", file_hierarchy |>> fun x s -> {s with modules=x}
@@ -14637,7 +14574,7 @@ module spiral_compiler =
     let ss_validate_modules (packages : SchemaEnv) modules order =
         Array.fold (fun s x ->
             match Map.tryFind x s with
-            | Some v -> Map.add x {v with errors_modules = ss_validate_module packages modules v} s
+            | Some v -> Map.add x ({v with errors_modules = ss_validate_module packages modules v} : SchemaState) s
             | None -> s
             ) packages order
 
@@ -15598,7 +15535,14 @@ module spiral_compiler =
     open Hopac.Infixes
     // open Common
 
-    let new_server () =
+    let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> and 'b : null> ()
+        :
+        {|
+            errors: FSharp.Control.AsyncSeq<ClientErrorsRes>
+            job_null: 'a -> Task<'b>
+            job_val: (IVar<'c> -> 'd) -> Task<string>
+            supervisor: Ch<SupervisorReq> 
+        |} =
         let event = Event<ClientErrorsRes> ()
         // let disposable' = connection.On<string> ("ServerToClientMsg", event.Trigger)
         let stream =
