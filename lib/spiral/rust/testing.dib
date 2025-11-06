@@ -41,6 +41,7 @@ inl run_tests' tests =
 #!spiral
 
 //// test
+//// test_force
 
 inl run test =
     if env.get_environment_variable "TEST" = "1"

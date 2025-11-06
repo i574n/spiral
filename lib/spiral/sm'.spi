@@ -74,7 +74,7 @@ inl (~$$) s =
 inl obj_to_string x : string =
     backend_switch {
         Gleam = fun () => $$x : string
-        Fsharp = fun () => x |> $'_.ToString()' : string
+        Fsharp = fun () => $'!x |> _.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }
 
