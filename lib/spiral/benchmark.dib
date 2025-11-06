@@ -239,6 +239,7 @@ inl sort_result_list results =
 #!spiral
 
 //// test
+//// test_force
 
 inl is_fast () =
     false
