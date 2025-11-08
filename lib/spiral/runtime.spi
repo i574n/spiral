@@ -39,7 +39,7 @@ let split_command (command : string) : result (string * option string) string =
     inl normalize = "/" |> sm'.replace "\\"
     inl p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize
     inl p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize
-    inl p_path = p_quoted <|> p_unquoted <|> eof () >>% ""
+    inl p_path = p_quoted <|> p_unquoted <|> (eof () >>% "")
     inl p_args = spaces1 () >>. rest_of_line ()
     inl p_command = p_path .>>. (p_args |> opt)
     command

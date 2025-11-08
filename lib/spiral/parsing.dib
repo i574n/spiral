@@ -224,7 +224,7 @@ inl split_args (args : string) : result (array_base (string * position_)) (strin
     inl p_esc = esc |> listm.map p_esc_char |> choice_
     inl p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq.of_list' >> sm'.concat "")
     inl p_quoted_all = p_quoted |> between_ (p_char_ '"') (p_char_ '"')
-    inl p_esc_root = p_esc |>>$ (fun _ => "") >>.$ (p_word |> many_) |>>$ (seq.of_list' >> sm'.concat "")
+    inl p_esc_root = (p_esc |>>$ (fun _ => "")) >>.$ (p_word |> many_) |>>$ (seq.of_list' >> sm'.concat "")
     inl p_content = p_plain <|>$ p_quoted_all <|>$ p_esc_root
     inl p_args = spaces1_ () |> sep_by_ p_content
     args
@@ -1226,7 +1226,7 @@ inl between p_open p_close p_content : parser _ = fun input, i, s =>
     "parsing.between / expected closing delimiter / "
     ++# "{ e = parsing.p_char / unexpected end of input / { c = ]; "
     ++# "st = " ++# ((new_parser_state 0 1 7 6) |> sm'.format) ++# " }; "
-    ++# "input = [aaabb; rest1 = aaabb; rest2 =  }"
+    ++# "input = [aaabb; rest' = aaabb; rest'' =  }"
 )
 
 #!markdown
