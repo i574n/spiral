@@ -532,22 +532,6 @@ inl get_max_context () =
 
 #!markdown
 
-### span_from
-
-#!spiral
-
-inl span_from pred str i0 =
-    inl len = str |> sm'.length
-    let rec 루프 (i : int) =
-        if i >= len
-        then i
-        elif str |> sm'.index i |> pred
-        then 루프 (i + 1)
-        else i
-    루프 i0
-
-#!markdown
-
 ### p_char
 
 #!spiral
@@ -561,7 +545,7 @@ inl p_char (c : char) : parser char =
             if got = c
             then Ok (got, i + 1, got |> update_char s)
             else
-                inl line_end = i |> span_from ((<>) '\n') input
+                inl line_end = i |> sm'.span_from ((<>) '\n') input
                 inl end = (i + get_max_context ()) |> min line_end
                 inl line_slice = input |> slice line_start end
                 inl new_line =
@@ -659,6 +643,56 @@ inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
 |> resultm.get
 |> sm'.format_debug
 |> _assert_eq $$((), "def", new_parser_state 0 1 4 6)
+
+#!markdown
+
+### skip_many
+
+#!spiral
+
+inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
+    let rec 루프 (i : int) (s : parser_state) =
+        match a (input, i, s) with
+        | Ok (_, j, s') =>
+            if j = i
+            then "parsing.skip_many / inner parser consumed no input" |> Error
+            else s' |> 루프 j
+        | Error _ => Ok ((), i, s)
+    s0 |> 루프 i0
+
+#!spiral
+
+//// test
+
+"sskkip_many"
+|> run_parser (skip_many (p_char 's'))
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$("kkip_many", new_parser_state 0 1 3 11)
+
+#!markdown
+
+### skip_many1
+
+#!spiral
+
+inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
+    match a (input, i, s) with
+    | Ok (_, j, s') =>
+        if j = i
+        then "parsing.skip_many1 / inner parser consumed no input" |> Error
+        else skip_many a (input, j, s')
+    | Error err => Error err
+
+#!spiral
+
+//// test
+
+"skip_many1"
+|> run_parser (skip_many1 (p_char 's'))
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$("kip_many1", new_parser_state 0 1 2 10)
 
 #!markdown
 
@@ -1133,31 +1167,31 @@ inl choice forall t. parsers : parser t = fun input, i, s =>
 
 #!spiral
 
-inl between p_open p_close p_content : parser _ = fun input, i0, s0 =>
-    match p_open (input, i0, s0) with
-    | Ok (_, i1, s1) =>
-        match p_content (input, i1, s1) with
-        | Ok (result, i2, s2) =>
-            match p_close (input, i2, s2) with
-            | Ok (_, i3, s3) => Ok (result, i3, s3)
+inl between p_open p_close p_content : parser _ = fun input, i, s =>
+    match p_open (input, i, s) with
+    | Ok (_, i', s') =>
+        match p_content (input, i', s') with
+        | Ok (result, i'', s'') =>
+            match p_close (input, i'', s'') with
+            | Ok (_, i''', s''') => Ok (result, i''', s''')
             | Error e =>
                 inl total_len = input |> sm'.length
-                inl end1 = (i1 + get_max_context ()) |> min total_len
-                inl end2 = (i2 + get_max_context ()) |> min total_len
-                inl rest1 = input |> slice i1 end1
-                inl rest2 = input |> slice i2 end2
+                inl end' = (i' + get_max_context ()) |> min total_len
+                inl end'' = (i'' + get_max_context ()) |> min total_len
+                inl rest' = input |> slice i' end'
+                inl rest'' = input |> slice i'' end''
                 "parsing.between / expected closing delimiter / "
-                ++# ({ e input rest1 rest2 } |> sm'.format)
+                ++# ({ e input rest' rest'' } |> sm'.format)
                 |> Error
         | Error _ =>
-            match p_close (input, i1, s1) with
-            | Ok (_, i3, s3) => Ok ("", i3, s3)
+            match p_close (input, i', s') with
+            | Ok (_, i''', s''') => Ok ("", i''', s''')
             | Error _ =>
                 inl total_len = input |> sm'.length
-                inl end1 = (i1 + get_max_context ()) |> min total_len
-                inl rest1 = input |> slice i1 end1
+                inl end' = (i' + get_max_context ()) |> min total_len
+                inl rest' = input |> slice i' end'
                 "parsing.between / expected content or closing delimiter / "
-                ++# ({ rest1 } |> sm'.format)
+                ++# ({ rest' } |> sm'.format)
                 |> Error
     | Error e => e |> Error
 
@@ -1219,6 +1253,39 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
 
 #!markdown
 
+### sep_end_by
+
+#!spiral
+
+inl sep_end_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
+    let rec 루프 acc i s =
+        match p (input, i, s) with
+        | Ok (x, j, s1) =>
+            if j = i
+            then "parsing.sep_end_by / element parser consumed no input" |> Error
+            else
+                inl acc' = x :: acc
+                match sep (input, j, s1) with
+                | Ok (_, k, s'') =>
+                    if k = j then
+                    "parsing.sep_end_by / separator consumed no input" |> Error
+                    else s'' |> 루프 acc' k
+                | Error _ => Ok (acc' |> listm.rev, j, s1)
+        | Error _ => Ok (acc |> listm.rev, i, s)
+    s0 |> 루프 [] i0
+
+#!spiral
+
+//// test
+
+"sep_end_by"
+|> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$([ 's' ], "p_end_by", new_parser_state 0 1 3 10)
+
+#!markdown
+
 ### is_space
 
 #!spiral
@@ -1233,7 +1300,7 @@ inl is_space c =
 #!spiral
 
 inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
-    inl j = i |> span_from is_space input
+    inl j = i |> sm'.span_from is_space input
     if j <> i
     then Ok ((), j, s |> update_span input i (j - i))
     else
@@ -1249,7 +1316,7 @@ inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl spaces () : parser () = fun input, i, s =>
-    inl j = i |> span_from is_space input
+    inl j = i |> sm'.span_from is_space input
     Ok ((), j, s |> update_span input i (j - i))
 
 #!markdown
@@ -1331,3 +1398,171 @@ inl eof () : parser () = fun input, i, (parser_state st as s) =>
         "parsing.eof / expected end of input / "
         ++# ({ rest = input |> slice i st.input_len } |> sm'.format)
         |> Error
+
+#!markdown
+
+### p_string
+
+#!spiral
+
+inl p_string (str : string) : parser string = fun input, i, (parser_state st as s) =>
+    inl len = str |> sm'.length
+    if st.input_len - i < len
+    then "parsing.p_string / unexpected end of input / " ++# ({ expected = str; s } |> sm'.format) |> Error
+    else
+        inl got = input |> slice i (i + len)
+        if got = str
+        then Ok (got, i + len, s |> update_span input i len)
+        else
+            inl preview_end = (i + get_max_context ()) |> min st.input_len
+            inl rest = input |> slice i preview_end
+            "parsing.p_string / unexpected string / "
+            ++# ({ expected = str; got; rest; s } |> sm'.format)
+            |> Error
+
+#!spiral
+
+//// test
+
+"hello world"
+|> run_parser (p_string "hello")
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$("hello", " world", new_parser_state 0 1 6 11)
+
+#!markdown
+
+### new_line
+
+#!spiral
+
+inl new_line () : parser char = fun input, i, (parser_state st as s) =>
+    if i >= st.input_len
+    then "parsing.new_line / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
+    else
+        inl c = input |> sm'.index i
+        if c = '\n'
+        then Ok (c, i + 1, c |> update_char s)
+        else
+            inl preview_end = (i + get_max_context ()) |> min st.input_len
+            inl rest = input |> slice i preview_end
+            "parsing.new_line / expected new line char / "
+            ++# ({ first_char = c; rest s } |> sm'.format)
+            |> Error
+
+#!spiral
+
+//// test
+
+"hello\nworld"
+|> run_parser (many_chars_till (any_char ()) (new_line ()))
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$("hello", "\nworld", new_parser_state 0 1 6 11)
+
+#!markdown
+
+### many_till
+
+#!spiral
+
+inl many_till forall b c. (p : parser b) (end_p : parser c) : parser (list b) = fun input, i0, s0 =>
+    let rec 루프 (acc : list b) (i : int) s : result (list b * int * parser_state) string =
+        match end_p (input, i, s) with
+        | Ok (_, j, s') => Ok (acc |> listm.rev, j, s')
+        | Error _ =>
+            match p (input, i, s) with
+            | Ok (x, i', s') =>
+                if i' = i
+                then "parsing.many_till / inner parser succeeded without consuming input" |> Error
+                else s' |> 루프 (x :: acc) i'
+            | Error e => e |> Error
+    s0 |> 루프 [] i0
+
+#!spiral
+
+//// test
+
+"hello\nworld"
+|> run_parser (many_till (any_char ()) (new_line ()))
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$(['h'; 'e'; 'l'; 'l'; 'o'], "world", new_parser_state 6 2 1 11)
+
+#!markdown
+
+### p_return
+
+#!spiral
+
+inl p_return forall t. (x : t) : parser t = fun input, i, s =>
+    Ok (x, i, s)
+
+#!spiral
+
+//// test
+
+"abc"
+|> run_parser (p_return 42i32)
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$(42i32, "abc", new_parser_state 0 1 1 3)
+
+#!markdown
+
+### attempt
+
+#!spiral
+
+inl attempt forall t. (p : parser t) : parser t = fun input, i, s =>
+    match p (input, i, s) with
+    | Ok (r, i', s') => Ok (r, i', s')
+    | Error e => Error e
+
+#!spiral
+
+//// test
+
+"aabbcc"
+|> run_parser (attempt (p_char 'a' >>. p_char 'a' >>. p_char 'b' >>. p_char 'c'))
+|> _assert_eq (Error "parsing.p_char / { expected = c; line = 1; col = 4 }\naabbcc\n   ^\n")
+
+#!markdown
+
+### look_ahead
+
+#!spiral
+
+inl look_ahead (p : parser _) : parser _ = fun input, i, s =>
+    match p (input, i, s) with
+    | Ok (x, _, _) => Ok (x, i, s)
+    | Error e => Error e
+
+#!spiral
+
+//// test
+
+"123"
+|> run_parser (look_ahead (many1_chars (p_digit ())))
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$("123", "123", new_parser_state 0 1 1 3)
+
+#!markdown
+
+### pipe2
+
+#!spiral
+
+inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : a -> b -> c) : parser c =
+    p1 .>>. p2 |>> fun r1, r2 => f r1 r2
+
+#!spiral
+
+//// test
+
+"pipe2"
+|> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a b => a ++# b))
+|> resultm.get
+|> sm'.format_debug
+|> _assert_eq $$("pipe2", "", new_parser_state 0 1 6 5)

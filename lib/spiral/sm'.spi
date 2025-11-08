@@ -367,15 +367,52 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
             $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
     }
 
+/// ### span_from
+inl span_from pred str i0 =
+    inl len = str |> length
+    let rec 루프 (i : int) =
+        if i >= len
+        then i
+        elif str |> index i |> pred
+        then 루프 (i + 1)
+        else i
+    루프 i0
+
+/// ### char_contains
+inl char_contains (chars : list char) (c : char) : bool =
+    chars |> listm'.exists' ((=) c)
+
+/// ### trim_start
+inl trim_start (chars : list char) (input : string) : string =
+    inl len = input |> length
+    let rec 루프 (i : int) =
+        if i >= len
+        then len
+        elif input |> index i |> char_contains chars
+        then 루프 (i + 1)
+        else i
+    input |> slice (루프 0) len
+
+/// ### trim_end
+inl trim_end (chars : list char) (input : string) : string =
+    inl len = input |> length
+    let rec 루프 (i : int) =
+        if i <= 0
+        then 0
+        elif input |> index (i - 1) |> char_contains chars
+        then 루프 (i - 1)
+        else i - 1
+    input |> slice 0 (루프 len)
+
+/// ### trim_with
+inl trim_with (chars : list char) (input : string) : string =
+    input
+    |> trim_start chars
+    |> trim_end chars
+
 /// ### trim
 inl trim (input : string) : string =
-    backend_switch {
-        Gleam = fun () =>
-            global "import gleam/string"
-            $'!input |> string.trim' : string
-        Fsharp = fun () => $'!input.Trim' () : string
-        Python = fun () => $'!input.strip()' : string
-    }
+    input |> trim_with [ ' '; '\t'; '\r'; '\n' ]
 
 /// ### concat
 inl concat (a : string) (b : seq.seq' string) : string =
@@ -981,72 +1018,29 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     join
         [
             "sm'.range"
-            " / s |> var_is: "; s |> var_is |> obj_to_string
-            " / start |> var_is: "; start_is_var |> obj_to_string
-            " / end |> var_is: "; end |> var_is |> obj_to_string
-            " / same_fixed: "; same_fixed |> obj_to_string
+            " / s: "; s
+            " / (s |> var_is): "; s |> var_is |> obj_to_string
+            " // start: "; start |> obj_to_string
+            " / (start |> var_is): "; start_is_var |> obj_to_string
+            " // end: "; end |> obj_to_string
+            " / (end |> var_is): "; end |> var_is |> obj_to_string
+            " // same_fixed: "; same_fixed |> obj_to_string
             " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
         ]
         |> concat_list ""
         |> fun x =>
             backend_switch {
                 Gleam = fun () =>
-                    global "import gleam/io"
-                    $'io.println(!x)' : ()
+                    // global "import gleam/io"
+                    // $'io.println(!x)' : ()
+                    ()
                 Fsharp = fun () =>
-                    $'System.Console.WriteLine(!x)' : ()
+                    // $'System.Console.WriteLine(!x)' : ()
+                    ()
                 Python = fun () =>
                     $'print(!x)' : ()
             }
     s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
-
-/// ### trim_end
-inl trim_end (trim_chars : list char) (input : string) : string =
-    inl trim_chars' = trim_chars |> listm'.box
-    backend_switch {
-        Gleam = fun () =>
-            let rec 루프 acc =
-                inl changed, result =
-                    ((false, acc), trim_chars)
-                    ||> listm.fold fun (changed, acc) x =>
-                        if acc |> ends_with $x
-                        then true, acc |> range (am'.Start 0i32) (am'.End fun x => x () - 1)
-                        else changed, acc
-                if changed
-                    then 루프 result
-                    else result
-            루프 input
-        Fsharp = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.to_array'
-            $'!input.TrimEnd !trim_chars' ' : string
-        Python = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.map obj_to_string |> seq.of_list' |> concat ""
-            $'!input.rstrip(!trim_chars')' : string
-    }
-
-/// ### trim_start
-inl trim_start (trim_chars : list char) (input : string) : string =
-    inl trim_chars' = trim_chars |> listm'.box
-    backend_switch {
-        Gleam = fun () =>
-            let rec 루프 acc =
-                inl changed, result =
-                    ((false, acc), trim_chars)
-                    ||> listm.fold fun (changed, acc) x =>
-                        if acc |> starts_with $x
-                        then true, acc |> range (am'.Start 1i32) (am'.End eval)
-                        else changed, acc
-                if changed
-                    then 루프 result
-                    else result
-            루프 input
-        Fsharp = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.to_array'
-            $'!input.TrimStart !trim_chars' ' : string
-        Python = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.map obj_to_string |> seq.of_list' |> concat ""
-            $'!input.lstrip(!trim_chars')' : string
-    }
 
 /// ### ellipsis_end
 let ellipsis_end (max : i64) (s : string) =

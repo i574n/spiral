@@ -1235,18 +1235,150 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
 
 #!markdown
 
+### span_from
+
+#!spiral
+
+inl span_from pred str i0 =
+    inl len = str |> length
+    let rec 루프 (i : int) =
+        if i >= len
+        then i
+        elif str |> index i |> pred
+        then 루프 (i + 1)
+        else i
+    루프 i0
+
+#!markdown
+
+### char_contains
+
+#!spiral
+
+inl char_contains (chars : list char) (c : char) : bool =
+    chars |> listm'.exists' ((=) c)
+
+#!markdown
+
+### trim_start
+
+#!spiral
+
+inl trim_start (chars : list char) (input : string) : string =
+    inl len = input |> length
+    let rec 루프 (i : int) =
+        if i >= len
+        then len
+        elif input |> index i |> char_contains chars
+        then 루프 (i + 1)
+        else i
+    input |> slice (루프 0) len
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+///! cuda
+
+"  abc  "
+|> trim_start [ ' '; '\t'; '\n' ]
+|> _assert_eq "abc  "
+
+"abcde"
+|> trim_start [ ' ' ]
+|> _assert_eq "abcde"
+
+"abcde"
+|> trim_start [ 'a' ]
+|> _assert_eq "bcde"
+
+"abcde"
+|> trim_start [ 'b'; 'a' ]
+|> _assert_eq "cde"
+
+"abcde"
+|> trim_start [ 'c'; 'b'; 'a' ]
+|> _assert_eq "de"
+
+#!markdown
+
+### trim_end
+
+#!spiral
+
+inl trim_end (chars : list char) (input : string) : string =
+    inl len = input |> length
+    let rec 루프 (i : int) =
+        if i <= 0
+        then 0
+        elif input |> index (i - 1) |> char_contains chars
+        then 루프 (i - 1)
+        else i - 1
+    input |> slice 0 (루프 len)
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+///! cuda
+
+"  def  "
+|> trim_end [ ' '; '\t'; '\n' ]
+|> _assert_eq "  def"
+
+"abcde"
+|> trim_end [ ' ' ]
+|> _assert_eq "abcde"
+
+"abcde"
+|> trim_end [ 'e' ]
+|> _assert_eq "abcd"
+
+"abcde"
+|> trim_end [ 'e'; 'd' ]
+|> _assert_eq "abc"
+
+"abcde"
+|> trim_end [ 'e'; 'd'; 'c' ]
+|> _assert_eq "ab"
+
+#!markdown
+
+### trim_with
+
+#!spiral
+
+inl trim_with (chars : list char) (input : string) : string =
+    input
+    |> trim_start chars
+    |> trim_end chars
+
+#!spiral
+
+//// test
+
+"  jkl  "
+|> trim_with [ ' '; '\t'; '\n' ]
+|> _assert_eq "jkl"
+
+#!markdown
+
 ### trim
 
 #!spiral
 
 inl trim (input : string) : string =
-    backend_switch {
-        Gleam = fun () =>
-            global "import gleam/string"
-            $'!input |> string.trim' : string
-        Fsharp = fun () => $'!input.Trim' () : string
-        Python = fun () => $'!input.strip()' : string
-    }
+    input |> trim_with [ ' '; '\t'; '\r'; '\n' ]
+
+#!spiral
+
+//// test
+
+"  ghi  "
+|> trim
+|> _assert_eq "ghi"
 
 #!markdown
 
@@ -2335,20 +2467,25 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     join
         [
             "sm'.range"
-            " / s |> var_is: "; s |> var_is |> obj_to_string
-            " / start |> var_is: "; start_is_var |> obj_to_string
-            " / end |> var_is: "; end |> var_is |> obj_to_string
-            " / same_fixed: "; same_fixed |> obj_to_string
+            " / s: "; s
+            " / (s |> var_is): "; s |> var_is |> obj_to_string
+            " // start: "; start |> obj_to_string
+            " / (start |> var_is): "; start_is_var |> obj_to_string
+            " // end: "; end |> obj_to_string
+            " / (end |> var_is): "; end |> var_is |> obj_to_string
+            " // same_fixed: "; same_fixed |> obj_to_string
             " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
         ]
         |> concat_list ""
         |> fun x =>
             backend_switch {
                 Gleam = fun () =>
-                    global "import gleam/io"
-                    $'io.println(!x)' : ()
+                    // global "import gleam/io"
+                    // $'io.println(!x)' : ()
+                    ()
                 Fsharp = fun () =>
-                    $'System.Console.WriteLine(!x)' : ()
+                    // $'System.Console.WriteLine(!x)' : ()
+                    ()
                 Python = fun () =>
                     $'print(!x)' : ()
             }
@@ -2427,110 +2564,6 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 "vwxyz"
 |> range (am'.End fun x => join x () - 4i32) (am'.End fun _ => 4)
 |> _assert_eq "wxy"
-
-#!markdown
-
-### trim_end
-
-#!spiral
-
-inl trim_end (trim_chars : list char) (input : string) : string =
-    inl trim_chars' = trim_chars |> listm'.box
-    backend_switch {
-        Gleam = fun () =>
-            let rec 루프 acc =
-                inl changed, result =
-                    ((false, acc), trim_chars)
-                    ||> listm.fold fun (changed, acc) x =>
-                        if acc |> ends_with $x
-                        then true, acc |> range (am'.Start 0i32) (am'.End fun x => x () - 1)
-                        else changed, acc
-                if changed
-                    then 루프 result
-                    else result
-            루프 input
-        Fsharp = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.to_array'
-            $'!input.TrimEnd !trim_chars' ' : string
-        Python = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.map obj_to_string |> seq.of_list' |> concat ""
-            $'!input.rstrip(!trim_chars')' : string
-    }
-
-#!spiral
-
-//// test
-///! gleam
-///! fsharp
-///! cuda
-
-"abcde"
-|> trim_end [ ' ' ]
-|> _assert_eq "abcde"
-
-"abcde"
-|> trim_end [ 'e' ]
-|> _assert_eq "abcd"
-
-"abcde"
-|> trim_end [ 'e'; 'd' ]
-|> _assert_eq "abc"
-
-"abcde"
-|> trim_end [ 'e'; 'd'; 'c' ]
-|> _assert_eq "ab"
-
-#!markdown
-
-### trim_start
-
-#!spiral
-
-inl trim_start (trim_chars : list char) (input : string) : string =
-    inl trim_chars' = trim_chars |> listm'.box
-    backend_switch {
-        Gleam = fun () =>
-            let rec 루프 acc =
-                inl changed, result =
-                    ((false, acc), trim_chars)
-                    ||> listm.fold fun (changed, acc) x =>
-                        if acc |> starts_with $x
-                        then true, acc |> range (am'.Start 1i32) (am'.End eval)
-                        else changed, acc
-                if changed
-                    then 루프 result
-                    else result
-            루프 input
-        Fsharp = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.to_array'
-            $'!input.TrimStart !trim_chars' ' : string
-        Python = fun () =>
-            inl trim_chars' = trim_chars' |> listm'.map obj_to_string |> seq.of_list' |> concat ""
-            $'!input.lstrip(!trim_chars')' : string
-    }
-
-#!spiral
-
-//// test
-///! gleam
-///! fsharp
-///! cuda
-
-"abcde"
-|> trim_start [ ' ' ]
-|> _assert_eq "abcde"
-
-"abcde"
-|> trim_start [ 'a' ]
-|> _assert_eq "bcde"
-
-"abcde"
-|> trim_start [ 'b'; 'a' ]
-|> _assert_eq "cde"
-
-"abcde"
-|> trim_start [ 'c'; 'b'; 'a' ]
-|> _assert_eq "de"
 
 #!markdown
 
