@@ -267,7 +267,7 @@ inl (><) (a : vec) (b : vec) =
 
 /// #### magnitude
 inl magnitude v =
-    v <.> v |> sqrt
+    (v <.> v) |> sqrt
 
 /// #### v1
 inl v1 t =

@@ -363,3 +363,17 @@ inl to_array' forall t. (items : list' t) : array_base t =
         Fsharp = fun () => items |> $'List.toArray' : array_base t
         Python = fun () => $'(cp if cuda else np).array(!items)' : array_base t
     }
+
+/// ### contains
+inl contains forall t. (item : t) (list : list t) : bool =
+    list
+    |> try_index_of_ item
+    |> fun x => x : _ int
+    |> (<>) None
+
+/// ### pairwise
+inl pairwise forall t. (list : list t) : list (t * t) =
+    let rec 루프 = function
+        | (x1 : t) :: x2 :: xs => (x1, x2) :: 루프 (x2 :: xs)
+        | _ => []
+    루프 list

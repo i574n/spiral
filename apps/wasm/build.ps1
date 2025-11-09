@@ -58,4 +58,4 @@ Write-Output "spiral/apps/wasm/build.ps1 / `$targetDir = $targetDir / `$projectN
 
 cargo fmt --
 
-{ cargo build --release } | Invoke-Block -Linux
+{ cargo build --timings --release } | Invoke-Block -Linux

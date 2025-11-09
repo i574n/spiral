@@ -34,6 +34,10 @@ inl length forall dim {int}. (input : string) : dim =
 inl to_char_list (str : string) : list char =
     listm.init (str |> length) (fun (i : i64) => str |> index i)
 
+/// ### to_char_array
+inl to_char_array (str : string) : array_base char =
+    am'.init_base (str |> length) (fun i => str |> index i)
+
 /// ### is_empty
 inl is_empty (input : string) : bool =
     (input |> length) = 0i32
@@ -382,8 +386,13 @@ inl span_from pred str i0 =
 inl char_contains (chars : list char) (c : char) : bool =
     chars |> listm'.exists' ((=) c)
 
+/// ### trim_chars
+inl trim_chars () =
+    [ ' '; '\t'; '\r'; '\n' ]
+
 /// ### trim_start
 inl trim_start (chars : list char) (input : string) : string =
+    inl chars = if chars = [] then trim_chars () else chars
     inl len = input |> length
     let rec 루프 (i : int) =
         if i >= len
@@ -395,6 +404,7 @@ inl trim_start (chars : list char) (input : string) : string =
 
 /// ### trim_end
 inl trim_end (chars : list char) (input : string) : string =
+    inl chars = if chars = [] then trim_chars () else chars
     inl len = input |> length
     let rec 루프 (i : int) =
         if i <= 0
@@ -412,7 +422,7 @@ inl trim_with (chars : list char) (input : string) : string =
 
 /// ### trim
 inl trim (input : string) : string =
-    input |> trim_with [ ' '; '\t'; '\r'; '\n' ]
+    input |> trim_with []
 
 /// ### concat
 inl concat (a : string) (b : seq.seq' string) : string =
@@ -1004,7 +1014,7 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl is_start, start, end =
         inl len () : int =
             real
-                typecase t with 
+                typecase t with
                 | int => length `t s
                 | _ => length' `t s
         match start, end with

@@ -38,6 +38,8 @@ inl symbol_to_string forall t {symbol}. : string =
 
 /// ### to_char_list
 
+/// ### to_char_array
+
 /// ### is_empty
 
 /// ### to_option
@@ -277,6 +279,8 @@ let format_real forall t. (x : t) : string =
 /// ### span_from
 
 /// ### char_contains
+
+/// ### trim_chars
 
 /// ### trim_start
 

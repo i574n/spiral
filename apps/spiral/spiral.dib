@@ -561,6 +561,16 @@ inl get_workspace_cargo_toml_content { workspace_root } : string =
     ++\# $'$"[workspace.dependencies]"'
     ++\# $'$"inline_colorization = \\\"~0.1\\\""'
     ++\# $'$""'
+    ++\# $'$"[profile.dev]"'
+    ++\# $'$"codegen-units = 256"'
+    ++\# $'$"opt-level = 0"'
+    ++\# $'$"lto = false"'
+    ++\# $'$"debug = 1"'
+    ++\# $'$"panic = \\\"unwind\\\""'
+    ++\# $'$"rustflags = [\\\"-C\\\", \\\"link-arg=-s\\\"]"'
+    ++\# $'$"strip = \\\"debuginfo\\\""'
+    ++\# $'$"rpath = true"'
+    ++\# $'$""'
     ++\# $'$"[profile.release]"'
     ++\# $'$"codegen-units = 1"'
     ++\# $'$"opt-level = \\\"z\\\""'
@@ -944,8 +954,8 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
 
         inl command =
             if runtime <> None
-            then $'$"cargo +nightly-2024-07-14 build --release --target wasm32-unknown-unknown --manifest-path \\\"{!cargo_toml_path}\\\""'
-            else $'$"cargo run --manifest-path \\\"{!cargo_toml_path}\\\""'
+            then $'$"cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \\\"{!cargo_toml_path}\\\""'
+            else $'$"cargo run --timings --manifest-path \\\"{!cargo_toml_path}\\\""'
         inl environment_variables =
             if runtime <> None
             then ;[]

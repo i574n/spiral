@@ -41,6 +41,7 @@ pub use _Networking::Networking;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./runtime.rs"]
 pub mod _Runtime;
 pub use _Runtime::Runtime;
@@ -101,6 +102,7 @@ pub use _Crypto::Crypto;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./common.rs"]
 pub mod _Common;
 pub use _Common::Common;

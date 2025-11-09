@@ -48,7 +48,7 @@ inl run test =
     then ()
     else
         runtime.execution_options fun x => { x with
-            command = "cargo test -- --show-output"
+            command = "cargo test --timings -- --show-output"
             working_directory = file_system.get_source_directory () |> Some |> optionm'.box
             environment_variables = ;[ "TEST", "1" ]
         }

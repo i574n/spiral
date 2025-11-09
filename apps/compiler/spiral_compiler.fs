@@ -2407,9 +2407,12 @@ module spiral_compiler =
         | "*" -> ValueSome(70, Associativity.Left)
         | "/" -> ValueSome(70, Associativity.Left)
         | "%" -> ValueSome(70, Associativity.Left)
-        | "<|>" -> ValueSome(25, Associativity.Left)
-        | "|>" -> ValueSome(10, Associativity.Left)
-        | ">>" -> ValueSome(15, Associativity.Left)
+        | "</>" -> ValueSome(43, Associativity.Left)
+        | "<|>" -> ValueSome(42, Associativity.Left)
+        | "|>" -> ValueSome(41, Associativity.Left)
+        | "||>" -> ValueSome(41, Associativity.Left)
+        | "|||>" -> ValueSome(41, Associativity.Left)
+        | ">>" -> ValueSome(45, Associativity.Left)
         | "<-" -> ValueSome(4, Associativity.Left)
 
         | "<=" -> ValueSome(40, Associativity.None)
@@ -2428,8 +2431,8 @@ module spiral_compiler =
         | "&&" -> ValueSome(30, Associativity.Left)
         | "::" -> ValueSome(50, Associativity.Right)
         | "^" -> ValueSome(45, Associativity.Right)
-        | "<|" -> ValueSome(10, Associativity.Right)
-        | "<<" -> ValueSome(15, Associativity.Right)
+        | "<|" -> ValueSome(41, Associativity.Right)
+        | "<<" -> ValueSome(45, Associativity.Left)
         | "." -> ValueSome(2, Associativity.Right)
         | "," -> ValueSome(6, Associativity.Right)
         | ":>" -> ValueSome(35, Associativity.Right)
@@ -2647,13 +2650,22 @@ module spiral_compiler =
             let (+) = alt (blockParsingIndex s)
             (root_pattern_rounds + root_pattern_var_nominal_union + root_pattern_wildcard + root_pattern_dyn + pat_value + pat_string
             + root_pattern_record + pat_symbol + pat_array + pat_list + pat_exists) s
-
-        let pat_and = sepBy1 body (skip_op "&") |>> List.reduce (fun a b -> PatAnd(range_of_pattern a +. range_of_pattern b,a,b))
-        let pat_pair = pat_pair pat_and
-        let pat_cons = blockParsingRange (sepBy1 pat_pair (skip_op "::")) |>> fun (r,x) -> List.reduceBack (pat_list_pair r) x
-        let pat_or = sepBy1 pat_cons (skip_op "|") |>> List.reduce (fun a b -> PatOr(range_of_pattern a +. range_of_pattern b,a,b))
-        let pat_as = pat_or .>>. (opt (skip_keyword SpecAs >>. pat_or )) |>> function a, Some b -> PatAnd(range_of_pattern a +. range_of_pattern b,a,b) | a, None -> a
-        pat_as s
+        let pat_and =
+            sepBy1 body (skip_op "&")
+            |>> List.reduce (fun a b -> PatAnd(range_of_pattern a +. range_of_pattern b, a, b))
+        let pat_cons =
+            blockParsingRange (sepBy1 (pat_pair pat_and) (skip_op "::"))
+            |>> fun (r,x) -> List.reduceBack (pat_list_pair r) x
+        let pat_or =
+            sepBy1 pat_cons (skip_op "|")
+            |>> List.reduce (fun a b -> PatOr(range_of_pattern a +. range_of_pattern b, a, b))
+        let pat_as =
+            pat_or .>>. (opt (skip_keyword SpecAs >>. read_small_var'))
+            |>> function
+                | a, Some (rv,x) -> PatAnd(range_of_pattern a +. rv, a, PatVar(rv,x))
+                | a, None        -> a
+        let pat_pair = pat_pair pat_as
+        pat_pair s
     and root_pattern_when d = (root_pattern .>>. (opt (skip_keyword SpecWhen >>. root_term)) |>> function a, Some b -> PatWhen(range_of_pattern a +. range_of_expr b,a,b) | a, None -> a) d
     and root_pattern_var d =
         let (+) = alt (blockParsingIndex d)
@@ -10008,7 +10020,13 @@ module spiral_compiler =
                     line s (sprintf "| %s -> (* %s *)" cases k)
                     binds (indent s) b
                     ) on_succs
-                on_fail |> Option.iter (fun b ->
+                match on_fail with
+                | Some on_fail -> on_fail |> Some
+                | None ->
+                    if on_succs |> Map.count = 1
+                    then on_succs |> Map.values |> Seq.tryHead |> Option.map snd
+                    else None
+                |> Option.iter (fun b ->
                     line s "| _ ->"
                     binds (indent s) b
                     )
@@ -10350,6 +10368,8 @@ module spiral_compiler =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then env.globals.Add x
 
+        let mutable while_id = 0
+
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -10494,11 +10514,30 @@ module spiral_compiler =
                 line s "}"
             | TyJoinPoint(a,args) -> simple (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Gleam backend does not support nesting other backends."
-            | TyWhile(a,b) ->
-                complex <| fun s ->
-                line s (sprintf "while %s {" (jp a))
-                binds (indent s) b
-                line s "}"
+            | TyWhile(a, b) ->
+                let id = while_id
+                while_id <- while_id + 1
+
+                print
+                    false
+                    (fun s id' ->
+                        line s (sprintf "loop%i (v0, v1) {" id')
+                        line (indent s) (sprintf "case %s {" (jp a))
+                        line (indent (indent s)) "True -> {"
+                        binds (indent (indent (indent s))) b
+                        global' "import gleam/io"
+                        line (indent (indent (indent s))) (sprintf "|> fn(_) { io.debug(\"spiral_compiler.TyWhile\") } loop%i(v0, v1)" id')
+                        line (indent (indent s)) "}"
+                        line (indent (indent s)) "False -> {"
+                        line (indent (indent (indent s))) "v0"
+                        line (indent (indent s)) "}"
+                        line (indent s) "}"
+                        line s "}"
+                    )
+                    id
+
+                simple (sprintf "let v0 = loop%i(v0, v1)" id)
+
             | TyDo a ->
                 complex <| fun s ->
                 line s "{"
@@ -10666,7 +10705,7 @@ module spiral_compiler =
                 | ArrayIndexSet, [a;b;c] ->
                     global' "import gary/array"
                     global' "import gleam/result"
-                    sprintf "%s |> array.set(%s, %s) |> result.unwrap" (tup a) (tup b) (tup c)
+                    $"let {tup a} = {tup a} |> array.set({tup b}, {tup c}) |> result.unwrap({tup a})"
 
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
@@ -15606,6 +15645,8 @@ module spiral_compiler =
             errors = stream
             supervisor = supervisor
         |}
+
+    /// ### tests
 
     /// ## getParentProcessId
     let getParentProcessId () =

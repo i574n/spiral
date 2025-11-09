@@ -143,13 +143,22 @@ inl collect forall t r. (fn : t -> a int r) (items : a int t) : a int r =
 
 #!markdown
 
+### init_base
+
+#!spiral
+
+inl init_base n fn : array_base _ =
+    am.init n fn
+    |> fun (a x : _ int _) => x
+
+#!markdown
+
 ### init
 
 #!spiral
 
 inl init n : array_base _ =
-    am.init n id
-    |> fun (a x : _ int _) => x
+    init_base n id
 
 #!markdown
 
@@ -864,6 +873,9 @@ inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
     backend_switch {
         Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
         Python = fun () => items |> to : listm'.list' t
+        Gleam = fun () =>
+            global "import gary/array"
+            $'!items |> array.to_list' : listm'.list' t
     }
 
 #!markdown

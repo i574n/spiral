@@ -172,6 +172,29 @@ inl to_char_list (str : string) : list char =
 
 #!markdown
 
+### to_char_array
+
+#!spiral
+
+inl to_char_array (str : string) : array_base char =
+    am'.init_base (str |> length) (fun i => str |> index i)
+
+#!spiral
+
+//// test
+///! gleam
+///! fsharp
+///! cuda
+
+"abc"
+|> to_char_array
+|> fun x => a x : _ int _
+|> am'.to_list'
+|> listm'.unbox
+|> _assert_eq [ 'a'; 'b'; 'c' ]
+
+#!markdown
+
 ### is_empty
 
 #!spiral
@@ -1260,11 +1283,21 @@ inl char_contains (chars : list char) (c : char) : bool =
 
 #!markdown
 
+### trim_chars
+
+#!spiral
+
+inl trim_chars () =
+    [ ' '; '\t'; '\r'; '\n' ]
+
+#!markdown
+
 ### trim_start
 
 #!spiral
 
 inl trim_start (chars : list char) (input : string) : string =
+    inl chars = if chars = [] then trim_chars () else chars
     inl len = input |> length
     let rec 루프 (i : int) =
         if i >= len
@@ -1282,11 +1315,11 @@ inl trim_start (chars : list char) (input : string) : string =
 ///! cuda
 
 "  abc  "
-|> trim_start [ ' '; '\t'; '\n' ]
+|> trim_start []
 |> _assert_eq "abc  "
 
 "abcde"
-|> trim_start [ ' ' ]
+|> trim_start []
 |> _assert_eq "abcde"
 
 "abcde"
@@ -1308,6 +1341,7 @@ inl trim_start (chars : list char) (input : string) : string =
 #!spiral
 
 inl trim_end (chars : list char) (input : string) : string =
+    inl chars = if chars = [] then trim_chars () else chars
     inl len = input |> length
     let rec 루프 (i : int) =
         if i <= 0
@@ -1325,11 +1359,11 @@ inl trim_end (chars : list char) (input : string) : string =
 ///! cuda
 
 "  def  "
-|> trim_end [ ' '; '\t'; '\n' ]
+|> trim_end []
 |> _assert_eq "  def"
 
 "abcde"
-|> trim_end [ ' ' ]
+|> trim_end []
 |> _assert_eq "abcde"
 
 "abcde"
@@ -1370,7 +1404,7 @@ inl trim_with (chars : list char) (input : string) : string =
 #!spiral
 
 inl trim (input : string) : string =
-    input |> trim_with [ ' '; '\t'; '\r'; '\n' ]
+    input |> trim_with []
 
 #!spiral
 

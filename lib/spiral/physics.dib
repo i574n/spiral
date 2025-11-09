@@ -672,7 +672,7 @@ vec 1 2 3 >< vec 4 5 6
 #!spiral
 
 inl magnitude v =
-    v <.> v |> sqrt
+    (v <.> v) |> sqrt
 
 #!spiral
 
