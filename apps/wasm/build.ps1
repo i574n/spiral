@@ -18,7 +18,7 @@ if (!$SkipFsx) {
         { . ../../workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/$projectName.dib" --working-directory $workingDirectory } | Invoke-Block -Retries 3
     }
 
-    { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "$projectName.dib" spi } | Invoke-Block
+    { . ../../workspace/target/release/spiral$(_exe) dib-export "$ScriptDir/$projectName.dib" spi } | Invoke-Block
 
     { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --build-file "$projectName.spi" "$projectName.fsx" } | Invoke-Block
 }
@@ -58,4 +58,4 @@ Write-Output "spiral/apps/wasm/build.ps1 / `$targetDir = $targetDir / `$projectN
 
 cargo fmt --
 
-{ cargo build --timings --release } | Invoke-Block -Linux
+{ cargo +nightly-2025-11-01 build --timings --release } | Invoke-Block -Linux

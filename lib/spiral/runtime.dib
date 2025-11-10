@@ -871,7 +871,7 @@ inl arg_action (value : arg_action) (arg : arg) : arg =
 #!spiral
 
 inl arg_index (value : i32) (arg : arg) : arg =
-    !\\((arg, value), $'"$0.index($1)"')
+    !\\((arg, ($'!value |> `unativeint ' : unativeint)), $'"$0.index($1)"')
 
 #!markdown
 

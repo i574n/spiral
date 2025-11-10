@@ -306,6 +306,7 @@ inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
 inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list u =
     backend_switch {
         Gleam = fun () =>
+            global "import gleam/list"
             $'let listm_fold_back = !list |> list.fold_right (!init, fn (acc, x) {'
             $'!(Cons (fn $'x', $'acc'))' : ()
             $'})' : ()

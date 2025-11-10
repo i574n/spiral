@@ -952,8 +952,8 @@ inl drop forall t. (x : t) : () =
 
 #!spiral
 
-inl break () : () =
-    (!\($'"true; break"') : bool) |> ignore
+inl break x : () =
+    (!\($'"true; break !x"') : bool) |> ignore
 
 #!markdown
 
@@ -1020,18 +1020,18 @@ inl fix_closure depth x =
 #!spiral
 
 inl loop (depth : i32) (fn : () -> ()) : () =
-    (!\($'"true; loop { // rust.loop"') : bool) |> ignore
+    (!\($'"true; loop { // rust.loop 1"') : bool) |> ignore
     fn ()
 
     listm.init depth id
     |> listm.iter fun n =>
-        (!\($'"true; } // rust.loop"') : bool) |> ignore
+        (!\($'"true; } // rust.loop 2 / n: {!n}"') : bool) |> ignore
 
-    (!\($'"true; } // rust.loop"') : bool) |> ignore
+    (!\($'"true; } // rust.loop 3"') : bool) |> ignore
 
     listm.init depth id
     |> listm.iter fun n =>
-        (!\($'"true; { // rust.loop"') : bool) |> ignore
+        (!\($'"true; { // rust.loop 4 / n: {!n}"') : bool) |> ignore
 
 #!markdown
 

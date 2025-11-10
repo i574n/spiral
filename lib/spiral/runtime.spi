@@ -466,7 +466,7 @@ inl arg_action (value : arg_action) (arg : arg) : arg =
 
 /// ### arg_index
 inl arg_index (value : i32) (arg : arg) : arg =
-    !\\((arg, value), $'"$0.index($1)"')
+    !\\((arg, ($'!value |> `unativeint ' : unativeint)), $'"$0.index($1)"')
 
 /// ### arg_matches
 nominal arg_matches =

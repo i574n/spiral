@@ -585,7 +585,7 @@ nominal time_span = $'backend_switch `(time_span_switch)'
 inl time_span x : time_span =
     backend_switch {
         Gleam = fun () => x |> convert : time_span
-        Fsharp = fun () => x |> convert : time_span
+        Fsharp = fun () => $'!x |> `time_span ' : time_span
         Python = fun () => $'datetime.timedelta(!x)' : time_span
     }
 
@@ -937,7 +937,7 @@ nominal stopwatch = $'backend_switch `(stopwatch_switch)'
 
 inl stopwatch () : stopwatch =
     backend_switch {
-        Fsharp = fun () => () |> convert : stopwatch
+        Fsharp = fun () => $'`stopwatch ()' : stopwatch
         Python = fun () => $'`stopwatch ' : stopwatch
     }
 
@@ -1129,7 +1129,7 @@ inl get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : t
             inl ticks = date_time |> ticks
             // inl ticks = ticks |> rust.rust.emit
             (!\\((date_time, ticks), $'"chrono::FixedOffset::local_minus_utc(&chrono::DateTime::timezone(&chrono::DateTime::fixed_offset(&chrono::DateTime::from_timestamp_nanos($1))))"') : i32)
-            |> convert
+            |> fun x => $'!x |> `time_span '
         | target => fun () =>
             backend_switch {
                 Fsharp = fun () => failwith $'$"date_time.get_utc_offset / target: {!target}"' : time_span

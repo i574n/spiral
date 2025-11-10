@@ -8,14 +8,10 @@ $ErrorActionPreference = "Stop"
 . ../../deps/polyglot/scripts/core.ps1
 
 
+$spiralPath = "../../../spiral/workspace/target/release/spiral$(_exe)"
+
 if (!$fast) {
     {
-        $spiralPath = "../../deps/spiral/workspace/target/release/spiral$(_exe)"
-
-        if ($sequential) {
-            . $spiralPath dib --path $ScriptDir/sm`'.dib --retries 3
-        }
-
         . ../../apps/spiral/dist/Supervisor$(_exe) `
             --exit-on-error `
             $(!$sequential ? @("--parallel") : @()) `
@@ -61,7 +57,7 @@ if (!$fast) {
     } | Invoke-Block -Location (GetFullPath "../../deps/polyglot/lib/fsharp")
 }
 
-{ . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) testing.dib spi async.dib spi runtime.dib spi trace.dib spi threading.dib spi networking.dib spi crypto.dib spi common.dib spi base.dib spi resultm.dib spi iter.dib spi env.dib spi parsing.dib spi console.dib spi date_time.dib spi file_system.dib spi guid.dib spi math.dib spi mapm.dib spi "optionm'.dib" spi "am'.dib" spi "sm'.dib" spi "sm'.dib" spir "listm'.dib" spi reflection.dib spi python.dib spi typescript.dib spi benchmark.dib spi stream.dib spi seq.dib spi util.dib spi platform.dib spi rust/rust.dib spi rust/testing.dib spi rust/near.dib spi rust/near_workspaces.dib spi physics.dib spi leptos/leptos.dib spi lustre.dib spi wasm.dib spi } | Invoke-Block
+{ . $spiralPath dib-export testing.dib spi async.dib spi runtime.dib spi trace.dib spi threading.dib spi networking.dib spi crypto.dib spi common.dib spi base.dib spi resultm.dib spi iter.dib spi env.dib spi parsing.dib spi console.dib spi date_time.dib spi file_system.dib spi guid.dib spi math.dib spi mapm.dib spi "optionm'.dib" spi "am'.dib" spi "sm'.dib" spi "sm'.dib" spir "listm'.dib" spi reflection.dib spi python.dib spi typescript.dib spi benchmark.dib spi stream.dib spi seq.dib spi util.dib spi platform.dib spi rust/rust.dib spi rust/testing.dib spi rust/near.dib spi rust/near_workspaces.dib spi physics.dib spi leptos/leptos.dib spi lustre.dib spi wasm.dib spi } | Invoke-Block
 
 if (!$fast) {
     { pwsh near/wallet/build.ps1 } | Invoke-Block

@@ -23,7 +23,7 @@ if (!$SkipPreBuild -and !$SkipFsx) {
         { . ../../workspace/target/release/spiral$(_exe) dib --path "$ResolvedScriptDir/$projectName.dib" --working-directory $workingDirectory --retries 3 } | Invoke-Block
     }
 
-    { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "$projectName.dib" spi } | Invoke-Block
+    { . ../../workspace/target/release/spiral$(_exe) dib-export "$ResolvedScriptDir/$projectName.dib" spi } | Invoke-Block
 
     { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --build-file "$projectName.spi" "$projectName.fsx" } | Invoke-Block
 }
@@ -68,9 +68,9 @@ Write-Output "spiral/apps/spiral/build.ps1 / `$projectName: $projectName / `$env
 cargo fmt --
 
 if (!$fast) {
-    { cargo test --timings --release -- --show-output } | Invoke-Block
+    { cargo +nightly-2025-11-01 test --timings --release -- --show-output } | Invoke-Block
 }
-{ cargo build --timings --release } | Invoke-Block -OnError Continue
+{ cargo +nightly-2025-11-01 build --timings --release } | Invoke-Block -OnError Continue
 
 if ($env:CI) {
     Remove-Item ../../deps/polyglot/target/spiral/spiral/target -Recurse -Force -ErrorAction Ignore

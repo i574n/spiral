@@ -10421,29 +10421,19 @@ module spiral_compiler =
                 let args = args b
                 match a with
                 | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
-                | JPClosure(a,b) ->
-                    let code =
-                        [
-                            "closure"
-                            (a, b) |> closure |> _.tag |> string
-                            "("
-                            if args = "" then "" else $")(#({args})        "
-                            ")"
-                            // if args = "" || args |> SpiralSm.contains ", "
-                            // then ""
-                            // else "( Nil )"
-                        ]
-                        |> SpiralSm.concat ""
-                    if args = ""
-                    then $"fn (x) {{ {code}(#(x))(   Nil) }}"
-                    else code
-                    |> fun code ->
-                        let comment =
-                            $"// args: %A{args} / d: %A{d} / b': %A{b'} / b: %A{b}"
-                            |> SpiralSm.replace "\r\n" ""
-                            |> SpiralSm.replace "\n" ""
-                            |> fun comment -> $"{comment |> SpiralSm.ellipsis 1000}\n"
-                        $"{code} {comment}"
+                | JPClosure (a, b) ->
+                    let tag = (closure (a, b)).tag
+                    let fv =
+                        match args with
+                        | "" -> "Nil"
+                        | xs -> sprintf "#(%s)" xs
+                    let code = sprintf "closure%i(%s)" tag fv
+                    let comment =
+                        $"// args: %A{args} / d: %A{d} / b': %A{b} / b: %A{b}"
+                        |> SpiralSm.replace "\r\n" ""
+                        |> SpiralSm.replace "\n" ""
+                        |> fun c -> $"{c |> SpiralSm.ellipsis 1000}\n"
+                    code + " " + comment
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
@@ -10652,34 +10642,36 @@ module spiral_compiler =
             | TyStringLength(a,b) -> length (a,b)
             | TyFailwith(a,b) -> simple (sprintf "panic as %s" (tup b))
             | TyConv(a,b) ->
-                let b = tup b
-                match a with
-                | YPrim Int8T -> $"{b}"
-                | YPrim Int16T -> $"{b}"
-                | YPrim Int32T -> $"{b}"
-                | YPrim Int64T -> $"{b}"
-                | YPrim UInt8T -> $"{b}"
-                | YPrim UInt16T -> $"{b}"
-                | YPrim UInt32T -> $"{b}"
-                | YPrim UInt64T -> $"{b}"
-                | YPrim Float32T -> $"{b}"
-                | YPrim Float64T -> $"{b}"
-                | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
+                let t = tyv a
+                let d = tup b
+                if t = "bool" || true then
+                    global' $"import gleam/{t}"
+                    $"{t}.to_int({d})"
+                else
+                    $"{d}"
                 |> simple
-            | TyApply(L(i,t),b) ->
-                match tup b with
-                // | "Nil " when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"    v{i}    "
-                | "Nil " when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"    v{i}( Nil      )"
-                | "Nil " -> $"v{i} "
-                | b' when tup_ty t |> SpiralSm.starts_with "fn(Nil  ) -> " -> $"v{i}( {b'}(      Nil)  ) "
-                | b' -> $"v{i}( {b'}  )"
+            | TyApply (L(i, t), b) ->
+                let arg_code = tup b
+                let call =
+                  match t with
+                  | YFun (domain, _, FT_Vanilla) ->
+                      let domain_is_nil =
+                        env.ty_to_data domain |> data_free_vars |> Array.isEmpty
+                      if arg_code = "Nil " then
+                        if domain_is_nil then sprintf "v%i( Nil      )" i else sprintf "v%i " i
+                      else
+                        if domain_is_nil then sprintf "v%i( %s(      Nil)  ) " i arg_code
+                        else sprintf "v%i( %s  )" i arg_code
+                  | _ ->
+                      sprintf "v%i( %s  )" i arg_code
+                call
                 |> fun code ->
                     let comment =
                         $"// tup_ty t: {tup_ty t} / b: %A{b} / d: %A{d} / a'': %A{a''}"
                         |> SpiralSm.replace "\r\n" ""
                         |> SpiralSm.replace "\n" ""
-                        |> fun comment -> $"{comment |> SpiralSm.ellipsis 1000}\n"
-                    $"{code} {comment}"
+                        |> fun c -> $"{c |> SpiralSm.ellipsis 1000}\n"
+                    $"{call} {comment}"
                 |> simple
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(op,l) ->
@@ -10810,109 +10802,79 @@ module spiral_compiler =
                 else line s "}"
                 )
         and closure : _ -> ClosureRecGleam =
-            jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
+            jp
+                (fun ((jp_body, key & (C(args, _, fun_ty))), i) ->
                 match fun_ty with
-                | YFun(domain,range,FT_Vanilla) ->
+                | YFun (domain, range, FT_Vanilla) ->
                     match (fst env.join_point_closure.[jp_body]).[key] with
-                    | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
+                    | Some (domain_args, body) ->
+                        {   tag = i
+                            free_vars = rdata_free_vars args
+                            domain_args = data_free_vars domain_args
+                            range = range
+                            body = body }
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
-                | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
-                | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
-                ) (fun s x ->
-                let domain, nil =
-                    let domain_args, nil =
-                        let t () =
-                            x.domain_args
-                            |> Array.map (fun (L(_,t)) -> $"{tyv t}")
+                | YFun (_, _, _) ->
+                    raise_codegen_error "Non-standard functions are not supported in the Gleam backend."
+                | _ ->
+                    raise_codegen_error "Compiler error: Unexpected type in the closure join point.")
+                (fun s x ->
+                let fv_tys =
+                    x.free_vars
+                    |> Array.map (fun (L(_, t)) -> tyv t)
+
+                let dom_ty =
+                    match x.domain_args with
+                    | [||] -> "Nil"
+                    | [| L(_, t) |] -> tyv t
+                    | many ->
+                        many
+                        |> Array.map (fun (L(_, t)) -> tyv t)
+                        |> String.concat ", "
+                        |> sprintf "#(%s)"
+
+                let capt_ty =
+                    fv_tys
+                    |> function
+                    | [||] -> "Nil"
+                    | [|one|] -> sprintf "#(%s)" one
+                    | many -> many |> String.concat ", " |> sprintf "#(%s)"
+
+                let fv_bind =
+                    match x.free_vars with
+                    | [||] -> None
+                    | arr ->
+                        let names =
+                            arr
+                            |> Array.mapi (fun idx (L(i,_)) -> sprintf "v%i" i)
                             |> String.concat ", "
-                        if x.domain_args |> Array.length > 1 then
-                            [| $"x : #(#({t ()}))           " |], false
-                        elif x.free_vars |> Array.length > 1 then
-                            let t =
-                                x.free_vars
-                                |> Array.map (fun (L(_,t)) -> $"{tyv t}")
-                                |> String.concat ", "
-                            [| $"x : #({t})            " |], false
-                        elif x.domain_args |> Array.length = 0
-                        then [||], false
-                        else
-                            let t = t ()
-                            if t = "Nil" && x.free_vars |> Array.length = 1
-                            then [||], true
-                            else [| $"x : #({t})             " |], false
-                    match domain_args with
-                    | [||] -> ""
-                    | [|x|] -> x
-                    | x -> String.concat ", " x
-                    , nil
-                let domain' =
-                    if x.domain_args |> Array.length <> 1
-                    then "      Nil"
-                    elif x.free_vars |> Array.length > 1 then
-                        x.domain_args
-                        |> Array.map (fun (L(_,t)) -> $"{tyv t}")
+                        Some (sprintf "let #(%s) = capt" names)
+
+                let dom_name =
+                    match x.domain_args with
+                    | [| L(i, _) |] -> sprintf "v%i" i
+                    | _ -> "dom"
+
+                line s (sprintf "closure%i (capt : %s) -> fn(%s) -> %s {" x.tag capt_ty dom_ty (tup_ty x.range))
+                line (indent s) (sprintf "fn (%s) {" dom_name)
+
+                match x.domain_args with
+                | [||] -> ()
+                | [| L(_, _) |] -> ()
+                | many ->
+                    let names =
+                        many
+                        |> Array.mapi (fun _ _ -> "_")
                         |> String.concat ", "
-                    else "       Nil"
-                let free_vars_tys =
-                    if x.free_vars |> Array.length > 1
-                    then ""
-                    elif x.domain_args |> Array.length = 0 then
-                        let t =
-                            x.free_vars
-                            |> Array.map (fun (L(_,t)) -> tup_ty t)
-                            |> String.concat ", "
-                        let t =
-                            if t = ""
-                            then "Nil    "
-                            else t
-                        $"x : #({t})              "
-                    elif nil && x.free_vars |> Array.length = 1 then
-                        match x.free_vars.[0] with
-                        | L(i,t) -> $"v{i} : #({tup_ty t})               "
-                    else args_tys x.free_vars
-                let args =
-                    [| free_vars_tys; domain |]
-                    |> Array.filter ((<>) "")
-                    |> String.concat ", "
-                let args' =
-                    let args =
-                        if x.domain_args |> Array.isEmpty || x.free_vars |> Array.length > 1
-                        then x.free_vars
-                        else x.domain_args
-                        |> Array.map (fun (L(i,_)) -> $"v{i}")
-                        |> String.concat ", "
-                    let args =
-                        if args = ""
-                        then "Nil     "
-                        else args
-                    if x.domain_args |> Array.length > 1
-                    then $"let #(#(       {args})) = x"
-                    elif nil
-                    then $"let #(v0) = v0 let {args} = Nil"
-                    else $"let #(      {args}) = x"
-                let domain'' =
-                    if x.domain_args |> Array.length <> 1 || x.free_vars |> Array.length <= 1
-                    then "_"
-                    else
-                        x.domain_args
-                        |> Array.map (fun (L(i,_)) -> $"v{i}")
-                        |> String.concat ", "
-                let domain_args' =
-                    $"%A{x.domain_args}"
-                    |> SpiralSm.replace "\r\n" ""
-                    |> SpiralSm.replace "\n" ""
-                let free_vars' =
-                    $"%A{x.free_vars}"
-                    |> SpiralSm.replace "\r\n" ""
-                    |> SpiralSm.replace "\n" ""
-                let comment =
-                    $"// free_vars_tys: %A{free_vars_tys} / domain: %A{domain} / x.domain_args: %A{domain_args'} / free_vars': %A{free_vars'}"
-                line
-                    s
-                    $"closure{x.tag} () -> fn(_) -> fn({domain'}) -> {tup_ty x.range} {{ fn({args}) {{ {args'}\nfn ({domain''}) {{ {comment}"
-                binds (indent s) x.body
-                line s "}}}"
-                )
+                    line (indent (indent s)) (sprintf "let #(%s) = dom" names)
+
+                fv_bind |> Option.iter (line (indent (indent s)))
+
+                binds (indent (indent s)) x.body
+
+                line (indent s) "}"
+                line s "}"
+            )
 
         let main = StringBuilder()
         binds {text=main; indent=0} x
@@ -15213,8 +15175,8 @@ module spiral_compiler =
         let handle_file_packages file (dirty_packages,s) = Hopac.start (Ch.send atten ([|file|],dirty_packages,s)); s
         let handle_files_packages (dirty_files,(dirty_packages,s)) = Hopac.start (Ch.send atten (dirty_files,dirty_packages,s)); s
         let loop (s : SupervisorState) = req >>- function
-            | ProjectFileChange x | ProjectFileOpen x -> proj_open default_env s (dir x.uri,Some x.spiprojText) |> handle_packages
-            | FileOpen x ->
+            | SupervisorReq.ProjectFileChange x | SupervisorReq.ProjectFileOpen x -> proj_open default_env s (dir x.uri,Some x.spiprojText) |> handle_packages
+            | SupervisorReq.FileOpen x ->
                 let file = file x.uri
                 // trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileOpen / x: %A{x} / file: {file}") _locals
                 match Map.tryFind file s.modules with
@@ -15222,7 +15184,7 @@ module spiral_compiler =
                 | None -> wdiff_module_init_all default_env (is_top_down file) x.spiText
                 |> fun v -> proj_revalidate_owner default_env {s with modules = Map.add file v s.modules} file
                 |> handle_file_packages file
-            | FileChange x ->
+            | SupervisorReq.FileChange x ->
                 let file = file x.uri
                 trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileChange / x: %A{x} / file: {file}") _locals
                 match Map.tryFind file s.modules with
@@ -15231,10 +15193,10 @@ module spiral_compiler =
                     match wdiff_module_edit default_env m x.spiEdit with
                     | Ok v -> proj_revalidate_owner default_env {s with modules = Map.add file v s.modules} file |> handle_file_packages file
                     | Error er -> fatal er; s
-            | FileDelete x ->
+            | SupervisorReq.FileDelete x ->
                 trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileDelete / x: {x}") _locals
                 file_delete default_env s (Array.map file x.uris) |> handle_files_packages
-            | ProjectFileLinks(x,res) ->
+            | SupervisorReq.ProjectFileLinks(x,res) ->
                 let l =
                     match Map.tryFind (dir x.uri) s.packages with
                     | None -> []
@@ -15255,7 +15217,7 @@ module spiral_compiler =
                         l
                 Hopac.start (IVar.fill res l)
                 s
-            | ProjectCodeActions(x,res) ->
+            | SupervisorReq.ProjectCodeActions(x,res) ->
                 let z =
                     match Map.tryFind (dir x.uri) s.packages with
                     | None -> []
@@ -15291,7 +15253,7 @@ module spiral_compiler =
                         z
                 Hopac.start (IVar.fill res z)
                 s
-            | ProjectCodeActionExecute(x,res) ->
+            | SupervisorReq.ProjectCodeActionExecute(x,res) ->
                 let error, s =
                     match code_action_execute x.action with
                     | Error x -> Some x, s
@@ -15299,7 +15261,7 @@ module spiral_compiler =
                     | Ok path -> None, file_delete default_env s [|path|] |> handle_files_packages
                 Hopac.start (IVar.fill res {|result=error|})
                 s
-            | FileTokenRange(x, res) ->
+            | SupervisorReq.FileTokenRange(x, res) ->
                 let v =
                     match Map.tryFind (file x.uri) s.modules with
                     | Some v -> Some v
@@ -15322,7 +15284,7 @@ module spiral_compiler =
 
                     Hopac.start (IVar.fill res [||])
                 s
-            | HoverAt(x,res) ->
+            | SupervisorReq.HoverAt(x,res) ->
                 let file = file x.uri
                 let pos = x.pos
                 let _locals () = $"x: %A{x} / file: {file} / res: %A{res}"
@@ -15371,7 +15333,7 @@ module spiral_compiler =
                             go_parent x.Parent
                 if go_parent (Directory.GetParent(file)) = false then Hopac.start (IVar.fill res None)
                 s
-            | BuildFile (x, res) ->
+            | SupervisorReq.BuildFile (x, res) ->
                 let backend = x.backend
                 let file = file x.uri
                 let _locals () = $"x: %A{x} / file: {file}"

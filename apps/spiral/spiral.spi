@@ -3,226 +3,7 @@ open file_system_operators
 open rust.rust_operators
 open rust
 open sm'_operators
-
-/// ## get_args
-inl get_args () =
-    {
-        fsharp = "fsharp", {
-            spi_path = "spi-path", 's'
-        }
-        gleam = "gleam", {
-            gleam_path = "gleam-path", 'g'
-            target = "target", 't'
-            deps = "deps", 'd'
-        }
-        lua = "lua", {
-            lua_path = "lua-path", 'l'
-        }
-        cuda = "cuda", {
-            py_path = "py-path", 'p'
-            env = "env", 'e'
-            deps = "deps", 'd'
-        }
-        fable = "fable", {
-            fs_path = "fs-path", 'f'
-            command = "command", 'c'
-        }
-        rust = "rust", {
-            fs_path = "fs-path", 'f'
-            deps = "deps", 'd'
-            wasm = "wasm", 'w'
-            contract = "contract", 'c'
-            cleanup = "cleanup", 'l'
-        }
-        typescript = "typescript", {
-            fs_path = "fs-path", 'f'
-            deps = "deps", 'd'
-        }
-        python = "python", {
-            fs_path = "fs-path", 'f'
-            deps = "deps", 'd'
-        }
-        dib = "dib", {
-            path = "path", 'p'
-            retries = "retries", 'r'
-            working_directory = "working-directory", 'w'
-            cleanup = "cleanup", 'l'
-        }
-    }
-
-/// ## cuda_env
-union cuda_env =
-    | Pip
-    | Poetry
-
-/// ## gleam_target
-union gleam_target =
-    | Erlang
-    | JavaScript
-
-/// ## get_command
-let get_command () =
-    ##"command"
-    |> runtime.new_command
-    |> runtime.command_subcommand_required true
-    |> runtime.command_subcommand (
-        ##(get_args () .fsharp |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .fsharp |> snd).spi_path) (
-            runtime.arg_required true
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .gleam |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
-            runtime.arg_required true
-        )
-        |> runtime.command_init_arg ((get_args () .gleam |> snd).target) (
-            real runtime.arg_union `gleam_target ignore
-        )
-        |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
-                    false
-                    (am'.Start (1i32 |> convert : unativeint))
-                    (am'.End eval)
-            )
-            >> runtime.arg_action runtime.Append
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .cuda |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .cuda |> snd).py_path) (
-            runtime.arg_required true
-        )
-        |> runtime.command_init_arg ((get_args () .cuda |> snd).env) (
-            real runtime.arg_union `cuda_env ignore
-        )
-        |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
-                    false
-                    (am'.Start (1i32 |> convert : unativeint))
-                    (am'.End eval)
-            )
-            >> runtime.arg_action runtime.Append
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .fable |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .fable |> snd).fs_path) (
-            runtime.arg_required true
-        )
-        |> runtime.command_init_arg ((get_args () .fable |> snd).command) (
-            id
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .rust |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .rust |> snd).fs_path) (
-            runtime.arg_required true
-        )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
-                    false
-                    (am'.Start (1i32 |> convert : unativeint))
-                    (am'.End eval)
-            )
-            >> runtime.arg_action runtime.Append
-        )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).wasm) (
-            runtime.arg_num_args_range (
-                runtime.new_value_range
-                    true
-                    (am'.End eval)
-                    (am'.End fun _ => (1i32 |> convert : unativeint))
-            )
-            >> runtime.arg_require_equals true
-            >> runtime.arg_default_missing_value ""
-        )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).contract) (
-            runtime.arg_num_args_range (
-                runtime.new_value_range
-                    true
-                    (am'.End eval)
-                    (am'.End fun _ => (1i32 |> convert : unativeint))
-            )
-            >> runtime.arg_require_equals true
-            >> runtime.arg_default_missing_value ""
-        )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).cleanup) (
-            runtime.arg_default_value "true"
-            >> runtime.arg_action runtime.SetFalse
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .typescript |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .typescript |> snd).fs_path) (
-            runtime.arg_required true
-        )
-        |> runtime.command_init_arg ((get_args () .typescript |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
-                    false
-                    (am'.Start (1i32 |> convert : unativeint))
-                    (am'.End eval)
-            )
-            >> runtime.arg_action runtime.Append
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .python |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .python |> snd).fs_path) (
-            runtime.arg_required true
-        )
-        |> runtime.command_init_arg ((get_args () .python |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
-                    false
-                    (am'.Start (1i32 |> convert : unativeint))
-                    (am'.End eval)
-            )
-            >> runtime.arg_action runtime.Append
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .dib |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .dib |> snd).path) (
-            runtime.arg_required true
-            // >> runtime.arg_value_parser (runtime.value_parser_path_buf ())
-        )
-        |> runtime.command_init_arg ((get_args () .dib |> snd).retries) (
-            runtime.arg_value_parser (runtime.value_parser_expr "u8")
-        )
-        |> runtime.command_init_arg ((get_args () .dib |> snd).working_directory) (
-            id
-        )
-        |> runtime.command_init_arg ((get_args () .dib |> snd).cleanup) (
-            runtime.arg_default_value "true"
-            >> runtime.arg_action runtime.SetFalse
-        )
-    )
-    |> runtime.command_subcommand (
-        ##(get_args () .lua |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (
-            runtime.arg_required true
-            // >> runtime.arg_value_parser (runtime.value_parser_path_buf ())
-        )
-    )
+open parsing
 
 /// ## fable
 
@@ -958,6 +739,291 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
 
         result
 
+/// ## dib_export
+
+/// ### magic_marker
+inl magic_marker () : parser string =
+    "#!" |> p_string
+
+/// ### magic_command
+inl magic_command () =
+    magic_marker ()
+    >>. many_chars_till (any_char ()) (new_line ())
+    |>> sm'.trim
+
+/// ### content
+inl content () =
+    new_line () >>. magic_marker () <|> eof () >>. p_return ""
+    |> look_ahead
+    |> many_chars_till (any_char ())
+    |>> sm'.trim
+
+/// ### dib_output
+union dib_output =
+    | Fs
+    | Md
+    | Spi
+    | Spir
+
+/// ### magic
+union magic =
+    | Fsharp
+    | Markdown
+    | Spiral : dib_output
+    | Magic : string
+
+/// ### kernel_outputs
+inl kernel_outputs = function
+    | Fsharp => [ Fs ]
+    | Markdown => [ Md ]
+    | Spiral output => [ output ]
+    | _ => []
+
+/// ### block
+type block =
+    {
+        magic : magic
+        content : string
+    }
+
+inl block () =
+    pipe2
+        (magic_command ())
+        (content ())
+        fun magic content =>
+            inl magic, content =
+                match magic with
+                | "fsharp" => Fsharp, content
+                | "markdown" => Markdown, content
+                | "spiral" =>
+                    inl output =
+                        if content |> sm'.contains "//// real\n"
+                        then Spir
+                        else Spi
+                    inl content =
+                        if output = Spi
+                        then content
+                        else
+                            content
+                            |> sm'.replace "//// real\n\n" ""
+                            |> sm'.replace "//// real\n" ""
+                    output |> Spiral, content
+                | magic => magic |> Magic, content
+            {
+                magic = magic
+                content = content
+            }
+
+/// ### blocks
+inl blocks () =
+    skip_many (new_line ())
+    >>. sep_end_by (block ()) (skip_many1 (new_line ()))
+
+/// ### format_block
+inl format_block output (block : block) =
+    match output, block with
+    | output, { magic = (Markdown) content = content } =>
+        inl markdown_comment =
+            match output with
+            | Spi | Spir => "/// "
+            | Fs => "/// "
+            | _ => ""
+        content
+        |> sm'.split "\n"
+        |> am'.to_list_base'
+        |> listm'.unbox
+        |> listm.map (sm'.trim_end [])
+        |> listm'.filter (sm'.ends_with " (test)" >> not)
+        |> listm.map function
+            | "" => markdown_comment
+            | line =>
+                inl len = line |> sm'.length
+                let rec loop i =
+                    if i >= len
+                    then line
+                    else
+                        match line |> sm'.index i with
+                        | ' ' | '\t' => loop (i + 1)
+                        | _ =>
+                            (line |> sm'.slice 0i32 (i - 1))
+                            ++# markdown_comment
+                            ++# (line |> sm'.slice i (len - 1))
+                loop 0
+        |> sm'.concat_list "\n"
+    | Fs, { magic = (Fsharp) content = content } =>
+        inl trimmed_content = content |> sm'.trim
+        if (trimmed_content |> sm'.contains "//// test\n")
+            || (trimmed_content |> sm'.contains "//// ignore\n")
+        then ""
+        else
+            content
+            |> sm'.split "\n"
+            |> am'.to_list_base'
+            |> listm'.unbox
+            |> listm'.filter (sm'.trim_start [] >> sm'.starts_with "#r" >> not)
+            |> sm'.concat_list "\n"
+    | (Spi | Spir), { magic = (Spiral output') content = content } when output' = output =>
+        inl trimmed_content = content |> sm'.trim
+        if (trimmed_content |> sm'.contains "//// test\n")
+            || (trimmed_content |> sm'.contains "//// ignore\n")
+        then ""
+        else content
+    | _ => ""
+
+/// ### format_blocks
+inl format_blocks output blocks =
+    blocks
+    |> listm.map fun block =>
+        block, format_block output block
+    |> listm'.filter (snd >> (<>) "")
+    |> fun list =>
+        (list, (None, []))
+        ||> listm.foldBack (fun (block, content) (last_magic, acc) =>
+            inl line_break =
+                if block.magic = Markdown && last_magic <> Some Markdown && last_magic <> None
+                then ""
+                else "\n"
+            Some block.magic, content ++# line_break :: acc
+        )
+    |> snd
+    |> sm'.concat_list "\n"
+
+/// ### indent_block
+inl indent_block (block : block) =
+    { block with
+        content =
+            (([], false), block.content |> sm'.split "\n" |> am'.to_list_base' |> listm'.unbox)
+            ||> listm.fold fun (lines, is_multiline) line =>
+                inl trimmed_line = line |> sm'.trim
+                if trimmed_line = ""
+                then "" :: lines, is_multiline
+                else
+                    inl single_quote_line () =
+                        (trimmed_line
+                            |> sm'.to_char_list
+                            |> listm.map ((=) '"' >> convert)
+                            |> listm'.sum) = 1i32
+                        && trimmed_line |> sm'.contains "'\"'" |> not
+                        && trimmed_line |> sm'.ends_with "{" |> not
+                        && trimmed_line |> sm'.ends_with "{|" |> not
+                        && trimmed_line |> sm'.starts_with "}" |> not
+                        && trimmed_line |> sm'.starts_with "|}" |> not
+
+                    match is_multiline, trimmed_line |> sm'.split_string ;[ "\"\"\"" ] with
+                    | false, ;[ _; _ ] =>
+                        "    " ++# line :: lines, true
+
+                    | true, ;[ _; _ ] =>
+                        line :: lines, false
+
+                    | false, _ when single_quote_line () =>
+                        "    " ++# line :: lines, true
+
+                    | false, _ when line |> sm'.starts_with "#" && block.magic = Fsharp =>
+                        line :: lines, false
+
+                    | false, _ =>
+                        "    " ++# line :: lines, false
+
+                    | true, _ when single_quote_line () && (line |> sm'.starts_with "    ") =>
+                        "    " ++# line :: lines, false
+
+                    | true, _ when single_quote_line () =>
+                        line :: lines, false
+
+                    | true, _ =>
+                        line :: lines, true
+            |> fst
+            |> listm.rev
+            |> sm'.concat_list "\n"
+    }
+
+/// ### parse
+inl parse output input =
+    match input |> run_parser (blocks ()) with
+    | Ok (blocks, _, _) =>
+        blocks
+        |> listm'.filter fun block =>
+            block.magic |> kernel_outputs |> listm'.contains output || block.magic = Markdown
+        |> listm.map Some
+        |> fun x => x ++ [ None ]
+        |> listm'.pairwise
+        |> listm'.choose function
+            | Some { magic = (Markdown) } as block, Some { magic = (Markdown) } => block
+            | Some { magic = (Markdown) } as block, Some { magic = magic }
+                when magic |> kernel_outputs |> listm'.contains output => block
+            | Some { magic = (Markdown) } as block, _ when output = Md => block
+            | Some { magic = (Markdown) }, _ => None
+            | Some block, _ => Some block
+            | _ => None
+        |> listm.fold
+            fun acc, indent => function
+                | { magic = (Markdown) content = content }
+                    when output = Fs
+                            && content |> sm'.starts_with "# "
+                            && content |> sm'.ends_with ")"
+                    =>
+                    match sm'.index_of " (" content, sm'.last_index_of ")" content with
+                    | i_open, i_close when i_open > 1 && i_close > i_open + 1 =>
+                        inl module_name =
+                            content |> sm'.substring 2 (i_open - 2) |> sm'.trim
+                        inl namespace_name =
+                            content |> sm'.substring (i_open + 2) (i_close - (i_open + 2)) |> sm'.trim
+
+                        inl module_block =
+                            {
+                                magic = Fsharp
+                                content =
+                                    "#if !INTERACTIVE\nnamespace " ++# namespace_name
+                                    ++\# "#endif\n\nmodule " ++# module_name ++# " ="
+                            }
+
+                        module_block :: acc, (indent + 1)
+                    | _ => { magic = Markdown; content = content } :: acc, indent
+                | { magic = magic content = content } as block when indent > 0 =>
+                    indent_block block :: acc, indent
+                | block => block :: acc, indent
+            ([], 0i32)
+        |> fst
+        |> listm.rev
+        |> Ok
+    | Error error_msg => error_msg |> Error
+
+/// ### parse_dib_code
+inl parse_dib_code output file =
+    trace Debug
+        (fun () => "spiral.parse_dib_code")
+        fun () => { output = output |> reflection.union_to_string; file }
+    inl input = file |> file_system.read_all_text
+    match parse output input with
+    | Ok blocks => blocks |> format_blocks output
+    | Error msg => failwith msg
+
+/// ### write_dib_code
+inl write_dib_code output path =
+    trace Debug
+        (fun () => "spiral.write_dib_code")
+        (fun () => { output = output |> reflection.union_to_string; path })
+    inl result = parse_dib_code output path
+    inl path_dir = path |> file_system.directory_get_parent |> optionm'.default_value' ""
+    inl file_name_without_ext =
+        match output, path |> file_system.get_file_name_without_extension with
+        | Spir, file_name_without_ext => file_name_without_ext ++# "_real"
+        | _, file_name_without_ext => file_name_without_ext
+    inl output_path =
+        path_dir </> (file_name_without_ext ++# "." ++# (output |> reflection.union_to_string |> sm'.to_lower))
+    result |> file_system.write_all_text_exists output_path
+
+/// ### process_dib_export
+inl process_dib_export { entries } =
+    entries
+    |> async.into_par_iter
+    |> async.par_map fun path, export =>
+        path |> write_dib_code export
+    |> async.par_collect
+    |> ignore
+    ;[]
+
 /// ## dib
 
 /// ### process_dib
@@ -979,7 +1045,7 @@ inl process_dib { path retries working_directory cleanup } =
                 }
                 |> runtime.execute_with_options
 
-            if exit_code = 0 || retry >= retries then 
+            if exit_code = 0 || retry >= retries then
                 ipynb_path
                 |> file_system.read_all_text
                 |> sm'.replace "\r\n" "\n"
@@ -1452,6 +1518,11 @@ inl process_python { fs_path deps trace_level } =
 
 /// ## gleam
 
+/// ### gleam_target
+union gleam_target =
+    | Erlang
+    | JavaScript
+
 /// ### process_gleam
 inl process_gleam { gleam_path target deps } =
     inl extension = "gleam"
@@ -1730,7 +1801,7 @@ inl process_lua { lua_path } =
     |> fun x => x : _ ()
     |> use
     |> ignore
-    
+
     inl output = "spiral.process_lua / output"
 
     {
@@ -1741,6 +1812,11 @@ inl process_lua { lua_path } =
     }
 
 /// ## cuda
+
+/// ### cuda_env
+union cuda_env =
+    | Pip
+    | Poetry
 
 /// ### process_cuda
 inl process_cuda { py_path env deps } =
@@ -1934,6 +2010,244 @@ inl process_fsharp { spi_path } =
         { extension = Some extension; code = None; code_path = None; output = None }
 
 /// ## run
+
+/// ### get_args
+inl get_args () =
+    {
+        fsharp = "fsharp", {
+            spi_path = "spi-path", 's'
+        }
+        gleam = "gleam", {
+            gleam_path = "gleam-path", 'g'
+            target = "target", 't'
+            deps = "deps", 'd'
+        }
+        lua = "lua", {
+            lua_path = "lua-path", 'l'
+        }
+        cuda = "cuda", {
+            py_path = "py-path", 'p'
+            env = "env", 'e'
+            deps = "deps", 'd'
+        }
+        fable = "fable", {
+            fs_path = "fs-path", 'f'
+            command = "command", 'c'
+        }
+        rust = "rust", {
+            fs_path = "fs-path", 'f'
+            deps = "deps", 'd'
+            wasm = "wasm", 'w'
+            contract = "contract", 'c'
+            cleanup = "cleanup", 'l'
+        }
+        typescript = "typescript", {
+            fs_path = "fs-path", 'f'
+            deps = "deps", 'd'
+        }
+        python = "python", {
+            fs_path = "fs-path", 'f'
+            deps = "deps", 'd'
+        }
+        dib = "dib", {
+            path = "path", 'p'
+            retries = "retries", 'r'
+            working_directory = "working-directory", 'w'
+            cleanup = "cleanup", 'l'
+            export = "export", 'e'
+        }
+        dib_export = "dib-export", {
+            entries = "entries", 'e'
+        }
+    }
+
+/// ### get_command
+let get_command () =
+    ##"command"
+    |> runtime.new_command
+    |> runtime.command_subcommand_required true
+    |> runtime.command_subcommand (
+        ##(get_args () .fsharp |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .fsharp |> snd).spi_path) (
+            runtime.arg_required true
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .gleam |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .gleam |> snd).target) (
+            real runtime.arg_union `gleam_target ignore
+        )
+        |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (
+            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            >> runtime.arg_num_args_range (
+                runtime.new_value_range
+                    false
+                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.End eval)
+            )
+            >> runtime.arg_action runtime.Append
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .cuda |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .cuda |> snd).py_path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .cuda |> snd).env) (
+            real runtime.arg_union `cuda_env ignore
+        )
+        |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (
+            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            >> runtime.arg_num_args_range (
+                runtime.new_value_range
+                    false
+                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.End eval)
+            )
+            >> runtime.arg_action runtime.Append
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .fable |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .fable |> snd).fs_path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .fable |> snd).command) (
+            id
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .rust |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .rust |> snd).fs_path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .rust |> snd).deps) (
+            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            >> runtime.arg_num_args_range (
+                runtime.new_value_range
+                    false
+                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.End eval)
+            )
+            >> runtime.arg_action runtime.Append
+        )
+        |> runtime.command_init_arg ((get_args () .rust |> snd).wasm) (
+            runtime.arg_num_args_range (
+                runtime.new_value_range
+                    true
+                    (am'.End eval)
+                    (am'.End fun _ => (1i32 |> convert : unativeint))
+            )
+            >> runtime.arg_require_equals true
+            >> runtime.arg_default_missing_value ""
+        )
+        |> runtime.command_init_arg ((get_args () .rust |> snd).contract) (
+            runtime.arg_num_args_range (
+                runtime.new_value_range
+                    true
+                    (am'.End eval)
+                    (am'.End fun _ => (1i32 |> convert : unativeint))
+            )
+            >> runtime.arg_require_equals true
+            >> runtime.arg_default_missing_value ""
+        )
+        |> runtime.command_init_arg ((get_args () .rust |> snd).cleanup) (
+            runtime.arg_default_value "true"
+            >> runtime.arg_action runtime.SetFalse
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .typescript |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .typescript |> snd).fs_path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .typescript |> snd).deps) (
+            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            >> runtime.arg_num_args_range (
+                runtime.new_value_range
+                    false
+                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.End eval)
+            )
+            >> runtime.arg_action runtime.Append
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .python |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .python |> snd).fs_path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .python |> snd).deps) (
+            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            >> runtime.arg_num_args_range (
+                runtime.new_value_range
+                    false
+                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.End eval)
+            )
+            >> runtime.arg_action runtime.Append
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .dib |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .dib |> snd).path) (
+            runtime.arg_required true
+        )
+        |> runtime.command_init_arg ((get_args () .dib |> snd).retries) (
+            runtime.arg_value_parser (runtime.value_parser_expr "u8")
+        )
+        |> runtime.command_init_arg ((get_args () .dib |> snd).working_directory) (
+            id
+        )
+        |> runtime.command_init_arg ((get_args () .dib |> snd).cleanup) (
+            runtime.arg_default_value "true"
+            >> runtime.arg_action runtime.SetFalse
+        )
+    )
+    |> runtime.command_subcommand (
+        inl parse (s : rust.ref sm'.str) : resultm.result' (sm'.std_string * sm'.std_string) sm'.std_string =
+            trace Verbose (fun () => "spiral.get_command") (fun () => { s })
+            inl path = "" |> sm'.to_std_string
+            inl ext = "" |> sm'.to_std_string
+            Ok (path, ext)
+            |> resultm.box
+        ##(get_args () .dib_export |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .dib_export |> snd).entries) (
+            runtime.arg_required true
+            // >> runtime.arg_value_parser (!\\(parse, $'"clap::value_parser\!(String).into()"'))
+            >> runtime.arg_index 1
+            >> runtime.arg_value_names ;[ ##"PATH"; ##"EXT" ]
+            >> runtime.arg_num_args_range (
+                runtime.new_value_range
+                    false
+                    (am'.Start (2i32 |> convert : unativeint))
+                    (am'.End eval)
+            )
+            >> runtime.arg_action runtime.Append
+        )
+    )
+    |> runtime.command_subcommand (
+        ##(get_args () .lua |> fst)
+        |> runtime.new_command
+        |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (
+            runtime.arg_required true
+            // >> runtime.arg_value_parser (runtime.value_parser_path_buf ())
+        )
+    )
+
+/// ### run
 let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resultm.result' string string) =
     fun () =>
         match matches |> runtime.matches_subcommand |> optionm'.unbox with
@@ -2125,6 +2439,47 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 |> runtime.matches_get_flag ((get_args () .dib |> snd).cleanup |> fst)
 
             process_dib { path retries working_directory cleanup }
+
+        | Some (subcommand, arg_matches)
+            when (subcommand |> sm'.from_std_string) = (get_args () .dib_export |> fst) =>
+
+            inl deps : am'.vec (sm'.std_string * sm'.std_string) =
+                arg_matches
+                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
+                |> optionm'.unbox
+                |> optionm'.default_value (;[] |> am'.to_vec)
+
+            inl entries =
+                arg_matches
+                |> runtime.matches_get_many ((get_args () .dib_export |> snd).entries |> fst)
+                |> optionm'.unbox
+                |> optionm.map (fun (entries : am'.vec sm'.std_string) =>
+                    entries
+                    |> fun x => !\\(x, $'$"$0.chunks_exact(2).map(|chunk| chunk.to_vec()).collect()"') : am'.vec (am'.vec sm'.std_string)
+                    |> am'.vec_map' fun chunk =>
+                        inl exts () =
+                            reflection.get_union_fields_untag () : _ (_ * dib_output)
+                        chunk
+                        |> am'.from_vec_base
+                        |> am'.to_list_base'
+                        |> listm'.unbox
+                        |> function
+                            | [ path; ext ] =>
+                                match ext |> sm'.from_std_string |> reflection.union_try_pick with
+                                | Some (ext : dib_output) => (path |> sm'.from_std_string, ext) |> Ok
+                                | None => "spiral.run / invalid ext / " ++# ({ ext exts } |> sm'.format) |> Error
+                            | _ => "spiral.run / invalid entries / " ++# ({ entries = entries |> rust.clone; exts } |> sm'.format) |> Error
+                            |> resultm.get
+                    |> am'.from_vec_base
+                    |> am'.to_list_base'
+                    |> listm'.unbox
+                )
+                |> optionm'.default_value []
+                |> listm'.box
+                |> listm'.to_array'
+                |> am'.to_vec
+
+            process_dib_export { entries }
 
         | matches =>
             match matches with

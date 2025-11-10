@@ -230,7 +230,9 @@ inl path_display (path : rust.ref path) : display =
 /// ### path_buf_display
 inl path_buf_display (path_buf : path_buf) : display =
     run_target_args (fun () => path_buf) function
-        | Rust _ => fun path_buf => !\\(path_buf, $'"$0.display()"')
+        | Rust _ => fun path_buf =>
+            inl path_buf = join path_buf
+            !\($'"!path_buf.display()"')
         | _ => fun path_buf => path_buf |> unbox
 
 /// ### path_buf_file_name

@@ -18,7 +18,7 @@ if (!$SkipFsx) {
         { . ../../workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/$projectName.dib" --working-directory $workingDirectory } | Invoke-Block -Retries 3
     }
 
-    { . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) "$projectName.dib" fs } | Invoke-Block
+    { . ../../workspace/target/release/spiral$(_exe) dib-export "$ScriptDir/$projectName.dib" fs } | Invoke-Block
 }
 
 $runtime = $fast -or $env:CI ? @("--runtime", ($IsWindows ? "win-x64" : "linux-x64")) : @()

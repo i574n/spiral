@@ -119,7 +119,7 @@ inl new_sha256 () : sha256' =
 #!spiral
 
 inl hasher_update forall el dim. (slice : rust.ref (am'.slice' el dim)) (hasher : sha256') : () =
-    !\($'"sha2::Digest::update(&mut !hasher, !slice)"')
+    (!\($'"true; sha2::Digest::update(&mut !hasher, !slice)"') : bool) |> ignore
 
 #!markdown
 
@@ -151,7 +151,7 @@ inl hash_read data : resultm.result' string stream.io_error =
             inl count = stream.buf_reader_read `u8 `@size buffer reader
             inl count = resultm.unwrap' `unativeint `(stream.io_error) count
 
-            if (=.) `unativeint count zero then rust.break ()
+            if (=.) `unativeint count zero then rust.break `(()) ()
 
             hasher_update `u8 `@size
                 (
@@ -166,10 +166,10 @@ inl hash_read data : resultm.result' string stream.io_error =
     |> hasher_finalize
     |> am'.slice_to_vec
     |> am'.vec_map (sm'.format_hex' >> sm'.from_std_string)
-    |> am'.from_vec
-    |> fun x => x : _ i32 _
-    |> seq.of_array'
-    |> sm'.concat (join "")
+    |> am'.from_vec_base
+    |> am'.to_list_base'
+    |> listm'.unbox
+    |> sm'.concat_list (join "")
     |> Ok
     |> resultm.box
 

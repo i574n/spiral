@@ -410,8 +410,6 @@ let format_real forall t. (x : t) : string =
 
 /// ### regex_captures
 
-/// ### replace_regex\\'
-
 /// ### serialize
 
 /// ### deserialize

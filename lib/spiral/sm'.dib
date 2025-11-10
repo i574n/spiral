@@ -462,7 +462,6 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
         Gleam = fun () =>
             [
                 "sm'.slice"
-                " / s: "; s
                 " / from: "; from |> obj_to_string
                 " / to: "; to |> obj_to_string
                 " / s |> var_is: "; s |> var_is |> obj_to_string
@@ -2141,21 +2140,6 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
 #!markdown
 
-### replace_regex\\'
-
-#!spiral
-
-inl replace_regex' (pattern : string) (replacement : a i32 string) (s : string) : string =
-    run_target_args (fun () => s, pattern, replacement) function
-        | Rust (Native) => fun s, pattern, replacement =>
-            inl regex = pattern |> new_regex |> resultm.unwrap'
-            !\\((regex, #s, replacement), $'$"$0.replace_all($1, &*$2)"')
-            |> cow_to_std_string
-            |> from_std_string
-        | _ => fun _ => join ""
-
-#!markdown
-
 ### serialize
 
 #!spiral
@@ -2501,7 +2485,6 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     join
         [
             "sm'.range"
-            " / s: "; s
             " / (s |> var_is): "; s |> var_is |> obj_to_string
             " // start: "; start |> obj_to_string
             " / (start |> var_is): "; start_is_var |> obj_to_string
@@ -2662,12 +2645,17 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
             !\\((regex, s, replacement), $'$"$0.replace_all(&*$1, &*$2)"')
             |> cow_to_std_string
             |> from_std_string
+        | Gleam (Native) => fun s, pattern, replacement =>
+            global "import gleam/regexp"
+            $'let assert Ok(re) = !pattern |> regexp.from_string'
+            $'re |> regexp.replace(!s, !replacement)' : string
         | _ => fun _ => join ""
 
 #!spiral
 
 //// test
 ///! fsharp
+///! gleam
 ///! rust -d regex
 
 " 123"
@@ -2680,7 +2668,7 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
 ///! rust -d regex
 
 "    let main args =\n        ()\n"
-|> replace_regex $'@@"(?P<a> *)(?P<b>let\\s+main\\s+.*?\\s*=)"' "$a[<EntryPoint>]\n$a$b"
+|> replace_regex "(?P<a> *)(?P<b>let\\s+main\\s+.*?\\s*=)" "$a[<EntryPoint>]\n$a$b"
 |> _assert_eq "    [<EntryPoint>]\n    let main args =\n        ()\n"
 
 #!markdown
