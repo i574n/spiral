@@ -748,15 +748,36 @@ inl magic_marker () : parser string =
 /// ### magic_command
 inl magic_command () =
     magic_marker ()
-    >>. many_chars_till (any_char ()) (new_line ())
+    >>. many1_chars (none_of ['\n'])
     |>> sm'.trim
 
 /// ### content
-inl content () =
-    new_line () >>. magic_marker () <|> eof () >>. p_return ""
-    |> look_ahead
-    |> many_chars_till (any_char ())
-    |>> sm'.trim
+inl content () : parser string = fun input, i0, (parser_state st as s0) =>
+    let rec 루프 (j : int) =
+        if j >= st.input_len
+        then -1
+        else
+            inl k =
+                match input |> sm'.index_of_char_from j '\n' with
+                | -1 => -1
+                | kk when kk >= j => kk
+                | kk => j + kk
+            if k = -1
+            then -1
+            else
+                inl has_magic =
+                    k + 2 <= st.input_len - 1
+                    && input |> sm'.index (k + 1) = '#'
+                    && input |> sm'.index (k + 2) = '!'
+                if has_magic
+                then k
+                else 루프 (k + 1)
+    inl stop = 루프 i0
+    inl j =
+        if stop = -1
+        then st.input_len
+        else stop
+    Ok (input |> slice i0 j |> sm'.trim, j, s0 |> update_span input i0 (j - i0))
 
 /// ### dib_output
 union dib_output =

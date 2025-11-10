@@ -955,7 +955,7 @@ inl magic_marker () : parser string =
 
 inl magic_command () =
     magic_marker ()
-    >>. many_chars_till (any_char ()) (new_line ())
+    >>. many1_chars (none_of ['\n'])
     |>> sm'.trim
 
 #!spiral
@@ -988,11 +988,32 @@ inl magic_command () =
 
 #!spiral
 
-inl content () =
-    new_line () >>. magic_marker () <|> eof () >>. p_return ""
-    |> look_ahead
-    |> many_chars_till (any_char ())
-    |>> sm'.trim
+inl content () : parser string = fun input, i0, (parser_state st as s0) =>
+    let rec 루프 (j : int) =
+        if j >= st.input_len
+        then -1
+        else
+            inl k =
+                match input |> sm'.index_of_char_from j '\n' with
+                | -1 => -1
+                | kk when kk >= j => kk
+                | kk => j + kk
+            if k = -1
+            then -1
+            else
+                inl has_magic =
+                    k + 2 <= st.input_len - 1
+                    && input |> sm'.index (k + 1) = '#'
+                    && input |> sm'.index (k + 2) = '!'
+                if has_magic
+                then k
+                else 루프 (k + 1)
+    inl stop = 루프 i0
+    inl j =
+        if stop = -1
+        then st.input_len
+        else stop
+    Ok (input |> slice i0 j |> sm'.trim, j, s0 |> update_span input i0 (j - i0))
 
 #!spiral
 
@@ -3262,7 +3283,11 @@ inl fs_path = temp_dir </> file_name
 code |> file_system.write_all_text fs_path
 
 get_command ()
-|> runtime.command_get_matches_from ($'$"_ fable -f \\\"{!fs_path}\\\" -c \\\"rust -d regex=\'*\'\\\""' |> runtime.split_args |> resultm.get)
+|> runtime.command_get_matches_from (
+    $'$"_ fable -f \\\"{!fs_path}\\\" -c \\\"rust -d regex=\'*\'\\\""'
+    |> runtime.split_args
+    |> resultm.get
+)
 |> run Verbose
 |> async.block_on_futures
 |> resultm.unwrap'
