@@ -758,19 +758,21 @@ inl content () : parser string = fun input, i0, (parser_state st as s0) =>
         then -1
         else
             inl k =
-                match input |> sm'.index_of_char_from j '\n' with
+                match input |> sm'.index_of_char_from j '#' with
                 | -1 => -1
                 | kk when kk >= j => kk
                 | kk => j + kk
             if k = -1
             then -1
             else
-                inl has_magic =
-                    k + 2 <= st.input_len - 1
-                    && input |> sm'.index (k + 1) = '#'
-                    && input |> sm'.index (k + 2) = '!'
-                if has_magic
-                then k
+                inl prev_is_nl =
+                    if k > 0
+                    then input |> sm'.index (k - 1) = '\n'
+                    else false
+                inl next_is_bang =
+                    k + 1 < st.input_len && input |> sm'.index (k + 1) = '!'
+                if prev_is_nl && next_is_bang
+                then k - 1
                 else 루프 (k + 1)
     inl stop = 루프 i0
     inl j =
