@@ -37,7 +37,7 @@ inl new_parser_state' input_len =
     new_parser_state 0 1 1 input_len |> parser_state
 
 /// ### parser
-type parser t = string * int * parser_state -> result (t * int * parser_state) string
+type parser t = string * int * parser_state -> result (t * int * parser_state) (() -> string)
 
 /// ### slice
 inl slice (i0 : int) (i1 : int) (input : string) : string =
@@ -48,7 +48,7 @@ inl parse forall t.
     (p : parser t)
     (input : string)
     (s : parser_state)
-    : result (t * string * parser_state) string
+    : result (t * string * parser_state) (() -> string)
     =
     p (input, 0, s)
     |> resultm.map fun result, i, s' =>
@@ -95,32 +95,32 @@ inl update result s =
     s |> 루프 0
 
 /// ### update_span
-inl update_span (input : string) (i0 : int) (len : int) (s : parser_state) : parser_state =
+inl update_span (input : string) (i0 : int) (len : int) (parser_state s) : parser_state =
     inl endi = i0 + len
-    let rec 루프 (j : int) (parser_state st) : parser_state =
-        if j >= endi
-        then st |> parser_state
-        else
-            inl k =
-                match input |> sm'.index_of_char_from j '\n' with
-                | -1 => -1
-                | k when k >= j => k
-                | k => j + k
-            if k = -1 || k >= endi then
-                { st with
-                    position = { line = st.position.line; col = st.position.col + (endi - j) }
-                } |> parser_state
-            else
-                inl st' =
-                    if k <= j
-                    then st
-                    else
-                        { st with
-                            position = { line = st.position.line; col = st.position.col + (k - j) }
-                        }
-                    |> parser_state
-                '\n' |> update_char st' |> 루프 (k + 1)
-    s |> 루프 i0
+    let rec 루프 (j : int) (last_nl : int) (count : int) =
+        match input |> sm'.index_of_char_from j '\n' with
+        | -1 => last_nl, count
+        | k when k >= endi => last_nl, count
+        | k when k >= j => 루프 (k + 1) k (count + 1)
+        | k =>
+            inl kk = j + k
+            if kk >= endi
+            then last_nl, count
+            else 루프 (kk + 1) kk (count + 1)
+    inl last_nl, n = 루프 i0 (-1) 0
+    if n = 0
+    then { s with position = { line = s.position.line; col = s.position.col + len } }
+    else
+        { s with
+            line_start = last_nl + 1
+            position =
+                {
+                    line = s.position.line + n
+                    col = endi - last_nl
+                }
+            input_len = s.input_len
+        }
+    |> parser_state
 
 /// ### run_parser
 inl run_parser p input =
@@ -130,8 +130,9 @@ inl run_parser p input =
 
 /// ### any_char
 inl any_char () : parser char = fun input, i, (parser_state st as s) =>
-    if i >= st.input_len
-    then "parsing.any_char / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
+    if i >= st.input_len then
+        fun () => "parsing.any_char / unexpected end of input / " ++# ({ s } |> sm'.format)
+        |> Error
     else
         inl c = input |> sm'.index i
         Ok (c, i + 1, c |> update_char s)
@@ -143,47 +144,51 @@ inl get_max_context () =
 /// ### p_char
 inl p_char (c : char) : parser char =
     fun input, i, (parser_state ({ line_start position = { line col } } as st) as s) =>
-        if i >= st.input_len
-        then "parsing.p_char / unexpected end of input / " ++# ({ c st } |> sm'.format) |> Error
+        if i >= st.input_len then
+            fun () => "parsing.p_char / unexpected end of input / " ++# ({ c st } |> sm'.format)
+            |> Error
         else
             inl got = input |> sm'.index i
             if got = c
             then Ok (got, i + 1, got |> update_char s)
             else
-                inl line_end = i |> sm'.span_from ((<>) '\n') input
-                inl end = (i + get_max_context ()) |> min line_end
-                inl line_slice = input |> slice line_start end
-                inl new_line =
-                    inl n = line_slice |> sm'.length
-                    if n > 0 && (line_slice |> sm'.index (n - 1i32)) = '\n' then "" else "\n"
-                inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
-                "parsing.p_char / "
-                ++# ({ expected = c; line col } |> sm'.format)
-                ++# "\n" ++# line_slice
-                ++# new_line
-                ++# pointer_line ++# "\n"
+                fun () =>
+                    inl line_end = i |> sm'.span_from ((<>) '\n') input
+                    inl end = (i + get_max_context ()) |> min line_end
+                    inl line_slice = input |> slice line_start end
+                    inl new_line =
+                        inl n = line_slice |> sm'.length
+                        if n > 0 && (line_slice |> sm'.index (n - 1i32)) = '\n' then "" else "\n"
+                    inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
+                    "parsing.p_char / "
+                    ++# ({ expected = c; line col } |> sm'.format)
+                    ++# "\n" ++# line_slice
+                    ++# new_line
+                    ++# pointer_line ++# "\n"
                 |> Error
 
 /// ### any_string
 inl any_string length : parser string = fun input, i, (parser_state st as s) =>
-    if st.input_len - i < length
-    then "parsing.any_string / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
+    if st.input_len - i < length then
+        fun () => "parsing.any_string / unexpected end of input / " ++# ({ s } |> sm'.format)
+        |> Error
     else Ok (input |> slice i (i + length), i + length, s |> update_span input i length)
 
 /// ### skip_any_string
 inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
-    if st.input_len - i < length
-    then "parsing.skip_any_string / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
-    else
-        Ok ((), i + length, s |> update_span input i length)
+    if st.input_len - i < length then
+        fun () => "parsing.skip_any_string / unexpected end of input / " ++# ({ s } |> sm'.format)
+        |> Error
+    else Ok ((), i + length, s |> update_span input i length)
 
 /// ### skip_many
 inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
     let rec 루프 (i : int) (s : parser_state) =
         match a (input, i, s) with
         | Ok (_, j, s') =>
-            if j = i
-            then "parsing.skip_many / inner parser consumed no input" |> Error
+            if j = i then
+                fun () => "parsing.skip_many / inner parser consumed no input"
+                |> Error
             else s' |> 루프 j
         | Error _ => Ok ((), i, s)
     s0 |> 루프 i0
@@ -193,7 +198,9 @@ inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
     match a (input, i, s) with
     | Ok (_, j, s') =>
         if j = i
-        then "parsing.skip_many1 / inner parser consumed no input" |> Error
+        then
+            fun () => "parsing.skip_many1 / inner parser consumed no input"
+            |> Error
         else skip_many a (input, j, s')
     | Error err => Error err
 
@@ -230,15 +237,17 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 inl none_of (chars : list char) : parser char = fun input, i, (parser_state st as s) =>
     inl chars' () =
         chars |> listm'.box |> listm'.to_array' |> sm'.format
-    if i >= st.input_len
-    then "parsing.none_of / unexpected end of input / " ++# ({ chars' = chars' (); s } |> sm'.format) |> Error
+    if i >= st.input_len then
+        fun () => "parsing.none_of / unexpected end of input / " ++# ({ chars' = chars' (); s } |> sm'.format)
+        |> Error
     else
         inl ch = input |> sm'.index i
         if chars |> listm'.exists' ((=) ch) |> not
         then Ok (ch, i + 1, ch |> update_char s)
         else
-            "parsing.none_of / unexpected char / "
-            ++# ({ first_char = ch; chars' = chars' (); s } |> sm'.format)
+            fun () =>
+                "parsing.none_of / unexpected char / "
+                ++# ({ first_char = ch; chars' = chars' (); s } |> sm'.format)
             |> Error
 
 /// ### (<|>)
@@ -259,14 +268,16 @@ inl many forall b c.
     =
     fun input, i0, (parser_state st as s0) =>
         let rec 루프 (acc : list b) (i : int) (fuel : int) (s : parser_state)
-            : result (list b * int * parser_state) string
+            : result (list b * int * parser_state) _
             =
-            if fuel <= 0
-            then "parsing.many / out of fuel (probable zero-length loop)" |> Error
+            if fuel <= 0 then
+                fun () => "parsing.many / out of fuel (probable zero-length loop)"
+                |> Error
             else
                 match p (input, i, s) with
                 | Ok (x, i', s') when i' = i =>
-                    "parsing.many / inner parser succeeded without consuming input" |> Error
+                    fun () => "parsing.many / inner parser succeeded without consuming input"
+                    |> Error
                 | Ok (x, i', s') => s' |> 루프 (x :: acc) i' (fuel - 1)
                 | Error _ => Ok (acc |> listm.rev, i, s)
         s0 |> 루프 [] i0 (st.input_len - i0 + 2)
@@ -276,11 +287,12 @@ inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
     match p (input, i0, s0) with
     | Error e => Error e
     | Ok (_, i1, s1) =>
-        let rec 루프 (i : int) (s : parser_state) : result (string * int * parser_state) string =
+        let rec 루프 (i : int) (s : parser_state) : result (string * int * parser_state) _ =
             match p (input, i, s) with
             | Ok (_, i', s') =>
-                if i' = i
-                then "parsing.many1_chars / inner parser succeeded without consuming input" |> Error
+                if i' = i then
+                    fun () => "parsing.many1_chars / inner parser succeeded without consuming input"
+                    |> Error
                 else s' |> 루프 i'
             | Error _ => Ok (input |> slice i0 i, i, s)
         s1 |> 루프 i1
@@ -292,17 +304,22 @@ inl many_chars (p : parser char) : parser string = fun input, i, s =>
     | Error _ => Ok ("", i, s)
 
 /// ### many_chars_till
-inl many_chars_till (p : parser char) (end_p : parser _) : parser string = fun input, i0, s0 =>
-    let rec 루프 (i : int) (s : parser_state) : result (string * int * parser_state) string =
-        match end_p (input, i, s) with
-        | Ok _ => Ok ((if i > i0 then input |> slice i0 i else ""), i, s)
-        | Error _ =>
-            match p (input, i, s) with
-            | Ok (_, i', s') =>
-                if i' = i
-                then "parsing.many_chars_till / inner parser succeeded without consuming input" |> Error
-                else s' |> 루프 i'
-            | Error _ => Ok ((if i > i0 then input |> slice i0 i else ""), i, s)
+inl many_chars_till (p : parser char) (end_p : parser _) : parser _ = fun input, i0, (parser_state st as s0) =>
+    let rec 루프 (i : int) (s : parser_state) : result (string * int * parser_state) _ =
+        if i >= st.input_len
+        then Ok ((if i > i0 then input |> slice i0 i else ""), i, s)
+        else
+            match end_p (input, i, s) with
+            | Ok _ => Ok ((if i > i0 then input |> slice i0 i else ""), i, s)
+            | Error _ =>
+                inl k =
+                    match input |> sm'.index_of_char_from i '\n' with
+                    | -1 => st.input_len
+                    | kk when kk >= i => kk
+                    | kk => i + kk
+                if k > i
+                then s |> update_span input i (k - i) |> 루프 k
+                else '\n' |> update_char s |> 루프 (i + 1)
     s0 |> 루프 i0
 
 /// ### many1
@@ -311,14 +328,16 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, (parser_state st as 
     | Error e => e |> Error
     | Ok (first, i1, s1) =>
         inl fuel_max = st.input_len - i1 + 2
-        let rec 루프 acc (i : int) (fuel : int) s : result (list _ * int * parser_state) string =
-            if fuel <= 0
-            then "parsing.many1 / out of fuel (probable zero-length loop)" |> Error
+        let rec 루프 acc (i : int) (fuel : int) s : result (list _ * int * parser_state) _ =
+            if fuel <= 0 then
+                fun () => "parsing.many1 / out of fuel (probable zero-length loop)"
+                |> Error
             else
                 match p (input, i, s) with
                 | Ok (x, i', s') =>
-                    if i' = i
-                    then "parsing.many1 / inner parser succeeded without consuming input" |> Error
+                    if i' = i then
+                        fun () => "parsing.many1 / inner parser succeeded without consuming input"
+                        |> Error
                     else s' |> 루프 (x :: acc) i' (fuel - 1)
                 | Error _ => Ok (acc |> listm.rev, i, s)
         s1 |> 루프 [ first ] i1 fuel_max
@@ -329,15 +348,17 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, (parser_state 
     | Error e => e |> Error
     | Ok (r0, i1, s1) =>
         inl fuel_max = st.input_len - i1 + 2
-        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) string =
-            if fuel <= 0
-            then "parsing.many1_strings / out of fuel (probable zero-length loop)" |> Error
+        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) _ =
+            if fuel <= 0 then
+                fun () => "parsing.many1_strings / out of fuel (probable zero-length loop)"
+                |> Error
             else
                 match p (input, i, s) with
                 | Error _ => Ok (acc |> listm.rev |> sm'.concat_list "", i, s)
                 | Ok (r, i', s') =>
-                    if i' = i
-                    then "parsing.many1_strings / inner parser succeeded without consuming input" |> Error
+                    if i' = i then
+                        fun () => "parsing.many1_strings / inner parser succeeded without consuming input"
+                        |> Error
                     else s' |> 루프 ($r :: acc) i' (fuel - 1)
         s1 |> 루프 [ $r0 ] i1 fuel_max
 
@@ -345,16 +366,20 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, (parser_state 
 inl many_strings (p : parser _) : parser string = fun input, i0, (parser_state st as s0) =>
     match p (input, i0, s0) with
     | Error _ => Ok ("", i0, s0)
-    | Ok (r0, i1, s1) when i1 = i0 => "parsing.many_strings / first inner parser consumed no input" |> Error
+    | Ok (r0, i1, s1) when i1 = i0 =>
+        fun () => $"parsing.many_strings / first inner parser consumed no input"
+        |> Error
     | Ok (r0, i1, s1) =>
         inl fuel_max = st.input_len - i1 + 2
-        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) string =
-            if fuel <= 0
-            then "parsing.many_strings / out of fuel (probable zero-length loop)" |> Error
+        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result (string * int * _) _ =
+            if fuel <= 0 then
+                fun () => "parsing.many_strings / out of fuel (probable zero-length loop)"
+                |> Error
             else
                 match p (input, i, s) with
                 | Ok (r, i', s') when i' = i =>
-                    "parsing.many_strings / inner parser succeeded without consuming input" |> Error
+                    fun () => "parsing.many_strings / inner parser succeeded without consuming input"
+                    |> Error
                 | Ok (r, i', s') => s' |> 루프 ($r :: acc) i' (fuel - 1)
                 | Error _ => Ok ($r0 :: (acc |> listm.rev) |> sm'.concat_list "", i, s)
         s1 |> 루프 [] i1 fuel_max
@@ -362,7 +387,9 @@ inl many_strings (p : parser _) : parser string = fun input, i0, (parser_state s
 /// ### choice
 inl choice forall t. parsers : parser t = fun input, i, s =>
     let rec 루프 = function
-        | [] => "parsing.choice / no parsers succeeded" |> Error
+        | [] =>
+            fun () => "parsing.choice / no parsers succeeded"
+            |> Error
         | (p : _ -> _ (t * int * parser_state) _) :: ps =>
             match p (input, i, s) with
             | Ok _ as r => r
@@ -378,23 +405,25 @@ inl between p_open p_close p_content : parser _ = fun input, i, s =>
             match p_close (input, i'', s'') with
             | Ok (_, i''', s''') => Ok (result, i''', s''')
             | Error e =>
-                inl total_len = input |> sm'.length
-                inl end' = (i' + get_max_context ()) |> min total_len
-                inl end'' = (i'' + get_max_context ()) |> min total_len
-                inl rest' = input |> slice i' end'
-                inl rest'' = input |> slice i'' end''
-                "parsing.between / expected closing delimiter / "
-                ++# ({ e input rest' rest'' } |> sm'.format)
+                fun () =>
+                    inl total_len = input |> sm'.length
+                    inl end' = (i' + get_max_context ()) |> min total_len
+                    inl end'' = (i'' + get_max_context ()) |> min total_len
+                    inl rest' = input |> slice i' end'
+                    inl rest'' = input |> slice i'' end''
+                    "parsing.between / expected closing delimiter / "
+                    ++# ({ e input rest' rest'' } |> sm'.format)
                 |> Error
         | Error _ =>
             match p_close (input, i', s') with
             | Ok (_, i''', s''') => Ok ("", i''', s''')
             | Error _ =>
-                inl total_len = input |> sm'.length
-                inl end' = (i' + get_max_context ()) |> min total_len
-                inl rest' = input |> slice i' end'
-                "parsing.between / expected content or closing delimiter / "
-                ++# ({ rest' } |> sm'.format)
+                fun () =>
+                    inl total_len = input |> sm'.length
+                    inl end' = (i' + get_max_context ()) |> min total_len
+                    inl rest' = input |> slice i' end'
+                    "parsing.between / expected content or closing delimiter / "
+                    ++# ({ rest' } |> sm'.format)
                 |> Error
     | Error e => e |> Error
 
@@ -403,11 +432,12 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
     match p (input, i0, s0) with
     | Error _ => Ok ([], i0, s0)
     | Ok (first, i1, s1) =>
-        let rec 루프 (acc : list b) (i : int) s : result (list b * int * parser_state) string =
+        let rec 루프 (acc : list b) (i : int) s : result (list b * int * parser_state) _ =
             match sep (input, i, s) with
             | Ok (_, j, s') =>
-                if j = i
-                then "parsing.sep_by / separator consumed no input" |> Error
+                if j = i then
+                    fun () => "parsing.sep_by / separator consumed no input"
+                    |> Error
                 else
                     match p (input, j, s') with
                     | Ok (x, k, s'') => s'' |> 루프 (x :: acc) k
@@ -420,14 +450,16 @@ inl sep_end_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
     let rec 루프 acc i s =
         match p (input, i, s) with
         | Ok (x, j, s1) =>
-            if j = i
-            then "parsing.sep_end_by / element parser consumed no input" |> Error
+            if j = i then
+                fun () => "parsing.sep_end_by / element parser consumed no input"
+                |> Error
             else
                 inl acc' = x :: acc
                 match sep (input, j, s1) with
                 | Ok (_, k, s'') =>
                     if k = j then
-                    "parsing.sep_end_by / separator consumed no input" |> Error
+                        fun () => "parsing.sep_end_by / separator consumed no input"
+                        |> Error
                     else s'' |> 루프 acc' k
                 | Error _ => Ok (acc' |> listm.rev, j, s1)
         | Error _ => Ok (acc |> listm.rev, i, s)
@@ -443,9 +475,10 @@ inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
     if j <> i
     then Ok ((), j, s |> update_span input i (j - i))
     else
-        inl preview_end = (i + get_max_context ()) |> min st.input_len
-        "parsing.spaces1 / expected at least one space / "
-        ++# ({ rest = input |> slice i preview_end } |> sm'.format)
+        fun () =>
+            inl preview_end = (i + get_max_context ()) |> min st.input_len
+            "parsing.spaces1 / expected at least one space / "
+            ++# ({ rest = input |> slice i preview_end } |> sm'.format)
         |> Error
 
 /// ### spaces
@@ -455,12 +488,15 @@ inl spaces () : parser () = fun input, i, s =>
 
 /// ### p_digit
 inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
-    if i >= st.input_len
-    then "parsing.p_digit / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
+    if i >= st.input_len then
+        fun () => "parsing.p_digit / unexpected end of input / " ++# ({ s } |> sm'.format)
+        |> Error
     else
         match input |> sm'.index i with
         | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c => Ok (c, i + 1, c |> update_char s)
-        | c => "parsing.p_digit / unexpected char / " ++# ({ c } |> sm'.format) |> Error
+        | c =>
+            fun () => "parsing.p_digit / unexpected char / " ++# ({ c } |> sm'.format)
+            |> Error
 
 /// ### opt
 inl opt p : parser (option _) = fun input, i, s =>
@@ -481,51 +517,60 @@ inl eof () : parser () = fun input, i, (parser_state st as s) =>
     if st.input_len = i
     then Ok ((), i, s)
     else
-        "parsing.eof / expected end of input / "
-        ++# ({ rest = input |> slice i st.input_len } |> sm'.format)
+        fun () =>
+            "parsing.eof / expected end of input / "
+            ++# ({ rest = input |> slice i st.input_len } |> sm'.format)
         |> Error
 
 /// ### p_string
 inl p_string (str : string) : parser string = fun input, i, (parser_state st as s) =>
     inl len = str |> sm'.length
-    if st.input_len - i < len
-    then "parsing.p_string / unexpected end of input / " ++# ({ expected = str; s } |> sm'.format) |> Error
+    if st.input_len - i < len then
+        fun () => "parsing.p_string / unexpected end of input / " ++# ({ expected = str; s } |> sm'.format)
+        |> Error
     else
-        inl got = input |> slice i (i + len)
-        if got = str
-        then Ok (got, i + len, s |> update_span input i len)
+        let rec eq k =
+            if k >= len
+            then true
+            else input |> sm'.index (i + k) = str |> sm'.index k && eq (k + 1)
+        if eq 0
+        then Ok (input |> slice i (i + len), i + len, s |> update_span input i len)
         else
-            inl preview_end = (i + get_max_context ()) |> min st.input_len
-            inl rest = input |> slice i preview_end
-            "parsing.p_string / unexpected string / "
-            ++# ({ expected = str; got; rest; s } |> sm'.format)
+            fun () =>
+                inl preview_end = (i + get_max_context ()) |> min st.input_len
+                inl rest = input |> slice i preview_end
+                "parsing.p_string / unexpected string / "
+                ++# ({ expected = str; rest s } |> sm'.format)
             |> Error
 
 /// ### new_line
 inl new_line () : parser char = fun input, i, (parser_state st as s) =>
-    if i >= st.input_len
-    then "parsing.new_line / unexpected end of input / " ++# ({ s } |> sm'.format) |> Error
+    if i >= st.input_len then
+        fun () => "parsing.new_line / unexpected end of input / " ++# ({ s } |> sm'.format)
+        |> Error
     else
         inl c = input |> sm'.index i
         if c = '\n'
         then Ok (c, i + 1, c |> update_char s)
         else
-            inl preview_end = (i + get_max_context ()) |> min st.input_len
-            inl rest = input |> slice i preview_end
-            "parsing.new_line / expected new line char / "
-            ++# ({ first_char = c; rest s } |> sm'.format)
+            fun () =>
+                inl preview_end = (i + get_max_context ()) |> min st.input_len
+                inl rest = input |> slice i preview_end
+                "parsing.new_line / expected new line char / "
+                ++# ({ first_char = c; rest s } |> sm'.format)
             |> Error
 
 /// ### many_till
 inl many_till forall b c. (p : parser b) (end_p : parser c) : parser (list b) = fun input, i0, s0 =>
-    let rec 루프 (acc : list b) (i : int) s : result (list b * int * parser_state) string =
+    let rec 루프 (acc : list b) (i : int) s : result (list b * int * parser_state) _ =
         match end_p (input, i, s) with
         | Ok (_, j, s') => Ok (acc |> listm.rev, j, s')
         | Error _ =>
             match p (input, i, s) with
             | Ok (x, i', s') =>
-                if i' = i
-                then "parsing.many_till / inner parser succeeded without consuming input" |> Error
+                if i' = i then
+                    fun () => "parsing.many_till / inner parser succeeded without consuming input"
+                    |> Error
                 else s' |> 루프 (x :: acc) i'
             | Error e => e |> Error
     s0 |> 루프 [] i0
@@ -538,14 +583,32 @@ inl p_return forall t. (x : t) : parser t = fun input, i, s =>
 inl attempt forall t. (p : parser t) : parser t = fun input, i, s =>
     match p (input, i, s) with
     | Ok (r, i', s') => Ok (r, i', s')
-    | Error e => Error e
+    | Error e => e |> Error
 
 /// ### look_ahead
 inl look_ahead (p : parser _) : parser _ = fun input, i, s =>
     match p (input, i, s) with
     | Ok (x, _, _) => Ok (x, i, s)
-    | Error e => Error e
+    | Error e => e |> Error
 
 /// ### pipe2
 inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : a -> b -> c) : parser c =
     p1 .>>. p2 |>> fun r1, r2 => f r1 r2
+
+/// ### new_lines
+inl new_lines () : parser () = fun input, i, s =>
+    inl j = i |> sm'.span_from ((=) '\n') input
+    Ok ((), j, s |> update_span input i (j - i))
+
+/// ### new_lines1
+inl new_lines1 () : parser () = fun input, i, (parser_state st as s) =>
+    // TODO: invert span_from input pipe
+    inl j = i |> sm'.span_from ((=) '\n') input
+    if j <> i
+    then Ok ((), j, s |> update_span input i (j - i))
+    else
+        fun () =>
+            inl preview_end = (i + get_max_context ()) |> min st.input_len
+            "parsing.new_lines1 / expected at least one new line / "
+            ++# ({ rest = input |> slice i preview_end } |> sm'.format)
+        |> Error

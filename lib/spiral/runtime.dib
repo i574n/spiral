@@ -30,7 +30,7 @@ open file_system_operators
 
 #!spiral
 
-let split_args (args : string) : result (array_base string) string =
+let split_args (args : string) : result (array_base string) _ =
     open parsing
     inl esc = [ '\\'; '`' ]
     inl quotes = [ '"' ]
@@ -46,7 +46,9 @@ let split_args (args : string) : result (array_base string) string =
     inl p_esc_root = p_esc >>% "" >>. (p_word |> many) |>> sm'.concat_list ""
     inl ensure_progress p : parser _ = fun input, i, s =>
         match p (input, i, s) with
-        | Ok (r, i', s') when i' = i => "runtime.split_args / segment zero-length success" |> Error
+        | Ok (r, i', s') when i' = i =>
+            fun () => "runtime.split_args / segment zero-length success"
+            |> Error
         | other => other
     inl p_segment = ensure_progress (p_quoted_all <|> p_plain <|> p_esc_root)
     inl p_content = p_segment |> many1_strings
@@ -109,7 +111,7 @@ let split_args (args : string) : result (array_base string) string =
 
 #!spiral
 
-let split_command (command : string) : result (string * option string) string =
+let split_command (command : string) : result (string * option string) _ =
     open parsing
     inl quotes = [ '"'; '\'' ]
     inl p_quoted_char = quotes |> listm.map p_char |> choice

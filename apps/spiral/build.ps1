@@ -68,6 +68,7 @@ Write-Output "spiral/apps/spiral/build.ps1 / `$projectName: $projectName / `$env
 cargo fmt --
 
 if (!$fast) {
+    # TODO: erroring without release (clap index)
     { cargo +nightly-2025-11-01 test --timings --release -- --show-output } | Invoke-Block
 }
 { cargo +nightly-2025-11-01 build --timings --release } | Invoke-Block -OnError Continue

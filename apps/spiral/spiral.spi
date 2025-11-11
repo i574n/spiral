@@ -861,17 +861,17 @@ inl format_block output (block : block) =
             | "" => markdown_comment
             | line =>
                 inl len = line |> sm'.length
-                let rec loop i =
+                let rec 루프 i =
                     if i >= len
                     then line
                     else
                         match line |> sm'.index i with
-                        | ' ' | '\t' => loop (i + 1)
+                        | ' ' | '\t' => 루프 (i + 1)
                         | _ =>
                             (line |> sm'.slice 0i32 (i - 1))
                             ++# markdown_comment
                             ++# (line |> sm'.slice i (len - 1))
-                loop 0
+                루프 0
         |> sm'.concat_list "\n"
     | Fs, { magic = (Fsharp) content = content } =>
         inl trimmed_content = content |> sm'.trim
@@ -1020,7 +1020,7 @@ inl parse_dib_code output file =
     inl input = file |> file_system.read_all_text
     match parse output input with
     | Ok blocks => blocks |> format_blocks output
-    | Error msg => failwith msg
+    | Error msg => msg () |> failwith
 
 /// ### write_dib_code
 inl write_dib_code output path =
@@ -1042,7 +1042,9 @@ inl process_dib_export { entries } =
     entries
     |> async.into_par_iter
     |> async.par_map fun path, export =>
-        path |> write_dib_code export
+        path
+        |> file_system.get_full_path
+        |> write_dib_code export
     |> async.par_collect
     |> ignore
     ;[]
