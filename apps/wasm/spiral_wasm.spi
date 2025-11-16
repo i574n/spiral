@@ -23,7 +23,7 @@ let get_command () =
             runtime.new_value_range
                 true
                 (am'.End eval)
-                (am'.End fun _ => (1i32 |> convert : unativeint))
+                (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))
         )
         >> runtime.arg_require_equals true
         >> runtime.arg_default_missing_value ""
@@ -86,14 +86,14 @@ let rec run
                 trace Verbose (fun () => "spiral_wasm.run") fun () => { result2 }
 
                 inl receipt_failures = result |> near_workspaces.receipt_failures
-                inl receipt_failures_len = receipt_failures |> am'.vec_len |> i32
+                inl receipt_failures_len = receipt_failures |> am'.vec_len |> convert.i32
 
                 trace Verbose
                     fun () => "spiral_wasm.run"
                     fun () => { receipt_failures_len receipt_failures }
 
                 inl receipt_outcomes = result |> near_workspaces.receipt_outcomes
-                inl receipt_outcomes_len = receipt_outcomes |> am'.vec_len |> i32
+                inl receipt_outcomes_len = receipt_outcomes |> am'.vec_len |> convert.i32
 
                 trace Verbose
                     fun () => "spiral_wasm.run"

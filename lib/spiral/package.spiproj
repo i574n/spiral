@@ -13,6 +13,7 @@ modules:
     optionm'
     optionm'_operators
     resultm
+    convert
     listm'
     iter_prototypes-
     am'

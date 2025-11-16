@@ -74,6 +74,17 @@ inl format_debug forall t. (x : t) : string =
 inl (~$$) s =
     s |> format_debug
 
+/// ### unwrap_format
+instance unwrap_format option t = fun x =>
+    x
+    |> optionm.value
+    |> format_debug
+
+instance unwrap_format result t u = fun x =>
+    x
+    |> resultm.get
+    |> format_debug
+
 /// ### obj_to_string
 inl obj_to_string x : string =
     backend_switch {
@@ -245,7 +256,7 @@ inl convert_to_utf32 (c : char) : int =
         Fsharp = fun () =>
             run_target_args' c function
             | Fsharp (Native) => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int
-            | _ => fun c => c |> i32
+            | _ => fun c => c |> convert.i32
         Python = fun () => $'ord(!c)' : int
     }
 
@@ -642,7 +653,7 @@ inl as_str (s : string) : rust.ref str =
     // !\\(s, $'"fable_library_rust::String_::LrcStr::as_str(&$0)"')
     run_target_args (fun () => s) function
         | Rust _ => fun s => !\\(s, $'"&*$0"')
-        | _ => fun s => s |> unbox
+        | _ => convert.unbox
 
 /// ### from_iter
 inl from_iter forall (t : * -> *). (s : t char) : std_string =
@@ -652,7 +663,7 @@ inl from_iter forall (t : * -> *). (s : t char) : std_string =
 inl ref_to_std_string (str : rust.ref str) : std_string =
     run_target_args (fun () => str) function
         | Rust _ => fun str => !\\(str, $'"String::from($0)"')
-        | _ => fun str => str |> unbox
+        | _ => convert.unbox
 
 /// ### cow_to_std_string
 inl cow_to_std_string (str : rust.cow str) : std_string =
@@ -915,7 +926,7 @@ nominal windows t =
         $'' : $'std_slice_Windows<`t>'
     )
 
-inl windows (len : unativeint) (source : am'.vec u8) : windows u8 =
+inl windows (len : convert.unativeint) (source : am'.vec u8) : windows u8 =
     inl source = source |> rust.new_box |> rust.box_leak
     // inl source' = source |> rust.clone
     inl result = !\\(len, $'"<[_]>::windows(!source, $0)"')
@@ -939,7 +950,7 @@ inl slice_contains (text : string) (source : am'.vec u8) : bool =
     fun () =>
         inl source = join source
         source
-        |> windows (text |> length |> (fun x => x : i32) |> convert)
+        |> windows (text |> length |> (fun x => x : i32) |> convert.convert)
         |> any ((=.) text)
     |> fun x => join x ()
 
@@ -1007,37 +1018,29 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
                 | int => length `t s
                 | _ => length' `t s
         match start, end with
-        | Start start, End fn => true, start, len >> to |> fn
-        | End start_fn, End end_fn => false, start_fn (len >> to), end_fn (len >> to)
-    inl start' = start |> try_convert |> optionm.value : int
-    inl end' = end |> try_convert |> optionm.value : int
+        | Start start, End fn => true, start, len >> convert.to |> fn
+        | End start_fn, End end_fn => false, start_fn (len >> convert.to), end_fn (len >> convert.to)
+    inl start' = start |> convert.try_convert |> optionm.value : int
+    inl end' = end |> convert.try_convert |> optionm.value : int
     inl start_is_var = start |> var_is
     inl same_fixed = start = end && (start_is_var |> not) && (end |> var_is |> not)
     inl start_var_s_fixed = start_is_var && (s |> var_is |> not)
-    join
-        [
-            "sm'.range"
-            " / (s |> var_is): "; s |> var_is |> obj_to_string
-            " // start: "; start |> obj_to_string
-            " / (start |> var_is): "; start_is_var |> obj_to_string
-            " // end: "; end |> obj_to_string
-            " / (end |> var_is): "; end |> var_is |> obj_to_string
-            " // same_fixed: "; same_fixed |> obj_to_string
-            " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
-        ]
-        |> concat_list ""
-        |> fun x =>
-            backend_switch {
-                Gleam = fun () =>
-                    // global "import gleam/io"
-                    // $'io.println(!x)' : ()
-                    ()
-                Fsharp = fun () =>
-                    // $'System.Console.WriteLine(!x)' : ()
-                    ()
-                Python = fun () =>
-                    $'print(!x)' : ()
-            }
+    backend_switch {
+        Python = fun () =>
+            inl x =
+                [
+                    "sm'.range"
+                    " / (s |> var_is): "; s |> var_is |> obj_to_string
+                    " // start: "; start |> obj_to_string
+                    " / (start |> var_is): "; start_is_var |> obj_to_string
+                    " // end: "; end |> obj_to_string
+                    " / (end |> var_is): "; end |> var_is |> obj_to_string
+                    " // same_fixed: "; same_fixed |> obj_to_string
+                    " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
+                ]
+                |> concat_list ""
+            $'print(!x)' : ()
+    }
     s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
 
 /// ### ellipsis_end
@@ -1046,9 +1049,9 @@ let ellipsis_end (max : i64) (s : string) =
     if len <= max
     then s
     else
-        inl half = f64 max / 2
-        inl start_half = half |> math.ceil |> i64
-        inl end_half = half |> math.floor |> i64
+        inl half = convert.f64 max / 2
+        inl start_half = half |> math.ceil |> convert.i64
+        inl end_half = half |> math.floor |> convert.i64
         inl start = s |> slice 0 (start_half - 1)
         inl end = s |> slice (len - end_half) (len - 1)
         (a ;[ start; "..."; end ] : _ int _)

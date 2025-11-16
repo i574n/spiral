@@ -355,7 +355,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                         deps
                         |> am'.vec_filter (sm'.from_std_string >> sm'.contains "near-sdk")
                         |> am'.vec_len
-                        |> i32
+                        |> convert.i32
                         |> fun n => n > 0
                     // TODO: simplify with ++
                     if has_near_sdk
@@ -748,38 +748,15 @@ inl magic_marker () : parser string =
 /// ### magic_command
 inl magic_command () =
     magic_marker ()
-    >>. many1_chars (none_of ['\n'])
-    |>> sm'.trim
+    >>. many_chars_till (any_char ()) (new_line ())
+    |>> fun s => fun () => s () |> sm'.trim
 
 /// ### content
-inl content () : parser string = fun input, i0, (parser_state st as s0) =>
-    let rec 루프 (j : int) =
-        if j >= st.input_len
-        then -1
-        else
-            inl k =
-                match input |> sm'.index_of_char_from j '#' with
-                | -1 => -1
-                | kk when kk >= j => kk
-                | kk => j + kk
-            if k = -1
-            then -1
-            else
-                inl prev_is_nl =
-                    if k > 0
-                    then input |> sm'.index (k - 1) = '\n'
-                    else false
-                inl next_is_bang =
-                    k + 1 < st.input_len && input |> sm'.index (k + 1) = '!'
-                if prev_is_nl && next_is_bang
-                then k - 1
-                else 루프 (k + 1)
-    inl stop = 루프 i0
-    inl j =
-        if stop = -1
-        then st.input_len
-        else stop
-    Ok (input |> slice i0 j |> sm'.trim, j, s0 |> update_span input i0 (j - i0))
+inl content () =
+    new_line () >>. magic_marker () <|> eof () >>. p_return ""
+    |> look_ahead
+    |> many_chars_till (any_char ())
+    |>> fun s => fun () => s () |> sm'.trim
 
 /// ### dib_output
 union dib_output =
@@ -806,24 +783,25 @@ inl kernel_outputs = function
 type block =
     {
         magic : magic
-        content : string
+        content : () -> string
     }
 
 inl block () =
     pipe2
         (magic_command ())
         (content ())
-        fun magic content =>
+        fun magic, content =>
             inl magic, content =
-                match magic with
+                match magic () with
                 | "fsharp" => Fsharp, content
                 | "markdown" => Markdown, content
                 | "spiral" =>
+                    inl content = content ()
                     inl output =
                         if content |> sm'.contains "//// real\n"
                         then Spir
                         else Spi
-                    inl content =
+                    inl content () =
                         if output = Spi
                         then content
                         else
@@ -839,8 +817,8 @@ inl block () =
 
 /// ### blocks
 inl blocks () =
-    skip_many (new_line ())
-    >>. sep_end_by (block ()) (skip_many1 (new_line ()))
+    new_lines ()
+    >>. sep_end_by (block ()) (new_lines1 ())
 
 /// ### format_block
 inl format_block output (block : block) =
@@ -851,7 +829,7 @@ inl format_block output (block : block) =
             | Spi | Spir => "/// "
             | Fs => "/// "
             | _ => ""
-        content
+        content ()
         |> sm'.split "\n"
         |> am'.to_list_base'
         |> listm'.unbox
@@ -874,23 +852,23 @@ inl format_block output (block : block) =
                 루프 0
         |> sm'.concat_list "\n"
     | Fs, { magic = (Fsharp) content = content } =>
-        inl trimmed_content = content |> sm'.trim
+        inl trimmed_content = content () |> sm'.trim
         if (trimmed_content |> sm'.contains "//// test\n")
             || (trimmed_content |> sm'.contains "//// ignore\n")
         then ""
         else
-            content
+            content ()
             |> sm'.split "\n"
             |> am'.to_list_base'
             |> listm'.unbox
             |> listm'.filter (sm'.trim_start [] >> sm'.starts_with "#r" >> not)
             |> sm'.concat_list "\n"
     | (Spi | Spir), { magic = (Spiral output') content = content } when output' = output =>
-        inl trimmed_content = content |> sm'.trim
+        inl trimmed_content = content () |> sm'.trim
         if (trimmed_content |> sm'.contains "//// test\n")
             || (trimmed_content |> sm'.contains "//// ignore\n")
         then ""
-        else content
+        else content ()
     | _ => ""
 
 /// ### format_blocks
@@ -914,8 +892,8 @@ inl format_blocks output blocks =
 /// ### indent_block
 inl indent_block (block : block) =
     { block with
-        content =
-            (([], false), block.content |> sm'.split "\n" |> am'.to_list_base' |> listm'.unbox)
+        content = fun () =>
+            (([], false), block.content () |> sm'.split "\n" |> am'.to_list_base' |> listm'.unbox)
             ||> listm.fold fun (lines, is_multiline) line =>
                 inl trimmed_line = line |> sm'.trim
                 if trimmed_line = ""
@@ -924,7 +902,7 @@ inl indent_block (block : block) =
                     inl single_quote_line () =
                         (trimmed_line
                             |> sm'.to_char_list
-                            |> listm.map ((=) '"' >> convert)
+                            |> listm.map ((=) '"' >> convert.convert)
                             |> listm'.sum) = 1i32
                         && trimmed_line |> sm'.contains "'\"'" |> not
                         && trimmed_line |> sm'.ends_with "{" |> not
@@ -979,9 +957,10 @@ inl parse output input =
             | Some { magic = (Markdown) }, _ => None
             | Some block, _ => Some block
             | _ => None
+        |> listm.map fun block => block, block.content ()
         |> listm.fold
             fun acc, indent => function
-                | { magic = (Markdown) content = content }
+                | ({ magic = (Markdown) } : block) as block, content
                     when output = Fs
                             && content |> sm'.starts_with "# "
                             && content |> sm'.ends_with ")"
@@ -996,16 +975,16 @@ inl parse output input =
                         inl module_block =
                             {
                                 magic = Fsharp
-                                content =
+                                content = fun () =>
                                     "#if !INTERACTIVE\nnamespace " ++# namespace_name
                                     ++\# "#endif\n\nmodule " ++# module_name ++# " ="
                             }
 
                         module_block :: acc, (indent + 1)
-                    | _ => { magic = Markdown; content = content } :: acc, indent
-                | { magic = magic content = content } as block when indent > 0 =>
+                    | b => { block with magic = Markdown } :: acc, indent
+                | block, _ when indent > 0 =>
                     indent_block block :: acc, indent
-                | block => block :: acc, indent
+                | block, _ => block :: acc, indent
             ([], 0i32)
         |> fst
         |> listm.rev
@@ -2112,7 +2091,7 @@ let get_command () =
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
-                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
             >> runtime.arg_action runtime.Append
@@ -2132,7 +2111,7 @@ let get_command () =
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
-                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
             >> runtime.arg_action runtime.Append
@@ -2159,7 +2138,7 @@ let get_command () =
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
-                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
             >> runtime.arg_action runtime.Append
@@ -2169,7 +2148,7 @@ let get_command () =
                 runtime.new_value_range
                     true
                     (am'.End eval)
-                    (am'.End fun _ => (1i32 |> convert : unativeint))
+                    (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))
             )
             >> runtime.arg_require_equals true
             >> runtime.arg_default_missing_value ""
@@ -2179,7 +2158,7 @@ let get_command () =
                 runtime.new_value_range
                     true
                     (am'.End eval)
-                    (am'.End fun _ => (1i32 |> convert : unativeint))
+                    (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))
             )
             >> runtime.arg_require_equals true
             >> runtime.arg_default_missing_value ""
@@ -2200,7 +2179,7 @@ let get_command () =
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
-                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
             >> runtime.arg_action runtime.Append
@@ -2217,7 +2196,7 @@ let get_command () =
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
-                    (am'.Start (1i32 |> convert : unativeint))
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
             >> runtime.arg_action runtime.Append
@@ -2257,7 +2236,7 @@ let get_command () =
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
-                    (am'.Start (2i32 |> convert : unativeint))
+                    (am'.Start (2i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
             >> runtime.arg_action runtime.Append

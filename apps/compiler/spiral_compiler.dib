@@ -4104,8 +4104,20 @@ and root_term d =
                         then Ok(RawExists(r +. range_of_expr body, (r, type_vars), body))
                         else Error [r, TypeVarsNeedToBeExplicitForExists]
         let case_rounds =
-            blockParsingRange (rounds ((((read_op' |>> rawv) <|> next) |>> fun x _ -> x) <|>% RawB))
-            |>> fun (r,x) -> x r
+            let mk_tuple xs =
+                match xs with
+                | []      -> fun r -> RawB r
+                | [x]     -> fun _ -> x
+                | x :: xr ->
+                    fun _ ->
+                        List.fold (fun a b -> RawPair(range_of_expr a +. range_of_expr b, a, b)) x xr
+            blockParsingRange (
+                rounds (
+                    sepBy (((read_op' |>> rawv) <|> next)) (skip_op ",")
+                    |>> mk_tuple
+                )
+            )
+            |>> fun (r, build) -> build r
         let case_fun =
             (skip_keyword SpecFun >>. many1 root_pattern_pair .>>. (annotated_body "=>" next root_type_annot))
             >>= fun (pats, body) _ ->
@@ -13224,10 +13236,10 @@ let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
               | YFun (domain, _, FT_Vanilla) ->
                   let domain_is_nil =
                     env.ty_to_data domain |> data_free_vars |> Array.isEmpty
-                  if arg_code = "Nil " then
+                  if arg_code |> SpiralSm.trim = "Nil" then
                     if domain_is_nil then sprintf "v%i( Nil      )" i else sprintf "v%i " i
                   else
-                    if domain_is_nil then sprintf "v%i( %s(      Nil)  ) " i arg_code
+                    if domain_is_nil then $"v%i{i}( {arg_code}(      Nil)  ) "
                     else sprintf "v%i( %s  )" i arg_code
               | _ ->
                   sprintf "v%i( %s  )" i arg_code

@@ -218,7 +218,7 @@ inl random' forall t. (min : t) (max : t) : t =
             open rust.rust_operators
             !\\((min, max), $'"rand::Rng::gen_range(&mut rand::thread_rng(), $0..$1)"')
         | _ => fun () =>
-            random () |> random_next (i32 min) (i32 max) |> convert
+            random () |> random_next (convert.i32 min) (convert.i32 max) |> convert.convert
 
 #!markdown
 

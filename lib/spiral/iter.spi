@@ -5,7 +5,7 @@ open rust_operators
 /// ## rust
 
 /// ### enumerate
-inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair unativeint t) =
+inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
     !\($'"!iter.enumerate().map(std::sync::Arc::new)"')
 
 /// ### into_iter
@@ -56,7 +56,7 @@ inl all forall t. (fn : t -> bool) (x : rust.mut' (into_iterator t)) : bool =
     !\\(fn, $'$"!x.all(|x| $0(x))"')
 
 /// ### enumerate
-inl enumerate forall dim {int; number} t. (ar : a dim t) : a dim (unativeint * t) =
+inl enumerate forall dim {int; number} t. (ar : a dim t) : a dim (convert.unativeint * t) =
     inl (a ar) = ar
     ar
     |> am'.to_vec

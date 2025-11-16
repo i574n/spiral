@@ -204,7 +204,7 @@ inl to_calendar_utc (timestamp : timestamp) : date_time =
     }
     inl duration = $'calendar.utc_offset' : duration_gleam
     inl (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
-    (date, time_of_day, duration) |> to
+    (date, time_of_day, duration) |> convert.to
 
 /// ### tempo_date_time
 nominal time_zone_provider =
@@ -275,7 +275,7 @@ inl date_time_milliseconds
             inl nanoseconds = millisecond * 1000000
             inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
             inl duration : duration_gleam = $'duration.milliseconds(#millisecond)'
-            (date, time_of_day, duration) |> to : date_time
+            (date, time_of_day, duration) |> convert.to : date_time
         Fsharp = fun () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
         Python = fun () =>
@@ -337,7 +337,7 @@ nominal time_span = $'backend_switch `(time_span_switch)'
 
 inl time_span x : time_span =
     backend_switch {
-        Gleam = fun () => x |> convert : time_span
+        Gleam = fun () => x |> convert.convert : time_span
         Fsharp = fun () => $'!x |> `time_span ' : time_span
         Python = fun () => $'datetime.timedelta(!x)' : time_span
     }
@@ -378,7 +378,12 @@ inl ticks (date_time : date_time) : timestamp =
                 | _ => fun () => date_time |> $'_.Ticks'
             : timestamp
         Python = fun () =>
-            date_time |> new_time_span (min_value ()) |> total_seconds |> ((*) 10000000) |> convert : timestamp
+            date_time
+            |> new_time_span (min_value ())
+            |> total_seconds
+            |> ((*) 10000000)
+            |> convert.convert
+            : timestamp
     }
 
 /// ### hours
@@ -462,7 +467,7 @@ inl to_calendar (timestamp : timestamp) : date_time =
     }
     inl duration = $'calendar.local_offset()' : duration_gleam
     inl (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
-    (date, time_of_day, duration) |> to
+    (date, time_of_day, duration) |> convert.to
 
 /// ### now
 inl now () : date_time =
@@ -643,7 +648,8 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
                 |> to_universal_time
             inl unixticks =
                 match date_time |> ticks, epoch |> ticks with
-                | timestamp date_time, timestamp epoch => convert date_time - convert epoch : i64
+                | timestamp date_time, timestamp epoch =>
+                    convert.convert date_time - convert.convert epoch : i64
             inl prefix =
                 unixticks / 10
                 |> from_timestamp_micros

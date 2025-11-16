@@ -122,7 +122,7 @@ nominal file_info =
 
 inl file_info (path : string) : file_info =
     run_target function
-        | Fsharp (Native) => fun () => path |> convert
+        | Fsharp (Native) => fun () => $'!path |> `file_info '
         | _ => fun () => null ()
 
 #!markdown
@@ -143,7 +143,7 @@ nominal directory_info =
 
 inl directory_info (path : string) : directory_info =
     run_target function
-        | Fsharp (Native) => fun () => path |> convert
+        | Fsharp (Native) => fun () => $'!path |> `directory_info '
         | _ => fun () => null ()
 
 #!markdown
@@ -358,7 +358,7 @@ nominal path_buf =
 inl new_path_buf (path : sm'.std_string) : path_buf =
     run_target function
         | Rust _ => fun () => !\\(path, $'"std::path::PathBuf::from($0)"')
-        | _ => fun () => path |> unbox
+        | _ => fun () => path |> convert.unbox
 
 #!markdown
 
@@ -407,7 +407,7 @@ inl path_buf_display (path_buf : path_buf) : display =
         | Rust _ => fun path_buf =>
             inl path_buf = join path_buf
             !\($'"!path_buf.display()"')
-        | _ => fun path_buf => path_buf |> unbox
+        | _ => fun path_buf => path_buf |> convert.unbox
 
 #!markdown
 
@@ -1186,7 +1186,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
         | Some parent when path' <>. "" =>
             match 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with
             | Ok parent' =>
-                (parent' |> path_buf_display |> convert) </> name
+                (parent' |> path_buf_display |> convert.convert) </> name
                 |> sm'.to_std_string
                 |> new_path_buf
                 |> resultm.ok''
@@ -1238,7 +1238,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                     path'
                     |> file_info
                     |> file_info_link_target
-                    |> unbox
+                    |> convert.unbox
                     |> resultm.ok''
                 else
                     inl error =
@@ -1265,7 +1265,7 @@ let normalize_path (path : string) : string =
             | Some path_buf =>
                 path_buf
                 |> path_buf_display
-                |> convert
+                |> convert.convert
             | None => path
         inl result =
             if result = ""
@@ -1476,10 +1476,10 @@ inl new_file_uri (path : string) : string =
 
 #!spiral
 
-let rec trace_file text =
+let rec trace_file text : () =
     run_target function
     | Fsharp (Native) => fun () =>
-        try_unit
+        resultm.from_try
             fun () =>
                 inl assembly_name = env.get_entry_assembly_name ()
                 inl guid = date_time.now () |> date_time.new_guid_from_date_time
@@ -1491,9 +1491,12 @@ let rec trace_file text =
                 inl path = trace_dir </> file_name
                 text |> write_all_text_async path |> async.run_synchronously
             fun ex =>
+                inl ex = ex ()
                 inl text = $'$"file_system.trace_file / ex: %A{!ex}"'
                 text |> console.write_line
                 text |> trace_file
+                ex
+        |> resultm.get
     | _ => fun () => ()
 
 #!spiral
@@ -1760,8 +1763,6 @@ inl main () =
     $'let standardize_path x = !standardize_path x' : ()
     $'let new_file_uri x = !new_file_uri x' : ()
     $'let get_workspace_root () = !get_workspace_root ()' : ()
-    $'let trace_file x = !trace_file x' : ()
-    $'let init_trace_file x = !init_trace_file x' : ()
     $'let link_directory x = !link_directory x' : ()
     inl combine x = (</>) x
     $'let (</>) x = !combine x' : ()

@@ -912,24 +912,6 @@ inl move forall t. (fn : () -> t) : func0 t =
 
 #!markdown
 
-### to_static_ref_unbox
-
-#!spiral
-
-inl to_static_ref_unbox forall t. (x : ref t) : static_ref t =
-    x |> unbox
-
-#!markdown
-
-### from_static_ref_unbox
-
-#!spiral
-
-inl from_static_ref_unbox forall t. (x : static_ref t) : ref t =
-    x |> unbox
-
-#!markdown
-
 ### box_leak
 
 #!spiral

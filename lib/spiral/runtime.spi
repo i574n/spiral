@@ -12,14 +12,14 @@ let split_args (args : string) : result (array_base string) _ =
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
     inl p_esc_char c =
-        p_char c >>. any_char () |>> fun c' => $c ++# $c'
-    inl p_word = special |> none_of |>> sm'.obj_to_string
+        p_char c >>. any_char () |>> fun c' => fun () => $c ++# $(c' ())
+    inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
     inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
     inl p_text = p_word |> many1_strings
     inl p_esc = esc |> listm.map p_esc_char |> choice
     inl p_quoted = (p_word <|> p_esc) |> many_strings
     inl p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
-    inl p_esc_root = p_esc >>% "" >>. (p_word |> many) |>> sm'.concat_list ""
+    inl p_esc_root = p_esc >>% "" >>. (p_word |> many) |>> fun s => fun () => s () |> sm'.concat_list ""
     inl ensure_progress p : parser _ = fun input, i, s =>
         match p (input, i, s) with
         | Ok (r, i', s') when i' = i =>
@@ -32,13 +32,14 @@ let split_args (args : string) : result (array_base string) _ =
     args
     |> run_parser p_args
     |> resultm.map (fst >> listm'.box >> listm'.to_array')
+    |> resultm.map_error eval
 
 /// ### split_command
-let split_command (command : string) : result (string * option string) _ =
+let split_command (command : string) : result (string * option (() -> string)) _ =
     open parsing
     inl quotes = [ '"'; '\'' ]
     inl p_quoted_char = quotes |> listm.map p_char |> choice
-    inl normalize = "/" |> sm'.replace "\\"
+    inl normalize = fun s => fun () => s () |> sm'.replace "\\" "/"
     inl p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize
     inl p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize
     inl p_path = p_quoted <|> p_unquoted <|> (eof () >>% "")
@@ -46,7 +47,8 @@ let split_command (command : string) : result (string * option string) _ =
     inl p_command = p_path .>>. (p_args |> opt)
     command
     |> run_parser p_command
-    |> resultm.map fst
+    |> resultm.map (fst >> fun path, args => path (), args ())
+    |> resultm.map_error eval
 
 /// ### execution_line
 type execution_line =
@@ -378,7 +380,7 @@ nominal value_range =
 /// ### new_value_range
 inl new_value_range forall t. inclusive (start : _ t) (end : _ t) : value_range =
     inl len () =
-        0i32 |> convert
+        0i32 |> convert.convert
     inl start, end =
         open am'
         match start, end with
@@ -468,7 +470,7 @@ inl arg_action (value : arg_action) (arg : arg) : arg =
 
 /// ### arg_index
 inl arg_index (value : i32) (arg : arg) : arg =
-    !\\((arg, ($'!value |> `unativeint ' : unativeint)), $'"$0.index($1)"')
+    !\\((arg, ($'!value |> `(convert.unativeint) ' : convert.unativeint)), $'"$0.index($1)"')
 
 /// ### arg_matches
 nominal arg_matches =
@@ -674,6 +676,7 @@ let execute_with_options (options : execution_options) : i32 * string =
     inl file_name, arguments = command |> split_command |> resultm.get
     inl arguments =
         arguments
+        |> optionm.map eval
         |> optionm'.default_value ""
         |> split_args
         |> resultm.get

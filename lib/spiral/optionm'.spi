@@ -144,13 +144,6 @@ inl of_obj forall t. (x : t) : option' t =
             $'!x ' : option' t
     }
 
-/// ### flatten'
-inl flatten' x =
-    x
-    |> unbox
-    |> optionm.map unbox
-    |> flatten
-
 /// ## rust
 
 /// ### try'

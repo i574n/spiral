@@ -132,7 +132,7 @@ inl range start end s =
             start, fn len
         | End start_fn, End end_fn =>
             start_fn len, end_fn len
-    s |> slice (start |> unbox) (end |> unbox)
+    s |> slice (start |> convert.unbox) (end |> convert.unbox)
 
 /// ## rust
 
@@ -277,7 +277,7 @@ inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
     !\($'"!ar.into_iter().filter(|x| !fn(x.clone().clone())).collect::<Vec<_>>()"')
 
 /// ### vec_len
-inl vec_len forall t. (vec : vec t) : unativeint =
+inl vec_len forall t. (vec : vec t) : convert.unativeint =
     !\\(vec, $'"$0.len()"')
 
 /// ### vec_chunks
@@ -325,19 +325,22 @@ inl slice_singleton forall dim el. (x : option el) : slice' el dim =
             // !\( : string) : slice' el i32 // !\($'"[]"')
 
 /// ### slice_length
-inl slice_length forall t dim. (x : slice' t dim) : unativeint =
+inl slice_length forall t dim. (x : slice' t dim) : convert.unativeint =
     !\($'"!x.len()"')
 
 /// ### slice_range
-inl slice_range forall t dim. (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim) =
+inl slice_range forall t dim.
+    (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim)
+    =
     inl len () =
         s |> slice_length
-    inl start, (end : unativeint) =
+    inl start, (end : convert.unativeint) =
         match start, end with
-        | Start start, End fn => start, (len >> convert) |> fn |> convert
-        | End start_fn, End end_fn => (len >> convert) |> start_fn, (len >> convert) |> end_fn |> convert
+        | Start start, End fn => start, (len >> convert.convert) |> fn |> convert.convert
+        | End start_fn, End end_fn =>
+            (len >> convert.convert) |> start_fn, (len >> convert.convert) |> end_fn |> convert.convert
     match start, end with
-    | start, end when unbox end =. len () => !\($'"&!s[!start..]"')
+    | start, end when end |> convert.unbox =. len () => !\($'"&!s[!start..]"')
     | start, end => !\\((start, end), $'"&!s[$0..$1]"')
 
 /// ### new_slice
@@ -403,7 +406,7 @@ inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
 inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
     backend_switch {
         Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
-        Python = fun () => items |> to : listm'.list' t
+        Python = fun () => items |> convert.to : listm'.list' t
         Gleam = fun () =>
             global "import gary/array"
             $'!items |> array.to_list' : listm'.list' t

@@ -67,6 +67,28 @@ inl flatten forall t u. (x : result (result t u) u) : result t u =
 
 #!markdown
 
+### from_try
+
+#!spiral
+
+inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =
+    inl ok x = x |> Ok : result t exn
+    inl error (e : exn) = e |> Error : result t exn
+    backend_switch {
+        Fsharp = fun () =>
+            $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
+        Python = fun () =>
+            $'fn = !fn '
+            $'ok = !ok '
+            $'error = !error '
+            $'ex_fn = !ex_fn '
+            $'try: x = ok(fn()) '
+            $'except Exception as ex: x = error(ex_fn(lambda: ex))'
+            $'x' : result t exn
+    }
+
+#!markdown
+
 ### get
 
 #!spiral
@@ -234,8 +256,8 @@ inl map' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
 
 inl x : _ _ string = Ok 3i32
 inl y : _ i32 _ = Error "error1"
-inl x' = x |> box |> unbox
-inl y' = y |> box |> map' id |> unbox
+inl x' = x |> box |> convert.unbox
+inl y' = y |> box |> map' id |> convert.unbox
 (x', y') |> _assert_eq' (x, y)
 
 #!markdown

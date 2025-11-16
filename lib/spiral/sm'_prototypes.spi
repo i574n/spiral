@@ -1,2 +1,3 @@
 prototype of_string t : string -> option t
 prototype to_string t : t -> string
+prototype unwrap_format t : t -> string

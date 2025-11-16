@@ -67,8 +67,8 @@ inl format_debug forall t. (x : t) : string =
             Gleam =
                 (fun () =>
                     typecase t with
-                    | char => to `(`x) `string x
-                    | string_builder => to `(`x) `string x
+                    | char => convert.to `(`x) `string x
+                    | string_builder => convert.to `(`x) `string x
                     | _ =>
                         global "import gleam/string"
                         inl x =
@@ -85,6 +85,8 @@ inl format_debug forall t. (x : t) : string =
         }
 
 /// ### (~$$)
+
+/// ### unwrap_format
 
 /// ### obj_to_string
 

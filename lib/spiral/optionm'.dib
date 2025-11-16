@@ -276,8 +276,8 @@ inl unbox forall t. (x : option' t) : option t =
 
 inl x = Some 3i32
 inl y : option i32 = None
-inl x' = x |> box |> unbox
-inl y' = y |> box |> map id |> unbox
+inl x' = x |> box |> convert.unbox
+inl y' = y |> box |> map id |> convert.unbox
 (x', y') |> _assert_eq' (x, y)
 
 #!markdown
@@ -333,18 +333,6 @@ null ()
 |> of_obj
 |> unbox
 |> _assert_eq' (Some "")
-
-#!markdown
-
-### flatten'
-
-#!spiral
-
-inl flatten' x =
-    x
-    |> unbox
-    |> optionm.map unbox
-    |> flatten
 
 #!markdown
 

@@ -157,7 +157,7 @@ inl near_price_in_usd () =
 
 /// ### gas_to_usd
 inl gas_to_usd (gas : u64) =
-    (gas |> f64) / 10_000_000_000_000_000 * near_price_in_usd ()
+    (gas |> convert.f64) / 10_000_000_000_000_000 * near_price_in_usd ()
 
 /// ### tokens_to_usd
 inl tokens_to_usd (tokens : rust.u128) =

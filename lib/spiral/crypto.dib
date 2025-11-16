@@ -109,7 +109,7 @@ nominal sha256' =
 #!spiral
 
 inl new_sha256 () : sha256' =
-    !\($'"let result : sha2::Sha256 = sha2::Digest::new()"')
+    (!\($'"true; let result : sha2::Sha256 = sha2::Digest::new()"') : bool) |> ignore
     !\($'"result"')
 
 #!markdown
@@ -141,27 +141,27 @@ inl hash_read data : resultm.result' string stream.io_error =
     (!\($'"true; let mut !reader = !reader"') : bool) |> ignore
     inl hasher = new_sha256 ()
     (!\($'"true; let mut !hasher = !hasher"') : bool) |> ignore
-
     real
         inl size = 1024
-        inl zero = convert `i32 `unativeint 0
+        inl zero = convert.convert `i32 `(convert.unativeint) 0
         inl buffer = am'.new_slice `u8 `@size 0u8
-
-        rust.loop 2 fun () =>
+        rust.loop 0 fun () =>
             inl count = stream.buf_reader_read `u8 `@size buffer reader
-            inl count = resultm.unwrap' `unativeint `(stream.io_error) count
-
-            if (=.) `unativeint count zero then rust.break `(()) ()
-
+            inl count = resultm.unwrap' `(convert.unativeint) `(stream.io_error) count
+            inl _ =
+                if (=.) `(convert.unativeint) count zero then
+                    rust.break `(()) ()
+                    true
+                else false
             hasher_update `u8 `@size
                 (
                     am'.slice_range `u8 `@size
-                        (am'.Start `unativeint zero)
-                        (am'.End `unativeint ((fun _ => count) : (() -> unativeint) -> unativeint))
+                        (am'.Start `(convert.unativeint) zero)
+                        (am'.End `(convert.unativeint)
+                            ((fun _ => count) : (() -> convert.unativeint) -> convert.unativeint))
                         buffer
                 )
                 hasher
-
     hasher
     |> hasher_finalize
     |> am'.slice_to_vec
@@ -392,7 +392,7 @@ let hash_text (~input : string) =
 inl hash_to_port (text : string) : u16 =
     inl first_letter_code = text |> sm'.index 0i32 |> sm'.convert_to_utf32
     inl hash_part = text |> sm'.slice 0i32 7
-    inl combined_value = convert_i32_base 16 hash_part + first_letter_code |> u16
+    inl combined_value = convert.convert_i32_base 16 hash_part + first_letter_code |> convert.u16
     trace Verbose
         fun () => "crypto.hash_to_port"
         fun () => { first_letter_code hash_part combined_value }

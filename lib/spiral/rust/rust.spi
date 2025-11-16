@@ -498,14 +498,6 @@ inl new_func0 forall t. (fn : () -> t) : func0 t =
 inl move forall t. (fn : () -> t) : func0 t =
     !\\(fn, $'"Func0::new(move || $0())"')
 
-/// ### to_static_ref_unbox
-inl to_static_ref_unbox forall t. (x : ref t) : static_ref t =
-    x |> unbox
-
-/// ### from_static_ref_unbox
-inl from_static_ref_unbox forall t. (x : static_ref t) : ref t =
-    x |> unbox
-
 /// ### box_leak
 inl box_leak forall t. (x : box t) : static_ref (mut' t) =
     !\\(x, $'"Box::leak($0)"')

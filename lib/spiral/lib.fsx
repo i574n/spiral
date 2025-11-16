@@ -342,65 +342,6 @@ module SpiralFileSystem =
         delete_directory_async x
 #endif
 
-    let trace_file x =
-#if !INTERACTIVE
-        File_system.trace_file x
-#else
-        trace_file x
-#endif
-
-    let init_trace_file x =
-#if !INTERACTIVE
-        File_system.init_trace_file x
-#else
-        init_trace_file x
-#endif
-
-#if !INTERACTIVE
-        let struct (_, _, _, _, trace_file, _) = File_system.TraceState.trace_state |> Option.get
-        let new_trace_file = trace_file.l0
-
-        let struct (_, _, _, _, trace_file, _) = Networking.TraceState.trace_state |> Option.get
-        trace_file.l0 <-
-            match new_trace_file with
-            | File_system.US0_0 -> Networking.US0_0
-            | File_system.US0_1 -> Networking.US0_1
-            | File_system.US0_2 -> Networking.US0_2
-            | File_system.US0_3 -> Networking.US0_3
-            | File_system.US0_4 -> Networking.US0_4
-
-        let struct (_, _, _, _, trace_file, _) = Runtime.TraceState.trace_state |> Option.get
-        trace_file.l0 <-
-            match new_trace_file with
-            | File_system.US0_0 -> Runtime.US0_0
-            | File_system.US0_1 -> Runtime.US0_1
-            | File_system.US0_2 -> Runtime.US0_2
-            | File_system.US0_3 -> Runtime.US0_3
-            | File_system.US0_4 -> Runtime.US0_4
-
-        let struct (_, _, _, _, trace_file, _) = Trace.TraceState.trace_state |> Option.get
-        trace_file.l0 <-
-            match new_trace_file with
-            | File_system.US0_0 -> Trace.US0_0
-            | File_system.US0_1 -> Trace.US0_1
-            | File_system.US0_2 -> Trace.US0_2
-            | File_system.US0_3 -> Trace.US0_3
-            | File_system.US0_4 -> Trace.US0_4
-
-        let struct (_, _, _, _, trace_file, _) = Common.TraceState.trace_state |> Option.get
-        trace_file.l0 <-
-            match new_trace_file with
-            | File_system.US0_0 -> Common.US0_0
-            | File_system.US0_1 -> Common.US0_1
-            | File_system.US0_2 -> Common.US0_2
-            | File_system.US0_3 -> Common.US0_3
-            | File_system.US0_4 -> Common.US0_4
-#else
-        let struct (_, _, _, _, trace_file, _) = TraceState.trace_state |> Option.get
-        let new_trace_file = trace_file.l0
-        ()
-#endif
-
     let wait_for_file_access x =
 #if !INTERACTIVE
         File_system.wait_for_file_access x

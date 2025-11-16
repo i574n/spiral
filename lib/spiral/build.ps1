@@ -33,6 +33,7 @@ if (!$fast) {
             --execute-command "$spiralPath dib --path $ScriptDir/resultm.dib --retries 3" `
             --execute-command "$spiralPath dib --path $ScriptDir/console.dib --retries 3" `
             --execute-command "$spiralPath dib --path $ScriptDir/base.dib --retries 3" `
+            --execute-command "$spiralPath dib --path $ScriptDir/convert.dib --retries 3" `
             --execute-command "$spiralPath dib --path $ScriptDir/date_time.dib --retries 3" `
             --execute-command "$spiralPath dib --path $ScriptDir/math.dib --retries 3" `
             --execute-command "$spiralPath dib --path $ScriptDir/mapm.dib --retries 3" `
@@ -57,7 +58,7 @@ if (!$fast) {
     } | Invoke-Block -Location (GetFullPath "../../deps/polyglot/lib/fsharp")
 }
 
-{ . $spiralPath dib-export testing.dib spi async.dib spi runtime.dib spi trace.dib spi threading.dib spi networking.dib spi crypto.dib spi common.dib spi base.dib spi resultm.dib spi iter.dib spi env.dib spi parsing.dib spi console.dib spi date_time.dib spi file_system.dib spi guid.dib spi math.dib spi mapm.dib spi "optionm'.dib" spi "am'.dib" spi "sm'.dib" spi "sm'.dib" spir "listm'.dib" spi reflection.dib spi python.dib spi typescript.dib spi benchmark.dib spi stream.dib spi seq.dib spi util.dib spi platform.dib spi rust/rust.dib spi rust/testing.dib spi rust/near.dib spi rust/near_workspaces.dib spi physics.dib spi leptos/leptos.dib spi lustre.dib spi wasm.dib spi } | Invoke-Block
+{ . $spiralPath dib-export testing.dib spi async.dib spi runtime.dib spi trace.dib spi threading.dib spi networking.dib spi crypto.dib spi common.dib spi base.dib spi convert.dib spi resultm.dib spi iter.dib spi env.dib spi parsing.dib spi console.dib spi date_time.dib spi file_system.dib spi guid.dib spi math.dib spi mapm.dib spi "optionm'.dib" spi "am'.dib" spi "sm'.dib" spi "sm'.dib" spir "listm'.dib" spi reflection.dib spi python.dib spi typescript.dib spi benchmark.dib spi stream.dib spi seq.dib spi util.dib spi platform.dib spi rust/rust.dib spi rust/testing.dib spi rust/near.dib spi rust/near_workspaces.dib spi physics.dib spi leptos/leptos.dib spi lustre.dib spi wasm.dib spi } | Invoke-Block
 
 if (!$fast) {
     { pwsh near/wallet/build.ps1 } | Invoke-Block

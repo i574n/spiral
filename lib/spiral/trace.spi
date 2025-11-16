@@ -29,7 +29,7 @@ inl read_state () =
                     then None
                     else
                         inl timestamp : u64 = !\($'$"near_sdk::env::block_timestamp()"')
-                        timestamp |> i64 |> Some
+                        timestamp |> convert.i64 |> Some
             }
         | _ => fun () =>
             join
@@ -45,7 +45,7 @@ inl read_state () =
                         else
                             date_time.now ()
                             |> date_time.ticks
-                            |> fun (date_time.timestamp x) => x |> convert
+                            |> fun (date_time.timestamp x) => x |> convert.convert
                             |> fun (x : i64) =>
                                 backend_switch {
                                     Gleam = fun () =>
@@ -173,7 +173,7 @@ inl trace_raw level fn =
                             |> am'.vec_chunks 15000
                             |> am'.vec_map sm'.from_iter
 
-                        inl chunks_len = chunks |> am'.vec_len |> i32
+                        inl chunks_len = chunks |> am'.vec_len |> convert.i32
 
                         if text <>. "" && chunks_len <= 1
                         then acc <- new_acc
@@ -208,7 +208,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         inl timestamp = near.block_timestamp ()
                         inl timestamp =
                             match trace_state.repl_start |> optionm'.unbox with
-                            | Some repl_start => timestamp - u64 repl_start
+                            | Some repl_start => timestamp - convert.u64 repl_start
                             | None => timestamp
                         inl timestamp_s = timestamp / 1_000_000_000
                         inl s = timestamp_s % 60
@@ -223,7 +223,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                             inl t =
                                 date_time.now ()
                                 |> date_time.ticks
-                                |> fun (date_time.timestamp x) => x |> convert
+                                |> fun (date_time.timestamp x) => x |> convert.convert
                                 |> fun (x : i64) =>
                                     backend_switch {
                                         Gleam = fun () =>
