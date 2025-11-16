@@ -478,7 +478,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                         |> am'.vec_filter (sm'.from_std_string >> sm'.contains "near-sdk")
                         |> am'.vec_len
                         |> convert.i32
-                        |> fun n => n > 0
+                        |> fun (n : int) => n > 0
                     // TODO: simplify with ++
                     if has_near_sdk
                     then deps
@@ -1110,8 +1110,8 @@ inl blocks () =
 "#!magic1\n\na\n\n\#!magic2\n\nb\n\n"
 |> escape_cell
 |> run_parser (blocks ())
-|> resultm.get
-|> sm'.format_debug
+|> resultm.map fun a, b, s => (a |> listm.map fun block => { block with content = block.content () }), b, s
+|> unwrap_format
 |> _assert_eq $$(
     [
         { magic = Magic "magic1"; content = "a" }
@@ -1186,7 +1186,7 @@ inl format_block output (block : block) =
 |> run_parser (block ())
 |> function
     | Ok (block, _, _) => format_block Fs block
-    | Error msg => failwith msg
+    | Error msg => msg () |> failwith
 |> _assert_eq "/// a\n/// \n    /// b\n/// \n/// c"
 
 #!markdown
@@ -1221,7 +1221,7 @@ inl format_blocks output blocks =
 |> run_parser (blocks ())
 |> function
     | Ok (blocks, _, _) => format_blocks Fs blocks
-    | Error msg => failwith msg
+    | Error msg => msg () |> failwith
 |> _assert_eq "/// a\n/// \n/// b\n\n/// c\nlet a = 1\n\n/// e\nlet a = 3\n"
 
 #!markdown

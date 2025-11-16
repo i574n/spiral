@@ -905,7 +905,7 @@ let create_temp_path' (guid : guid.guid) =
         | Rust (Contract) => fun _ => null ()
         | _ => fun guid =>
             get_temp_path ()
-            </> join "!create_temp_path_"
+            </> join "!create_temp_path_" // TODO: replace ! (generates invalid links)
             </> (env.get_entry_assembly_name ())
             </> (guid |> sm'.obj_to_string)
 
