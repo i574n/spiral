@@ -1437,8 +1437,9 @@ inl p_string (str : string) : parser string = fun input, i, (parser_state st as 
             fun () =>
                 inl preview_end = (i + get_max_context ()) |> min st.input_len
                 inl rest = input |> slice i preview_end
+                inl got = input |> slice i (i + len)
                 "parsing.p_string / unexpected string / "
-                ++# ({ expected = str; rest s } |> sm'.format)
+                ++# ({ expected = str; got rest s } |> sm'.format)
             |> Error
 
 #!spiral

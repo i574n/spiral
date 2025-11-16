@@ -921,8 +921,7 @@ inl magic_marker () : parser string =
 
 "#!magic"
 |> run_parser (magic_marker ())
-|> resultm.get
-|> sm'.format_debug
+|> unwrap_format
 |> _assert_eq $$("#!", "magic", new_parser_state 0 1 3 7)
 
 #!spiral
@@ -931,9 +930,10 @@ inl magic_marker () : parser string =
 
 "##!magic"
 |> run_parser (magic_marker ())
+|> resultm.map_error eval
 |> sm'.format_debug
 |> _assert_eq (
-    "US0_1\n  \"parsing.p_string / unexpected string / { "
+    "US3_1\n  \"parsing.p_string / unexpected string / { "
     ++# $'"expected = ##!!; got = ####; rest = ####!!magic; s = !(new_parser_state 0 1 1 8) }\\\""'
 )
 
@@ -943,8 +943,7 @@ inl magic_marker () : parser string =
 
 "\n#!x"
 |> run_parser ((new_line () >>. magic_marker ()) <|> (eof () >>. p_return "") |> look_ahead)
-|> resultm.get
-|> sm'.format_debug
+|> unwrap_format
 |> _assert_eq $$("#!", "\n#!x", new_parser_state 0 1 1 4)
 
 #!markdown
@@ -966,8 +965,7 @@ inl magic_command () =
 
 "#!magic\n\na"
 |> run_parser (magic_command ())
-|> resultm.get
-|> sm'.format_debug
+|> unwrap_format
 |> _assert_eq $$("magic", "\n\na", new_parser_state 0 1 8 10)
 
 #!spiral
@@ -976,9 +974,10 @@ inl magic_command () =
 
 " #!magic\n\na"
 |> run_parser (magic_command ())
+|> resultm.map_error eval
 |> sm'.format_debug
 |> _assert_eq (
-    "US0_1\n  \"parsing.p_string / unexpected string / { "
+    "US5_1\n  \"parsing.p_string / unexpected string / { "
     ++# $'"expected = ##!!; got =  ##; rest =  ##!!magic\n\na; s = !(new_parser_state 0 1 1 11) }\\\""'
 )
 
@@ -1000,8 +999,7 @@ inl content () =
 
 "#!magic\n\n\na\n\n\n"
 |> run_parser (content ())
-|> resultm.get
-|> sm'.format_debug
+|> unwrap_format
 |> _assert_eq $$("#!magic\n\n\na", "", new_parser_state 14 7 1 14)
 
 #!markdown
@@ -1087,8 +1085,8 @@ inl block () =
 
 "#!magic\n\n\na\n\n\n"
 |> run_parser (block ())
-|> resultm.get
-|> sm'.format_debug
+|> resultm.map fun block, b, s => { block with content = block.content () }, b, s
+|> unwrap_format
 |> _assert_eq $$(Magic "magic", "a", "", new_parser_state 14 7 1 14)
 
 #!markdown
