@@ -7,6 +7,11 @@ Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 . ../../deps/polyglot/scripts/core.ps1
 
+$ResolvedScriptDir = ResolveLink $ScriptDir
+$ResolvedScriptDir | Set-Location
+
+Write-Output "spiral/lib/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScriptDir: $ResolvedScriptDir"
+
 
 $spiralPath = "../../../spiral/workspace/target/release/spiral$(_exe)"
 

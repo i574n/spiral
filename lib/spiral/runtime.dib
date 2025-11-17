@@ -112,7 +112,7 @@ let split_args (args : string) : result (array_base string) _ =
 
 #!spiral
 
-let split_command (command : string) : result (string * option (() -> string)) _ =
+let split_command (command : string) : result (string * option string) _ =
     open parsing
     inl quotes = [ '"'; '\'' ]
     inl p_quoted_char = quotes |> listm.map p_char |> choice
@@ -124,7 +124,7 @@ let split_command (command : string) : result (string * option (() -> string)) _
     inl p_command = p_path .>>. (p_args |> opt)
     command
     |> run_parser p_command
-    |> resultm.map (fst >> fun path, args => path (), args ())
+    |> resultm.map (fst >> fun path, args => path (), args () |> optionm.map eval)
     |> resultm.map_error eval
 
 #!spiral
@@ -1273,7 +1273,6 @@ let execute_with_options (options : execution_options) : i32 * string =
     inl file_name, arguments = command |> split_command |> resultm.get
     inl arguments =
         arguments
-        |> optionm.map eval
         |> optionm'.default_value ""
         |> split_args
         |> resultm.get

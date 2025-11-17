@@ -243,7 +243,6 @@ inl trace_raw level fn =
                             elif text = ""
                             then *acc
                             else *acc ++\# text
-
                         inl chunks =
                             new_acc
                             |> sm'.as_str
@@ -252,15 +251,14 @@ inl trace_raw level fn =
                             |> iter_collect
                             |> am'.vec_chunks 15000
                             |> am'.vec_map sm'.from_iter
-
-                        inl chunks_len = chunks |> am'.vec_len |> convert.i32
-
-                        if text <>. "" && chunks_len <= 1
+                            |> am'.from_vec
+                        inl chunks_len = chunks |> am'.length
+                        if text <>. "" && chunks_len <= 1i32
                         then acc <- new_acc
                         else
                             acc <- ""
                             chunks
-                            |> am'.vec_for_each''' near.log
+                            |> am.iter near.log
                     | Rust _ => fun text, _ =>
                         !\\(text, $'\@"println\!(""{}"", $0)"')
                     | _ => fun text, write_line =>
