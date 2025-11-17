@@ -191,7 +191,7 @@ inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
                 fun () => "parsing.skip_many / inner parser consumed no input"
                 |> Error
             else s' |> 루프 j
-        | Error _ => Ok (id, i, s)
+        | Error _ => Ok (id : () -> (), i, s)
     s0 |> 루프 i0
 
 /// ### skip_many1
@@ -209,7 +209,7 @@ inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
 inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s =>
     match a (input, i, s) with
     | Ok (_, i', s') => b (input, i', s')
-    | Error e => Error e
+    | Error e => e |> Error
 
 /// ### (.>>)
 inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s =>
@@ -218,7 +218,7 @@ inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s
         b (input, i', s')
         |> resultm.map fun _, i'', s'' =>
             ra, i'', s''
-    | Error e => Error e
+    | Error e => e |> Error
 
 /// ### (.>>.)
 inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -> u)) = fun input, i, s =>
@@ -227,7 +227,7 @@ inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -
         b (input, i', s')
         |> resultm.map fun rb, i'', s'' =>
             (fun () => ra, rb), i'', s''
-    | Error e => Error e
+    | Error e => e |> Error
 
 /// ### (>>%)
 inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
@@ -286,7 +286,6 @@ inl many forall b c.
 /// ### many1_chars
 inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
     match p (input, i0, s0) with
-    | Error e => Error e
     | Ok (_, i1, s1) =>
         let rec 루프 (i : int) (s : parser_state) : result ((() -> string) * int * parser_state) _ =
             match p (input, i, s) with
@@ -297,6 +296,7 @@ inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
                 else s' |> 루프 i'
             | Error _ => Ok ((fun () => input |> slice i0 i), i, s)
         s1 |> 루프 i1
+    | Error e => e |> Error
 
 /// ### many_chars
 inl many_chars (p : parser char) : parser string = fun input, i, s =>

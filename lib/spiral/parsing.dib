@@ -657,7 +657,7 @@ inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
                 fun () => "parsing.skip_many / inner parser consumed no input"
                 |> Error
             else s' |> 루프 j
-        | Error _ => Ok (id, i, s)
+        | Error _ => Ok (id : () -> (), i, s)
     s0 |> 루프 i0
 
 #!spiral
@@ -703,7 +703,7 @@ inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
 inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s =>
     match a (input, i, s) with
     | Ok (_, i', s') => b (input, i', s')
-    | Error e => Error e
+    | Error e => e |> Error
 
 #!spiral
 
@@ -715,6 +715,7 @@ inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s
 
 "abc\ndef\nghi"
 |> run_parser (skip_any_string 5 >>. p_char 'a')
+|> resultm.map_error eval
 |> _assert_eq (Error "parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n")
 
 #!markdown
@@ -729,7 +730,7 @@ inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s
         b (input, i', s')
         |> resultm.map fun _, i'', s'' =>
             ra, i'', s''
-    | Error e => Error e
+    | Error e => e |> Error
 
 #!markdown
 
@@ -743,7 +744,7 @@ inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -
         b (input, i', s')
         |> resultm.map fun rb, i'', s'' =>
             (fun () => ra, rb), i'', s''
-    | Error e => Error e
+    | Error e => e |> Error
 
 #!markdown
 
@@ -821,6 +822,7 @@ inl none_of (chars : list char) : parser char = fun input, i, (parser_state st a
 
 "abc"
 |> run_parser (none_of ['a'; 'b'; 'c'])
+|> resultm.map_error eval
 |> _assert_eq (
     backend_switch {
         Gleam = fun () =>
@@ -891,6 +893,7 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, i, s =
 
 "cba"
 |> run_parser (p_char 'a' <|> p_char 'b')
+|> resultm.map_error eval
 |> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
 
 #!markdown
@@ -912,7 +915,7 @@ inl (|>>) p f : parser _ =
 ///! typescript
 
 "abc"
-|> run_parser (p_char 'a' |>> sm'.char_to_upper)
+|> run_parser (p_char 'a' |>> fun c => fun () => c () |> sm'.char_to_upper)
 |> unwrap_format
 |> _assert_eq $$('A', "bc", new_parser_state 0 1 2 3)
 
@@ -963,7 +966,6 @@ inl many forall b c.
 
 inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
     match p (input, i0, s0) with
-    | Error e => Error e
     | Ok (_, i1, s1) =>
         let rec 루프 (i : int) (s : parser_state) : result ((() -> string) * int * parser_state) _ =
             match p (input, i, s) with
@@ -974,6 +976,7 @@ inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
                 else s' |> 루프 i'
             | Error _ => Ok ((fun () => input |> slice i0 i), i, s)
         s1 |> 루프 i1
+    | Error e => e |> Error
 
 #!spiral
 
@@ -1068,6 +1071,7 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, (parser_state st as 
 
 "cba"
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
+|> resultm.map_error eval
 |> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
 
 #!markdown
@@ -1230,6 +1234,7 @@ inl between p_open p_close p_content : parser _ = fun input, i, s =>
 
 "[aaabb"
 |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
+|> resultm.map_error eval
 |> resultm.unwrap_err
 |> sm'.format_debug
 |> _assert_eq (
@@ -1546,6 +1551,7 @@ inl attempt forall t. (p : parser t) : parser t = fun input, i, s =>
 
 "aabbcc"
 |> run_parser (attempt (p_char 'a' >>. p_char 'a' >>. p_char 'b' >>. p_char 'c'))
+|> resultm.map_error eval
 |> _assert_eq (Error "parsing.p_char / { expected = c; line = 1; col = 4 }\naabbcc\n   ^\n")
 
 #!markdown
@@ -1582,7 +1588,7 @@ inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() ->
 //// test
 
 "pipe2"
-|> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a b => a ++# b))
+|> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a, b => a () ++# b ()))
 |> unwrap_format
 |> _assert_eq $$("pipe2", "", new_parser_state 0 1 6 5)
 
