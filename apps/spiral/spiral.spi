@@ -356,7 +356,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                         |> am'.vec_filter (sm'.from_std_string >> sm'.contains "near-sdk")
                         |> am'.vec_len
                         |> convert.i32
-                        |> fun n => n > 0
+                        |> fun (n : int) => n > 0
                     // TODO: simplify with ++
                     if has_near_sdk
                     then deps
