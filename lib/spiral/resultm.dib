@@ -76,7 +76,7 @@ inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t ex
     inl error (e : exn) = e |> Error : result t exn
     backend_switch {
         Fsharp = fun () =>
-            $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
+            join $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
         Python = fun () =>
             $'fn = !fn '
             $'ok = !ok '

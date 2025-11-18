@@ -51,9 +51,9 @@ inl parse forall t.
     : result ((() -> t) * (() -> string) * parser_state) (() -> string)
     =
     p (input, 0, s)
-    |> resultm.map fun result, i, s' =>
+    |> resultm.map fun result, i, (parser_state st as s') =>
         result,
-        (fun () => input |> slice i (input |> sm'.length)),
+        (fun () => input |> slice i st.input_len),
         s'
 
 /// ### update_char
@@ -70,44 +70,17 @@ inl update_char (parser_state s) (c : char) : parser_state =
         }
     |> parser_state
 
-/// ### update
-inl update result s =
-    inl len = result |> sm'.length
-    let rec 루프 (j : int) (parser_state st) =
-        if j >= len
-        then st |> parser_state
-        else
-            inl k =
-                match result |> sm'.index_of_char_from j '\n' with
-                | -1 => -1
-                | kk when kk >= j => kk
-                | kk => j + kk
-            if k = -1 then
-                { st with position = { line = st.position.line; col = st.position.col + (len - j) } }
-                |> parser_state
-            else
-                inl st' =
-                    if k > j
-                    then { st with position = { line = st.position.line; col = st.position.col + (k - j) } }
-                    else st
-                    |> parser_state
-                '\n' |> update_char st' |> 루프 (k + 1)
-    s |> 루프 0
-
 /// ### update_span
 inl update_span (input : string) (i0 : int) (len : int) (parser_state s) : parser_state =
     inl endi = i0 + len
     let rec 루프 (j : int) (last_nl : int) (count : int) =
-        match input |> sm'.index_of_char_from j '\n' with
-        | -1 => last_nl, count
-        | k when k >= endi => last_nl, count
-        | k when k >= j => 루프 (k + 1) k (count + 1)
-        | k =>
-            inl kk = j + k
-            if kk >= endi
-            then last_nl, count
-            else 루프 (kk + 1) kk (count + 1)
-    inl last_nl, n = 루프 i0 (-1) 0
+        if j >= endi
+        then last_nl, count
+        else
+            match input |> sm'.index j with
+            | '\n' => 루프 (j + 1) j (count + 1)
+            | _ => 루프 (j + 1) last_nl count
+    inl last_nl, n = 루프 i0 -1 0
     if n = 0
     then { s with position = { line = s.position.line; col = s.position.col + len } }
     else
@@ -121,6 +94,28 @@ inl update_span (input : string) (i0 : int) (len : int) (parser_state s) : parse
             input_len = s.input_len
         }
     |> parser_state
+
+/// ### update
+inl update result s =
+    inl len = result |> sm'.length
+    s |> update_span result 0 len
+
+/// ### advance_while
+inl advance_while (pred : char -> bool) (input : string) (i0 : int) (parser_state st as s0)
+    : int * parser_state
+    =
+    if i0 >= st.input_len then i0, s0
+    else
+        inl j =
+            i0
+            |> sm'.span_from pred input
+            |> fun j => if j > st.input_len then st.input_len else j
+        inl consumed = j - i0
+        if consumed = 0
+        then i0, s0
+        else
+            inl s' = s0 |> update_span input i0 consumed
+            j, s'
 
 /// ### run_parser
 inl run_parser p input =
@@ -305,7 +300,7 @@ inl many_chars (p : parser char) : parser string = fun input, i, s =>
     | Error _ => Ok ((fun () => ""), i, s)
 
 /// ### many_chars_till
-inl many_chars_till (p : parser char) (end_p : parser _) : parser _ = fun input, i0, (parser_state st as s0) =>
+inl many_chars_till (p : parser char) (end_p : parser _) = fun input, i0, (parser_state st as s0) =>
     let rec 루프 (i : int) (s : parser_state) : result ((() -> string) * int * parser_state) (() -> string) =
         if i >= st.input_len
         then Ok ((fun () => if i > i0 then input |> slice i0 i else ""), i, s)
@@ -313,14 +308,13 @@ inl many_chars_till (p : parser char) (end_p : parser _) : parser _ = fun input,
             match end_p (input, i, s) with
             | Ok _ => Ok ((fun () => if i > i0 then input |> slice i0 i else ""), i, s)
             | Error _ =>
-                inl k =
-                    match input |> sm'.index_of_char_from i '\n' with
-                    | -1 => st.input_len
-                    | kk when kk >= i => kk
-                    | kk => i + kk
-                if k > i
-                then s |> update_span input i (k - i) |> 루프 k
-                else '\n' |> update_char s |> 루프 (i + 1)
+                match p (input, i, s) with
+                | Ok (_, i', s') =>
+                    if i' = i then
+                        fun () => "parsing.many_chars_till / inner parser succeeded without consuming input"
+                        |> Error
+                    else s' |> 루프 i'
+                | Error _ => Ok ((fun () => if i > i0 then input |> slice i0 i else ""), i, s)
     s0 |> 루프 i0
 
 /// ### many1
@@ -472,9 +466,9 @@ inl is_space c =
 
 /// ### spaces1
 inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
-    inl j = i |> sm'.span_from is_space input
+    inl j, s' = s |> advance_while is_space input i
     if j <> i
-    then Ok (id, j, s |> update_span input i (j - i))
+    then Ok (id, j, s')
     else
         fun () =>
             inl preview_end = (i + get_max_context ()) |> min st.input_len
@@ -484,8 +478,8 @@ inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
 
 /// ### spaces
 inl spaces () : parser () = fun input, i, s =>
-    inl j = i |> sm'.span_from is_space input
-    Ok (id, j, s |> update_span input i (j - i))
+    inl j, s' = s |> advance_while is_space input i
+    Ok (id, j, s')
 
 /// ### p_digit
 inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
@@ -507,12 +501,9 @@ inl opt p : parser (option _) = fun input, i, s =>
     | Error _ => Ok ((fun () => None), i, s)
 
 /// ### rest_of_line
-inl rest_of_line () : parser string = fun input, i0, (parser_state st as s) =>
-    inl j =
-        match input |> sm'.index_of_char_from i0 '\n' with
-        | -1 => st.input_len
-        | k => if k >= i0 then k else i0 + k
-    Ok ((fun () => input |> slice i0 j), j, s |> update_span input i0 (j - i0))
+inl rest_of_line () : parser string = fun input, i0, s0 =>
+    inl j, s' = s0 |> advance_while ((<>) '\n') input i0
+    Ok ((fun () => input |> slice i0 j), j, s')
 
 /// ### eof
 inl eof () : parser () = fun input, i, (parser_state st as s) =>
@@ -600,15 +591,14 @@ inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() ->
 
 /// ### new_lines
 inl new_lines () : parser () = fun input, i, s =>
-    inl j = i |> sm'.span_from ((=) '\n') input
-    Ok (id, j, s |> update_span input i (j - i))
+    inl j, s' = s |> advance_while ((=) '\n') input i
+    Ok (id, j, s')
 
 /// ### new_lines1
 inl new_lines1 () : parser () = fun input, i, (parser_state st as s) =>
-    // TODO: invert span_from input pipe
-    inl j = i |> sm'.span_from ((=) '\n') input
+    inl j, s' = s |> advance_while ((=) '\n') input i
     if j <> i
-    then Ok (id, j, s |> update_span input i (j - i))
+    then Ok (id, j, s')
     else
         fun () =>
             inl preview_end = (i + get_max_context ()) |> min st.input_len

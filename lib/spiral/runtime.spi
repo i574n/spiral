@@ -11,22 +11,28 @@ let split_args (args : string) : result (array_base string) _ =
     inl esc = [ '\\'; '`' ]
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
-    inl p_esc_char c =
-        p_char c >>. any_char () |>> fun c' => fun () => $c ++# $(c' ())
+    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => $c ++# $(c' ())
     inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
     inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
-    inl p_text = p_word |> many1_strings
     inl p_esc = esc |> listm.map p_esc_char |> choice
     inl p_quoted = (p_word <|> p_esc) |> many_strings
     inl p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
-    inl p_esc_root = p_esc >>% "" >>. (p_word |> many) |>> fun s => fun () => s () |> sm'.concat_list ""
+    inl p_esc_root = p_esc >>% "" >>. p_word |> many |>> fun s => fun () => s () |> sm'.concat_list ""
+    inl p_esc_quote_delim =
+        esc
+        |> listm.map fun c => p_char c >>. p_char '"' >>% '"'
+        |> choice
+    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => $c ++# $(c' ())
+    inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
+    inl p_quoted_esc = (p_word <|> p_esc_noquote) |> many_strings
+    inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
     inl ensure_progress p : parser _ = fun input, i, s =>
         match p (input, i, s) with
         | Ok (r, i', s') when i' = i =>
             fun () => "runtime.split_args / segment zero-length success"
             |> Error
         | other => other
-    inl p_segment = ensure_progress (p_quoted_all <|> p_plain <|> p_esc_root)
+    inl p_segment = ensure_progress (p_quoted_all_esc <|> p_quoted_all <|> p_plain <|> p_esc_root)
     inl p_content = p_segment |> many1_strings
     inl p_args = spaces1 () |> sep_by p_content
     args
