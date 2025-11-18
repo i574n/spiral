@@ -448,8 +448,7 @@ inl update_span (input : string) (i0 : int) (len : int) (parser_state s) : parse
 #!spiral
 
 inl update result s =
-    inl len = result |> sm'.length
-    s |> update_span result 0 len
+    s |> update_span result 0 (result |> sm'.length)
 
 #!markdown
 
@@ -460,7 +459,8 @@ inl update result s =
 inl advance_while (pred : char -> bool) (input : string) (i0 : int) (parser_state st as s0)
     : int * parser_state
     =
-    if i0 >= st.input_len then i0, s0
+    if i0 >= st.input_len
+    then i0, s0
     else
         inl j =
             i0
@@ -469,9 +469,7 @@ inl advance_while (pred : char -> bool) (input : string) (i0 : int) (parser_stat
         inl consumed = j - i0
         if consumed = 0
         then i0, s0
-        else
-            inl s' = s0 |> update_span input i0 consumed
-            j, s'
+        else j, s0 |> update_span input i0 consumed
 
 #!markdown
 
@@ -590,10 +588,11 @@ inl p_char (c : char) : parser char =
 #!spiral
 
 inl any_string length : parser string = fun input, i, (parser_state st as s) =>
-    if st.input_len - i < length then
+    if st.input_len - i >= length
+    then Ok ((fun () => input |> slice i (i + length)), i + length, s |> update_span input i length)
+    else
         fun () => "parsing.any_string / unexpected end of input / " ++# ({ s } |> sm'.format)
         |> Error
-    else Ok ((fun () => input |> slice i (i + length)), i + length, s |> update_span input i length)
 
 #!spiral
 
@@ -625,10 +624,11 @@ inl any_string length : parser string = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
-    if st.input_len - i < length then
+    if st.input_len - i >= length
+    then Ok (id, i + length, s |> update_span input i length)
+    else
         fun () => "parsing.skip_any_string / unexpected end of input / " ++# ({ s } |> sm'.format)
         |> Error
-    else Ok (id, i + length, s |> update_span input i length)
 
 #!spiral
 
@@ -652,12 +652,13 @@ inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
 inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
     let rec 루프 (i : int) (s : parser_state) =
         match a (input, i, s) with
+        | Error _ => Ok (id : () -> (), i, s)
         | Ok (_, j, s') =>
-            if j = i then
+            if j <> i
+            then s' |> 루프 j
+            else
                 fun () => "parsing.skip_many / inner parser consumed no input"
                 |> Error
-            else s' |> 루프 j
-        | Error _ => Ok (id : () -> (), i, s)
     s0 |> 루프 i0
 
 #!spiral
@@ -677,13 +678,13 @@ inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
 
 inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
     match a (input, i, s) with
+    | Error e => e |> Error
     | Ok (_, j, s') =>
-        if j = i
-        then
+        if j <> i
+        then skip_many a (input, j, s')
+        else
             fun () => "parsing.skip_many1 / inner parser consumed no input"
             |> Error
-        else skip_many a (input, j, s')
-    | Error err => Error err
 
 #!spiral
 
@@ -726,11 +727,11 @@ inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s
 
 inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s =>
     match a (input, i, s) with
+    | Error e => e |> Error
     | Ok (ra, i', s') =>
         b (input, i', s')
         |> resultm.map fun _, i'', s'' =>
             ra, i'', s''
-    | Error e => e |> Error
 
 #!markdown
 
@@ -740,11 +741,11 @@ inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s
 
 inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -> u)) = fun input, i, s =>
     match a (input, i, s) with
+    | Error e => e |> Error
     | Ok (ra, i', s') =>
         b (input, i', s')
         |> resultm.map fun rb, i'', s'' =>
             (fun () => ra, rb), i'', s''
-    | Error e => e |> Error
 
 #!markdown
 
@@ -929,21 +930,17 @@ inl many forall b c.
     (p : _ * _ * _ -> _ ((() -> b) * _ * _) c)
     : parser (list _)
     =
-    fun input, i0, (parser_state st as s0) =>
-        let rec 루프 (acc : list b) (i : int) (fuel : int) (s : parser_state)
+    fun input, i0, s0 =>
+        let rec 루프 (acc : list b) (i : int) (s : parser_state)
             : result ((() -> list b) * int * parser_state) _
             =
-            if fuel <= 0 then
-                fun () => "parsing.many / out of fuel (probable zero-length loop)"
+            match p (input, i, s) with
+            | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
+            | Ok (x, i', s') when i' > i => s' |> 루프 (x () :: acc) i'
+            | Ok _ =>
+                fun () => "parsing.many / inner parser succeeded without consuming input"
                 |> Error
-            else
-                match p (input, i, s) with
-                | Ok (x, i', s') when i' = i =>
-                    fun () => "parsing.many / inner parser succeeded without consuming input"
-                    |> Error
-                | Ok (x, i', s') => s' |> 루프 (x () :: acc) i' (fuel - 1)
-                | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
-        s0 |> 루프 [] i0 (st.input_len - i0 + 2)
+        s0 |> 루프 [] i0
 
 #!spiral
 
@@ -966,17 +963,18 @@ inl many forall b c.
 
 inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
     match p (input, i0, s0) with
+    | Error e => e |> Error
     | Ok (_, i1, s1) =>
         let rec 루프 (i : int) (s : parser_state) : result ((() -> string) * int * parser_state) _ =
             match p (input, i, s) with
+            | Error _ => Ok ((fun () => input |> slice i0 i), i, s)
             | Ok (_, i', s') =>
-                if i' = i then
+                if i' <> i
+                then s' |> 루프 i'
+                else
                     fun () => "parsing.many1_chars / inner parser succeeded without consuming input"
                     |> Error
-                else s' |> 루프 i'
-            | Error _ => Ok ((fun () => input |> slice i0 i), i, s)
         s1 |> 루프 i1
-    | Error e => e |> Error
 
 #!spiral
 
@@ -1013,16 +1011,19 @@ inl many_chars_till (p : parser char) (end_p : parser _) = fun input, i0, (parse
         if i >= st.input_len
         then Ok ((fun () => if i > i0 then input |> slice i0 i else ""), i, s)
         else
-            match end_p (input, i, s) with
-            | Ok _ => Ok ((fun () => if i > i0 then input |> slice i0 i else ""), i, s)
-            | Error _ =>
-                match p (input, i, s) with
-                | Ok (_, i', s') =>
-                    if i' = i then
+            inl j, s' = s |> advance_while (fun c => c <> '\n') input i
+            if j >= st.input_len
+            then Ok ((fun () => if j > i0 then input |> slice i0 j else ""), j, s')
+            else
+                match end_p (input, j, s') with
+                | Ok _ => Ok ((fun () => if j > i0 then input |> slice i0 j else ""), j, s')
+                | Error _ =>
+                    match p (input, j, s') with
+                    | Error _ => Ok ((fun () => if j > i0 then input |> slice i0 j else ""), j, s')
+                    | Ok (_, j', s'') when j' > j => s'' |> 루프 j'
+                    | Ok _ =>
                         fun () => "parsing.many_chars_till / inner parser succeeded without consuming input"
                         |> Error
-                    else s' |> 루프 i'
-                | Error _ => Ok ((fun () => if i > i0 then input |> slice i0 i else ""), i, s)
     s0 |> 루프 i0
 
 #!markdown
@@ -1031,24 +1032,18 @@ inl many_chars_till (p : parser char) (end_p : parser _) = fun input, i0, (parse
 
 #!spiral
 
-inl many1 (p : parser _) : parser (list _) = fun input, i0, (parser_state st as s0) =>
+inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
     match p (input, i0, s0) with
     | Error e => e |> Error
     | Ok (first, i1, s1) =>
-        inl fuel_max = st.input_len - i1 + 2
-        let rec 루프 acc (i : int) (fuel : int) s : result ((() -> list _) * int * parser_state) _ =
-            if fuel <= 0 then
-                fun () => "parsing.many1 / out of fuel (probable zero-length loop)"
+        let rec 루프 acc (i : int) s : result ((() -> list _) * int * parser_state) _ =
+            match p (input, i, s) with
+            | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
+            | Ok (x, i', s') when i' > i => s' |> 루프 (x () :: acc) i'
+            | Ok _ =>
+                fun () => "parsing.many1 / inner parser succeeded without consuming input"
                 |> Error
-            else
-                match p (input, i, s) with
-                | Ok (x, i', s') =>
-                    if i' = i then
-                        fun () => "parsing.many1 / inner parser succeeded without consuming input"
-                        |> Error
-                    else s' |> 루프 (x () :: acc) i' (fuel - 1)
-                | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
-        s1 |> 루프 [ first () ] i1 fuel_max
+        s1 |> 루프 [ first () ] i1
 
 #!spiral
 
@@ -1079,24 +1074,18 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, (parser_state st as 
 
 #!spiral
 
-inl many1_strings (p : parser _) : parser string = fun input, i0, (parser_state st as s0) =>
+inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
     match p (input, i0, s0) with
     | Error e => e |> Error
     | Ok (r0, i1, s1) =>
-        inl fuel_max = st.input_len - i1 + 2
-        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result ((() -> string) * int * _) _ =
-            if fuel <= 0 then
-                fun () => "parsing.many1_strings / out of fuel (probable zero-length loop)"
+        let rec 루프 (acc : list string) (i : int) s : result ((() -> string) * int * _) _ =
+            match p (input, i, s) with
+            | Error _ => Ok ((fun () => acc |> listm.rev |> sm'.concat_list ""), i, s)
+            | Ok (r, i', s') when i' > i => s' |> 루프 ($(r ()) :: acc) i'
+            | Ok _ =>
+                fun () => "parsing.many1_strings / inner parser succeeded without consuming input"
                 |> Error
-            else
-                match p (input, i, s) with
-                | Error _ => Ok ((fun () => acc |> listm.rev |> sm'.concat_list ""), i, s)
-                | Ok (r, i', s') =>
-                    if i' = i then
-                        fun () => "parsing.many1_strings / inner parser succeeded without consuming input"
-                        |> Error
-                    else s' |> 루프 ($(r ()) :: acc) i' (fuel - 1)
-        s1 |> 루프 [ $(r0 ()) ] i1 fuel_max
+        s1 |> 루프 [ $(r0 ()) ] i1
 
 #!spiral
 
@@ -1117,26 +1106,21 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, (parser_state 
 
 #!spiral
 
-inl many_strings (p : parser _) : parser string = fun input, i0, (parser_state st as s0) =>
+inl many_strings (p : parser _) : parser string = fun input, i0, s0 =>
     match p (input, i0, s0) with
     | Error _ => Ok ((fun () => ""), i0, s0)
     | Ok (r0, i1, s1) when i1 = i0 =>
         fun () => "parsing.many_strings / first inner parser consumed no input"
         |> Error
     | Ok (r0, i1, s1) =>
-        inl fuel_max = st.input_len - i1 + 2
-        let rec 루프 (acc : list string) (i : int) (fuel : int) s : result ((() -> string) * int * _) _ =
-            if fuel <= 0 then
-                fun () => "parsing.many_strings / out of fuel (probable zero-length loop)"
+        let rec 루프 (acc : list string) (i : int) s : result ((() -> string) * int * _) _ =
+            match p (input, i, s) with
+            | Error _ => Ok ((fun () => $(r0 ()) :: (acc |> listm.rev) |> sm'.concat_list ""), i, s)
+            | Ok (r, i', s') when i' > i => s' |> 루프 ($(r ()) :: acc) i'
+            | Ok _ =>
+                fun () => "parsing.many_strings / inner parser succeeded without consuming input"
                 |> Error
-            else
-                match p (input, i, s) with
-                | Ok (r, i', s') when i' = i =>
-                    fun () => "parsing.many_strings / inner parser succeeded without consuming input"
-                    |> Error
-                | Ok (r, i', s') => s' |> 루프 ($(r ()) :: acc) i' (fuel - 1)
-                | Error _ => Ok ((fun () => $(r0 ()) :: (acc |> listm.rev) |> sm'.concat_list ""), i, s)
-        s1 |> 루프 [] i1 fuel_max
+        s1 |> 루프 [] i1
 
 #!markdown
 
@@ -1255,6 +1239,7 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
     | Ok (first, i1, s1) =>
         let rec 루프 (acc : list b) (i : int) s : result ((() -> list b) * int * parser_state) _ =
             match sep (input, i, s) with
+            | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
             | Ok (_, j, s') =>
                 if j = i then
                     fun () => "parsing.sep_by / separator consumed no input"
@@ -1263,7 +1248,6 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
                     match p (input, j, s') with
                     | Ok (x, k, s'') => s'' |> 루프 (x () :: acc) k
                     | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
-            | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
         s1 |> 루프 [ first () ] i1
 
 #!markdown
@@ -1275,6 +1259,7 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
 inl sep_end_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
     let rec 루프 acc i s =
         match p (input, i, s) with
+        | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
         | Ok (x, j, s1) =>
             if j = i then
                 fun () => "parsing.sep_end_by / element parser consumed no input"
@@ -1282,13 +1267,13 @@ inl sep_end_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
             else
                 inl acc' = x () :: acc
                 match sep (input, j, s1) with
+                | Error _ => Ok ((fun () => acc' |> listm.rev), j, s1)
                 | Ok (_, k, s'') =>
-                    if k = j then
+                    if k <> j
+                    then s'' |> 루프 acc' k
+                    else
                         fun () => "parsing.sep_end_by / separator consumed no input"
                         |> Error
-                    else s'' |> 루프 acc' k
-                | Error _ => Ok ((fun () => acc' |> listm.rev), j, s1)
-        | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
     s0 |> 루프 [] i0
 
 #!spiral
@@ -1496,10 +1481,11 @@ inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun inp
         | Error _ =>
             match p (input, i, s) with
             | Ok (x, i', s') =>
-                if i' = i then
+                if i' <> i
+                then s' |> 루프 (x () :: acc) i'
+                else
                     fun () => "parsing.many_till / inner parser succeeded without consuming input"
                     |> Error
-                else s' |> 루프 (x () :: acc) i'
             | Error e => e |> Error
     s0 |> 루프 [] i0
 
