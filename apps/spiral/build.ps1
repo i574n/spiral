@@ -74,5 +74,6 @@ if (!$fast) {
 { cargo +nightly-2025-11-01 build --timings --release } | Invoke-Block -OnError Continue
 
 if ($env:CI) {
-    Remove-Item ../../deps/polyglot/target/spiral/spiral/target -Recurse -Force -ErrorAction Ignore
+    ClearCargoTarget "../../deps/polyglot/target/spiral/spiral"
+    ClearCargoTarget "../../workspace"
 }

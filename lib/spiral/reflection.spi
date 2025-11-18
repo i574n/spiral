@@ -16,6 +16,14 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                 | () => $'' : value
                                 | _ =>
                                     backend_switch `value `({}) {
+                                        Gleam =
+                                            (fun () =>
+                                                $'Nil' : value
+                                            ) : () -> value
+                                        Lua =
+                                            (fun () =>
+                                                $'nil' : value
+                                            ) : () -> value
                                         Fsharp =
                                             (fun () =>
                                                 $'Unchecked.defaultof<_>' : value
@@ -50,6 +58,14 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                                                 | () => $'' : value
                                                 | _ =>
                                                     backend_switch `value `({}) {
+                                                        Gleam =
+                                                            (fun () =>
+                                                                $'Nil' : value
+                                                            ) : () -> value
+                                                        Lua =
+                                                            (fun () =>
+                                                                $'nil' : value
+                                                            ) : () -> value
                                                         Fsharp =
                                                             (fun () =>
                                                                 $'Unchecked.defaultof<_>' : value
@@ -113,6 +129,8 @@ inl union_to_string forall t. (x : t) : string =
             else
                 inl separator =
                     backend_switch {
+                        Gleam = fun () => "("
+                        Lua = fun () => "("
                         Fsharp = fun () =>
                             run_target function
                                 | Rust _ => fun () => join "("

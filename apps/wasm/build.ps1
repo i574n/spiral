@@ -50,12 +50,14 @@ Write-Output "spiral/apps/wasm/build.ps1 / path: $path"
     | FixRust `
     | Set-Content "$projectName.rs"
 
-if ($env:CI) {
-    Remove-Item $targetDir -Recurse -Force -ErrorAction Ignore
-}
-
 Write-Output "spiral/apps/wasm/build.ps1 / `$targetDir = $targetDir / `$projectName: $projectName / `$env:CI:'$env:CI'"
 
 cargo fmt --
 
 { cargo +nightly-2025-11-01 build --timings --release } | Invoke-Block -Linux
+
+if ($env:CI) {
+    Remove-Item $targetDir -Recurse -Force -ErrorAction Ignore
+
+    ClearCargoTarget "../../workspace"
+}

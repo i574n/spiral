@@ -11066,12 +11066,12 @@ module spiral_compiler =
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i :    %s" i (tup_ty t)) |> String.concat ", "
+        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i" i) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             Array.iter (function
                 | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnData(d,trace) -> try line s (tup d) with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) -> try line s $"return {tup d}          " with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 ) x
         and tup x =
             match data_term_vars x with
@@ -11103,17 +11103,17 @@ module spiral_compiler =
                         | xs -> sprintf "{ %s }" xs
                     sprintf "closure%i(%s)" tag fv
             let free_vars do_annot x =
-                let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
+                let f (L(i,t)) = if do_annot then sprintf "v%i" i else sprintf "v%i" i
                 match data_free_vars x with
                 | [||] -> "nil         "
                 | [|x|] -> f x
                 | x -> Array.map f x |> String.concat ", " |> sprintf "{ %s }"
             let simple x =
                 match d with
-                | None -> x
+                | None -> $"return {x}           "
                 | Some d ->
                     match free_vars false d |> SpiralSm.trim with
-                    | "nil" -> x
+                    | "nil" -> $"{x}            "
                     | d -> sprintf "local %s = %s" d x
                 |> line s
             let complex f =
@@ -11123,8 +11123,10 @@ module spiral_compiler =
                     match free_vars false d |> SpiralSm.trim with
                     | "nil" -> f s
                     | d ->
-                        line s (sprintf "local %s =" d)
+                        line s $"local get{d} = function()"
                         f (indent s)
+                        line s $"end"
+                        line s $"local {d} = get{d}()"
             let layout_vars a =
                 let f i x =
                     match x with
@@ -11132,10 +11134,9 @@ module spiral_compiler =
                     | WLit x -> sprintf "l%i = %s" i (litLua x)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
             let layout_index i x =
-                x
-                |> Array.mapi (fun j (L(i',_)) -> sprintf "local l%i = v%i.l%i" j i i')
-                |> String.concat "\n"
-                |> function "" -> () | x -> line s x
+                x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
+                |> String.concat ", "
+                |> function "" -> () | x -> simple x
             let length (a,b) =
                 sprintf "string.len(%s)" (tup b)
                 |> simple
@@ -11150,7 +11151,7 @@ module spiral_compiler =
                 line s "else"
                 match fl with
                 | [|TyLocalReturnData(DB,_)|] ->
-                    line (indent s) "nil"
+                    line (indent s) "return nil"
                 | _ ->
                     binds (indent s) fl
                 line s "end"
@@ -11367,14 +11368,17 @@ module spiral_compiler =
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecLua = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i = %s" i (tyv t)) |> String.concat ", "
+            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i" i) |> String.concat ", "
             if b = "" then line s (sprintf "Heap%i = function() return { __tag = \"Heap%i\" } end" x.tag x.tag)
             else line s (sprintf "Heap%i = function(%s) return { __tag = \"Heap%i\", %s } end" x.tag b x.tag b)
             )
         and mut : _ -> LayoutRecLua = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i = %s" i (tyv t)) |> String.concat ", "
-            if b = "" then line s (sprintf "Mut%i = function() return { __tag = \"Mut%i\" } end" x.tag x.tag)
-            else line s (sprintf "Mut%i = function(%s) return { __tag = \"Mut%i\", %s } end" x.tag b x.tag b)
+            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i" i) |> String.concat ", "
+            if b = ""
+            then line s (sprintf "Mut%i = function() return { __tag = \"Mut%i\" } end" x.tag x.tag)
+            else
+                let b' = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i = l%i" i i) |> String.concat ", "
+                line s (sprintf "Mut%i = function(%s) return { __tag = \"Mut%i\", %s } end" x.tag b x.tag b')
             )
         and uheap : _ -> UnionRecLua = union (fun s x ->
             let tag = x.tag
@@ -11408,7 +11412,7 @@ module spiral_compiler =
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
-                line s (sprintf "function method%i(%s)" x.tag (args_tys x.free_vars |> SpiralSm.replace ":" "" |> SpiralSm.replace "    " " "))
+                line s (sprintf "function method%i(%s)" x.tag (args_tys x.free_vars))
                 binds (indent s) x.body
                 line s "end"
                 )
@@ -11462,9 +11466,7 @@ module spiral_compiler =
             program.Append("-- lua 5.4 ops\n") |> ignore
         types |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
-        program.Append("return (function()\n") |> ignore
-        program.Append(main.ToString()) |> ignore
-        program.Append("\nend)()\n").ToString()
+        program.Append(main.ToString()).ToString()
 
     /// ## RefCounting
     // Here are the reference counting analysis passes.

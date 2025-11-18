@@ -70,5 +70,5 @@ if (!$fast) {
 }
 
 if ($env:CI) {
-    Remove-Item ../../deps/polyglot/target/spiral/spiral/target -Recurse -Force -ErrorAction Ignore
+    ClearCargoTarget "../../deps/polyglot/target/spiral/spiral"
 }

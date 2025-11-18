@@ -319,6 +319,15 @@ inl arc_mutex_lock forall t. (x : arc (mutex t)) : resultm.result' (mutex_guard 
 
 #!markdown
 
+### arc_mutex_lock'
+
+#!spiral
+
+inl arc_mutex_lock' forall t. (x : arc (mutex t)) : resultm.result' (mutex_guard t) (poison_error (mutex_guard t)) =
+    !\\(x, $'"$0.lock()"')
+
+#!markdown
+
 ### arc_rw_lock_read
 
 #!spiral

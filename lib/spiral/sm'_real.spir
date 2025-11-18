@@ -77,6 +77,7 @@ inl format_debug forall t. (x : t) : string =
                             | _ => x
                         $'string.inspect(!x)' : string
                     ) : () -> string
+            Lua = (fun () => $'tostring(!x)' : string) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
             Python =
                 (fun () =>
@@ -96,6 +97,7 @@ inl format_debug forall t. (x : t) : string =
 inl append_real (x : string) (s : string) : string =
     backend_switch `string `({}) {
         Gleam = (fun () => $'!s <> !x ' : string) : () -> string
+        Lua = (fun () => $'!s .. !x ' : string) : () -> string
         Fsharp = (fun () => (+.) `string s x) : () -> string
         Python = (fun () => (+.) `string s x) : () -> string
     }
@@ -136,6 +138,10 @@ let format_real forall t. (x : t) : string =
                 (fun () =>
                     ""
                 ) : () -> string
+            Lua =
+                (fun () =>
+                    ""
+                ) : () -> string
             Fsharp =
                 (fun () =>
                     join ""
@@ -151,6 +157,13 @@ let format_real forall t. (x : t) : string =
             inl s : string =
                 backend_switch `string `({}) {
                     Gleam =
+                        (fun () =>
+                            match b with
+                            | (_ : string) => b : string
+                            // | (_ : f32) | (_ : f64) => format_debug `(`b) b
+                            | _ => format_debug `(`b) b
+                        ) : () -> string
+                    Lua =
                         (fun () =>
                             match b with
                             | (_ : string) => b : string
@@ -174,6 +187,10 @@ let format_real forall t. (x : t) : string =
                 }
             backend_switch `(()) `({}) {
                 Gleam =
+                    (fun () =>
+                        exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+                    ) : () -> ()
+                Lua =
                     (fun () =>
                         exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
                     ) : () -> ()

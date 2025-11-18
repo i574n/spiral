@@ -55,6 +55,7 @@ inl read_state () =
                                                 global "import gleam/time/timestamp"
                                         }
                                         $'!x |> timestamp.to_unix_seconds |> float.round' : i64
+                                    Lua = fun () => x
                                     Fsharp = fun () => x
                                     Python = fun () => x
                                 }

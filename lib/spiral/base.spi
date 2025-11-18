@@ -28,6 +28,7 @@ inl backend_switch forall t. x : t =
                 (fun () =>
                     !!!!BackendSwitch ({
                         Gleam = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
+                        Lua = fun () => $'-- base.backend_switch / record_type_try_find / key: !key ' : t
                         Fsharp = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
                         Python = fun () => $'## base.backend_switch / record_type_try_find / key: !key ' : t
                         Cpp = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
@@ -35,6 +36,7 @@ inl backend_switch forall t. x : t =
                 )
         !!!!BackendSwitch ({
             Gleam = fun () => backend "Gleam"
+            Lua = fun () => backend "Lua"
             Fsharp = fun () => backend "Fsharp"
             Python = fun () => backend "Python"
             Cpp = fun () => backend "Cpp"
@@ -49,6 +51,7 @@ union target_runtime =
 /// ### target
 union target =
     | Gleam : target_runtime
+    | Lua : target_runtime
     | Fsharp : target_runtime
     | Cuda : target_runtime
     | Cpp : target_runtime
@@ -61,6 +64,9 @@ inl run_target_args' forall t u. (args : u) (fn : target -> (u -> t)) : t =
     backend_switch {
         Gleam = fun () =>
             inl target = Gleam Native
+            fn target args
+        Lua = fun () =>
+            inl target = Lua Native
             fn target args
         Fsharp = fun () =>
             inl is_unit : bool =
@@ -135,6 +141,9 @@ inl indent (body : () -> ()) : () =
         Gleam = fun () =>
             !!!!Indent (body())
             ()
+        Lua = fun () =>
+            !!!!Indent (body())
+            ()
         Fsharp = fun () =>
             inl body () =
                 body ()
@@ -151,6 +160,7 @@ inl let' fn =
     inl result : unit =
         backend_switch {
             Gleam = fun () => $'Nil' : unit
+            Lua = fun () => $'nil' : unit
             Fsharp = fun () => $'()' : unit
             Python = fun () => $'None' : unit
         }
@@ -159,6 +169,11 @@ inl let' fn =
             $'let _let\'_!result = {' : ()
             fn |> indent
             $'}' : ()
+        Lua = fun () =>
+            $'local _get_let_!result = function()' : ()
+            fn |> indent
+            $'end' : ()
+            $'local _let_!result = _get_let_!result()' : ()
         Fsharp = fun () =>
             $'let _let\'_!result =' : ()
             fn |> indent
@@ -172,6 +187,7 @@ inl let' fn =
 inl exec_unit (fn : () -> ()) : () =
     backend_switch {
         Gleam = fun () => fn ()
+        Lua = fun () => fn ()
         Fsharp = fun () =>
             inl unit = $'()' : $'unit'
             ($'(fun () -> !fn (); !unit) ()' : $'unit') |> ignore
@@ -182,8 +198,6 @@ inl exec_unit (fn : () -> ()) : () =
 nominal lazy t = $'Lazy<`t>'
 
 /// ### memoize
-nominal lazy t = $'Lazy<`t>'
-
 inl memoize forall t. (fn : () -> t) : () -> t =
     inl body () =
         inl result = mut None
@@ -199,6 +213,7 @@ inl memoize forall t. (fn : () -> t) : () -> t =
         : () -> t
     backend_switch {
         Gleam = fun () => body ()
+        Lua = fun () => body ()
         Fsharp = fun () =>
             inl result : lazy t = $'lazy !fn ()'
             fun () => $'!result.Value' : t

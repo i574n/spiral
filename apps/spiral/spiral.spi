@@ -747,16 +747,24 @@ inl magic_marker () : parser string =
 
 /// ### magic_command
 inl magic_command () =
+    trace Verbose (fun () => "spiral.magic_command") (fun () => {})
     magic_marker ()
     >>. many_chars_till (any_char ()) (new_line ())
-    |>> fun s => fun () => s () |> sm'.trim
+    |>> fun s => fun () =>
+        inl s = s () |> sm'.trim
+        trace Verbose (fun () => "spiral.magic_command") (fun () => { s_len = s |> sm'.length : int })
+        s
 
 /// ### content
 inl content () =
+    trace Verbose (fun () => "spiral.content") (fun () => {})
     new_line () >>. magic_marker () <|> eof () >>. p_return ""
     |> look_ahead
     |> many_chars_till (any_char ())
-    |>> fun s => fun () => s () |> sm'.trim
+    |>> fun s => fun () =>
+        inl s = s () |> sm'.trim
+        trace Verbose (fun () => "spiral.content") (fun () => { s_len = s |> sm'.length : int })
+        s
 
 /// ### dib_output
 union dib_output =
@@ -787,10 +795,12 @@ type block =
     }
 
 inl block () =
+    trace Verbose (fun () => "spiral.block") (fun () => {})
     pipe2
         (magic_command ())
         (content ())
         fun magic, content =>
+            trace Verbose (fun () => "spiral.block") (fun () => { magic })
             inl magic, content =
                 match magic () with
                 | "fsharp" => Fsharp, content
@@ -817,11 +827,13 @@ inl block () =
 
 /// ### blocks
 inl blocks () =
+    trace Verbose (fun () => "spiral.blocks") (fun () => {})
     new_lines ()
     >>. sep_end_by (block ()) (new_lines1 ())
 
 /// ### format_block
 inl format_block output (block : block) =
+    trace Verbose (fun () => "spiral.format_block") (fun () => {})
     match output, block with
     | output, { magic = (Markdown) content = content } =>
         inl markdown_comment =
@@ -873,6 +885,7 @@ inl format_block output (block : block) =
 
 /// ### format_blocks
 inl format_blocks output blocks =
+    trace Verbose (fun () => "spiral.format_blocks") (fun () => {})
     blocks
     |> listm.map fun block =>
         block, format_block output block
@@ -891,6 +904,7 @@ inl format_blocks output blocks =
 
 /// ### indent_block
 inl indent_block (block : block) =
+    trace Verbose (fun () => "spiral.indent_block") (fun () => {})
     { block with
         content = fun () =>
             (([], false), block.content () |> sm'.split "\n" |> am'.to_list_base' |> listm'.unbox)
@@ -941,6 +955,7 @@ inl indent_block (block : block) =
 
 /// ### parse
 inl parse output input =
+    trace Verbose (fun () => "spiral.parse") (fun () => {})
     match input |> run_parser (blocks ()) with
     | Ok (blocks, _, _) =>
         blocks
@@ -1745,7 +1760,7 @@ inl process_gleam { gleam_path target deps } =
                         |> sm'.split "\n"
                         |> am'.to_vec
                         |> am'.vec_filter fun x =>
-                            (x |> sm'.starts_with "{compiling,\"" |> not)
+                            (x |> sm'.starts_with "{compiling," |> not)
                             && (x |> sm'.starts_with "{compiled," |> not)
                             && (x |> sm'.ends_with ".beam\"}" |> not)
                             && (x |> sm'.starts_with "src\\main.gleam:" |> not)
@@ -1776,6 +1791,36 @@ inl process_gleam { gleam_path target deps } =
 /// ## lua
 
 /// ### process_lua
+nominal lua =
+    `(
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mlua::Lua\")>]\ntype mlua_Lua = class end\n\#else\ntype mlua_Lua = obj\n#endif\n"
+        $'' : $'mlua_Lua'
+    )
+
+nominal lua_function =
+    `(
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mlua::prelude::LuaFunction\")>]\ntype mlua_LuaFunction = class end\n\#else\ntype mlua_LuaFunction = obj\n#endif\n"
+        $'' : $'mlua_LuaFunction'
+    )
+
+nominal lua_error =
+    `(
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mlua::prelude::LuaError\")>]\ntype mlua_LuaError = class end\n\#else\ntype mlua_LuaError = obj\n#endif\n"
+        $'' : $'mlua_LuaError'
+    )
+
+nominal lua_value =
+    `(
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mlua::prelude::LuaValue\")>]\ntype mlua_LuaValue = class end\n\#else\ntype mlua_LuaValue = obj\n#endif\n"
+        $'' : $'mlua_LuaValue'
+    )
+
+nominal lua_multi_value =
+    `(
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mlua::prelude::LuaMultiValue\")>]\ntype mlua_LuaMultiValue = class end\n\#else\ntype mlua_LuaMultiValue = obj\n#endif\n"
+        $'' : $'mlua_LuaMultiValue'
+    )
+
 inl process_lua { lua_path } =
     inl extension = "lua"
 
@@ -1796,6 +1841,40 @@ inl process_lua { lua_path } =
 
     inl package_dir = src_dir </> ".." |> file_system.standardize_path
 
+    inl stdio = [] |> mut
+    inl stdio_clone = stdio |> rust.clone
+
+    inl lua : lua = !\($'$"mlua::Lua::new()"')
+
+    inl custom_print (args : lua_multi_value) : _ _ lua_error =
+        inl args : am'.vec (rust.ref lua_value) = !\\(args, $'$"$0.iter().collect()"')
+        inl args =
+            args
+            |> am'.vec_map (rust.deref >> sm'.format_debug)
+            |> am'.from_vec_base
+            |> am'.to_list_base'
+            |> listm'.unbox
+            |> sm'.concat_list ", "
+        stdio <- args :: *stdio
+        Ok () |> resultm.box
+
+    inl custom_print : lua_function =
+        !\\((lua, custom_print), $'$"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()"')
+
+    !\\((lua, custom_print), $'$"$0.globals().set(\\\"print\\\", $1).unwrap()"')
+
+    inl output : lua_multi_value =
+        inl new_code = new_code |> sm'.to_std_string
+        !\\((lua, new_code), $'$"$0.load($1).eval::<mlua::MultiValue>().unwrap()"')
+    inl output : am'.vec (rust.ref lua_value) = !\\(output, $'$"$0.iter().collect()"')
+    inl output =
+        output |> am'.vec_map (rust.deref >> sm'.format_debug) |> am'.from_vec |> sm'.concat_array "\n"
+    
+    inl stdio =
+        *stdio_clone
+        |> listm.rev
+        |> sm'.concat_list "\n"
+
     fun () =>
         inl ci = "CI" |> env.get_environment_variable
         if ci <> "" then
@@ -1806,13 +1885,12 @@ inl process_lua { lua_path } =
     |> use
     |> ignore
 
-    inl output = "spiral.process_lua / output"
-
     {
         extension = Some extension
         code = Some new_code
         code_path = Some new_code_path
         output = Some output
+        stdio = Some stdio
     }
 
 /// ## cuda
@@ -2315,11 +2393,11 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
 
             inl command_result =
                 process_lua { lua_path }
-                |> fun { extension code output } =>
+                |> fun { extension code output stdio } =>
                     ;[
                         "extension", extension |> optionm'.default_value ""
                         "code", code |> optionm'.default_value ""
-                        "output", output |> optionm'.default_value ""
+                        "output", stdio |> optionm'.default_value ""
                     ]
 
             ;[

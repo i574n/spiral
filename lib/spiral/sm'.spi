@@ -59,6 +59,7 @@ inl string_builder (initial : string) : string_builder =
 
     backend_switch {
         Gleam = fun () => $'!initial ' : string_builder
+        Lua = fun () => $'!initial ' : string_builder
         Fsharp = fun () => initial |> $'`string_builder ' : string_builder
         Python = fun () =>
             global "import io"
@@ -89,6 +90,7 @@ instance unwrap_format result t u = fun x =>
 inl obj_to_string x : string =
     backend_switch {
         Gleam = fun () => $$x : string
+        Lua = fun () => $$x : string
         Fsharp = fun () => $'!x |> _.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }
@@ -145,6 +147,7 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
                 global "import gleam/io"
                 $'io.println(!x)' : ()
             sm.slice s { from to } : string
+        Lua = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
         Python = fun () => sm.slice s { from to = to_py () } : string
     }
@@ -227,6 +230,7 @@ inl index_of (search : string) (s : string) : int =
             $'  }' : ()
             $'})' : ()
             $'x |> option.unwrap(-1)' : int
+        Lua = fun () => $'string.find(!s, !search) - 1' : int
         Fsharp = fun () => $'!s.IndexOf !search ' : int
         Python = fun () => $'!s.find(!search)' : int
     }
@@ -268,6 +272,7 @@ inl ends_with (value : string) (s : string) : bool =
             $'!s |> string.ends_with(!value)' : bool
         Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool
         Python = fun () => $'!s.endswith(!value)' : bool
+        Lua = fun () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
     }
 
 /// ### starts_with
@@ -317,6 +322,8 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
             $'!sb <> !item ' : string_builder
+        Lua = fun () =>
+            $'!sb .. !item ' : string_builder
         Fsharp = fun () =>
             ($'!sb.Append' item : string_builder) |> ignore
             sb
@@ -343,6 +350,8 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
         Gleam = fun () =>
             global "import gleam/string"
             $'!sb |> string.replace(!old, !new)' : string_builder
+        Lua = fun () =>
+            $'string.gsub(!sb, !old, !new)' : string_builder
         Fsharp = fun () =>
             ($'!sb.Replace (!old, !new)' : string_builder) |> ignore
             sb
@@ -355,6 +364,9 @@ inl builder_clear (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
             $'let !sb = ""'
+            sb
+        Lua = fun () =>
+            $'!sb = ""'
             sb
         Fsharp = fun () =>
             ($'!sb.Clear' () : string_builder) |> ignore
@@ -369,6 +381,11 @@ inl builder_clear (sb : string_builder) : string_builder =
 inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
+            inl sb = $sb
+            inl a = sb |> slice 0 (i - 1)
+            inl b = sb |> slice i (length sb)
+            [ a; s; b ] |> concat_list "" |> string_builder
+        Lua = fun () =>
             inl sb = $sb
             inl a = sb |> slice 0 (i - 1)
             inl b = sb |> slice i (length sb)
@@ -440,6 +457,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
         Gleam = fun () =>
             global "import gleam/string"
             $'!b |> string.join(!a)' : string
+        Lua = fun () => $'table.concat(!b, !a)' : string
         Fsharp = fun () =>
             inl a =
                 if a = "\n"
@@ -456,6 +474,7 @@ inl length' forall dim. (input : string) : dim =
         Gleam = fun () =>
             global "import gleam/string"
             $'string.length(!input)' : dim
+        Lua = fun () => $'##!input ' : dim
         Fsharp = fun () => input |> $'String.length' : dim
         Python = fun () => $'len(!input)' : dim
     }
@@ -470,6 +489,8 @@ inl replace (old : string) (new : string) (s : string) : string =
         Gleam = fun () =>
             global "import gleam/string"
             $'!s |> string.replace(!old, !new)' : string
+        Lua = fun () =>
+            $'string.gsub(!s, !old, !new)' : string
         Fsharp = fun () =>
             $'!s.Replace (!old, !new)' : string
         Python = fun () =>
@@ -984,6 +1005,7 @@ inl contains (value : string) (s : string) : bool =
         Gleam = fun () =>
             global "import gleam/string"
             $'!s |> string.contains(!value)' : bool
+        Lua = fun () => $'string.find(!s, !value, 1, true) ~= nil ' : bool
         Fsharp = fun () => $'!s.Contains !value ' : bool
         Python = fun () => $'!value in !s ' : bool
     }

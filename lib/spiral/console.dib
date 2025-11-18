@@ -69,6 +69,7 @@ inl write_line obj : () =
                     : ()
             }
             $'io.println(!obj)' : ()
+        Lua = fun () => $'print(!obj)' : ()
         Fsharp = fun () =>
             fun () => obj |> $'System.Console.WriteLine'
             |> exec_unit
@@ -83,8 +84,19 @@ inl write_line obj : () =
 
 inl write forall t. (x : t) : () =
     backend_switch {
-        Python = fun () => $'print(!x, end="")' : ()
+        Gleam = fun () =>
+            backend_switch {
+                Gleam = fun () =>
+                    backend_switch {
+                        Gleam = fun () =>
+                            global "import gleam/io"
+                    }
+                    : ()
+            }
+            $'io.print(!x)' : ()
+        Lua = fun () => $'io.write(!x)' : ()
         Fsharp = fun () => $'!x |> System.Console.Write' : ()
+        Python = fun () => $'print(!x, end="")' : ()
     }
 
 #!markdown
@@ -96,9 +108,11 @@ inl write forall t. (x : t) : () =
 inl write_ln l : () =
     write l
     backend_switch {
-        Cuda = fun () => $'printf("\\n")' : ()
-        Python = fun () => $"print()" : ()
+        Gleam = fun () => write_line () : ()
+        Lua = fun () => write_line () : ()
         Fsharp = fun () => write_line () : ()
+        Python = fun () => $"print()" : ()
+        Cuda = fun () => $'printf("\\n")' : ()
     }
 
 #!markdown

@@ -174,6 +174,8 @@ inl arc_mutex_lock forall t. (x : arc (mutex t)) : resultm.result' (mutex_guard 
     inl x = x |> rust.emit
     !\($'"!x.lock()"')
 
+inl arc_mutex_lock' forall t. (x : arc (mutex t)) : resultm.result' (mutex_guard t) (poison_error (mutex_guard t)) =
+    !\\(x, $'"$0.lock()"')
 /// ### arc_rw_lock_read
 inl arc_rw_lock_read forall t. (x : arc (rw_lock t)) : resultm.result' (rw_lock_read_guard t) (poison_error (rw_lock_read_guard t)) =
     inl x = x |> rust.emit
