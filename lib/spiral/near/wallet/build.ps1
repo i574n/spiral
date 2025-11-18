@@ -22,7 +22,7 @@ if (!$SkipPreBuild) {
         { . ../../../../../deps/spiral/workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/src/$projectName.dib" } | Invoke-Block -Retries 3 -Location ../../../../deps/polyglot/lib/rust/fable/fable_modules/fable-library-rust
     }
 
-    { . ../../../../../deps/spiral/workspace/target/release/spiral$(_exe) dib-export "$ScriptDir/src/$projectName.dib" spi } | Invoke-Block
+    { . ../../../../deps/polyglot/deps/spiral/workspace/target/release/spiral$(_exe) dib-export "$ScriptDir/src/$projectName.dib" spi } | Invoke-Block
 }
 
 if (!$SkipGleam) {
