@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 

@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 open file_system_operators
@@ -66,8 +65,8 @@ inl get_file_hash' (path : string) : result string string =
 
 #!spiral
 
-//// test
-///! rust -d chrono encoding_rs encoding_rs_io regex sha2
+///- --test
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
 
 inl file_name = "test.txt"
 inl text = "\n"
@@ -188,8 +187,8 @@ inl get_file_hash (path : string) =
 
 #!spiral
 
-//// test
-///! rust -d chrono regex sha2
+///- --test
+///> rust -d chrono regex sha2
 
 inl file_name = join "test.txt"
 inl text = "\n"
@@ -211,8 +210,8 @@ path
 
 #!spiral
 
-//// test
-///! rust -d chrono regex sha2
+///- --test
+///> rust -d chrono regex sha2
 
 inl file_name = join "test.txt"
 inl text = ""
@@ -368,12 +367,12 @@ let hash_text (~input : string) =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust -d sha2
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust -d sha2
+///> typescript
+///> python
 
 "\n"
 |> hash_text
@@ -400,12 +399,12 @@ inl hash_to_port (text : string) : u16 =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust -d sha2
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust -d sha2
+///> typescript
+///> python
 
 "\n"
 |> hash_text

@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -167,12 +166,12 @@ inl retry_fn forall t. retries (fn : () -> t) : option t =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 inl retry_fn_test = mut 0i32
 fun () =>
@@ -183,12 +182,12 @@ fun () =>
 
 #!spiral
 
-//// test
-///! fsharp
-////! cuda // v3 = $"retry: {v0} / ex: %A{v1} / {v2 ()}"
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+////> cuda // v3 = $"retry: {v0} / ex: %A{v1} / {v2 ()}"
+///> rust
+///> typescript
+///> python
 
 inl retry_fn_test = mut 0i32
 fun () =>
@@ -248,12 +247,12 @@ inl new_disposable (fn : () -> ()) : disposable _ =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 inl new_disposable_test = mut 0i32
 new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
@@ -263,7 +262,7 @@ new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
 
 #!spiral
 
-//// test
+///- --test
 
 inl new_disposable_test = mut 0i32
 fun () =>
@@ -279,7 +278,7 @@ fun () =>
 
 #!spiral
 
-//// test
+///- --test
 
 inl new_disposable_test = mut 0i32
 fun () =>

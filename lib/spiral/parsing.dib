@@ -12,8 +12,7 @@ open sm'_operators
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -23,19 +22,18 @@ open testing
 
 #!spiral
 
-//// test
+///- --test
 
 #r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsec.dll"
 #r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsecCS.dll"
 
-///! _
+///> _
 
 ()
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 nominal position_ = $'FParsec.Position'
 nominal parser_error_ = $'FParsec.Error.ParserError'
@@ -210,7 +208,7 @@ inl parse_ parser input : result _ _ =
 
 #!spiral
 
-//// test
+///- --test
 
 inl split_args (args : string) : result (array_base (string * position_)) (string * parser_error_) =
     inl esc = [ '\\'; '`' ]
@@ -336,7 +334,7 @@ nominal parser_state =
     {
         line_start : int
         position : position
-        input_len : int
+        text_length : int
     }
 
 #!markdown
@@ -345,8 +343,8 @@ nominal parser_state =
 
 #!spiral
 
-inl new_parser_state (line_start : i32) (line : i32) (col : i32) (input_len : i32) =
-    { line_start position = { line col }; input_len }
+inl new_parser_state (line_start : i32) (line : i32) (col : i32) (text_length : i32) =
+    { line_start position = { line col }; text_length }
 
 #!markdown
 
@@ -354,8 +352,8 @@ inl new_parser_state (line_start : i32) (line : i32) (col : i32) (input_len : i3
 
 #!spiral
 
-inl new_parser_state' input_len =
-    new_parser_state 0 1 1 input_len |> parser_state
+inl new_parser_state' text_length =
+    new_parser_state 0 1 1 text_length |> parser_state
 
 #!markdown
 
@@ -371,8 +369,11 @@ type parser t = string * int * parser_state -> result ((() -> t) * int * parser_
 
 #!spiral
 
-inl slice (i0 : int) (i1 : int) (input : string) : string =
-    input |> sm'.range (am'.Start i0) (am'.End fun _ => i1)
+inl slice (start : int) (end : int) (t : string) : string =
+    t
+    |> sm'.range (am'.Start start) (am'.End fun _ => end)
+    |> trace_format Verbose fun r =>
+        "parsing.slice", { start end t_length = t |> sm'.length : int; r_length = r |> sm'.length : int }
 
 #!markdown
 
@@ -387,10 +388,10 @@ inl parse forall t.
     : result ((() -> t) * (() -> string) * parser_state) (() -> string)
     =
     p (input, 0, s)
-    |> resultm.map fun result, i, (parser_state st as s') =>
+    |> resultm.map fun result, i, (parser_state s' as s) =>
         result,
-        (fun () => input |> slice i st.input_len),
-        s'
+        (fun () => input |> slice i s'.text_length),
+        s
 
 #!markdown
 
@@ -410,6 +411,7 @@ inl update_char (parser_state s) (c : char) : parser_state =
             position = { line = s.position.line; col = s.position.col + 1 }
         }
     |> parser_state
+    |> trace_format Verbose fun r => "parsing.update_char", { c s r }
 
 #!markdown
 
@@ -417,16 +419,19 @@ inl update_char (parser_state s) (c : char) : parser_state =
 
 #!spiral
 
-inl update_span (input : string) (i0 : int) (len : int) (parser_state s) : parser_state =
-    inl endi = i0 + len
+inl update_span (input : string) (i : int) (len : int) (parser_state s) : parser_state =
+    inl endi = i + len
     let rec 루프 (j : int) (last_nl : int) (count : int) =
+        trace Verbose
+            (fun () => "parsing.update_span / 루프")
+            (fun () => { j last_nl count })
         if j >= endi
         then last_nl, count
         else
             match input |> sm'.index j with
             | '\n' => 루프 (j + 1) j (count + 1)
             | _ => 루프 (j + 1) last_nl count
-    inl last_nl, n = 루프 i0 -1 0
+    inl last_nl, n = 루프 i -1 0
     if n = 0
     then { s with position = { line = s.position.line; col = s.position.col + len } }
     else
@@ -437,9 +442,11 @@ inl update_span (input : string) (i0 : int) (len : int) (parser_state s) : parse
                     line = s.position.line + n
                     col = endi - last_nl
                 }
-            input_len = s.input_len
+            text_length = s.text_length
         }
     |> parser_state
+    |> trace_format Verbose fun r =>
+        "parsing.update_span", { i len endi last_nl n text_length = input |> sm'.length : int; s r }
 
 #!markdown
 
@@ -447,8 +454,10 @@ inl update_span (input : string) (i0 : int) (len : int) (parser_state s) : parse
 
 #!spiral
 
-inl update result s =
-    s |> update_span result 0 (result |> sm'.length)
+inl update t s =
+    s
+    |> update_span t 0 (t |> sm'.length)
+    |> trace_format Verbose fun r => "parsing.update", { t s r }
 
 #!markdown
 
@@ -456,20 +465,23 @@ inl update result s =
 
 #!spiral
 
-inl advance_while (pred : char -> bool) (input : string) (i0 : int) (parser_state st as s0)
+inl advance_while (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)
     : int * parser_state
     =
-    if i0 >= st.input_len
-    then i0, s0
+    if i >= s'.text_length
+    then i, s
     else
-        inl j =
-            i0
-            |> sm'.span_from pred input
-            |> fun j => if j > st.input_len then st.input_len else j
-        inl consumed = j - i0
+        inl i' = i |> sm'.span_from fn t
+        inl i' =
+            if i' > s'.text_length
+            then s'.text_length
+            else i'
+        inl consumed = i' - i
         if consumed = 0
-        then i0, s0
-        else j, s0 |> update_span input i0 consumed
+        then i, s
+        else i', s |> update_span t i consumed
+    |> trace_format Verbose fun r =>
+        "parsing.advance_while", { i t_length = t |> sm'.length : int; s r }
 
 #!markdown
 
@@ -489,21 +501,32 @@ inl run_parser p input =
 
 #!spiral
 
-inl any_char () : parser char = fun input, i, (parser_state st as s) =>
-    if i >= st.input_len then
-        fun () => "parsing.any_char / unexpected end of input / " ++# ({ s } |> sm'.format)
+inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
+    if i >= s'.text_length then
+        fun () => "parsing.any_char / unexpected end of t / " ++# ({ s } |> sm'.format)
         |> Error
     else
-        inl c = input |> sm'.index i
+        inl c = t |> sm'.index i
+        trace Verbose (fun () => "parsing.any_char") (fun () => { c s })
         Ok ((fun () => c), i + 1, c |> update_char s)
+    |> trace_format Verbose fun r => "parsing.any_char", { i t_length = t |> sm'.length : int; s r }
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+
+"abc"
+|> run_parser (any_char ())
+|> unwrap_format
+|> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
+
+#!spiral
+
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abc"
 |> run_parser (any_char ())
@@ -512,7 +535,7 @@ inl any_char () : parser char = fun input, i, (parser_state st as s) =>
 
 #!spiral
 
-//// test
+///- --test
 
 "abc"
 |> parse_ (any_char_ ())
@@ -536,7 +559,8 @@ inl get_max_context () =
 
 inl p_char (c : char) : parser char =
     fun input, i, (parser_state ({ line_start position = { line col } } as st) as s) =>
-        if i >= st.input_len then
+        trace Verbose (fun () => "parsing.p_char") (fun () => { c text_length = input |> sm'.length : int })
+        if i >= st.text_length then
             fun () => "parsing.p_char / unexpected end of input / " ++# ({ c st } |> sm'.format)
             |> Error
         else
@@ -561,11 +585,11 @@ inl p_char (c : char) : parser char =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abc"
 |> run_parser (p_char 'a')
@@ -574,7 +598,7 @@ inl p_char (c : char) : parser char =
 
 #!spiral
 
-//// test
+///- --test
 
 "abc"
 |> parse_ (p_char_ 'a')
@@ -588,7 +612,8 @@ inl p_char (c : char) : parser char =
 #!spiral
 
 inl any_string length : parser string = fun input, i, (parser_state st as s) =>
-    if st.input_len - i >= length
+    trace Verbose (fun () => "parsing.any_string") (fun () => { text_length = input |> sm'.length : int })
+    if st.text_length - i >= length
     then Ok ((fun () => input |> slice i (i + length)), i + length, s |> update_span input i length)
     else
         fun () => "parsing.any_string / unexpected end of input / " ++# ({ s } |> sm'.format)
@@ -596,11 +621,11 @@ inl any_string length : parser string = fun input, i, (parser_state st as s) =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abcdef"
 |> run_parser (any_string 3)
@@ -609,7 +634,7 @@ inl any_string length : parser string = fun input, i, (parser_state st as s) =>
 
 #!spiral
 
-//// test
+///- --test
 
 "abcdef"
 |> parse_ (any_string__ 3)
@@ -624,7 +649,8 @@ inl any_string length : parser string = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
-    if st.input_len - i >= length
+    trace Verbose (fun () => "parsing.skip_any_string") (fun () => { text_length = input |> sm'.length : int })
+    if st.text_length - i >= length
     then Ok (id, i + length, s |> update_span input i length)
     else
         fun () => "parsing.skip_any_string / unexpected end of input / " ++# ({ s } |> sm'.format)
@@ -632,11 +658,11 @@ inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abcdef"
 |> run_parser (skip_any_string 3)
@@ -650,6 +676,7 @@ inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.skip_many") (fun () => { text_length = input |> sm'.length : int })
     let rec 루프 (i : int) (s : parser_state) =
         match a (input, i, s) with
         | Error _ => Ok (id : () -> (), i, s)
@@ -663,7 +690,7 @@ inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
 
 #!spiral
 
-//// test
+///- --test
 
 "sskkip_many"
 |> run_parser (skip_many (p_char 's'))
@@ -677,6 +704,7 @@ inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
 #!spiral
 
 inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
+    trace Verbose (fun () => "parsing.skip_many1") (fun () => { text_length = input |> sm'.length : int })
     match a (input, i, s) with
     | Error e => e |> Error
     | Ok (_, j, s') =>
@@ -688,7 +716,7 @@ inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
 
 #!spiral
 
-//// test
+///- --test
 
 "skip_many1"
 |> run_parser (skip_many1 (p_char 's'))
@@ -702,17 +730,18 @@ inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
 #!spiral
 
 inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s =>
+    trace Verbose (fun () => "parsing.(>>.)") (fun () => { text_length = input |> sm'.length : int })
     match a (input, i, s) with
     | Ok (_, i', s') => b (input, i', s')
     | Error e => e |> Error
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abc\ndef\nghi"
 |> run_parser (skip_any_string 5 >>. p_char 'a')
@@ -726,6 +755,7 @@ inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun input, i, s
 #!spiral
 
 inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s =>
+    trace Verbose (fun () => "parsing.(.>>)") (fun () => { text_length = input |> sm'.length : int })
     match a (input, i, s) with
     | Error e => e |> Error
     | Ok (ra, i', s') =>
@@ -740,6 +770,7 @@ inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun input, i, s
 #!spiral
 
 inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -> u)) = fun input, i, s =>
+    trace Verbose (fun () => "parsing.(.>>.)") (fun () => { text_length = input |> sm'.length : int })
     match a (input, i, s) with
     | Error e => e |> Error
     | Ok (ra, i', s') =>
@@ -759,11 +790,11 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abc"
 |> run_parser (p_char 'a' >>. p_char 'b')
@@ -772,7 +803,7 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 
 #!spiral
 
-//// test
+///- --test
 
 "abc"
 |> parse_ (p_char_ 'a' >>.$ p_char_ 'b')
@@ -782,7 +813,7 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 
 #!spiral
 
-//// test
+///- --test
 
 "abc\ndef\nghi"
 |> parse_ (skip_any_string_ 5 >>.$ p_char_ 'a')
@@ -798,9 +829,10 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 #!spiral
 
 inl none_of (chars : list char) : parser char = fun input, i, (parser_state st as s) =>
+    trace Verbose (fun () => "parsing.none_of") (fun () => { chars text_length = input |> sm'.length : int })
     inl chars' () =
         chars |> listm'.box |> listm'.to_array' |> sm'.format
-    if i >= st.input_len then
+    if i >= st.text_length then
         fun () => "parsing.none_of / unexpected end of input / " ++# ({ chars' = chars' (); s } |> sm'.format)
         |> Error
     else
@@ -815,11 +847,11 @@ inl none_of (chars : list char) : parser char = fun input, i, (parser_state st a
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abc"
 |> run_parser (none_of ['a'; 'b'; 'c'])
@@ -853,7 +885,7 @@ inl none_of (chars : list char) : parser char = fun input, i, (parser_state st a
 
 #!spiral
 
-//// test
+///- --test
 
 "abc"
 |> parse_ (none_of_ ['a'; 'b'; 'c'])
@@ -875,17 +907,18 @@ inl none_of (chars : list char) : parser char = fun input, i, (parser_state st a
 #!spiral
 
 inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, i, s =>
+    trace Verbose (fun () => "parsing.(<|>)") (fun () => { text_length = input |> sm'.length : int })
     match a (input, i, s) with
     | Ok _ as r => r
     | Error _ => b (input, i, s)
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abc"
 |> run_parser (p_char 'a' <|> p_char 'b')
@@ -909,11 +942,11 @@ inl (|>>) p f : parser _ =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "abc"
 |> run_parser (p_char 'a' |>> fun c => fun () => c () |> sm'.char_to_upper)
@@ -931,6 +964,7 @@ inl many forall b c.
     : parser (list _)
     =
     fun input, i0, s0 =>
+        trace Verbose (fun () => "parsing.many") (fun () => { text_length = input |> sm'.length : int })
         let rec 루프 (acc : list b) (i : int) (s : parser_state)
             : result ((() -> list b) * int * parser_state) _
             =
@@ -944,11 +978,11 @@ inl many forall b c.
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "aaabbc"
 |> run_parser (many (p_char 'a' <|> p_char 'b'))
@@ -962,6 +996,7 @@ inl many forall b c.
 #!spiral
 
 inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.many1_chars") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i0, s0) with
     | Error e => e |> Error
     | Ok (_, i1, s1) =>
@@ -978,11 +1013,11 @@ inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "aaabbc"
 |> run_parser (many1_chars (p_char 'a' <|> p_char 'b'))
@@ -996,6 +1031,7 @@ inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
 #!spiral
 
 inl many_chars (p : parser char) : parser string = fun input, i, s =>
+    trace Verbose (fun () => "parsing.many_chars") (fun () => { text_length = input |> sm'.length : int })
     match many1_chars p (input, i, s) with
     | Ok (res, i', s') => Ok (res, i', s')
     | Error _ => Ok ((fun () => ""), i, s)
@@ -1007,12 +1043,13 @@ inl many_chars (p : parser char) : parser string = fun input, i, s =>
 #!spiral
 
 inl many_chars_till (p : parser char) (end_p : parser _) = fun input, i0, (parser_state st as s0) =>
+    trace Verbose (fun () => "parsing.many_chars_till") (fun () => { text_length = input |> sm'.length : int })
     let rec 루프 (i : int) (s : parser_state) : result ((() -> string) * int * parser_state) (() -> string) =
-        if i >= st.input_len
+        if i >= st.text_length
         then Ok ((fun () => if i > i0 then input |> slice i0 i else ""), i, s)
         else
             inl j, s' = s |> advance_while (fun c => c <> '\n') input i
-            if j >= st.input_len
+            if j >= st.text_length
             then Ok ((fun () => if j > i0 then input |> slice i0 j else ""), j, s')
             else
                 match end_p (input, j, s') with
@@ -1033,6 +1070,7 @@ inl many_chars_till (p : parser char) (end_p : parser _) = fun input, i0, (parse
 #!spiral
 
 inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.many1") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i0, s0) with
     | Error e => e |> Error
     | Ok (first, i1, s1) =>
@@ -1047,11 +1085,11 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "aaabbc"
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
@@ -1075,25 +1113,26 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
 #!spiral
 
 inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.many1_strings") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i0, s0) with
     | Error e => e |> Error
     | Ok (r0, i1, s1) =>
         let rec 루프 (acc : list string) (i : int) s : result ((() -> string) * int * _) _ =
             match p (input, i, s) with
             | Error _ => Ok ((fun () => acc |> listm.rev |> sm'.concat_list ""), i, s)
-            | Ok (r, i', s') when i' > i => s' |> 루프 ($(r ()) :: acc) i'
+            | Ok (r, i', s') when i' > i => s' |> 루프 (#?(r ()) :: acc) i'
             | Ok _ =>
                 fun () => "parsing.many1_strings / inner parser succeeded without consuming input"
                 |> Error
-        s1 |> 루프 [ $(r0 ()) ] i1
+        s1 |> 루프 [ #?(r0 ()) ] i1
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "aaabbc"
 |> run_parser (many1_strings (p_char 'a' <|> p_char 'b'))
@@ -1107,6 +1146,7 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
 #!spiral
 
 inl many_strings (p : parser _) : parser string = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.many_strings") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i0, s0) with
     | Error _ => Ok ((fun () => ""), i0, s0)
     | Ok (r0, i1, s1) when i1 = i0 =>
@@ -1115,8 +1155,8 @@ inl many_strings (p : parser _) : parser string = fun input, i0, s0 =>
     | Ok (r0, i1, s1) =>
         let rec 루프 (acc : list string) (i : int) s : result ((() -> string) * int * _) _ =
             match p (input, i, s) with
-            | Error _ => Ok ((fun () => $(r0 ()) :: (acc |> listm.rev) |> sm'.concat_list ""), i, s)
-            | Ok (r, i', s') when i' > i => s' |> 루프 ($(r ()) :: acc) i'
+            | Error _ => Ok ((fun () => #?(r0 ()) :: (acc |> listm.rev) |> sm'.concat_list ""), i, s)
+            | Ok (r, i', s') when i' > i => s' |> 루프 (#?(r ()) :: acc) i'
             | Ok _ =>
                 fun () => "parsing.many_strings / inner parser succeeded without consuming input"
                 |> Error
@@ -1129,6 +1169,7 @@ inl many_strings (p : parser _) : parser string = fun input, i0, s0 =>
 #!spiral
 
 inl choice forall t. parsers : parser t = fun input, i, s =>
+    trace Verbose (fun () => "parsing.choice") (fun () => { text_length = input |> sm'.length : int })
     let rec 루프 = function
         | [] =>
             fun () => "parsing.choice / no parsers succeeded"
@@ -1141,11 +1182,11 @@ inl choice forall t. parsers : parser t = fun input, i, s =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "bca"
 |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
@@ -1164,6 +1205,7 @@ inl choice forall t. parsers : parser t = fun input, i, s =>
 #!spiral
 
 inl between p_open p_close p_content : parser _ = fun input, i, s =>
+    trace Verbose (fun () => "parsing.between") (fun () => { text_length = input |> sm'.length : int })
     match p_open (input, i, s) with
     | Ok (_, i', s') =>
         match p_content (input, i', s') with
@@ -1195,7 +1237,7 @@ inl between p_open p_close p_content : parser _ = fun input, i, s =>
 
 #!spiral
 
-//// test
+///- --test
 
 "[aaabb"
 |> parse_ (between_ (p_char_ '[') (p_char_ ']') (many1_chars_ (p_char_ 'a' <|>$ p_char_ 'b')))
@@ -1204,11 +1246,11 @@ inl between p_open p_close p_content : parser _ = fun input, i, s =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "[aaabb]"
 |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
@@ -1234,6 +1276,7 @@ inl between p_open p_close p_content : parser _ = fun input, i, s =>
 #!spiral
 
 inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.sep_by") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i0, s0) with
     | Error _ => Ok ((fun () => []), i0, s0)
     | Ok (first, i1, s1) =>
@@ -1257,6 +1300,7 @@ inl sep_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
 #!spiral
 
 inl sep_end_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.sep_end_by") (fun () => { text_length = input |> sm'.length : int })
     let rec 루프 acc i s =
         match p (input, i, s) with
         | Error _ => Ok ((fun () => acc |> listm.rev), i, s)
@@ -1278,7 +1322,7 @@ inl sep_end_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
 
 #!spiral
 
-//// test
+///- --test
 
 "sep_end_by"
 |> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))
@@ -1301,12 +1345,13 @@ inl is_space c =
 #!spiral
 
 inl spaces1 () : parser () = fun input, i, (parser_state st as s) =>
+    trace Verbose (fun () => "parsing.spaces1") (fun () => { text_length = input |> sm'.length : int })
     inl j, s' = s |> advance_while is_space input i
     if j <> i
     then Ok (id, j, s')
     else
         fun () =>
-            inl preview_end = (i + get_max_context ()) |> min st.input_len
+            inl preview_end = (i + get_max_context ()) |> min st.text_length
             "parsing.spaces1 / expected at least one space / "
             ++# ({ rest = input |> slice i preview_end } |> sm'.format)
         |> Error
@@ -1328,7 +1373,8 @@ inl spaces () : parser () = fun input, i, s =>
 #!spiral
 
 inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
-    if i >= st.input_len then
+    trace Verbose (fun () => "parsing.p_digit") (fun () => { text_length = input |> sm'.length : int })
+    if i >= st.text_length then
         fun () => "parsing.p_digit / unexpected end of input / " ++# ({ s } |> sm'.format)
         |> Error
     else
@@ -1341,11 +1387,11 @@ inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "1 2 3"
 |> run_parser (sep_by (p_digit ()) (spaces1 ()))
@@ -1354,11 +1400,11 @@ inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! typescript
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
 
 "1 a 2"
 |> run_parser (sep_by (p_digit ()) (spaces1 ()))
@@ -1372,6 +1418,7 @@ inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl opt p : parser (option _) = fun input, i, s =>
+    trace Verbose (fun () => "parsing.opt") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i, s) with
     | Ok (result, i', s') => Ok ((fun () => result |> Some), i', s')
     | Error _ => Ok ((fun () => None), i, s)
@@ -1383,6 +1430,7 @@ inl opt p : parser (option _) = fun input, i, s =>
 #!spiral
 
 inl rest_of_line () : parser string = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.rest_of_line") (fun () => { text_length = input |> sm'.length : int })
     inl j, s' = s0 |> advance_while ((<>) '\n') input i0
     Ok ((fun () => input |> slice i0 j), j, s')
 
@@ -1393,12 +1441,13 @@ inl rest_of_line () : parser string = fun input, i0, s0 =>
 #!spiral
 
 inl eof () : parser () = fun input, i, (parser_state st as s) =>
-    if st.input_len = i
+    trace Verbose (fun () => "parsing.eof") (fun () => { text_length = input |> sm'.length : int })
+    if st.text_length = i
     then Ok (id, i, s)
     else
         fun () =>
             "parsing.eof / expected end of input / "
-            ++# ({ rest = input |> slice i st.input_len } |> sm'.format)
+            ++# ({ rest = input |> slice i st.text_length } |> sm'.format)
         |> Error
 
 #!markdown
@@ -1408,8 +1457,9 @@ inl eof () : parser () = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl p_string (str : string) : parser string = fun input, i, (parser_state st as s) =>
+    trace Verbose (fun () => "parsing.p_string") (fun () => { text_length = input |> sm'.length : int })
     inl len = str |> sm'.length
-    if st.input_len - i < len then
+    if st.text_length - i < len then
         fun () => "parsing.p_string / unexpected end of input / " ++# ({ expected = str; s } |> sm'.format)
         |> Error
     else
@@ -1421,7 +1471,7 @@ inl p_string (str : string) : parser string = fun input, i, (parser_state st as 
         then Ok ((fun () => input |> slice i (i + len)), i + len, s |> update_span input i len)
         else
             fun () =>
-                inl preview_end = (i + get_max_context ()) |> min st.input_len
+                inl preview_end = (i + get_max_context ()) |> min st.text_length
                 inl rest = input |> slice i preview_end
                 inl got = input |> slice i (i + len)
                 "parsing.p_string / unexpected string / "
@@ -1430,7 +1480,7 @@ inl p_string (str : string) : parser string = fun input, i, (parser_state st as 
 
 #!spiral
 
-//// test
+///- --test
 
 "hello world"
 |> run_parser (p_string "hello")
@@ -1444,7 +1494,8 @@ inl p_string (str : string) : parser string = fun input, i, (parser_state st as 
 #!spiral
 
 inl new_line () : parser char = fun input, i, (parser_state st as s) =>
-    if i >= st.input_len then
+    trace Verbose (fun () => "parsing.new_line") (fun () => { text_length = input |> sm'.length : int })
+    if i >= st.text_length then
         fun () => "parsing.new_line / unexpected end of input / " ++# ({ s } |> sm'.format)
         |> Error
     else
@@ -1453,7 +1504,7 @@ inl new_line () : parser char = fun input, i, (parser_state st as s) =>
         then Ok ((fun () => c), i + 1, c |> update_char s)
         else
             fun () =>
-                inl preview_end = (i + get_max_context ()) |> min st.input_len
+                inl preview_end = (i + get_max_context ()) |> min st.text_length
                 inl rest = input |> slice i preview_end
                 "parsing.new_line / expected new line char / "
                 ++# ({ first_char = c; rest s } |> sm'.format)
@@ -1461,7 +1512,7 @@ inl new_line () : parser char = fun input, i, (parser_state st as s) =>
 
 #!spiral
 
-//// test
+///- --test
 
 "hello\nworld"
 |> run_parser (many_chars_till (any_char ()) (new_line ()))
@@ -1475,7 +1526,11 @@ inl new_line () : parser char = fun input, i, (parser_state st as s) =>
 #!spiral
 
 inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun input, i0, s0 =>
+    trace Verbose (fun () => "parsing.many_till") (fun () => { text_length = input |> sm'.length : int })
     let rec 루프 (acc : list b) (i : int) s : result (_ * int * parser_state) _ =
+        trace Verbose
+            (fun () => "parsing.many_till / loop")
+            (fun () => { i acc_len = acc |> listm.length : int })
         match end_p (input, i, s) with
         | Ok (_, j, s') => Ok ((fun () => acc |> listm.rev), j, s')
         | Error _ =>
@@ -1491,7 +1546,7 @@ inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun inp
 
 #!spiral
 
-//// test
+///- --test
 
 "hello\nworld"
 |> run_parser (many_till (any_char ()) (new_line ()))
@@ -1505,11 +1560,12 @@ inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun inp
 #!spiral
 
 inl p_return forall t. (x : t) : parser t = fun input, i, s =>
+    trace Verbose (fun () => "parsing.p_return") (fun () => { text_length = input |> sm'.length : int })
     Ok ((fun () => x), i, s)
 
 #!spiral
 
-//// test
+///- --test
 
 "abc"
 |> run_parser (p_return 42i32)
@@ -1523,13 +1579,14 @@ inl p_return forall t. (x : t) : parser t = fun input, i, s =>
 #!spiral
 
 inl attempt forall t. (p : parser t) : parser t = fun input, i, s =>
+    trace Verbose (fun () => "parsing.attempt") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i, s) with
     | Ok (r, i', s') => Ok (r, i', s')
     | Error e => e |> Error
 
 #!spiral
 
-//// test
+///- --test
 
 "aabbcc"
 |> run_parser (attempt (p_char 'a' >>. p_char 'a' >>. p_char 'b' >>. p_char 'c'))
@@ -1543,13 +1600,14 @@ inl attempt forall t. (p : parser t) : parser t = fun input, i, s =>
 #!spiral
 
 inl look_ahead (p : parser _) : parser _ = fun input, i, s =>
+    trace Verbose (fun () => "parsing.look_ahead") (fun () => { text_length = input |> sm'.length : int })
     match p (input, i, s) with
     | Ok (x, _, _) => Ok (x, i, s)
     | Error e => e |> Error
 
 #!spiral
 
-//// test
+///- --test
 
 "123"
 |> run_parser (look_ahead (many1_chars (p_digit ())))
@@ -1563,11 +1621,13 @@ inl look_ahead (p : parser _) : parser _ = fun input, i, s =>
 #!spiral
 
 inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() -> b)) -> c) : parser c =
-    p1 .>>. p2 |>> fun r => fun () => r () |> f
+    p1 .>>. p2 |>> fun r => fun () =>
+        trace Verbose (fun () => "parsing.pipe2") (fun () => {})
+        r () |> f
 
 #!spiral
 
-//// test
+///- --test
 
 "pipe2"
 |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a, b => a () ++# b ()))
@@ -1581,12 +1641,13 @@ inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() ->
 #!spiral
 
 inl new_lines () : parser () = fun input, i, s =>
+    trace Verbose (fun () => "parsing.new_lines") (fun () => { text_length = input |> sm'.length : int })
     inl j, s' = s |> advance_while ((=) '\n') input i
     Ok (id, j, s')
 
 #!spiral
 
-//// test
+///- --test
 
 "\n\nline1\nline2\n\nline4"
 |> run_parser (many_till (any_char ()) (new_lines ()))
@@ -1600,19 +1661,20 @@ inl new_lines () : parser () = fun input, i, s =>
 #!spiral
 
 inl new_lines1 () : parser () = fun input, i, (parser_state st as s) =>
+    trace Verbose (fun () => "parsing.new_lines1") (fun () => { text_length = input |> sm'.length : int })
     inl j, s' = s |> advance_while ((=) '\n') input i
     if j <> i
     then Ok (id, j, s')
     else
         fun () =>
-            inl preview_end = (i + get_max_context ()) |> min st.input_len
+            inl preview_end = (i + get_max_context ()) |> min st.text_length
             "parsing.new_lines1 / expected at least one new line / "
             ++# ({ rest = input |> slice i preview_end } |> sm'.format)
         |> Error
 
 #!spiral
 
-//// test
+///- --test
 
 "\n\n\n"
 |> run_parser (new_lines ())

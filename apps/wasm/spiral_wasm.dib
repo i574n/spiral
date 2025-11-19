@@ -190,7 +190,7 @@ let rec run
 
 #!spiral
 
-///! _
+///> _
 
 inl main (args : array_base string) =
     inl command = get_command ()

@@ -808,17 +808,10 @@ inl block () =
                 | "spiral" =>
                     inl content = content ()
                     inl output =
-                        if content |> sm'.contains "//// real\n"
+                        if content |> sm'.contains "///- " && content |> sm'.contains " --real"
                         then Spir
                         else Spi
-                    inl content () =
-                        if output = Spi
-                        then content
-                        else
-                            content
-                            |> sm'.replace "//// real\n\n" ""
-                            |> sm'.replace "//// real\n" ""
-                    output |> Spiral, content
+                    output |> Spiral, fun () => content
                 | magic => magic |> Magic, content
             {
                 magic = magic
@@ -865,8 +858,9 @@ inl format_block output (block : block) =
         |> sm'.concat_list "\n"
     | Fs, { magic = (Fsharp) content = content } =>
         inl trimmed_content = content () |> sm'.trim
-        if (trimmed_content |> sm'.contains "//// test\n")
-            || (trimmed_content |> sm'.contains "//// ignore\n")
+        if trimmed_content |> sm'.contains "///- "
+            && (trimmed_content |> sm'.contains " --test"
+                || trimmed_content |> sm'.contains " --ignore")
         then ""
         else
             content ()
@@ -877,8 +871,9 @@ inl format_block output (block : block) =
             |> sm'.concat_list "\n"
     | (Spi | Spir), { magic = (Spiral output') content = content } when output' = output =>
         inl trimmed_content = content () |> sm'.trim
-        if (trimmed_content |> sm'.contains "//// test\n")
-            || (trimmed_content |> sm'.contains "//// ignore\n")
+        if trimmed_content |> sm'.contains "///- "
+            && (trimmed_content |> sm'.contains " --test"
+                || trimmed_content |> sm'.contains " --ignore")
         then ""
         else content ()
     | _ => ""
@@ -1869,7 +1864,7 @@ inl process_lua { lua_path } =
     inl output : am'.vec (rust.ref lua_value) = !\\(output, $'$"$0.iter().collect()"')
     inl output =
         output |> am'.vec_map (rust.deref >> sm'.format_debug) |> am'.from_vec |> sm'.concat_array "\n"
-    
+
     inl stdio =
         *stdio_clone
         |> listm.rev
@@ -2671,10 +2666,10 @@ inl tests () =
     }
 
 /// ## main
-///! _
+///> _
 
 inl main (args : array_base string) =
-    inl trace_state = get_trace_state_or_init None
+    inl trace_state = get_trace_state_or_init (Debug |> Some)
 
     trace Debug
         fun () => "spiral.main"

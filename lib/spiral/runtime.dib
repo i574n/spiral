@@ -14,8 +14,7 @@ open sm'_operators
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 open file_system_operators
@@ -35,7 +34,7 @@ let split_args (args : string) : result (array_base string) _ =
     inl esc = [ '\\'; '`' ]
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
-    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => $c ++# $(c' ())
+    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => #?c ++# #?(c' ())
     inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
     inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
     inl p_esc = esc |> listm.map p_esc_char |> choice
@@ -46,7 +45,7 @@ let split_args (args : string) : result (array_base string) _ =
         esc
         |> listm.map fun c => p_char c >>. p_char '"' >>% '"'
         |> choice
-    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => $c ++# $(c' ())
+    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => #?c ++# #?(c' ())
     inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
     inl p_quoted_esc = (p_word <|> p_esc_noquote) |> many_strings
     inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
@@ -66,13 +65,13 @@ let split_args (args : string) : result (array_base string) _ =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 [
     "a b c",
@@ -138,13 +137,13 @@ let split_command (command : string) : result (string * option string) _ =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 [
     "",
@@ -591,8 +590,8 @@ inl new_command (s : rust.static_ref sm'.str) : command =
 
 #!spiral
 
-//// test
-///! rust -d clap
+///- --test
+///> rust -d clap
 
 ##"command"
 |> new_command
@@ -622,8 +621,8 @@ inl new_arg (s : rust.static_ref sm'.str) : arg =
 
 #!spiral
 
-//// test
-///! rust -d clap
+///- --test
+///> rust -d clap
 
 ##"arg"
 |> new_arg
@@ -1054,8 +1053,8 @@ inl arg_union forall union_type. (fn : union_type -> ()) (arg : arg) : arg =
 
 #!spiral
 
-//// test
-///! rust -d clap
+///- --test
+///> rust -d clap
 
 ##"command"
 |> new_command
@@ -1519,8 +1518,8 @@ let execute command =
 
 #!spiral
 
-//// test
-///! rust -d chrono encoding_rs encoding_rs_io regex sha2
+///- --test
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
 
 inl content = "╭─[ 你好，世界！こんにちは世界！ ]─╮"
 
@@ -1551,8 +1550,8 @@ output |> _assert_eq content
 
 #!spiral
 
-//// test
-///! rust -d chrono encoding_rs encoding_rs_io regex sha2
+///- --test
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
 
 /// task: write a script to test the real time capabilities of std capturing
 

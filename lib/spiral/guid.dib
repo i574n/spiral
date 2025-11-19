@@ -12,8 +12,7 @@ open sm'_operators
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -91,13 +90,13 @@ let hash_guid (hash : string) : hash_guid =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 ""
 |> hash_guid

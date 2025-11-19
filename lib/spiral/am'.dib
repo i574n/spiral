@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -105,12 +104,12 @@ instance append a dim {int; number} t = am.append
 
 #!spiral
 
-//// test
-////! fsharp
-////! cuda
-////! rust
-////! typescript
-////! python
+///- --test
+////> fsharp
+////> cuda
+////> rust
+////> typescript
+////> python
 
 // Pattern miss.
 // Got: {name : __assert_eq; actual : array_base i64 : a i64 i64; expected : array_base i64 : a i64 i64}
@@ -176,12 +175,12 @@ inl choose f l =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-////! rust // v0.get_mut()[v2.get().clone() as usize] = match v1.get().clone().as_ref() { ^ expected `i32`, found `usize`
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+////> rust // v0.get_mut()[v2.get().clone() as usize] = match v1.get().clone().as_ref() { ^ expected `i32`, found `usize`
+///> typescript
+///> python
 
 10
 |> init
@@ -200,12 +199,12 @@ inl sum a =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 10
 |> init
@@ -226,12 +225,12 @@ inl init_series start end inc : array_base _ =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 init_series 0i32 6 2
 |> a
@@ -263,12 +262,12 @@ inl last (ar : a _ _) =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 10
 |> init
@@ -291,12 +290,12 @@ inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-////! rust // match &v23 { Spiral_builder::US0::US0_0(x) => x.clone(), _ => unreachable!(), } == 5_i32
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+////> rust // match &v23 { Spiral_builder::US0::US0_0(x) => x.clone(), _ => unreachable!(), } == 5_i32
+///> typescript
+///> python
 
 10
 |> init
@@ -319,12 +318,12 @@ inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
 
 #!spiral
 
-//// test
-///! fsharp
-////! cuda // Only stack allocated primitive types (i8,i16,i32,i64 and u8,u16,u32,u64 and f32,f64 and bool) are allowed in CuPy arrays.
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+////> cuda // Only stack allocated primitive types (i8,i16,i32,i64 and u8,u16,u32,u64 and f32,f64 and bool) are allowed in CuPy arrays.
+///> rust
+///> typescript
+///> python
 
 am.init 3i32 ((*) 2)
 |> fun (a x : _ int _) => x
@@ -342,12 +341,12 @@ inl slice forall dim {int; number} el. from nearTo s : a dim el =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 inl x : _ i32 _ = a ;[ 1i32; 2; 3 ]
 x |> slice 0 0 |> _assert_eq (a ;[])
@@ -817,8 +816,8 @@ inl new_vec forall t. (items : list t) : vec t =
 
 #!spiral
 
-//// test
-///! rust
+///- --test
+///> rust
 
 [ 0i32; 1 ]
 |> new_vec
@@ -892,12 +891,12 @@ inl to_list' forall dim {int} t. (items : a dim t) : listm'.list' t =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 a' ;[ -3i32; 6 ]
 |> to_list'

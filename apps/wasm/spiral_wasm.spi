@@ -159,7 +159,7 @@ let rec run
     |> async.new_future_move
 
 /// ### main
-///! _
+///> _
 
 inl main (args : array_base string) =
     inl command = get_command ()

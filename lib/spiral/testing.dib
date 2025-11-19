@@ -84,29 +84,27 @@ inl _assert_approx_eq e b a =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 12.345f64
 |> _assert_approx_eq (Some 0.0001f64) 12.345f64
 
 #!spiral
 
-//// test
-//// print_code
+///- --test --print-code
 
 1f64
 |> __assert_approx_eq Console (Some 3) 2
 
 #!spiral
 
-//// test
-//// print_code
+///- --test --print-code
 
 (dyn 1f64)
 |> _assert_approx_eq (Some 3) 2
@@ -262,13 +260,13 @@ inl rec _assert_fn fn list =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 [
     3i32,
@@ -337,14 +335,14 @@ inl _assert_contains b a =
 
 #!spiral
 
-//// test
+///- --test
 
 ;[ "a"; "b"; "c" ]
 |> _assert_contains "b"
 
 #!spiral
 
-//// test
+///- --test
 
 "abcd"
 |> _assert_contains 'b'

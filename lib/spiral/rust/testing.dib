@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -40,8 +39,7 @@ inl run_tests' tests =
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 inl run test =
     if env.get_environment_variable "TEST" = "1"
@@ -61,8 +59,8 @@ inl run test =
 
 #!spiral
 
-//// test
-///! rust -d encoding_rs encoding_rs_io
+///- --test
+///> rust -d encoding_rs encoding_rs_io
 
 fun () =>
     run_tests' {
@@ -87,8 +85,8 @@ inl run_tests tests : () =
 
 #!spiral
 
-//// test
-///! rust -d encoding_rs encoding_rs_io
+///- --test
+///> rust -d encoding_rs encoding_rs_io
 
 fun () =>
     run_tests {
@@ -113,8 +111,8 @@ inl run_tests_log tests : () =
 
 #!spiral
 
-//// test
-///! rust -d encoding_rs encoding_rs_io
+///- --test
+///> rust -d encoding_rs encoding_rs_io
 
 fun () =>
     run_tests_log {

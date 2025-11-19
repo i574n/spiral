@@ -13,8 +13,7 @@ open rust_operators
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -33,7 +32,7 @@ inl default_value d =
 
 #!spiral
 
-//// test
+///- --test
 
 None
 |> default_value 3i32
@@ -50,7 +49,7 @@ inl (/??) a b =
 
 #!spiral
 
-//// test
+///- --test
 
 None /?? 3i32
 |> _assert_eq 3i32
@@ -67,7 +66,7 @@ inl default_with fn = function
 
 #!spiral
 
-//// test
+///- --test
 
 None
 |> default_with fun () => 3i32
@@ -86,7 +85,7 @@ inl choose fn a b =
 
 #!spiral
 
-//// test
+///- --test
 
 (Some 2i32, Some 3)
 ||> choose (+)
@@ -104,7 +103,7 @@ inl iter fn = function
 
 #!spiral
 
-//// test
+///- --test
 
 inl n = mut 1i32
 inl fn =
@@ -266,13 +265,13 @@ inl unbox forall t. (x : option' t) : option t =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 inl x = Some 3i32
 inl y : option i32 = None
@@ -306,13 +305,13 @@ inl of_obj forall t. (x : t) : option' t =
 
 #!spiral
 
-//// test
-////! gleam // Expected type: #(String) Found type: #(Nil)
-///! fsharp
-///! cuda
-////! rust // attempted to zero-initialize type `alloc::sync::Arc<dyn core::any::Any>`, which is invalid
-///! typescript
-///! python
+///- --test
+////> gleam // Expected type: #(String) Found type: #(Nil)
+///> fsharp
+///> cuda
+////> rust // attempted to zero-initialize type `alloc::sync::Arc<dyn core::any::Any>`, which is invalid
+///> typescript
+///> python
 
 null ()
 |> of_obj
@@ -321,13 +320,13 @@ null ()
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 ""
 |> of_obj
@@ -462,8 +461,8 @@ inl rc_into_inner forall t. (x : rust.rc t) : option' t =
 
 #!spiral
 
-//// test
-///! rust
+///- --test
+///> rust
 
 rust.new_rc 0i32
 |> rc_into_inner

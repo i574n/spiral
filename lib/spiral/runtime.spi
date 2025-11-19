@@ -11,7 +11,7 @@ let split_args (args : string) : result (array_base string) _ =
     inl esc = [ '\\'; '`' ]
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
-    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => $c ++# $(c' ())
+    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => #?c ++# #?(c' ())
     inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
     inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
     inl p_esc = esc |> listm.map p_esc_char |> choice
@@ -22,7 +22,7 @@ let split_args (args : string) : result (array_base string) _ =
         esc
         |> listm.map fun c => p_char c >>. p_char '"' >>% '"'
         |> choice
-    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => $c ++# $(c' ())
+    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => #?c ++# #?(c' ())
     inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
     inl p_quoted_esc = (p_word <|> p_esc_noquote) |> many_strings
     inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim

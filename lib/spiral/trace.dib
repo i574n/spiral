@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -202,13 +201,13 @@ inl test_trace_level level : bool =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 test_trace_level Critical |> _assert_eq true
 test_trace_level Verbose |> _assert_eq true
@@ -358,9 +357,8 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
         else
             inl locals = locals ()
             join
-                inl locals = locals |> sm'.format
                 inl count = *trace_state.count
-                time ++# " " ++# level_str ++# " #" ++# $count ++# " " ++# text ++# " / " ++# locals
+                time ++# " "  ++# #?count ++# level_str ++# " " ++# text ++# " / " ++# #?locals
                 |> fun x =>
                     join
                         x
@@ -383,6 +381,18 @@ trace Debug (fun () => "test2") id
 get_trace_state_or_init None .count
 |> fun x => *x
 |> _assert_eq 3
+
+#!markdown
+
+### trace_format
+
+#!spiral
+
+inl trace_format level fn obj =
+    inl text, locals = fn obj
+    inl locals = #?locals |> sm'.ellipsis_end 200
+    trace level (fun () => text) (fun () => locals)
+    obj
 
 #!markdown
 

@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -54,18 +53,18 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                             ) : () -> value
                                     }
                             inl item = real_core.nominal_create `union_type (key, value)
-                            inl key' = sm'_real.symbol_to_string `(`key)
+                            inl key' = sm'_real.symbol_to_string_real `(`key)
                             (::) `(string * union_type) (key', item) acc
                     (Nil `(string * union_type))
                     `union_record_type
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> rust
+///> typescript
+///> python
 
 get_union_fields ()
 |> listm'.box
@@ -77,11 +76,11 @@ get_union_fields ()
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> rust
+///> typescript
+///> python
 
 get_union_fields ()
 |> listm'.box
@@ -109,7 +108,7 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                                 inl key, item : (string * union_type) =
                                     real_core.union_untag `union_type i
                                         (fun key => forall value. =>
-                                            inl key' = sm'_real.symbol_to_string `(`key)
+                                            inl key' = sm'_real.symbol_to_string_real `(`key)
                                             inl value =
                                                 typecase value with
                                                 | () => $'' : value
@@ -148,24 +147,24 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 get_union_fields_untag ()
 |> _assert_eq' [ "Native", Native; "Wasm", Wasm; "Contract", Contract ]
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 get_union_fields_untag ()
 |> _assert_eq' [ "Some", Some (); "None", None ]
@@ -189,8 +188,8 @@ inl union_try_pick forall t. (key : string) : option t =
 
 #!spiral
 
-//// test
-///! fsharp
+///- --test
+///> fsharp
 
 "wasm"
 |> union_try_pick
@@ -249,12 +248,12 @@ inl union_to_string forall t. (x : t) : string =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 Some true
 |> union_to_string
@@ -271,13 +270,13 @@ inl nameof forall t. (x : t) : string =
         real_core.record_type_fold_back
             fun key =>
                 forall value. _ =>
-                    sm'_real.symbol_to_string `(`key)
+                    sm'_real.symbol_to_string_real `(`key)
             `t
             ""
 
 #!spiral
 
-//// test
+///- --test
 
 { test1 = ""; test2 = "" }
 |> nameof
@@ -294,7 +293,7 @@ inl get_record_fields forall t u. (x : t) : list (string * u) =
         real_core.record_type_fold_back
             fun key =>
                 forall u'. acc =>
-                    inl k = sm'_real.symbol_to_string `(`key)
+                    inl k = sm'_real.symbol_to_string_real `(`key)
                     inl v = x key
                     (::) `(string * u') (k, v) acc
             `t
@@ -302,7 +301,7 @@ inl get_record_fields forall t u. (x : t) : list (string * u) =
 
 #!spiral
 
-//// test
+///- --test
 
 { a = "1"; b = "2" }
 |> get_record_fields
@@ -321,7 +320,7 @@ inl get_functions_types forall t {record}. (fns : t) =
                 real_core.record_type_fold_back
                     fun key =>
                         forall v. acc =>
-                            inl k = sm'_real.symbol_to_string `(`key)
+                            inl k = sm'_real.symbol_to_string_real `(`key)
                             inl v = $'"`v"' : string
                             (::) `(string * string) (k, v) acc
                     `t
@@ -333,7 +332,7 @@ inl get_functions_types forall t {record}. (fns : t) =
         real_core.record_type_fold_back
             fun key =>
                 forall v. acc =>
-                    inl k = sm'_real.symbol_to_string `(`key)
+                    inl k = sm'_real.symbol_to_string_real `(`key)
                     inl args, result = get_function_type `v
                     (::) `(string * (list (string * string) * string)) (k, (args, result)) acc
             `(`fns)
@@ -342,7 +341,7 @@ inl get_functions_types forall t {record}. (fns : t) =
 
 #!spiral
 
-//// test
+///- --test
 
 inl one ({ a } : { a : i32 }) : i32 = a + 1
 inl two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2

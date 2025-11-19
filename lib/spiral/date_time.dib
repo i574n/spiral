@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -72,8 +71,7 @@ type date_time_guid = guid.guid
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 inl test_guid () =
     "6543210F-EDCB-A987-6543-210FEDCBA987" |> guid.new_guid
@@ -290,9 +288,9 @@ inl min_value () : date_time =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 min_value ()
 |> format ""
@@ -312,9 +310,9 @@ inl max_value () : date_time =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 max_value ()
 |> format ""
@@ -370,10 +368,10 @@ inl unix_epoch () : date_time =
 
 #!spiral
 
-//// test
-///! fsharp
-///! gleam
-///! cuda
+///- --test
+///> fsharp
+///> gleam
+///> cuda
 
 unix_epoch ()
 |> format ""
@@ -440,10 +438,10 @@ inl date_time_milliseconds
 
 #!spiral
 
-//// test
-///! fsharp
-///! gleam
-///! cuda
+///- --test
+///> fsharp
+///> gleam
+///> cuda
 
 date_time_milliseconds 1970 1 1 0 0 0 0
 |> format ""
@@ -468,9 +466,9 @@ inl date_time_utc
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 date_time_utc 1970 1 1 0 0 0
 |> format ""
@@ -519,9 +517,9 @@ inl to_universal_time (date_time : date_time) : date_time =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 date_time_milliseconds 1970 1 1 0 0 0 0
 |> specify_date_kind Utc
@@ -531,9 +529,9 @@ date_time_milliseconds 1970 1 1 0 0 0 0
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 date_time_utc 1970 1 1 0 0 0
 |> specify_date_kind Utc
@@ -542,9 +540,9 @@ date_time_utc 1970 1 1 0 0 0
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 date_time_utc 1970 1 1 0 0 0
 |> specify_date_kind Local
@@ -553,9 +551,9 @@ date_time_utc 1970 1 1 0 0 0
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 date_time_utc 1970 1 1 0 0 0
 |> specify_date_kind Unspecified
@@ -655,10 +653,10 @@ inl ticks (date_time : date_time) : timestamp =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
+///- --test
+///> fsharp
+///> cuda
+///> rust
 
 unix_epoch ()
 |> ticks
@@ -679,12 +677,12 @@ inl hours (time_span : time_span) : i32 =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (join date_time_milliseconds 2002 2 2 20 22 24 26)
 |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
@@ -706,12 +704,12 @@ inl minutes (time_span : time_span) : i32 =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (join date_time_milliseconds 2002 2 2 20 22 24 26)
 |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
@@ -733,12 +731,12 @@ inl seconds (time_span : time_span) : i32 =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (join date_time_milliseconds 2002 2 2 20 22 24 26)
 |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
@@ -760,12 +758,12 @@ inl milliseconds (time_span : time_span) : i32 =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (join date_time_milliseconds 2002 2 2 20 22 24 26)
 |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
@@ -797,7 +795,7 @@ inl time_span_format (format : string) (time_span : time_span) : string =
                     inl result =
                         if days <= 0
                         then time
-                        else $days ++# time
+                        else #?days ++# time
                     inl ms = time_span |> milliseconds
                     if ms <= 0
                     then result
@@ -812,12 +810,12 @@ inl time_span_format (format : string) (time_span : time_span) : string =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (join date_time_milliseconds 2002 2 2 20 22 24 26)
 |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
@@ -829,12 +827,12 @@ inl time_span_format (format : string) (time_span : time_span) : string =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (join date_time_milliseconds 2002 2 2 20 22 24 26)
 |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 26)
@@ -843,12 +841,12 @@ inl time_span_format (format : string) (time_span : time_span) : string =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (join date_time_milliseconds 2002 2 2 20 22 24 999)
 |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)
@@ -1195,10 +1193,10 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
 
 #!spiral
 
-//// test
-///! fsharp
-////! cuda
-////! rust -d chrono // Ambiguous local time, ranging from 1970-01-01T00:00:00-03:00 to 1970-01-01T00:00:00-04:00
+///- --test
+///> fsharp
+////> cuda
+////> rust -d chrono // Ambiguous local time, ranging from 1970-01-01T00:00:00-03:00 to 1970-01-01T00:00:00-04:00
 
 inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
 unix_epoch ()
@@ -1210,9 +1208,9 @@ unix_epoch ()
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust -d chrono
+///- --test
+///> fsharp
+///> rust -d chrono
 
 inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
 min_value ()
@@ -1223,8 +1221,8 @@ min_value ()
 
 #!spiral
 
-//// test
-///! fsharp
+///- --test
+///> fsharp
 
 inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
 max_value ()
@@ -1236,8 +1234,8 @@ max_value ()
 
 #!spiral
 
-//// test
-///! rust -d chrono
+///- --test
+///> rust -d chrono
 
 inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
 max_value ()
@@ -1249,9 +1247,9 @@ max_value ()
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust -d chrono
+///- --test
+///> fsharp
+///> rust -d chrono
 
 inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
 unix_epoch ()
@@ -1277,21 +1275,21 @@ inl date_time_from_guid (date_time_guid : date_time_guid) =
 
 #!spiral
 
-//// test
+///- --test
 
 date_time_from_guid (guid.new_guid "00010101-0000-0000-0000-0a9876543210")
 |> _assert_eq' (min_value ())
 
 #!spiral
 
-//// test
+///- --test
 
 date_time_from_guid (guid.new_guid $'$"99991231-2359-5999-9999-9{(!test_guid () |> string).[^10..]}"')
 |> _assert_eq' (max_value ())
 
 #!spiral
 
-//// test
+///- --test
 
 date_time_from_guid (guid.new_guid $'$"19700101-0000-0000-0000-0{(!test_guid () |> string).[^10..]}"')
 |> _assert_eq' $'System.DateTime.UnixEpoch'
@@ -1309,14 +1307,14 @@ inl timestamp_guid_from_timestamp (guid : guid.guid) (timestamp : timestamp) : t
 
 #!spiral
 
-//// test
+///- --test
 
 timestamp_guid_from_timestamp (test_guid ()) (0i64 |> convert |> timestamp)
 |> _assert_eq' (guid.new_guid "00000000-0000-0000-0043-210fedcba987")
 
 #!spiral
 
-//// test
+///- --test
 
 timestamp_guid_from_timestamp (test_guid ()) (999999999999999999i64 |> convert |> timestamp)
 |> _assert_eq' (guid.new_guid $'$"99999999-9999-9999-9943-2{(!test_guid () |> string).[^10..]}"')
@@ -1333,14 +1331,14 @@ inl timestamp_from_guid (guid : date_time_guid) : timestamp =
 
 #!spiral
 
-//// test
+///- --test
 
 timestamp_from_guid (guid.new_guid "00000000-0000-0000-00dc-ba9876543210")
 |> _assert_eq' (0i64 |> convert |> timestamp)
 
 #!spiral
 
-//// test
+///- --test
 
 timestamp_from_guid (guid.new_guid $'$"99999999-9999-9999-99{(!test_guid () |> string).[^14..]}"')
 |> _assert_eq' (999999999999999999i64 |> convert |> timestamp)
@@ -1357,7 +1355,7 @@ inl new_guid_from_date_time (date_time : date_time) =
 
 #!spiral
 
-//// test
+///- --test
 
 utc_now ()
 |> new_guid_from_date_time
@@ -1377,7 +1375,7 @@ inl new_guid_from_timestamp (timestamp : timestamp) =
 
 #!spiral
 
-//// test
+///- --test
 
 utc_now ()
 |> ticks

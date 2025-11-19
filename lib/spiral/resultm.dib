@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -246,13 +245,13 @@ inl map' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-////! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+////> cuda
+///> rust
+///> typescript
+///> python
 
 inl x : _ _ string = Ok 3i32
 inl y : _ i32 _ = Error "error1"
@@ -539,8 +538,8 @@ inl rc_try_unwrap forall t. (x : rust.rc t) : result' t (rust.rc t) =
 
 #!spiral
 
-//// test
-///! rust
+///- --test
+///> rust
 
 rust.new_rc true
 |> rc_try_unwrap

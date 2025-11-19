@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -119,7 +118,7 @@ inl get_executable_suffix () =
 
 #!spiral
 
-//// test
+///- --test
 
 get_executable_suffix ()
 

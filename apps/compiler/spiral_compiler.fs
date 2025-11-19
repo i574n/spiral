@@ -1109,7 +1109,7 @@ module spiral_compiler =
         if peek s = '/' && peek' s 1 = '/' then
             let from = s.from
             inc' 2 s
-            while peek s = '/' || (peek s = '!' && peek' s 1 = ' ') do
+            while peek s = '/' || ((peek s = '!' || peek s = '-' || peek s = '>') && peek' s 1 = ' ') do
                 inc s
             if skip ' ' s then
                 let com = s.text.[s.from..]
@@ -11291,7 +11291,7 @@ module spiral_compiler =
                   match t with
                   | YFun (domain, _, FT_Vanilla) ->
                       let domain_is_nil = env.ty_to_data domain |> data_free_vars |> Array.isEmpty
-                      if arg_code = "nil" then
+                      if arg_code |> SpiralSm.trim = "nil" then
                         if domain_is_nil then sprintf "v%i(nil)" i else sprintf "v%i" i
                       else
                         if domain_is_nil then sprintf "v%i((%s)(nil))" i arg_code
@@ -16127,7 +16127,7 @@ module spiral_compiler =
             errors: FSharp.Control.AsyncSeq<ClientErrorsRes>
             job_null: 'a -> Task<'b>
             job_val: (IVar<'c> -> 'd) -> Task<string>
-            supervisor: Ch<SupervisorReq> 
+            supervisor: Ch<SupervisorReq>
         |} =
         let event = Event<ClientErrorsRes> ()
         // let disposable' = connection.On<string> ("ServerToClientMsg", event.Trigger)

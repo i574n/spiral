@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -190,14 +189,14 @@ inl run_target forall t. (fn : target -> (() -> t)) : t =
 
 #!spiral
 
-//// test
-///! gleam
-///! lua
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 run_target function
     | Gleam (Native) => fun () => $'1 + 1'
@@ -349,12 +348,12 @@ inl memoize forall t. (fn : () -> t) : () -> t =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 inl count = mut 0i32
 inl add =
@@ -421,8 +420,7 @@ inl join_body body acc x =
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 inl rec fold_list f s = function
     | Cons (x, x') => fold_list f (f s x) x'
@@ -430,15 +428,14 @@ inl rec fold_list f s = function
 
 #!spiral
 
-//// test
-///! gleam
-///! lua
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
-//// print_code
+///- --test --print-code
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 [ 5i32; 4; join 3; 2; 1 ]
 |> fold_list (+) 0
@@ -446,14 +443,13 @@ inl rec fold_list f s = function
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
-//// print_code
+///- --test --print-code
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 [ 5i32; 4; join 3; 2; 1 ]
 |> fold_list (join_body (+)) 0
@@ -474,14 +470,13 @@ inl join_body_unit body d x =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
-//// print_code
+///- --test --print-code
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 [ 5i32; 4; join 3; 2; 1 ]
 |> fold_list (fun acc n => join_body_unit ((+) acc) n n) 0
@@ -498,14 +493,14 @@ inl (+.) forall t. (a : t) (b : t) : t =
 
 #!spiral
 
-//// test
-///! gleam
-///! lua
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 ($'3' : int) +. ($'-6' : int)
 |> _assert_eq -3i32
@@ -521,13 +516,13 @@ inl (-.) forall t. (a : t) (b : t) : t =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 ($'3' : i32) -. ($'6' : i32)
 |> _assert_eq -3i32
@@ -543,13 +538,13 @@ inl (*.) forall t. (a : t) (b : t) : t =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 ($'3' : i32) *. ($'-1' : i32)
 |> _assert_eq -3i32
@@ -565,13 +560,13 @@ inl (/.) forall t. (a : t) (b : t) : t =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 ($'-3' : i32) /. ($'1' : i32)
 |> _assert_eq -3i32
@@ -591,13 +586,13 @@ inl (=.) forall t. (a : t) (b : t) : bool =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (($'-3' : i32) =. ($'-3' : i32))
 |> _assert_eq true
@@ -617,13 +612,13 @@ inl (<>.) forall t. (a : t) (b : t) : bool =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (($'-3' : i32) <>. ($'3' : i32))
 |> _assert_eq true
@@ -642,13 +637,13 @@ inl (<>..) a b =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (($'-3' : i32) <>.. ($'3' : i32))
 |> _assert_eq true
@@ -689,13 +684,13 @@ inl pair x y =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 pair 1i32 2i32
 |> _assert_eq (1, 2)
@@ -737,13 +732,13 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 new_pair "a" (new_pair 1i32 "b")
 |> from_pair
@@ -764,13 +759,13 @@ inl (||>) (arg1, arg2) fn =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (3i32, 2i32)
 ||> fun a b => a - b
@@ -778,13 +773,13 @@ inl (||>) (arg1, arg2) fn =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 (1i32, 2i32)
 ||> flip pair
@@ -863,9 +858,9 @@ inl defaultof forall t. () : t =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
+///- --test
+///> gleam
+///> fsharp
 
 real defaultof `string ()
 |> _assert_eq ""
@@ -988,12 +983,12 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 try
     fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
@@ -1011,13 +1006,13 @@ try
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 try
     fun () => a ;[ 0i32 ] |> am'.index 0i32 |> sm'.format

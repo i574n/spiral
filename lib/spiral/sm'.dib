@@ -8,8 +8,13 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
+
+open testing
+
+#!spiral
+
+///- --real --test force
 
 open testing
 
@@ -17,6 +22,11 @@ open testing
 
 open rust
 open rust_operators
+
+#!spiral
+
+///- --static
+
 open sm'_real
 
 #!markdown
@@ -25,13 +35,13 @@ open sm'_real
 
 #!markdown
 
-### std_string
+### std_string_real
 
 #!spiral
 
-//// real
+///- --real
 
-nominal std_string =
+nominal std_string_real =
     `(
         backend_switch `(()) `({}) {
             Fsharp =
@@ -42,9 +52,13 @@ nominal std_string =
         $'' : $'std_string_String'
     )
 
+#!markdown
+
+### std_string
+
 #!spiral
 
-type std_string = sm'_real.std_string
+type std_string = std_string_real
 
 #!markdown
 
@@ -57,20 +71,24 @@ inl to_string' forall t. (x : t) : std_string =
 
 #!markdown
 
+### from_std_string_real
+
+#!spiral
+
+///- --real
+
+inl from_std_string_real (str : std_string_real) : string =
+    open rust
+    rust.emit_expr `std_string_real `string str ($'"fable_library_rust::String_::fromString($0)"' : string)
+
+#!markdown
+
 ### from_std_string
 
 #!spiral
 
-//// real
-
 inl from_std_string (str : std_string) : string =
-    open rust
-    rust.emit_expr `std_string `string str ($'"fable_library_rust::String_::fromString($0)"' : string)
-
-#!spiral
-
-inl from_std_string (str : std_string) : string =
-    real sm'_real.from_std_string str
+    real from_std_string_real str
 
 #!markdown
 
@@ -78,13 +96,13 @@ inl from_std_string (str : std_string) : string =
 
 #!markdown
 
-### symbol_to_string
+### symbol_to_string_real
 
 #!spiral
 
-//// real
+///- --real
 
-inl symbol_to_string forall t {symbol}. : string =
+inl symbol_to_string_real forall t {symbol}. : string =
     // inl x = real_core.type_lit_to_lit `t
     // inl x = real_core.type_to_symbol `t
     // inl x = real_core.type_lit_to_lit `t
@@ -92,17 +110,22 @@ inl symbol_to_string forall t {symbol}. : string =
     inl x = real_core.type_to_symbol `t
     !!!!SymbolToString (x)
 
+#!markdown
+
+### symbol_to_string
+
 #!spiral
 
 inl symbol_to_string forall t {symbol}. (x : t) : string =
-    real symbol_to_string `t
+    real symbol_to_string_real `t
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
 
 .test
 |> symbol_to_string
@@ -110,15 +133,15 @@ inl symbol_to_string forall t {symbol}. (x : t) : string =
 
 #!spiral
 
-//// test
-//// real
-///! gleam
-///! fsharp
-///! cuda
+///- --real --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
 
 open testing
 inl x = .test
-inl x = symbol_to_string `(`x)
+inl x = symbol_to_string_real `(`x)
 _assert_eq `string "test" x
 
 #!markdown
@@ -141,10 +164,10 @@ inl length forall dim {int}. (input : string) : dim =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> fsharp
+///> cuda
 
 "abc"
 |> length
@@ -161,10 +184,10 @@ inl to_char_list (str : string) : list char =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> fsharp
+///> cuda
 
 "abc"
 |> to_char_list
@@ -181,10 +204,10 @@ inl to_char_array (str : string) : array_base char =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> fsharp
+///> cuda
 
 "abc"
 |> to_char_array
@@ -215,11 +238,11 @@ inl to_option s =
 
 #!markdown
 
-### string_builder
+### string_builder_real
 
 #!spiral
 
-//// real
+///- --real
 
 nominal string_builder_python =
     `(
@@ -232,11 +255,15 @@ type string_builder_switch =
         Fsharp : $'System.Text.StringBuilder'
         Python : string_builder_python
     }
-nominal string_builder = $'backend_switch `(string_builder_switch)'
+nominal string_builder_real = $'backend_switch `(string_builder_switch)'
+
+#!markdown
+
+### string_builder
 
 #!spiral
 
-type string_builder = sm'_real.string_builder
+type string_builder = string_builder_real
 
 #!spiral
 
@@ -258,13 +285,13 @@ inl string_builder (initial : string) : string_builder =
 
 #!markdown
 
-### format_debug
+### format_debug_real
 
 #!spiral
 
-//// real
+///- --real
 
-inl format_debug forall t. (x : t) : string =
+inl format_debug_real forall t. (x : t) : string =
     typecase t with
     | string => x
     | _ =>
@@ -273,7 +300,7 @@ inl format_debug forall t. (x : t) : string =
                 (fun () =>
                     typecase t with
                     | char => convert.to `(`x) `string x
-                    | string_builder => convert.to `(`x) `string x
+                    | string_builder_real => convert.to `(`x) `string x
                     | _ =>
                         global "import gleam/string"
                         inl x =
@@ -282,7 +309,17 @@ inl format_debug forall t. (x : t) : string =
                             | _ => x
                         $'string.inspect(!x)' : string
                     ) : () -> string
-            Lua = (fun () => $'tostring(!x)' : string) : () -> string
+            Lua =
+                (fun () =>
+                    typecase t with
+                    | _ * _ => $'table.concat(!x, ", ") ' : string
+                    | {} => $'table.concat(!x, ", ")   ' : string
+                    | array_base _ => append_real (append_real "[" ($'table.concat(!x, ", ")' : string)) "]"
+                    | t =>
+                        if real_core.union_type_is `t
+                        then $'table.
+                        else $'tostring(!x)' : string
+                ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
             Python =
                 (fun () =>
@@ -290,31 +327,37 @@ inl format_debug forall t. (x : t) : string =
                 ) : () -> string
         }
 
+#!markdown
+
+### format_debug
+
 #!spiral
 
 inl format_debug forall t. (x : t) : string =
-    real format_debug `t x
+    real format_debug_real `t x
 
 #!markdown
 
-### (~$$)
+### (~#?*)
 
 #!spiral
 
-inl (~$$) s =
+inl (~#?*) s =
     s |> format_debug
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
 
-$$("1", "2", "3")
+#?*("1", "2", "3")
 |> _assert_eq (
     backend_switch {
         Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
+        Lua = fun () => "1, 2, 3" : string
         Fsharp = fun () => "struct (\"1\", \"2\", \"3\")" : string
         Python = fun () => "('1', '2', '3')" : string
     }
@@ -322,15 +365,17 @@ $$("1", "2", "3")
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
 
-$${ c = "1"; a = "2"; b = "3" }
+#?*{ c = "1"; a = "2"; b = "3" }
 |> _assert_eq (
     backend_switch {
         Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
+        Lua = fun () => "1, 2, 3" : string
         Fsharp = fun () => "struct (\"1\", \"2\", \"3\")" : string
         Python = fun () => "('1', '2', '3')" : string
     }
@@ -360,19 +405,19 @@ instance unwrap_format result t u = fun x =>
 
 inl obj_to_string x : string =
     backend_switch {
-        Gleam = fun () => $$x : string
-        Lua = fun () => $$x : string
+        Gleam = fun () => #?*x : string
+        Lua = fun () => #?*x : string
         Fsharp = fun () => $'!x |> _.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }
 
 #!markdown
 
-### (~$)
+### (~#?**)
 
 #!spiral
 
-inl (~$) s =
+inl (~#?**) s =
     s |> obj_to_string
 
 #!markdown
@@ -381,7 +426,7 @@ inl (~$) s =
 
 #!spiral
 
-//// real
+///- --real
 
 inl append_real (x : string) (s : string) : string =
     backend_switch `string `({}) {
@@ -406,19 +451,12 @@ inl append (x : string) (s : string) : string =
 
 #!spiral
 
-//// real
-
 inl (++#) (a : string) (b : string) : string =
-    append_real b a
-
-#!spiral
-
-inl (++#) (a : string) (b : string) : string =
-    real (++#) a b
+    append b a
 
 #!markdown
 
-### (++\\#)
+### (++\\\\#)
 
 #!spiral
 
@@ -427,7 +465,7 @@ inl (++\\#) a b =
 
 #!markdown
 
-### (++\#)
+### (++\\#)
 
 #!spiral
 
@@ -450,14 +488,13 @@ inl concat_list separator input =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
-//// print_code
+///- --test --print-code
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 [
     "1"
@@ -502,9 +539,8 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
 
 #!spiral
 
-//// test
-///! fsharp
-//// print_code
+///- --test --print-code
+///> fsharp
 
 "abcdef"
 |> slice 3i32 3i32
@@ -523,10 +559,11 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
 
 "abcdef"
 |> slice 1i32 3i32
@@ -574,24 +611,28 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
 
 #!markdown
 
+### format_pretty_real
+
+#!spiral
+
+///- --real
+
+inl format_pretty_real forall t. (x : t) : string =
+    run_target_args `string `t (fun () => x) function
+        | Rust _ => fun x =>
+            open rust
+            inl result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
+            from_std_string_real result
+        | _ => fun _ => format_debug_real `t x
+
+#!markdown
+
 ### format_pretty
 
 #!spiral
 
-//// real
-
 inl format_pretty forall t. (x : t) : string =
-    run_target_args `string `t (fun () => x) function
-        | Rust _ => fun x =>
-            open rust
-            inl result = rust.emit_expr `t `std_string x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
-            from_std_string result
-        | _ => fun _ => format_debug `t x
-
-#!spiral
-
-inl format_pretty forall t. (x : t) : string =
-    real sm'_real.format_pretty `t x
+    real format_pretty_real `t x
 
 #!markdown
 
@@ -613,7 +654,7 @@ inl prim x = real
 
 #!spiral
 
-//// real
+///- --real
 
 prototype printable t : t -> ()
 
@@ -623,7 +664,7 @@ prototype printable t : t -> ()
 
 #!spiral
 
-//// real
+///- --real
 
 let format_real forall t. (x : t) : string =
     inl empty : string =
@@ -655,14 +696,14 @@ let format_real forall t. (x : t) : string =
                             match b with
                             | (_ : string) => b : string
                             // | (_ : f32) | (_ : f64) => format_debug `(`b) b
-                            | _ => format_debug `(`b) b
+                            | _ => format_debug_real `(`b) b
                         ) : () -> string
                     Lua =
                         (fun () =>
                             match b with
                             | (_ : string) => b : string
                             // | (_ : f32) | (_ : f64) => format_debug `(`b) b
-                            | _ => format_debug `(`b) b
+                            | _ => format_debug_real `(`b) b
                         ) : () -> string
                     Fsharp =
                         (fun () =>
@@ -682,21 +723,21 @@ let format_real forall t. (x : t) : string =
             backend_switch `(()) `({}) {
                 Gleam =
                     (fun () =>
-                        exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+                        exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())
                     ) : () -> ()
                 Lua =
                     (fun () =>
-                        exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+                        exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())
                     ) : () -> ()
                 Fsharp =
                     (fun () =>
                         join
-                            result <- (++#) ((~*) `string result) s
+                            result <- append_real s ((~*) `string result)
                     ) : () -> ()
                 Python =
                     (fun () =>
                         join
-                            result <- (++#) ((~*) `string result) s
+                            result <- append_real s ((~*) `string result)
                     ) : () -> ()
             }
 
@@ -715,16 +756,16 @@ let format_real forall t. (x : t) : string =
                 real_core.record_fold
                     fun { state = separator key value } =>
                         write separator
-                        write (symbol_to_string `(`key)) . write " = " . write value
+                        write (symbol_to_string_real `(`key)) . write " = " . write value
                         "; "
                     () x
             write " }"
-        | x when real_core.symbol_is x => write (symbol_to_string `(`x))
+        | x when real_core.symbol_is x => write (symbol_to_string_real `(`x))
         | x when real_core.function_is x => write (x ())
         | x when real_core.union_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
             else
-                write (format_debug `(`x) x)
+                write (format_debug_real `(`x) x)
                 // real_core.unbox x (fun (k, v) =>
                 //     write k
                 //     match v with
@@ -734,8 +775,8 @@ let format_real forall t. (x : t) : string =
         | x when real_core.nominal_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
             // elif layout_is x then write *x // TODO: Deal with all the layout type cases.
-            else write (format_pretty `(`x) x)
-        | x => write (format_debug `(`x) x)
+            else write (format_pretty_real `(`x) x)
+        | x => write (format_debug_real `(`x) x)
     write x
     (~*) `string result
 
@@ -750,13 +791,13 @@ inl format forall t. (x : t) : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 ("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
 |> format
@@ -776,6 +817,15 @@ inl format forall t. (x : t) : string =
 
 #!markdown
 
+### (~#?)
+
+#!spiral
+
+inl (~#?) s =
+    s |> format
+
+#!markdown
+
 ### to_char_array
 
 #!spiral
@@ -786,9 +836,9 @@ inl to_char_array (str : string) : array_base char =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 "abc"
 |> to_char_array
@@ -809,13 +859,12 @@ inl concat_array (separator : string) (input : a int string) =
 
 #!spiral
 
-//// test
-///! fsharp
-////! cuda // AttributeError: 'str' object has no attribute 'item'
-///! rust
-///! typescript
-///! python
-//// print_code
+///- --test --print-code
+///> fsharp
+////> cuda // AttributeError: 'str' object has no attribute 'item'
+///> rust
+///> typescript
+///> python
 
 ;[
     "1"
@@ -840,13 +889,13 @@ inl ellipsis (max : i32) (s : string) =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "12345"
 |> ellipsis 2
@@ -897,7 +946,7 @@ inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
 
 #!spiral
 
-//// test
+///- --test
 
 "abcdefabc"
 |> index_of_char_from 2i32 'a'
@@ -932,13 +981,13 @@ inl index_of (search : string) (s : string) : int =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "123"
 |> index_of "2"
@@ -960,9 +1009,9 @@ inl replicate (n : int) (s : string) : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
+///- --test
+///> gleam
+///> fsharp
 
 "12"
 |> replicate (join 3)
@@ -970,10 +1019,9 @@ inl replicate (n : int) (s : string) : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-//// print_code
+///- --test --print-code
+///> gleam
+///> fsharp
 
 "12"
 |> replicate 3
@@ -981,13 +1029,13 @@ inl replicate (n : int) (s : string) : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "12"
 |> replicate 3
@@ -1015,13 +1063,13 @@ inl pad_right (total_width : int) (padding_char : char) (s : string) : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "123"
 |> pad_right 6 ' '
@@ -1152,13 +1200,13 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "ab"
 |> string_builder
@@ -1206,13 +1254,13 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "ab"
 |> string_builder
@@ -1247,13 +1295,13 @@ inl builder_clear (sb : string_builder) : string_builder =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "ab"
 |> string_builder
@@ -1272,12 +1320,12 @@ inl builder_clear (sb : string_builder) : string_builder =
 inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
-            inl sb = $sb
+            inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
             inl b = sb |> slice i (length sb)
             [ a; s; b ] |> concat_list "" |> string_builder
         Lua = fun () =>
-            inl sb = $sb
+            inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
             inl b = sb |> slice i (length sb)
             [ a; s; b ] |> concat_list "" |> string_builder
@@ -1291,13 +1339,13 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-////! rust
-////! typescript
-////! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+////> rust
+////> typescript
+////> python
 
 "ab"
 |> string_builder
@@ -1358,10 +1406,10 @@ inl trim_start (chars : list char) (input : string) : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> fsharp
+///> cuda
 
 "  abc  "
 |> trim_start []
@@ -1402,10 +1450,10 @@ inl trim_end (chars : list char) (input : string) : string =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
+///- --test
+///> gleam
+///> fsharp
+///> cuda
 
 "  def  "
 |> trim_end []
@@ -1440,7 +1488,7 @@ inl trim_with (chars : list char) (input : string) : string =
 
 #!spiral
 
-//// test
+///- --test
 
 "  jkl  "
 |> trim_with [ ' '; '\t'; '\n' ]
@@ -1457,7 +1505,7 @@ inl trim (input : string) : string =
 
 #!spiral
 
-//// test
+///- --test
 
 "  ghi  "
 |> trim
@@ -1503,9 +1551,9 @@ inl length' forall dim. (input : string) : dim =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
+///- --test
+///> fsharp
+///> cuda
 
 "abc"
 |> length'
@@ -2174,8 +2222,8 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
 #!spiral
 
-//// test
-///! rust -d regex
+///- --test
+///> rust -d regex
 
 "fable-library-ts\\.(?<a>[\\d.]+)$"
 |> new_regex
@@ -2496,12 +2544,12 @@ inl format_exception (ex : exn) : string =
 
 #!spiral
 
-//// test
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 fun () => failwith "test"
 |> _throws
@@ -2526,7 +2574,7 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl is_start, start, end =
         inl len () : int =
             real
-                typecase t with 
+                typecase t with
                 | int => length `t s
                 | _ => length' `t s
         match start, end with
@@ -2557,13 +2605,13 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! cuda
-///! rust
-///! typescript
-///! python
+///- --test
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "abcde"
 |> range (am'.Start 0i32) (am'.End eval)
@@ -2651,7 +2699,7 @@ let ellipsis_end (max : i64) (s : string) =
 
 #!spiral
 
-//// test
+///- --test
 
 "12345"
 |> ellipsis_end 2
@@ -2700,10 +2748,10 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
 
 #!spiral
 
-//// test
-///! fsharp
-///! gleam
-///! rust -d regex
+///- --test
+///> fsharp
+///> gleam
+///> rust -d regex
 
 " 123"
 |> replace_regex "\\s\\w2" ""
@@ -2711,8 +2759,8 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
 
 #!spiral
 
-//// test
-///! rust -d regex
+///- --test
+///> rust -d regex
 
 "    let main args =\n        ()\n"
 |> replace_regex "(?P<a> *)(?P<b>let\\s+main\\s+.*?\\s*=)" "$a[<EntryPoint>]\n$a$b"

@@ -13,8 +13,7 @@ open rust_operators
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -151,8 +150,8 @@ inl enumerate forall dim {int; number} t. (ar : a dim t) : a dim (convert.unativ
 
 #!spiral
 
-//// test
-///! rust
+///- --test
+///> rust
 
 am'.init_series 0i32 2 1
 |> fun x => a x : _ int _

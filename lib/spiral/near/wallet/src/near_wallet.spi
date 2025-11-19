@@ -59,7 +59,7 @@ inl view model =
 /// ## tests
 
 /// ## main
-///! _
+///> _
 
 inl main' (n : int) =
     simple init (update 1) view

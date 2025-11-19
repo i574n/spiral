@@ -5,22 +5,28 @@ open sm'_real
 
 /// ## rust
 
+/// ### std_string_real
+
 /// ### std_string
-type std_string = sm'_real.std_string
+type std_string = std_string_real
 
 /// ### to_string'
 inl to_string' forall t. (x : t) : std_string =
     !\($'$"!x.to_string()"')
 
+/// ### from_std_string_real
+
 /// ### from_std_string
 inl from_std_string (str : std_string) : string =
-    real sm'_real.from_std_string str
+    real from_std_string_real str
 
 /// ## sm'
 
+/// ### symbol_to_string_real
+
 /// ### symbol_to_string
 inl symbol_to_string forall t {symbol}. (x : t) : string =
-    real symbol_to_string `t
+    real symbol_to_string_real `t
 
 /// ### index
 inl index i (str : string) : char =
@@ -48,8 +54,10 @@ inl to_option s =
     then None
     else s |> Some
 
+/// ### string_builder_real
+
 /// ### string_builder
-type string_builder = sm'_real.string_builder
+type string_builder = string_builder_real
 
 inl string_builder (initial : string) : string_builder =
     inl initial =
@@ -67,12 +75,14 @@ inl string_builder (initial : string) : string_builder =
             $'CustomStringIO(!initial)' : string_builder
     }
 
+/// ### format_debug_real
+
 /// ### format_debug
 inl format_debug forall t. (x : t) : string =
-    real format_debug `t x
+    real format_debug_real `t x
 
-/// ### (~$$)
-inl (~$$) s =
+/// ### (~#?*)
+inl (~#?*) s =
     s |> format_debug
 
 /// ### unwrap_format
@@ -89,14 +99,14 @@ instance unwrap_format result t u = fun x =>
 /// ### obj_to_string
 inl obj_to_string x : string =
     backend_switch {
-        Gleam = fun () => $$x : string
-        Lua = fun () => $$x : string
+        Gleam = fun () => #?*x : string
+        Lua = fun () => #?*x : string
         Fsharp = fun () => $'!x |> _.ToString()' : string
         Python = fun () => $'str(!x)' : string
     }
 
-/// ### (~$)
-inl (~$) s =
+/// ### (~#?**)
+inl (~#?**) s =
     s |> obj_to_string
 
 /// ### append_real
@@ -107,13 +117,13 @@ inl append (x : string) (s : string) : string =
 
 /// ### (++#)
 inl (++#) (a : string) (b : string) : string =
-    real (++#) a b
+    append b a
 
-/// ### (++\\#)
+/// ### (++\\\\#)
 inl (++\\#) a b =
     a ++# "\\n" ++# b
 
-/// ### (++\#)
+/// ### (++\\#)
 inl (++\#) a b =
     a ++# "\n" ++# b
 
@@ -152,9 +162,11 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
         Python = fun () => sm.slice s { from to = to_py () } : string
     }
 
+/// ### format_pretty_real
+
 /// ### format_pretty
 inl format_pretty forall t. (x : t) : string =
-    real sm'_real.format_pretty `t x
+    real format_pretty_real `t x
 
 /// ### prim
 inl prim x = real
@@ -172,6 +184,10 @@ inl prim x = real
 /// ### format
 inl format forall t. (x : t) : string =
     real format_real `t x
+
+/// ### (~#?)
+inl (~#?) s =
+    s |> format
 
 /// ### to_char_array
 inl to_char_array (str : string) : array_base char =
@@ -381,12 +397,12 @@ inl builder_clear (sb : string_builder) : string_builder =
 inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
-            inl sb = $sb
+            inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
             inl b = sb |> slice i (length sb)
             [ a; s; b ] |> concat_list "" |> string_builder
         Lua = fun () =>
-            inl sb = $sb
+            inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
             inl b = sb |> slice i (length sb)
             [ a; s; b ] |> concat_list "" |> string_builder
@@ -1036,7 +1052,7 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl is_start, start, end =
         inl len () : int =
             real
-                typecase t with 
+                typecase t with
                 | int => length `t s
                 | _ => length' `t s
         match start, end with

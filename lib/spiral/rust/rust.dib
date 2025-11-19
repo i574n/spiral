@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -971,16 +970,14 @@ inl fix_closure' forall t. (depth : u8 * u8) (x : t) : string =
 
 #!spiral
 
-//// test
-//// print_code
+///- --test --print-code
 
 fix_closure' (3, 2) 0i32
 |> _assert_eq "true; _fix_closure_v9 }}}); {{ // rust.fix_closure'"
 
 #!spiral
 
-//// test
-//// print_code
+///- --test --print-code
 
 fix_closure' (0, 0) ()
 |> _assert_eq "true; _fix_closure_v1 );  // rust.fix_closure'"

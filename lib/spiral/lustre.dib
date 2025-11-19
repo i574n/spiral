@@ -240,16 +240,16 @@ inl view model =
 
 #!spiral
 
-//// test
-///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+///- --test
+///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 
 simple init (update 1) view
 |> start "#app_"
 
 #!spiral
 
-//// test
-///! gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+///- --test
+///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 
 simple init (update 2) view
 |> start "#app_"

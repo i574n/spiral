@@ -14,8 +14,7 @@ open rust_operators
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -294,7 +293,7 @@ inl get_source_directory () =
 
 #!spiral
 
-//// test
+///- --test
 
 get_source_directory ()
 |> directory_info
@@ -839,7 +838,7 @@ let get_current_directory () : string =
 
 #!spiral
 
-//// test
+///- --test
 
 get_current_directory ()
 |> _assert_contains (directory_separator_char ())
@@ -911,9 +910,9 @@ let create_temp_path' (guid : guid.guid) =
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust -d chrono
+///- --test
+///> fsharp
+///> rust -d chrono
 
 guid.hash_guid ""
 |> create_temp_path'
@@ -1107,7 +1106,7 @@ let find_parent file_type name root_dir =
 
 #!spiral
 
-//// test
+///- --test
 
 a ;[ Directory, "workspace"; File, "README.md" ]
 |> am.map fun file_type, file =>
@@ -1122,8 +1121,8 @@ a ;[ Directory, "workspace"; File, "README.md" ]
 
 #!spiral
 
-//// test
-///! rust
+///- --test
+///> rust
 
 a ;[ Directory, "workspace"; File, "README.md" ]
 |> am.map fun file_type, file =>
@@ -1329,7 +1328,7 @@ inl get_workspace_root_external () =
 
 #!spiral
 
-//// test
+///- --test
 
 match get_workspace_root_external () with
 | Ok root => root
@@ -1378,7 +1377,7 @@ let get_full_path (path : string) : string =
 
 #!spiral
 
-//// test
+///- --test
 
 "."
 |> get_full_path
@@ -1388,7 +1387,7 @@ let get_full_path (path : string) : string =
 
 #!spiral
 
-//// test
+///- --test
 
 "dir/.././._file"
 |> get_full_path
@@ -1396,8 +1395,8 @@ let get_full_path (path : string) : string =
 
 #!spiral
 
-//// test
-///! rust -d regex
+///- --test
+///> rust -d regex
 
 "."
 |> get_full_path
@@ -1410,8 +1409,8 @@ let get_full_path (path : string) : string =
 
 #!spiral
 
-//// test
-///! rust -d regex
+///- --test
+///> rust -d regex
 
 "dir/.././._file"
 |> get_full_path
@@ -1449,7 +1448,7 @@ inl new_file_uri (path : string) : string =
 
 #!spiral
 
-//// test
+///- --test
 
 @"\\?\C:\test"
 |> normalize_path
@@ -1458,8 +1457,8 @@ inl new_file_uri (path : string) : string =
 
 #!spiral
 
-//// test
-///! rust -d regex
+///- --test
+///> rust -d regex
 
 @"\\?\C:\test"
 |> normalize_path
@@ -1501,7 +1500,7 @@ let rec trace_file text : () =
 
 #!spiral
 
-//// test
+///- --test
 
 inl get_count dir : i64 =
     inl files = dir |> directory_get_files
@@ -1568,9 +1567,9 @@ inl create_temp_dir () =
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust -d chrono
+///- --test
+///> fsharp
+///> rust -d chrono
 
 inl path, disposable = create_temp_dir ()
 join
@@ -1632,9 +1631,9 @@ let link_file target_path path =
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust -d sha2 regex
+///- --test
+///> fsharp
+///> rust -d sha2 regex
 
 inl file_name = "LICENSE"
 inl text = file_name

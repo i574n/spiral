@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -238,8 +237,7 @@ inl sort_result_list results =
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 inl is_fast () =
     false
@@ -293,7 +291,7 @@ struct ("b", "b")	| "b"     	| "b"   	| struct (1L, 110L)
 
 #!spiral
 
-//// test
+///- --test
 
 inl get_solutions () =
     [
@@ -377,7 +375,7 @@ Input	| Expected	| Result	| Best
 
 #!spiral
 
-//// test
+///- --test
 
 inl get_solutions () =
     [

@@ -50,7 +50,7 @@ open Common
 
 #!fsharp
 
-//// test
+///- --test
 
 SpiralTrace.TraceLevel.US0_0 |> set_trace_level
 
@@ -152,7 +152,7 @@ let concat vec = PersistentVector.fold (PersistentVector.append) PersistentVecto
 
 #!markdown
 
-### rangePersistentVector 
+### rangePersistentVector
 
 #!fsharp
 
@@ -438,7 +438,7 @@ let inline memoize (memo_dict: Dictionary<_,_>) f k =
 
 #!markdown
 
-### lines 
+### lines
 
 #!fsharp
 
@@ -446,7 +446,7 @@ let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOpti
 
 #!markdown
 
-### remove 
+### remove
 
 #!fsharp
 
@@ -540,7 +540,7 @@ let inline tuple3 a b c d =
 
 #!markdown
 
-### tuple4 
+### tuple4
 
 #!fsharp
 
@@ -560,7 +560,7 @@ let inline tuple4 a b c d' d =
 
 #!markdown
 
-### tuple5 
+### tuple5
 
 #!fsharp
 
@@ -583,7 +583,7 @@ let inline tuple5 a b c d' e d =
 
 #!markdown
 
-### tuple6 
+### tuple6
 
 #!fsharp
 
@@ -609,7 +609,7 @@ let inline tuple6 a b c d' e f d =
 
 #!markdown
 
-### tuple7 
+### tuple7
 
 #!fsharp
 
@@ -726,7 +726,7 @@ let inline (.>>) a b d =
 
 #!markdown
 
-### (>>.) 
+### (>>.)
 
 #!fsharp
 
@@ -779,7 +779,7 @@ let inline (|>>) a b d =
 
 #!markdown
 
-### (>>%) 
+### (>>%)
 
 #!fsharp
 
@@ -1157,7 +1157,7 @@ let skip_char c (s : Tokenizer) =
 
 #!markdown
 
-### skip_string 
+### skip_string
 
 #!fsharp
 
@@ -1750,7 +1750,7 @@ let comment (s : Tokenizer) =
     if peek s = '/' && peek' s 1 = '/' then
         let from = s.from
         inc' 2 s
-        while peek s = '/' || (peek s = '!' && peek' s 1 = ' ') do
+        while peek s = '/' || ((peek s = '!' || peek s = '-' || peek s = '>') && peek' s 1 = ' ') do
             inc s
         if skip ' ' s then
             let com = s.text.[s.from..]
@@ -13905,7 +13905,7 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
               match t with
               | YFun (domain, _, FT_Vanilla) ->
                   let domain_is_nil = env.ty_to_data domain |> data_free_vars |> Array.isEmpty
-                  if arg_code = "nil" then
+                  if arg_code |> SpiralSm.trim = "nil" then
                     if domain_is_nil then sprintf "v%i(nil)" i else sprintf "v%i" i
                   else
                     if domain_is_nil then sprintf "v%i((%s)(nil))" i arg_code
@@ -19841,7 +19841,7 @@ let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> 
         errors: FSharp.Control.AsyncSeq<ClientErrorsRes>
         job_null: 'a -> Task<'b>
         job_val: (IVar<'c> -> 'd) -> Task<string>
-        supervisor: Ch<SupervisorReq> 
+        supervisor: Ch<SupervisorReq>
     |} =
     let event = Event<ClientErrorsRes> ()
     // let disposable' = connection.On<string> ("ServerToClientMsg", event.Trigger)
@@ -19908,8 +19908,7 @@ let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> 
 
 #!fsharp
 
-//// test
-//// test_force
+///- --test force
 
 let run_test backendId expected code =
     SpiralTrace.TraceLevel.US0_0 |> set_trace_level
@@ -19955,14 +19954,14 @@ let run_test backendId expected code =
 
 #!fsharp
 
-//// test
+///- --test
 
 "inl main () = 1i32 + 1"
 |> run_test "Fsharp" "2\n"
 
 #!fsharp
 
-//// test
+///- --test
 
 """inl main () =
     inl x = { from = 0i32; to = 0 }
@@ -19979,7 +19978,7 @@ v0
 
 #!fsharp
 
-//// test
+///- --test
 
 """inl main () : string = inl x = { from = 0i32; to = 0i32 } in sm.slice (sm.slice (sm.slice "abc" x) x) x"""
 |> run_test "Fsharp" """let v0 : string = "a"
@@ -19988,7 +19987,7 @@ v0
 
 #!fsharp
 
-//// test
+///- --test
 
 """inl main () : string = inl x = { from = 0i32; to = dyn 0i32 } in sm.slice (sm.slice (sm.slice "abc" x) x) x"""
 |> run_test "Fsharp" """let v0 : int32 = 0
@@ -20000,14 +19999,14 @@ v3
 
 #!fsharp
 
-//// test
+///- --test
 
 "inl main () = 1i32 + 1"
 |> run_test "Gleam" "pub fn main () { 2\n }"
 
 #!fsharp
 
-//// test
+///- --test
 
 "inl main () = am.init 3 id : a int _"
 |> run_test "Gleam" """import gary/array
@@ -20249,6 +20248,6 @@ let main args =
 
 #!fsharp
 
-//// test
+///- --test
 
 // SpiralHub.main [|"--port"; "13805"|]

@@ -17,7 +17,6 @@ if (!$SkipFsx) {
         $workingDirectory = ResolveLink (GetFullPath "../../deps/polyglot/lib/fsharp")
         { . ../../workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/$projectName.dib" --working-directory $workingDirectory } | Invoke-Block -Retries 3
     }
-
     { . ../../workspace/target/release/spiral$(_exe) dib-export "$ScriptDir/$projectName.dib" fs } | Invoke-Block
 }
 

@@ -8,8 +8,7 @@
 
 #!spiral
 
-//// test
-//// test_force
+///- --test force
 
 open testing
 
@@ -111,9 +110,9 @@ inl try_convert forall t u. (x : t) : option u =
 
 #!spiral
 
-//// test
-///! fsharp
-///! rust
+///- --test
+///> fsharp
+///> rust
 
 3i32
 |> try_convert
@@ -121,11 +120,11 @@ inl try_convert forall t u. (x : t) : option u =
 
 #!spiral
 
-//// test
-///! gleam
-///! fsharp
-///! rust
-///! cuda
+///- --test
+///> gleam
+///> fsharp
+///> rust
+///> cuda
 
 "3"
 |> try_convert
