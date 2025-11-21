@@ -13,7 +13,7 @@ open rust_operators
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 

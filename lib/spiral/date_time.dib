@@ -8,7 +8,7 @@
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
@@ -71,7 +71,7 @@ type date_time_guid = guid.guid
 
 #!spiral
 
-///- --test force
+///- --test static
 
 inl test_guid () =
     "6543210F-EDCB-A987-6543-210FEDCBA987" |> guid.new_guid

@@ -14,7 +14,7 @@ open sm'_operators
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 open file_system_operators

@@ -13,7 +13,7 @@ open rust_operators
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
@@ -161,6 +161,7 @@ nominal option' t = $'backend_switch `(option'_switch t)'
 inl none' forall t. () : option' t =
     backend_switch {
         Gleam = fun () => $'option.None' : option' t
+        Lua = fun () => $'nil' : option' t
         Fsharp = fun () => $'None' : option' t
         Python = fun () => $'None' : option' t
     }
@@ -174,6 +175,7 @@ inl none' forall t. () : option' t =
 inl some' forall t. (x : t) : option' t =
     backend_switch {
         Gleam = fun () => $'!x |> option.Some' : option' t
+        Lua = fun () => $'!x ' : option' t
         Fsharp = fun () => $'Some !x ' : option' t
         Python = fun () => $'!x \# some\' ' : option' t
     }
@@ -187,6 +189,7 @@ inl some' forall t. (x : t) : option' t =
 inl default_value' forall t. (value : t) (x : option' t) : t =
     backend_switch {
         Gleam = fun () => $'!x |> option.unwrap(!value)' : t
+        Lua = fun () => $'if !x ~= nil then return !x else return !value end ' : t
         Fsharp = fun () => $'!x |> Option.defaultValue !value ' : t
         Python = fun () => $'!x or !value ' : t
     }
@@ -202,6 +205,7 @@ inl get' forall t. (x : option' t) : t =
         Gleam = fun () =>
             option'_types ()
             $'!x |> option.unwrap (Nil)' : t
+        Lua = fun () => $'!x ' : t
         Fsharp = fun () => $'!x |> Option.get' : t
         Python = fun () => $'!x ' : t
     }
@@ -232,6 +236,10 @@ inl map forall t u. (fn : t -> u) (x : option' t) : option' u =
             option'_types ()
             // inl fn = join fn
             $'!x |> option.map(!fn)' : option' u
+        Lua = fun () =>
+            if x =. none' ()
+            then none' ()
+            else fn $'!x ' |> fun x => $'!x ' : option' u
         Fsharp = fun () =>
             inl fn = join fn
             $'!x |> Option.map !fn ' : option' u
@@ -290,6 +298,8 @@ inl of_obj forall t. (x : t) : option' t =
         Gleam = fun () =>
             option'_types ()
             $'!x |> option.Some' : option' t
+        Lua = fun () =>
+            $'!x ' : option' t
         Fsharp = fun () =>
             $'let mutable _!x = None'
             $'\#if \!FABLE_COMPILER && \!WASM && \!CONTRACT'

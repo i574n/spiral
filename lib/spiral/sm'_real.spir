@@ -3,6 +3,8 @@
 /// ## rust
 
 /// ### std_string_real
+///- --real
+
 nominal std_string_real =
     `(
         backend_switch `(()) `({}) {
@@ -19,6 +21,8 @@ nominal std_string_real =
 /// ### to_string'
 
 /// ### from_std_string_real
+///- --real
+
 inl from_std_string_real (str : std_string_real) : string =
     open rust
     rust.emit_expr `std_string_real `string str ($'"fable_library_rust::String_::fromString($0)"' : string)
@@ -28,6 +32,8 @@ inl from_std_string_real (str : std_string_real) : string =
 /// ## sm'
 
 /// ### symbol_to_string_real
+///- --real
+
 inl symbol_to_string_real forall t {symbol}. : string =
     // inl x = real_core.type_lit_to_lit `t
     // inl x = real_core.type_to_symbol `t
@@ -51,6 +57,8 @@ inl symbol_to_string_real forall t {symbol}. : string =
 /// ### to_option
 
 /// ### string_builder_real
+///- --real
+
 nominal string_builder_python =
     `(
         global "import io"
@@ -66,8 +74,35 @@ nominal string_builder_real = $'backend_switch `(string_builder_switch)'
 
 /// ### string_builder
 
+/// ### append_real
+///- --real
+
+inl append_real (x : string) (s : string) : string =
+    backend_switch `string `({}) {
+        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
+        Lua = (fun () => $'!s .. !x ' : string) : () -> string
+        Fsharp = (fun () => (+.) `string s x) : () -> string
+        Python = (fun () => (+.) `string s x) : () -> string
+    }
+
+/// ### append
+
+/// ### (++#*)
+///- --real
+
+inl (++#*) (a : string) (b : string) : string =
+    append_real b a
+
+/// ### (++#)
+
+/// ### (++\\\\#)
+
+/// ### (++\\#)
+
 /// ### format_debug_real
-inl format_debug_real forall t. (x : t) : string =
+///- --real
+
+inl rec format_debug_real forall t. (x : t) : string =
     typecase t with
     | string => x
     | _ =>
@@ -88,9 +123,14 @@ inl format_debug_real forall t. (x : t) : string =
             Lua =
                 (fun () =>
                     typecase t with
-                    | _ * _ => $'table.concat(!x, ", ")' : string
-                    | {} => $'table.concat(!x, ", ")' : string
-                    | _ => $'tostring(!x)' : string
+                    | _ * _ => $'table.concat(!x, ", ") ' : string
+                    | {} => $'table.concat(!x, ", ")   ' : string
+                    | array_base _ =>
+                        (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
+                    | t =>
+                        if real_core.union_type_is `t
+                        then serialize_union `t x
+                        else $'tostring(!x)       ' : string
                 ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
             Python =
@@ -98,6 +138,26 @@ inl format_debug_real forall t. (x : t) : string =
                     $'f"{!x}"' : string
                 ) : () -> string
         }
+and inl serialize_union forall t. (x : t) : string =
+    join    
+        real_core.unbox x fun k, v =>
+            inl tag : string = $'__v[1].tag'
+            typecase `v with
+            | () => tag
+            | ~a * ~b =>
+                inl head_str = format_debug_real `a ($'__v[1]._1' : a)
+                inl tail_str = format_debug_real `b ($'__v[1]._2' : b)
+                (++#*) tag
+                    ((++#*) "("
+                        ((++#*) head_str
+                            ((++#*) ", "
+                                ((++#*) tail_str ")"))))
+            | ~a =>
+                inl arg_str = format_debug_real `a ($'__v[1]._1' : a)
+                (++#*) tag
+                    ((++#*) "("
+                        ((++#*) arg_str ")"))
+    : string
 
 /// ### format_debug
 
@@ -109,28 +169,13 @@ inl format_debug_real forall t. (x : t) : string =
 
 /// ### (~#?**)
 
-/// ### append_real
-inl append_real (x : string) (s : string) : string =
-    backend_switch `string `({}) {
-        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
-        Lua = (fun () => $'!s .. !x ' : string) : () -> string
-        Fsharp = (fun () => (+.) `string s x) : () -> string
-        Python = (fun () => (+.) `string s x) : () -> string
-    }
-
-/// ### append
-
-/// ### (++#)
-
-/// ### (++\\\\#)
-
-/// ### (++\\#)
-
 /// ### concat_list
 
 /// ### slice
 
 /// ### format_pretty_real
+///- --real
+
 inl format_pretty_real forall t. (x : t) : string =
     run_target_args `string `t (fun () => x) function
         | Rust _ => fun x =>
@@ -144,9 +189,13 @@ inl format_pretty_real forall t. (x : t) : string =
 /// ### prim
 
 /// ### printable
+///- --real
+
 prototype printable t : t -> ()
 
 /// ### format_real
+///- --real
+
 let format_real forall t. (x : t) : string =
     inl empty : string =
         backend_switch `string `({}) {
@@ -246,13 +295,14 @@ let format_real forall t. (x : t) : string =
         | x when real_core.union_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
             else
+                inl temp () =
+                    real_core.unbox x (fun (k, v) =>
+                        write k
+                        match v with
+                        | () => ()
+                        | _ => (join write "(" . write v . write ")") : ()
+                        )
                 write (format_debug_real `(`x) x)
-                // real_core.unbox x (fun (k, v) =>
-                //     write k
-                //     match v with
-                //     | () => ()
-                //     | _ => write "(" . write v . write ")"
-                //     )
         | x when real_core.nominal_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
             // elif layout_is x then write *x // TODO: Deal with all the layout type cases.
@@ -329,7 +379,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### concat
 
-/// ### length\\'
+/// ### length'
 
 /// ### to_string any
 
@@ -339,7 +389,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### split_string
 
-/// ### join\\'
+/// ### join'
 
 /// ### encoding
 
@@ -419,15 +469,15 @@ let format_real forall t. (x : t) : string =
 
 /// ### from_os_str_ref
 
-/// ### format_custom\\'
+/// ### format_custom'
 
-/// ### format_debug\\'
+/// ### format_debug'
 
-/// ### format\\'
+/// ### format'
 
-/// ### format_hex\\'
+/// ### format_hex'
 
-/// ### format\\''
+/// ### format''
 
 /// ### regex
 
@@ -441,7 +491,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### regex_capture_names
 
-/// ### match\\'
+/// ### match'
 
 /// ### regex_captures_iter
 
@@ -467,9 +517,9 @@ let format_real forall t. (x : t) : string =
 
 /// ### base64_decode
 
-/// ### encoding\\'
+/// ### encoding'
 
-/// ### encoding_utf8\\'
+/// ### encoding_utf8'
 
 /// ### encoding_1252
 
@@ -491,7 +541,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### encode_utf8
 
-/// ## sm\\'
+/// ## sm'
 
 /// ### contains
 

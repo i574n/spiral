@@ -14,24 +14,39 @@ inl square x =
 
 /// ### atan2
 inl atan2 (y : f64) (x : f64) : f64 =
-    $'System.Math.Atan2 (!y, !x)'
+    backend_switch {
+        Lua = fun () => $'math.atan2(!y, !x)' : float
+        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float
+    }
 
 /// ## floor
 inl floor forall t {float}. (n : t) : t =
-    n |> $'floor'
+    backend_switch {
+        Lua = fun () => n |> $'math.floor' : t
+        Fsharp = fun () => n |> $'floor' : t
+    }
 
 /// ## ceil
 inl ceil forall t {float}. (n : t) : t =
-    n |> $'ceil'
+    backend_switch {
+        Lua = fun () => n |> $'math.ceil' : t
+        Fsharp = fun () => n |> $'ceil' : t
+    }
 
 /// ## round
-inl round forall t {float}. (n : t) : t =
-    n |> $'round'
+inl round forall t {number; float}. (x : t) : t =
+    backend_switch {
+        Lua = fun () =>
+            if x < 1
+            then x - 0.5 |> $'math.ceil' : t
+            else
+                inl result = x + 1 |> $'math.floor'
+                if result % 2 = 0
+                then result
+                else result - 1
+        Fsharp = fun () => x |> $'round' : t
+    }
 
 /// ## log_base
 inl log_base (new_base : f64) (a : f64) : f64 =
     $'System.Math.Log (!a, !new_base)'
-
-/// ## round
-inl round forall t {float}. (x : t) : t =
-    x |> $'round'

@@ -8,13 +8,13 @@
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
 #!spiral
 
-///- --real --test force
+///- --real --test static
 
 open testing
 
@@ -285,13 +285,76 @@ inl string_builder (initial : string) : string_builder =
 
 #!markdown
 
+### append_real
+
+#!spiral
+
+///- --real
+
+inl append_real (x : string) (s : string) : string =
+    backend_switch `string `({}) {
+        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
+        Lua = (fun () => $'!s .. !x ' : string) : () -> string
+        Fsharp = (fun () => (+.) `string s x) : () -> string
+        Python = (fun () => (+.) `string s x) : () -> string
+    }
+
+#!markdown
+
+### append
+
+#!spiral
+
+inl append (x : string) (s : string) : string =
+    real append_real x s
+
+#!markdown
+
+### (++#*)
+
+#!spiral
+
+///- --real
+
+inl (++#*) (a : string) (b : string) : string =
+    append_real b a
+
+#!markdown
+
+### (++#)
+
+#!spiral
+
+inl (++#) (a : string) (b : string) : string =
+    real (++#*) a b
+
+#!markdown
+
+### (++\\\\#)
+
+#!spiral
+
+inl (++\\#) a b =
+    a ++# "\\n" ++# b
+
+#!markdown
+
+### (++\\#)
+
+#!spiral
+
+inl (++\#) a b =
+    a ++# "\n" ++# b
+
+#!markdown
+
 ### format_debug_real
 
 #!spiral
 
 ///- --real
 
-inl format_debug_real forall t. (x : t) : string =
+inl rec format_debug_real forall t. (x : t) : string =
     typecase t with
     | string => x
     | _ =>
@@ -314,11 +377,12 @@ inl format_debug_real forall t. (x : t) : string =
                     typecase t with
                     | _ * _ => $'table.concat(!x, ", ") ' : string
                     | {} => $'table.concat(!x, ", ")   ' : string
-                    | array_base _ => append_real (append_real "[" ($'table.concat(!x, ", ")' : string)) "]"
+                    | array_base _ =>
+                        (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
                     | t =>
                         if real_core.union_type_is `t
-                        then $'table.
-                        else $'tostring(!x)' : string
+                        then serialize_union `t x
+                        else $'tostring(!x)       ' : string
                 ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
             Python =
@@ -326,6 +390,26 @@ inl format_debug_real forall t. (x : t) : string =
                     $'f"{!x}"' : string
                 ) : () -> string
         }
+and inl serialize_union forall t. (x : t) : string =
+    join    
+        real_core.unbox x fun k, v =>
+            inl tag : string = $'__v[1].tag'
+            typecase `v with
+            | () => tag
+            | ~a * ~b =>
+                inl head_str = format_debug_real `a ($'__v[1]._1' : a)
+                inl tail_str = format_debug_real `b ($'__v[1]._2' : b)
+                (++#*) tag
+                    ((++#*) "("
+                        ((++#*) head_str
+                            ((++#*) ", "
+                                ((++#*) tail_str ")"))))
+            | ~a =>
+                inl arg_str = format_debug_real `a ($'__v[1]._1' : a)
+                (++#*) tag
+                    ((++#*) "("
+                        ((++#*) arg_str ")"))
+    : string
 
 #!markdown
 
@@ -419,58 +503,6 @@ inl obj_to_string x : string =
 
 inl (~#?**) s =
     s |> obj_to_string
-
-#!markdown
-
-### append_real
-
-#!spiral
-
-///- --real
-
-inl append_real (x : string) (s : string) : string =
-    backend_switch `string `({}) {
-        Gleam = (fun () => $'!s <> !x ' : string) : () -> string
-        Lua = (fun () => $'!s .. !x ' : string) : () -> string
-        Fsharp = (fun () => (+.) `string s x) : () -> string
-        Python = (fun () => (+.) `string s x) : () -> string
-    }
-
-#!markdown
-
-### append
-
-#!spiral
-
-inl append (x : string) (s : string) : string =
-    real append_real x s
-
-#!markdown
-
-### (++#)
-
-#!spiral
-
-inl (++#) (a : string) (b : string) : string =
-    append b a
-
-#!markdown
-
-### (++\\\\#)
-
-#!spiral
-
-inl (++\\#) a b =
-    a ++# "\\n" ++# b
-
-#!markdown
-
-### (++\\#)
-
-#!spiral
-
-inl (++\#) a b =
-    a ++# "\n" ++# b
 
 #!markdown
 
@@ -765,13 +797,14 @@ let format_real forall t. (x : t) : string =
         | x when real_core.union_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
             else
+                inl temp () =
+                    real_core.unbox x (fun (k, v) =>
+                        write k
+                        match v with
+                        | () => ()
+                        | _ => (join write "(" . write v . write ")") : ()
+                        )
                 write (format_debug_real `(`x) x)
-                // real_core.unbox x (fun (k, v) =>
-                //     write k
-                //     match v with
-                //     | () => ()
-                //     | _ => write "(" . write v . write ")"
-                //     )
         | x when real_core.nominal_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
             // elif layout_is x then write *x // TODO: Deal with all the layout type cases.
@@ -793,6 +826,7 @@ inl format forall t. (x : t) : string =
 
 ///- --test
 ///> gleam
+///> lua
 ///> fsharp
 ///> cuda
 ///> rust
@@ -803,6 +837,8 @@ inl format forall t. (x : t) : string =
 |> format
 |> _assert_eq (
     backend_switch {
+        Gleam = fun () => "1, 2, Uh0i1(\"3\", Uh0i1(\"4\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
+        Lua = fun () => "1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
         Fsharp = fun () =>
             run_target function
                 | Rust _ => fun () => join "1, 2, UH0_1(\"3\", UH0_1(\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, Array(MutCell([8]))"
@@ -810,7 +846,6 @@ inl format forall t. (x : t) : string =
                 | Python _ => fun () => join "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, array('l', [8])"
                 | _ => fun () => join "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]"
             : string
-        Gleam = fun () => "1, 2, Uh0i1(\"3\", Uh0i1(\"4\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
         Python = fun () => "1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]" : string
     }
 )
@@ -843,7 +878,7 @@ inl to_char_array (str : string) : array_base char =
 "abc"
 |> to_char_array
 |> format
-|> _assert_eq (;[ 'a'; 'b'; 'c' ] |> format)
+|> _assert_eq #?(;[ 'a'; 'b'; 'c' ])
 
 #!markdown
 
@@ -1117,6 +1152,7 @@ inl starts_with (value : string) (s : string) : bool =
         Gleam = fun () =>
             global "import gleam/string"
             $'!s |> string.starts_with(!value)' : bool
+        Lua = fun () => $'!value == "" or !s:sub(1, ##!value) == !value ' : bool
         Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool
         Python = fun () => $'!s.startswith(!value)' : bool
     }
@@ -1150,6 +1186,7 @@ inl to_lower (input : string) : string =
         Gleam = fun () =>
             global "import gleam/string"
             $'!input |> string.lowercase' : string
+        Lua = fun () => $'!input:lower()' : string
         Fsharp = fun () => $'!input.ToLower' () : string
         Python = fun () => $'!input.lower()' : string
     }
@@ -1174,6 +1211,7 @@ inl char_to_upper (input : char) : char =
         Gleam = fun () =>
             global "import gleam/string"
             $'!input |> string.uppercase' : char
+        Lua = fun () => $'!input:upper()' : char
         Fsharp = fun () => $'System.Char.ToUpper !input ' : char
         Python = fun () => $'!input.upper()' : char
     }
@@ -1224,6 +1262,8 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
 inl builder_append_line (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
+            sb |> builder_append "\n"
+        Lua = fun () =>
             sb |> builder_append "\n"
         Fsharp = fun () =>
             ($'!sb.AppendLine ()' : string_builder) |> ignore
@@ -1535,7 +1575,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
 
 #!markdown
 
-### length\\'
+### length'
 
 #!spiral
 
@@ -1616,7 +1656,7 @@ inl split_string (separator : array_base string) (str : string) : array_base str
 
 #!markdown
 
-### join\\'
+### join'
 
 #!spiral
 
@@ -2026,7 +2066,7 @@ inl from_os_str_ref s =
 
 #!markdown
 
-### format_custom\\'
+### format_custom'
 
 #!spiral
 
@@ -2038,7 +2078,7 @@ inl format_custom' (f : string) x : std_string =
 
 #!markdown
 
-### format_debug\\'
+### format_debug'
 
 #!spiral
 
@@ -2050,7 +2090,7 @@ inl format_debug' x : std_string =
 
 #!markdown
 
-### format\\'
+### format'
 
 #!spiral
 
@@ -2062,7 +2102,7 @@ inl format' x : std_string =
 
 #!markdown
 
-### format_hex\\'
+### format_hex'
 
 #!spiral
 
@@ -2071,7 +2111,7 @@ inl format_hex' x : std_string =
 
 #!markdown
 
-### format\\''
+### format''
 
 #!spiral
 
@@ -2156,7 +2196,7 @@ inl regex_capture_names (regex : regex) : regex_capture_names =
 
 #!markdown
 
-### match\\'
+### match'
 
 #!spiral
 
@@ -2356,7 +2396,7 @@ inl base64_decode (s : std_string) : result std_string std_string =
 
 #!markdown
 
-### encoding\\'
+### encoding'
 
 #!spiral
 
@@ -2368,7 +2408,7 @@ nominal encoding' =
 
 #!markdown
 
-### encoding_utf8\\'
+### encoding_utf8'
 
 #!spiral
 
@@ -2493,7 +2533,7 @@ inl encode_utf8 (s : string) : string =
 
 #!markdown
 
-## sm\\'
+## sm'
 
 #!markdown
 
@@ -2693,13 +2733,26 @@ let ellipsis_end (max : i64) (s : string) =
         inl end_half = half |> math.floor |> convert.i64
         inl start = s |> slice 0 (start_half - 1)
         inl end = s |> slice (len - end_half) (len - 1)
-        (a ;[ start; "..."; end ] : _ int _)
-        |> seq.of_array
-        |> concat ""
+        [ start; "..."; end ]
+        |> concat_list ""
 
 #!spiral
 
 ///- --test
+///> lua
+///> fsharp
+
+"12345"
+|> ellipsis_end 2
+|> _assert_eq "1...5"
+
+"12345"
+|> ellipsis_end 3
+|> _assert_eq "12...5"
+
+"1234567"
+|> ellipsis_end 4
+|> _assert_eq "12...67"
 
 "12345"
 |> ellipsis_end 2

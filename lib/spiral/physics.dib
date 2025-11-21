@@ -12,7 +12,7 @@
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
@@ -216,7 +216,7 @@ inl position_ft dt : position_ft =
 
 #!spiral
 
-///- --test force
+///- --test static
 
 inl pedal_coast (t : time) : force =
     inl t_cycle = 20
@@ -359,7 +359,7 @@ inl spring_force k (state_1d (_, x0, _)) =
 
 #!spiral
 
-///- --test force
+///- --test static
 
 inl damped_ho_forces () =
     [
@@ -857,7 +857,7 @@ inl halley_initial () =
 
 #!spiral
 
-///- --test force
+///- --test static
 
 inl baseball_forces () =
     inl area = pi * (0.074 / 2) ** 2
@@ -1037,7 +1037,7 @@ inl relativity_y = relativity_y |> listm'.box |> listm'.to_array'
 
 #!spiral
 
-///- --test force
+///- --test static
 
 type force_vector = vec
 type two_body_force = particle_state -> particle_state -> force_vector
@@ -1330,7 +1330,7 @@ let main () =
 
 #!spiral
 
-///- --test force
+///- --test static
 
 nominal multi_particle_state_s = stream.stream particle_state
 

@@ -24,7 +24,7 @@ function FixRust {
             -replace [regex]::Escape("),);"), "));" `
             -replace [regex]::Escape("},);"), "});" `
             -replace "get_or_insert_with", "get_or_init" `
-            -replace "([^=]\s)defaultOf\(\);", "`$1`defaultOf::<()>();" `
+            -replace "([^=]\s)defaultOf\(\);", "`$1`defaultOf::<()>();      " `
             -replace "([^=]\s)getZero\(\);", "`$1`getZero::<()>();" `
             -replace "getNull::", "&getNull::" `
             -replace "&getNull::<\(\)>\(\)", "fable_library_rust::Native_::getZero()" `

@@ -11107,7 +11107,7 @@ module spiral_compiler =
                 match data_free_vars x with
                 | [||] -> "nil         "
                 | [|x|] -> f x
-                | x -> Array.map f x |> String.concat ", " |> sprintf "{ %s }"
+                | x -> Array.map f x |> String.concat ", " |> sprintf "%s                  "
             let simple x =
                 match d with
                 | None -> $"return {x}           "
@@ -11151,7 +11151,7 @@ module spiral_compiler =
                 line s "else"
                 match fl with
                 | [|TyLocalReturnData(DB,_)|] ->
-                    line (indent s) "return nil"
+                    line (indent s) "-- return nil"
                 | _ ->
                     binds (indent s) fl
                 line s "end"

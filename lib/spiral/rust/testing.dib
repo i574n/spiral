@@ -8,7 +8,7 @@
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
@@ -39,7 +39,7 @@ inl run_tests' tests =
 
 #!spiral
 
-///- --test force
+///- --test static
 
 inl run test =
     if env.get_environment_variable "TEST" = "1"

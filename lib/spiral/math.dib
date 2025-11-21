@@ -8,7 +8,7 @@
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
@@ -112,11 +112,16 @@ pi / 2 |> cos
 #!spiral
 
 inl atan2 (y : f64) (x : f64) : f64 =
-    $'System.Math.Atan2 (!y, !x)'
+    backend_switch {
+        Lua = fun () => $'math.atan2(!y, !x)' : float
+        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float
+    }
 
 #!spiral
 
 ///- --test
+///> lua
+///> fsharp
 
 0 |> atan2 1
 |> _assert_eq 1.5707963267948966
@@ -128,7 +133,10 @@ inl atan2 (y : f64) (x : f64) : f64 =
 #!spiral
 
 inl floor forall t {float}. (n : t) : t =
-    n |> $'floor'
+    backend_switch {
+        Lua = fun () => n |> $'math.floor' : t
+        Fsharp = fun () => n |> $'floor' : t
+    }
 
 #!spiral
 
@@ -144,11 +152,16 @@ inl floor forall t {float}. (n : t) : t =
 #!spiral
 
 inl ceil forall t {float}. (n : t) : t =
-    n |> $'ceil'
+    backend_switch {
+        Lua = fun () => n |> $'math.ceil' : t
+        Fsharp = fun () => n |> $'ceil' : t
+    }
 
 #!spiral
 
 ///- --test
+///> lua
+///> fsharp
 
 0.6 |> ceil
 |> _assert_eq 1f64
@@ -159,15 +172,30 @@ inl ceil forall t {float}. (n : t) : t =
 
 #!spiral
 
-inl round forall t {float}. (n : t) : t =
-    n |> $'round'
+inl round forall t {number; float}. (x : t) : t =
+    backend_switch {
+        Lua = fun () =>
+            if x < 1
+            then x - 0.5 |> $'math.ceil' : t
+            else
+                inl result = x + 1 |> $'math.floor'
+                if result % 2 = 0
+                then result
+                else result - 1
+        Fsharp = fun () => x |> $'round' : t
+    }
 
 #!spiral
 
 ///- --test
+///> lua
+///> fsharp
 
 0.5 |> round
 |> _assert_eq 0f64
+
+0.6 |> round
+|> _assert_eq 1f64
 
 1.5 |> round
 |> _assert_eq 2f64
@@ -193,26 +221,3 @@ inl log_base (new_base : f64) (a : f64) : f64 =
 
 100 |> log_base 10
 |> _assert_eq 2
-
-#!markdown
-
-## round
-
-#!spiral
-
-inl round forall t {float}. (x : t) : t =
-    x |> $'round'
-
-#!spiral
-
-///- --test
-
-0.5 |> round
-|> _assert_eq 0f64
-
-#!spiral
-
-///- --test
-
-0.6 |> round
-|> _assert_eq 1f64

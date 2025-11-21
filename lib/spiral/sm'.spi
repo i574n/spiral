@@ -1,6 +1,9 @@
 /// # sm'
 open rust
 open rust_operators
+
+///- --static
+
 open sm'_real
 
 /// ## rust
@@ -75,6 +78,26 @@ inl string_builder (initial : string) : string_builder =
             $'CustomStringIO(!initial)' : string_builder
     }
 
+/// ### append_real
+
+/// ### append
+inl append (x : string) (s : string) : string =
+    real append_real x s
+
+/// ### (++#*)
+
+/// ### (++#)
+inl (++#) (a : string) (b : string) : string =
+    real (++#*) a b
+
+/// ### (++\\\\#)
+inl (++\\#) a b =
+    a ++# "\\n" ++# b
+
+/// ### (++\\#)
+inl (++\#) a b =
+    a ++# "\n" ++# b
+
 /// ### format_debug_real
 
 /// ### format_debug
@@ -108,24 +131,6 @@ inl obj_to_string x : string =
 /// ### (~#?**)
 inl (~#?**) s =
     s |> obj_to_string
-
-/// ### append_real
-
-/// ### append
-inl append (x : string) (s : string) : string =
-    real append_real x s
-
-/// ### (++#)
-inl (++#) (a : string) (b : string) : string =
-    append b a
-
-/// ### (++\\\\#)
-inl (++\\#) a b =
-    a ++# "\\n" ++# b
-
-/// ### (++\\#)
-inl (++\#) a b =
-    a ++# "\n" ++# b
 
 /// ### concat_list
 inl concat_list separator input =
@@ -297,6 +302,7 @@ inl starts_with (value : string) (s : string) : bool =
         Gleam = fun () =>
             global "import gleam/string"
             $'!s |> string.starts_with(!value)' : bool
+        Lua = fun () => $'!value == "" or !s:sub(1, ##!value) == !value ' : bool
         Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool
         Python = fun () => $'!s.startswith(!value)' : bool
     }
@@ -315,6 +321,7 @@ inl to_lower (input : string) : string =
         Gleam = fun () =>
             global "import gleam/string"
             $'!input |> string.lowercase' : string
+        Lua = fun () => $'!input:lower()' : string
         Fsharp = fun () => $'!input.ToLower' () : string
         Python = fun () => $'!input.lower()' : string
     }
@@ -329,6 +336,7 @@ inl char_to_upper (input : char) : char =
         Gleam = fun () =>
             global "import gleam/string"
             $'!input |> string.uppercase' : char
+        Lua = fun () => $'!input:upper()' : char
         Fsharp = fun () => $'System.Char.ToUpper !input ' : char
         Python = fun () => $'!input.upper()' : char
     }
@@ -352,6 +360,8 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
 inl builder_append_line (sb : string_builder) : string_builder =
     backend_switch {
         Gleam = fun () =>
+            sb |> builder_append "\n"
+        Lua = fun () =>
             sb |> builder_append "\n"
         Fsharp = fun () =>
             ($'!sb.AppendLine ()' : string_builder) |> ignore
@@ -484,7 +494,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
             $'!a.join(!b)' : string
     }
 
-/// ### length\\'
+/// ### length'
 inl length' forall dim. (input : string) : dim =
     backend_switch {
         Gleam = fun () =>
@@ -530,7 +540,7 @@ inl split_string (separator : array_base string) (str : string) : array_base str
         | Fsharp (Native) => fun str, separator => $'!str.Split (!separator, System.StringSplitOptions.None)'
         | _ => fun str, separator => str |> split ((a separator : _ int _) |> seq.of_array |> concat (join ""))
 
-/// ### join\\'
+/// ### join'
 inl join' (concat : string) (s : a int string) : string =
     $'System.String.Join (!concat, !s)'
 
@@ -743,32 +753,32 @@ inl from_os_str_ref s =
     |> ref_to_std_string
     |> from_std_string
 
-/// ### format_custom\\'
+/// ### format_custom'
 inl format_custom' (f : string) x : std_string =
     run_target function
         | Rust _ => fun () =>
             !\\(x, $'"format\!(\\\"" + !f + "\\\", $0)"')
         | _ => fun () => null ()
 
-/// ### format_debug\\'
+/// ### format_debug'
 inl format_debug' x : std_string =
     run_target function
         | Rust _ => fun () =>
             !\\(x, $'"format\!(\\\"{:?}\\\", $0)"')
         | _ => fun () => null ()
 
-/// ### format\\'
+/// ### format'
 inl format' x : std_string =
     run_target_args (fun () => x) function
         | Rust _ => fun x =>
             !\\(x, $'"format\!(\\\"{}\\\", $0)"')
         | _ => fun _ => null ()
 
-/// ### format_hex\\'
+/// ### format_hex'
 inl format_hex' x : std_string =
     !\\(x, $'"format\!(\\\"{:02x}\\\", $0)"')
 
-/// ### format\\''
+/// ### format''
 inl format'' (format : string) : std_string =
     !\($'@@$"format\!(" + !format + ")"')
 
@@ -818,7 +828,7 @@ nominal regex_capture_names =
 inl regex_capture_names (regex : regex) : regex_capture_names =
     !\\(regex, $'$"$0.capture_names()"')
 
-/// ### match\\'
+/// ### match'
 nominal match' =
     `(
         global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Match\")>]\n#endif\ntype regex_Match = class end"
@@ -933,14 +943,14 @@ inl base64_decode (s : std_string) : result std_string std_string =
         join x ()
         |> resultm.unbox
 
-/// ### encoding\\'
+/// ### encoding'
 nominal encoding' =
     `(
         global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"encoding_rs::Encoding\")>]\n#endif\ntype encoding_rs_Encoding = class end"
         $'' : $'encoding_rs_Encoding'
     )
 
-/// ### encoding_utf8\\'
+/// ### encoding_utf8'
 inl encoding_utf8' () : rust.ref encoding' =
     !\($'"encoding_rs::UTF_8"')
 
@@ -1013,7 +1023,7 @@ inl encode_utf8 (s : string) : string =
             $'!s.encode(!encoding)' : string
     }
 
-/// ## sm\\'
+/// ## sm'
 
 /// ### contains
 inl contains (value : string) (s : string) : bool =
@@ -1092,9 +1102,8 @@ let ellipsis_end (max : i64) (s : string) =
         inl end_half = half |> math.floor |> convert.i64
         inl start = s |> slice 0 (start_half - 1)
         inl end = s |> slice (len - end_half) (len - 1)
-        (a ;[ start; "..."; end ] : _ int _)
-        |> seq.of_array
-        |> concat ""
+        [ start; "..."; end ]
+        |> concat_list ""
 
 /// ### format_ellipsis
 inl format_ellipsis s =

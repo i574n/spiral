@@ -13765,7 +13765,7 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
             line s "else"
             match fl with
             | [|TyLocalReturnData(DB,_)|] ->
-                line (indent s) "return nil"
+                line (indent s) "-- return nil"
             | _ ->
                 binds (indent s) fl
             line s "end"
@@ -19908,7 +19908,7 @@ let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> 
 
 #!fsharp
 
-///- --test force
+///- --test static
 
 let run_test backendId expected code =
     SpiralTrace.TraceLevel.US0_0 |> set_trace_level

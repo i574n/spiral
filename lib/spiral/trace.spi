@@ -94,6 +94,9 @@ inl init_trace_state trace_level : () =
             $'let trace_state = fn () { case trace_state () { option.None -> !new_trace_state(!trace_level) |> option.Some' : ()
             $'  x -> x' : ()
             $'}}' : ()
+        Lua = fun () =>
+            global "TraceState = { trace_state = nil }"
+            $'if TraceState.trace_state == nil then TraceState.trace_state = !new_trace_state(!trace_level) end' : ()
         Fsharp = fun () =>
             backend_switch {
                 Fsharp = fun () =>
@@ -116,6 +119,8 @@ inl get_trace_state_or_init trace_level : trace_state =
         Gleam = fun () =>
             inl trace_level = trace_level |> optionm'.default_value Verbose
             $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state
+        Lua = fun () =>
+            $'TraceState.trace_state' : trace_state
         Fsharp = fun () =>
             $'TraceState.trace_state.Value' : trace_state
         Python = fun () =>
@@ -229,6 +234,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                                             global "import gleam/float"
                                             global "import gleam/time/timestamp"
                                             $'!x |> timestamp.to_unix_seconds |> float.round' : i64
+                                        Lua = fun () => x
                                         Fsharp = fun () => x
                                         Python = fun () => x
                                     }
@@ -244,6 +250,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         |> date_time.format (
                             backend_switch {
                                 Gleam = fun () => "HH:mm:ss"
+                                Lua = fun () => "HH:mm:ss"
                                 Fsharp = fun () =>
                                     match target with
                                     | Rust _ => join "hh:mm:ss"

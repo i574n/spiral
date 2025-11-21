@@ -8,7 +8,7 @@
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
@@ -65,12 +65,20 @@ inl backend_switch forall t. x : t =
             real_core.record_type_try_find `(`x) s
                 (forall v'. => (x s) ())
                 (fun () =>
+                    inl x =
+                        typecase t with
+                        | ~t => $'"`t"' : string
                     !!!!BackendSwitch ({
-                        Gleam = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
-                        Lua = fun () => $'-- base.backend_switch / record_type_try_find / key: !key ' : t
-                        Fsharp = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
-                        Python = fun () => $'## base.backend_switch / record_type_try_find / key: !key ' : t
-                        Cpp = fun () => $'// base.backend_switch / record_type_try_find / key: !key ' : t
+                        Gleam = fun () =>
+                            $'Nil // base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
+                        Lua = fun () =>
+                            $'nil -- base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
+                        Fsharp = fun () =>
+                            $'null // base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
+                        Python = fun () =>
+                            $'None ## base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
+                        Cpp = fun () =>
+                            $'nullptr // base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
                     })
                 )
         !!!!BackendSwitch ({
@@ -420,7 +428,7 @@ inl join_body body acc x =
 
 #!spiral
 
-///- --test force
+///- --test static
 
 inl rec fold_list f s = function
     | Cons (x, x') => fold_list f (f s x) x'
@@ -580,6 +588,7 @@ inl (/.) forall t. (a : t) (b : t) : t =
 inl (=.) forall t. (a : t) (b : t) : bool =
     backend_switch {
         Gleam = fun () => $'!a == !b ' : bool
+        Lua = fun () => $'!a == !b ' : bool
         Fsharp = fun () => $'!a = !b ' : bool
         Python = fun () => $'!a == !b ' : bool
     }
@@ -606,6 +615,7 @@ inl (=.) forall t. (a : t) (b : t) : bool =
 inl (<>.) forall t. (a : t) (b : t) : bool =
     backend_switch {
         Gleam = fun () => $'!a \!= !b ' : bool
+        Lua = fun () => $'!a ~= !b ' : bool
         Fsharp = fun () => $'!a <> !b ' : bool
         Python = fun () => $'!a \!= !b ' : bool
     }
@@ -674,6 +684,7 @@ inl (++) a b =
 type pair_switch a b =
     {
         Gleam : $'\#(`a, `b  )'
+        Lua : $'(`a, `b)'
         Fsharp : $'(`a * `b)'
         Python : $'(`a, `b)'
     }
@@ -705,6 +716,8 @@ inl new_pair forall a b. (a : a) (b : b) : pair a b =
     backend_switch {
         Gleam = fun () =>
             $'\#(!a, !b )' : pair a b
+        Lua = fun () =>
+            $'{!a, !b}' : pair a b
         Fsharp = fun () =>
             $'!a, !b ' : pair a b
         Python = fun () =>
@@ -721,6 +734,9 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
     backend_switch {
         Gleam = fun () =>
             $'let \#(a, b) = !pair '
+            ($'a' : a), ($'b' : b)
+        Lua = fun () =>
+            $'local a, b = !pair[1], !pair[2]'
             ($'a' : a), ($'b' : b)
         Fsharp = fun () =>
             $'let (a, b) = !pair '
@@ -832,6 +848,7 @@ nominal any = $'obj'
 inl null forall t. () : t =
     backend_switch {
         Gleam = fun () => $'Nil' : t
+        Lua = fun () => $'nil' : t
         Fsharp = fun () => $'null |> unbox<`t>' : t
         Python = fun () => $'None' : t
     }
@@ -853,7 +870,9 @@ inl defaultof forall t. () : t =
             | _ => default ()
     backend_switch {
         Gleam = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
+        Lua = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
         Fsharp = fun () => run (fun () => $'Unchecked.defaultof<`t>' : t) : t
+        Python = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
     }
 
 #!spiral
@@ -940,6 +959,7 @@ inl ref_set_value forall t. (value : t) (ref : ref t) : ref t =
 type exn_switch =
     {
         Gleam : $'Nil'
+        Lua : $'nil'
         Fsharp : $'exn'
         Python : $'BaseException'
     }
@@ -961,6 +981,8 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
     inl ex_fn = dyn ex_fn
     backend_switch {
         Gleam = fun () =>
+            fn () |> some
+        Lua = fun () =>
             fn () |> some
         Fsharp = fun () =>
             $'let result = ref !(None : option t)'

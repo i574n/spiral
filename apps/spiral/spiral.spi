@@ -491,7 +491,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
                     "});"
                 |> sm'.replace_regex
                     "\\s\\sdefaultOf\\(\\);"
-                    " defaultOf::<()>();"
+                    " defaultOf::<()>();   "
                 |> sm'.replace_regex
                     "\\s\\sgetZero\\(\\);"
                     " getZero::<()>();"
@@ -808,7 +808,7 @@ inl block () =
                 | "spiral" =>
                     inl content = content ()
                     inl output =
-                        if content |> sm'.contains "///- " && content |> sm'.contains " --real"
+                        if content |> sm'.contains "///- " && content |> sm'.contains (" --" ++# "real")
                         then Spir
                         else Spi
                     output |> Spiral, fun () => content
@@ -859,8 +859,8 @@ inl format_block output (block : block) =
     | Fs, { magic = (Fsharp) content = content } =>
         inl trimmed_content = content () |> sm'.trim
         if trimmed_content |> sm'.contains "///- "
-            && (trimmed_content |> sm'.contains " --test"
-                || trimmed_content |> sm'.contains " --ignore")
+            && (trimmed_content |> sm'.contains (" --" ++# "test")
+                || trimmed_content |> sm'.contains (" --" ++# "ignore"))
         then ""
         else
             content ()
@@ -872,8 +872,8 @@ inl format_block output (block : block) =
     | (Spi | Spir), { magic = (Spiral output') content = content } when output' = output =>
         inl trimmed_content = content () |> sm'.trim
         if trimmed_content |> sm'.contains "///- "
-            && (trimmed_content |> sm'.contains " --test"
-                || trimmed_content |> sm'.contains " --ignore")
+            && (trimmed_content |> sm'.contains (" --" ++# "test")
+                || trimmed_content |> sm'.contains (" --" ++# "ignore"))
         then ""
         else content ()
     | _ => ""
@@ -1305,9 +1305,6 @@ inl process_typescript { fs_path deps trace_level } =
                 |> sm'.replace
                     $'$"\\\"./fable_modules/fable-library-ts.{!version}/"'
                     $'$"\\\"{!workspace_root}/lib/typescript/fable/fable_modules/fable-library-ts.{!version}/"'
-                |> sm'.replace_regex
-                    "\\s\\sdefaultOf\\(\\);"
-                    " defaultOf::<()>();"
 
         if not cached then
             $'$"{!new_code}\\n\\n{!main_code}\\n"'
@@ -1473,7 +1470,7 @@ inl process_python { fs_path deps trace_level } =
                     "));"
                 |> sm'.replace_regex
                     "\\s\\sdefaultOf\\(\\);"
-                    " defaultOf::<()>();"
+                    " defaultOf::<()>();     "
 
         if not cached
         then

@@ -12,7 +12,7 @@ open sm'_operators
 
 #!spiral
 
-///- --test force
+///- --test static
 
 open testing
 
@@ -33,7 +33,7 @@ open testing
 
 #!spiral
 
-///- --test force
+///- --test static
 
 nominal position_ = $'FParsec.Position'
 nominal parser_error_ = $'FParsec.Error.ParserError'
@@ -531,7 +531,7 @@ inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
 "abc"
 |> run_parser (any_char ())
 |> unwrap_format
-|> _assert_eq $$('a', "bc", new_parser_state 0 1 2 3)
+|> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
 
 #!spiral
 
@@ -540,7 +540,7 @@ inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
 "abc"
 |> parse_ (any_char_ ())
 |> unwrap_format
-|> _assert_eq' $$('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
+|> _assert_eq'#?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
 
 #!markdown
 
@@ -594,7 +594,7 @@ inl p_char (c : char) : parser char =
 "abc"
 |> run_parser (p_char 'a')
 |> unwrap_format
-|> _assert_eq $$('a', "bc", new_parser_state 0 1 2 3)
+|> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
 
 #!spiral
 
@@ -603,7 +603,7 @@ inl p_char (c : char) : parser char =
 "abc"
 |> parse_ (p_char_ 'a')
 |> unwrap_format
-|> _assert_eq' $$('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
+|> _assert_eq'#?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
 
 #!markdown
 
@@ -630,7 +630,7 @@ inl any_string length : parser string = fun input, i, (parser_state st as s) =>
 "abcdef"
 |> run_parser (any_string 3)
 |> unwrap_format
-|> _assert_eq $$("abc", "def", new_parser_state 0 1 4 6)
+|> _assert_eq #?*("abc", "def", new_parser_state 0 1 4 6)
 
 #!spiral
 
@@ -667,7 +667,7 @@ inl skip_any_string length : parser () = fun input, i, (parser_state st as s) =>
 "abcdef"
 |> run_parser (skip_any_string 3)
 |> unwrap_format
-|> _assert_eq $$((), "def", new_parser_state 0 1 4 6)
+|> _assert_eq #?*((), "def", new_parser_state 0 1 4 6)
 
 #!markdown
 
@@ -695,7 +695,7 @@ inl skip_many forall t. (a : parser t) : parser () = fun input, i0, s0 =>
 "sskkip_many"
 |> run_parser (skip_many (p_char 's'))
 |> unwrap_format
-|> _assert_eq $$("kkip_many", new_parser_state 0 1 3 11)
+|> _assert_eq #?*("kkip_many", new_parser_state 0 1 3 11)
 
 #!markdown
 
@@ -721,7 +721,7 @@ inl skip_many1 forall t. (a : parser t) : parser () = fun input, i, s =>
 "skip_many1"
 |> run_parser (skip_many1 (p_char 's'))
 |> unwrap_format
-|> _assert_eq $$("kip_many1", new_parser_state 0 1 2 10)
+|> _assert_eq #?*("kip_many1", new_parser_state 0 1 2 10)
 
 #!markdown
 
@@ -799,7 +799,7 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 "abc"
 |> run_parser (p_char 'a' >>. p_char 'b')
 |> unwrap_format
-|> _assert_eq $$('b', "c", new_parser_state 0 1 3 3)
+|> _assert_eq #?*('b', "c", new_parser_state 0 1 3 3)
 
 #!spiral
 
@@ -881,7 +881,7 @@ inl none_of (chars : list char) : parser char = fun input, i, (parser_state st a
 "def"
 |> run_parser (none_of ['a'; 'b'; 'c'])
 |> unwrap_format
-|> _assert_eq $$('d', "ef", new_parser_state 0 1 2 3)
+|> _assert_eq #?*('d', "ef", new_parser_state 0 1 2 3)
 
 #!spiral
 
@@ -923,7 +923,7 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun input, i, s =
 "abc"
 |> run_parser (p_char 'a' <|> p_char 'b')
 |> unwrap_format
-|> _assert_eq $$('a', "bc", new_parser_state 0 1 2 3)
+|> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
 
 "cba"
 |> run_parser (p_char 'a' <|> p_char 'b')
@@ -951,7 +951,7 @@ inl (|>>) p f : parser _ =
 "abc"
 |> run_parser (p_char 'a' |>> fun c => fun () => c () |> sm'.char_to_upper)
 |> unwrap_format
-|> _assert_eq $$('A', "bc", new_parser_state 0 1 2 3)
+|> _assert_eq #?*('A', "bc", new_parser_state 0 1 2 3)
 
 #!markdown
 
@@ -987,7 +987,7 @@ inl many forall b c.
 "aaabbc"
 |> run_parser (many (p_char 'a' <|> p_char 'b'))
 |> unwrap_format
-|> _assert_eq $$(['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6 6)
+|> _assert_eq #?*(['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6 6)
 
 #!markdown
 
@@ -1022,7 +1022,7 @@ inl many1_chars (p : parser char) : parser string = fun input, i0, s0 =>
 "aaabbc"
 |> run_parser (many1_chars (p_char 'a' <|> p_char 'b'))
 |> unwrap_format
-|> _assert_eq $$("aaabb", "c", new_parser_state 0 1 6 6)
+|> _assert_eq #?*("aaabb", "c", new_parser_state 0 1 6 6)
 
 #!markdown
 
@@ -1094,12 +1094,12 @@ inl many1 (p : parser _) : parser (list _) = fun input, i0, s0 =>
 "aaabbc"
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
 |> unwrap_format
-|> _assert_eq $$([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6)
+|> _assert_eq #?*([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6)
 
 "bcc"
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
 |> unwrap_format
-|> _assert_eq $$([ 'b' ], "cc", new_parser_state 0 1 2 3)
+|> _assert_eq #?*([ 'b' ], "cc", new_parser_state 0 1 2 3)
 
 "cba"
 |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
@@ -1137,7 +1137,7 @@ inl many1_strings (p : parser _) : parser string = fun input, i0, s0 =>
 "aaabbc"
 |> run_parser (many1_strings (p_char 'a' <|> p_char 'b'))
 |> unwrap_format
-|> _assert_eq $$("aaabb", "c", new_parser_state 0 1 6 6)
+|> _assert_eq #?*("aaabb", "c", new_parser_state 0 1 6 6)
 
 #!markdown
 
@@ -1191,12 +1191,12 @@ inl choice forall t. parsers : parser t = fun input, i, s =>
 "bca"
 |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
 |> unwrap_format
-|> _assert_eq $$('b', "ca", new_parser_state 0 1 2 3)
+|> _assert_eq #?*('b', "ca", new_parser_state 0 1 2 3)
 
 "cba"
 |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
 |> unwrap_format
-|> _assert_eq $$('c', "ba", new_parser_state 0 1 2 3)
+|> _assert_eq #?*('c', "ba", new_parser_state 0 1 2 3)
 
 #!markdown
 
@@ -1255,7 +1255,7 @@ inl between p_open p_close p_content : parser _ = fun input, i, s =>
 "[aaabb]"
 |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
 |> unwrap_format
-|> _assert_eq $$("aaabb", "", new_parser_state 0 1 8 7)
+|> _assert_eq #?*("aaabb", "", new_parser_state 0 1 8 7)
 
 "[aaabb"
 |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
@@ -1327,7 +1327,7 @@ inl sep_end_by forall b. p sep : parser (list b) = fun input, i0, s0 =>
 "sep_end_by"
 |> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))
 |> unwrap_format
-|> _assert_eq $$([ 's' ], "p_end_by", new_parser_state 0 1 3 10)
+|> _assert_eq #?*([ 's' ], "p_end_by", new_parser_state 0 1 3 10)
 
 #!markdown
 
@@ -1396,7 +1396,7 @@ inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
 "1 2 3"
 |> run_parser (sep_by (p_digit ()) (spaces1 ()))
 |> unwrap_format
-|> _assert_eq $$([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5)
+|> _assert_eq #?*([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5)
 
 #!spiral
 
@@ -1409,7 +1409,7 @@ inl p_digit () : parser char = fun input, i, (parser_state st as s) =>
 "1 a 2"
 |> run_parser (sep_by (p_digit ()) (spaces1 ()))
 |> unwrap_format
-|> _assert_eq $$([ '1' ], " a 2", new_parser_state 0 1 2 5)
+|> _assert_eq #?*([ '1' ], " a 2", new_parser_state 0 1 2 5)
 
 #!markdown
 
@@ -1485,7 +1485,7 @@ inl p_string (str : string) : parser string = fun input, i, (parser_state st as 
 "hello world"
 |> run_parser (p_string "hello")
 |> unwrap_format
-|> _assert_eq $$("hello", " world", new_parser_state 0 1 6 11)
+|> _assert_eq #?*("hello", " world", new_parser_state 0 1 6 11)
 
 #!markdown
 
@@ -1517,7 +1517,7 @@ inl new_line () : parser char = fun input, i, (parser_state st as s) =>
 "hello\nworld"
 |> run_parser (many_chars_till (any_char ()) (new_line ()))
 |> unwrap_format
-|> _assert_eq $$("hello", "\nworld", new_parser_state 0 1 6 11)
+|> _assert_eq #?*("hello", "\nworld", new_parser_state 0 1 6 11)
 
 #!markdown
 
@@ -1551,7 +1551,7 @@ inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun inp
 "hello\nworld"
 |> run_parser (many_till (any_char ()) (new_line ()))
 |> unwrap_format
-|> _assert_eq $$(['h'; 'e'; 'l'; 'l'; 'o'], "world", new_parser_state 6 2 1 11)
+|> _assert_eq #?*(['h'; 'e'; 'l'; 'l'; 'o'], "world", new_parser_state 6 2 1 11)
 
 #!markdown
 
@@ -1570,7 +1570,7 @@ inl p_return forall t. (x : t) : parser t = fun input, i, s =>
 "abc"
 |> run_parser (p_return 42i32)
 |> unwrap_format
-|> _assert_eq $$(42i32, "abc", new_parser_state 0 1 1 3)
+|> _assert_eq #?*(42i32, "abc", new_parser_state 0 1 1 3)
 
 #!markdown
 
@@ -1612,7 +1612,7 @@ inl look_ahead (p : parser _) : parser _ = fun input, i, s =>
 "123"
 |> run_parser (look_ahead (many1_chars (p_digit ())))
 |> unwrap_format
-|> _assert_eq $$("123", "123", new_parser_state 0 1 1 3)
+|> _assert_eq #?*("123", "123", new_parser_state 0 1 1 3)
 
 #!markdown
 
@@ -1632,7 +1632,7 @@ inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() ->
 "pipe2"
 |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a, b => a () ++# b ()))
 |> unwrap_format
-|> _assert_eq $$("pipe2", "", new_parser_state 0 1 6 5)
+|> _assert_eq #?*("pipe2", "", new_parser_state 0 1 6 5)
 
 #!markdown
 
@@ -1652,7 +1652,7 @@ inl new_lines () : parser () = fun input, i, s =>
 "\n\nline1\nline2\n\nline4"
 |> run_parser (many_till (any_char ()) (new_lines ()))
 |> unwrap_format
-|> _assert_eq $$(([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20)
+|> _assert_eq #?*(([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20)
 
 #!markdown
 
@@ -1679,4 +1679,4 @@ inl new_lines1 () : parser () = fun input, i, (parser_state st as s) =>
 "\n\n\n"
 |> run_parser (new_lines ())
 |> unwrap_format
-|> _assert_eq $$("", new_parser_state 3 4 1 3)
+|> _assert_eq #?*("", new_parser_state 3 4 1 3)

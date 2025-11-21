@@ -260,6 +260,9 @@ inl empty' forall t. () : list' t =
 inl cons' forall t. (head : t) (tail : list' t) : list' t =
     backend_switch {
         Gleam = fun () => $'[ !head, ..!tail ]' : list' t
+        Lua = fun () =>
+            $'table.insert(!tail, 1, !head)'
+            $'!tail ' : list' t
         Fsharp = fun () => $'!head :: !tail ' : list' t
         Python = fun () =>
             $'!tail.insert(0, !head)'
