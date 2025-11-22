@@ -36,6 +36,10 @@ inl to' forall t u. (fn : t -> option u) (x : t) : option u =
         | ~x * ~x => Some `u x
         | int * int => Some `u (conv `t `u x)
         | float * float => Some `u (conv `t `u x)
+        | int * float => Some `u (conv `t `u x)
+        | float * int => Some `u (conv `t `u x)
+        | char * bool => Some `u (x = '1')
+        | bool * char => Some `u (if x then '1' else '0')
         | bool * _ => Some `u (if x then 1 else 0)
         | _ => fn x
 
@@ -194,7 +198,7 @@ inl unbox forall t u. (x : t) : u =
 
 inl u8 forall t. (x : t) : u8 =
     backend_switch {
-        Gleam = fun () => x |> to : u8
+        Gleam = fun () => x |> convert : u8
         Lua = fun () => x |> to : u8
         Fsharp = fun () => x |> $'uint8' : u8
         Python = fun () => x |> to : u8
@@ -208,7 +212,7 @@ inl u8 forall t. (x : t) : u8 =
 
 inl u16 forall t. (x : t) : u16 =
     backend_switch {
-        Gleam = fun () => x |> to : u16
+        Gleam = fun () => x |> convert : u16
         Lua = fun () => x |> to : u16
         Fsharp = fun () => x |> $'uint16' : u16
         Python = fun () => $'!x & 0xFFFF' : u16
@@ -222,7 +226,7 @@ inl u16 forall t. (x : t) : u16 =
 
 inl u64 forall t. (x : t) : u64 =
     backend_switch {
-        Gleam = fun () => x |> to : u64
+        Gleam = fun () => x |> convert : u64
         Lua = fun () => x |> to : u64
         Fsharp = fun () => x |> $'uint64' : u64
         Python = fun () => x |> to : u64
@@ -250,7 +254,7 @@ inl i32 forall t. (x : t) : i32 =
 
 inl i64 forall t. (x : t) : i64 =
     backend_switch {
-        Gleam = fun () => x |> to : i64
+        Gleam = fun () => x |> convert : i64
         Lua = fun () => x |> to : i64
         Fsharp = fun () => x |> $'int64' : i64
         Python = fun () => x |> to : i64
@@ -264,7 +268,7 @@ inl i64 forall t. (x : t) : i64 =
 
 inl f32 forall t. (x : t) : f32 =
     backend_switch {
-        Gleam = fun () => x |> to : f32
+        Gleam = fun () => x |> convert : f32
         Lua = fun () => x |> to : f32
         Fsharp = fun () => x |> $'float32' : f32
         Python = fun () => x |> to : f32
@@ -278,7 +282,7 @@ inl f32 forall t. (x : t) : f32 =
 
 inl f64 forall t. (x : t) : f64 =
     backend_switch {
-        Gleam = fun () => x |> to : f64
+        Gleam = fun () => x |> convert : f64
         Lua = fun () => x |> to : f64
         Fsharp = fun () => x |> $'float' : f64
         Python = fun () => x |> to : f64

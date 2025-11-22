@@ -101,6 +101,8 @@ nominal disposable t = $'backend_switch `(disposable_switch t)'
 
 inl dispose (disposable : disposable _) : () =
     backend_switch {
+        Gleam = fun () => $'// common.dispose' : ()
+        Lua = fun () => $'-- common.dispose' : ()
         Fsharp = fun () => disposable |> $'_.Dispose()' : ()
         Python = fun () => $'!disposable.__exit__(None, None, None)' : ()
     }

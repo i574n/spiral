@@ -1468,9 +1468,6 @@ inl process_python { fs_path deps trace_level } =
                 |> sm'.replace
                     ("),)" +. !\($'"\\\";\\\".into()"'))
                     "));"
-                |> sm'.replace_regex
-                    "\\s\\sdefaultOf\\(\\);"
-                    " defaultOf::<()>();     "
 
         if not cached
         then

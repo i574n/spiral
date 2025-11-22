@@ -76,7 +76,7 @@ inl some' forall t. (x : t) : option' t =
 inl default_value' forall t. (value : t) (x : option' t) : t =
     backend_switch {
         Gleam = fun () => $'!x |> option.unwrap(!value)' : t
-        Lua = fun () => $'if !x ~= nil then return !x else return !value end ' : t
+        Lua = fun () => $'(function() if !x ~= nil then return !x else return !value end)()' : t
         Fsharp = fun () => $'!x |> Option.defaultValue !value ' : t
         Python = fun () => $'!x or !value ' : t
     }

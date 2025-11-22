@@ -11356,14 +11356,14 @@ module spiral_compiler =
                         | UHeap -> sprintf "Uh%i" (uheap h.cases).tag
                         | UStack -> sprintf "Us%i" (ustack h.cases).tag
                     let mutable code = StringBuilder()
-                    code.Append("local __tag\n") |> ignore
+                    code.Append("(function() local __tag\n") |> ignore
                     h.cases |> Seq.iteri (fun idx (KeyValue ((ci,_), _)) ->
                         if idx = 0 then
                             code.AppendFormat("if v{0}.tag == \"{1}i{2}\" then __tag = {2}\n", i, ty, ci) |> ignore
                         else
                             code.AppendFormat("elseif v{0}.tag == \"{1}i{2}\" then __tag = {2}\n", i, ty, ci) |> ignore
                     )
-                    code.Append("else __tag = 0 end\n__tag") |> ignore
+                    code.Append("else __tag = 0 end\nreturn __tag end)()") |> ignore
                     code.ToString()
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple

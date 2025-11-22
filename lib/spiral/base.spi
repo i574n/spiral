@@ -26,16 +26,16 @@ inl backend_switch forall t. x : t =
             real_core.record_type_try_find `(`x) s
                 (forall v'. => (x s) ())
                 (fun () =>
-                    inl x =
-                        typecase t with
-                        | ~t => $'"`t"' : string
+                    inl x = ()
+                        // typecase t with
+                        // | ~t => $'"`t"' : string
                     !!!!BackendSwitch ({
                         Gleam = fun () =>
                             $'Nil // base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
                         Lua = fun () =>
-                            $'nil -- base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
+                            $'(function () end)() -- base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
                         Fsharp = fun () =>
-                            $'null // base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
+                            $'() // base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
                         Python = fun () =>
                             $'None ## base.backend_switch / record_type_try_find / key: !key / x: !x ' : t
                         Cpp = fun () =>
@@ -231,6 +231,10 @@ inl memoize forall t. (fn : () -> t) : () -> t =
 /// ### capture
 inl capture forall t. (fn : () -> t) : t =
     backend_switch {
+        Gleam = fun () =>
+            fn ()
+        Lua = fun () =>
+            fn ()
         Fsharp = fun () =>
             inl result = dyn true
             $'let mutable _capture_!result : `t option = None '
@@ -487,11 +491,15 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
 /// ### try_unit
 inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
     backend_switch {
+        Gleam = fun () => $'// base.try_unit' : ()
+        Lua = fun () => $'-- base.try_unit' : ()
         Fsharp = fun () => $'try' : ()
         Python = fun () => $'try:' : ()
     }
     fn |> indent
     backend_switch {
+        Gleam = fun () => $'// base.try_unit' : ()
+        Lua = fun () => $'-- base.try_unit' : ()
         Fsharp = fun () => $'with ex ->' : ()
         Python = fun () => $'except Exception as ex:' : ()
     }
@@ -505,6 +513,8 @@ inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
         ex_fn ex
     |> indent
     backend_switch {
+        Gleam = fun () => $'// base.try_unit' : ()
+        Lua = fun () => $'-- base.try_unit' : ()
         Fsharp = fun () =>
             $'|> ignore'
             $'(* try_unit'
@@ -519,21 +529,27 @@ inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
 /// ### try_finally
 inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
     backend_switch {
+        Gleam = fun () => $'// base.try_finally' : ()
+        Lua = fun () => $'-- base.try_finally' : ()
         Fsharp = fun () => $'try' : ()
         Python = fun () => $'try:' : ()
     }
     fn |> indent
     backend_switch {
+        Gleam = fun () => $'// base.try_finally' : ()
+        Lua = fun () => $'-- base.try_finally' : ()
         Fsharp = fun () => $'finally' : ()
         Python = fun () => $'finally:' : ()
     }
     finally |> indent
     backend_switch {
+        Gleam = fun () => $'// base.try_finally' : ()
+        Lua = fun () => $'-- base.try_finally' : ()
         Fsharp = fun () =>
             $'(* try_finally'
             $'try_finally *)'
             ()
-        Python = fun () => ()
+        Python = fun () => $'// base.try_finally' : ()
     }
 
 /// ### (:>)

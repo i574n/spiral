@@ -145,22 +145,22 @@ inl concat_list separator input =
 inl slice forall t {number; int}. (from : t) (to : t) s : string =
     inl to_py () =
         if (s |> var_is) || (to |> var_is) || (from |> var_is) then to + 1 else to
+    inl trace () =
+        [
+            "sm'.slice"
+            " / from: "; from |> obj_to_string
+            " / to: "; to |> obj_to_string
+            " / s |> var_is: "; s |> var_is |> obj_to_string
+            " / from |> var_is: "; from |> var_is |> obj_to_string
+            " / to |> var_is: "; to |> var_is |> obj_to_string
+            " / to_py (): "; to_py () |> obj_to_string
+            " / to_py () |> var_is: "; to_py () |> var_is |> obj_to_string
+        ]
+        |> concat_list ""
     backend_switch {
         Gleam = fun () =>
-            [
-                "sm'.slice"
-                " / from: "; from |> obj_to_string
-                " / to: "; to |> obj_to_string
-                " / s |> var_is: "; s |> var_is |> obj_to_string
-                " / from |> var_is: "; from |> var_is |> obj_to_string
-                " / to |> var_is: "; to |> var_is |> obj_to_string
-                " / to_py (): "; to_py () |> obj_to_string
-                " / to_py () |> var_is: "; to_py () |> var_is |> obj_to_string
-            ]
-            |> concat_list ""
-            |> fun x =>
-                global "import gleam/io"
-                $'io.println(!x)' : ()
+            global "import gleam/io"
+            $'io.println(!(trace ()))' : ()
             sm.slice s { from to } : string
         Lua = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
@@ -1073,21 +1073,25 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl start_is_var = start |> var_is
     inl same_fixed = start = end && (start_is_var |> not) && (end |> var_is |> not)
     inl start_var_s_fixed = start_is_var && (s |> var_is |> not)
+    inl trace () =
+        [
+            "sm'.range"
+            " / (s |> var_is): "; s |> var_is |> obj_to_string
+            " // start: "; start |> obj_to_string
+            " / (start |> var_is): "; start_is_var |> obj_to_string
+            " // end: "; end |> obj_to_string
+            " / (end |> var_is): "; end |> var_is |> obj_to_string
+            " // same_fixed: "; same_fixed |> obj_to_string
+            " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
+        ]
+        |> concat_list ""
     backend_switch {
-        Python = fun () =>
-            inl x =
-                [
-                    "sm'.range"
-                    " / (s |> var_is): "; s |> var_is |> obj_to_string
-                    " // start: "; start |> obj_to_string
-                    " / (start |> var_is): "; start_is_var |> obj_to_string
-                    " // end: "; end |> obj_to_string
-                    " / (end |> var_is): "; end |> var_is |> obj_to_string
-                    " // same_fixed: "; same_fixed |> obj_to_string
-                    " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
-                ]
-                |> concat_list ""
-            $'print(!x)' : ()
+        Gleam = fun () =>
+            global "import gleam/io"
+            $'io.println(!(trace ()))' : ()
+        Lua = id : () -> ()
+        Fsharp = id : () -> ()
+        Python = id : () -> ()
     }
     s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
 

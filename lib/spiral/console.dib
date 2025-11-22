@@ -122,6 +122,7 @@ inl write_ln l : () =
 
 inl color_reset () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[0m"'
         | Rust _ => fun () =>
             open rust
@@ -140,6 +141,7 @@ inl color_reset () =
 
 inl color_bright_black () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[90m"'
         | Rust _ => fun () =>
             open rust
@@ -158,6 +160,7 @@ inl color_bright_black () =
 
 inl color_bright_red () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[91m"'
         | Rust _ => fun () =>
             open rust
@@ -176,6 +179,7 @@ inl color_bright_red () =
 
 inl color_bright_green () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[92m"'
         | Rust _ => fun () =>
             open rust
@@ -194,6 +198,7 @@ inl color_bright_green () =
 
 inl color_yellow () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[93m"'
         | Rust _ => fun () =>
             open rust
@@ -212,6 +217,7 @@ inl color_yellow () =
 
 inl color_bright_blue () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[94m"'
         | Rust _ => fun () =>
             open rust
@@ -230,6 +236,7 @@ inl color_bright_blue () =
 
 inl color_bright_magenta () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[95m"'
         | Rust _ => fun () =>
             open rust
@@ -248,6 +255,7 @@ inl color_bright_magenta () =
 
 inl color_bright_cyan () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[96m"'
         | Rust _ => fun () =>
             open rust
@@ -266,6 +274,7 @@ inl color_bright_cyan () =
 
 inl color_bright_white () =
     run_target function
+        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[97m"'
         | Rust _ => fun () =>
             open rust
