@@ -13721,7 +13721,7 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
             match data_free_vars x with
             | [||] -> "nil         "
             | [|x|] -> f x
-            | x -> Array.map f x |> String.concat ", " |> sprintf "{ %s }"
+            | x -> Array.map f x |> String.concat ", " |> sprintf "%s                  "
         let simple x =
             match d with
             | None -> $"return {x}           "

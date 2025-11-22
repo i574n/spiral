@@ -1248,7 +1248,7 @@ inl indent_block (block : block) =
                     inl single_quote_line () =
                         (trimmed_line
                             |> sm'.to_char_list
-                            |> listm.map ((=) '"' >> convert.convert)
+                            |> listm.map ((=) '"' >> convert.try_convert >> optionm'.default_value 0)
                             |> listm'.sum) = 1i32
                         && trimmed_line |> sm'.contains "'\"'" |> not
                         && trimmed_line |> sm'.ends_with "{" |> not

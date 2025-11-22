@@ -5,7 +5,21 @@
 /// ### unativeint
 nominal unativeint = $'unativeint'
 
-/// ### to
+/// ### to''
+inl to'' forall t u. (fn : t -> u) (x : t) : u =
+    real
+        typecase t * u with
+        | ~x * ~x => x
+        | int * int => conv `t `u x
+        | float * float => conv `t `u x
+        | int * float => conv `t `u x
+        | float * int => conv `t `u x
+        | char * bool => x = '1'
+        | bool * char => if x then '1' else '0'
+        | bool * _ => if x then 1 else 0
+        | _ => fn x
+
+/// ### to'
 inl to' forall t u. (fn : t -> option u) (x : t) : option u =
     real
         typecase t * u with
