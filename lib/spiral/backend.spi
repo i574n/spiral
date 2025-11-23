@@ -1,0 +1,121 @@
+inl backend_switch forall t. x : t =
+    real
+        inl backend (key : string) : t =
+            inl s = real_core.string_lit_to_symbol key
+            real_core.record_type_try_find `(`x) s
+                (forall v'. => (x s) ())
+                (fun () =>
+                    // inl x = ()
+                        // typecase t with
+                        // | ~t => $'"`t"' : string
+                    !!!!BackendSwitch ({
+                        Gleam = fun () =>
+                            $'Nil // base.backend_switch / record_type_try_find / key: !key ' : t
+                        Lua = fun () =>
+                            $'(function () end)() -- base.backend_switch / record_type_try_find / key: !key ' : t
+                        Fsharp = fun () =>
+                            $'() // base.backend_switch / record_type_try_find / key: !key ' : t
+                        Python = fun () =>
+                            $'None ## base.backend_switch / record_type_try_find / key: !key ' : t
+                        Cpp = fun () =>
+                            $'nullptr // base.backend_switch / record_type_try_find / key: !key ' : t
+                    })
+                )
+        !!!!BackendSwitch ({
+            Gleam = fun () => backend "Gleam"
+            Lua = fun () => backend "Lua"
+            Fsharp = fun () => backend "Fsharp"
+            Python = fun () => backend "Python"
+            Cpp = fun () => backend "Cpp"
+        })
+
+union target =
+    | Wasm
+    | Contract
+
+union backend =
+    | Gleam
+    | Lua
+    | Fsharp
+    | Cuda
+    | Cpp
+    | Rust : option target
+    | TypeScript
+    | Python
+
+inl run_target_args' forall t u. (args : u) (fn : backend -> (u -> t)) : t =
+    backend_switch {
+        Gleam = fun () =>
+            inl target = Gleam
+            fn target args
+        Lua = fun () =>
+            inl target = Lua
+            fn target args
+        Fsharp = fun () =>
+            inl is_unit : bool =
+                real
+                    typecase t with
+                    | () => true
+                    | _ => false
+            $'(* run_target_args\''
+            inl result = $'()' : $'unit'
+            $'run_target_args\' *)'
+            inl emit_result x : () =
+                if is_unit |> not
+                then $'let _run_target_args\'_!result = !x '
+            $'\n\#if FABLE_COMPILER || WASM || CONTRACT'
+            $'\n\#if FABLE_COMPILER_RUST && \!WASM && \!CONTRACT'
+            inl target = Rust None
+            fn target args |> emit_result
+            $'\#endif\n\#if FABLE_COMPILER_RUST && WASM'
+            inl target = Wasm |> Some |> Rust
+            fn target args |> emit_result
+            $'\#endif\n\#if FABLE_COMPILER_RUST && CONTRACT'
+            inl target = Contract |> Some |> Rust
+            fn target args |> emit_result
+            $'\#endif\n\#if FABLE_COMPILER_TYPESCRIPT'
+            inl target = TypeScript
+            fn target args |> emit_result
+            $'\#endif\n\#if FABLE_COMPILER_PYTHON'
+            inl target = Python
+            fn target args |> emit_result
+            $'\#endif\n\#else'
+            inl target = Fsharp
+            fn target args |> emit_result
+            $'\#endif'
+            if is_unit
+            then $'// run_target_args\' is_unit'
+            else $'_run_target_args\'_!result ' : t
+        Python = fun () =>
+            inl target = Cuda
+            fn target args
+        Cpp = fun () =>
+            inl target = Cpp
+            fn target args
+    }
+
+inl run_target_args forall t u. (args : () -> u) (fn : backend -> (u -> t)) : t =
+    inl args = args () |> dyn
+    fn |> run_target_args' args
+
+inl run_target forall t. (fn : backend -> (() -> t)) : t =
+    run_target_args id fn
+
+inl indent (body : () -> ()) : () =
+    backend_switch {
+        Gleam = fun () =>
+            !!!!Indent (body())
+            ()
+        Lua = fun () =>
+            !!!!Indent (body())
+            ()
+        Fsharp = fun () =>
+            inl body () =
+                body ()
+                $'(* indent' : ()
+            !!!!Indent (body())
+            $'indent *)' : ()
+        Python = fun () =>
+            !!!!Indent (body())
+            ()
+    }

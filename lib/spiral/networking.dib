@@ -184,7 +184,7 @@ nominal tcp_client =
 
 inl new_tcp_client () : tcp_client =
     run_target function
-        | Fsharp (Native) => fun () => $'new `tcp_client ()'
+        | Fsharp => fun () => $'new `tcp_client ()'
         | _ => fun () => null ()
 
 #!markdown
@@ -253,7 +253,7 @@ inl client_connect_async
     : async.value_task
     =
     run_target function
-        | Fsharp (Native) => fun () => $'!client.ConnectAsync (!host, !port, !ct)'
+        | Fsharp => fun () => $'!client.ConnectAsync (!host, !port, !ct)'
         | _ => fun () => null ()
 
 #!markdown

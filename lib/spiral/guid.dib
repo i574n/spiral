@@ -47,7 +47,7 @@ nominal guid = $'backend_switch `(guid_switch)'
 
 inl new_guid (x : string) : guid =
     run_target_args (fun () => x) function
-        | Rust (Contract) => fun _ => null ()
+        | Rust (Some (Contract)) => fun _ => null ()
         | _ => fun x => $'!x |> `guid '
 
 #!markdown
@@ -75,7 +75,7 @@ type hash_guid = guid
 
 let hash_guid (hash : string) : hash_guid =
     run_target function
-        | Rust (Contract) => fun () => null ()
+        | Rust (Some (Contract)) => fun () => null ()
         | _ => fun () =>
             inl dash = "-"
             join

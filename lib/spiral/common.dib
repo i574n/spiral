@@ -213,7 +213,7 @@ fun () =>
 
 inl random' forall t. (min : t) (max : t) : t =
     run_target function
-        | Rust (Contract) => fun () =>
+        | Rust (Some (Contract)) => fun () =>
             failwith "common.random' / target=Rust(Contract)"
         | Rust _ => fun () =>
             open rust.rust_operators

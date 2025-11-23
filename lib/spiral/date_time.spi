@@ -374,7 +374,7 @@ inl ticks (date_time : date_time) : timestamp =
             $'timestamp.from_calendar(!date, !time_of_day, !duration)' : timestamp
         Fsharp = fun () =>
             run_target function
-                | Rust (Contract) => fun () => null ()
+                | Rust (Some (Contract)) => fun () => null ()
                 | _ => fun () => date_time |> $'_.Ticks'
             : timestamp
         Python = fun () =>
@@ -477,7 +477,7 @@ inl now () : date_time =
             timestamp |> to_calendar
         Fsharp = fun () =>
             run_target function
-                | Rust (Contract) => fun () => null ()
+                | Rust (Some (Contract)) => fun () => null ()
                 | _ => fun () => $'System.DateTime.Now'
             : date_time
         Python = fun () => $'datetime.datetime.now()' : date_time
@@ -605,7 +605,7 @@ inl time_zone_local () : time_zone_info =
     run_target function
         | Fsharp _ => fun () =>
             $'System.TimeZoneInfo.Local'
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             open rust.rust_operators
             !\($'"std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(chrono::Local::now().offset()) as i64)"')
         | _ => fun () => null ()
@@ -614,7 +614,7 @@ inl time_zone_local () : time_zone_info =
 inl get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : time_span =
     run_target function
         | Fsharp _ => fun () => date_time |> $'_.GetUtcOffset' (time_zone_local ())
-        | Rust (Native | Wasm) => fun () =>
+        | Rust (None | Some (Wasm)) => fun () =>
             open rust.rust_operators
             inl ticks = date_time |> ticks
             // inl ticks = ticks |> rust.rust.emit
@@ -637,8 +637,8 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
                 (am'.End eval)
         ($'$"{!prefix}{!time_zone}{!guid_range}"' : string) |> guid.new_guid
     run_target function
-        | Rust (Contract) => fun () => null ()
-        | Rust (Native | Wasm) => fun () =>
+        | Rust (Some (Contract)) => fun () => null ()
+        | Rust (None | Some (Wasm)) => fun () =>
             inl epoch =
                 unix_epoch ()
                 |> to_universal_time

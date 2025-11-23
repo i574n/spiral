@@ -339,7 +339,7 @@ inl sha256_hexdigest (sha256 : py_sha256) : string =
 
 let hash_text (~input : string) =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             inl sha256 = sha256 () |> use
             input
             |> sm'.utf8_get_bytes
@@ -347,11 +347,11 @@ let hash_text (~input : string) =
             |> am.map (sm'.byte_to_string "x2")
             |> seq.of_array'
             |> sm'.concat (join "")
-        | TypeScript (Native) => fun () =>
+        | TypeScript => fun () =>
             create_hash "sha256"
             |> hash_update input
             |> hash_digest "hex"
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             input
             |> sm'.utf8_get_bytes
             |> fun (a x) => x
@@ -359,7 +359,7 @@ let hash_text (~input : string) =
             |> stream.new_cursor
             |> hash_read
             |> resultm.unwrap'
-        | Python (Native) | Cuda (Native) => fun () =>
+        | Python | Cuda => fun () =>
             hashlib_sha256 ()
             |> sha256_update (input |> sm'.encode_utf8)
             |> sha256_hexdigest

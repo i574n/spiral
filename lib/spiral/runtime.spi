@@ -595,25 +595,25 @@ inl process_start (process : process) : bool =
 /// ### process_exit_code
 inl process_exit_code (process : process) : i32 =
     run_target function
-        | Fsharp (Native) => fun () => $'!process.ExitCode'
+        | Fsharp => fun () => $'!process.ExitCode'
         | _ => fun () => null ()
 
 /// ### process_id
 let process_id (process : process) : i32 =
     run_target function
-        | Fsharp (Native) => fun () => process |> $'_.Id'
+        | Fsharp => fun () => process |> $'_.Id'
         | _ => fun () => null ()
 
 /// ### process_has_exited
 let process_has_exited (process : process) : bool =
     run_target function
-        | Fsharp (Native) => fun () => process |> $'_.HasExited'
+        | Fsharp => fun () => process |> $'_.HasExited'
         | _ => fun () => null ()
 
 /// ### process_kill
 let process_kill (process : process) : () =
     run_target function
-        | Fsharp (Native) => fun () => process |> $'_.Kill()'
+        | Fsharp => fun () => process |> $'_.Kill()'
         | _ => fun () => ()
 
 /// ### process_begin_error_read_line
@@ -635,22 +635,22 @@ inl process_add_error_data_received fn (process : process) : () =
 /// ### process_wait_for_exit_async
 inl process_wait_for_exit_async (ct : threading.cancellation_token) (process : process) : async.task () =
     run_target function
-        | Fsharp (Native) => fun () => $'!process.WaitForExitAsync !ct '
+        | Fsharp => fun () => $'!process.WaitForExitAsync !ct '
         | _ => fun () => null ()
 
 /// ### event_data
 let event_data (e : data_received_event_args) : string =
     run_target function
-        | Fsharp (Native) => fun () => e |> $'_.Data'
+        | Fsharp => fun () => e |> $'_.Data'
         | _ => fun () => null ()
 
 /// ### current_process_kill
 let current_process_kill () =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             inl fn () =
                 run_target function
-                    | Fsharp (Native) => fun () =>
+                    | Fsharp => fun () =>
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 3") id
                         $'System.Threading.Thread.Sleep 500'
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 2") id

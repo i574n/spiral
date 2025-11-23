@@ -2,6 +2,7 @@ packages:
     |core-
 modules:
     am'_prototypes-
+    backend-
     base-
     rust/
         rust

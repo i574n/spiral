@@ -96,7 +96,7 @@ nominal file_stream' = $'System.IO.FileStream'
 
 inl file_stream (path : string) mode access share : file_stream' =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             inl mode = mode |> file_mode
             inl access = access |> file_access
             inl share = share |> file_share
@@ -121,7 +121,7 @@ nominal file_info =
 
 inl file_info (path : string) : file_info =
     run_target function
-        | Fsharp (Native) => fun () => $'!path |> `file_info '
+        | Fsharp => fun () => $'!path |> `file_info '
         | _ => fun () => null ()
 
 #!markdown
@@ -142,7 +142,7 @@ nominal directory_info =
 
 inl directory_info (path : string) : directory_info =
     run_target function
-        | Fsharp (Native) => fun () => $'!path |> `directory_info '
+        | Fsharp => fun () => $'!path |> `directory_info '
         | _ => fun () => null ()
 
 #!markdown
@@ -153,7 +153,7 @@ inl directory_info (path : string) : directory_info =
 
 inl directory_info_exists (info : directory_info) : bool =
     run_target function
-        | Fsharp (Native) => fun () => info |> $'_.Exists'
+        | Fsharp => fun () => info |> $'_.Exists'
         | _ => fun () => null ()
 
 #!markdown
@@ -164,7 +164,7 @@ inl directory_info_exists (info : directory_info) : bool =
 
 inl directory_info_creation_time (info : directory_info) : date_time.date_time =
     run_target function
-        | Fsharp (Native) => fun () => info |> $'_.CreationTime'
+        | Fsharp => fun () => info |> $'_.CreationTime'
         | _ => fun () => null ()
 
 #!markdown
@@ -175,7 +175,7 @@ inl directory_info_creation_time (info : directory_info) : date_time.date_time =
 
 inl directory_info_name (info : directory_info) : string =
     run_target function
-        | Fsharp (Native) => fun () => info |> $'_.Name'
+        | Fsharp => fun () => info |> $'_.Name'
         | _ => fun () => null ()
 
 #!markdown
@@ -186,7 +186,7 @@ inl directory_info_name (info : directory_info) : string =
 
 inl directory_info_full_name (info : directory_info) : string =
     run_target function
-        | Fsharp (Native) => fun () => info |> $'_.FullName'
+        | Fsharp => fun () => info |> $'_.FullName'
         | _ => fun () => null ()
 
 #!markdown
@@ -205,7 +205,7 @@ nominal file_attributes = $'System.IO.FileAttributes'
 
 let directory_info_attributes (info : directory_info) : file_attributes =
     run_target function
-        | Fsharp (Native) => fun () => info |> $'_.Attributes'
+        | Fsharp => fun () => info |> $'_.Attributes'
         | _ => fun () => null ()
 
 #!markdown
@@ -216,7 +216,7 @@ let directory_info_attributes (info : directory_info) : file_attributes =
 
 let file_attributes_reparse_point () : file_attributes =
     run_target function
-        | Fsharp (Native) => fun () => $'`file_attributes.ReparsePoint'
+        | Fsharp => fun () => $'`file_attributes.ReparsePoint'
         | _ => fun () => null ()
 
 #!markdown
@@ -227,7 +227,7 @@ let file_attributes_reparse_point () : file_attributes =
 
 let file_attributes_has_flag (flag : file_attributes) (file_attributes : file_attributes) : bool =
     run_target function
-        | Fsharp (Native) => fun () => $'!file_attributes.HasFlag !flag '
+        | Fsharp => fun () => $'!file_attributes.HasFlag !flag '
         | _ => fun () => null ()
 
 #!markdown
@@ -238,7 +238,7 @@ let file_attributes_has_flag (flag : file_attributes) (file_attributes : file_at
 
 let create_directory (path : string) : directory_info =
     run_target function
-        | Fsharp (Native) => fun () => path |> $'System.IO.Directory.CreateDirectory'
+        | Fsharp => fun () => path |> $'System.IO.Directory.CreateDirectory'
         | _ => fun () => null ()
 
 #!markdown
@@ -249,7 +249,7 @@ let create_directory (path : string) : directory_info =
 
 let directory_get_files (path : string) : array_base string =
     run_target function
-        | Fsharp (Native) => fun () => path |> $'System.IO.Directory.GetFiles'
+        | Fsharp => fun () => path |> $'System.IO.Directory.GetFiles'
         | _ => fun () => null ()
 
 #!markdown
@@ -260,7 +260,7 @@ let directory_get_files (path : string) : array_base string =
 
 let file_move (new_path : string) (old_path : string) : () =
     run_target function
-        | Fsharp (Native) => fun () => $'System.IO.File.Move (!old_path, !new_path)'
+        | Fsharp => fun () => $'System.IO.File.Move (!old_path, !new_path)'
         | _ => fun () => ()
 
 #!markdown
@@ -271,7 +271,7 @@ let file_move (new_path : string) (old_path : string) : () =
 
 let write_all_text_async (path : string) (text : string) : _ () =
     run_target function
-        | Fsharp (Native) => fun () => $'System.IO.File.WriteAllTextAsync (!path, !text)' |> async.await_task
+        | Fsharp => fun () => $'System.IO.File.WriteAllTextAsync (!path, !text)' |> async.await_task
         | _ => fun () => null ()
 
 #!markdown
@@ -644,7 +644,7 @@ inl create_dir_all (path : string) : resultm.result' () stream.io_error =
 
 inl file_info_link_target (file_info : file_info) : string =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             file_info |> $'_.LinkTarget'
         | _ => fun () => null ()
 
@@ -685,8 +685,8 @@ inl ts_path_join (b : string) (a : string) : string =
 
 let (</>) (a : string) (b : string) : string =
     run_target_args (fun () => a, b) function
-        | Rust (Contract) => fun _ => null ()
-        | Rust (Native) => fun a, b =>
+        | Rust (Some (Contract)) => fun _ => null ()
+        | Rust (None) => fun a, b =>
             a
             |> sm'.to_std_string
             |> new_path_buf
@@ -694,9 +694,9 @@ let (</>) (a : string) (b : string) : string =
             |> path_buf_display
             |> sm'.format'
             |> sm'.from_std_string
-        | TypeScript (Native) => fun a, b =>
+        | TypeScript => fun a, b =>
             a |> ts_path_join b
-        | Fsharp (Native) => fun a, b =>
+        | Fsharp => fun a, b =>
             $'System.IO.Path.Combine (!a, !b)'
         | target => fun a, b => failwith $'$"file_system.(</>) / target: {!target} / a: {!a} / b: {!b}"'
 
@@ -708,13 +708,13 @@ let (</>) (a : string) (b : string) : string =
 
 let get_temp_path () : string =
     run_target function
-        | Rust (Contract) => fun () => null ()
-        | Rust (Native) => fun () =>
+        | Rust (Some (Contract)) => fun () => null ()
+        | Rust (None) => fun () =>
             !\($'"std::env::temp_dir()"')
             |> path_buf_display
             |> sm'.format'
             |> sm'.from_std_string
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             $'System.IO.Path.GetTempPath' ()
         | target => fun () => failwith $'$"file_system.get_temp_path / target: {!target}"'
 
@@ -726,9 +726,9 @@ let get_temp_path () : string =
 
 let get_file_name (path : string) : string =
     run_target_args' path function
-        | Fsharp (Native) => fun path =>
+        | Fsharp => fun path =>
             path |> $'System.IO.Path.GetFileName'
-        | Rust (Native) => fun path =>
+        | Rust (None) => fun path =>
             path
             |> sm'.to_std_string
             |> new_path_buf
@@ -736,7 +736,7 @@ let get_file_name (path : string) : string =
             |> optionm'.map' sm'.from_os_str_ref
             |> optionm'.unbox
             |> optionm'.default_value ""
-        | Rust (Contract) => fun _ => null ()
+        | Rust (Some (Contract)) => fun _ => null ()
         | TypeScript => fun path =>
             open typescript_operators
             global "type IPathBasename = abstract basename: path: string -> string"
@@ -752,8 +752,8 @@ let get_file_name (path : string) : string =
 
 let get_file_name_without_extension (path : string) : string =
     run_target_args' path function
-        | Rust (Contract) => fun _ => null ()
-        | Rust (Native) => fun path =>
+        | Rust (Some (Contract)) => fun _ => null ()
+        | Rust (None) => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             inl file_stem = !\\(path_buf, $'"$0.file_stem()"')
             match file_stem |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox with
@@ -772,7 +772,7 @@ let get_directory_name (path : string) : string =
     run_target_args' path function
         | Fsharp _ => fun path =>
             path |> $'System.IO.Path.GetDirectoryName'
-        | Rust (Native) => fun path =>
+        | Rust (None) => fun path =>
             path
             |> sm'.to_std_string
             |> new_path_buf
@@ -790,8 +790,8 @@ let get_directory_name (path : string) : string =
 
 let get_extension (path : string) : string =
     run_target_args' path function
-        | Rust (Contract) => fun _ => null ()
-        | Rust (Native) => fun path =>
+        | Rust (Some (Contract)) => fun _ => null ()
+        | Rust (None) => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             !\\(path_buf, $'"$0.extension()"')
             |> optionm'.unwrap
@@ -819,15 +819,15 @@ let directory_separator_char () : char =
 
 let get_current_directory () : string =
     run_target function
-        | Rust (Contract | Wasm) => fun () => null ()
-        | Rust (Native) => fun () =>
+        | Rust (Some (Contract | Wasm)) => fun () => null ()
+        | Rust (None) => fun () =>
             inl current_dir = !\($'"std::env::current_dir()"') : resultm.result' path_buf stream.io_error
             current_dir
             |> resultm.unwrap'
             |> path_buf_display
             |> sm'.format'
             |> sm'.from_std_string
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             $'System.IO.Directory.GetCurrentDirectory' ()
         | TypeScript _ => fun () =>
             open typescript_operators
@@ -851,12 +851,12 @@ get_current_directory ()
 
 let directory_exists (path : string) : bool =
     run_target_args' path function
-        | Fsharp (Native) => fun path =>
+        | Fsharp => fun path =>
             path |> $'System.IO.Directory.Exists'
-        | Rust (Native) => fun path =>
+        | Rust (None) => fun path =>
             inl path = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path && path_buf_is_dir path
-        | TypeScript (Native) => fun path =>
+        | TypeScript => fun path =>
             global "type IFsExistsSync = abstract existsSync: path: string -> bool"
             open typescript_operators
             inl fs : $'IFsExistsSync' = typescript.import_all "fs"
@@ -871,13 +871,13 @@ let directory_exists (path : string) : bool =
 
 let directory_get_parent (path : string) : optionm'.option' string =
     run_target_args' path function
-        | Fsharp (Native) => fun path =>
+        | Fsharp => fun path =>
             inl parent : directory_info = path |> $'System.IO.Directory.GetParent'
             if parent =. null ()
             then None
             else parent |> directory_info_full_name |> Some
             |> optionm'.box
-        | Rust (Native) => fun path =>
+        | Rust (None) => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             inl parent = path_buf |> path_buf_parent
             parent
@@ -901,7 +901,7 @@ let directory_get_parent (path : string) : optionm'.option' string =
 
 let create_temp_path' (guid : guid.guid) =
     run_target_args' guid function
-        | Rust (Contract) => fun _ => null ()
+        | Rust (Some (Contract)) => fun _ => null ()
         | _ => fun guid =>
             get_temp_path ()
             </> join "!create_temp_path_" // TODO: replace ! (generates invalid links)
@@ -926,7 +926,7 @@ guid.hash_guid ""
 
 let create_temp_path () =
     run_target function
-        | Rust (Contract) => fun () => null ()
+        | Rust (Some (Contract)) => fun () => null ()
         | _ => fun () =>
             date_time.now ()
             |> date_time.new_guid_from_date_time
@@ -940,9 +940,9 @@ let create_temp_path () =
 
 let file_copy (new_path : string) (old_path : string) : () =
     run_target_args' (old_path, new_path) function
-        | Fsharp (Native) => fun old_path, new_path =>
+        | Fsharp => fun old_path, new_path =>
             $'System.IO.File.Copy (!old_path, !new_path, true)'
-        | Rust (Native) => fun old_path, new_path =>
+        | Rust (None) => fun old_path, new_path =>
             inl result : _ _ stream.io_error = !\\((old_path, new_path), $'"std::fs::copy(&*$0, &*$1)"')
             match result |> resultm.map_error' sm'.format' |> resultm.unbox with
             | Ok (result : u64) =>
@@ -963,12 +963,12 @@ let file_copy (new_path : string) (old_path : string) : () =
 
 let file_exists (path : string) : bool =
     run_target_args' path function
-        | Fsharp (Native) => fun path =>
+        | Fsharp => fun path =>
             path |> $'System.IO.File.Exists'
-        | Rust (Native) => fun path =>
+        | Rust (None) => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path_buf && path_buf_is_file path_buf
-        | TypeScript (Native) => fun path =>
+        | TypeScript => fun path =>
             open typescript_operators
             global "type IFsExistsSync = abstract existsSync: path: string -> bool"
             inl fs : $'IFsExistsSync' = typescript.import_all "fs"
@@ -983,9 +983,9 @@ let file_exists (path : string) : bool =
 
 let directory_delete recursive (path : string) : () =
     run_target_args' (path, recursive) function
-        | Fsharp (Native) => fun path, recursive =>
+        | Fsharp => fun path, recursive =>
             $'System.IO.Directory.Delete (!path, !recursive)'
-        | Rust (Native) => fun path, recursive =>
+        | Rust (None) => fun path, recursive =>
             if path |> directory_exists then
                 if recursive
                 then !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
@@ -1000,9 +1000,9 @@ let directory_delete recursive (path : string) : () =
 
 inl write_all_text (path : string) (text : string) : () =
     run_target_args' (path, text) function
-        | Fsharp (Native) => fun path, text =>
+        | Fsharp => fun path, text =>
             $'System.IO.File.WriteAllText (!path, !text)'
-        | Rust (Native) => fun path, text =>
+        | Rust (None) => fun path, text =>
             !\\((path, text), $'"std::fs::write(&*$0, &*$1).unwrap()"')
         | _ => fun _ => ()
 
@@ -1014,10 +1014,10 @@ inl write_all_text (path : string) (text : string) : () =
 
 inl read_all_bytes (path : string) : am'.vec u8 =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             $'!path |> System.IO.File.ReadAllBytes'
             |> am'.to_vec
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             path |> read |> resultm.unwrap'
         | _ => fun () => null ()
 
@@ -1029,9 +1029,9 @@ inl read_all_bytes (path : string) : am'.vec u8 =
 
 inl read_all_text (path : string) : string =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             $'!path |> System.IO.File.ReadAllText'
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             path
             |> read_all_bytes
             |> sm'.string_from_utf8
@@ -1047,10 +1047,10 @@ inl read_all_text (path : string) : string =
 
 inl directory_create_symbolic_link (target : string) (path : string) : () =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()"') : bool) |> ignore
             (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
         | _ => fun () => ()
@@ -1063,10 +1063,10 @@ inl directory_create_symbolic_link (target : string) (path : string) : () =
 
 inl file_create_symbolic_link (target : string) (path : string) : () =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()"') : bool) |> ignore
             (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
         | _ => fun () => ()
@@ -1153,9 +1153,9 @@ a ;[ Directory, "workspace"; File, "README.md" ]
 
 inl file_delete (path : string) : () =
     run_target function
-        | Fsharp (Native) => fun () =>
+        | Fsharp => fun () =>
             path |> $'System.IO.File.Delete'
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             inl result : resultm.result' () stream.io_error =
                 if path |> file_exists
                 then !\\(path, $'"std::fs::remove_file(&*$0)"')
@@ -1344,9 +1344,9 @@ match get_workspace_root_external () with
 
 let get_full_path (path : string) : string =
     run_target_args (fun () => path) function
-        | Fsharp (Native) => fun path =>
+        | Fsharp => fun path =>
             path |> $'System.IO.Path.GetFullPath'
-        | Rust (Native) => fun path =>
+        | Rust (None) => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             if path_buf |> path_buf_exists |> not then
                 inl current_dir = get_current_directory ()
@@ -1477,7 +1477,7 @@ inl new_file_uri (path : string) : string =
 
 let rec trace_file text : () =
     run_target function
-    | Fsharp (Native) => fun () =>
+    | Fsharp => fun () =>
         resultm.from_try
             fun () =>
                 inl assembly_name = env.get_entry_assembly_name ()
@@ -1538,8 +1538,8 @@ inl init_trace_file enabled =
 
 let create_dir dir =
     run_target_args' dir function
-        | Rust (Contract | Wasm) => fun _ => null ()
-        | Rust (Native) => fun dir =>
+        | Rust (Some (Contract | Wasm)) => fun _ => null ()
+        | Rust (None) => fun dir =>
             match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with
             | Ok () =>
                 trace Verbose
@@ -1721,7 +1721,7 @@ link_path'
 
 let file_exists_content path content : bool =
     run_target function
-        | Rust (Native) => fun () =>
+        | Rust (None) => fun () =>
             if path |> file_exists |> not
             then false
             else

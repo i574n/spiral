@@ -310,7 +310,7 @@ inl run_synchronously forall t. (a : async t) : t =
         // | Rust _
         | Python _ => fun () =>
             a |> $'Async.RunSynchronously'
-        | Cuda (Native) => fun () =>
+        | Cuda => fun () =>
             $'asyncio.run(!a())'
         | _ => fun () => null ()
 
@@ -426,7 +426,7 @@ nominal value_task = $'System.Threading.Tasks.ValueTask'
 /// ### value_task_as_task
 inl value_task_as_task (task : value_task) : task () =
     run_target function
-        | Fsharp (Native) => fun () => $'!task.AsTask' ()
+        | Fsharp => fun () => $'!task.AsTask' ()
         | _ => fun () => null ()
 
 /// ### await_value_task_unit

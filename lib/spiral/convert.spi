@@ -11,12 +11,12 @@ inl to'' forall t u. (fn : t -> u) (x : t) : u =
         typecase t * u with
         | ~x * ~x => x
         | int * int => conv `t `u x
-        | float * float => conv `t `u x
-        | int * float => conv `t `u x
-        | float * int => conv `t `u x
-        | char * bool => x = '1'
-        | bool * char => if x then '1' else '0'
-        | bool * _ => if x then 1 else 0
+        // | float * float => conv `t `u x
+        // | int * float => conv `t `u x
+        // | float * int => conv `t `u x
+        // | char * bool => x = '1'
+        // | bool * char => if x then '1' else '0'
+        // | bool * _ => if x then 1 else 0
         | _ => fn x
 
 /// ### to'
@@ -25,12 +25,12 @@ inl to' forall t u. (fn : t -> option u) (x : t) : option u =
         typecase t * u with
         | ~x * ~x => Some `u x
         | int * int => Some `u (conv `t `u x)
-        | float * float => Some `u (conv `t `u x)
-        | int * float => Some `u (conv `t `u x)
-        | float * int => Some `u (conv `t `u x)
-        | char * bool => Some `u (x = '1')
-        | bool * char => Some `u (if x then '1' else '0')
-        | bool * _ => Some `u (if x then 1 else 0)
+        // | float * float => Some `u (conv `t `u x)
+        // | int * float => Some `u (conv `t `u x)
+        // | float * int => Some `u (conv `t `u x)
+        // | char * bool => Some `u (x = '1')
+        // | bool * char => Some `u (if x then '1' else '0')
+        // | bool * _ => Some `u (if x then 1 else 0)
         | _ => fn x
 
 /// ### to
@@ -38,6 +38,13 @@ inl to forall t u. (x : t) : u =
     x
     |> to' fun x => $'!x ' |> Some
     |> optionm.value
+
+inl to forall t u. (x : t) : u =
+    real
+        typecase t * u with
+        | ~x * ~x => x : u
+        | int * int => conv `t `u x
+        | _ => $'!x ' : u
 
 /// ### convert_i32_base
 inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
@@ -66,7 +73,7 @@ inl convert_i32 forall t. (x : t) : int =
 
 /// ### try_convert
 inl try_convert forall t u. (x : t) : option u =
-    x |> to' fun x =>
+    inl run () =
         backend_switch {
             Gleam = fun () =>
                 if (real typecase u with int => true | _ => false) then
@@ -92,6 +99,13 @@ inl try_convert forall t u. (x : t) : option u =
                 |> resultm.ok
                 : _ u
         }
+    // x |> to' fun _ => run ()
+    real
+        typecase t * u with
+        | ~x * ~x => Some `u x
+        | int * int => Some `u (conv `t `u x)
+        | bool * _ => Some `u (if x then 1 else 0)
+        | _ => run `(option u) ()
 
 /// ### convert
 inl convert forall t u. (x : t) : u =

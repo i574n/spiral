@@ -280,7 +280,7 @@ inl convert_to_utf32 (c : char) : int =
     backend_switch {
         Fsharp = fun () =>
             run_target_args' c function
-            | Fsharp (Native) => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int
+            | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int
             | _ => fun c => c |> convert.i32
         Python = fun () => $'ord(!c)' : int
     }
@@ -537,7 +537,7 @@ inl split (separator : string) (str : string) : array_base string =
 /// ### split_string
 inl split_string (separator : array_base string) (str : string) : array_base string =
     run_target_args (fun () => str, separator) function
-        | Fsharp (Native) => fun str, separator => $'!str.Split (!separator, System.StringSplitOptions.None)'
+        | Fsharp => fun str, separator => $'!str.Split (!separator, System.StringSplitOptions.None)'
         | _ => fun str, separator => str |> split ((a separator : _ int _) |> seq.of_array |> concat (join ""))
 
 /// ### join'
@@ -1054,7 +1054,7 @@ instance to_string result t u = fun x =>
 /// ### format_exception
 inl format_exception (ex : exn) : string =
     run_target function
-        | Fsharp (Native) => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
+        | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
         | _ => fun () => ex |> format_debug
 
 /// ### range
@@ -1118,15 +1118,15 @@ inl format_ellipsis s =
 /// ### replace_regex
 let replace_regex (pattern : string) (replacement : string) (s : string) : string =
     run_target_args (fun () => s, pattern, replacement) function
-        | Fsharp (Native) => fun s, pattern, replacement =>
+        | Fsharp => fun s, pattern, replacement =>
             $'System.Text.RegularExpressions.Regex.Replace (!s, !pattern, !replacement)'
-        | Rust (Native) => fun s, pattern, replacement =>
+        | Rust (None) => fun s, pattern, replacement =>
             inl regex = pattern |> new_regex |> resultm.unwrap'
             inl s = join s
             !\\((regex, s, replacement), $'$"$0.replace_all(&*$1, &*$2)"')
             |> cow_to_std_string
             |> from_std_string
-        | Gleam (Native) => fun s, pattern, replacement =>
+        | Gleam => fun s, pattern, replacement =>
             global "import gleam/regexp"
             $'let assert Ok(re) = !pattern |> regexp.from_string'
             $'re |> regexp.replace(!s, !replacement)' : string
