@@ -375,7 +375,10 @@ inl rec format_debug_real forall t. (x : t) : string =
             Lua =
                 (fun () =>
                     typecase t with
-                    | _ * _ => $'table.concat(!x, ", ") ' : string
+                    | ~a * ~b =>
+                        inl head_str = format_debug_real `a ($'__v[1]._1' : a)
+                        inl tail_str = format_debug_real `b ($'__v[1]._2' : b)
+                        (++#*) head_str ((++#*) ", " tail_str)
                     | {} => $'table.concat(!x, ", ")   ' : string
                     | array_base _ =>
                         (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
@@ -392,23 +395,25 @@ inl rec format_debug_real forall t. (x : t) : string =
         }
 and inl serialize_union forall t. (x : t) : string =
     join
+        $'if type(v0) ~= "table" then return tostring(v0) end' : ()
         real_core.unbox x fun k, v =>
             inl tag : string = $'__v[1].tag'
             typecase `v with
             | () => tag
             | ~a * ~b =>
-                inl head_str = format_debug_real `a ($'__v[1]._1' : a)
-                inl tail_str = format_debug_real `b ($'__v[1]._2' : b)
-                (++#*) tag
-                    ((++#*) "("
-                        ((++#*) head_str
-                            ((++#*) ", "
-                                ((++#*) tail_str ")"))))
+                typecase a with
+                | ~c * ~d =>
+                    inl head_str = format_debug_real `c ($'__v[1]._1 -- `c ' : c)
+                    inl tail_str = format_debug_real `d ($'__v[1]._2 -- `d ' : d)
+                    inl x = format_debug_real `b ($'__v[1]._3 -- `b ' : b)
+                    tag ++#* "(" ++#* head_str ++#* ", " ++#* tail_str ++#* ", " ++#* x ++#* ")"
+                | _ =>
+                    inl head_str = format_debug_real `a ($'__v[1]._1 -- `a ' : a)
+                    inl tail_str = format_debug_real `b ($'__v[1]._2 -- `b ' : b)
+                    (++#*) tag ((++#*) "(" ((++#*) head_str ((++#*) ", " ((++#*) tail_str ")"))))
             | ~a =>
                 inl arg_str = format_debug_real `a ($'__v[1]._1' : a)
-                (++#*) tag
-                    ((++#*) "("
-                        ((++#*) arg_str ")"))
+                (++#*) tag ((++#*) "(" ((++#*) arg_str ")"))
     : string
 
 #!markdown

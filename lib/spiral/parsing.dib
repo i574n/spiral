@@ -861,6 +861,9 @@ inl none_of (chars : list char) : parser char = fun input, i, (parser_state st a
         Gleam = fun () =>
             "parsing.none_of / unexpected char / "
             ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
+        Lua = fun () =>
+            "parsing.none_of / unexpected char / "
+            ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
         Fsharp = fun () =>
             run_target function
             | TypeScript _ => fun () =>

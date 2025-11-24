@@ -54,22 +54,7 @@ nominal unit = $'unit'
 
 #!markdown
 
-### run_target_args
-
-#!spiral
-
-inl run_target_args forall t u. (args : () -> u) (fn : target -> (u -> t)) : t =
-    inl args = args () |> dyn
-    fn |> run_target_args' args
-
-#!markdown
-
-### run_target
-
-#!spiral
-
-inl run_target forall t. (fn : target -> (() -> t)) : t =
-    run_target_args id fn
+### run_target (test)
 
 #!spiral
 
