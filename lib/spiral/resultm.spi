@@ -131,10 +131,10 @@ inl unbox forall t u. (x : result' t u) : result t u =
         Gleam = fun () =>
             $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
         Lua = fun () =>
-            $'ok = !ok '
-            $'error = !error '
+            $'local ok = !ok '
+            $'local error = !error '
             $'local r = nil'
-            $'if !x.tag == "Ok" then'
+            $'if !x ~= nil then'
             $'    r = ok(!x)'
             $'else'
             $'    r = error(!x)'
@@ -146,6 +146,15 @@ inl unbox forall t u. (x : result' t u) : result t u =
                 | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
                 | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
             : result t u
+        Python = fun () =>
+            $'ok = !ok '
+            $'error = !error '
+            $'r = None'
+            $'if !x is not None:'
+            $'    r = ok(!x)'
+            $'else:'
+            $'    r = error(!x)'
+            $'r' : result t u
     }
 
 /// ### box
@@ -166,8 +175,8 @@ inl box forall t u. (x : result t u) : result' t u =
             Python = fun () => $'!err ' : result' t u
         }
 
-/// ### map'
-inl map' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
+/// ### map'''
+inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
     backend_switch {
         Gleam = fun () =>
             result'_types ()

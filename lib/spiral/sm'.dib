@@ -376,8 +376,12 @@ inl rec format_debug_real forall t. (x : t) : string =
                 (fun () =>
                     typecase t with
                     | ~a * ~b =>
-                        inl head_str = format_debug_real `a ($'__v[1]._1' : a)
-                        inl tail_str = format_debug_real `b ($'__v[1]._2' : b)
+                        inl a, b =
+                            if not (var_is `t x)
+                            then x
+                            else ($'__v[1]._1' : a), ($'__v[1]._2' : b)
+                        inl head_str = format_debug_real `a a
+                        inl tail_str = format_debug_real `b b
                         (++#*) head_str ((++#*) ", " tail_str)
                     | {} => $'table.concat(!x, ", ")   ' : string
                     | array_base _ =>

@@ -540,7 +540,7 @@ inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
 "abc"
 |> parse_ (any_char_ ())
 |> unwrap_format
-|> _assert_eq'#?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
+|> _assert_eq' #?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
 
 #!markdown
 
@@ -603,7 +603,7 @@ inl p_char (c : char) : parser char =
 "abc"
 |> parse_ (p_char_ 'a')
 |> unwrap_format
-|> _assert_eq'#?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
+|> _assert_eq' #?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
 
 #!markdown
 
@@ -899,9 +899,8 @@ inl none_of (chars : list char) : parser char = fun input, i, (parser_state st a
 
 "def"
 |> parse_ (none_of_ ['a'; 'b'; 'c'])
-|> resultm.get
-|> sm'.obj_to_string
-|> _assert_eq' ($('d', ($'FParsec.Position (null, 0, 1, 2)' : position_)))
+|> unwrap_format
+|> _assert_eq' #?*('d', ($'FParsec.Position (null, 0, 1, 2)' : position_))
 
 #!markdown
 

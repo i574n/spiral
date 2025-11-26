@@ -858,6 +858,7 @@ try
 |> optionm.value
 |> _assert_eq (run_target function
     | Gleam => fun () => null ()
+    | Lua => fun () => null ()
     | Fsharp => fun () => join "System.IndexOutOfRangeException: Index was outside the bounds of the array."
     | Cuda => fun () => "index 1 is out of bounds for axis 0 with size 1"
     | Cpp => fun () => null ()
