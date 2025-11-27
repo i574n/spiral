@@ -922,7 +922,7 @@ let create_dir dir =
     run_target_args' dir function
         | Rust (Some (Contract | Wasm)) => fun _ => null ()
         | Rust (None) => fun dir =>
-            match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with
+            match dir |> create_dir_all |> resultm.map_error'' sm'.format' |> resultm.unbox with
             | Ok () =>
                 trace Verbose
                     fun () => "file_system.create_dir"

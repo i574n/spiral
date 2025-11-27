@@ -660,7 +660,7 @@ inl ticks (date_time : date_time) : timestamp =
 
 unix_epoch ()
 |> ticks
-|> _assert_eq' (621355968000000000i64 |> convert)
+|> _assert_eq' (621355968000000000i64 |> convert.convert)
 
 #!markdown
 
@@ -1309,14 +1309,14 @@ inl timestamp_guid_from_timestamp (guid : guid.guid) (timestamp : timestamp) : t
 
 ///- --test
 
-timestamp_guid_from_timestamp (test_guid ()) (0i64 |> convert |> timestamp)
+timestamp_guid_from_timestamp (test_guid ()) (0i64 |> convert.convert |> timestamp)
 |> _assert_eq' (guid.new_guid "00000000-0000-0000-0043-210fedcba987")
 
 #!spiral
 
 ///- --test
 
-timestamp_guid_from_timestamp (test_guid ()) (999999999999999999i64 |> convert |> timestamp)
+timestamp_guid_from_timestamp (test_guid ()) (999999999999999999i64 |> convert.convert |> timestamp)
 |> _assert_eq' (guid.new_guid $'$"99999999-9999-9999-9943-2{(!test_guid () |> string).[^10..]}"')
 
 #!markdown
@@ -1334,14 +1334,14 @@ inl timestamp_from_guid (guid : date_time_guid) : timestamp =
 ///- --test
 
 timestamp_from_guid (guid.new_guid "00000000-0000-0000-00dc-ba9876543210")
-|> _assert_eq' (0i64 |> convert |> timestamp)
+|> _assert_eq' (0i64 |> convert.convert |> timestamp)
 
 #!spiral
 
 ///- --test
 
 timestamp_from_guid (guid.new_guid $'$"99999999-9999-9999-99{(!test_guid () |> string).[^14..]}"')
-|> _assert_eq' (999999999999999999i64 |> convert |> timestamp)
+|> _assert_eq' (999999999999999999i64 |> convert.convert |> timestamp)
 
 #!markdown
 
@@ -1381,7 +1381,8 @@ utc_now ()
 |> ticks
 |> new_guid_from_timestamp
 |> timestamp_from_guid
-|> fun (timestamp t) => (convert t - (utc_now () |> ticks |> fun (timestamp x) => convert x)) / 100000i64
+|> fun (timestamp t) =>
+    (convert.convert t - (utc_now () |> ticks |> fun (timestamp x) => convert.convert x)) / 100000i64
 |> _assert_eq 0i64
 
 #!markdown

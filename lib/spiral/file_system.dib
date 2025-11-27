@@ -1540,7 +1540,7 @@ let create_dir dir =
     run_target_args' dir function
         | Rust (Some (Contract | Wasm)) => fun _ => null ()
         | Rust (None) => fun dir =>
-            match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with
+            match dir |> create_dir_all |> resultm.map_error'' sm'.format' |> resultm.unbox with
             | Ok () =>
                 trace Verbose
                     fun () => "file_system.create_dir"
@@ -1568,7 +1568,6 @@ inl create_temp_dir () =
 #!spiral
 
 ///- --test
-///> fsharp
 ///> rust -d chrono
 
 inl path, disposable = create_temp_dir ()
@@ -1632,7 +1631,6 @@ let link_file target_path path =
 #!spiral
 
 ///- --test
-///> fsharp
 ///> rust -d sha2 regex
 
 inl file_name = "LICENSE"
@@ -1673,14 +1671,14 @@ dir_link_path
 |> read_link
 |> resultm.unwrap'
 |> path_buf_display
-|> convert
+|> convert.convert
 |> _assert sm'.ends_with "dir1"
 
 link_path
 |> read_link
 |> resultm.unwrap'
 |> path_buf_display
-|> convert
+|> convert.convert
 |> _assert sm'.ends_with "LICENSE"
 
 inl link_name = "LICENSE_"
@@ -1699,14 +1697,14 @@ link_path
 |> read_link
 |> resultm.unwrap'
 |> path_buf_display
-|> convert
+|> convert.convert
 |> _assert sm'.ends_with "LICENSE"
 
 link_path'
 |> read_link
 |> resultm.unwrap'
 |> path_buf_display
-|> convert
+|> convert.convert
 |> _assert sm'.ends_with "LICENSE"
 
 #!markdown

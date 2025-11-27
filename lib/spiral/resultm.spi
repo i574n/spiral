@@ -231,9 +231,13 @@ inl to_try forall t u. (x : result' t u) : rust.try t =
 
 /// ### unwrap'
 inl unwrap' forall t u. (x : result' t u) : t =
+    !\\(x, $'"$0.unwrap()"')
+
+/// ### unwrap''
+inl unwrap'' forall t u. (x : result' t u) : t =
     run_target function
-        | Rust _ => fun () => !\\(x, $'"$0.unwrap()"')
-        | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\' / e: {e}"'
+        | Rust _ => fun () => x |> unwrap'
+        | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
 
 /// ### unwrap_err'
 inl unwrap_err' forall t u. (x : result' t u) : u =
@@ -284,6 +288,10 @@ inl map_error'' forall t e u. (fn : e -> u) (source : result' t e) : result' t u
     (!\\(source, $'"true; let _result_map_error__ = $0.map_err(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
     !\($'"_result_map_error__"')
+
+/// ### map_error'''
+inl map_error''' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
+    !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
 
 /// ### option_ok_or
 inl option_ok_or forall t e. (e : e) (source : optionm'.option' t) : result' t e =

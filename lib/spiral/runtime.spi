@@ -271,7 +271,7 @@ inl stdio_line
     inl line =
         match
             line
-            |> resultm.map_error' sm'.format'
+            |> resultm.map_error'' sm'.format'
             |> resultm.unbox'
         with
         | Ok line =>
@@ -308,7 +308,7 @@ inl stdio_line
     |> resultm.unwrap'
     |> threading.mutex_guard_ref
     |> threading.channel_send line
-    |> resultm.map_error' sm'.format'
+    |> resultm.map_error'' sm'.format'
 
 /// ### command
 nominal command =
@@ -713,8 +713,8 @@ let execute_with_options (options : execution_options) : i32 * string =
                     ||> am'.vec_fold' fun command (key, value) =>
                         command |> process_command_env key value
             |> process_command_spawn
-            |> resultm.map_error' sm'.format'
-            |> resultm.map' (optionm'.some' >> (join id) >> threading.new_arc_mutex)
+            |> resultm.map_error''' sm'.format'
+            |> resultm.map' (rust.emit >> optionm'.some' >> rust.emit >> threading.new_arc_mutex)
             |> resultm.unbox'
             |> function
                 | Ok child =>
@@ -723,7 +723,7 @@ let execute_with_options (options : execution_options) : i32 * string =
                             child
                             |> threading.arc_mutex_lock
                             |> resultm.unwrap'
-                            |> threading.mutex_guard_ref_mut
+                            |> threading.mutex_guard_ref_mut''
                             |> optionm'.as_mut
                             |> optionm'.unwrap
                             |> process_child_stdout
@@ -735,7 +735,7 @@ let execute_with_options (options : execution_options) : i32 * string =
                             child
                             |> threading.arc_mutex_lock
                             |> resultm.unwrap'
-                            |> threading.mutex_guard_ref_mut
+                            |> threading.mutex_guard_ref_mut''
                             |> optionm'.as_mut
                             |> optionm'.unwrap
                             |> process_child_stderr
@@ -747,20 +747,20 @@ let execute_with_options (options : execution_options) : i32 * string =
                             child
                             |> threading.arc_mutex_lock
                             |> resultm.unwrap'
-                            |> threading.mutex_guard_ref_mut
+                            |> threading.mutex_guard_ref_mut''
                             |> optionm'.as_mut
                             |> optionm'.unwrap
                             |> process_child_stdin
                             |> optionm'.take_ref_mut
                             |> optionm'.unwrap
                             |> optionm'.some'
-                            |> join id
+                            |> rust.emit
                             |> threading.new_arc_mutex
                         |> rust.capture
                     inl channel_sender, channel_receiver = threading.new_channel ()
-                    inl channel_sender'' = channel_sender |> (join id) |> threading.new_arc_mutex
-                    inl channel_sender' = channel_sender |> (join id) |> threading.new_arc_mutex
-                    inl channel_receiver' = channel_receiver |> (join id) |> threading.new_arc_mutex
+                    inl channel_sender'' = channel_sender |> rust.emit |> threading.new_arc_mutex
+                    inl channel_sender' = channel_sender |> rust.emit |> threading.new_arc_mutex
+                    inl channel_receiver' = channel_receiver |> rust.emit |> threading.new_arc_mutex
                     inl stdout_handle =
                         fun () =>
                             stdout
@@ -791,9 +791,9 @@ let execute_with_options (options : execution_options) : i32 * string =
                     match options.stdin |> optionm'.unbox with
                     | Some stdin' =>
                         stdin
-                        |> threading.arc_mutex_lock
+                        |> threading.arc_mutex_lock'
                         |> resultm.unwrap'
-                        |> threading.mutex_guard_ref_mut
+                        |> threading.mutex_guard_ref_mut''
                         |> optionm'.take_ref_mut
                         |> optionm'.map' threading.new_arc_mutex
                         |> optionm'.unbox
@@ -801,20 +801,20 @@ let execute_with_options (options : execution_options) : i32 * string =
                             | Some stdin =>
                                 stdin |> stdin'
                                 stdin
-                                |> threading.arc_mutex_lock
+                                |> threading.arc_mutex_lock'
                                 |> resultm.unwrap'
                                 |> stdin_flush
                             | None => ()
                     | None => ()
                     inl output =
                         child
-                        |> threading.arc_mutex_lock
+                        |> threading.arc_mutex_lock'
                         |> resultm.unwrap'
-                        |> threading.mutex_guard_ref_mut
+                        |> threading.mutex_guard_ref_mut''
                         |> optionm'.take_ref_mut
                         |> optionm'.unwrap
                         |> child_wait_with_output
-                        |> resultm.map_error' sm'.format'
+                        |> resultm.map_error'' sm'.format'
                     [ stdout_handle; stderr_handle ]
                     |> am'.new_vec
                     |> am'.vec_for_each' (threading.join' >> resultm.unwrap' >> resultm.unwrap')
@@ -872,7 +872,7 @@ let execute_with_options (options : execution_options) : i32 * string =
                         |> optionm'.box
                         |> optionm'.map' fun channel_receiver =>
                             channel_receiver
-                            |> threading.arc_mutex_lock
+                            |> threading.arc_mutex_lock'
                             |> resultm.unwrap'
                             |> iter.iter
                             |> iter_collect''

@@ -147,6 +147,7 @@ nominal option'_gleam t =
 type option'_switch t =
     {
         Gleam : option'_gleam t
+        Lua : t
         Fsharp : $"`t option"
         Python : t
     }
@@ -283,8 +284,8 @@ inl unbox forall t. (x : option' t) : option t =
 
 inl x = Some 3i32
 inl y : option i32 = None
-inl x' = x |> box |> convert.unbox
-inl y' = y |> box |> map id |> convert.unbox
+inl x' = x |> box |> unbox
+inl y' = y |> box |> map id |> unbox
 (x', y') |> _assert_eq' (x, y)
 
 #!markdown

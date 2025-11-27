@@ -49,6 +49,7 @@ nominal option'_gleam t =
 type option'_switch t =
     {
         Gleam : option'_gleam t
+        Lua : t
         Fsharp : $"`t option"
         Python : t
     }

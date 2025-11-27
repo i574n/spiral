@@ -25,20 +25,15 @@ inl to' forall t u. (fn : t -> option u) (x : t) : option u =
         typecase t * u with
         | ~x * ~x => Some `u x
         | int * int => Some `u (conv `t `u x)
-        // | float * float => Some `u (conv `t `u x)
-        // | int * float => Some `u (conv `t `u x)
-        // | float * int => Some `u (conv `t `u x)
-        // | char * bool => Some `u (x = '1')
-        // | bool * char => Some `u (if x then '1' else '0')
-        // | bool * _ => Some `u (if x then 1 else 0)
+        | float * float => Some `u (conv `t `u x)
+        | int * float => Some `u (conv `t `u x)
+        | float * int => Some `u (conv `t `u x)
+        | char * bool => Some `u (x = '1')
+        | bool * char => Some `u (if x then '1' else '0')
+        | bool * _ => Some `u (if x then 1 else 0)
         | _ => fn x
 
 /// ### to
-inl to forall t u. (x : t) : u =
-    x
-    |> to' fun x => $'!x ' |> Some
-    |> optionm.value
-
 inl to forall t u. (x : t) : u =
     real
         typecase t * u with
@@ -73,7 +68,7 @@ inl convert_i32 forall t. (x : t) : int =
 
 /// ### try_convert
 inl try_convert forall t u. (x : t) : option u =
-    inl run () =
+    x |> to' fun x =>
         backend_switch {
             Gleam = fun () =>
                 if (real typecase u with int => true | _ => false) then
@@ -99,13 +94,6 @@ inl try_convert forall t u. (x : t) : option u =
                 |> resultm.ok
                 : _ u
         }
-    // x |> to' fun _ => run ()
-    real
-        typecase t * u with
-        | ~x * ~x => Some `u x
-        | int * int => Some `u (conv `t `u x)
-        | bool * _ => Some `u (if x then 1 else 0)
-        | _ => run `(option u) ()
 
 /// ### convert
 inl convert forall t u. (x : t) : u =

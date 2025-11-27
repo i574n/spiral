@@ -12,6 +12,7 @@ nominal guid_python =
 type guid_switch =
     {
         Gleam : string
+        Lua : string
         Fsharp : $'System.Guid'
         Python : guid_python
     }
@@ -21,6 +22,9 @@ nominal guid = $'backend_switch `(guid_switch)'
 inl new_guid (x : string) : guid =
     run_target_args (fun () => x) function
         | Rust (Some (Contract)) => fun _ => null ()
+        | Gleam => fun x => $'!x '
+        | Lua => fun x => $'!x '
+        | Cuda => fun x => $'!x '
         | _ => fun x => $'!x |> `guid '
 
 /// ### new_raw_guid
@@ -29,6 +33,7 @@ inl new_raw_guid () : guid =
         Gleam = fun () =>
             global "import gleam_uuid"
             $'gleam_uuid.v4_string ()' : guid
+        Lua = fun () => $'""' : guid
         Fsharp = fun () => $'System.Guid.NewGuid' () : guid
         Python = fun () => $'uuid.uuid4()' : guid
     }

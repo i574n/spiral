@@ -72,7 +72,7 @@ get_union_fields ()
 |> a
 |> am'.sort_by snd
 |> fun (a x : _ int _) => x
-|> _assert_eq' ;[ "Native", Native; "Wasm", Wasm; "Contract", Contract ]
+|> _assert_eq' ;[ "Wasm", Wasm; "Contract", Contract ]
 
 #!spiral
 
@@ -155,7 +155,7 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
 ///> python
 
 get_union_fields_untag ()
-|> _assert_eq' [ "Native", Native; "Wasm", Wasm; "Contract", Contract ]
+|> _assert_eq' [ "Wasm", Wasm; "Contract", Contract ]
 
 #!spiral
 

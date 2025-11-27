@@ -405,6 +405,17 @@ inl mutex_guard_ref_mut forall t. (x : mutex_guard t) : rust.ref (rust.mut' t) =
 
 #!markdown
 
+### mutex_guard_ref_mut''
+
+#!spiral
+
+inl mutex_guard_ref_mut'' forall t. (x : mutex_guard t) : rust.ref (rust.mut' t) =
+    inl x = x |> rust.emit
+    (!\($'"true; let mut !x = !x"') : bool) |> ignore
+    !\\(x, $'"&mut $0"')
+
+#!markdown
+
 ### mutex_guard_ref_mut'
 
 #!spiral

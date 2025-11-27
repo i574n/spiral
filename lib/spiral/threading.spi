@@ -216,6 +216,12 @@ inl mutex_guard_ref_mut forall t. (x : mutex_guard t) : rust.ref (rust.mut' t) =
     (!\($'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"&mut $0"')
 
+/// ### mutex_guard_ref_mut''
+inl mutex_guard_ref_mut'' forall t. (x : mutex_guard t) : rust.ref (rust.mut' t) =
+    inl x = x |> rust.emit
+    (!\($'"true; let mut !x = !x"') : bool) |> ignore
+    !\\(x, $'"&mut $0"')
+
 /// ### mutex_guard_ref_mut'
 inl mutex_guard_ref_mut' forall t. (x : mutex_guard (rust.ref (rust.mut' t))) : rust.ref (rust.mut' t) =
     inl x = x |> rust.emit
