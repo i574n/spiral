@@ -31,6 +31,7 @@ pub use _Threading::Threading;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./networking_wasm.rs"]
 pub mod _Networking;
 pub use _Networking::Networking;
@@ -41,6 +42,7 @@ pub use _Networking::Networking;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./runtime_wasm.rs"]
 pub mod _Runtime;
 pub use _Runtime::Runtime;
@@ -61,6 +63,7 @@ pub use _Platform::Platform;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./trace_wasm.rs"]
 pub mod _Trace;
 pub use _Trace::Trace;
@@ -71,6 +74,7 @@ pub use _Trace::Trace;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./file_system_wasm.rs"]
 pub mod _File_system;
 pub use _File_system::File_system;
@@ -81,6 +85,7 @@ pub use _File_system::File_system;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./sm_wasm.rs"]
 pub mod _Sm;
 pub use _Sm::Sm;
@@ -91,6 +96,7 @@ pub use _Sm::Sm;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./crypto_wasm.rs"]
 pub mod _Crypto;
 pub use _Crypto::Crypto;
@@ -101,6 +107,7 @@ pub use _Crypto::Crypto;
 #[allow(unreachable_code)]
 #[allow(unused_imports)]
 #[allow(unused_variables)]
+#[allow(unused_parens)]
 #[path = "./common_wasm.rs"]
 pub mod _Common;
 pub use _Common::Common;

@@ -419,34 +419,34 @@ inl update_char (parser_state s) (c : char) : parser_state =
 
 #!spiral
 
-inl update_span (input : string) (i : int) (len : int) (parser_state s) : parser_state =
+inl update_span (t : string) (i : int) (len : int) (parser_state s' as s) : parser_state =
     inl endi = i + len
     let rec 루프 (j : int) (last_nl : int) (count : int) =
         trace Verbose
             (fun () => "parsing.update_span / 루프")
-            (fun () => { j last_nl count })
+            (fun () => { i len endi j last_nl count t_length = t |> sm'.length : int; s })
         if j >= endi
         then last_nl, count
         else
-            match input |> sm'.index j with
+            match t |> sm'.index j with
             | '\n' => 루프 (j + 1) j (count + 1)
             | _ => 루프 (j + 1) last_nl count
     inl last_nl, n = 루프 i -1 0
     if n = 0
-    then { s with position = { line = s.position.line; col = s.position.col + len } }
+    then { s' with position = { line = s'.position.line; col = s'.position.col + len } }
     else
-        { s with
+        { s' with
             line_start = last_nl + 1
             position =
                 {
-                    line = s.position.line + n
+                    line = s'.position.line + n
                     col = endi - last_nl
                 }
-            text_length = s.text_length
+            text_length = s'.text_length
         }
     |> parser_state
     |> trace_format Verbose fun r =>
-        "parsing.update_span", { i len endi last_nl n text_length = input |> sm'.length : int; s r }
+        "parsing.update_span", { i len endi last_nl n t_length = t |> sm'.length : int; s r }
 
 #!markdown
 

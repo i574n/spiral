@@ -1099,11 +1099,11 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 
 /// ### ellipsis_end
 let ellipsis_end (max : i64) (s : string) =
-    inl len = sm.length s
+    inl len = s |> length
     if len <= max
     then s
     else
-        inl half = convert.f64 max / 2
+        inl half = (max |> convert.f64) / 2
         inl start_half = half |> math.ceil |> convert.i64
         inl end_half = half |> math.floor |> convert.i64
         inl start = s |> slice 0 (start_half - 1)
