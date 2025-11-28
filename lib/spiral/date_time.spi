@@ -438,7 +438,7 @@ inl time_span_format (format : string) (time_span : time_span) : string =
                     inl result =
                         if days <= 0
                         then time
-                        else #?days ++# time
+                        else #?**days ++# time
                     inl ms = time_span |> milliseconds
                     if ms <= 0
                     then result
