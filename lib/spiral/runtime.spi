@@ -69,14 +69,18 @@ type execution_line =
 /// ### process_child
 nominal process_child =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Child\")>]\n#endif\ntype std_process_Child = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Child\")>]\n#endif\ntype std_process_Child = class end") : () -> ()
+        }
         $'' : $'std_process_Child'
     )
 
 /// ### process_child_stdin
 nominal process_child_stdin =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdin\")>]\n#endif\ntype std_process_ChildStdin = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdin\")>]\n#endif\ntype std_process_ChildStdin = class end") : () -> ()
+        }
         $'' : $'std_process_ChildStdin'
     )
 
@@ -119,7 +123,9 @@ inl execution_options (fn : execution_options -> execution_options) : execution_
 /// ### process_child_stderr
 nominal process_child_stderr =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStderr\")>]\n#endif\ntype std_process_ChildStderr = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStderr\")>]\n#endif\ntype std_process_ChildStderr = class end") : () -> ()
+        }
         $'' : $'std_process_ChildStderr'
     )
 
@@ -132,7 +138,9 @@ inl process_child_stderr
 /// ### process_child_stdout
 nominal process_child_stdout =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdout\")>]\n#endif\ntype std_process_ChildStdout = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdout\")>]\n#endif\ntype std_process_ChildStdout = class end") : () -> ()
+        }
         $'' : $'std_process_ChildStdout'
     )
 
@@ -145,28 +153,36 @@ inl process_child_stdout
 /// ### process_command
 nominal process_command =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Command\")>]\n#endif\ntype std_process_Command = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Command\")>]\n#endif\ntype std_process_Command = class end") : () -> ()
+        }
         $'' : $'std_process_Command'
     )
 
 /// ### process_stdio
 nominal process_stdio =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Stdio\")>]\n#endif\ntype std_process_Stdio = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Stdio\")>]\n#endif\ntype std_process_Stdio = class end") : () -> ()
+        }
         $'' : $'std_process_Stdio'
     )
 
 /// ### process_output
 nominal process_output =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Output\")>]\n#endif\ntype std_process_Output = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Output\")>]\n#endif\ntype std_process_Output = class end") : () -> ()
+        }
         $'' : $'std_process_Output'
     )
 
 /// ### process_exit_status
 nominal process_exit_status =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ExitStatus\")>]\n#endif\ntype std_process_ExitStatus = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ExitStatus\")>]\n#endif\ntype std_process_ExitStatus = class end") : () -> ()
+        }
         $'' : $'std_process_ExitStatus'
     )
 
@@ -713,7 +729,7 @@ let execute_with_options (options : execution_options) : i32 * string =
                     ||> am'.vec_fold' fun command (key, value) =>
                         command |> process_command_env key value
             |> process_command_spawn
-            |> resultm.map_error''' sm'.format'
+            |> resultm.map_error'' sm'.format'
             |> resultm.map' (rust.emit >> optionm'.some' >> rust.emit >> threading.new_arc_mutex)
             |> resultm.unbox'
             |> function
@@ -791,7 +807,7 @@ let execute_with_options (options : execution_options) : i32 * string =
                     match options.stdin |> optionm'.unbox with
                     | Some stdin' =>
                         stdin
-                        |> threading.arc_mutex_lock'
+                        |> threading.arc_mutex_lock
                         |> resultm.unwrap'
                         |> threading.mutex_guard_ref_mut''
                         |> optionm'.take_ref_mut

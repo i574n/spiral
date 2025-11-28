@@ -8,70 +8,90 @@ type any_base = any
 /// ### any
 nominal any =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"core::any::Any\")>]\ntype core_any_Any = class end\n\#else\ntype core_any_Any = obj\n#endif\n"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"core::any::Any\")>]\ntype core_any_Any = class end\n\#else\ntype core_any_Any = obj\n#endif\n") : () -> ()
+        }
         $'' : $'core_any_Any'
     )
 
 /// ### try
 nominal try t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype core_ops_Try<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype core_ops_Try<'T> = class end") : () -> ()
+        }
         $'' : $'core_ops_Try<`t>'
     )
 
 /// ### cow
 nominal cow t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::borrow::Cow<$0>\")>]\n#endif\ntype std_borrow_Cow<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::borrow::Cow<$0>\")>]\n#endif\ntype std_borrow_Cow<'T> = class end") : () -> ()
+        }
         $'' : $'std_borrow_Cow<`t>'
     )
 
 /// ### ref_cell
 nominal ref_cell t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefCell<$0>\")>]\n#endif\ntype std_cell_RefCell<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefCell<$0>\")>]\n#endif\ntype std_cell_RefCell<'T> = class end") : () -> ()
+        }
         $'' : $'std_cell_RefCell<`t>'
     )
 
 /// ### cell_ref
 nominal cell_ref t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::Ref<$0>\")>]\n#endif\ntype std_cell_Ref<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::Ref<$0>\")>]\n#endif\ntype std_cell_Ref<'T> = class end") : () -> ()
+        }
         $'' : $'std_cell_Ref<`t>'
     )
 
 /// ### rc
 nominal rc t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Rc<$0>\")>]\n#endif\ntype std_rc_Rc<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Rc<$0>\")>]\n#endif\ntype std_rc_Rc<'T> = class end") : () -> ()
+        }
         $'' : $'std_rc_Rc<`t>'
     )
 
 /// ### lifetime_ref
 nominal lifetime_ref (t : * -> *) u =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0\")>]\n#endif\ntype LifetimeRef<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0\")>]\n#endif\ntype LifetimeRef<'T> = class end") : () -> ()
+        }
         $'' : $'LifetimeRef<`(t u)>'
     )
 
 /// ### lifetime_join
 nominal lifetime_join t u =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 + $1\")>]\n#endif\ntype LifetimeJoin<'T, 'U> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 + $1\")>]\n#endif\ntype LifetimeJoin<'T, 'U> = class end") : () -> ()
+        }
         $'' : $'LifetimeJoin<`t, `u>'
     )
 
 /// ### lifetime
 nominal lifetime t u =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 $1\")>]\n#endif\ntype Lifetime<'T, 'U> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 $1\")>]\n#endif\ntype Lifetime<'T, 'U> = class end") : () -> ()
+        }
         $'' : $'Lifetime<`t, `u>'
     )
 
 /// ### static_lifetime
 nominal static_lifetime =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"'static\")>]\n#endif\ntype StaticLifetime = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"'static\")>]\n#endif\ntype StaticLifetime = class end") : () -> ()
+        }
         $'' : $'StaticLifetime'
     )
 
@@ -79,10 +99,7 @@ nominal static_lifetime =
 nominal ref t =
     `(
         backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"&$0\")>]\ntype Ref<'T> = class end\n\#else\ntype Ref<'T> = 'T\n#endif\n"
-                ) : () -> ()
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"&$0\")>]\ntype Ref<'T> = class end\n\#else\ntype Ref<'T> = 'T\n#endif\n") : () -> ()
         }
         $'' : $'Ref<`t>'
     )
@@ -93,77 +110,99 @@ nominal static_ref t = ref (lifetime static_lifetime t)
 /// ### weak_rc
 nominal weak_rc t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Weak<$0>\")>]\n#endif\ntype std_rc_Weak<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Weak<$0>\")>]\n#endif\ntype std_rc_Weak<'T> = class end") : () -> ()
+        }
         $'' : $'std_rc_Weak<`t>'
     )
 
 /// ### box
 nominal box t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Box<$0>\")>]\n#endif\ntype Box<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Box<$0>\")>]\n#endif\ntype Box<'T> = class end") : () -> ()
+        }
         $'' : $'Box<`t>'
     )
 
 /// ### mut_cell
 nominal mut_cell t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"MutCell<$0>\")>]\n#endif\ntype MutCell<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"MutCell<$0>\")>]\n#endif\ntype MutCell<'T> = class end") : () -> ()
+        }
         $'' : $'MutCell<`t>'
     )
 
 /// ### pin
 nominal pin t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::pin::Pin<$0>\")>]\n#endif\ntype std_pin_Pin<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::pin::Pin<$0>\")>]\n#endif\ntype std_pin_Pin<'T> = class end") : () -> ()
+        }
         $'' : $'std_pin_Pin<`t>'
     )
 
 /// ### dyn'
 nominal dyn' t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"dyn $0\")>]\n#endif\ntype Dyn<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"dyn $0\")>]\n#endif\ntype Dyn<'T> = class end") : () -> ()
+        }
         $'' : $'Dyn<`t>'
     )
 
 /// ### fn'
 nominal fn' t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn() -> $0\")>]\n#endif\ntype Fn<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn() -> $0\")>]\n#endif\ntype Fn<'T> = class end") : () -> ()
+        }
         $'' : $'Fn<`t>'
     )
 
 /// ### action_fn
 nominal action_fn t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0)\")>]\n#endif\ntype ActionFn<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0)\")>]\n#endif\ntype ActionFn<'T> = class end") : () -> ()
+        }
         $'' : $'ActionFn<`t>'
     )
 
 /// ### action_fn2
 nominal action_fn2 t u =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0, $1)\")>]\n#endif\ntype ActionFn2<'T, 'U> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0, $1)\")>]\n#endif\ntype ActionFn2<'T, 'U> = class end") : () -> ()
+        }
         $'' : $'ActionFn2<`t, `u>'
     )
 
 /// ### fn_once
 nominal fn_once t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"FnOnce() -> $0\")>]\n#endif\ntype FnOnce<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"FnOnce() -> $0\")>]\n#endif\ntype FnOnce<'T> = class end") : () -> ()
+        }
         $'' : $'FnOnce<`t>'
     )
 
 /// ### fn_unit
 nominal fn_unit =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn()\")>]\n#endif\ntype FnUnit = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn()\")>]\n#endif\ntype FnUnit = class end") : () -> ()
+        }
         $'' : $'FnUnit'
     )
 
 /// ### func0
 nominal func0 t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func0<$0>\")>]\n#endif\ntype Func0<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func0<$0>\")>]\n#endif\ntype Func0<'T> = class end") : () -> ()
+        }
         $'' : $'Func0<`t>'
     )
 
@@ -173,14 +212,18 @@ nominal func1 t u =
         typecase t with
         | () => `func0 `u
         | _ =>
-            global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func1<$0, $1>\")>]\n#endif\ntype Func0<'T, 'U> = class end"
+            backend_switch `(()) `({}) {
+                Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func1<$0, $1>\")>]\n#endif\ntype Func0<'T, 'U> = class end") : () -> ()
+            }
             $'' : $'Func0<`t, `u>'
     )
 
 /// ### impl
 nominal impl t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"impl $0\")>]\n#endif\ntype Impl<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"impl $0\")>]\n#endif\ntype Impl<'T> = class end") : () -> ()
+        }
         $'' : $'Impl<`t>'
     )
 
@@ -188,10 +231,7 @@ nominal impl t =
 nominal mut' t =
     `(
         backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mut $0\")>]\n#endif\ntype Mut<'T> = class end"
-                ) : () -> ()
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mut $0\")>]\n#endif\ntype Mut<'T> = class end") : () -> ()
         }
         $'' : $'Mut<`t>'
     )
@@ -200,10 +240,7 @@ nominal mut' t =
 nominal ref_mut t =
     `(
         backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefMut<$0>\")>]\n#endif\ntype std_cell_RefMut<'T> = class end"
-                ) : () -> ()
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefMut<$0>\")>]\n#endif\ntype std_cell_RefMut<'T> = class end") : () -> ()
         }
         $'' : $'std_cell_RefMut<`t>'
     )
@@ -211,7 +248,9 @@ nominal ref_mut t =
 /// ### send
 nominal send t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Send\")>]\n#endif\ntype Send<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Send\")>]\n#endif\ntype Send<'T> = class end") : () -> ()
+        }
         $'' : lifetime_join t $'Send<`t>'
     )
 
@@ -230,7 +269,9 @@ inl (~!\\) forall t u. ((args : t), (code : string)) : u =
 /// ### ptr
 nominal ptr t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*const $0\")>]\n#endif\ntype Ptr<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*const $0\")>]\n#endif\ntype Ptr<'T> = class end") : () -> ()
+        }
         $'' : $'Ptr<`t>'
     )
 
@@ -241,7 +282,9 @@ inl ptr_read forall t. (x : ptr t) : t =
 /// ### u128
 nominal u128 =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"u128\")>]\n#endif\ntype u128 = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"u128\")>]\n#endif\ntype u128 = class end") : () -> ()
+        }
         $'' : $'u128'
     )
 

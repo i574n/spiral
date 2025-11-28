@@ -10654,13 +10654,18 @@ module spiral_compiler =
             | TyStringLength(a,b) -> length (a,b)
             | TyFailwith(a,b) -> simple (sprintf "panic as %s" (tup b))
             | TyConv(a,b) ->
-                let t = tyv a
+                let t = tyv a |> SpiralSm.to_lower
                 let d = tup b
-                if t = "bool" || true then
-                    global' $"import gleam/{t}"
-                    $"{t}.to_int({d})"
+                if t = "int" then
+                    global' $"import gleam/float"
+                    $"float.truncate({d})"
+                elif t = "float" then
+                    global' $"import gleam/int"
+                    $"int.to_float({d})"
+                elif t = "bool" then
+                    $"{d} > 0"
                 else
-                    $"{d}"
+                    $"{d} // spiral_compiler.TyConv / t: {t}"
                 |> simple
             | TyApply (L(i, t), b) ->
                 let arg_code = tup b
@@ -10687,6 +10692,10 @@ module spiral_compiler =
                 |> simple
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(op,l) ->
+                let dot = function
+                    | DV(L(_,YPrim Float32T)) | DLit(LitFloat32 _)
+                    | DV(L(_,YPrim Float64T)) | DLit(LitFloat64 _) -> "."
+                    | _ -> ""
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
@@ -10712,12 +10721,12 @@ module spiral_compiler =
                     $"let {tup a} = {tup a} |> array.set({tup b}, {tup c}) |> result.unwrap({tup a})"
 
                 // Math
-                | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
-                | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
-                | Mult, [a;b] -> sprintf "%s * %s" (tup a) (tup b)
-                | Div, [a;b] -> sprintf "%s / %s" (tup a) (tup b)
-                | Mod, [a;b] -> sprintf "%s %% %s" (tup a) (tup b)
-                | Pow, [a;b] -> sprintf "%s ** %s" (tup a) (tup b)
+                | Add, [a;b] -> $"{a |> tup} +{a |> dot} {b |> tup}"
+                | Sub, [a;b] -> $"{a |> tup} -{a |> dot} {b |> tup}"
+                | Mult, [a;b] -> $"{a |> tup} *{a |> dot} {b |> tup}"
+                | Div, [a;b] -> $"{a |> tup} /{a |> dot} {b |> tup}"
+                | Mod, [a;b] -> $"{a |> tup} %%{a |> dot} {b |> tup}"
+                | Pow, [a;b] -> $"{a |> tup} **{a |> dot} {b |> tup}"
                 | LT, [a;b] -> sprintf "%s < %s" (tup a) (tup b)
                 | LTE, [a;b] -> sprintf "%s <= %s" (tup a) (tup b)
                 | EQ, [a;b] -> sprintf "%s == %s" (tup a) (tup b)

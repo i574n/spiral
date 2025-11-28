@@ -113,15 +113,23 @@ pi / 2 |> cos
 
 inl atan2 (y : f64) (x : f64) : f64 =
     backend_switch {
+        Gleam = fun () =>
+            global "import gleam_community/maths"
+            $'maths.atan2(!y, !x)' : float
         Lua = fun () => $'math.atan2(!y, !x)' : float
         Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float
+        Python = fun () => 
+            global "import math"
+            $'math.atan2(!y, !x)' : float
     }
 
 #!spiral
 
 ///- --test
+///> gleam -d gleam_community_maths=\">=2.0.0\"
 ///> lua
 ///> fsharp
+///> cuda
 
 0 |> atan2 1
 |> _assert_eq 1.5707963267948966
@@ -134,13 +142,23 @@ inl atan2 (y : f64) (x : f64) : f64 =
 
 inl floor forall t {float}. (n : t) : t =
     backend_switch {
+        Gleam = fun () =>
+            global "import gleam/float"
+            n |> $'float.floor' : t
         Lua = fun () => n |> $'math.floor' : t
         Fsharp = fun () => n |> $'floor' : t
+        Python = fun () => 
+            global "import math"
+            $'math.floor(!n)' : t
     }
 
 #!spiral
 
 ///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
 
 0.6 |> floor
 |> _assert_eq 0f64
@@ -153,15 +171,23 @@ inl floor forall t {float}. (n : t) : t =
 
 inl ceil forall t {float}. (n : t) : t =
     backend_switch {
+        Gleam = fun () =>
+            global "import gleam/float"
+            n |> $'float.ceiling' : t
         Lua = fun () => n |> $'math.ceil' : t
         Fsharp = fun () => n |> $'ceil' : t
+        Python = fun () =>
+            global "import math"
+            n |> $'math.ceil' : t
     }
 
 #!spiral
 
 ///- --test
+///> gleam
 ///> lua
 ///> fsharp
+///> cuda
 
 0.6 |> ceil
 |> _assert_eq 1f64
@@ -174,22 +200,34 @@ inl ceil forall t {float}. (n : t) : t =
 
 inl round forall t {number; float}. (x : t) : t =
     backend_switch {
+        Gleam = fun () =>
+            if x < 1
+            then x - 0.5 |> ceil
+            else
+                inl result = x + 1 |> floor |> convert.i32
+                if result % 2 = 0
+                then result
+                else result - 1
+                |> convert.convert
         Lua = fun () =>
             if x < 1
-            then x - 0.5 |> $'math.ceil' : t
+            then x - 0.5 |> ceil
             else
-                inl result = x + 1 |> $'math.floor'
+                inl result = x + 1 |> floor
                 if result % 2 = 0
                 then result
                 else result - 1
         Fsharp = fun () => x |> $'round' : t
+        Python = fun () => x |> $'round' : t
     }
 
 #!spiral
 
 ///- --test
+///> gleam
 ///> lua
 ///> fsharp
+///> cuda
 
 0.5 |> round
 |> _assert_eq 0f64

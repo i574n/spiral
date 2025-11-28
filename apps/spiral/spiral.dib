@@ -932,7 +932,7 @@ inl magic_marker () : parser string =
 |> resultm.map_error eval
 |> sm'.format_debug
 |> _assert_eq (
-    "US3_1\n  \"parsing.p_string / unexpected string / { "
+    "US13_1\n  \"parsing.p_string / unexpected string / { "
     ++# $'"expected = ##!!; got = ####; rest = ####!!magic; s = !(new_parser_state 0 1 1 8) }\\\""'
 )
 
@@ -980,7 +980,7 @@ inl magic_command () =
 |> resultm.map_error eval
 |> sm'.format_debug
 |> _assert_eq (
-    "US5_1\n  \"parsing.p_string / unexpected string / { "
+    "US14_1\n  \"parsing.p_string / unexpected string / { "
     ++# $'"expected = ##!!; got =  ##; rest =  ##!!magic\n\na; s = !(new_parser_state 0 1 1 11) }\\\""'
 )
 
@@ -1090,6 +1090,22 @@ inl block () =
 |> resultm.map fun block, b, s => { block with content = block.content () }, b, s
 |> unwrap_format
 |> _assert_eq #?*(Magic "magic", "a", "", new_parser_state 14 7 1 14)
+
+#!spiral
+
+///- --test
+
+"#!spiral"
+++\# ""
+++\# ""
+++\# "///- --real"
+++\# ""
+++\# ""
+++\# ""
+|> run_parser (block ())
+|> resultm.map fun block, b, s => { block with content = block.content () }, b, s
+|> unwrap_format
+|> _assert_eq #?*(Spir |> Spiral, "///- --real", "", new_parser_state 25 7 1 25)
 
 #!markdown
 
@@ -1563,6 +1579,8 @@ example1 ()
     "/// # TestModule (TestNamespace)"
     ++\# ""
     ++\# "/// ## ParserLibrary"
+    ++\# "///- --real"
+    ++\# ""
     ++\# "inl x = 2i32"
     ++\# ""
 )
@@ -3360,7 +3378,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
 #!spiral
 
 ///- --test
-///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2
+///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2 mlua['lua51','vendored']
 
 inl file_name = "main.fs"
 inl code = "let method0 () =\n    3 - 6 |> System.Console.WriteLine\nmethod0 ()\n"
@@ -3406,7 +3424,7 @@ get_command ()
 #!spiral
 
 ///- --test
-///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2
+///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2 mlua['lua51','vendored']
 
 inl file_name = "main.fs"
 inl code = "3 - 6 |> System.Console.WriteLine\n"
@@ -3422,7 +3440,8 @@ inl fs_path = temp_dir </> file_name
 code |> file_system.write_all_text fs_path
 
 get_command ()
-|> runtime.command_get_matches_from ($'$"_ fable -f \\\"{!fs_path}\\\" -c \\\"typescript\\\""' |> runtime.split_args |> resultm.get)
+|> runtime.command_get_matches_from
+    ($'$"_ fable -f \\\"{!fs_path}\\\" -c \\\"typescript\\\""' |> runtime.split_args |> resultm.get)
 |> run Verbose
 |> async.block_on_futures
 |> resultm.unwrap'
@@ -3448,7 +3467,7 @@ get_command ()
 #!spiral
 
 ///- --test
-///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2
+///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2 mlua['lua51','vendored']
 
 inl file_name = "main.fs"
 inl code = "3 - 6 |> System.Console.WriteLine\n"
@@ -3490,7 +3509,7 @@ get_command ()
 #!spiral
 
 ///- --test
-///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2
+///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2 mlua['lua51','vendored']
 
 inl file_name = "test.dib"
 inl code =

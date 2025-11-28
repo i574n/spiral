@@ -278,6 +278,8 @@ inl pad_right (total_width : int) (padding_char : char) (s : string) : string =
 /// ### convert_to_utf32
 inl convert_to_utf32 (c : char) : int =
     backend_switch {
+        Gleam = fun () => c |> convert.i32
+        Lua = fun () => c |> convert.i32
         Fsharp = fun () =>
             run_target_args' c function
             | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int

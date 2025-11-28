@@ -29,7 +29,9 @@ open rust_operators
 
 nominal join_handle t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::thread::JoinHandle<$0>\")>]\n#endif\ntype std_thread_JoinHandle<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::thread::JoinHandle<$0>\")>]\n#endif\ntype std_thread_JoinHandle<'T> = class end") : () -> ()
+        }
         $'' : $'std_thread_JoinHandle<`t>'
     )
 
@@ -109,7 +111,9 @@ inl new_arc forall t. (x : t) : arc t =
 
 nominal mutex t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::Mutex<$0>\")>]\n#endif\ntype std_sync_Mutex<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::Mutex<$0>\")>]\n#endif\ntype std_sync_Mutex<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_Mutex<`t>'
     )
 
@@ -139,7 +143,9 @@ inl new_mutex_mut forall t. (x : rust.ref (rust.mut' t)) : mutex t =
 
 nominal rw_lock t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::RwLock<$0>\")>]\n#endif\ntype std_sync_RwLock<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::RwLock<$0>\")>]\n#endif\ntype std_sync_RwLock<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_RwLock<`t>'
     )
 
@@ -251,9 +257,7 @@ inl new_partial_eq_wrapper_arc forall t. (x : arc t) : rust.partial_eq_wrapper (
 nominal mutex_guard t =
     `(
         backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::MutexGuard<$0>\")>]\n#endif\ntype std_sync_MutexGuard<'T> = class end"
-                        ) : () -> ()
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::MutexGuard<$0>\")>]\n#endif\ntype std_sync_MutexGuard<'T> = class end") : () -> ()
         }
         $'' : $'std_sync_MutexGuard<`t>'
     )
@@ -266,7 +270,9 @@ nominal mutex_guard t =
 
 nominal rw_lock_read_guard t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::RwLockReadGuard<$0>\")>]\n#endif\ntype std_sync_RwLockReadGuard<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::RwLockReadGuard<$0>\")>]\n#endif\ntype std_sync_RwLockReadGuard<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_RwLockReadGuard<`t>'
     )
 
@@ -278,7 +284,9 @@ nominal rw_lock_read_guard t =
 
 nominal rw_lock_write_guard t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::RwLockWriteGuard<$0>\")>]\n#endif\ntype std_sync_RwLockWriteGuard<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::RwLockWriteGuard<$0>\")>]\n#endif\ntype std_sync_RwLockWriteGuard<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_RwLockWriteGuard<`t>'
     )
 
@@ -290,7 +298,9 @@ nominal rw_lock_write_guard t =
 
 nominal poison_error t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::PoisonError<$0>\")>]\n#endif\ntype std_sync_PoisonError<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::PoisonError<$0>\")>]\n#endif\ntype std_sync_PoisonError<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_PoisonError<`t>'
     )
 
@@ -302,7 +312,9 @@ nominal poison_error t =
 
 nominal try_lock_error t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::TryLockError<$0>\")>]\n#endif\ntype std_sync_TryLockError<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::TryLockError<$0>\")>]\n#endif\ntype std_sync_TryLockError<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_TryLockError<`t>'
     )
 
@@ -443,7 +455,9 @@ inl mutex_guard_as_mut forall (t : * -> *) u. (x : mutex_guard (t u)) : t (rust.
 
 nominal channel_receiver t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::mpsc::Receiver<$0>\")>]\n#endif\ntype std_sync_mpsc_Receiver<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::mpsc::Receiver<$0>\")>]\n#endif\ntype std_sync_mpsc_Receiver<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_mpsc_Receiver<`t>'
     )
 
@@ -455,7 +469,9 @@ nominal channel_receiver t =
 
 nominal channel_sender t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::mpsc::Sender<$0>\")>]\n#endif\ntype std_sync_mpsc_Sender<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::mpsc::Sender<$0>\")>]\n#endif\ntype std_sync_mpsc_Sender<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_mpsc_Sender<`t>'
     )
 
@@ -476,7 +492,9 @@ inl new_channel () : channel_sender sm'.std_string * arc (channel_receiver sm'.s
 
 nominal send_error t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::mpsc::SendError<$0>\")>]\n#endif\ntype std_sync_mpsc_SendError<'T> = class end"
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::sync::mpsc::SendError<$0>\")>]\n#endif\ntype std_sync_mpsc_SendError<'T> = class end") : () -> ()
+        }
         $'' : $'std_sync_mpsc_SendError<`t>'
     )
 

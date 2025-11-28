@@ -26,25 +26,6 @@ nominal unativeint = $'unativeint'
 
 #!markdown
 
-### to''
-
-#!spiral
-
-inl to'' forall t u. (fn : t -> u) (x : t) : u =
-    real
-        typecase t * u with
-        | ~x * ~x => x
-        | int * int => conv `t `u x
-        // | float * float => conv `t `u x
-        // | int * float => conv `t `u x
-        // | float * int => conv `t `u x
-        // | char * bool => x = '1'
-        // | bool * char => if x then '1' else '0'
-        // | bool * _ => if x then 1 else 0
-        | _ => fn x
-
-#!markdown
-
 ### to'
 
 #!spiral
@@ -57,6 +38,8 @@ inl to' forall t u. (fn : t -> option u) (x : t) : option u =
         | float * float => Some `u (conv `t `u x)
         | int * float => Some `u (conv `t `u x)
         | float * int => Some `u (conv `t `u x)
+        | i64 * f64 => Some `u (conv `t `u x)
+        | f64 * i64 => Some `u (conv `t `u x)
         | char * bool => Some `u (x = '1')
         | bool * char => Some `u (if x then '1' else '0')
         | bool * _ => Some `u (if x then 1 else 0)
@@ -69,11 +52,9 @@ inl to' forall t u. (fn : t -> option u) (x : t) : option u =
 #!spiral
 
 inl to forall t u. (x : t) : u =
-    real
-        typecase t * u with
-        | ~x * ~x => x : u
-        | int * int => conv `t `u x
-        | _ => $'!x ' : u
+    x
+    |> to' fun x => $'!x ' |> Some
+    |> optionm.value
 
 #!markdown
 
@@ -205,7 +186,7 @@ inl convert forall t u. (x : t) : u =
 
 inl unbox forall t u. (x : t) : u =
     backend_switch {
-        Gleam = fun () => x |> to : u
+        Gleam = fun () => x |> convert : u
         Lua = fun () => x |> to : u
         Fsharp = fun () => $'!x |> unbox<`u>' : u
         Python = fun () => x |> to : u

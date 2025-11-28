@@ -1127,6 +1127,8 @@ inl pad_right (total_width : int) (padding_char : char) (s : string) : string =
 
 inl convert_to_utf32 (c : char) : int =
     backend_switch {
+        Gleam = fun () => c |> convert.i32
+        Lua = fun () => c |> convert.i32
         Fsharp = fun () =>
             run_target_args' c function
             | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int
@@ -2737,11 +2739,11 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
 #!spiral
 
 let ellipsis_end (max : i64) (s : string) =
-    inl len = sm.length s
+    inl len = s |> length
     if len <= max
     then s
     else
-        inl half = convert.f64 max / 2
+        inl half = (max |> convert.f64) / 2
         inl start_half = half |> math.ceil |> convert.i64
         inl end_half = half |> math.floor |> convert.i64
         inl start = s |> slice 0 (start_half - 1)
@@ -2752,20 +2754,9 @@ let ellipsis_end (max : i64) (s : string) =
 #!spiral
 
 ///- --test
+///> gleam
 ///> lua
 ///> fsharp
-
-"12345"
-|> ellipsis_end 2
-|> _assert_eq "1...5"
-
-"12345"
-|> ellipsis_end 3
-|> _assert_eq "12...5"
-
-"1234567"
-|> ellipsis_end 4
-|> _assert_eq "12...67"
 
 "12345"
 |> ellipsis_end 2

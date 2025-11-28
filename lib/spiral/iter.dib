@@ -157,4 +157,4 @@ am'.init_series 0i32 2 1
 |> fun x => a x : _ int _
 |> enumerate
 |> fun (a x : _ int _) => x
-|> _assert_eq' ;[ convert 0i32, 0; convert 1i32, 1; convert 2i32, 2 ]
+|> _assert_eq' ;[ convert.convert 0i32, 0; convert.convert 1i32, 1; convert.convert 2i32, 2 ]
