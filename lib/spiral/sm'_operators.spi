@@ -13,8 +13,14 @@ inl (~#) s =
 inl (~##) s =
     s |> sm'.(~##)
 
+inl (~###) s =
+    s |> sm'.(~###)
+
 inl (++#) a b =
     sm'.(++#) a b
+
+inl (++#?) a b =
+    sm'.(++#?) a b
 
 inl (++\\#) a b =
     sm'.(++\\#) a b

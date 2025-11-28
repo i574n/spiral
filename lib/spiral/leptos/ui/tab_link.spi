@@ -8,8 +8,8 @@ inl render { href icon label select } : _ (_ a') =
     !\\(href, $'"let !href = $0"')
     inl select_class () : rust.static_ref sm'.str =
         if select ()
-        then ##"border-grey-200 text-grey-900"
-        else ##"border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+        then ###"border-grey-200 text-grey-900"
+        else ###"border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
     inl select = select |> rust.emit
     inl select_class = select_class |> rust.emit
     a' [

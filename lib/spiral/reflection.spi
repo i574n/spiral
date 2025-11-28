@@ -1,4 +1,5 @@
 /// # reflection
+open sm'_operators
 
 /// ## reflection
 
@@ -137,8 +138,8 @@ inl union_to_string forall t. (x : t) : string =
                                 | _ => fun () => join " "
                         Python = fun () => "("
                     }
-                inl x' = x' |> sm'.format |> sm'.split separator |> am'.index_base 0
-                if x |> sm'.format |> sm'.starts_with x'
+                inl x' = #?x' |> sm'.split separator |> am'.index_base 0
+                if #?x |> sm'.starts_with x'
                 then Some key
                 else None
     |> optionm.value

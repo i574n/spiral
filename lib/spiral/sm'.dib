@@ -175,6 +175,15 @@ inl length forall dim {int}. (input : string) : dim =
 
 #!markdown
 
+### (~##)
+
+#!spiral
+
+inl (~##) s : int =
+    s |> length
+
+#!markdown
+
 ### to_char_list
 
 #!spiral
@@ -867,6 +876,15 @@ inl format forall t. (x : t) : string =
 
 inl (~#?) s =
     s |> format
+
+#!markdown
+
+### (++#?)
+
+#!spiral
+
+inl (++#?) (a : string) (b : _) : string =
+    a ++# #?b
 
 #!markdown
 
@@ -1941,11 +1959,11 @@ inl (~#) s =
 
 #!markdown
 
-### (~##)
+### (~###)
 
 #!spiral
 
-inl (~##) s =
+inl (~###) s =
     s |> raw_string_literal_static
 
 #!markdown

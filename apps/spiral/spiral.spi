@@ -172,7 +172,7 @@ inl read_file path =
         |> sm'.replace_regex $'@@"(?P<a> *)(?P<b>let\\s+main\\s+.*?\\s*=)"' "$a[<EntryPoint>]\n$a$b"
     inl code_trim = code |> sm'.trim_end []
     if code_trim |> sm'.ends_with "\\n()"
-    then code_trim |> sm'.slice 0i64 ((code_trim |> sm'.length) - 3)
+    then code_trim |> sm'.slice 0 (##code_trim - 3)
     else code
 
 /// ### persist_file
@@ -291,7 +291,7 @@ inl process_rust { fs_path deps trace_level runtime cleanup } =
     inl extension = "rs"
     inl code = fs_path |> file_system.read_all_text
 
-    inl hash = { extension code runtime } |> sm'.format |> crypto.hash_text
+    inl hash = #?{ extension code runtime } |> crypto.hash_text
 
     inl workspace_name = "spiral"
 
@@ -752,7 +752,7 @@ inl magic_command () =
     >>. many_chars_till (any_char ()) (new_line ())
     |>> fun s => fun () =>
         inl s = s () |> sm'.trim
-        trace Verbose (fun () => "spiral.magic_command") (fun () => { s_len = s |> sm'.length : int })
+        trace Verbose (fun () => "spiral.magic_command") (fun () => { s_len = ##s })
         s
 
 /// ### content
@@ -763,7 +763,7 @@ inl content () =
     |> many_chars_till (any_char ())
     |>> fun s => fun () =>
         inl s = s () |> sm'.trim
-        trace Verbose (fun () => "spiral.content") (fun () => { s_len = s |> sm'.length : int })
+        trace Verbose (fun () => "spiral.content") (fun () => { s_len = ##s })
         s
 
 /// ### dib_output
@@ -843,7 +843,7 @@ inl format_block output (block : block) =
         |> listm.map function
             | "" => markdown_comment
             | line =>
-                inl len = line |> sm'.length
+                inl len = ##line
                 let rec 루프 i =
                     if i >= len
                     then line
@@ -949,9 +949,9 @@ inl indent_block (block : block) =
     }
 
 /// ### parse
-inl parse output input =
+inl parse output t =
     trace Verbose (fun () => "spiral.parse") (fun () => {})
-    match input |> run_parser (blocks ()) with
+    match t |> run_parser (blocks ()) with
     | Ok (blocks, _, _) =>
         blocks
         |> listm'.filter fun block =>
@@ -1006,8 +1006,8 @@ inl parse_dib_code output file =
     trace Debug
         (fun () => "spiral.parse_dib_code")
         fun () => { output = output |> reflection.union_to_string; file }
-    inl input = file |> file_system.read_all_text
-    match parse output input with
+    inl t = file |> file_system.read_all_text
+    match parse output t with
     | Ok blocks => blocks |> format_blocks output
     | Error msg => msg () |> failwith
 
@@ -1049,7 +1049,9 @@ inl process_dib { path retries working_directory cleanup } =
         let rec 루프 retry =
             inl exit_code, repl_result =
                 runtime.execution_options fun x => { x with
-                    command = $'$"dotnet repl --exit-after-run --run \\\"{!path}\\\" --output-path \\\"{!ipynb_path}\\\""'
+                    command =
+                        $'$"dotnet repl --exit-after-run --run \\\"{!path}\\\""'
+                        ++# $'$" --output-path \\\"{!ipynb_path}\\\""'
                     environment_variables = ;[
                         "TRACE_LEVEL", "Verbose"
                         "AUTOMATION", "True"
@@ -1086,7 +1088,7 @@ inl process_dib { path retries working_directory cleanup } =
 
             trace Debug
                 fun () => "spiral.process_dib / dib / jupyter nbconvert"
-                fun () => { exit_code jupyter_result_length = jupyter_result |> sm'.length : i32 }
+                fun () => { exit_code jupyter_result_len = ##jupyter_result }
 
             if exit_code <>. 0
             then exit_code, $'$"repl_result: {!repl_result}\n\njupyter_result: {!jupyter_result}"'
@@ -1098,13 +1100,16 @@ inl process_dib { path retries working_directory cleanup } =
 
                 inl exit_code, pwsh_replace_html_result =
                     runtime.execution_options fun x => { x with
-                        command = $'$"pwsh -c \\\"$counter = 1; $path = \'{!(html_path |> sm'.replace "'" "''")}\'; (Get-Content $path -Raw) -replace \'(id=\\\\\\"cell-id=)[a-fA-F0-9]{{8}}\', {{ $_.Groups[1].Value + $counter++ }} | Set-Content $path\\\""'
+                        command =
+                            $'$"pwsh -c \\\"$counter = 1; $path = \'{!(html_path |> sm'.replace "'" "''")}\';"'
+                            ++# $'$" (Get-Content $path -Raw) -replace \'(id=\\\\\\"cell-id=)[a-fA-F0-9]{{8}}\',"'
+                            ++# $'$" {{ $_.Groups[1].Value + $counter++ }} | Set-Content $path\\\""'
                     }
                     |> runtime.execute_with_options
 
                 trace Debug
                     fun () => "spiral.run / dib / html cell ids"
-                    fun () => { exit_code pwsh_replace_html_result_length = pwsh_replace_html_result |> sm'.length : i32 }
+                    fun () => { exit_code pwsh_replace_html_result_len = ##pwsh_replace_html_result }
 
                 exit_code, $'$"repl_result: {!repl_result}\n\njupyter_result: {!jupyter_result}\n\npwsh_replace_html_result: {!pwsh_replace_html_result}"'
 
@@ -1116,7 +1121,7 @@ inl process_dib { path retries working_directory cleanup } =
 
     trace Debug
         fun () => "spiral.process_dib / dib"
-        fun () => { exit_code result_length = result |> sm'.length : i32 }
+        fun () => { exit_code result_len = ##result }
 
     if exit_code <>. 0
     then $'$"spiral.process_dib / dib / exit_code: {!exit_code} / result: \'{!result}\'"' |> failwith
@@ -1133,7 +1138,7 @@ inl process_typescript { fs_path deps trace_level } =
 
     inl code = fs_path |> file_system.read_all_text
 
-    inl hash = { extension code } |> sm'.format |> crypto.hash_text
+    inl hash = #?{ extension code } |> crypto.hash_text
 
     inl workspace_name = "spiral"
 
@@ -1378,7 +1383,7 @@ inl process_python { fs_path deps trace_level } =
 
     inl code = fs_path |> file_system.read_all_text
 
-    inl hash = { extension code } |> sm'.format |> crypto.hash_text
+    inl hash = #?{ extension code } |> crypto.hash_text
 
     inl workspace_name = "spiral"
 
@@ -1538,7 +1543,7 @@ inl process_gleam { gleam_path target deps } =
     inl new_code_path = gleam_path
     inl new_code = new_code_path |> file_system.read_all_text
 
-    inl hash = { extension new_code } |> sm'.format |> crypto.hash_text
+    inl hash = #?{ extension new_code } |> crypto.hash_text
 
     inl workspace_root_external = file_system.get_workspace_root_external ()
     inl workspace_root =
@@ -1816,7 +1821,7 @@ inl process_lua { lua_path } =
     inl new_code_path = lua_path
     inl new_code = new_code_path |> file_system.read_all_text
 
-    inl hash = { extension new_code } |> sm'.format |> crypto.hash_text
+    inl hash = #?{ extension new_code } |> crypto.hash_text
 
     inl workspace_root_external = file_system.get_workspace_root_external ()
     inl workspace_root =
@@ -2134,18 +2139,18 @@ inl get_args () =
 
 /// ### get_command
 let get_command () =
-    ##"command"
+    ###"command"
     |> runtime.new_command
     |> runtime.command_subcommand_required true
     |> runtime.command_subcommand (
-        ##(get_args () .fsharp |> fst)
+        ###(get_args () .fsharp |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .fsharp |> snd).spi_path) (
             runtime.arg_required true
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .gleam |> fst)
+        ###(get_args () .gleam |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
             runtime.arg_required true
@@ -2154,7 +2159,7 @@ let get_command () =
             real runtime.arg_union `gleam_target ignore
         )
         |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -2165,7 +2170,7 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .cuda |> fst)
+        ###(get_args () .cuda |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .cuda |> snd).py_path) (
             runtime.arg_required true
@@ -2174,7 +2179,7 @@ let get_command () =
             real runtime.arg_union `cuda_env ignore
         )
         |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -2185,7 +2190,7 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .fable |> fst)
+        ###(get_args () .fable |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .fable |> snd).fs_path) (
             runtime.arg_required true
@@ -2195,13 +2200,13 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .rust |> fst)
+        ###(get_args () .rust |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .rust |> snd).fs_path) (
             runtime.arg_required true
         )
         |> runtime.command_init_arg ((get_args () .rust |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -2236,13 +2241,13 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .typescript |> fst)
+        ###(get_args () .typescript |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .typescript |> snd).fs_path) (
             runtime.arg_required true
         )
         |> runtime.command_init_arg ((get_args () .typescript |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -2253,13 +2258,13 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .python |> fst)
+        ###(get_args () .python |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .python |> snd).fs_path) (
             runtime.arg_required true
         )
         |> runtime.command_init_arg ((get_args () .python |> snd).deps) (
-            runtime.arg_value_names ;[ ##"NAME"; ##"VERSION" ]
+            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -2270,7 +2275,7 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .dib |> fst)
+        ###(get_args () .dib |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .dib |> snd).path) (
             runtime.arg_required true
@@ -2293,13 +2298,13 @@ let get_command () =
             inl ext = "" |> sm'.to_std_string
             Ok (path, ext)
             |> resultm.box
-        ##(get_args () .dib_export |> fst)
+        ###(get_args () .dib_export |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .dib_export |> snd).entries) (
             runtime.arg_required true
             // >> runtime.arg_value_parser (!\\(parse, $'"clap::value_parser\!(String).into()"'))
             >> runtime.arg_index 1
-            >> runtime.arg_value_names ;[ ##"PATH"; ##"EXT" ]
+            >> runtime.arg_value_names ;[ ###"PATH"; ###"EXT" ]
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -2310,7 +2315,7 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ##(get_args () .lua |> fst)
+        ###(get_args () .lua |> fst)
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (
             runtime.arg_required true
@@ -2526,7 +2531,9 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 |> optionm'.unbox
                 |> optionm.map (fun (entries : am'.vec sm'.std_string) =>
                     entries
-                    |> fun x => !\\(x, $'$"$0.chunks_exact(2).map(|chunk| chunk.to_vec()).collect()"') : am'.vec (am'.vec sm'.std_string)
+                    |> fun x =>
+                        !\\(x, $'$"$0.chunks_exact(2).map(|chunk| chunk.to_vec()).collect()"')
+                        : am'.vec (am'.vec sm'.std_string)
                     |> am'.vec_map' fun chunk =>
                         inl exts () =
                             reflection.get_union_fields_untag () : _ (_ * dib_output)
@@ -2538,8 +2545,10 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                             | [ path; ext ] =>
                                 match ext |> sm'.from_std_string |> reflection.union_try_pick with
                                 | Some (ext : dib_output) => (path |> sm'.from_std_string, ext) |> Ok
-                                | None => "spiral.run / invalid ext / " ++# ({ ext exts } |> sm'.format) |> Error
-                            | _ => "spiral.run / invalid entries / " ++# ({ entries = entries |> rust.clone; exts } |> sm'.format) |> Error
+                                | None => "spiral.run / invalid ext / " ++#? { ext exts } |> Error
+                            | _ =>
+                                "spiral.run / invalid entries / " ++#? { entries = entries |> rust.clone; exts }
+                                |> Error
                             |> resultm.get
                     |> am'.from_vec_base
                     |> am'.to_list_base'

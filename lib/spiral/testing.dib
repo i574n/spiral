@@ -43,8 +43,8 @@ inl rec __expect
     inl result = fn a b
     inl get_data () =
         if result
-        then { expected = b } |> sm'.format
-        else { actual = a; expected = b } |> sm'.format
+        then #?{ expected = b }
+        else #?{ actual = a; expected = b }
     inl get_raw_text () =
         inl data = get_data ()
         name ++# " " ++# get_data ()
@@ -243,9 +243,8 @@ inl rec _assert_fn fn list =
                     trace Verbose
                         fun () => name
                         fun () => { input }
-                    x
-                    |> sm'.format
-                    |> _assert_eq' (expected' |> sm'.format)
+                    #?x
+                    |> _assert_eq' #?expected'
                     true
                 fun ex =>
                     trace Critical
@@ -256,7 +255,7 @@ inl rec _assert_fn fn list =
     |> listm'.filter not
     |> function
         | [] => ()
-        | x => x |> sm'.format_debug |> failwith
+        | x => #?*x |> failwith
 
 #!spiral
 
@@ -300,7 +299,7 @@ inl _assert_in items x =
     |> function
         | Some _ => ()
         | None =>
-            "_assert_in / " ++# ({ x items } |> sm'.format) |> failwith
+            "_assert_in / " ++#? { x items } |> failwith
 
 #!markdown
 
@@ -376,6 +375,6 @@ inl _throws (fn : () -> ()) : option exn =
 
 inl rec print_and_return x =
     inl name = reflection.nameof { print_and_return }
-    name ++# ({ x } |> sm'.format)
+    name ++#? { x }
     |> console.write_line
     x

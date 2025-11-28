@@ -365,7 +365,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
             inl locals = locals ()
             join
                 inl count = *trace_state.count
-                time ++# " "  ++# #?count ++# level_str ++# " " ++# text ++# " / " ++# #?locals
+                time ++# " "  ++#? count ++# level_str ++# " " ++# text ++# " / " ++#? locals
                 |> fun x =>
                     join
                         x

@@ -1,6 +1,7 @@
 /// # crypto
 open rust
 open rust_operators
+open sm'_operators
 
 /// ## fsharp
 

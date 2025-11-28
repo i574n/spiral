@@ -700,7 +700,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
     let run 루프 n error path' =
         inl name = path' |> get_file_name
         inl parent = path' |> directory_get_parent |> optionm'.unbox
-        inl error'' = error |> sm'.format
+        inl error'' = #?error
         match parent with
         | _ when n >= 11 =>
             ($'$"file_system.read_link / "' : string)

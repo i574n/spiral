@@ -39,6 +39,10 @@ inl index i (str : string) : char =
 inl length forall dim {int}. (input : string) : dim =
     input |> sm.length
 
+/// ### (~##)
+inl (~##) s : int =
+    s |> length
+
 /// ### to_char_list
 inl to_char_list (str : string) : list char =
     listm.init (str |> length) (fun (i : i64) => str |> index i)
@@ -193,6 +197,10 @@ inl format forall t. (x : t) : string =
 /// ### (~#?)
 inl (~#?) s =
     s |> format
+
+/// ### (++#?)
+inl (++#?) (a : string) (b : _) : string =
+    a ++# #?b
 
 /// ### to_char_array
 inl to_char_array (str : string) : array_base char =
@@ -689,8 +697,8 @@ inl raw_string_literal_static (s : string) : rust.static_ref str =
 inl (~#) s =
     s |> raw_string_literal
 
-/// ### (~##)
-inl (~##) s =
+/// ### (~###)
+inl (~###) s =
     s |> raw_string_literal_static
 
 /// ### include_str

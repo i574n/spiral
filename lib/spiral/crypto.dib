@@ -17,6 +17,7 @@ open file_system_operators
 
 open rust
 open rust_operators
+open sm'_operators
 
 #!markdown
 
@@ -72,8 +73,7 @@ inl file_name = "test.txt"
 inl text = "\n"
 
 inl temp_dir, disposable =
-    (file_name, text)
-    |> sm'.format_debug
+    #?*(file_name, text)
     |> crypto.hash_text
     |> file_system.create_temp_dir'
 disposable |> use |> ignore
@@ -194,8 +194,7 @@ inl file_name = join "test.txt"
 inl text = "\n"
 
 inl temp_dir, disposable =
-    (file_name, text)
-    |> sm'.format_debug
+    #?*(file_name, text)
     |> crypto.hash_text
     |> file_system.create_temp_dir'
 disposable |> use |> ignore
@@ -217,8 +216,7 @@ inl file_name = join "test.txt"
 inl text = ""
 
 inl temp_dir, disposable =
-    (file_name, text)
-    |> sm'.format_debug
+    #?*(file_name, text)
     |> crypto.hash_text
     |> file_system.create_temp_dir'
 disposable |> use |> ignore

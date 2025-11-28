@@ -495,9 +495,8 @@ inl log_pretty (text : string) =
 
 /// ### log_format
 inl log_format fn obj =
-    inl obj_log = obj |> sm'.format_debug
-    inl text = fn obj_log |> sm'.ellipsis_end 200
-    log text
+    inl text = #?*obj |> fn |> sm'.ellipsis_end 200
+    text |> log
     obj
 
 /// ### mount_to_body

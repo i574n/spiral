@@ -36,7 +36,7 @@ inl get_args () =
 #!spiral
 
 let get_command () =
-    ##"command"
+    ###"command"
     |> runtime.new_command
     |> runtime.command_args_override_self true
     |> runtime.command_init_arg (get_args () .exception) (
@@ -133,7 +133,7 @@ let rec run
 
                 trace Verbose (fun () => "spiral_wasm.run") fun () => { borsh }
 
-                inl error = { receipt_outcomes_len retry receipt_failures } |> sm'.format
+                inl error = #?{ receipt_outcomes_len retry receipt_failures }
                 if receipt_failures_len > 0
                 then (Ok (Some error) : _ _ resultm.anyhow_error) |> resultm.box
                 elif receipt_outcomes_len > 1
@@ -180,7 +180,7 @@ let rec run
 
         match retries with
         | Ok { retry } => Ok retry |> resultm.box
-        | Error { retry error } => { retries error } |> sm'.format |> resultm.anyhow_error |> resultm.err
+        | Error { retry error } => #?{ retries error } |> resultm.anyhow_error |> resultm.err
 
     |> async.new_future_move
 

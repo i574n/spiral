@@ -11,7 +11,7 @@ let split_args (args : string) : result (array_base string) _ =
     inl esc = [ '\\'; '`' ]
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
-    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => #?c ++# #?(c' ())
+    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => #?c ++#? (c' ())
     inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
     inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
     inl p_esc = esc |> listm.map p_esc_char |> choice
@@ -22,7 +22,7 @@ let split_args (args : string) : result (array_base string) _ =
         esc
         |> listm.map fun c => p_char c >>. p_char '"' >>% '"'
         |> choice
-    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => #?c ++# #?(c' ())
+    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => #?c ++#? (c' ())
     inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
     inl p_quoted_esc = (p_word <|> p_esc_noquote) |> many_strings
     inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
@@ -518,10 +518,10 @@ inl command_args_override_self (yes : bool) (command : command) : command =
 inl command_init_arg (long, short) fn command =
     command
     |> command_arg (
-        ##long
+        ###long
         |> new_arg
         |> arg_short short
-        |> arg_long ##long
+        |> arg_long ###long
         |> fn
     )
 
@@ -705,7 +705,7 @@ let execute_with_options (options : execution_options) : i32 * string =
         |> am'.vec_map sm'.to_std_string
     trace Debug
         fun () => "runtime.execute_with_options"
-        fun () => { file_name arguments = arguments |> sm'.format_debug; options }
+        fun () => { file_name arguments = #?*arguments; options }
     fun () =>
         fun () =>
             // inl new_command_mutex (command : rust.ref (rust.mut' process_command)) : threading.arc (threading.mutex process_command) =
@@ -870,16 +870,12 @@ let execute_with_options (options : execution_options) : i32 * string =
                     | Error error =>
                         trace Critical
                             fun () => "runtime.execute_with_options / output error"
-                            fun () => {
-                                error file_name arguments = arguments |> sm'.format_debug; options
-                            }
+                            fun () => { error file_name arguments = #?*arguments; options }
                         -2i32, error |> Some, None
                 | Error error =>
                     trace Critical
                         fun () => "runtime.execute_with_options / child error"
-                        fun () => {
-                            error file_name arguments = arguments |> sm'.format_debug; options
-                        }
+                        fun () => { error file_name arguments = #?*arguments; options }
                     -1i32, error |> Some, None
             |> function
                 | exit_code, std_trace, channel_receiver =>
@@ -907,9 +903,7 @@ let execute_with_options (options : execution_options) : i32 * string =
                         )
                     trace Verbose
                         fun () => "runtime.execute_with_options / result"
-                        fun () => {
-                            file_name exit_code std_trace_length = std_trace |> sm'.length : i32
-                        }
+                        fun () => { file_name exit_code std_trace_len = ##std_trace }
                     new_pair exit_code std_trace
         |> capture
     // |> async.new_future_move

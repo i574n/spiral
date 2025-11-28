@@ -158,7 +158,7 @@ inl format (format : string) (date_time : date_time) : string =
                 then "M-D-YY hh:mm:ss A"
                 else format
             $'!tempo_date_time |> datetime.format(tempo.Custom(!format))' : string
-            // { date_time format date time_of_day duration timestamp tempo_date_time } |> sm'.format
+            // #?{ date_time format date time_of_day duration timestamp tempo_date_time }
         Fsharp = fun () =>
             inl format =
                 if format = ""
@@ -633,9 +633,9 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
             guid'
             |> sm'.obj_to_string
             |> sm'.range
-                (am'.Start ((prefix |> sm'.length |> fun x => x : i32) + (time_zone |> sm'.length)))
+                (am'.Start (##prefix + ##time_zone))
                 (am'.End eval)
-        ($'$"{!prefix}{!time_zone}{!guid_range}"' : string) |> guid.new_guid
+        prefix ++# time_zone ++# guid_range |> guid.new_guid
     run_target function
         | Rust (Some (Contract)) => fun () => null ()
         | Rust (None | Some (Wasm)) => fun () =>

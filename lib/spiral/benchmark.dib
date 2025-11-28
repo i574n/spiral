@@ -12,6 +12,10 @@
 
 open testing
 
+#!spiral
+
+open sm'_operators
+
 #!markdown
 
 ## fsharp
@@ -61,7 +65,7 @@ inl run forall input expected.
     ((input, expected) : (input * expected))
     : test_case_result
     =
-    inl input_str = input |> sm'.format_debug
+    inl input_str = #?*input
 
     console.write_line ""
     trace Verbose
@@ -89,7 +93,7 @@ inl run forall input expected.
 
     {
         input = input_str
-        expected = expected |> sm'.format_debug
+        expected = #?*expected
         result = results_with_time |> am'.map_base fst |> (fun x => a x : _ int _) |> am'.index 0 |> sm'.format_debug
         time_list = results_with_time |> am'.map_base snd
     }

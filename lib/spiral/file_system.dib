@@ -1175,7 +1175,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
     let run 루프 n error path' =
         inl name = path' |> get_file_name
         inl parent = path' |> directory_get_parent |> optionm'.unbox
-        inl error'' = error |> sm'.format
+        inl error'' = #?error
         match parent with
         | _ when n >= 11 =>
             ($'$"file_system.read_link / "' : string)
@@ -1271,7 +1271,7 @@ let normalize_path (path : string) : string =
             then path
             else result
         inl result' = result |> sm'.replace_regex @"^\\\\\?\\" ""
-        if sm'.length result' < 2i32
+        if ##result' < 2
         then path
         else $'$"{!result'.[0] |> string |> _.ToLower()}{!result'.[1..]}"' |> sm'.replace "\\" "/"
 
@@ -1637,8 +1637,7 @@ inl file_name = "LICENSE"
 inl text = file_name
 
 inl test_hash =
-    (file_name, text)
-    |> sm'.format_debug
+    #?*(file_name, text)
     |> crypto.hash_text
 
 inl workspace_root = get_workspace_root ()

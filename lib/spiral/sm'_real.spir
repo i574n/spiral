@@ -48,6 +48,8 @@ inl symbol_to_string_real forall t {symbol}. : string =
 
 /// ### length
 
+/// ### (~##)
+
 /// ### to_char_list
 
 /// ### to_char_array
@@ -324,6 +326,8 @@ let format_real forall t. (x : t) : string =
 
 /// ### (~#?)
 
+/// ### (++#?)
+
 /// ### to_char_array
 
 /// ### concat_array
@@ -450,7 +454,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### (~#)
 
-/// ### (~##)
+/// ### (~###)
 
 /// ### include_str
 
