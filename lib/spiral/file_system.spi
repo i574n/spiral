@@ -791,7 +791,7 @@ let normalize_path (path : string) : string =
             then path
             else result
         inl result' = result |> sm'.replace_regex @"^\\\\\?\\" ""
-        if sm'.length result' < 2i32
+        if ##result' < 2
         then path
         else $'$"{!result'.[0] |> string |> _.ToLower()}{!result'.[1..]}"' |> sm'.replace "\\" "/"
 

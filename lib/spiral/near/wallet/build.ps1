@@ -78,7 +78,7 @@ $jsFile = ($html | Select-String -Pattern "import init, \* as bindings from '\./
 # Copy-Item public/manifest.json dist/manifest.json -Force
 
 #
-{ Copy-Item ./public/* ./dist -Recurse -Force } | Invoke-Block -OnError Continue
+# { Copy-Item ./public/* ./dist -Recurse -Force } | Invoke-Block -OnError Continue
 
 if (!$fast) {
     { . $(Search-Command bun) test:e2e } | Invoke-Block -OnError Continue
