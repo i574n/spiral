@@ -331,7 +331,7 @@ inl to_lower (input : string) : string =
         Gleam = fun () =>
             global "import gleam/string"
             $'!input |> string.lowercase' : string
-        Lua = fun () => $'!input:lower()' : string
+        Lua = fun () => $'string.lower(!input)' : string
         Fsharp = fun () => $'!input.ToLower' () : string
         Python = fun () => $'!input.lower()' : string
     }
@@ -346,7 +346,7 @@ inl char_to_upper (input : char) : char =
         Gleam = fun () =>
             global "import gleam/string"
             $'!input |> string.uppercase' : char
-        Lua = fun () => $'!input:upper()' : char
+        Lua = fun () => $'string.upper(!input)' : char
         Fsharp = fun () => $'System.Char.ToUpper !input ' : char
         Python = fun () => $'!input.upper()' : char
     }

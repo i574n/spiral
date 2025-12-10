@@ -91,9 +91,14 @@ inl init_trace_state trace_level : () =
     backend_switch {
         Gleam = fun () =>
             global "fn trace_state () { option.None }"
-            $'let trace_state = fn () { case trace_state () { option.None -> !new_trace_state(!trace_level) |> option.Some' : ()
-            $'  x -> x' : ()
-            $'}}' : ()
+            $'let new_trace_state = !new_trace_state ' : ()
+            $'let trace_level = !trace_level ' : ()
+            $'let trace_state = fn () {' : ()
+            $'  case trace_state () {' : ()
+            $'    option.None -> new_trace_state(trace_level) |> option.Some' : ()
+            $'    x -> x' : ()
+            $'  }' : ()
+            $'}' : ()
         Lua = fun () =>
             global "trace_state = nil"
             $'if trace_state == nil then trace_state = !new_trace_state(!trace_level) end' : ()

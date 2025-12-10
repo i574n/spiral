@@ -1742,12 +1742,91 @@ let symbol s =
 
 #!markdown
 
+### TripleString
+
+#!fsharp
+
+module TripleString =
+    let mutable in_triple = false
+    let inline is_open () = in_triple
+    let inline open' () = in_triple <- true
+    let inline close () = in_triple <- false
+
+#!markdown
+
+### MultiComment
+
+#!fsharp
+
+module MultiComment =
+    let mutable depth = 0
+    let inline in_comment () = depth > 0
+    let inline open' () = depth <- depth + 1
+    let inline close () = if depth > 0 then depth <- depth - 1
+    let inline reset () = depth <- 0
+
+#!markdown
+
+### reset_lexical_state
+
+#!fsharp
+
+let reset_lexical_state () =
+    MultiComment.reset ()
+    TripleString.close ()
+
+#!markdown
+
+### multi_comment_marker
+
+#!fsharp
+
+let multi_comment_marker = '\u0001'
+
+#!markdown
+
+### multiline_comment
+
+#!fsharp
+
+let multiline_comment (s : Tokenizer) =
+    let from = s.from
+    let len = s.text.Length
+    let body_from = s.from
+    if body_from >= len then
+        Error []
+    else
+        let mutable i = s.from
+        while i + 1 < len && MultiComment.in_comment() do
+            if s.text.[i] = '(' && s.text.[i+1] = '*' then
+                MultiComment.open'()
+                i <- i + 2
+            elif s.text.[i] = '*' && s.text.[i+1] = ')' then
+                MultiComment.close()
+                i <- i + 2
+            else
+                i <- i + 1
+        let i_end = if MultiComment.in_comment() then len else i
+        let text =
+            if body_from < i_end then s.text.Substring(body_from, i_end - body_from)
+            else ""
+        s.from <- i_end
+        Ok ({from=from; nearTo=s.from},
+            TokComment (string multi_comment_marker + text))
+
+#!markdown
+
 ### comment
 
 #!fsharp
 
 let comment (s : Tokenizer) =
-    if peek s = '/' && peek' s 1 = '/' then
+    if TripleString.is_open() then
+        let from = s.from
+        let content = s.text.Substring(from)
+        s.from <- s.text.Length
+        Ok ({from=from; nearTo=s.from}, TokText (content + "\n"))
+    elif peek s = '/' && peek' s 1 = '/' then 
         let from = s.from
         inc' 2 s
         while peek s = '/' || ((peek s = '!' || peek s = '-' || peek s = '>') && peek' s 1 = ' ') do
@@ -1757,6 +1836,29 @@ let comment (s : Tokenizer) =
             s.from <- s.text.Length
             Ok ({from=from; nearTo=s.from}, TokComment com)
         else error_char s.from "whitespace"
+    elif peek s = '(' && peek' s 1 = '*' && peek' s 2 = ' ' then
+        let from = s.from
+        inc' 2 s
+        let body_from = s.from
+        let len = s.text.Length
+        let mutable depth = 1
+        let mutable i = s.from
+        let inline at j c = j < len && s.text.[j] = c
+        while i < len && depth > 0 do
+            if at i '(' && at (i+1) '*' then
+                depth <- depth + 1
+                i <- i + 2
+            elif at i '*' && at (i+1) ')' then
+                depth <- depth - 1
+                i <- i + 2
+            else
+                i <- i + 1
+        if depth <> 0 then
+            Error [{from=from; nearTo=i}, "Unterminated multiline comment. Expected '*)'."]
+        else
+            let content = s.text.Substring(body_from, i - 2 - body_from)
+            s.from <- i
+            Ok ({from=from; nearTo=s.from}, TokComment content)
     else
         error_char s.from "comment"
 
@@ -1826,6 +1928,68 @@ let inline special_char l text s =
     | x when x = lineParsersEol -> error_char s.from "character"
     | 'n' -> esc '\n' | 'r' -> esc '\r'  | 't' -> esc '\t'  | 'b' -> esc '\b'
     | x -> unesc x
+
+#!markdown
+
+### string_triple_line
+
+#!fsharp
+
+let string_triple_line (s : Tokenizer) =
+    let text = s.text
+    let len = text.Length
+    if TripleString.is_open() then
+        let body_from = s.from
+        let idx = text.IndexOf("\"\"\"", body_from)
+        if idx >= 0 then
+            let body =
+                if body_from < idx then
+                    [ ({from=body_from; nearTo=idx},
+                        TokText (text.Substring(body_from, idx - body_from))) ]
+                else []
+            s.from <- idx + 3
+            TripleString.close()
+            Ok (body @ [ ({from=idx; nearTo=s.from}, TokStringClose) ])
+        else
+            let content =
+                if body_from < len then
+                    text.Substring(body_from, len - body_from) + "\n"
+                else
+                    "\n"
+            let t = ({from=body_from; nearTo=len}, TokText content)
+            s.from <- len
+            Ok [t]
+    elif peek s = '"' && peek' s 1 = '"' && peek' s 2 = '"' then
+        let from_open = s.from
+        inc' 3 s
+        let body_from = s.from
+        let text = s.text
+        let len = text.Length
+        let idx = text.IndexOf("\"\"\"", body_from)
+        if idx >= 0 then
+            let open_tok  = ({from=from_open; nearTo=from_open+3}, TokStringOpen)
+            let body =
+                if body_from < idx then
+                    [ ({from=body_from; nearTo=idx},
+                        TokText (text.Substring(body_from, idx - body_from))) ]
+                else []
+            s.from <- idx + 3
+            let close_tok = ({from=idx; nearTo=s.from}, TokStringClose)
+            Ok (open_tok :: body @ [close_tok])
+        else
+            let open_tok  = ({from=from_open; nearTo=from_open+3}, TokStringOpen)
+            let content =
+                if body_from < len then
+                    text.Substring(body_from, len - body_from) + "\n"
+                else
+                    "\n"
+            let body =
+                [ ({from=body_from; nearTo=len}, TokText content) ]
+            s.from <- len
+            TripleString.open' ()
+            Ok (open_tok :: body)
+    else
+        Error [{from=s.from; nearTo=s.from}, "triple-string: not a triple opener nor continuation"]
 
 #!markdown
 
@@ -1915,6 +2079,17 @@ let tab s = if peek s = '\t' then Error [range_char (index s), "Tabs are not all
 
 let tokenizeEol s = if peek s = lineParsersEol then Ok [] else Error [range_char (index s), "end of line"]
 
+#!fsharp
+
+let inline with_advance (p: Tokenizer -> Result<'a,(TokenizerRange * string) list>) : Tokenizer -> Result<'a,(TokenizerRange * string) list> =
+    fun s ->
+        let i0 = s.from
+        match p s with
+        | Ok x when s.from > i0 -> Ok x
+        | Ok _ ->
+            Error [{from=i0; nearTo=i0}, "tokenizer: zero-length token"]
+        | Error e -> Error e
+
 #!markdown
 
 ### token
@@ -1924,8 +2099,16 @@ let tokenizeEol s = if peek s = lineParsersEol then Ok [] else Error [range_char
 let rec token s =
     let i = s.from
     let inline (+) a b = alt i a b
-    let individual_tokens = string_quoted + hexNumber + tokenizeNumber + ((var + symbol + string_raw + char_quoted + brackets + comment + operator) |>> fun x -> [x]) |>> fun x -> x, []
-    (macro + individual_tokens) s
+    let individual_tokens =
+        (string_triple_line .>> spaces)
+        + string_quoted
+        + hexNumber + tokenizeNumber
+        + ((var + symbol + string_raw + char_quoted + (comment .>> spaces) + brackets + operator)
+            |>> function
+                | (_, TokComment _) -> []
+                | t -> [t])
+        |>> fun x -> x, []
+    ((macro + individual_tokens) |> with_advance) s
 and tokenize text =
     let mutable ar = PersistentVector.empty
     let mutable er = []
@@ -1934,7 +2117,13 @@ and tokenize text =
             List.iter (fun x -> ar <- PersistentVector.conj x ar) x
             er <- List.append er' er
             ) token
-    let er = match (spaces >>. tokens .>> (tokenizeEol <|> tab)) {from=0; text=text} with Ok() -> er | Error er' -> List.append er' er
+    let parser =
+        let body = tokens .>> (tokenizeEol <|> tab)
+        fun s ->
+            if TripleString.is_open() then body s
+            else (spaces >>. body) s
+    let er =
+        match parser {from=0; text=text} with Ok() -> er | Error er' -> List.append er' er
     ar, er
 and macro s =
     let char_to_macro_expr = function
@@ -4334,8 +4523,14 @@ and root_term d =
         let i = col d
         let inline if_ x = blockParsingIndent i x
         let stmts =
-            many1 (if_ (=) (blockParsingRange statement_parsers)) .>>. opt ((if_ (<=) (skip_keyword SpecIn) >>. root_term) <|> if_ (=) next)
-            >>= fun (a,b) _ -> match b with Some b -> Ok(a,b) | None -> Error [List.last a |> fst, ExpectedExpression]
+            many1 (if_ (=) (blockParsingRange statement_parsers))
+            .>>. opt ((if_ (<=) (skip_keyword SpecIn) >>. root_term) <|> if_ (=) next)
+            >>= fun (a,b) _ ->
+                match b with
+                | Some b -> Ok(a,b)
+                | None ->
+                    let r = List.last a |> fst
+                    Ok (a, RawB r)
         let expr = if_ (=) next |>> fun x -> [],x
         (many1 (stmts <|> expr)
         |>> fun x ->
@@ -13735,9 +13930,14 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
             match d with
             | None -> $"return {x}           "
             | Some d ->
-                match free_vars false d |> SpiralSm.trim with
-                | "nil" -> $"{x}            "
-                | d -> sprintf "local %s = %s" d x
+                match data_free_vars d with
+                | [||] -> $"{x}            "
+                | [|_|] ->
+                    let names = free_vars false d |> SpiralSm.trim
+                    sprintf "local %s = %s" names x
+                | _ ->
+                    let names = free_vars false d |> SpiralSm.trim
+                    sprintf "local %s = (table.unpack or unpack)(%s)" names x
             |> line s
         let complex f =
             match d with
@@ -13757,7 +13957,7 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
                 | WLit x -> sprintf "l%i = %s" i (litLua x)
             a |> data_term_vars |> Array.mapi f |> String.concat ", "
         let layout_index i x =
-            x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
+            x |> Array.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
             |> String.concat ", "
             |> function "" -> () | x -> simple x
         let length (a,b) =
@@ -13826,40 +14026,97 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
         | TyUnionUnbox(is,x,on_succs,on_fail) ->
             complex <| fun s ->
             let case_tags = x.Item.tags
-            let vs = is |> List.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+            let vs =
+                is
+                |> List.map (fun (L(i,_)) -> sprintf "v%i" i)
+                |> String.concat ", "
             line s (sprintf "local __v = { %s }" vs)
-            let prefix =
-                let x = x.Item
-                match x.layout with
-                | UHeap -> sprintf "Uh%i" (uheap x.cases).tag
-                | UStack -> sprintf "Us%i" (ustack x.cases).tag
+
+            let xUnion = x.Item
+            let unionRec, prefix =
+                match xUnion.layout with
+                | UHeap ->
+                    let u = uheap xUnion.cases
+                    u, sprintf "Uh%i" u.tag
+                | UStack ->
+                    let u = ustack xUnion.cases
+                    u, sprintf "Us%i" u.tag
+
+            let scrutineeIds =
+                is |> List.map (fun (L(i,_)) -> i)
+
             let mutable first = true
             Map.iter (fun k (a,bnds) ->
                 let i = case_tags.[k]
                 let guard =
-                    a
-                    |> List.mapi (fun idx _ -> sprintf "__v[%i].tag == \"%si%i\"" (idx+1) prefix i)
+                    is
+                    |> List.mapi (fun idx _ ->
+                        sprintf "__v[%i] ~= nil and __v[%i].tag == \"%si%i\"" (idx + 1) (idx + 1) prefix i
+                    )
                     |> String.concat " and "
+
                 if first then
                     line s (sprintf "if %s then" guard)
                     first <- false
                 else
                     line s (sprintf "elseif %s then" guard)
-                binds (indent s) bnds
+
+                let body = indent s
+
+                let payloadArity =
+                    match
+                        unionRec.free_vars |> Map.tryPick (fun (_, k') v -> if k' = k then Some v else None)
+                    with
+                    | Some arr -> arr.Length
+                    | None -> 0
+
+                let binderIds =
+                    a
+                    |> List.choose (fun pat ->
+                        match pat with
+                        | DV (L(j,_)) -> Some j
+                        | _ -> None)
+
+                let handledDirectReturn =
+                    match is, bnds, payloadArity with
+                    | [_], [| TyLocalReturnData(d,_) |], n when n > 0 ->
+                        match data_term_vars d with
+                        | [| WV (L(j,_)) |] when not (scrutineeIds |> List.exists ((=) j)) ->
+                            line body "return __v[1]._1"
+                            true
+                        | _ -> false
+                    | _ -> false
+
+                if not handledDirectReturn then
+                    match is with
+                    | [_] when payloadArity > 0 && binderIds <> [] ->
+                        binderIds
+                        |> List.mapi (fun idx j ->
+                            line body (sprintf "local v%i = __v[1]._%i" j (idx + 1)))
+                        |> ignore
+                    | _ -> ()
+
+                    binds body bnds
+
             ) on_succs
+
             match on_fail with
-            | Some b -> line s "else"; binds (indent s) b; line s "end"
-            | None -> line s "end"
+            | Some b ->
+                line s "else"
+                binds (indent s) b
+                line s "end"
+            | None ->
+                line s "end"
         | TyUnionBox(a,b,c) ->
             let c = c.Item
             let i = c.tags.[a]
             let vars =
                 match data_term_vars b with
                 | [||] -> ""
-                | x -> Array.mapi (fun j v -> sprintf "_%i = %s" (j+1) (show_w v)) x |> String.concat ", " |> sprintf ", %s"
+                | x -> Array.mapi (fun _j v -> show_w v) x |> String.concat ", "
             match c.layout with
-            | UHeap -> sprintf "{ tag = \"Uh%ii%i\"%s }" (uheap c.cases).tag i vars
-            | UStack -> sprintf "{ tag = \"Us%ii%i\"%s }" (ustack c.cases).tag i vars
+            | UHeap -> $"Uh{(uheap c.cases).tag}i{i}({vars})"
+            | UStack -> $"Us{(ustack c.cases).tag}i{i}({vars})"
             |> simple
         | TyToLayout(a,b) ->
             let a = layout_vars a
@@ -13979,7 +14236,7 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
                     | UHeap -> sprintf "Uh%i" (uheap h.cases).tag
                     | UStack -> sprintf "Us%i" (ustack h.cases).tag
                 let mutable code = StringBuilder()
-                code.Append("(function() local __tag\n") |> ignore
+                code.Append(";(function () local __tag\n") |> ignore
                 h.cases |> Seq.iteri (fun idx (KeyValue ((ci,_), _)) ->
                     if idx = 0 then
                         code.AppendFormat("if v{0}.tag == \"{1}i{2}\" then __tag = {2}\n", i, ty, ci) |> ignore
@@ -14064,7 +14321,7 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
                     let names = arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
                     sprintf "local %s = capt[1], %s" (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) (names |> SpiralSm.replace (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) "" |> SpiralSm.trim)
             line s (sprintf "function closure%i(capt)" x.tag)
-            if x.free_vars.Length > 0 then line (indent s) (sprintf "local %s = table.unpack(capt)" (x.free_vars |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
+            if x.free_vars.Length > 0 then line (indent s) (sprintf "local %s = (table.unpack or unpack)(capt)" (x.free_vars |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
             match x.domain_args with
             | [||] ->
                 line (indent s) "return function(dom)"
@@ -14072,7 +14329,7 @@ let codegenLua (env : PartEvalResult) (x : TypedBind []) =
                 line (indent s) (sprintf "return function(v%i)" i)
             | many ->
                 line (indent s) "return function(dom)"
-                line (indent (indent s)) "local _ = table.unpack(dom)"
+                line (indent (indent s)) "local _ = (table.unpack or unpack)(dom)"
             binds (indent (indent s)) x.body
             line (indent s) "end"
             line s "end"
@@ -16799,6 +17056,54 @@ let wdiff_tokenizer_init = { lines_text = PersistentVector.empty; lines_token = 
 
 #!markdown
 
+### triple_balance
+
+#!fsharp
+
+let triple_balance (blk : LineTokens) =
+    let count_in_line acc (line : LineToken PersistentVector) =
+        PersistentVector.fold (fun acc (_, tok) ->
+            match tok with
+            | TokStringOpen -> acc + 1
+            | TokStringClose -> acc - 1
+            | _ -> acc) acc line
+    PersistentVector.fold count_in_line 0 blk
+
+#!markdown
+
+### append_lines
+
+#!fsharp
+
+let append_lines (a : LineTokens) (b : LineTokens) : LineTokens =
+    PersistentVector.fold (fun acc line -> PersistentVector.conj line acc) a b
+
+#!markdown
+
+### merge_triple_blocks
+
+#!fsharp
+
+let merge_triple_blocks (blocks : LineTokens Block list) : LineTokens Block list =
+    let rec loop acc pending pendingBal rest =
+        match pending, rest with
+        | None, [] -> List.rev acc
+        | Some p, [] -> List.rev (p :: acc)
+        | None, x :: xs ->
+            let bal = triple_balance x.block
+            if bal = 0 then loop (x :: acc) None 0 xs
+            else loop acc (Some x) bal xs
+        | Some p, x :: xs ->
+            let merged =
+                {   block  = append_lines p.block x.block
+                    offset = p.offset }
+            let bal = pendingBal + triple_balance x.block
+            if bal = 0 then loop (merged :: acc) None 0 xs
+            else loop acc (Some merged) bal xs
+    loop [] None 0 blocks
+
+#!markdown
+
 ### replace'
 
 #!fsharp
@@ -16806,9 +17111,14 @@ let wdiff_tokenizer_init = { lines_text = PersistentVector.empty; lines_token = 
 /// Immutably updates the state based on the request. Does diffing to make the operation efficient.
 /// It is possible for the server to go out of sync, in which case an error is returned.
 let replace' (state : TokenizerState) (edit : SpiEdit) =
-    let lines_text = replace edit.from edit.nearTo edit.lines state.lines_text
+    let lines_text =
+        replace edit.from edit.nearTo edit.lines state.lines_text
+    // Re-lex the edited range with a fresh lexer state.
+    reset_lexical_state ()
     let lines_token, errors = tokenize_replace (state.lines_token, state.errors) edit
-    let blocks = wdiff_block_all state.blocks (lines_token, edit.lines.Length, edit.from, edit.nearTo)
+    let blocks =
+        wdiff_block_all state.blocks (lines_token, edit.lines.Length, edit.from, edit.nearTo)
+        |> merge_triple_blocks
     {lines_text=lines_text; lines_token=lines_token; errors=errors; blocks=blocks}
 
 #!markdown
@@ -16818,7 +17128,8 @@ let replace' (state : TokenizerState) (edit : SpiEdit) =
 #!fsharp
 
 let wdiff_tokenizer_all (state : TokenizerState) text =
-    let text = lines text
+    reset_lexical_state ()
+    let text = (*Utils.*)lines text
     let text' = state.lines_text |> Seq.toArray
     let rec loop (index,text : string [] as x) i = if i < min text.Length state.lines_text.Length && index text i = index text' i then loop x (i+1) else i
     let from = loop ((fun text i -> text.[i]),text) 0
@@ -16834,8 +17145,20 @@ let wdiff_tokenizer_all (state : TokenizerState) text =
 #!fsharp
 
 let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) =
-    if edit.nearTo <= state.lines_text.Length then Ok (replace' state edit)
-    else Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
+    if edit.nearTo <= state.lines_text.Length then
+        let lines_text =
+            replace edit.from edit.nearTo edit.lines state.lines_text
+
+        let sb = System.Text.StringBuilder()
+        let last = lines_text.Length - 1
+        for i = 0 to last do
+            if i > 0 then sb.Append('\n') |> ignore
+            sb.Append(lines_text.[i] : string) |> ignore
+        let full_text = sb.ToString()
+
+        Ok (wdiff_tokenizer_all wdiff_tokenizer_init full_text)
+    else
+        Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
 
 #!markdown
 
@@ -16844,19 +17167,21 @@ let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) =
 #!fsharp
 
 let semantic_updates_apply (block : LineTokens) updates =
-    Seq.fold (fun block (c : VectorCord, l) ->
-        let x =
-            let r, x = PersistentVector.nthNth c.row c.col block
-            let x =
-                match x with
-                | TokVar(a,_) -> TokVar(a,l)
-                | TokSymbol(a,_) -> TokSymbol(a,l)
-                | TokOperator(a,_) -> TokOperator(a,l)
-                | TokUnaryOperator(a,_) -> TokUnaryOperator(a,l)
-                | x -> failwithf "Compiler error: Cannot change the semantic legend for the %A token." x
-            r, x
-        PersistentVector.updateNth c.row c.col x block
-        ) block updates
+    Seq.fold (fun (block : LineTokens) (c : VectorCord, l) ->
+        if c.row < block.Length then
+            let line = block.[c.row]
+            if c.col < line.Length then
+                let r, tok = line.[c.col]
+                let tok' =
+                    match tok with
+                    | TokVar(a,_) -> TokVar(a,l)
+                    | TokSymbol(a,_) -> TokSymbol(a,l)
+                    | TokOperator(a,_) -> TokOperator(a,l)
+                    | TokUnaryOperator(a,_) -> TokUnaryOperator(a,l)
+                    | x -> x
+                PersistentVector.updateNth c.row c.col (r, tok') block
+            else block
+        else block) block updates
 
 #!markdown
 
@@ -16868,11 +17193,14 @@ let parse_block default_env is_top_down (block : LineTokens) =
     let comments, cords_tokens =
         Array.init block.Length (fun line ->
             let x = block.[line]
-            let comment, len = match PersistentVector.tryLast x with Some (r, TokComment c) -> Some (r, c), x.Length-1 | _ -> None, x.Length
+            let comment, len =
+                match PersistentVector.tryLast x with
+                | Some (r, TokComment c) -> Some (r, c), x.Length - 1
+                | _ -> None, x.Length
             let tokens = Array.init len (fun i ->
-                let r, x = x.[i]
-                {|row=line; col=i|}, (({| line=line; character=r.from |}, {| line=line; character=r.nearTo |}), x)
-                )
+                let r, t = x.[i]
+                {|row=line; col=i|},
+                (({| line=line; character=r.from |}, {| line=line; character=r.nearTo |}), t))
             comment, tokens
             )
         |> Array.unzip
@@ -16884,6 +17212,7 @@ let parse_block default_env is_top_down (block : LineTokens) =
         comments = comments; tokens = tokens; i = ref 0; is_top_down = is_top_down
         default_env = default_env
         }
+    assert (env.tokens_cords.Length = env.tokens.Length)
     {result=blockParsingParse env; semantic_tokens=semantic_updates_apply block semantic_updates}
 
 #!markdown

@@ -10,15 +10,15 @@ inl backend_switch forall t. x : t =
                         // | ~t => $'"`t"' : string
                     !!!!BackendSwitch ({
                         Gleam = fun () =>
-                            $'Nil // base.backend_switch / record_type_try_find / key: !key ' : t
+                            $'Nil // backend.backend_switch / record_type_try_find / key: !key ' : t
                         Lua = fun () =>
-                            $'(function () end)() -- base.backend_switch / record_type_try_find / key: !key ' : t
+                            $'print("backend.backend_switch / record_type_try_find")' : t
                         Fsharp = fun () =>
-                            $'() // base.backend_switch / record_type_try_find / key: !key ' : t
+                            $'() // backend.backend_switch / record_type_try_find / key: !key ' : t
                         Python = fun () =>
-                            $'None ## base.backend_switch / record_type_try_find / key: !key ' : t
+                            $'None ## backend.backend_switch / record_type_try_find / key: !key ' : t
                         Cpp = fun () =>
-                            $'nullptr // base.backend_switch / record_type_try_find / key: !key ' : t
+                            $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
                     })
                 )
         !!!!BackendSwitch ({

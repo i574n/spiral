@@ -127,11 +127,28 @@ inl _assert_eq b a =
 
 #!spiral
 
-inl rec __assert_eq' trace b a =
-    __expect (=.) trace (reflection.nameof { __assert_eq' }) b a
+inl rec __assert_eq' forall t. (trace : testing_trace) (b : t) (a : t) : () =
+    __expect
+        (fun a b => #?a = #?b)
+        trace
+        (reflection.nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })
+        b
+        a
 
 inl _assert_eq' b a =
     __assert_eq' Console b a
+
+#!markdown
+
+### __assert_eq''
+
+#!spiral
+
+inl rec __assert_eq'' trace b a =
+    __expect (=.) trace (reflection.nameof { __assert_eq'' }) b a
+
+inl _assert_eq'' b a =
+    __assert_eq'' Console b a
 
 #!markdown
 
@@ -244,7 +261,7 @@ inl rec _assert_fn fn list =
                         fun () => name
                         fun () => { input }
                     #?x
-                    |> _assert_eq' #?expected'
+                    |> _assert_eq #?expected'
                     true
                 fun ex =>
                     trace Critical
