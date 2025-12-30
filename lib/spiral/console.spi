@@ -23,14 +23,7 @@ inl set_foreground_color (color : console_color) : () =
 inl write_line obj : () =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () =>
-                    backend_switch {
-                        Gleam = fun () =>
-                            global "import gleam/io"
-                    }
-                    : ()
-            }
+            global "import gleam/io"
             $'io.println(!obj)' : ()
         Lua = fun () => $'print(!obj)' : ()
         Fsharp = fun () =>
@@ -43,14 +36,7 @@ inl write_line obj : () =
 inl write forall t. (x : t) : () =
     backend_switch {
         Gleam = fun () =>
-            backend_switch {
-                Gleam = fun () =>
-                    backend_switch {
-                        Gleam = fun () =>
-                            global "import gleam/io"
-                    }
-                    : ()
-            }
+            global "import gleam/io"
             $'io.print(!x)' : ()
         Lua = fun () => $'io.write(!x)' : ()
         Fsharp = fun () => $'!x |> System.Console.Write' : ()
@@ -71,8 +57,8 @@ inl write_ln l : () =
 /// ### color_reset
 inl color_reset () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[0m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -85,8 +71,8 @@ inl color_reset () =
 /// ### color_bright_black
 inl color_bright_black () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[90m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -99,8 +85,8 @@ inl color_bright_black () =
 /// ### color_bright_red
 inl color_bright_red () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[91m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -113,8 +99,8 @@ inl color_bright_red () =
 /// ### color_bright_green
 inl color_bright_green () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[92m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -127,8 +113,8 @@ inl color_bright_green () =
 /// ### color_yellow
 inl color_yellow () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[93m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -141,8 +127,8 @@ inl color_yellow () =
 /// ### color_bright_blue
 inl color_bright_blue () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[94m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -155,8 +141,8 @@ inl color_bright_blue () =
 /// ### color_bright_magenta
 inl color_bright_magenta () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[95m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -169,8 +155,8 @@ inl color_bright_magenta () =
 /// ### color_bright_cyan
 inl color_bright_cyan () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[96m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators
@@ -183,8 +169,8 @@ inl color_bright_cyan () =
 /// ### color_bright_white
 inl color_bright_white () =
     run_target function
-        | Lua _
         | Gleam _ => fun () => $'"\\u{001b}[97m"'
+        | Lua _ => fun () => $'""'
         | Rust _ => fun () =>
             open rust
             open rust.rust_operators

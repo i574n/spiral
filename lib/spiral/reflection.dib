@@ -78,14 +78,6 @@ get_union_fields ()
 |> fun (a x : _ int _) => x
 |> _assert_eq' ;[ "Wasm", Wasm; "Contract", Contract ]
 
-#!spiral
-
-///- --test
-///> fsharp
-///> rust
-///> typescript
-///> python
-
 get_union_fields ()
 |> listm'.box
 |> listm'.to_array'
@@ -152,6 +144,8 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
 #!spiral
 
 ///- --test
+///> gleam
+///> lua
 ///> fsharp
 ///> cuda
 ///> rust
@@ -160,15 +154,6 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
 
 get_union_fields_untag ()
 |> _assert_eq' [ "Wasm", Wasm; "Contract", Contract ]
-
-#!spiral
-
-///- --test
-///> fsharp
-///> cuda
-///> rust
-///> typescript
-///> python
 
 get_union_fields_untag ()
 |> _assert_eq' [ "Some", Some (); "None", None ]
@@ -180,20 +165,31 @@ get_union_fields_untag ()
 #!spiral
 
 inl union_try_pick forall t. (key : string) : option t =
-    real get_union_fields_untag `t ()
+    inl fields = real get_union_fields_untag `t ()
+    fields
     ++ (
-        real get_union_fields_untag `t ()
-        |> listm.map fun key, x => key |> sm'.to_lower, x
+        fields
+        |> listm.map fun key', x =>
+            key' |> sm'.to_lower, x
     )
-    |> listm'.try_pick fun key', x =>
-        if key' = key
+    |> listm'.box
+    |> listm'.to_array'
+    |> fun x => a x : _ int _
+    |> am'.try_pick fun key', x =>
+        if key' =. key
         then Some x
         else None
 
 #!spiral
 
 ///- --test
+///> gleam
+///> lua
 ///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
 
 "wasm"
 |> union_try_pick
@@ -201,6 +197,44 @@ inl union_try_pick forall t. (key : string) : option t =
 
 "Wasm"
 |> union_try_pick
+|> _assert_eq (Some Wasm)
+
+#!markdown
+
+### union_try_pick'
+
+#!spiral
+
+inl union_try_pick' forall t. (key : string) : option t =
+    inl fields = real get_union_fields_untag `t ()
+    fields
+    ++ (
+        fields
+        |> listm.map fun key', x =>
+            key' |> sm'.to_lower, x
+    )
+    |> listm'.try_pick fun key', x =>
+        if key' =. key
+        then x |> Some
+        else None
+
+#!spiral
+
+///- --test
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> python
+
+"wasm"
+|> union_try_pick'
+|> _assert_eq (Some Wasm)
+
+"Wasm"
+|> union_try_pick'
 |> _assert_eq (Some Wasm)
 
 #!markdown

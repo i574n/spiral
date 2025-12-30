@@ -11,6 +11,14 @@ union trace_level =
     | Warning
     | Critical
 
+/// ### severity
+inl severity = function
+    | Verbose => 10
+    | Debug => 20
+    | Info => 30
+    | Warning => 40
+    | Critical => 50
+
 /// ### read_state
 inl read_state () =
     run_target function
@@ -35,9 +43,16 @@ inl read_state () =
             join
                 {
                     trace_level =
-                        "TRACE_LEVEL"
-                        |> env.get_environment_variable
-                        |> reflection.union_try_pick
+                        inl get_result () =
+                            "TRACE_LEVEL"
+                            |> env.get_environment_variable
+                            |> reflection.union_try_pick
+                        backend_switch {
+                            Gleam = get_result : () -> option trace_level
+                            Lua = fun () => None : option trace_level
+                            Fsharp = get_result : () -> option trace_level
+                            Python = get_result : () -> option trace_level
+                        }
                     repl_start =
                         inl automation = env.get_environment_variable "AUTOMATION"
                         if automation <>. "True"
@@ -49,11 +64,8 @@ inl read_state () =
                             |> fun (x : i64) =>
                                 backend_switch {
                                     Gleam = fun () =>
-                                        backend_switch {
-                                            Gleam = fun () =>
-                                                global "import gleam/float"
-                                                global "import gleam/time/timestamp"
-                                        }
+                                        global "import gleam/float"
+                                        global "import gleam/time/timestamp"
                                         $'!x |> timestamp.to_unix_seconds |> float.round' : i64
                                     Lua = fun () => x
                                     Fsharp = fun () => x
@@ -100,8 +112,8 @@ inl init_trace_state trace_level : () =
             $'  }' : ()
             $'}' : ()
         Lua = fun () =>
-            global "trace_state = nil"
-            $'if trace_state == nil then trace_state = !new_trace_state(!trace_level) end' : ()
+            global "_G.trace_state = nil"
+            $'if _G.trace_state == nil then _G.trace_state = !new_trace_state(!trace_level) end' : ()
         Fsharp = fun () =>
             backend_switch {
                 Fsharp = fun () =>
@@ -125,7 +137,7 @@ inl get_trace_state_or_init trace_level : trace_state =
             inl trace_level = trace_level |> optionm'.default_value Verbose
             $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state
         Lua = fun () =>
-            $'trace_state' : trace_state
+            $'_G.trace_state' : trace_state
         Fsharp = fun () =>
             $'TraceState.trace_state.Value' : trace_state
         Python = fun () =>
@@ -137,20 +149,21 @@ inl set_trace_level new_level =
     inl ({ level } & trace_state) = get_trace_state_or_init None
     level <- new_level
     backend_switch {
-        Gleam = fun () =>
-            $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()
+        Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()
+        Lua = id : () -> ()
+        Fsharp = id : () -> ()
+        Python = id : () -> ()
     }
 
 /// ### test_trace_level
 inl test_trace_level level : bool =
     inl state = get_trace_state_or_init None
     inl level' = *state.level
+    inl a : int = level |> severity
+    inl b : int = level' |> severity
     if *state.enabled |> not
     then false
-    else
-        inl level : i32 = real real_core.union_tag level
-        inl level' : i32 = real real_core.union_tag level'
-        level >= level'
+    else a >= b
 
 /// ### trace_raw
 inl trace_raw level fn =
@@ -194,12 +207,13 @@ inl trace_raw level fn =
                         !\\(text, $'\@"println\!(""{}"", $0)"')
                     | _ => fun text, write_line =>
                         text |> write_line
-
                 text |> *trace_state.trace_file
                 trace_state |> Some
         backend_switch {
-            Gleam = fun () =>
-                $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
+            Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
+            Lua = id : () -> ()
+            Fsharp = id : () -> ()
+            Python = id : () -> ()
         }
     |> exec_unit
 
@@ -255,7 +269,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         |> date_time.format (
                             backend_switch {
                                 Gleam = fun () => "HH:mm:ss"
-                                Lua = fun () => "HH:mm:ss"
+                                Lua = fun () => "%H:%M:%S"
                                 Fsharp = fun () =>
                                     match target with
                                     | Rust _ => join "hh:mm:ss"

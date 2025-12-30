@@ -593,7 +593,12 @@ nominal list' t = $'backend_switch `(list'_switch t)'
 #!spiral
 
 inl empty' forall t. () : list' t =
-    $'[]'
+    backend_switch {
+        Gleam = fun () => $'[]' : list' t
+        Lua = fun () => $'{}' : list' t
+        Fsharp = fun () => $'[]' : list' t
+        Python = fun () => $'[]' : list' t
+    }
 
 #!markdown
 
@@ -631,6 +636,16 @@ inl box forall t. (list : list t) : list' t =
 inl rev' forall t. (items : list' t) : list' t =
     backend_switch {
         Gleam = fun () => $'!items |> list.reverse' : list' t
+        Lua = fun () =>
+            inl result : mut (list' t) = empty' () |> mut
+            inl len = $'##(!items)' : i32
+            let rec 루프 i =
+                if i < 0i32
+                then *result
+                else
+                    result <- cons' ($'!items[!i]') (*result)
+                    루프 (i - 1i32)
+            루프 (len - 1i32)
         Fsharp = fun () => items |> $'List.rev' : list' t
         Python = fun () => $'list(reversed(!items))' : list' t
     }
@@ -648,6 +663,16 @@ inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
             $'!(Cons (fn $'x', $'acc'))' : ()
             $'})' : ()
             $'listm_fold' : list u
+        Lua = fun () =>
+            inl result : mut (list u) = init |> mut
+            inl len = $'##(!list)' : i32
+            let rec 루프 i =
+                if i < 0i32
+                then *result
+                else
+                    result <- $'!fn(!list[!i])' :: *result
+                    루프 (i - 1i32)
+            루프 (len - 1i32)
         Fsharp = fun () =>
             (init, list)
             ||> $'List.fold' join fun acc x => Cons (fn x, acc)
@@ -678,6 +703,10 @@ inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list
             $'!(Cons (fn $'x', $'acc'))' : ()
             $'})' : ()
             $'listm_fold_back' : list u
+        Lua = fun () =>
+            list
+            |> rev'
+            |> fold' fn init
         Fsharp = fun () =>
             (list, init)
             ||> $'List.foldBack' join fun x acc => Cons (fn x, acc)
@@ -697,6 +726,20 @@ inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list
 inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
     backend_switch {
         Gleam = fun () => $'!list |> list.filter(!fn)' : list' t
+        Lua = fun () =>
+            inl result : mut (list' t) = empty' () |> mut
+            inl len = $'##(!list)' : i32
+            let rec 루프 i =
+                if i >= len
+                then *result
+                else
+                    inl item = $'!list[!i]' : t
+                    if fn item
+                    then
+                        result <- cons' item (*result)
+                        루프 (i + 1i32)
+                    else 루프 (i + 1i32)
+            루프 0i32
         Fsharp = fun () => list |> $'"List.filter !fn"' : list' t
         Python = fun () => $'list(filter(!fn, !list))' : list' t
     }
@@ -711,6 +754,16 @@ inl map forall t u. (fn : t -> u) (list : list' t) : list' u =
     list'_types ()
     backend_switch {
         Gleam = fun () => $'!list |> list.map(!fn)' : list' u
+        Lua = fun () =>
+            inl result : mut (list' u) = empty' () |> mut
+            inl len = $'##(!list)' : i32
+            let rec 루프 i =
+                if i >= len
+                then *result
+                else
+                    result <- cons' ($'!fn(!list[!i])') (*result)
+                    루프 (i + 1i32)
+            루프 0i32
         Fsharp = fun () => list |> $'List.map' fn : list' u
         Python = fun () => $'list(map(!fn, !list))' : list' u
     }
@@ -735,6 +788,22 @@ inl distinct' forall t. (list : list' t) : list' t =
     list'_types ()
     backend_switch {
         Gleam = fun () => $'!list |> list.unique' : list' t
+        Lua = fun () =>
+            inl result : mut (list' t) = empty' () |> mut
+            inl len = $'##(!list)' : i32
+            inl seen : mut (list t) = [] |> mut
+            let rec 루프 i =
+                if i >= len
+                then *result
+                else
+                    inl item = $'!list[!i]' : t
+                    if exists' (fun x => x = item) (*seen)
+                    then 루프 (i + 1i32)
+                    else
+                        seen <- item :: *seen
+                        result <- cons' item (*result)
+                        루프 (i + 1i32)
+            루프 0i32
         Fsharp = fun () => list |> $'List.distinct' : list' t
         Python = fun () =>
             $'x = list(set(!list))'
@@ -769,8 +838,31 @@ inl to_array' forall t. (items : list' t) : array_base t =
         Gleam = fun () =>
             inl d = real defaultof `t ()
             $'!items |> array.from_list(default: !d)' : array_base t
+        Lua = fun () =>
+            inl len = $'##(!items)' : i32
+            inl d = real defaultof `t ()
+            inl result : a _ t = am.init len (fun _ => d)
+            let rec 루프 i =
+                if i >= len then
+                    inl (a result) = result
+                    result
+                else
+                    set result i $'!items[!i]'
+                    루프 (i + 1i32)
+            루프 0i32
         Fsharp = fun () => items |> $'List.toArray' : array_base t
-        Python = fun () => $'(cp if cuda else np).array(!items)' : array_base t
+        Python = fun () =>
+            inl len = $'len(!items)' : i32
+            inl d = real defaultof `t ()
+            inl result : a _ t = am.init len (fun _ => d)
+            let rec 루프 i =
+                if i >= len then
+                    inl (a result) = result
+                    result
+                else
+                    set result i $'!items[!i]'
+                    루프 (i + 1i32)
+            루프 0i32
     }
 
 #!markdown

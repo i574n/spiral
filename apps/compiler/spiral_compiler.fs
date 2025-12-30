@@ -1159,7 +1159,7 @@ module spiral_compiler =
             let from = s.from
             let content = s.text.Substring(from)
             s.from <- s.text.Length
-            Ok ({from=from; nearTo=s.from}, TokText (content + "\n"))
+            Ok ({from=from; nearTo=s.from}, TokText content)
         elif peek s = '/' && peek' s 1 = '/' then
             let from = s.from
             inc' 2 s
@@ -1248,26 +1248,30 @@ module spiral_compiler =
         let text = s.text
         let len = text.Length
         if TripleString.is_open() then
-            let body_from = s.from
-            let idx = text.IndexOf("\"\"\"", body_from)
-            if idx >= 0 then
-                let body =
-                    if body_from < idx then
-                        [ ({from=body_from; nearTo=idx},
-                            TokText (text.Substring(body_from, idx - body_from))) ]
-                    else []
-                s.from <- idx + 3
-                TripleString.close()
-                Ok (body @ [ ({from=idx; nearTo=s.from}, TokStringClose) ])
-            else
-                let content =
-                    if body_from < len then
-                        text.Substring(body_from, len - body_from) + "\n"
-                    else
-                        "\n"
-                let t = ({from=body_from; nearTo=len}, TokText content)
-                s.from <- len
+            if len = 0 then
+                let t = ({from=0; nearTo=0}, TokText "\n")
                 Ok [t]
+            else
+                let body_from = s.from
+                let idx = text.IndexOf("\"\"\"", body_from)
+                if idx >= 0 then
+                    let body =
+                        if body_from < idx then
+                            [ ({from=body_from; nearTo=idx},
+                                TokText (text.Substring(body_from, idx - body_from))) ]
+                        else []
+                    s.from <- idx + 3
+                    TripleString.close()
+                    Ok (body @ [ ({from=idx; nearTo=s.from}, TokStringClose) ])
+                else
+                    let content =
+                        if body_from < len then
+                            "\n" + text.Substring(body_from, len - body_from)
+                        else
+                            "\n"
+                    let t = ({from=body_from; nearTo=len}, TokText content)
+                    s.from <- len
+                    Ok [t]
         elif peek s = '"' && peek' s 1 = '"' && peek' s 2 = '"' then
             let from_open = s.from
             inc' 3 s
@@ -1289,9 +1293,9 @@ module spiral_compiler =
                 let open_tok  = ({from=from_open; nearTo=from_open+3}, TokStringOpen)
                 let content =
                     if body_from < len then
-                        text.Substring(body_from, len - body_from) + "\n"
+                        text.Substring(body_from, len - body_from)
                     else
-                        "\n"
+                        ""
                 let body =
                     [ ({from=body_from; nearTo=len}, TokText content) ]
                 s.from <- len
@@ -1379,6 +1383,9 @@ module spiral_compiler =
     and tokenize text =
         let mutable ar = PersistentVector.empty
         let mutable er = []
+        if TripleString.is_open() && (text : string).Length = 0 then
+            ar <- PersistentVector.conj ({from=0; nearTo=0}, TokText "\n") ar
+
         let tokens =
             many_iter (fun (x : (TokenizerRange * SpiralToken) list,er' : (TokenizerRange * string) list) ->
                 List.iter (fun x -> ar <- PersistentVector.conj x ar) x
@@ -10650,15 +10657,18 @@ module spiral_compiler =
                 global' "import gary/array"
                 global' "import gleam/option"
                 global' "import gleam/list"
-                $"{x} " +
-                $"|> list.map(option.Some) " +
-                $"|> array.from_list(option.None) " +
-                $"|> array.map(fn(_, x) {{ " +
-                $"     case x {{ " +
-                $"       option.Some(x) -> x " +
-                $"       _ -> panic as \"{panic}\" " +
-                $"     }} " +
-                $"   }}) "
+                [
+                    $"{x} "
+                    "|> list.map(option.Some) "
+                    "|> array.from_list(default: option.None) "
+                    "|> array.map(fn(_, x) { "
+                    "     case x { "
+                    "       option.Some(x) -> x "
+                    $"       _ -> panic as \"{panic}\" "
+                    "     } "
+                    "   }) "
+                ]
+                |> String.concat ""
             match a with
             | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litGleam x) |> String.concat "" |> simple
             | TySizeOf t -> simple $"0"
@@ -10682,27 +10692,88 @@ module spiral_compiler =
             | TyWhile(a, b) ->
                 let id = while_id
                 while_id <- while_id + 1
+                let loopVars = snd a |> Array.map (fun (L(i,_)) -> i)
+                let loopVarSet = Set.ofArray loopVars
+
+                let fvData d = data_free_vars d |> Array.map (fun (L(i,_)) -> i) |> Set.ofArray
+                let rec fvOp a =
+                    let fromData l = l |> List.fold (fun acc d -> Set.union acc (fvData d)) Set.empty
+                    match a with
+                    | TyMacro l -> l |> List.choose (function CMTerm(d,_) -> Some (fvData d) | _ -> None) |> List.fold Set.union Set.empty
+                    | TyIf(cond,tr,fl) -> Set.unionMany [fvData cond; fvBinds tr; fvBinds fl]
+                    | TyJoinPoint(_,args) -> args |> Array.map (fun (L(i,_)) -> i) |> Set.ofArray
+                    | TyUnionUnbox(is,_,on_succs,on_fail) ->
+                        let isSet = is |> List.map (fun (L(i,_)) -> i) |> Set.ofList
+                        let succVars = on_succs |> Map.fold (fun acc _ (pats,bnds) ->
+                            let patVars = pats |> List.fold (fun acc p -> Set.union acc (fvData p)) Set.empty
+                            Set.union acc (Set.difference (fvBinds bnds) patVars)) Set.empty
+                        let failVars = on_fail |> Option.map fvBinds |> Option.defaultValue Set.empty
+                        Set.unionMany [isSet; succVars; failVars]
+                    | TyUnionBox(_,d,_) -> fvData d
+                    | TyToLayout(d,_) -> fvData d
+                    | TyLayoutIndexAll(L(i,_)) -> Set.singleton i
+                    | TyLayoutIndexByKey(L(i,_),_) -> Set.singleton i
+                    | TyLayoutMutableSet(L(i,_),_,c) -> Set.add i (fvData c)
+                    | TyArrayLiteral(_,l) -> fromData l
+                    | TyArrayCreate(_,d) -> fvData d
+                    | TyArrayLength(_,d) | TyStringLength(_,d) | TyFailwith(_,d) | TyConv(_,d) -> fvData d
+                    | TyApply(L(i,_),d) -> Set.add i (fvData d)
+                    | TyOp(_,l) -> fromData l
+                    | TyWhile((_,args),body) ->
+                        let argsSet = args |> Array.map (fun (L(i,_)) -> i) |> Set.ofArray
+                        Set.difference argsSet (fvBinds body)
+                    | TyDo body | TyIndent body -> fvBinds body
+                    | TyIntSwitch(L(i,_),on_succs,on_fail) ->
+                        let succVars = on_succs |> Array.map fvBinds |> Array.fold Set.union Set.empty
+                        Set.unionMany [Set.singleton i; succVars; fvBinds on_fail]
+                    | TySizeOf _ | TyBackend _ -> Set.empty
+
+                and fvBinds (x : TypedBind []) =
+                    let defined, used =
+                        x |> Array.fold (fun (defined, used) bind ->
+                            match bind with
+                            | TyLet(d,_,a) ->
+                                let usedInOp = Set.difference (fvOp a) defined
+                                let defVars = fvData d
+                                (Set.union defined defVars, Set.union used usedInOp)
+                            | TyLocalReturnOp(_,a,_) ->
+                                let usedInOp = Set.difference (fvOp a) defined
+                                (defined, Set.union used usedInOp)
+                            | TyLocalReturnData(d,_) ->
+                                let usedInData = Set.difference (fvData d) defined
+                                (defined, Set.union used usedInData)
+                        ) (Set.empty, Set.empty)
+                    used
+
+                let freeInBody = Set.difference (fvBinds b) loopVarSet
+                let capturedVars = Set.difference freeInBody loopVarSet |> Set.toArray |> Array.sort
+
+                let loopParams = Array.append (Array.map (sprintf "v%i") loopVars) (Array.map (sprintf "v%i") capturedVars)
+                let paramList = loopParams |> String.concat ", "
+                let retPat =
+                    match loopVars with
+                    | [||] -> "Nil"
+                    | [|x|] -> sprintf "v%i" x
+                    | xs -> sprintf "#(%s)" (xs |> Array.map (sprintf "v%i") |> String.concat ", ")
 
                 print
                     false
                     (fun s id' ->
-                        line s (sprintf "loop%i (v0, v1) {" id')
+                        line s (sprintf "loop%i(%s) {" id' paramList)
                         line (indent s) (sprintf "case %s {" (jp a))
                         line (indent (indent s)) "True -> {"
                         binds (indent (indent (indent s))) b
-                        global' "import gleam/io"
-                        line (indent (indent (indent s))) (sprintf "|> fn(_) { io.debug(\"spiral_compiler.TyWhile\") } loop%i(v0, v1)" id')
+                        line (indent (indent (indent s))) (sprintf "loop%i(%s)" id' paramList)
                         line (indent (indent s)) "}"
                         line (indent (indent s)) "False -> {"
-                        line (indent (indent (indent s))) "v0"
+                        line (indent (indent (indent s))) retPat
                         line (indent (indent s)) "}"
                         line (indent s) "}"
                         line s "}"
                     )
                     id
 
-                simple (sprintf "let v0 = loop%i(v0, v1)" id)
-
+                simple (sprintf "let %s = loop%i(%s)" retPat id paramList)
             | TyDo a ->
                 complex <| fun s ->
                 line s "{"
@@ -10809,7 +10880,19 @@ module spiral_compiler =
                 $"""[ {List.map tup b |> String.concat ", "} ]"""
                 |> listToArray "spiral_compiler..TyArrayLiteral"
                 |> simple
-            | TyArrayCreate(a,b) -> $"[]" |> listToArray "spiral_compiler..TyArrayCreate" |> simple
+            | TyArrayCreate(a,b) ->
+                global' "import gary/array"
+                global' "import gleam/option"
+                global' "import gleam/result"
+                $"array.create_fixed_size(size: {tup b}, default: option.None) " +
+                $"|> result.unwrap(array.from_list(default: option.None, [])) " +
+                $"|> array.map(fn(_, x) {{ " +
+                $"     case x {{ " +
+                $"       option.Some(x) -> x " +
+                $"       _ -> panic as \"spiral_compiler..TyArrayCreate\" " +
+                $"     }} " +
+                $"   }})"
+                |> simple
             | TyArrayLength(a,b) ->
                 global' "import gary/array"
                 sprintf "array.get_size(%s)" (tup b)
@@ -11291,7 +11374,8 @@ module spiral_compiler =
                         sprintf "local %s = %s" names x
                     | _ ->
                         let names = free_vars false d |> SpiralSm.trim
-                        sprintf "local %s = (table.unpack or unpack)(%s)" names x
+                        line s $"local _v = {x}"
+                        $"local {names} = (table.unpack or unpack)((type(_v) ~= 'table' or _v == nil) and {{}} or _v)"
                 |> line s
             let complex f =
                 match d with
@@ -11317,7 +11401,8 @@ module spiral_compiler =
             let length (a,b) =
                 sprintf "string.len(%s)" (tup b)
                 |> simple
-            let listToArray _ x = x
+            let listToArray _ x =
+                sprintf "(function() local xs = { n = 0 } for i, v in ipairs(%s) do xs[i] = v; xs.n = xs.n + 1 end return xs end)()" x
             match a with
             | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litLua x) |> String.concat "" |> simple
             | TySizeOf t -> simple $"0"
@@ -11335,27 +11420,16 @@ module spiral_compiler =
             | TyJoinPoint(a,args) -> simple (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Lua backend does not support nesting other backends."
             | TyWhile(a, b) ->
-                let id = while_id
-                while_id <- while_id + 1
-
-                print
-                    false
-                    (fun s id' ->
-                        line s (sprintf "function loop%i(v0, v1)" id')
-                        line (indent s) "while true do"
-                        line (indent (indent s)) (sprintf "if %s then" (jp a))
-                        binds (indent (indent (indent s))) b
-                        line (indent (indent (indent s))) (sprintf "v0, v1 = v0, v1")
-                        line (indent (indent s)) "else"
-                        line (indent (indent (indent s))) "return v0"
-                        line (indent (indent s)) "end"
-                        line (indent s) "end"
-                        line s "end"
-                    )
-                    id
-
-                simple (sprintf "local v0 = loop%i(v0, v1)" id)
-
+                let binds_in_loop (s : CodegenEnv) (x : TypedBind []) =
+                    Array.iter (function
+                        | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                        | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                        | TyLocalReturnData(DB,trace) -> ()
+                        | TyLocalReturnData(d,trace) -> try line s $"return {tup d}          " with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                        ) x
+                line s (sprintf "while %s do" (jp a))
+                binds_in_loop (indent s) b
+                line s "end"
             | TyDo a ->
                 complex <| fun s ->
                 line s "do"
@@ -11396,9 +11470,6 @@ module spiral_compiler =
                         let u = ustack xUnion.cases
                         u, sprintf "Us%i" u.tag
 
-                let scrutineeIds =
-                    is |> List.map (fun (L(i,_)) -> i)
-
                 let mutable first = true
                 Map.iter (fun k (a,bnds) ->
                     let i = case_tags.[k]
@@ -11417,41 +11488,24 @@ module spiral_compiler =
 
                     let body = indent s
 
-                    let payloadArity =
-                        match
-                            unionRec.free_vars |> Map.tryPick (fun (_, k') v -> if k' = k then Some v else None)
-                        with
-                        | Some arr -> arr.Length
-                        | None -> 0
+                    let rec extractVars = function
+                        | DV (L(j,_)) -> [j]
+                        | DPair(a,b) -> extractVars a @ extractVars b
+                        | DRecord m -> m |> Map.toList |> List.collect (snd >> extractVars)
+                        | DUnion(d,_) -> extractVars d
+                        | DNominal(d,_) -> extractVars d
+                        | _ -> []
 
-                    let binderIds =
-                        a
-                        |> List.choose (fun pat ->
-                            match pat with
-                            | DV (L(j,_)) -> Some j
-                            | _ -> None)
+                    let binderIds = a |> List.collect extractVars
 
-                    let handledDirectReturn =
-                        match is, bnds, payloadArity with
-                        | [_], [| TyLocalReturnData(d,_) |], n when n > 0 ->
-                            match data_term_vars d with
-                            | [| WV (L(j,_)) |] when not (scrutineeIds |> List.exists ((=) j)) ->
-                                line body "return __v[1]._1"
-                                true
-                            | _ -> false
-                        | _ -> false
+                    match is with
+                    | [_] when binderIds <> [] ->
+                        binderIds
+                        |> List.iteri (fun idx j ->
+                            line body (sprintf "local v%i = __v[1]._%i" j (idx + 1)))
+                    | _ -> ()
 
-                    if not handledDirectReturn then
-                        match is with
-                        | [_] when payloadArity > 0 && binderIds <> [] ->
-                            binderIds
-                            |> List.mapi (fun idx j ->
-                                line body (sprintf "local v%i = __v[1]._%i" j (idx + 1)))
-                            |> ignore
-                        | _ -> ()
-
-                        binds body bnds
-
+                    binds body bnds
                 ) on_succs
 
                 match on_fail with
@@ -11508,11 +11562,17 @@ module spiral_compiler =
                     line s (sprintf "v%i.l%i = %s" i i' (show_w b))
                     ) a_vars (data_term_vars c)
             | TyArrayLiteral(a,b) ->
-                (List.map tup b |> String.concat ", " |> sprintf "{ %s }")
+                let len = b.Length
+                match b with
+                | [] -> "{ n = 0 }"
+                | _ -> sprintf "{ %s, n = %d }" (List.map tup b |> String.concat ", ") len
                 |> simple
-            | TyArrayCreate(a,b) -> "{}" |> simple
+            | TyArrayCreate(a,b) ->
+                let size = tup b
+                sprintf "(function() local t = { n = %s }; for i = 1, %s do t[i] = false end; return t end)()" size size
+                |> simple
             | TyArrayLength(a,b) ->
-                sprintf "#(%s)" (tup b)
+                sprintf "(%s).n" (tup b)
                 |> simple
             | TyStringLength(a,b) -> length (a,b)
             | TyFailwith(a,b) -> simple (sprintf "error(%s)" (tup b))
@@ -11545,7 +11605,8 @@ module spiral_compiler =
                 | ArrayIndex, [a;b] ->
                     sprintf "(%s)[(%s)+1]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] ->
-                    sprintf "(%s)[(%s)+1] = %s" (tup a) (tup b) (tup c)
+                    let arr, idx, val' = tup a, tup b, tup c
+                    $"local __arr = {arr}; __arr[({idx})+1] = {val'}"
 
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
@@ -11698,6 +11759,9 @@ module spiral_compiler =
             program.Append("local bit = bit32 or bit\n") |> ignore
         else
             program.Append("-- lua 5.4 ops\n") |> ignore
+        env.globals
+        |> Seq.distinct
+        |> Seq.iter (fun (x : string) -> program.Append(x).Append("\n") |> ignore)
         types |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         program.Append(main.ToString()).ToString()
@@ -14048,8 +14112,18 @@ module spiral_compiler =
                         | DRecord l -> l |> Map.pick (fun (_,k') v -> if k = k' then Some v else None)
                         | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
                     Array.iter2 (fun (L(i',_)) b -> line s $"v{i}.v{i'} = {show_w b}") (data_free_vars a) (data_term_vars c)
-                | TyArrayLiteral(a,b) -> return' <| sprintf "(cp if cuda else np).array([%s],dtype=%s)" (List.map tup_data' b |> String.concat ", ") (cupy_ty a)
-                | TyArrayCreate(a,b) -> return' $"(cp if cuda else np).empty({tup_data b},dtype={cupy_ty a})"
+                | TyArrayLiteral(a,b) ->
+                    let dtype = cupy_ty a
+                    if dtype = "object" then
+                        return' <| sprintf "[%s]" (List.map tup_data' b |> String.concat ", ")
+                    else
+                        return' <| sprintf "(cp if cuda else np).array([%s],dtype=%s)" (List.map tup_data' b |> String.concat ", ") dtype
+                | TyArrayCreate(a,b) ->
+                    let dtype = cupy_ty a
+                    if dtype = "object" then
+                        return' <| sprintf "[None] * %s" (tup_data b)
+                    else
+                        return' $"(cp if cuda else np).empty({tup_data b},dtype={dtype})"
                 | TyFailwith(a,b) -> line s $"raise Exception({tup_data' b})"
                 | TyConv(a,b) -> return' $"{tyv a}({tup_data b})"
                 | TyApply(L(i,_),b) -> return' $"v{i}({tup_data' b})"
@@ -14068,7 +14142,11 @@ module spiral_compiler =
                     | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                     | StringIndex, [a;b] -> sprintf "%s[%s]" (tup_data a) (tup_data b)
                     | StringSlice, [a;b;c] -> sprintf "%s[%s:%s]" (tup_data a) (tup_data b) (tup_data c)
-                    | ArrayIndex, [a;b] -> sprintf "%s[%s].item()" (tup_data a) (tup_data b)
+                    | ArrayIndex, [a;b] ->
+                        let aTy = match a with DV(L(_,t)) -> t | _ -> YB
+                        match aTy with
+                        | YArray t when cupy_ty t = "object" -> sprintf "%s[%s]" (tup_data a) (tup_data b)
+                        | _ -> sprintf "%s[%s].item()" (tup_data a) (tup_data b)
                     | ArrayIndexSet, [a;b;c] ->
                         match tup_data' c with
                         | "" -> "pass # void array set"

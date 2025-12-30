@@ -2478,7 +2478,8 @@ inl process_lua { lua_path } =
     inl stdio = [] |> mut
     inl stdio_clone = stdio |> rust.clone
 
-    inl lua : lua = !\($'$"mlua::Lua::new()"')
+    inl lua : lua =
+        !\($'$"mlua::Lua::new_with(mlua::StdLib::ALL_SAFE, mlua::LuaOptions::default()).unwrap()"')
 
     inl custom_print (args : lua_multi_value) : _ _ lua_error =
         inl args : am'.vec (rust.ref lua_value) = !\\(args, $'$"$0.iter().collect()"')
@@ -2493,7 +2494,10 @@ inl process_lua { lua_path } =
         Ok () |> resultm.box
 
     inl custom_print : lua_function =
-        !\\((lua, custom_print), $'$"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()"')
+        !\\(
+            (lua, custom_print),
+            $'$"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()"'
+        )
 
     !\\((lua, custom_print), $'$"$0.globals().set(\\\"print\\\", $1).unwrap()"')
 

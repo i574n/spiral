@@ -521,8 +521,8 @@ inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
 
 "abc"
 |> run_parser (any_char ())
-|> unwrap_format
-|> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
+|> (resultm.get >> sm'.format)
+|> _assert_eq #?('a', "bc", #?*(new_parser_state 0 1 2 3))
 
 #!spiral
 

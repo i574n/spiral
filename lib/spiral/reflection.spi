@@ -92,14 +92,33 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
 
 /// ### union_try_pick
 inl union_try_pick forall t. (key : string) : option t =
-    real get_union_fields_untag `t ()
+    inl fields = real get_union_fields_untag `t ()
+    fields
     ++ (
-        real get_union_fields_untag `t ()
-        |> listm.map fun key, x => key |> sm'.to_lower, x
+        fields
+        |> listm.map fun key', x =>
+            key' |> sm'.to_lower, x
+    )
+    |> listm'.box
+    |> listm'.to_array'
+    |> fun x => a x : _ int _
+    |> am'.try_pick fun key', x =>
+        if key' =. key
+        then Some x
+        else None
+
+/// ### union_try_pick'
+inl union_try_pick' forall t. (key : string) : option t =
+    inl fields = real get_union_fields_untag `t ()
+    fields
+    ++ (
+        fields
+        |> listm.map fun key', x =>
+            key' |> sm'.to_lower, x
     )
     |> listm'.try_pick fun key', x =>
-        if key' = key
-        then Some x
+        if key' =. key
+        then x |> Some
         else None
 
 /// ### union_to_string

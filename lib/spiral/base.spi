@@ -266,20 +266,26 @@ inl null forall t. () : t =
     }
 
 /// ### defaultof
-inl defaultof forall t. () : t =
+inl rec defaultof forall t. (() : ()) : t =
     inl run default =
         real
             typecase t with
             | string => ""
             | int => 0
             | char => '\0'
+            | ~a * ~b => (defaultof `a ()), (defaultof `b ())
             | option ~u => None `u
-            | _ => default ()
+            | ~t =>
+                if real_core.union_type_is `t then
+                    real_core.union_untag `t 0
+                        (fun k => forall v. => real_core.nominal_create `t (k, ()))
+                        (fun _ => failwith `t ($'"defaultof / invalid tag"' : string))
+                else default ()
     backend_switch {
-        Gleam = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
-        Lua = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
+        Gleam = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
+        Lua = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
         Fsharp = fun () => run (fun () => $'Unchecked.defaultof<`t>' : t) : t
-        Python = fun () => run (fun () => (real failwith `t "base.defaultof / invalid type") : t) : t
+        Python = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
     }
 
 /// ### choice2'

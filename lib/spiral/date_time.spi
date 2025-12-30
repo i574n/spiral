@@ -22,6 +22,7 @@ nominal timestamp_python =
 type timestamp_switch =
     {
         Gleam : timestamp_gleam
+        Lua : i64
         Fsharp : i64
         Python : timestamp_python
     }
@@ -116,6 +117,7 @@ nominal date_time_python =
 type date_time_switch =
     {
         Gleam : date_gleam * time_of_day_gleam * duration_gleam
+        Lua : i64
         Fsharp : $'System.DateTime'
         Python : date_time_python
     }
@@ -184,6 +186,18 @@ inl format (format : string) (date_time : date_time) : string =
                 else format
             $'!tempo_date_time |> datetime.format(tempo.Custom(!format))' : string
             // #?{ date_time format date time_of_day duration timestamp tempo_date_time }
+        Lua = fun () =>
+            inl date_time = join date_time
+            if format <> ""
+            then $'os.date(!format, !date_time)' : string
+            else
+                inl date =
+                    if get_year date_time < 1000
+                    then $'(os.date("%m-%d-%y", !date_time) or ""):gsub("0(%d)", "%1")' : string
+                    else $'(os.date("%m-%d-%Y", !date_time) or ""):gsub("0(%d)", "%1")' : string
+                inl time =
+                    $'os.date("%I:%M:%S %p", !date_time) or ""' : string
+                date ++# " " ++# time
         Fsharp = fun () =>
             inl format =
                 if format = ""
@@ -197,18 +211,6 @@ inl format (format : string) (date_time : date_time) : string =
             elif get_year date_time < 1000
             then $'\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
             else $'\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
-        Lua = fun () =>
-            inl date_time = join date_time
-            if format <> ""
-            then $'os.date(!format, !date_time)' : string
-            else
-                inl date =
-                    if get_year date_time < 1000
-                    then $'(os.date("%m-%d-%y", !date_time) or ""):gsub("0(%d)", "%1")' : string
-                    else $'(os.date("%m-%d-%Y", !date_time) or ""):gsub("0(%d)", "%1")' : string
-                inl time =
-                    $'os.date("%I:%M:%S %p", !date_time) or ""' : string
-                date ++# " " ++# time
     }
 
 /// ### format_iso8601
@@ -223,16 +225,16 @@ inl format_iso8601 (date_time : date_time) : string =
 /// ### min_value
 inl min_value () : date_time =
     backend_switch {
-        Lua = fun () =>
-            inl date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0} or -62135596800' : date_time
-            date_time
-        Fsharp = fun () => $'System.DateTime.MinValue' : date_time
-        Python = fun () => $'datetime.datetime.min' : date_time
         Gleam = fun () =>
             inl date : date_gleam = $'calendar.Date(1, calendar.January, 1)' : date_gleam
             inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(0, 0, 0, 0)' : time_of_day_gleam
             inl duration : duration_gleam = $'duration.seconds(0) ' : duration_gleam
             (date, time_of_day, duration) |> convert.to : date_time
+        Lua = fun () =>
+            inl date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0} or -62135596800' : date_time
+            date_time
+        Fsharp = fun () => $'System.DateTime.MinValue' : date_time
+        Python = fun () => $'datetime.datetime.min' : date_time
     }
 
 /// ### max_value
@@ -427,7 +429,6 @@ inl time_span x : time_span =
 
 /// ### new_time_span
 inl new_time_span (a : date_time) (b : date_time) : time_span =
-    // | _ => fun () => $'!b - !a '
     run_target function
         | Gleam => fun () =>
             inl timestamp : timestamp = a |> split_date_time |> new_timestamp_gleam
@@ -443,7 +444,6 @@ inl new_time_span (a : date_time) (b : date_time) : time_span =
 inl total_seconds (time_span : time_span) : f64 =
     inl n : i64 =
         run_target function
-            | Cuda => fun () => $'!time_span.total_seconds() * 10000000' : i64
             | Gleam => fun () =>
                 backend_switch {
                     Gleam = fun () => global "import gleam/time/duration"
@@ -456,6 +456,7 @@ inl total_seconds (time_span : time_span) : f64 =
             | Lua => fun () =>
                 inl seconds = time_span |> convert.unbox : f64
                 seconds * 10000000 |> convert.convert : i64
+            | Cuda => fun () => $'!time_span.total_seconds() * 10000000' : i64
             | Rust (Some (Contract)) => fun () => null ()
             | _ => fun () => time_span |> $'_.Ticks' : i64
     n / 10000000 |> convert.convert
@@ -463,8 +464,6 @@ inl total_seconds (time_span : time_span) : f64 =
 /// ### days
 inl days (time_span : time_span) : f64 =
     backend_switch {
-        Fsharp = fun () => time_span |> $'_.TotalDays' : f64
-        Python = fun () => $'!time_span.days' : f64
         Gleam = fun () =>
             backend_switch {
                 Gleam = fun () => global "import gleam/time/duration"
@@ -476,6 +475,8 @@ inl days (time_span : time_span) : f64 =
         Lua = fun () =>
             inl seconds = time_span |> convert.unbox : f64
             seconds / 86400 |> convert.convert : f64
+        Fsharp = fun () => time_span |> $'_.TotalDays' : f64
+        Python = fun () => $'!time_span.days' : f64
     }
 
 /// ### ticks
@@ -509,7 +510,7 @@ inl ticks (date_time : date_time) : timestamp =
             |> new_time_span (min_value ())
             |> total_seconds
             |> ((*) 10000000)
-            |> convert.to
+            |> convert.convert
             : timestamp
     }
 
@@ -517,11 +518,11 @@ inl ticks (date_time : date_time) : timestamp =
 inl hours (time_span : time_span) : i32 =
     backend_switch {
         Gleam = fun () =>
-            inl duration : duration_gleam = time_span |> $'duration.hours'
-            $'duration.to_hours(!duration)' : i32
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            ((total_seconds / 3600.0) |> math.floor |> convert.unbox : i32) % 24
         Lua = fun () =>
-            inl total_seconds = time_span |> convert.unbox : f64
-            total_seconds / 3600.0 |> convert.convert : i32
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            ((total_seconds / 3600.0) |> math.floor |> convert.unbox : i32) % 24
         Fsharp = fun () => time_span |> $'_.Hours' : i32
         Python = fun () => $'!time_span.seconds // 3600' : i32
     }
@@ -529,6 +530,12 @@ inl hours (time_span : time_span) : i32 =
 /// ### minutes
 inl minutes (time_span : time_span) : i32 =
     backend_switch {
+        Gleam = fun () =>
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            ((total_seconds / 60.0) |> math.floor |> convert.unbox : i32) % 60
+        Lua = fun () =>
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            ((total_seconds / 60.0) |> math.floor |> convert.unbox : i32) % 60
         Fsharp = fun () => time_span |> $'_.Minutes' : i32
         Python = fun () => $'(!time_span.seconds // 60) % 60' : i32
     }
@@ -536,6 +543,12 @@ inl minutes (time_span : time_span) : i32 =
 /// ### seconds
 inl seconds (time_span : time_span) : i32 =
     backend_switch {
+        Gleam = fun () =>
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            (total_seconds |> math.floor |> convert.unbox : i32) % 60
+        Lua = fun () =>
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            (total_seconds |> math.floor |> convert.unbox : i32) % 60
         Fsharp = fun () => time_span |> $'_.Seconds' : i32
         Python = fun () => $'!time_span.seconds % 60' : i32
     }
@@ -544,11 +557,11 @@ inl seconds (time_span : time_span) : i32 =
 inl milliseconds (time_span : time_span) : i32 =
     backend_switch {
         Gleam = fun () =>
-            inl duration : duration_gleam = time_span |> $'duration.milliseconds'
-            $'duration.to_milliseconds(!duration)' : i32
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            ((total_seconds * 1000.0) |> math.floor |> convert.unbox : i32) % 1000
         Lua = fun () =>
-            inl total_seconds = time_span |> convert.unbox : f64
-            (total_seconds * 1000.0) % 1000.0 |> convert.convert : i32
+            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+            ((total_seconds * 1000.0) |> math.floor |> convert.unbox : i32) % 1000
         Fsharp = fun () => time_span |> $'_.Milliseconds' : i32
         Python = fun () => $'!time_span.microseconds' : i32
     }
@@ -565,24 +578,6 @@ inl time_span_format (format : string) (time_span : time_span) : string =
             !\\((time_span, format), $'"$0.toString($1)"')
         | _ => fun format, time_span =>
             backend_switch {
-                Fsharp = fun () => $'!time_span.ToString !format ' : string
-                Python = fun () =>
-                    inl date = $'!time_span + !(min_value ())' : date_time
-                    inl time = $'!date.strftime("%H:%M:%S")' : string
-                    inl days = time_span |> days
-                    inl result =
-                        if days <= 0
-                        then time
-                        else #?**days ++# time
-                    inl ms = time_span |> milliseconds
-                    if ms <= 0
-                    then result
-                    else
-                        inl ms =
-                            #?**ms
-                            |> sm'.pad_left 3 '0'
-                            |> sm'.pad_right 7 '0'
-                        result ++# ms
                 Gleam = fun () =>
                     global "import tempo/datetime"
                     inl tempo_date_time : tempo_date_time =
@@ -615,6 +610,24 @@ inl time_span_format (format : string) (time_span : time_span) : string =
                             |> sm'.pad_left 3 '0'
                             |> sm'.pad_right 7 '0'
                         result ++# ms
+                Fsharp = fun () => $'!time_span.ToString !format ' : string
+                Python = fun () =>
+                    inl date = $'!time_span + !(min_value ())' : date_time
+                    inl time = $'!date.strftime("%H:%M:%S")' : string
+                    inl days = time_span |> days
+                    inl result =
+                        if days <= 0
+                        then time
+                        else #?**days ++# time
+                    inl ms = time_span |> milliseconds
+                    if ms <= 0
+                    then result
+                    else
+                        inl ms =
+                            #?**ms
+                            |> sm'.pad_left 3 '0'
+                            |> sm'.pad_right 7 '0'
+                        result ++# ms
             }
 
 /// ### time_zone_info
@@ -623,10 +636,6 @@ nominal time_zone_info = $'System.TimeZoneInfo'
 /// ### add_days
 inl add_days (days : i32) (date_time : date_time) : date_time =
     backend_switch {
-        Fsharp = fun () =>
-            $'!date_time.AddDays' days : date_time
-        Python = fun () =>
-            $'!date_time + datetime.timedelta(days=!days)' : date_time
         Gleam = fun () =>
             global "import gleam/time/duration"
             inl duration : duration_gleam = $'duration.days(#days)' : duration_gleam
@@ -637,6 +646,10 @@ inl add_days (days : i32) (date_time : date_time) : date_time =
         Lua = fun () =>
             inl seconds = days * 86400
             (date_time |> convert.unbox) + seconds |> convert.unbox : date_time
+        Fsharp = fun () =>
+            $'!date_time.AddDays' days : date_time
+        Python = fun () =>
+            $'!date_time + datetime.timedelta(days=!days)' : date_time
     }
 
 /// ### to_calendar
@@ -656,6 +669,9 @@ inl now () : date_time =
         Gleam = fun () =>
             inl timestamp = $'timestamp.system_time ()' : timestamp
             timestamp |> to_calendar
+        Lua = fun () =>
+            inl date_time = $'os.time()' : date_time
+            date_time
         Fsharp = fun () =>
             run_target function
                 | Rust (Some (Contract)) => fun () => null ()
@@ -667,6 +683,12 @@ inl now () : date_time =
 /// ### utc_now
 inl utc_now () : date_time =
     backend_switch {
+        Gleam = fun () =>
+            inl timestamp = $'timestamp.system_time ()' : timestamp
+            timestamp |> to_calendar_utc
+        Lua = fun () =>
+            inl date_time = $'os.time()' : date_time
+            date_time
         Fsharp = fun () => $'System.DateTime.UtcNow' : date_time
         Python = fun () => $'datetime.datetime.utcnow()' : date_time
     }
@@ -803,8 +825,6 @@ inl get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : t
             |> fun x => $'!x |> `time_span '
         | target => fun () =>
             backend_switch {
-                Fsharp = fun () => failwith $'$"date_time.get_utc_offset / target: {!target}"' : time_span
-                Python = fun () => $'!date_time.utcoffset()' : time_span
                 Gleam = fun () =>
                     global "import gleam/time/duration"
                     inl duration : duration_gleam = $'calendar.utc_offset()' : duration_gleam
@@ -819,6 +839,8 @@ inl get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : t
                     inl date_time = date_time |> convert.unbox : int
                     inl offset = 5i32 * 3600i32
                     offset * 10000000 |> convert.convert : time_span
+                Fsharp = fun () => failwith $'$"date_time.get_utc_offset / target: {!target}"' : time_span
+                Python = fun () => $'!date_time.utcoffset()' : time_span
             }
 
 /// ### date_time_guid_from_date_time
