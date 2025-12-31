@@ -643,7 +643,7 @@ inl rev' forall t. (items : list' t) : list' t =
                 if i < 0i32
                 then *result
                 else
-                    result <- cons' ($'!items[!i]') (*result)
+                    result <- cons' ($'!items[!i + 1]') (*result)
                     루프 (i - 1i32)
             루프 (len - 1i32)
         Fsharp = fun () => items |> $'List.rev' : list' t
@@ -670,7 +670,7 @@ inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
                 if i < 0i32
                 then *result
                 else
-                    result <- $'!fn(!list[!i])' :: *result
+                    result <- $'!fn(!list[!i + 1])' :: *result
                     루프 (i - 1i32)
             루프 (len - 1i32)
         Fsharp = fun () =>
@@ -733,7 +733,7 @@ inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
                 if i >= len
                 then *result
                 else
-                    inl item = $'!list[!i]' : t
+                    inl item = $'!list[!i + 1]' : t
                     if fn item
                     then
                         result <- cons' item (*result)
@@ -761,7 +761,7 @@ inl map forall t u. (fn : t -> u) (list : list' t) : list' u =
                 if i >= len
                 then *result
                 else
-                    result <- cons' ($'!fn(!list[!i])') (*result)
+                    result <- cons' ($'!fn(!list[!i + 1])') (*result)
                     루프 (i + 1i32)
             루프 0i32
         Fsharp = fun () => list |> $'List.map' fn : list' u
@@ -796,7 +796,7 @@ inl distinct' forall t. (list : list' t) : list' t =
                 if i >= len
                 then *result
                 else
-                    inl item = $'!list[!i]' : t
+                    inl item = $'!list[!i + 1]' : t
                     if exists' (fun x => x = item) (*seen)
                     then 루프 (i + 1i32)
                     else
@@ -847,7 +847,7 @@ inl to_array' forall t. (items : list' t) : array_base t =
                     inl (a result) = result
                     result
                 else
-                    set result i $'!items[!i]'
+                    set result i $'!items[!i + 1]'
                     루프 (i + 1i32)
             루프 0i32
         Fsharp = fun () => items |> $'List.toArray' : array_base t

@@ -10750,8 +10750,9 @@ module spiral_compiler =
 
                 let loopParams = Array.append (Array.map (sprintf "v%i") loopVars) (Array.map (sprintf "v%i") capturedVars)
                 let paramList = loopParams |> String.concat ", "
+                let retVars = Array.append loopVars capturedVars
                 let retPat =
-                    match loopVars with
+                    match retVars with
                     | [||] -> "Nil"
                     | [|x|] -> sprintf "v%i" x
                     | xs -> sprintf "#(%s)" (xs |> Array.map (sprintf "v%i") |> String.concat ", ")
@@ -10884,8 +10885,54 @@ module spiral_compiler =
                 global' "import gary/array"
                 global' "import gleam/option"
                 global' "import gleam/result"
-                $"array.create_fixed_size(size: {tup b}, default: option.None) " +
-                $"|> result.unwrap(array.from_list(default: option.None, [])) " +
+                let rec default_value t =
+                    let rec atom = function
+                        | YNominal _ | YApply _ as t -> atom (env.nominal_apply t)
+                        | YMacro [Text "backend_switch "; Type (YRecord r)] ->
+                            match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameGleam then Some v else None) with
+                            | Some x -> default_value x
+                            | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameGleam}' field."
+                        | YPrim BoolT -> "False"
+                        | YPrim (Float32T | Float64T) -> "0.0"
+                        | YPrim (StringT | CharT) -> "\"\""
+                        | YPrim _ -> "0"
+                        | YArray t -> sprintf "array.from_list(default: %s, [])" (default_value t)
+                        | YUnion u ->
+                            let u = u.Item
+                            let key', key = u.cases |> Map.toArray |> Array.head |> fst
+                            let i = u.tags.[key]
+                            let tag, free_vars, prefix =
+                                match u.layout with
+                                | UHeap -> let r = uheap u.cases in r.tag, r.free_vars, "Uh"
+                                | UStack -> let r = ustack u.cases in r.tag, r.free_vars, "Us"
+                            let vars =
+                                match free_vars.[key', key] with
+                                | [||] -> ""
+                                | xs -> xs |> Array.map (fun (L(_, t)) -> atom t) |> String.concat ", " |> sprintf "(%s)"
+                            sprintf "%s%ii%i%s" prefix tag i vars
+                        | YLayout(_, lay) as t ->
+                            let name, tag, free_vars =
+                                match lay with
+                                | Heap -> let r = heap t in "Heap", r.tag, r.free_vars
+                                | HeapMutable -> let r = mut t in "Mut", r.tag, r.free_vars
+                                | StackMutable -> raise_codegen_error "Compiler error: The Gleam backend doesn't support stack mutable layout types."
+                            let vars =
+                                free_vars
+                                |> Array.map (fun (L(i, t)) -> sprintf "l%i: %s" i (atom t))
+                                |> String.concat ", "
+                            if vars = "" then sprintf "%s%i()" name tag else sprintf "%s%i(%s)" name tag vars
+                        | YFun _ -> raise_codegen_error "Compiler error: Cannot compute a default value for a function type in Gleam codegen."
+                        | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
+                        | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
+                        | t ->
+                            match env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, t)) -> atom t) with
+                            | [||] -> "Nil"
+                            | [|x|] -> x
+                            | xs -> xs |> String.concat ", " |> sprintf "#(%s)"
+                    atom t
+                let def = default_value a
+                $"array.create_fixed_size(size: {tup b}, default: option.Some({def})) " +
+                $"|> result.unwrap(array.from_list([], default: option.None)) " +
                 $"|> array.map(fn(_, x) {{ " +
                 $"     case x {{ " +
                 $"       option.Some(x) -> x " +

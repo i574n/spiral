@@ -214,6 +214,7 @@ inl to_char_array (str : string) : array_base char =
 #!spiral
 
 ///- --test
+///> lua
 ///> gleam
 ///> fsharp
 ///> cuda

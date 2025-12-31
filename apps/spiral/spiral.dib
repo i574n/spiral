@@ -932,7 +932,7 @@ inl magic_marker () : parser string =
 |> resultm.map_error eval
 |> sm'.format_debug
 |> _assert_eq (
-    "US13_1\n  \"parsing.p_string / unexpected string / { "
+    "US15_1\n  \"parsing.p_string / unexpected string / { "
     ++# $'"expected = ##!!; got = ####; rest = ####!!magic; s = !(new_parser_state 0 1 1 8) }\\\""'
 )
 
