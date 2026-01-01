@@ -10253,6 +10253,13 @@ let peval (env : PartEvalTopEnv) (x : E) =
     let join_point_closure = Dictionary(HashIdentity.Structural)
     let join_point_type = Dictionary(HashIdentity.Structural)
     let backend_strings = HashConsTable()
+    let backend_switch_validate_all = ref true
+
+    let inline map_try_find_by_string (key : string) (m : Map<int * string, 'v>) : 'v option =
+        let mutable r = None
+        for KeyValue((_, k), v) in m do
+            if k = key then r <- Some v
+        r
 
     let rec ty_to_data s x =
         let f = ty_to_data s
@@ -11242,18 +11249,31 @@ let peval (env : PartEvalTopEnv) (x : E) =
                 | None -> t <- Some t'
             match term s a with
             | DRecord l ->
-                l |> Map.iter (fun (_,backend) b ->
-                    // The reason why we're evaling all the branches intead of just one and in this specific order is because otherwise
-                    // compile time hashmaps could make type inference unsound.
-                    if backend = s.backend.node then
+                if backend_switch_validate_all.Value = false then
+                    match map_try_find_by_string s.backend.node l with
+                    | Some b ->
                         let d' = apply s (b, DB)
                         validate_type (data_to_ty s d')
                         d <- Some d'
-                    else
-                        let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend}
-                        let d' = apply s (b, DB)
-                        validate_type (data_to_ty s d')
-                )
+                    | None -> ()
+                else
+                    l |> Map.iter (fun (_,backend) b ->
+                        // The reason why we're evaling all the branches intead of just one and in this specific order is because otherwise
+                        // compile time hashmaps could make type inference unsound.
+                        if backend = s.backend.node then
+                            let d' = apply s (b, DB)
+                            validate_type (data_to_ty s d')
+                            d <- Some d'
+                        else
+                            let old = backend_switch_validate_all.Value
+                            backend_switch_validate_all.Value <- false
+                            try
+                                let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend}
+                                let d' = apply s (b, DB)
+                                validate_type (data_to_ty s d')
+                            finally
+                                backend_switch_validate_all.Value <- old
+                    )
             | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
             match d with
             | Some cur -> cur
@@ -11261,8 +11281,7 @@ let peval (env : PartEvalTopEnv) (x : E) =
         | EOp(_,UnsafeBackendSwitch,[a]) ->
             match term s a with // Unsafe version of the backend switch. Shouldn't ever be mixed with type level computations and bottom up inference.
             | DRecord l -> // Only use it if the code is backend agnostic.
-                // match Map.tryFind s.backend.node l with
-                match Map.tryPick (fun (_, backend) b -> if backend = s.backend.node then Some b else None) l with
+                match map_try_find_by_string s.backend.node l with
                 | Some b -> apply s (b, DB)
                 | None -> raise_type_error s $"Cannot find the backend {s.backend.node} in the backend switch op."
             | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
@@ -17258,10 +17277,15 @@ let wdiff_tokenizer_all (state : TokenizerState) text =
     let text' = state.lines_text |> Seq.toArray
     let rec loop (index,text : string [] as x) i = if i < min text.Length state.lines_text.Length && index text i = index text' i then loop x (i+1) else i
     let from = loop ((fun text i -> text.[i]),text) 0
-    if from = text.Length then state else
-    let text = text.[from..]
-    let fromRev = loop ((fun text i -> text.[text.Length-1-i]),text) 0
-    replace' state {|from=from; nearTo=text'.Length-fromRev; lines=text.[..text.Length-1-fromRev]|}
+    if from = text.Length && text.Length = text'.Length then state else
+    if from = text.Length then
+        replace' state {|from=from; nearTo=text'.Length; lines=[||]|}
+    else
+        let text = text.[from..]
+        let fromRev = loop ((fun text i -> text.[text.Length-1-i]),text) 0
+        let mid_len = text.Length - fromRev
+        let mid = if mid_len <= 0 then [||] else text.[..mid_len-1]
+        replace' state {|from=from; nearTo=text'.Length-fromRev; lines=mid|}
 
 #!markdown
 
@@ -17271,17 +17295,7 @@ let wdiff_tokenizer_all (state : TokenizerState) text =
 
 let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) =
     if edit.nearTo <= state.lines_text.Length then
-        let lines_text =
-            replace edit.from edit.nearTo edit.lines state.lines_text
-
-        let sb = System.Text.StringBuilder()
-        let last = lines_text.Length - 1
-        for i = 0 to last do
-            if i > 0 then sb.Append('\n') |> ignore
-            sb.Append(lines_text.[i] : string) |> ignore
-        let full_text = sb.ToString()
-
-        Ok (wdiff_tokenizer_all wdiff_tokenizer_init full_text)
+        Ok (replace' state edit)
     else
         Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
 

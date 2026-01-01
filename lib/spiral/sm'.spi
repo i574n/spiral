@@ -163,8 +163,9 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
         |> concat_list ""
     backend_switch {
         Gleam = fun () =>
-            global "import gleam/io"
-            $'io.println(!(trace ()))' : ()
+            // TODO: uncomment
+            // global "import gleam/io"
+            // $'io.println(!(trace ()))' : ()
             sm.slice s { from to } : string
         Lua = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
@@ -437,13 +438,14 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
 /// ### span_from
 inl span_from pred str i0 =
     inl len = str |> length
-    let rec 루프 (i : int) =
+    inl rec body (i : int) =
         if i >= len
         then i
         elif str |> index i |> pred
         then 루프 (i + 1)
         else i
-    루프 i0
+    and inl 루프 i = join_body_unit body i i
+    i0 |> 루프
 
 /// ### char_contains
 inl char_contains (chars : list char) (c : char) : bool =
@@ -1097,8 +1099,10 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
         |> concat_list ""
     backend_switch {
         Gleam = fun () =>
-            global "import gleam/io"
-            $'io.println(!(trace ()))' : ()
+            // TODO: uncomment
+            // global "import gleam/io"
+            // $'io.println(!(trace ()))' : ()
+            ()
         Lua = id : () -> ()
         Fsharp = id : () -> ()
         Python = id : () -> ()

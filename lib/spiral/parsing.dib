@@ -1042,6 +1042,63 @@ inl many_chars (p : parser char) : parser string = fun t, i, s =>
 
 #!markdown
 
+### advance_while_no_nl
+
+#!spiral
+
+inl advance_while_no_nl (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)
+    : int * parser_state
+    =
+    if i >= s'.text_length
+    then i, s
+    else
+        inl i' = i |> sm'.span_from fn t
+        inl i' =
+            if i' > s'.text_length
+            then s'.text_length
+            else i'
+        inl consumed = i' - i
+        if consumed = 0
+        then i, s
+        else
+            i',
+            { s' with position = { line = s'.position.line; col = s'.position.col + consumed } }
+            |> parser_state
+    |> trace_format Verbose fun r =>
+        "parsing.advance_while_no_nl", { i t_len = ##t; s r }
+
+#!markdown
+
+### advance_newlines
+
+#!spiral
+
+inl advance_newlines (t : string) (i : int) (parser_state s' as s)
+    : int * parser_state
+    =
+    if i >= s'.text_length
+    then i, s
+    else
+        inl i' = i |> sm'.span_from ((=) '\n') t
+        inl i' =
+            if i' > s'.text_length
+            then s'.text_length
+            else i'
+        inl consumed = i' - i
+        if consumed = 0
+        then i, s
+        else
+            i',
+            { s' with
+                line_start = i'
+                position = { line = s'.position.line + consumed; col = 1 }
+            }
+            |> parser_state
+    |> trace_format Verbose fun r =>
+        "parsing.advance_newlines", { i t_len = ##t; s r }
+
+#!markdown
+
 ### many_chars_till
 
 #!spiral
@@ -1055,7 +1112,7 @@ inl many_chars_till (p : parser char) (end_p : parser _) = fun t, i, (parser_sta
         if i' >= s'.text_length
         then Ok ((fun () => if i' > i then t |> slice i i' else ""), i', s'')
         else
-            inl i'', s''' = s'' |> advance_while (fun c => c <> '\n') t i'
+            inl i'', s''' = s'' |> advance_while_no_nl (fun c => c <> '\n') t i'
             if i'' >= s'.text_length
             then Ok ((fun () => if i'' > i then t |> slice i i'' else ""), i'', s''')
             else
@@ -1369,7 +1426,7 @@ inl is_space c =
 #!spiral
 
 inl spaces1 () : parser () = fun t, i, (parser_state s' as s) =>
-    inl i', s' = s |> advance_while is_space t i
+    inl i', s' = s |> advance_while_no_nl is_space t i
     trace Verbose (fun () => "parsing.spaces1") (fun () => { t_len = ##t; i s i' s' })
     if i' <> i
     then Ok (id, i', s')
@@ -1387,7 +1444,7 @@ inl spaces1 () : parser () = fun t, i, (parser_state s' as s) =>
 #!spiral
 
 inl spaces () : parser () = fun t, i, s =>
-    inl i', s' = s |> advance_while is_space t i
+    inl i', s' = s |> advance_while_no_nl is_space t i
     trace Verbose (fun () => "parsing.spaces") (fun () => { t_len = ##t; i i' s s' })
     Ok (id, i', s')
 
@@ -1456,7 +1513,7 @@ inl opt p : parser (option _) = fun t, i, s =>
 
 inl rest_of_line () : parser string = fun t, i, s =>
     trace Verbose (fun () => "parsing.rest_of_line") (fun () => { t_len = ##t })
-    inl i'', s' = s |> advance_while ((<>) '\n') t i
+    inl i'', s' = s |> advance_while_no_nl ((<>) '\n') t i
     Ok ((fun () => t |> slice i i''), i'', s')
 
 #!markdown
@@ -1668,7 +1725,7 @@ inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() ->
 
 inl new_lines () : parser () = fun t, i, s =>
     trace Verbose (fun () => "parsing.new_lines") (fun () => { t_len = ##t })
-    inl i', s' = s |> advance_while ((=) '\n') t i
+    inl i', s' = s |> advance_newlines t i
     Ok (id, i', s')
     |> trace_format Verbose fun r => "parsing.new_lines", { t_len = ##t; r}
 
@@ -1689,7 +1746,7 @@ inl new_lines () : parser () = fun t, i, s =>
 
 inl new_lines1 () : parser () = fun t, i, (parser_state s' as s) =>
     trace Verbose (fun () => "parsing.new_lines1") (fun () => { t_len = ##t })
-    inl i', s'' = s |> advance_while ((=) '\n') t i
+    inl i', s'' = s |> advance_newlines t i
     if i' <> i
     then Ok (id, i', s'')
     else
