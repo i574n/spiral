@@ -9608,25 +9608,34 @@ let raise_type_error (d: LangEnv) x = raise (PartEvalTypeError(d.trace,x))
 let data_to_rdata (d: LangEnv) (hc : HashConsTable) call_data =
     let hc x = hc.Add x
     let m = Dictionary(HashIdentity.Reference)
+    let visiting = HashSet(HashIdentity.Reference)
     let call_args = ResizeArray()
     let rec f x =
-        Utils.memoize m (function
-            | DPair(a,b) -> RePair(hc(f a, f b))
-            | DSymbol a -> ReSymbol a
-            | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
-            | DForall(a,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
-            | DExists(a,b) -> ReExists(hc(a,f b))
-            | DRecord l -> ReRecord(hc(Map.map (fun _ -> f) l))
-            | DV(L(_,ty) as t) -> call_args.Add t; ReV(hc (call_args.Count-1,ty))
-            | DLit a -> ReLit a
-            | DTLit a -> ReTLit a
-            | DUnion(a,b) -> ReUnion(hc(f a,b))
-            | DNominal(a,b) -> ReNominal(hc(f a,b))
-            | DB -> ReB
-            | DHashMap(x,is_writable) when is_writable.Value = false -> x |> Seq.map (fun kv -> f kv.Key, f kv.Value) |> Seq.toArray |> hc |> ReHashMap
-            | DHashMap _ -> raise_type_error d "The mutable compile time HashMap needs to be made immutable before it can be passed through a join point."
-            | DHashSet _ -> raise_type_error d "The mutable compile-time HashSet cannot be passed through join points."
-            ) x
+        match m.TryGetValue x with
+        | true, v -> v
+        | false, _ ->
+            if visiting.Add x = false then
+                raise_type_error d "Compiler error: Cyclic compile-time value detected while hashing join point environment."
+            let v =
+                match x with
+                | DPair(a,b) -> RePair(hc(f a, f b))
+                | DSymbol a -> ReSymbol a
+                | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
+                | DForall(a,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
+                | DExists(a,b) -> ReExists(hc(a,f b))
+                | DRecord l -> ReRecord(hc(Map.map (fun _ -> f) l))
+                | DV(L(_,ty) as t) -> call_args.Add t; ReV(hc (call_args.Count-1,ty))
+                | DLit a -> ReLit a
+                | DTLit a -> ReTLit a
+                | DUnion(a,b) -> ReUnion(hc(f a,b))
+                | DNominal(a,b) -> ReNominal(hc(f a,b))
+                | DB -> ReB
+                | DHashMap(x,is_writable) when is_writable.Value = false -> x |> Seq.map (fun kv -> f kv.Key, f kv.Value) |> Seq.toArray |> hc |> ReHashMap
+                | DHashMap _ -> raise_type_error d "The mutable compile time HashMap needs to be made immutable before it can be passed through a join point."
+                | DHashSet _ -> raise_type_error d "The mutable compile-time HashSet cannot be passed through join points."
+            visiting.Remove x |> ignore
+            m.Add(x,v)
+            v
     let x = Array.map f call_data
     call_args.ToArray(),x
 
@@ -9641,24 +9650,33 @@ let data_to_rdata (d: LangEnv) (hc : HashConsTable) call_data =
 // references to unused nodes to end up in anywhere other than join point keys (which will be weak).
 let rename_global_term (s : LangEnv) =
     let m = Dictionary(HashIdentity.Reference)
+    let visiting = HashSet(HashIdentity.Reference)
     let rec f x =
-        Utils.memoize m (function
-            | DPair(a,b) -> DPair(f a, f b)
-            | DForall(body,a,b,c,d) -> DForall(body,Array.map f a,b,c,d)
-            | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,Array.map f a,b,c,d)
-            | DExists(annot,a) -> DExists(annot, f a)
-            | DRecord l -> DRecord(Map.map (fun _ -> f) l)
-            | DV(L(_,ty)) -> let x = DV(L(s.i.Value,ty)) in s.i.Value <- s.i.Value + 1; x
-            | DUnion(a,b) -> DUnion(f a,b)
-            | DNominal(a,b) -> DNominal(f a,b)
-            | DSymbol _ | DLit _ | DTLit _ | DB as x -> x
-            | DHashMap(x,is_writable) when is_writable.Value = false ->
-                let q = OrderedDictionary(HashIdentity.Reference)
-                x |> Seq.iter (fun kv -> q.Add(f kv.Key, f kv.Value))
-                DHashMap(q,is_writable)
-            | DHashMap _ -> raise_type_error s "The mutable compile time HashMap needs to be made immutable before it can be renamed."
-            | DHashSet _ -> raise_type_error s "The mutable compile-time HashSets cannot be renamed."
-            ) x
+        match m.TryGetValue x with
+        | true, v -> v
+        | false, _ ->
+            if visiting.Add x = false then
+                raise_type_error s "Compiler error: Cyclic compile-time value detected during global-term renaming."
+            let v =
+                match x with
+                | DPair(a,b) -> DPair(f a, f b)
+                | DForall(body,a,b,c,d) -> DForall(body,Array.map f a,b,c,d)
+                | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,Array.map f a,b,c,d)
+                | DExists(annot,a) -> DExists(annot, f a)
+                | DRecord l -> DRecord(Map.map (fun _ -> f) l)
+                | DV(L(_,ty)) -> let x = DV(L(s.i.Value,ty)) in s.i.Value <- s.i.Value + 1; x
+                | DUnion(a,b) -> DUnion(f a,b)
+                | DNominal(a,b) -> DNominal(f a,b)
+                | DSymbol _ | DLit _ | DTLit _ | DB as x -> x
+                | DHashMap(x,is_writable) when is_writable.Value = false ->
+                    let q = OrderedDictionary(HashIdentity.Reference)
+                    x |> Seq.iter (fun kv -> q.Add(f kv.Key, f kv.Value))
+                    DHashMap(q,is_writable)
+                | DHashMap _ -> raise_type_error s "The mutable compile time HashMap needs to be made immutable before it can be renamed."
+                | DHashSet _ -> raise_type_error s "The mutable compile-time HashSets cannot be renamed."
+            visiting.Remove x |> ignore
+            m.Add(x,v)
+            v
     {s with env_global_term = Array.map f s.env_global_term}
 
 #!markdown
@@ -10379,24 +10397,33 @@ let peval (env : PartEvalTopEnv) (x : E) =
         f x
     and dyn do_lit s x =
         let m = Dictionary(HashIdentity.Reference)
+        let visiting = HashSet(HashIdentity.Reference)
         let mutable dirty = false
         let rec f x =
-            Utils.memoize m (function
-                | DPair(a,b) -> DPair(f a, f b)
-                | DB | DV _ | DTLit _ | DSymbol _ as a -> a
-                | DRecord l -> DRecord(Map.map (fun _ -> f) l)
-                | DNominal(DUnion(DPair(DSymbol k,v),b),b') -> dirty <- true; push_typedop_no_rewrite s (TyUnionBox(k,f v,b)) b'
-                | DUnion _ -> raise_type_error s "Compiler error: Malformed union"
-                | DNominal(a,b) -> DNominal(f a,b)
-                | DLit (LitString _ as v) -> dirty <- true; push_op s Dyn x (lit_to_ty v)
-                | DLit v as x -> if do_lit then dirty <- true; push_op_no_rewrite s Dyn x (lit_to_ty v) else x
-                | DFunction(body,Some annot,term',ty',sz_term,sz_ty) -> dirty <- true; closure_convert s (body,annot,term',ty',sz_term,sz_ty) |> fst
-                | DFunction(_,None,_,_,_,_) -> raise_type_error s "Cannot convert a function that is not annotated into a runtime variable."
-                | DExists _ -> raise_type_error s "Cannot dyn an existential into a runtime var."
-                | DForall _ -> raise_type_error s "Cannot dyn a forall into a runtime var."
-                | DHashSet _ -> raise_type_error s "Cannot dyn a compile time HashSet into a runtime var."
-                | DHashMap _ -> raise_type_error s "Cannot dyn a compile time HashMap into a runtime var."
-                ) x
+            match m.TryGetValue x with
+            | true, v -> v
+            | false, _ ->
+                if visiting.Add x = false then
+                    raise_type_error s "Compiler error: Cyclic compile-time value detected during dyn."
+                let v =
+                    match x with
+                    | DPair(a,b) -> DPair(f a, f b)
+                    | DB | DV _ | DTLit _ | DSymbol _ as a -> a
+                    | DRecord l -> DRecord(Map.map (fun _ -> f) l)
+                    | DNominal(DUnion(DPair(DSymbol k,v),b),b') -> dirty <- true; push_typedop_no_rewrite s (TyUnionBox(k,f v,b)) b'
+                    | DUnion _ -> raise_type_error s "Compiler error: Malformed union"
+                    | DNominal(a,b) -> DNominal(f a,b)
+                    | DLit (LitString _ as v) -> dirty <- true; push_op s Dyn x (lit_to_ty v)
+                    | DLit v as x -> if do_lit then dirty <- true; push_op_no_rewrite s Dyn x (lit_to_ty v) else x
+                    | DFunction(body,Some annot,term',ty',sz_term,sz_ty) -> dirty <- true; closure_convert s (body,annot,term',ty',sz_term,sz_ty) |> fst
+                    | DFunction(_,None,_,_,_,_) -> raise_type_error s "Cannot convert a function that is not annotated into a runtime variable."
+                    | DExists _ -> raise_type_error s "Cannot dyn an existential into a runtime var."
+                    | DForall _ -> raise_type_error s "Cannot dyn a forall into a runtime var."
+                    | DHashSet _ -> raise_type_error s "Cannot dyn a compile time HashSet into a runtime var."
+                    | DHashMap _ -> raise_type_error s "Cannot dyn a compile time HashMap into a runtime var."
+                visiting.Remove x |> ignore
+                m.Add(x,v)
+                v
         let v = f x
         if dirty then v else x
     and term_real_nominal s x =
@@ -10617,8 +10644,8 @@ let peval (env : PartEvalTopEnv) (x : E) =
             | DV(L(_,YPrim BoolT & type_bool)) ->
                 let lit_tr = DLit(LitBool true)
                 match cse_tryfind s (TyOp(EQ, [cond; lit_tr])) with
-                | Some cond -> if_ s cond on_succ on_fail
-                | None ->
+                | Some cond' when cond' <> cond -> if_ s cond' on_succ on_fail
+                | Some _ | None ->
                     let lit_fl = DLit(LitBool false)
                     let add_rewrite_cases is_true =
                         let cse = Dictionary(HashIdentity.Structural)
@@ -16633,7 +16660,7 @@ module CodegenPython =
             | _ -> "object"
         | _ -> "object"
 
-    type UnionRecPython = {tag : int; free_vars : Map<int * string, TyV[]>}
+    type UnionRecPython = {tag : int; tags : Dictionary<string, int>; free_vars : Map<int * string, TyV[]>}
     type LayoutRecPython = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
     type MethodRecPython = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
     type ClosureRecPython = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]}
@@ -16661,8 +16688,9 @@ module CodegenPython =
         let union show =
             let dict = Dictionary(HashIdentity.Reference)
             let f (a : Union) : UnionRecPython =
+                let tags = a.Item.tags
                 let free_vars = a.Item.cases |> Map.map (fun _ -> part_eval_env.ty_to_data >> data_free_vars)
-                {free_vars=free_vars; tag=dict.Count}
+                {tags=tags; free_vars=free_vars; tag=dict.Count}
             fun x ->
                 let mutable dirty = false
                 let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
@@ -16958,25 +16986,55 @@ module CodegenPython =
         and uheap : _ -> UnionRecPython = union (fun s x ->
             let cases = Array.init x.free_vars.Count (fun i -> $"\"UH{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
             code_env.fwd_dcls.Add $"UH{x.tag} = {cases}"
-            let mutable i = 0
-            x.free_vars |> Map.iter (fun k a ->
-                line s $"class UH{x.tag}_{i}(NamedTuple): # {k}"
+            let by_tag =
+                x.free_vars
+                |> Map.toArray
+                |> Array.map (fun (k,a) ->
+                    let name = snd k
+                    k, x.tags.[name], a
+                )
+                |> fun arr ->
+                    if arr.Length = 0 then arr
+                    else
+                        let tags = arr |> Array.map (fun (_,i,_) -> i)
+                        let min_tag = tags |> Array.min
+                        let max_tag = tags |> Array.max
+                        if min_tag <> 0 || max_tag <> arr.Length - 1 || (tags |> Array.distinct |> Array.length) <> arr.Length then
+                            raise_codegen_error $"Compiler error: Non-contiguous union tags in Python codegen. Got min={min_tag} max={max_tag} len={arr.Length}"
+                        arr |> Array.sortBy (fun (_,i,_) -> i)
+            by_tag
+            |> Array.iter (fun (k,i,a) ->
+                line s $"class UH{x.tag}_{i}(NamedTuple): # {snd k}"
                 let s = indent s
                 a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
                 line s $"tag = {i}"
-                i <- i+1
-                )
+            )
             )
         and ustack : _ -> UnionRecPython = union (fun s x ->
-            let mutable i = 0
-            x.free_vars |> Map.iter (fun k a ->
-                line s $"class US{x.tag}_{i}(NamedTuple): # {k}"
+            let by_tag =
+                x.free_vars
+                |> Map.toArray
+                |> Array.map (fun (k,a) ->
+                    let name = snd k
+                    k, x.tags.[name], a
+                )
+                |> fun arr ->
+                    if arr.Length = 0 then arr
+                    else
+                        let tags = arr |> Array.map (fun (_,i,_) -> i)
+                        let min_tag = tags |> Array.min
+                        let max_tag = tags |> Array.max
+                        if min_tag <> 0 || max_tag <> arr.Length - 1 || (tags |> Array.distinct |> Array.length) <> arr.Length then
+                            raise_codegen_error $"Compiler error: Non-contiguous union tags in Python codegen. Got min={min_tag} max={max_tag} len={arr.Length}"
+                        arr |> Array.sortBy (fun (_,i,_) -> i)
+            by_tag
+            |> Array.iter (fun (k,i,a) ->
+                line s $"class US{x.tag}_{i}(NamedTuple): # {snd k}"
                 let s = indent s
                 a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
                 line s $"tag = {i}"
-                i <- i+1
-                )
-            let cases = Array.init x.free_vars.Count (fun i -> $"US{x.tag}_{i}") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
+            )
+            let cases = Array.init x.free_vars.Count (fun i -> $"\"US{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
             line s $"US{x.tag} = {cases}"
             )
         and heap : _ -> LayoutRecPython = layout (fun s x ->
