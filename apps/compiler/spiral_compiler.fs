@@ -4453,6 +4453,7 @@ module spiral_compiler =
         | FPrototype of VSCRange * RString * RString * TypeVar list * RawTExpr
         | FInstance of VSCRange * RGlobalId * RGlobalId * RawExpr
         | FOpen of VSCRange * RString * RString list
+        | FError of VSCRange
 
     /// ### 'a AdditionType
     type 'a AdditionType =
@@ -5584,7 +5585,7 @@ module spiral_compiler =
             | _ -> Map.add name (constructor v) Map.empty
 
         let psucc = Hopac.Job.thunk >> Hopac.Hopac.memo
-        let pfail = Hopac.Promise.Now.withFailure (System.Exception "Compiler error: Tried to read from a FilledTop that has errors.")
+        let pfail = psucc (fun () -> FError(Unchecked.defaultof<_>))
 
         let top_env_nominal top_env (global_id : GlobalId) tt name vars v : TopEnv =
             { top_env with
@@ -7156,6 +7157,7 @@ module spiral_compiler =
             | FOpen(r,a,b) ->
                 let x = prepassModule_open top_env env a b
                 AOpen {prepassTop_env_empty with term=x.term.env; ty=x.ty.env}
+            | FError _ -> AInclude prepassTop_env_empty
         |}
 
     /// ### prepassTop_env_default
@@ -14602,7 +14604,7 @@ module spiral_compiler =
         // Offset should be ignored when memoizing the results of parsing.
         List.iter (fun (a,b) -> dict.Add(a,b.block)) state.blocks
         let blocks = unparsed_blocks |> List.map (fun x ->
-            x.block, {block=memoize dict (fun a -> Hopac.memo(Job.thunk <| fun () -> (parse_block default_env state.is_top_down) a)) x.block; offset=x.offset}
+            x.block, {block=memoize dict (fun a -> Promise.Now.withValue ((parse_block default_env state.is_top_down) a)) x.block; offset=x.offset}
             )
         {state with blocks = blocks }
 
@@ -14908,7 +14910,7 @@ module spiral_compiler =
             List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
         member _.union(small,big) =
             Job.delay <| fun () ->
-                Hopac.queueIgnore big
+                if Promise.Now.isFulfilled big = false then Hopac.queueIgnore big
                 small >>= fun a ->
                 big >>- fun b ->
                 fst a || fst b, union (snd a) (snd b)
@@ -15111,7 +15113,7 @@ module spiral_compiler =
             List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
         member _.union(small,big) =
             Job.delay <| fun () ->
-                Hopac.queueIgnore big
+                if Promise.Now.isFulfilled big = false then Hopac.queueIgnore big
                 small >>= fun a -> big >>- unionWDiffPrepass a
             |> Hopac.memo
         member _.in_module(name,x) = x >>-* fun env -> in_module name env
