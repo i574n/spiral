@@ -266,7 +266,7 @@ module spiral_compiler =
     let list_try_zip a b = try Some (List.zip a b) with _ -> None
 
     /// ### get_default
-    let inline get_default (memo_dict: Dictionary<_,_>) k def =
+    let inline get_default (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) k def =
         match memo_dict.TryGetValue k with
         | true, v -> v
         | false, _ -> def()
@@ -278,10 +278,10 @@ module spiral_compiler =
         | false, _ -> let v = f k in memo_dict.Add(k,v); v
 
     /// ### memoize
-    let inline memoize (memo_dict: Dictionary<_,_>) f k =
+    let inline memoize (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
-        | false, _ -> let v = f k in memo_dict.Add(k,v); v
+        | false, _ -> let v = f k in memo_dict.TryAdd(k,v) |> ignore; v
 
     /// ### lines
     let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
@@ -6065,9 +6065,19 @@ module spiral_compiler =
 
         let eval x =
             let recs = System.Collections.Generic.HashSet(HashIdentity.Reference)
+            let pat_ref_term = Dictionary(HashIdentity.Reference)
+            let pat_ref_ty = Dictionary(HashIdentity.Reference)
             let rec term = function
                 | E.ETypecase(r,a,b) -> ETypecase(ty a,b |> List.map (fun (a,b) -> ty a, term b))
-                | E.EPatternRef a -> term a.Value
+                | E.EPatternRef a ->
+                    match pat_ref_term.TryGetValue a with
+                    | true, v -> v
+                    | false, _ ->
+                        pat_ref_term.Add(a, EOmmitedRecursive)
+                        let r = a.Value
+                        let v = if isNull (box r) then EOmmitedRecursive else term r
+                        pat_ref_term.[a] <- v
+                        v
                 | E.EFun'(_,a,b,c,d) -> EFun'(a,b,term c,Option.map ty d)
                 | E.EForall'(_,a,b,c) -> EForall'(a,b,term c)
                 | E.EArray(_,a,b) -> EArray(List.map term a,ty b)
@@ -6153,7 +6163,15 @@ module spiral_compiler =
                 | E.EDefaultLitTest(_,a,b,c,d,e) -> EDefaultLitTest(a,ty b,c,term d,term e)
             and ty = function
                 | TPrepass.TTypecase(_,a,b) -> TTypecase(ty a,List.map (fun (a,b) -> ty a, ty b) b)
-                | TPrepass.TPatternRef a -> ty a.Value
+                | TPrepass.TPatternRef a ->
+                    match pat_ref_ty.TryGetValue a with
+                    | true, v -> v
+                    | false, _ ->
+                        pat_ref_ty.Add(a, TB)
+                        let r = a.Value
+                        let v = if isNull (box r) then TB else ty r
+                        pat_ref_ty.[a] <- v
+                        v
                 | TPrepass.TForall'(_,a,b,c) -> TForall'(a,b,ty c)
                 | TPrepass.TForall(_,a,b) -> TForall(a,ty b)
                 | TPrepass.TArrow'(a,b,c) -> TArrow'(a,b,ty c)
@@ -6250,6 +6268,7 @@ module spiral_compiler =
     // Attaches scopes to all the nodes.
     let propagate x =
         let dict = Dictionary(HashIdentity.Reference)
+        let pat_ref_dict = Dictionary(HashIdentity.Reference)
         let (+*) a b =
             match a,b with
             | Some(min',max'), Some(min'',max'') -> Some(min min' min'', max max' max'')
@@ -6277,7 +6296,14 @@ module spiral_compiler =
         let rec term x =
             match x with
             | EFun' _ | EForall' _ | ERecursiveFun' _ | ERecursiveForall' _ | ERecursive _ | EJoinPoint' _ | EModule _ | ESymbol _ | ELit _ | EB _ -> empty
-            | EPatternRef a -> term a.Value
+            | EPatternRef a ->
+                match pat_ref_dict.TryGetValue a with
+                | true, v -> v
+                | false, _ ->
+                    pat_ref_dict.Add(a, empty)
+                    let v = term a.Value
+                    pat_ref_dict.[a] <- v
+                    v
             | EV i -> singleton_term i
             | EPrototypeApply(_,_,a) | EType(_,a) | ETypePatternMiss a | EDefaultLit(_,_,a) -> ty a
             | ESeq(_,a,b) | EPair(_,a,b) | EIfThen(_,a,b) | EApply(_,a,b) -> term a + term b
@@ -6380,6 +6406,8 @@ module spiral_compiler =
     /// ### resolve
     let resolve (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = Dictionary(HashIdentity.Reference)
+        let pat_ref_term = HashSet(HashIdentity.Reference)
+        let pat_ref_ty = HashSet(HashIdentity.Reference)
         let subst' (env : ResolveEnv) (x : PropagatedVars) : PropagatedVars =
             let f (s : ResolveEnvValue) x =
                 if x < 0 then
@@ -6394,7 +6422,7 @@ module spiral_compiler =
             let f = term env
             match x with
             | EForall' _ | EFun' _ | ERecursiveForall' _ | ERecursiveFun' _ | ERecursive _ | EJoinPoint' _ | EModule _ | EV _ | ESymbol _ | ELit _ | EB _ -> ()
-            | EPatternRef a -> f a.Value
+            | EPatternRef a -> if pat_ref_term.Add(a) then f a.Value else ()
             | EDefaultLit(_,_,a) | EPrototypeApply(_,_,a) | EType(_,a) | ETypePatternMiss a -> ty env a
             | EJoinPoint(_,a,b,_,_) | EFun(_,_,a,b) -> subst env x; f a; Option.iter (ty env) b
             | EForall(_,_,a) -> subst env x; f a
@@ -6450,7 +6478,7 @@ module spiral_compiler =
             match x with
             | TExists | TJoinPoint' _ | TForall' _ | TArrow' _ | TNominal _ | TPrim _ | TSymbol _ | TV _ | TMetaV _ | TLit _ | TB _ -> ()
             | TTypecase(_,a,b) -> ty env a; b |> List.iter (fun (a,b) -> ty env a; ty env b)
-            | TPatternRef a -> f a.Value
+            | TPatternRef a -> if pat_ref_ty.Add(a) then f a.Value else ()
             | TForall(_,_,a)
             | TArrow(_,a) -> subst env x; f a
             | TApply(_,a,b) | TFun(a,b,_) | TPair(_,a,b) -> f a; f b
@@ -6477,6 +6505,8 @@ module spiral_compiler =
     /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = Dictionary(HashIdentity.Reference)
+        let pat_ref_term = Dictionary(HashIdentity.Reference)
+        let pat_ref_ty = Dictionary(HashIdentity.Reference)
         let scope (env : LowerEnv) x =
             let v = scope.[x]
             let fv v env = v |> Set.toArray |> Array.map (fun i -> Map.find i env)
@@ -6507,7 +6537,14 @@ module spiral_compiler =
             let g = ty env_rec
             match x with
             | EForall' _ | EJoinPoint' _ | EFun' _ | ERecursiveForall' _ | ERecursiveFun' _ | ERecursive _ | EModule _ | ESymbol _ | ELit _ | EB _ -> x
-            | EPatternRef a -> f a.Value
+            | EPatternRef a ->
+                match pat_ref_term.TryGetValue a with
+                | true, v -> v
+                | false, _ ->
+                    pat_ref_term.Add(a, EB Unchecked.defaultof<_>)
+                    let v = f a.Value
+                    pat_ref_term.[a] <- v
+                    v
             | EFun(r,pat,body,t) ->
                 let scope, env = scope env x
                 let pat, env = adj_term env pat
@@ -6675,7 +6712,14 @@ module spiral_compiler =
                     a, ty env_rec env_case b
                     )
                 TTypecase(r,ty env_rec env a,b)
-            | TPatternRef a -> f a.Value
+            | TPatternRef a ->
+                match pat_ref_ty.TryGetValue a with
+                | true, v -> v
+                | false, _ ->
+                    pat_ref_ty.Add(a, TB Unchecked.defaultof<_>)
+                    let v = f a.Value
+                    pat_ref_ty.[a] <- v
+                    v
             | TJoinPoint(r,a) as x ->
                 let scope, env = scope env x
                 TJoinPoint'(r,scope,ty env_rec env a)
@@ -8183,73 +8227,82 @@ module spiral_compiler =
                 | a,_ -> raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s" (show_data a)
 
             let rec if_ s cond on_succ on_fail =
+                let lit_tr = DLit(LitBool true)
+                let lit_fl = DLit(LitBool false)
+                let cond =
+                    let visiting = HashSet(HashIdentity.Reference)
+                    let rec norm cond =
+                        if visiting.Add cond = false then cond
+                        else
+                            match cond with
+                            | DV(L(_,YPrim BoolT & type_bool)) as cond ->
+                                match cse_tryfind s (TyOp(EQ, [cond; lit_tr])) with
+                                | Some cond' when cond' <> cond -> norm cond'
+                                | Some _ | None -> cond
+                            | _ -> cond
+                    norm cond
                 match cond with
                 | DLit (LitBool true) -> term s on_succ
                 | DLit (LitBool false) -> term s on_fail
                 | DV(L(_,YPrim BoolT & type_bool)) ->
-                    let lit_tr = DLit(LitBool true)
-                    match cse_tryfind s (TyOp(EQ, [cond; lit_tr])) with
-                    | Some cond' when cond' <> cond -> if_ s cond' on_succ on_fail
-                    | Some _ | None ->
-                        let lit_fl = DLit(LitBool false)
-                        let add_rewrite_cases is_true =
-                            let cse = Dictionary(HashIdentity.Structural)
-                            let tr,fl = if is_true then lit_tr, lit_fl else lit_fl, lit_tr
-                            let inline op op cond' res = cse.Add(TyOp(op,[cond;cond']),res); cse.Add(TyOp(op,[cond';cond]),res)
-                            op EQ lit_tr tr; op NEQ lit_tr fl; op EQ lit_fl fl; op NEQ lit_fl tr
-                            cse
-                        let tr, type_tr = term_scope' s (add_rewrite_cases true) on_succ
-                        let fl, type_fl = term_scope' s (add_rewrite_cases false) on_fail
-                        let type_tr, type_fl =
-                            match type_tr, type_fl with
-                            | YRecord tr, YRecord fl ->
-                                let tr =
-                                    tr
-                                    |> Seq.map (fun (KeyValue ((i, k), v)) ->
-                                        let i =
-                                            fl |> Map.tryPick (fun (i', k') _ -> if k = k' then Some i' else None)
-                                            |> Option.defaultValue i
-                                        (i, k), v
-                                    )
-                                    |> Map.ofSeq
-                                    |> YRecord
+                    let add_rewrite_cases is_true =
+                        let cse = Dictionary(HashIdentity.Structural)
+                        let tr,fl = if is_true then lit_tr, lit_fl else lit_fl, lit_tr
+                        let inline op op cond' res = cse.Add(TyOp(op,[cond;cond']),res); cse.Add(TyOp(op,[cond';cond]),res)
+                        op EQ lit_tr tr; op NEQ lit_tr fl; op EQ lit_fl fl; op NEQ lit_fl tr
+                        cse
+                    let tr, type_tr = term_scope' s (add_rewrite_cases true) on_succ
+                    let fl, type_fl = term_scope' s (add_rewrite_cases false) on_fail
+                    let type_tr, type_fl =
+                        match type_tr, type_fl with
+                        | YRecord tr, YRecord fl ->
+                            let tr =
+                                tr
+                                |> Seq.map (fun (KeyValue ((i, k), v)) ->
+                                    let i =
+                                        fl |> Map.tryPick (fun (i', k') _ -> if k = k' then Some i' else None)
+                                        |> Option.defaultValue i
+                                    (i, k), v
+                                )
+                                |> Map.ofSeq
+                                |> YRecord
 
-                                let fl =
-                                    fl
-                                    |> Seq.map (fun (KeyValue ((i, k), v)) ->
-                                        k, ((i, k), v)
-                                    )
-                                    |> Seq.distinctBy fst
-                                    |> Seq.map snd
-                                    |> Map.ofSeq
-                                    |> YRecord
+                            let fl =
+                                fl
+                                |> Seq.map (fun (KeyValue ((i, k), v)) ->
+                                    k, ((i, k), v)
+                                )
+                                |> Seq.distinctBy fst
+                                |> Seq.map snd
+                                |> Map.ofSeq
+                                |> YRecord
 
-                                tr, fl
+                            tr, fl
 
-                            | _ ->
-                                type_tr, type_fl
+                        | _ ->
+                            type_tr, type_fl
 
-                        if type_tr = type_fl then
-                            if tr.Length = 1 && fl.Length = 1 then
-                                match tr.[0], fl.[0] with
-                                | TyLocalReturnOp(_,tr,_), TyLocalReturnOp(_,fl,_) when tr = fl -> push_typedop_no_rewrite s tr type_tr
-                                | TyLocalReturnData(tr',_), TyLocalReturnData(fl',_) ->
-                                    match tr', fl' with
-                                    | tr, fl when tr = fl -> tr
-                                    | DLit(LitBool false), DLit(LitBool true) -> push_binop s EQ (cond,lit_fl) type_bool
-                                    | DLit(LitBool false), fl when cond = fl -> lit_fl
-                                    | DLit(LitBool true), fl -> // boolean or
-                                        match fl with
-                                        | DLit (LitBool false) -> cond
-                                        | _ -> if cond = fl then cond else push_binop s BoolOr (cond,fl) type_bool
-                                    | tr, DLit(LitBool false) -> // boolean and
-                                        match tr with
-                                        | DLit(LitBool true) -> cond
-                                        | _ -> if cond = tr then cond else push_binop s BoolAnd (cond,tr) type_bool
-                                    | _ -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
+                    if type_tr = type_fl then
+                        if tr.Length = 1 && fl.Length = 1 then
+                            match tr.[0], fl.[0] with
+                            | TyLocalReturnOp(_,tr,_), TyLocalReturnOp(_,fl,_) when tr = fl -> push_typedop_no_rewrite s tr type_tr
+                            | TyLocalReturnData(tr',_), TyLocalReturnData(fl',_) ->
+                                match tr', fl' with
+                                | tr, fl when tr = fl -> tr
+                                | DLit(LitBool false), DLit(LitBool true) -> push_binop s EQ (cond,lit_fl) type_bool
+                                | DLit(LitBool false), fl when cond = fl -> lit_fl
+                                | DLit(LitBool true), fl -> // boolean or
+                                    match fl with
+                                    | DLit (LitBool false) -> cond
+                                    | _ -> if cond = fl then cond else push_binop s BoolOr (cond,fl) type_bool
+                                | tr, DLit(LitBool false) -> // boolean and
+                                    match tr with
+                                    | DLit(LitBool true) -> cond
+                                    | _ -> if cond = tr then cond else push_binop s BoolAnd (cond,tr) type_bool
                                 | _ -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
-                            else push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
-                        else raise_type_error s <| sprintf "Types in branches of If do not match.\nGot: %s and %s" (show_ty type_tr) (show_ty type_fl)
+                            | _ -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
+                        else push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
+                    else raise_type_error s <| sprintf "Types in branches of If do not match.\nGot: %s and %s" (show_ty type_tr) (show_ty type_fl)
                 | cond -> raise_type_error s <| sprintf "Expected a bool in conditional.\nGot: %s" (show_data cond)
 
             let eq s a b =
@@ -8434,7 +8487,24 @@ module spiral_compiler =
                     call_args
             | EDefaultLit(r,a,b) -> let s = add_trace s r in default_lit s a (ty s b) |> DLit
             | EType(r,_) -> raise_type_error (add_trace s r) "Raw types are not allowed on the term level."
-            | EApply(r,a,b) -> let s = add_trace s r in apply s (term s a, term s b)
+            | EApply(r,a,b) ->
+                let mutable s0 = add_trace s r
+                let frames = ResizeArray()
+                frames.Add(struct(s0, b))
+                let mutable cur = a
+                let mutable running = true
+                while running do
+                    match cur with
+                    | EApply(r,a,b) ->
+                        s0 <- add_trace s0 r
+                        frames.Add(struct(s0, b))
+                        cur <- a
+                    | _ -> running <- false
+                let mutable res = term s0 cur
+                for i = frames.Count - 1 downto 0 do
+                    let struct(s', arg) = frames.[i]
+                    res <- apply s' (res, term s' arg)
+                res
             | ETypeApply(r,a,b) ->
                 let s = add_trace s r
                 type_apply s (term s a) (ty s b)
@@ -8498,10 +8568,18 @@ module spiral_compiler =
             | EModule a -> DRecord(a |> Seq.map (fun (KeyValue (k, v)) -> (a.Count, k), (v |> term s)) |> Map.ofSeq)
             | EPair(r,a,b) -> DPair(term s a, term s b)
             | ESeq(r,a,b) ->
-                let s = add_trace s r
-                match term s a with
-                | DB -> term s b
-                | a -> raise_type_error s <| sprintf "Expected unit.\nGot: %s" (show_data a)
+                let mutable s0 = s
+                let mutable x = ESeq(r,a,b)
+                let mutable running = true
+                while running do
+                    match x with
+                    | ESeq(r,a,b) ->
+                        s0 <- add_trace s0 r
+                        match term s0 a with
+                        | DB -> x <- b
+                        | a -> raise_type_error s0 <| sprintf "Expected unit.\nGot: %s" (show_data a)
+                    | _ -> running <- false
+                term s0 x
             | EAnnot(r,a,b) ->
                 let s = add_trace s r
                 let a = term s a
@@ -8735,7 +8813,21 @@ module spiral_compiler =
                     | DLit(LitInt32 i) -> lit i
                     | a -> raise_type_error s <| sprintf "Expected an i32.\nGot: %s" (show_data a)
                 | _ -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_ty t)
-            | ELet(r,i,a,b) -> let s = add_trace s r in store_term s i (term s a); term s b
+            | ELet(r,i,a,b) ->
+                let mutable s = s
+                let mutable e = ELet(r,i,a,b)
+                let mutable res = DB
+                let mutable cont = true
+                while cont do
+                    match e with
+                    | ELet(r,i,a,b) ->
+                        s <- add_trace s r
+                        store_term s i (term s a)
+                        e <- b
+                    | _ ->
+                        res <- term s e
+                        cont <- false
+                res
             | EPairTest(r,bind,p1,p2,on_succ,on_fail) ->
                 let s = add_trace s r
                 match v s bind with
@@ -10057,18 +10149,19 @@ module spiral_compiler =
 
     /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
-        let types = ResizeArray()
-        let functions = ResizeArray()
+        let types = System.Collections.Concurrent.ConcurrentQueue<string>()
+        let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
-            if is_type then types.Add(text) else functions.Add(text)
+            if is_type then types.Enqueue(text) else functions.Enqueue(text)
 
         let layout show =
-            let dict' = Dictionary(HashIdentity.Structural)
-            let dict = Dictionary(HashIdentity.Reference)
+            let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
+            let mutable next_tag = -1
             let f x : LayoutRecFsharp =
                 match x with
                 | YLayout(x,_) ->
@@ -10077,7 +10170,7 @@ module spiral_compiler =
                     match x with
                     | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
                     | _ -> data_free_vars x, Map.empty
-                {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
             fun x ->
                 let mutable dirty = false
@@ -10086,22 +10179,31 @@ module spiral_compiler =
                 r
 
         let union show =
-            let dict = Dictionary(HashIdentity.Reference)
-            let f (a : Map<int * string,Ty>) : UnionRecFsharp = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
+            let mutable next_tag = -1
+            let f (a : Map<int * string,Ty>) : _ = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
             fun x ->
-                let mutable dirty = false
-                let r = memoize dict (fun x -> dirty <- true; f x) x
-                if dirty then print true show r
-                r
+                match dict.TryGetValue x with
+                | true, r -> r
+                | _ ->
+                    let r = {free_vars=x |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=System.Threading.Interlocked.Increment(&next_tag)}
+                    if dict.TryAdd(x, r) then
+                        print true show r
+                        r
+                    else dict.[x]
 
         let jp f show =
-            let dict = Dictionary(HashIdentity.Structural)
-            let f x = f (x, dict.Count)
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
+            let mutable next_tag = -1
             fun x ->
-                let mutable dirty = false
-                let r = memoize dict (fun x -> dirty <- true; f x) x
-                if dirty then print false show r
-                r
+                match dict.TryGetValue x with
+                | true, r -> r
+                | _ ->
+                    let r = f (x, System.Threading.Interlocked.Increment(&next_tag))
+                    if dict.TryAdd(x, r) then
+                        print false show r
+                        r
+                    else dict.[x]
 
         let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litFsharp a
@@ -10136,11 +10238,23 @@ module spiral_compiler =
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
-            Array.iter (function
-                | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnData(d,trace) -> try line s (tup d) with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                ) x
+            x
+            |> Array.Parallel.map (fun b ->
+                let text = StringBuilder()
+                let s' = {text=text; indent=s.indent}
+                match b with
+                | TyLet(d,trace,a) ->
+                    try op s' (Some d) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s' None a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try line s' (tup d)
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                text.ToString()
+            )
+            |> Array.iter (fun t -> s.text.Append t |> ignore)
         and tup x =
             match data_term_vars x with
             | [||] -> "()"
@@ -10544,18 +10658,19 @@ module spiral_compiler =
 
     /// ### codegenGleam
     let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
-        let types = ResizeArray()
-        let functions = ResizeArray()
+        let types = System.Collections.Concurrent.ConcurrentQueue<string>()
+        let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
-            if is_type then types.Add(text) else functions.Add(text)
+            if is_type then types.Enqueue(text) else functions.Enqueue(text)
 
         let layout show =
-            let dict' = Dictionary(HashIdentity.Structural)
-            let dict = Dictionary(HashIdentity.Reference)
+            let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
+            let mutable next_tag = -1
             let f x : LayoutRecGleam =
                 match x with
                 | YLayout(x,_) ->
@@ -10564,7 +10679,7 @@ module spiral_compiler =
                     match x with
                     | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
                     | _ -> data_free_vars x, Map.empty
-                {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
             fun x ->
                 let mutable dirty = false
@@ -10573,22 +10688,31 @@ module spiral_compiler =
                 r
 
         let union show =
-            let dict = Dictionary(HashIdentity.Reference)
-            let f (a : Map<int * string,Ty>) : UnionRecGleam = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
+            let mutable next_tag = -1
+            let f (a : Map<int * string,Ty>) : _ = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
             fun x ->
-                let mutable dirty = false
-                let r = memoize dict (fun x -> dirty <- true; f x) x
-                if dirty then print true show r
-                r
+                match dict.TryGetValue x with
+                | true, r -> r
+                | _ ->
+                    let r = {free_vars=x |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=System.Threading.Interlocked.Increment(&next_tag)}
+                    if dict.TryAdd(x, r) then
+                        print true show r
+                        r
+                    else dict.[x]
 
         let jp f show =
-            let dict = Dictionary(HashIdentity.Structural)
-            let f x = f (x, dict.Count)
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
+            let mutable next_tag = -1
             fun x ->
-                let mutable dirty = false
-                let r = memoize dict (fun x -> dirty <- true; f x) x
-                if dirty then print false show r
-                r
+                match dict.TryGetValue x with
+                | true, r -> r
+                | _ ->
+                    let r = f (x, System.Threading.Interlocked.Increment(&next_tag))
+                    if dict.TryAdd(x, r) then
+                        print false show r
+                        r
+                    else dict.[x]
 
         let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litGleam a
@@ -10628,11 +10752,23 @@ module spiral_compiler =
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i :    %s" i (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
-            Array.iter (function
-                | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnData(d,trace) -> try line s (tup d) with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                ) x
+            x
+            |> Array.Parallel.map (fun b ->
+                let text = StringBuilder()
+                let s' = {text=text; indent=s.indent}
+                match b with
+                | TyLet(d,trace,a) ->
+                    try op s' (Some d) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s' None a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try line s' (tup d)
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                text.ToString()
+            )
+            |> Array.iter (fun t -> s.text.Append t |> ignore)
         and tup x =
             match data_term_vars x with
             | [||] -> "Nil      "
@@ -11337,18 +11473,19 @@ module spiral_compiler =
     let codegenLua (env : PartEvalResult) (x : TypedBind []) =
         let targetLua54 = false
 
-        let types = ResizeArray()
-        let functions = ResizeArray()
+        let types = System.Collections.Concurrent.ConcurrentQueue<string>()
+        let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
-            if is_type then types.Add(text) else functions.Add(text)
+            if is_type then types.Enqueue(text) else functions.Enqueue(text)
 
         let layout show =
-            let dict' = Dictionary(HashIdentity.Structural)
-            let dict = Dictionary(HashIdentity.Reference)
+            let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
+            let mutable next_tag = -1
             let f x : LayoutRecLua =
                 match x with
                 | YLayout(x,_) ->
@@ -11357,7 +11494,7 @@ module spiral_compiler =
                     match x with
                     | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
                     | _ -> data_free_vars x, Map.empty
-                {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
             fun x ->
                 let mutable dirty = false
@@ -11366,22 +11503,31 @@ module spiral_compiler =
                 r
 
         let union show =
-            let dict = Dictionary(HashIdentity.Reference)
-            let f (a : Map<int * string,Ty>) : UnionRecLua = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
+            let mutable next_tag = -1
+            let f (a : Map<int * string,Ty>) : _ = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
             fun x ->
-                let mutable dirty = false
-                let r = memoize dict (fun x -> dirty <- true; f x) x
-                if dirty then print true show r
-                r
+                match dict.TryGetValue x with
+                | true, r -> r
+                | _ ->
+                    let r = {free_vars=x |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=System.Threading.Interlocked.Increment(&next_tag)}
+                    if dict.TryAdd(x, r) then
+                        print true show r
+                        r
+                    else dict.[x]
 
         let jp f show =
-            let dict = Dictionary(HashIdentity.Structural)
-            let f x = f (x, dict.Count)
+            let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
+            let mutable next_tag = -1
             fun x ->
-                let mutable dirty = false
-                let r = memoize dict (fun x -> dirty <- true; f x) x
-                if dirty then print false show r
-                r
+                match dict.TryGetValue x with
+                | true, r -> r
+                | _ ->
+                    let r = f (x, System.Threading.Interlocked.Increment(&next_tag))
+                    if dict.TryAdd(x, r) then
+                        print false show r
+                        r
+                    else dict.[x]
 
         let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litLua a
@@ -11418,11 +11564,23 @@ module spiral_compiler =
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i" i) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
-            Array.iter (function
-                | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnData(d,trace) -> try line s $"return {tup d}          " with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                ) x
+            x
+            |> Array.Parallel.map (fun b ->
+                let text = StringBuilder()
+                let s' = {text=text; indent=s.indent}
+                match b with
+                | TyLet(d,trace,a) ->
+                    try op s' (Some d) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s' None a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try line s' $"return {tup d}          "
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
+                text.ToString()
+            )
+            |> Array.iter (fun t -> s.text.Append t |> ignore)
         and tup x =
             match data_term_vars x with
             | [||] -> "nil      "
@@ -12059,8 +12217,8 @@ module spiral_compiler =
         let codegenC (env : PartEvalResult) (x : TypedBind []) =
             let globals = ResizeArray()
             let fwd_dcls = ResizeArray()
-            let types = ResizeArray()
-            let functions = ResizeArray()
+            let types = System.Collections.Concurrent.ConcurrentQueue<string>()
+            let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
 
             let malloc, free = "malloc", "free"
 
@@ -12076,7 +12234,7 @@ module spiral_compiler =
                 let s_typ = {text=StringBuilder(); indent=0}
                 let s_fun = {text=StringBuilder(); indent=0}
                 show s_typ_fwd s_typ s_fun r
-                let f (a : _ ResizeArray) (b : CodegenEnv) =
+                let f (a : _ ConcurrentQueue) (b : CodegenEnv) =
                     let text = b.text.ToString()
                     if text <> "" then a.Add(text)
                 f fwd_dcls s_typ_fwd
@@ -12084,8 +12242,9 @@ module spiral_compiler =
                 f functions s_fun
 
             let layout show =
-                let dict' = Dictionary(HashIdentity.Structural)
-                let dict = Dictionary(HashIdentity.Reference)
+                let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
+                let mutable next_tag = -1
                 let f x : LayoutRecC =
                     match x with
                     | YLayout(x,_) ->
@@ -12094,7 +12253,7 @@ module spiral_compiler =
                             match x with
                             | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
                             | _ -> data_free_vars x, Map.empty
-                        {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                        {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (7).\nGot: %s{show_ty x}"
                 fun x ->
                     let mutable dirty = false
@@ -13002,7 +13161,7 @@ module spiral_compiler =
                 let s_typ = {text=StringBuilder(); indent=0}
                 let s_fun = {text=StringBuilder(); indent=0}
                 show s_typ_fwd s_typ s_fun r
-                let f (a : _ ResizeArray) (b : CodegenEnv) =
+                let f (a : _ ConcurrentQueue) (b : CodegenEnv) =
                     let text = b.text.ToString()
                     if text <> "" then a.Add(text)
                 f code_env.fwd_dcls s_typ_fwd
@@ -13010,8 +13169,9 @@ module spiral_compiler =
                 f code_env.functions s_fun
 
             let layout show =
-                let dict' = Dictionary(HashIdentity.Structural)
-                let dict = Dictionary(HashIdentity.Reference)
+                let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
+                let mutable next_tag = -1
                 let f x : LayoutRecCpp =
                     match x with
                     | YLayout(x,_) ->
@@ -13020,13 +13180,22 @@ module spiral_compiler =
                             match x with
                             | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
                             | _ -> data_free_vars x, Map.empty
-                        {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                        {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (1).\nGot: %s{show_ty x}"
                 fun x ->
-                    let mutable dirty = false
-                    let r = Utils.memoize dict (Utils.memoize dict' (fun x -> dirty <- true; f x)) x
-                    if dirty then print show r
-                    r
+                    match dict.TryGetValue x with
+                    | true, r -> r
+                    | _ ->
+                        let mutable added = false
+                        let r =
+                            match dict'.TryGetValue x with
+                            | true, r -> r
+                            | _ ->
+                                let r = f x
+                                if dict'.TryAdd(x, r) then added <- true; r else dict'.[x]
+                        dict.TryAdd(x, r) |> ignore
+                        if added then print show r
+                        r
 
             let union show =
                 let dict = Dictionary(HashIdentity.Reference)
@@ -13997,8 +14166,9 @@ module spiral_compiler =
                     r
 
             let layout show =
-                let dict' = Dictionary(HashIdentity.Structural)
-                let dict = Dictionary(HashIdentity.Reference)
+                let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
+                let mutable next_tag = -1
                 let f x : LayoutRecPython =
                     match x with
                     | YLayout(x,_) ->
@@ -14007,13 +14177,22 @@ module spiral_compiler =
                             match x with
                             | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
                             | _ -> data_free_vars x, Map.empty
-                        {data=x; free_vars=a; free_vars_by_key=b; tag=dict'.Count}
+                        {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (5).\nGot: %s{show_ty x}"
                 fun x ->
-                    let mutable dirty = false
-                    let r = Utils.memoize dict (Utils.memoize dict' (fun x -> dirty <- true; f x)) x
-                    if dirty then print true show r
-                    r
+                    match dict.TryGetValue x with
+                    | true, r -> r
+                    | _ ->
+                        let mutable added = false
+                        let r =
+                            match dict'.TryGetValue x with
+                            | true, r -> r
+                            | _ ->
+                                let r = f x
+                                if dict'.TryAdd(x, r) then added <- true; r else dict'.[x]
+                        dict.TryAdd(x, r) |> ignore
+                        if added then print true show r
+                        r
 
             let jp is_type f show =
                 let dict = Dictionary(HashIdentity.Structural)
@@ -16493,7 +16672,7 @@ module spiral_compiler =
 
                         // The partial evaluator is using too much stack space, so as a temporary fix, I am running it on a separate thread with much more of it.
                         let result = IVar()
-                        let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> Hopac.start), 1 <<< 28) // Stack space = 2 ** 28 = 256mb.
+                        let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> Hopac.start), 1 <<< 31) // Stack space = 2 ** 31 = 2GB
                         thread.Start()
                         result >>= handle_build_result
                         )
