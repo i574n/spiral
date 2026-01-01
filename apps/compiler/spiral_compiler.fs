@@ -5427,7 +5427,7 @@ module spiral_compiler =
             let gadt_links = ResizeArray()
             let gadt_typecases = ResizeArray()
             let term_vars = Dictionary(HashIdentity.Structural)
-            let ty_vars = Dictionary(HashIdentity.Structural)
+            let ty_vars = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let mutable scope = scope
             let update_env () =
                 scope,
@@ -6267,7 +6267,7 @@ module spiral_compiler =
     /// ### propagate
     // Attaches scopes to all the nodes.
     let propagate x =
-        let dict = Dictionary(HashIdentity.Reference)
+        let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let pat_ref_dict = Dictionary(HashIdentity.Reference)
         let (+*) a b =
             match a,b with
@@ -6405,7 +6405,7 @@ module spiral_compiler =
 
     /// ### resolve
     let resolve (scope : Dictionary<obj,PropagatedVars>) x =
-        let dict = Dictionary(HashIdentity.Reference)
+        let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let pat_ref_term = HashSet(HashIdentity.Reference)
         let pat_ref_ty = HashSet(HashIdentity.Reference)
         let subst' (env : ResolveEnv) (x : PropagatedVars) : PropagatedVars =
@@ -6504,7 +6504,7 @@ module spiral_compiler =
 
     /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
-        let dict = Dictionary(HashIdentity.Reference)
+        let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let pat_ref_term = Dictionary(HashIdentity.Reference)
         let pat_ref_ty = Dictionary(HashIdentity.Reference)
         let scope (env : LowerEnv) x =
@@ -6682,7 +6682,7 @@ module spiral_compiler =
             | EDefaultLitTest(r,a,b,i,on_succ,on_fail) -> EDefaultLitTest(r,a,g env b,env.term.var.[i],f on_succ,f on_fail)
             | ETypecase(r,a,b) ->
                 let b = b |> List.map (fun (a,b) ->
-                    let metavars = Dictionary()
+                    let metavars = System.Collections.Concurrent.ConcurrentDictionary<_,_>()
                     let mutable env_case = env
                     let a =
                         ty' (Utils.memoize metavars (fun i ->
@@ -6701,7 +6701,7 @@ module spiral_compiler =
             | TExists | TJoinPoint' _ | TForall' _ | TArrow' _ | TNominal  _ | TPrim _ | TSymbol _ | TLit _ | TB _ as x -> x
             | TTypecase(r,a,b) ->
                 let b = b |> List.map (fun (a,b) ->
-                    let metavars = Dictionary()
+                    let metavars = System.Collections.Concurrent.ConcurrentDictionary<_,_>()
                     let mutable env_case = env
                     let a =
                         ty' (Utils.memoize metavars (fun i ->
@@ -6990,7 +6990,7 @@ module spiral_compiler =
                 TUnion(p r,(Map.map (fun _ (is_gadt,x) -> f x, if is_gadt then Some (make_typecase x) else None) a,b))
             | RawTTypecase(r,a,b) ->
                 let b = b |> List.map (fun (t,e) ->
-                    let metavars = Dictionary()
+                    let metavars = System.Collections.Concurrent.ConcurrentDictionary<_,_>()
                     let mutable env_case = env
                     let t =
                         let f (id,env) = env_case <- env; TMetaV id
@@ -7040,7 +7040,7 @@ module spiral_compiler =
             | RawAnnot(_,RawArray(r,a),b) -> EArray(p r,List.map f a,ty env b)
             | RawTypecase(r,a,b) ->
                 let b = b |> List.map (fun (t,e) ->
-                    let metavars = Dictionary()
+                    let metavars = System.Collections.Concurrent.ConcurrentDictionary<_,_>()
                     let mutable env_case = env
                     let t =
                         let f (id,env) = env_case <- env; TMetaV id
@@ -7207,14 +7207,14 @@ module spiral_compiler =
     /// ### prepassTop_env_default
     let prepassTop_env_default default_env =
         let convert_infer_to_prepass x =
-            let m = Dictionary(HashIdentity.Reference)
+            let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
             let rec f = function
                 | TyVar (_,{contents=Some x}) -> f x
                 | TyVar (x,_) -> TV m.[x.name]
                 | TyPrim x -> TPrim x
                 | TyArray x -> TArray (f x)
                 | TyLayout(a,b) -> TLayout(f a,b)
-                | TyInl(a,b) -> let i = m.Count in m.Add(a.name,i); TArrow(i,f b)
+                | TyInl(a,b) -> let i = m.Count in m.TryAdd(a.name,i) |> ignore; TArrow(i,f b)
                 | TyFun(a,b,t) -> TFun(f a, f b, t)
                 | _ -> failwith "Compiler error: The base type in Infer is not supported in the prepass yet."
             f x
@@ -7411,7 +7411,7 @@ module spiral_compiler =
     /// ### data_to_rdata
     let data_to_rdata (d: LangEnv) (hc : HashConsTable) call_data =
         let hc x = hc.Add x
-        let m = Dictionary(HashIdentity.Reference)
+        let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let visiting = HashSet(HashIdentity.Reference)
         let call_args = ResizeArray()
         let rec f x =
@@ -7438,7 +7438,7 @@ module spiral_compiler =
                     | DHashMap _ -> raise_type_error d "The mutable compile time HashMap needs to be made immutable before it can be passed through a join point."
                     | DHashSet _ -> raise_type_error d "The mutable compile-time HashSet cannot be passed through join points."
                 visiting.Remove x |> ignore
-                m.Add(x,v)
+                m.TryAdd(x,v) |> ignore
                 v
         let x = Array.map f call_data
         call_args.ToArray(),x
@@ -7448,7 +7448,7 @@ module spiral_compiler =
     // In order to allow them to be cleaned by the garbage collection, I do not want the
     // references to unused nodes to end up in anywhere other than join point keys (which will be weak).
     let rename_global_term (s : LangEnv) =
-        let m = Dictionary(HashIdentity.Reference)
+        let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let visiting = HashSet(HashIdentity.Reference)
         let rec f x =
             match m.TryGetValue x with
@@ -7474,7 +7474,7 @@ module spiral_compiler =
                     | DHashMap _ -> raise_type_error s "The mutable compile time HashMap needs to be made immutable before it can be renamed."
                     | DHashSet _ -> raise_type_error s "The mutable compile-time HashSets cannot be renamed."
                 visiting.Remove x |> ignore
-                m.Add(x,v)
+                m.TryAdd(x,v) |> ignore
                 v
         {s with env_global_term = Array.map f s.env_global_term}
 
@@ -7498,7 +7498,7 @@ module spiral_compiler =
 
     /// ### data_free_vars_replace
     let data_free_vars_replace s (d : Dictionary<TyV,TyV>) (x : Data) =
-        let m = Dictionary(HashIdentity.Reference)
+        let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let rec f x =
             Utils.memoize m (function
                 | DPair(a,b) -> DPair(f a, f b)
@@ -7858,9 +7858,9 @@ module spiral_compiler =
 
     /// ### peval
     let peval (env : PartEvalTopEnv) (x : E) =
-        let join_point_method = Dictionary(HashIdentity.Structural)
-        let join_point_closure = Dictionary(HashIdentity.Structural)
-        let join_point_type = Dictionary(HashIdentity.Structural)
+        let join_point_method = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
+        let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
+        let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
         let backend_strings = HashConsTable()
         let backend_switch_validate_all = ref true
 
@@ -7965,7 +7965,7 @@ module spiral_compiler =
                 join_point_key, call_args, fun_ty
             push_typedop s (TyJoinPoint(JPClosure((s.backend,body),join_point_key),call_args)) fun_ty, fun_ty
         and data_to_ty s x =
-            let m = Dictionary(HashIdentity.Reference)
+            let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
             let rec f x =
                 Utils.memoize m (function
                     | DPair(a,b) -> YPair(f a, f b)
@@ -7985,7 +7985,7 @@ module spiral_compiler =
                     ) x
             f x
         and dyn do_lit s x =
-            let m = Dictionary(HashIdentity.Reference)
+            let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
             let visiting = HashSet(HashIdentity.Reference)
             let mutable dirty = false
             let rec f x =
@@ -8011,7 +8011,7 @@ module spiral_compiler =
                         | DHashSet _ -> raise_type_error s "Cannot dyn a compile time HashSet into a runtime var."
                         | DHashMap _ -> raise_type_error s "Cannot dyn a compile time HashMap into a runtime var."
                     visiting.Remove x |> ignore
-                    m.Add(x,v)
+                    m.TryAdd(x,v) |> ignore
                     v
             let v = f x
             if dirty then v else x
@@ -12093,13 +12093,13 @@ module spiral_compiler =
         g_bind
 
     /// ### RefcVars
-    type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : Dictionary<TypedBind,TyV Set>; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
+    type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : Collections.Concurrent.ConcurrentDictionary<TypedBind,TyV Set>; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
 
     /// ### refc_prepass
     let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
         let used_vars = refc_used_vars x
         let g_incr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
-        let g_decr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
+        let g_decr : Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
         let g_op : Dictionary<TypedBind, _> = Dictionary(HashIdentity.Reference)
         let g_op_decr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
 
@@ -12216,7 +12216,7 @@ module spiral_compiler =
 
         let codegenC (env : PartEvalResult) (x : TypedBind []) =
             let globals = ResizeArray()
-            let fwd_dcls = ResizeArray()
+            let fwd_dcls = System.Collections.Concurrent.ConcurrentQueue()
             let types = System.Collections.Concurrent.ConcurrentQueue<string>()
             let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
 
@@ -12234,9 +12234,9 @@ module spiral_compiler =
                 let s_typ = {text=StringBuilder(); indent=0}
                 let s_fun = {text=StringBuilder(); indent=0}
                 show s_typ_fwd s_typ s_fun r
-                let f (a : _ ConcurrentQueue) (b : CodegenEnv) =
+                let f (a : _ System.Collections.Concurrent.ConcurrentQueue) (b : CodegenEnv) =
                     let text = b.text.ToString()
-                    if text <> "" then a.Add(text)
+                    if text <> "" then a.TryAdd(text) |> ignore
                 f fwd_dcls s_typ_fwd
                 f types s_typ
                 f functions s_fun
@@ -12262,7 +12262,7 @@ module spiral_compiler =
                     r
 
             let union show =
-                let dict = Dictionary(HashIdentity.Reference)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
                 let f (a : Union) : UnionRecC =
                     let free_vars = a.Item.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars)
                     {free_vars=free_vars; tag=dict.Count}
@@ -12273,7 +12273,7 @@ module spiral_compiler =
                     r
 
             let jp f show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
                 fun x ->
                     let mutable dirty = false
@@ -12282,7 +12282,7 @@ module spiral_compiler =
                     r
 
             let tuple show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; tys=x}
                 fun x ->
                     let mutable dirty = false
@@ -12291,7 +12291,7 @@ module spiral_compiler =
                     r
 
             let carray' show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; ty=x; tyvs = env.ty_to_data x |> data_free_vars}
                 fun x ->
                     let mutable dirty = false
@@ -12306,7 +12306,7 @@ module spiral_compiler =
                     dirty <- false
 
             let cfun' show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f (a : Ty, b : Ty) = {tag=dict.Count; domain_args_ty=a |> env.ty_to_data |> data_free_vars |> Array.map (fun (L(_,t)) -> t); range=b}
                 fun x ->
                     let mutable dirty = false
@@ -13066,8 +13066,8 @@ module spiral_compiler =
             {
                 globals : string ResizeArray
                 fwd_dcls : string ResizeArray
-                types : string ResizeArray
-                functions : string ResizeArray
+                types : string System.Collections.Concurrent.ConcurrentQueue
+                functions : string System.Collections.Concurrent.ConcurrentQueue
                 main_defs : string ResizeArray
                 backend_name : string
                 __device__ : string
@@ -13161,9 +13161,9 @@ module spiral_compiler =
                 let s_typ = {text=StringBuilder(); indent=0}
                 let s_fun = {text=StringBuilder(); indent=0}
                 show s_typ_fwd s_typ s_fun r
-                let f (a : _ ConcurrentQueue) (b : CodegenEnv) =
+                let f (a : _ System.Collections.Concurrent.ConcurrentQueue) (b : CodegenEnv) =
                     let text = b.text.ToString()
-                    if text <> "" then a.Add(text)
+                    if text <> "" then a.TryAdd(text) |> ignore
                 f code_env.fwd_dcls s_typ_fwd
                 f code_env.types s_typ
                 f code_env.functions s_fun
@@ -13198,7 +13198,7 @@ module spiral_compiler =
                         r
 
             let union show =
-                let dict = Dictionary(HashIdentity.Reference)
+                let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
                 let f (a : Union) : UnionRecCpp =
                     let free_vars = a.Item.cases |> Map.map (fun _ -> part_eval_env.ty_to_data >> data_free_vars)
                     {free_vars=free_vars; tag=dict.Count; is_heap=a.Item.layout = UHeap}
@@ -13209,7 +13209,7 @@ module spiral_compiler =
                     r
 
             let jp f show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
                 fun x ->
                     let mutable dirty = false
@@ -13218,7 +13218,7 @@ module spiral_compiler =
                     r
 
             let tuple show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; tys=x}
                 fun x ->
                     let mutable dirty = false
@@ -13227,7 +13227,7 @@ module spiral_compiler =
                     r
 
             let cfun' show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f (a : Ty, b : Ty, t : FunType) = {tag=dict.Count; domain=a; range=b; funtype=t}
                 fun x ->
                     let mutable dirty = false
@@ -13976,7 +13976,7 @@ module spiral_compiler =
                 code_env.main_defs.Add(s.text.ToString())
 
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env x =
-            let g = Dictionary HashIdentity.Structural
+            let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>HashIdentity.Structural
             let host_code_env = codegen_env.Create("Cpp", "")
             let device_code_env = codegen_env.Create("Cuda", "__device__ ")
 
@@ -14154,7 +14154,7 @@ module spiral_compiler =
                 if is_type then code_env.types.Add(text) else code_env.functions.Add(text)
 
             let union show =
-                let dict = Dictionary(HashIdentity.Reference)
+                let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
                 let f (a : Union) : UnionRecPython =
                     let tags = a.Item.tags
                     let free_vars = a.Item.cases |> Map.map (fun _ -> part_eval_env.ty_to_data >> data_free_vars)
@@ -14195,7 +14195,7 @@ module spiral_compiler =
                         r
 
             let jp is_type f show =
-                let dict = Dictionary(HashIdentity.Structural)
+                let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
                 fun x ->
                     let mutable dirty = false
@@ -14837,7 +14837,7 @@ module spiral_compiler =
 
     /// ### wdiff_parse
     let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens Block list) =
-        let dict = Dictionary(HashIdentity.Reference)
+        let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
         // Offset should be ignored when memoizing the results of parsing.
         List.iter (fun (a,b) -> dict.Add(a,b.block)) state.blocks
         let blocks = unparsed_blocks |> List.map (fun x ->
