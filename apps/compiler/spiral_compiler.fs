@@ -3440,6 +3440,1506 @@ module spiral_compiler =
     /// ## BlockBundling
     open Hopac.Extensions
     open Hopac.Stream
+    /// Run a Hopac Job/Alt with a timeout (ms), returning None on timeout.
+    /// Implemented via Tasks to avoid Alt/Job operator overload pitfalls.
+    let jobWithTimeoutMs (timeoutMs: int) (work: Job<'a>) : Job<'a option> = job {
+        let workT = Hopac.startAsTask work
+        let timeoutT = System.Threading.Tasks.Task.Delay timeoutMs
+        let! completed = System.Threading.Tasks.Task.WhenAny(workT :> System.Threading.Tasks.Task, timeoutT :> System.Threading.Tasks.Task)
+        if obj.ReferenceEquals(completed, (workT :> System.Threading.Tasks.Task)) then
+            let! r = workT
+            return Some r
+        else
+            return None
+    }
+
+
+    // --- PATCH: actor_system (priority 10) ---
+
+    // =========================================================================
+    // ACTOR SYSTEM v4 - OTP-style Supervision (Rust tokio / Gleam OTP compatible)
+    // =========================================================================
+    // Maps to: Rust - tokio::spawn + mpsc channels
+    //          Gleam - erlang process + Subject/reply patterns
+    // Uses Hopac: Job<'a>, Ch<'a>, IVar<'a>, Promise<'a>
+    
+    /// Actor message envelope with typed request/reply
+    [<RequireQualifiedAccess>]
+    type ActorMsg<'req, 'reply> =
+        | Request of 'req * IVar<'reply>
+        | Fire of 'req
+        | Cast of 'req
+        | Shutdown of IVar<unit>
+        | Kill
+
+    /// Actor lifecycle state
+    [<RequireQualifiedAccess>]
+    type ActorLife =
+        | Starting
+        | Running
+        | Stopping
+        | Stopped
+        | Failed of exn
+
+    /// Actor statistics for monitoring
+    type ActorStat = {
+        name: string
+        startTime: DateTime
+        mutable messageCount: int64
+        mutable errorCount: int64
+        mutable lastMessageTime: DateTime
+        mutable avgProcessingTimeMs: float
+        mutable lifecycle: ActorLife
+    }
+
+    /// Actor handle for external communication
+    type ActorRef<'req, 'reply> = {
+        channel: Ch<ActorMsg<'req, 'reply>>
+        stats: ActorStat
+        shutdownComplete: IVar<unit>
+    }
+
+    /// Create actor statistics
+    let createActorStat name = {
+        name = name
+        startTime = DateTime.UtcNow
+        messageCount = 0L
+        errorCount = 0L
+        lastMessageTime = DateTime.UtcNow
+        avgProcessingTimeMs = 0.0
+        lifecycle = ActorLife.Starting
+    }
+
+    /// Spawn a new actor with supervision capabilities
+    let spawnActor<'req, 'reply, 'state>
+        (name: string)
+        (init: unit -> Job<'state>)
+        (handle: 'state -> 'req -> Job<'state * 'reply option>)
+        (onError: exn -> 'state -> Job<'state option>)
+        : Job<ActorRef<'req, 'reply>> =
+        job {
+            let ch = Ch<ActorMsg<'req, 'reply>>()
+            let stats = createActorStat name
+            let shutdownComplete = IVar<unit>()
+            
+            let! initialState = init()
+            stats.lifecycle <- ActorLife.Running
+            
+            let rec loop (state: 'state) = job {
+                let! msg = Ch.take ch
+                let sw = System.Diagnostics.Stopwatch.StartNew()
+                
+                match msg with
+                | ActorMsg.Request(req, reply) ->
+                    stats.messageCount <- stats.messageCount + 1L
+                    stats.lastMessageTime <- DateTime.UtcNow
+                    try
+                        let! newState, replyOpt = handle state req
+                        sw.Stop()
+                        stats.avgProcessingTimeMs <- (stats.avgProcessingTimeMs * 0.95) + (sw.Elapsed.TotalMilliseconds * 0.05)
+                        match replyOpt with
+                        | Some r -> do! IVar.fill reply r
+                        | None -> ()
+                        return! loop newState
+                    with ex ->
+                        stats.errorCount <- stats.errorCount + 1L
+                        match! onError ex state with
+                        | Some newState -> return! loop newState
+                        | None -> 
+                            stats.lifecycle <- ActorLife.Failed ex
+                            do! IVar.fill shutdownComplete ()
+                            
+                | ActorMsg.Fire req | ActorMsg.Cast req ->
+                    stats.messageCount <- stats.messageCount + 1L
+                    stats.lastMessageTime <- DateTime.UtcNow
+                    try
+                        let! newState, _ = handle state req
+                        return! loop newState
+                    with ex ->
+                        stats.errorCount <- stats.errorCount + 1L
+                        match! onError ex state with
+                        | Some newState -> return! loop newState
+                        | None ->
+                            stats.lifecycle <- ActorLife.Failed ex
+                            do! IVar.fill shutdownComplete ()
+                    
+                | ActorMsg.Shutdown reply ->
+                    stats.lifecycle <- ActorLife.Stopping
+                    do! IVar.fill reply ()
+                    stats.lifecycle <- ActorLife.Stopped
+                    do! IVar.fill shutdownComplete ()
+                    
+                | ActorMsg.Kill ->
+                    stats.lifecycle <- ActorLife.Stopped
+                    do! IVar.fill shutdownComplete ()
+            }
+            
+            do! Job.start (loop initialState)
+            return { channel = ch; stats = stats; shutdownComplete = shutdownComplete }
+        }
+
+    /// Send request and await reply (call pattern)
+    let actorCall (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<'reply> = job {
+        let reply = IVar<'reply>()
+        do! Ch.send handle.channel (ActorMsg.Request(req, reply))
+        return! IVar.read reply
+    }
+
+    /// Send request with timeout
+    let actorCallTimeout (timeoutMs: int) (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<'reply option> =
+        job {
+            let reply = IVar<'reply>()
+            do! Ch.send handle.channel (ActorMsg.Request(req, reply))
+            return! jobWithTimeoutMs timeoutMs (IVar.read reply)
+        }
+
+    /// Fire and forget (cast pattern)
+    let actorCast (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<unit> =
+        Ch.send handle.channel (ActorMsg.Fire req)
+
+    /// Graceful shutdown with confirmation
+    let actorShutdown (handle: ActorRef<_, _>) : Job<unit> = job {
+        let reply = IVar<unit>()
+        do! Ch.send handle.channel (ActorMsg.Shutdown reply)
+        return! IVar.read reply
+    }
+
+    /// Immediate termination
+    let actorKill (handle: ActorRef<_, _>) : Job<unit> =
+        Ch.send handle.channel ActorMsg.Kill
+
+    /// Wait for actor to complete
+    let actorAwait (handle: ActorRef<_, _>) : Job<unit> =
+        IVar.read handle.shutdownComplete
+
+    /// Check if actor is alive
+    let actorIsAlive (handle: ActorRef<_, _>) : bool =
+        match handle.stats.lifecycle with
+        | ActorLife.Running -> true
+        | _ -> false
+
+
+
+    // --- PATCH: supervision_tree (priority 11) ---
+
+    // =========================================================================
+    // SUPERVISION TREE - OTP-style (Rust tower / Gleam OTP compatible)
+    // =========================================================================
+
+    /// Supervision strategy (maps directly to Erlang/OTP)
+    [<RequireQualifiedAccess>]
+    type SuperStrategy =
+        | OneForOne
+        | OneForAll
+        | RestForOne
+
+    /// Child restart policy
+    [<RequireQualifiedAccess>]
+    type RestartPol =
+        | Permanent
+        | Temporary
+        | Transient
+
+    /// Child specification for supervisor
+    type ChildSpec<'req, 'reply> = {
+        id: string
+        start: unit -> Job<ActorRef<'req, 'reply>>
+        restart: RestartPol
+        shutdownMs: int
+    }
+
+    /// Supervisor state tracking children
+    type SuperState<'req, 'reply> = {
+        strategy: SuperStrategy
+        maxRestarts: int
+        windowSec: float
+        children: Map<string, ActorRef<'req, 'reply> * ChildSpec<'req, 'reply>>
+        restartLog: (DateTime * string) list
+    }
+
+    /// Supervisor request messages
+    [<RequireQualifiedAccess>]
+    type SuperReq<'req, 'reply> =
+        | StartChild of ChildSpec<'req, 'reply>
+        | StopChild of string
+        | RestartChild of string
+        | ListChildren
+        | GetStats
+
+    /// Supervisor response messages
+    [<RequireQualifiedAccess>]
+    type SuperResp<'req, 'reply> =
+        | Started of ActorRef<'req, 'reply>
+        | Stopped
+        | Restarted of ActorRef<'req, 'reply>
+        | ChildList of string list
+        | Stats of {| restarts: int; children: int |}
+        | Error of string
+
+    /// Create a supervisor actor
+    let createSupervisor 
+        (name: string)
+        (strategy: SuperStrategy)
+        (maxRestarts: int)
+        (windowSec: float)
+        : Job<ActorRef<SuperReq<'req, 'reply>, SuperResp<'req, 'reply>>> =
+        
+        let init () = job {
+            return {
+                strategy = strategy
+                maxRestarts = maxRestarts
+                windowSec = windowSec
+                children = Map.empty
+                restartLog = []
+            }
+        }
+        
+        let pruneLog (now: DateTime) (log: (DateTime * string) list) =
+            log |> List.filter (fun (time, _) -> 
+                (now - time).TotalSeconds < windowSec)
+        
+        let handle (state: SuperState<'req, 'reply>) (req: SuperReq<'req, 'reply>) = job {
+            match req with
+            | SuperReq.StartChild spec ->
+                let! child = spec.start()
+                let newChildren = Map.add spec.id (child, spec) state.children
+                return { state with children = newChildren }, 
+                       Some (SuperResp.Started child)
+                       
+            | SuperReq.StopChild id ->
+                match Map.tryFind id state.children with
+                | Some (child, _) ->
+                    do! actorShutdown child
+                    let newChildren = Map.remove id state.children
+                    return { state with children = newChildren }, 
+                           Some SuperResp.Stopped
+                | None ->
+                    return state, Some (SuperResp.Error $"Child {id} not found")
+                    
+            | SuperReq.RestartChild id ->
+                match Map.tryFind id state.children with
+                | Some (child, spec) ->
+                    do! actorKill child
+                    let! newChild = spec.start()
+                    let newChildren = Map.add id (newChild, spec) state.children
+                    let now = DateTime.UtcNow
+                    let newLog = (now, id) :: pruneLog now state.restartLog
+                    return { state with children = newChildren; restartLog = newLog },
+                           Some (SuperResp.Restarted newChild)
+                | None ->
+                    return state, Some (SuperResp.Error $"Child {id} not found")
+                    
+            | SuperReq.ListChildren ->
+                let names = state.children |> Map.toList |> List.map fst
+                return state, Some (SuperResp.ChildList names)
+                
+            | SuperReq.GetStats ->
+                let stats = {|
+                    restarts = state.restartLog.Length
+                    children = state.children.Count
+                |}
+                return state, Some (SuperResp.Stats stats)
+        }
+        
+        let onError (ex: exn) state = job {
+            Common.trace Common.Critical 
+                (fun () -> $"Supervisor {name} error: {ex.Message}") 
+                Common._locals
+            return Some state
+        }
+        
+        spawnActor name init handle onError
+
+
+
+    // --- PATCH: error_handling (priority 15) ---
+
+    // =========================================================================
+    // ENHANCED ERROR HANDLING & RECOVERY (Rust anyhow / Gleam result compatible)
+    // =========================================================================
+
+    /// Retry configuration
+    type RetryConf = {
+        maxAttempts: int
+        initDelay: TimeSpan
+        maxDelay: TimeSpan
+        backoffMult: float
+        shouldRetry: exn -> bool
+    }
+
+    /// Default retry config
+    let defaultRetry = {
+        maxAttempts = 3
+        initDelay = TimeSpan.FromMilliseconds(100.0)
+        maxDelay = TimeSpan.FromSeconds(10.0)
+        backoffMult = 2.0
+        shouldRetry = fun _ -> true
+    }
+
+    /// Retry with exponential backoff using Hopac
+    let retryBackoff (conf: RetryConf) (work: Job<'a>) : Job<Result<'a, exn list>> =
+        let rec loop (attempt: int) (delay: TimeSpan) (errors: exn list) = job {
+            if attempt > conf.maxAttempts then
+                return Error (List.rev errors)
+            else
+                try
+                    let! result = work
+                    return Ok result
+                with ex when conf.shouldRetry ex ->
+                    if attempt = conf.maxAttempts then
+                        return Error (List.rev (ex :: errors))
+                    else
+                        do! timeOutMillis (int delay.TotalMilliseconds)
+                        let nextDelay = 
+                            TimeSpan.FromTicks(int64 (float delay.Ticks * conf.backoffMult))
+                            |> min conf.maxDelay
+                        return! loop (attempt + 1) nextDelay (ex :: errors)
+        }
+        loop 1 conf.initDelay []
+
+    /// Fallback on error
+    let withFallback (fallback: exn -> Job<'a>) (work: Job<'a>) : Job<'a> = job {
+        try
+            return! work
+        with ex ->
+            return! fallback ex
+    }
+
+    /// Recover with default value
+    let recoverDefault (defaultValue: 'a) (work: Job<'a>) : Job<'a> = job {
+        try
+            return! work
+        with _ ->
+            return defaultValue
+    }
+
+    /// Ensure cleanup runs even on error
+    let ensureCleanup (cleanup: Job<unit>) (work: Job<'a>) : Job<'a> = job {
+        try
+            let! result = work
+            do! cleanup
+            return result
+        with ex ->
+            do! cleanup
+            return raise ex
+    }
+
+    /// Bracket pattern (acquire/use/release)
+    let bracket 
+        (acquire: Job<'resource>) 
+        (release: 'resource -> Job<unit>) 
+        (useRes: 'resource -> Job<'a>) 
+        : Job<'a> = job {
+        let! resource = acquire
+        try
+            let! result = useRes resource
+            do! release resource
+            return result
+        with ex ->
+            do! release resource
+            return raise ex
+    }
+
+
+
+    // --- PATCH: memory_opts (priority 16) ---
+
+    // =========================================================================
+    // MEMORY OPTIMIZATIONS (Rust arena / Gleam bytes compatible)
+    // =========================================================================
+
+    /// Object pool for reducing allocations
+    type ObjPool<'a> = {
+        pool: System.Collections.Concurrent.ConcurrentBag<'a>
+        factory: unit -> 'a
+        reset: 'a -> unit
+        maxSize: int
+    }
+
+    /// Create object pool
+    let createObjPool (factory: unit -> 'a) (reset: 'a -> unit) (maxSize: int) : ObjPool<'a> = {
+        pool = System.Collections.Concurrent.ConcurrentBag()
+        factory = factory
+        reset = reset
+        maxSize = maxSize
+    }
+
+    /// Rent object from pool
+    let poolRent (p: ObjPool<'a>) : 'a =
+        match p.pool.TryTake() with
+        | true, obj -> obj
+        | _ -> p.factory()
+
+    /// Return object to pool
+    let poolReturn (p: ObjPool<'a>) (obj: 'a) : unit =
+        if p.pool.Count < p.maxSize then
+            p.reset obj
+            p.pool.Add(obj)
+
+    /// Use object from pool with automatic return
+    let poolUse (p: ObjPool<'a>) (f: 'a -> Job<'b>) : Job<'b> = job {
+        let obj = poolRent p
+        try
+            return! f obj
+        finally
+            poolReturn p obj
+    }
+
+    /// StringBuilder pool
+    let sbPool = 
+        createObjPool 
+            (fun () -> System.Text.StringBuilder(1024))
+            (fun sb -> sb.Clear() |> ignore)
+            Environment.ProcessorCount
+
+    /// Pooled string building
+    let buildStr (f: System.Text.StringBuilder -> unit) : string =
+        let sb = poolRent sbPool
+        try
+            f sb
+            sb.ToString()
+        finally
+            poolReturn sbPool sb
+
+    /// String intern table for deduplication
+    type InternTable = {
+        table: System.Collections.Concurrent.ConcurrentDictionary<string, string>
+        mutable interned: int64
+        mutable deduped: int64
+    }
+
+    let createInternTable () : InternTable = {
+        table = System.Collections.Concurrent.ConcurrentDictionary()
+        interned = 0L
+        deduped = 0L
+    }
+
+    let internStr (t: InternTable) (s: string) : string =
+        match t.table.TryGetValue(s) with
+        | true, existing ->
+            System.Threading.Interlocked.Increment(&t.deduped) |> ignore
+            existing
+        | _ ->
+            t.table.[s] <- s
+            System.Threading.Interlocked.Increment(&t.interned) |> ignore
+            s
+
+    /// Global string intern table
+    let globalIntern = createInternTable()
+
+
+
+    // --- PATCH: parallel_primitives (priority 20) ---
+
+    // =========================================================================
+    // PARALLEL EXECUTION PRIMITIVES (Rust rayon / Gleam gleam_otp compatible)
+    // =========================================================================
+
+    /// Parallel map with bounded concurrency using Hopac
+    let parMapBounded (concurrency: int) (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
+        if items.Length = 0 then Job.result [||]
+        elif items.Length <= concurrency then
+            items |> Array.map f |> Job.conCollect >>- fun (ra: ResizeArray<'b>) -> ra.ToArray()
+        else
+            job {
+                let results = Array.zeroCreate<'b> items.Length
+                let workQueue = System.Collections.Concurrent.ConcurrentQueue(
+                    items |> Array.mapi (fun i x -> i, x))
+                let sem = new System.Threading.SemaphoreSlim(concurrency)
+                
+                let processItem () = job {
+                    let mutable cont = true
+                    while cont do
+                        do! Job.awaitUnitTask (sem.WaitAsync())
+                        match workQueue.TryDequeue() with
+                        | true, (idx, item) ->
+                            try
+                                let! result = f item
+                                results.[idx] <- result
+                            finally
+                                sem.Release() |> ignore
+                        | false, _ ->
+                            sem.Release() |> ignore
+                            cont <- false
+                }
+                
+                do! Seq.init (min concurrency items.Length) (fun _ -> processItem())
+                    |> Job.conIgnore
+                return results
+            }
+
+    /// Parallel map with auto concurrency
+    let parMap (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
+        parMapBounded Environment.ProcessorCount f items
+
+    /// Parallel iter with bounded concurrency
+    let parIterBounded (concurrency: int) (f: 'a -> Job<unit>) (items: 'a[]) : Job<unit> =
+        parMapBounded concurrency f items >>- ignore
+
+    /// Parallel iter with auto concurrency
+    let parIter (f: 'a -> Job<unit>) (items: 'a[]) : Job<unit> =
+        parIterBounded Environment.ProcessorCount f items
+
+    /// Parallel fold with associative combiner (tree reduction)
+    let parFold (combine: 'b -> 'b -> 'b) (zero: 'b) (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b> =
+        if items.Length = 0 then Job.result zero
+        else
+            let chunkSize = max 1 (items.Length / Environment.ProcessorCount)
+            let chunks = items |> Array.chunkBySize chunkSize
+            
+            job {
+                let! chunkResults = 
+                    chunks 
+                    |> Array.map (fun chunk ->
+                        job {
+                            let mutable acc = zero
+                            for item in chunk do
+                                let! result = f item
+                                acc <- combine acc result
+                            return acc
+                        })
+                    |> Job.conCollect >>- fun (ra: ResizeArray<'b>) -> ra.ToArray()
+                return Array.fold combine zero chunkResults
+            }
+
+    /// Scatter-gather pattern with workers
+    let scatterGather (workers: int) (work: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
+        parMapBounded workers work items
+
+    /// Parallel filter
+    let parFilter (pred: 'a -> Job<bool>) (items: 'a[]) : Job<'a[]> = job {
+        let! flags = parMap pred items
+        return 
+            Array.zip items flags 
+            |> Array.choose (fun (item, keep) -> if keep then Some item else None)
+    }
+
+    /// Parallel choose (filter + map)
+    let parChoose (chooser: 'a -> Job<'b option>) (items: 'a[]) : Job<'b[]> = job {
+        let! results = parMap chooser items
+        return results |> Array.choose id
+    }
+
+    /// Race - return first completed result
+    /// Note: This is a simple sequential fallback since Hopac Alt patterns are complex
+    let raceJobs (jobs: Job<'a>[]) : Job<'a> =
+        if jobs.Length = 0 then 
+            failwith "raceJobs requires at least one job"
+        elif jobs.Length = 1 then 
+            jobs.[0]
+        else
+            // For now, just run first job (proper Alt-based race would be more complex)
+            jobs.[0]
+
+    /// All settled - wait for all, collecting results
+    [<RequireQualifiedAccess>]
+    type Settled<'a> = 
+        | Ok of 'a 
+        | Err of exn
+
+    let allSettled (jobs: Job<'a>[]) : Job<Settled<'a>[]> =
+        jobs 
+        |> Array.map (fun j -> 
+            job {
+                try
+                    let! result = j
+                    return Settled.Ok result
+                with ex ->
+                    return Settled.Err ex
+            })
+        |> Job.conCollect >>- fun (ra: ResizeArray<Settled<'a>>) -> ra.ToArray()
+
+
+
+    // --- PATCH: incremental_cache (priority 21) ---
+
+    // =========================================================================
+    // INCREMENTAL COMPUTATION CACHE (Rust salsa / Gleam memoization compatible)
+    // =========================================================================
+
+    /// Cache entry with generation tracking
+    type CacheEntry<'v> = {
+        generation: int64
+        value: 'v
+        deps: string Set
+        computeMs: float
+    }
+
+    /// Incremental cache with dependency tracking
+    type IncrCache<'k, 'v when 'k : equality and 'k : comparison> = {
+        mutable gen: int64
+        cache: System.Collections.Concurrent.ConcurrentDictionary<'k, CacheEntry<'v>>
+        compute: 'k -> Job<'v * string Set>
+        mutable hits: int64
+        mutable misses: int64
+    }
+
+    /// Create a new incremental cache
+    let createIncrCache<'k, 'v when 'k : equality and 'k : comparison>
+        (compute: 'k -> Job<'v * string Set>)
+        : IncrCache<'k, 'v> = {
+        gen = 0L
+        cache = System.Collections.Concurrent.ConcurrentDictionary()
+        compute = compute
+        hits = 0L
+        misses = 0L
+    }
+
+    /// Get or compute value from cache
+    let cacheGet (c: IncrCache<'k, 'v>) (key: 'k) : Job<'v> = job {
+        let currentGen = c.gen
+        
+        match c.cache.TryGetValue(key) with
+        | true, entry when entry.generation = currentGen ->
+            System.Threading.Interlocked.Increment(&c.hits) |> ignore
+            return entry.value
+        | _ ->
+            System.Threading.Interlocked.Increment(&c.misses) |> ignore
+            let sw = System.Diagnostics.Stopwatch.StartNew()
+            let! value, deps = c.compute key
+            sw.Stop()
+            
+            let entry = {
+                generation = currentGen
+                value = value
+                deps = deps
+                computeMs = sw.Elapsed.TotalMilliseconds
+            }
+            c.cache.[key] <- entry
+            return value
+    }
+
+    /// Invalidate specific key
+    let cacheInvalidateKey (c: IncrCache<'k, 'v>) (key: 'k) : unit =
+        c.cache.TryRemove(key) |> ignore
+
+    /// Invalidate all entries (bump generation)
+    let cacheInvalidateAll (c: IncrCache<_, _>) : unit =
+        System.Threading.Interlocked.Increment(&c.gen) |> ignore
+
+    /// Get cache statistics
+    let cacheStats (c: IncrCache<_, _>) = 
+        let h = c.hits
+        let m = c.misses
+        {|
+            hits = h
+            misses = m
+            hitRate = if h + m > 0L then float h / float (h + m) else 0.0
+            entries = c.cache.Count
+        |}
+
+
+
+    // --- PATCH: stream_ops (priority 22) ---
+
+    // =========================================================================
+    // ENHANCED STREAM OPERATORS (using Hopac.Stream)
+    // =========================================================================
+
+    /// Parallel stream map with bounded concurrency
+    let streamMapParBounded (conc: int) (f: 'a -> Job<'b>) (s: Stream<'a>) : Stream<'b> =
+        let sem = new System.Threading.SemaphoreSlim(conc)
+        s |> Stream.mapJob (fun x -> job {
+            do! Job.awaitUnitTask (sem.WaitAsync())
+            try
+                return! f x
+            finally
+                sem.Release() |> ignore
+        })
+
+    /// Buffer and process in batches
+    let streamBatch (batchSize: int) (s: Stream<'a>) : Stream<'a[]> =
+        let rec loop buffer s = 
+            s >>= function
+            | Cons(x, xs) ->
+                let newBuffer = x :: buffer
+                if List.length newBuffer >= batchSize then
+                    Job.result (Cons(List.rev newBuffer |> Array.ofList, loop [] xs |> memo))
+                else
+                    loop newBuffer xs
+            | Nil ->
+                if List.isEmpty buffer then 
+                    Job.result Nil
+                else
+                    Job.result (Cons(List.rev buffer |> Array.ofList, Job.result Nil |> memo))
+        loop [] s |> memo
+
+    /// Take first n items from stream
+    let streamTake (n: int) (s: Stream<'a>) : Job<'a[]> =
+        let results = ResizeArray()
+        let rec loop count str = job {
+            if count >= n then return ()
+            else
+                let! item = str
+                match item with
+                | Cons(x, xs) ->
+                    results.Add(x)
+                    return! loop (count + 1) xs
+                | Nil -> return ()
+        }
+        loop 0 s >>- fun () -> results.ToArray()
+
+    /// Merge multiple streams
+    let streamMergeAll (streams: Stream<'a>[]) : Stream<'a> =
+        if streams.Length = 0 then Stream.nil
+        elif streams.Length = 1 then streams.[0]
+        else
+            streams |> Array.reduce Stream.merge
+
+
+
+    // --- PATCH: backpressure (priority 23) ---
+
+    // =========================================================================
+    // BACKPRESSURE & RATE LIMITING (Rust tower / Gleam rate_limiter compatible)
+    // =========================================================================
+
+    /// Token bucket rate limiter
+    type TokenBucket = {
+        mutable tokens: float
+        maxTokens: float
+        refillRate: float
+        mutable lastRefill: DateTime
+        lockObj: obj
+    }
+
+    /// Create a token bucket rate limiter
+    let createTokenBucket (maxTokens: float) (refillRate: float) : TokenBucket = {
+        tokens = maxTokens
+        maxTokens = maxTokens
+        refillRate = refillRate
+        lastRefill = DateTime.UtcNow
+        lockObj = obj()
+    }
+
+    /// Try to acquire tokens from bucket
+    let tryAcquire (bucket: TokenBucket) (count: float) : bool =
+        lock bucket.lockObj (fun () ->
+            let now = DateTime.UtcNow
+            let elapsed = (now - bucket.lastRefill).TotalSeconds
+            bucket.tokens <- min bucket.maxTokens (bucket.tokens + elapsed * bucket.refillRate)
+            bucket.lastRefill <- now
+            
+            if bucket.tokens >= count then
+                bucket.tokens <- bucket.tokens - count
+                true
+            else
+                false
+        )
+
+    /// Acquire tokens, waiting if necessary
+    let acquireTokens (bucket: TokenBucket) (count: float) : Job<unit> =
+        let rec loop () = job {
+            if tryAcquire bucket count then
+                return ()
+            else
+                let needed = count - bucket.tokens
+                let waitMs = int (needed / bucket.refillRate * 1000.0)
+                do! timeOutMillis (max 1 waitMs)
+                return! loop ()
+        }
+        loop ()
+
+    /// Circuit breaker states
+    [<RequireQualifiedAccess>]
+    type CircuitSt =
+        | Closed
+        | Open
+        | HalfOpen
+
+    /// Circuit breaker for fault tolerance
+    type CircuitBreaker = {
+        mutable state: CircuitSt
+        mutable failures: int
+        mutable successes: int
+        mutable lastFail: DateTime
+        failThreshold: int
+        successThreshold: int
+        resetTimeout: TimeSpan
+        lockObj: obj
+    }
+
+    /// Create a circuit breaker
+    let createCircuitBreaker (failThreshold: int) (successThreshold: int) (resetTimeout: TimeSpan) : CircuitBreaker = {
+        state = CircuitSt.Closed
+        failures = 0
+        successes = 0
+        lastFail = DateTime.MinValue
+        failThreshold = failThreshold
+        successThreshold = successThreshold
+        resetTimeout = resetTimeout
+        lockObj = obj()
+    }
+
+    /// Execute with circuit breaker protection
+    let withCircuit (cb: CircuitBreaker) (work: Job<'a>) : Job<Result<'a, string>> =
+        let checkState () =
+            lock cb.lockObj (fun () ->
+                match cb.state with
+                | CircuitSt.Open ->
+                    if DateTime.UtcNow - cb.lastFail > cb.resetTimeout then
+                        cb.state <- CircuitSt.HalfOpen
+                        cb.successes <- 0
+                        true
+                    else
+                        false
+                | _ -> true
+            )
+        
+        let recordSuccess () =
+            lock cb.lockObj (fun () ->
+                cb.failures <- 0
+                match cb.state with
+                | CircuitSt.HalfOpen ->
+                    cb.successes <- cb.successes + 1
+                    if cb.successes >= cb.successThreshold then
+                        cb.state <- CircuitSt.Closed
+                | _ -> ()
+            )
+        
+        let recordFail () =
+            lock cb.lockObj (fun () ->
+                cb.failures <- cb.failures + 1
+                cb.lastFail <- DateTime.UtcNow
+                if cb.failures >= cb.failThreshold then
+                    cb.state <- CircuitSt.Open
+            )
+        
+        job {
+            if checkState () then
+                try
+                    let! result = work
+                    recordSuccess ()
+                    return Ok result
+                with ex ->
+                    recordFail ()
+                    return Error ex.Message
+            else
+                return Error "Circuit breaker is open"
+        }
+
+
+
+    // --- PATCH: profiling (priority 24) ---
+
+    // =========================================================================
+    // PROFILING & METRICS (Rust metrics / Gleam telemetry compatible)
+    // =========================================================================
+
+    /// Simple counter
+    type MetricCounter = {
+        name: string
+        mutable value: int64
+    }
+
+    let createCounter name : MetricCounter = { name = name; value = 0L }
+    let counterInc (c: MetricCounter) : unit = 
+        System.Threading.Interlocked.Increment(&c.value) |> ignore
+    let counterAdd (c: MetricCounter) (n: int64) : unit = 
+        System.Threading.Interlocked.Add(&c.value, n) |> ignore
+
+    /// Simple gauge
+    type MetricGauge = {
+        name: string
+        mutable value: float
+    }
+
+    let createGauge name : MetricGauge = { name = name; value = 0.0 }
+    let gaugeSet (g: MetricGauge) (v: float) : unit = g.value <- v
+    let gaugeInc (g: MetricGauge) : unit = g.value <- g.value + 1.0
+    let gaugeDec (g: MetricGauge) : unit = g.value <- g.value - 1.0
+
+    /// Histogram for timing distributions
+    type MetricHistogram = {
+        name: string
+        buckets: int64[]
+        boundaries: float[]
+        mutable count: int64
+        mutable sum: float
+        mutable minVal: float
+        mutable maxVal: float
+    }
+
+    /// Create histogram with exponential buckets
+    let createHistogram (name: string) (minV: float) (maxV: float) (bucketCount: int) : MetricHistogram =
+        let ratio = Math.Pow(maxV / minV, 1.0 / float bucketCount)
+        {
+            name = name
+            buckets = Array.zeroCreate bucketCount
+            boundaries = Array.init bucketCount (fun i -> minV * Math.Pow(ratio, float i))
+            count = 0L
+            sum = 0.0
+            minVal = Double.MaxValue
+            maxVal = Double.MinValue
+        }
+
+    /// Record a value in histogram
+    let histRecord (h: MetricHistogram) (value: float) : unit =
+        System.Threading.Interlocked.Increment(&h.count) |> ignore
+        h.sum <- h.sum + value
+        if value < h.minVal then h.minVal <- value
+        if value > h.maxVal then h.maxVal <- value
+        let idx = 
+            h.boundaries 
+            |> Array.tryFindIndex (fun b -> value < b)
+            |> Option.defaultValue (h.buckets.Length - 1)
+        System.Threading.Interlocked.Increment(&h.buckets.[idx]) |> ignore
+
+    /// Timed execution with histogram recording
+    let timedJob (histogram: MetricHistogram) (work: Job<'a>) : Job<'a> = job {
+        let sw = System.Diagnostics.Stopwatch.StartNew()
+        let! result = work
+        sw.Stop()
+        histRecord histogram sw.Elapsed.TotalMilliseconds
+        return result
+    }
+
+    /// Timed execution returning duration
+    let timedWithDur (work: Job<'a>) : Job<'a * TimeSpan> = job {
+        let sw = System.Diagnostics.Stopwatch.StartNew()
+        let! result = work
+        sw.Stop()
+        return result, sw.Elapsed
+    }
+
+    /// Global compiler metrics
+    let mutable metricsTokenize = createHistogram "tokenize" 0.1 10000.0 20
+    let mutable metricsParse = createHistogram "parse" 0.1 10000.0 20
+    let mutable metricsTypecheck = createHistogram "typecheck" 0.1 10000.0 20
+    let mutable metricsCodegen = createHistogram "codegen" 0.1 10000.0 20
+
+
+
+    // --- PATCH: parallel_dep_graph (priority 25) ---
+
+    // =========================================================================
+    // PARALLEL DEPENDENCY GRAPH EXECUTION (using Hopac)
+    // =========================================================================
+
+    /// Node execution state
+    [<RequireQualifiedAccess>]
+    type NodeSt =
+        | Pending
+        | Ready
+        | Running
+        | Done
+        | Failed of exn
+
+    /// Dependency graph node
+    type DepNode<'id, 'r when 'id : comparison> = {
+        id: 'id
+        deps: 'id Set
+        mutable dependents: 'id Set
+        mutable state: NodeSt
+        mutable result: 'r option
+        ready: IVar<unit>
+        completed: IVar<Result<'r, exn>>
+    }
+
+    /// Parallel dependency graph
+    type ParDepGraph<'id, 'r when 'id : equality and 'id : comparison> = {
+        nodes: System.Collections.Concurrent.ConcurrentDictionary<'id, DepNode<'id, 'r>>
+        readyQueue: Mailbox<'id>
+        mutable pending: int
+        mutable completed: int
+        allDone: IVar<unit>
+    }
+
+    /// Create parallel dependency graph
+    let createParDepGraph<'id, 'r when 'id : equality and 'id : comparison>() 
+        : ParDepGraph<'id, 'r> = {
+        nodes = System.Collections.Concurrent.ConcurrentDictionary<'id, DepNode<'id, 'r>>()
+        readyQueue = Mailbox<'id>()
+        pending = 0
+        completed = 0
+        allDone = IVar<unit>()
+    }
+
+    /// Add node to graph
+    let depGraphAdd (g: ParDepGraph<'id, 'r>) (id: 'id) (deps: 'id Set) : Job<unit> = job {
+        let node = {
+            id = id
+            deps = deps
+            dependents = Set.empty<'id>
+            state = NodeSt.Pending
+            result = None
+            ready = IVar()
+            completed = IVar()
+        }
+        
+        g.nodes.[id] <- node
+        g.pending <- g.pending + 1
+        
+        // Register as dependent
+        for depId in deps do
+            match g.nodes.TryGetValue(depId) with
+            | true, depNode ->
+                depNode.dependents <- Set.add id depNode.dependents
+            | _ -> ()
+        
+        // If no deps, mark ready
+        if Set.isEmpty deps then
+            node.state <- NodeSt.Ready
+            do! Mailbox.send g.readyQueue id
+    }
+
+    /// Check if node is ready
+    let private checkReady (g: ParDepGraph<'id, 'r>) (nodeId: 'id) : Job<unit> = job {
+        match g.nodes.TryGetValue(nodeId) with
+        | true, node ->
+            let allDone = 
+                node.deps |> Set.forall (fun depId ->
+                    match g.nodes.TryGetValue(depId) with
+                    | true, depNode -> 
+                        match depNode.state with
+                        | NodeSt.Done -> true
+                        | _ -> false
+                    | _ -> true)
+            
+            if allDone && node.state = NodeSt.Pending then
+                node.state <- NodeSt.Ready
+                do! Mailbox.send g.readyQueue nodeId
+        | _ -> ()
+    }
+
+    /// Execute dependency graph with workers
+    let depGraphExec 
+        (g: ParDepGraph<'id, 'r>) 
+        (exec: 'id -> Job<'r>)
+        (workers: int)
+        : Job<Map<'id, Result<'r, exn>>> = job {
+        
+        let results = System.Collections.Concurrent.ConcurrentDictionary<'id, Result<'r, exn>>()
+        
+        let worker = job {
+            let mutable cont = true
+            while cont do
+                let! nodeIdOpt = 
+                    (Mailbox.take g.readyQueue |> Alt.afterFun Some)
+                    <|>
+                    (IVar.read g.allDone |> Alt.afterFun (fun _ -> None))
+                
+                match nodeIdOpt with
+                | Some id ->
+                    match g.nodes.TryGetValue(id) with
+                    | true, node ->
+                        node.state <- NodeSt.Running
+                        try
+                            let! result = exec id
+                            node.state <- NodeSt.Done
+                            node.result <- Some result
+                            results.[id] <- Ok result
+                            do! IVar.fill node.completed (Ok result)
+                            
+                            // Notify dependents
+                            for depId in node.dependents do
+                                do! checkReady g depId
+                        with ex ->
+                            node.state <- NodeSt.Failed ex
+                            results.[id] <- Error ex
+                            do! IVar.fill node.completed (Error ex)
+                        
+                        g.completed <- g.completed + 1
+                        if g.completed = g.pending then
+                            do! IVar.tryFill g.allDone ()
+                            cont <- false
+                    | _ -> ()
+                | None ->
+                    cont <- false
+        }
+        
+        // Start workers
+        do! Seq.init workers (fun _ -> Job.start worker) |> Job.conIgnore
+        
+        // Wait for completion
+        do! IVar.read g.allDone
+        
+        return results |> Seq.map (fun kv -> kv.Key, kv.Value) |> Map.ofSeq
+    }
+
+
+
+    // --- PATCH: watchdog (priority 28) ---
+
+    // =========================================================================
+    // WATCHDOG & HEALTH MONITORING (using Hopac)
+    // =========================================================================
+
+    /// Health check result
+    [<RequireQualifiedAccess>]
+    type HealthSt =
+        | Healthy
+        | Degraded of string
+        | Unhealthy of string
+
+    /// Component health
+    type CompHealth = {
+        name: string
+        status: HealthSt
+        lastCheck: DateTime
+        responseMs: float option
+    }
+
+    /// System health
+    type SysHealth = {
+        overall: HealthSt
+        components: CompHealth list
+        uptime: TimeSpan
+        startTime: DateTime
+    }
+
+    /// Health check function
+    type HealthCheck = string -> Job<CompHealth>
+
+    /// Watchdog config
+    type WatchdogConf = {
+        checkIntervalMs: int
+        unhealthyThreshold: int
+        timeout: TimeSpan
+    }
+
+    /// Watchdog state
+    type WatchdogSt = {
+        conf: WatchdogConf
+        checks: Map<string, HealthCheck>
+        mutable lastCheck: DateTime
+        startTime: DateTime
+    }
+
+    /// Create watchdog
+    let createWatchdog (conf: WatchdogConf) : WatchdogSt = {
+        conf = conf
+        checks = Map.empty
+        lastCheck = DateTime.UtcNow
+        startTime = DateTime.UtcNow
+    }
+
+    /// Register health check
+    let watchdogRegister (name: string) (check: HealthCheck) (w: WatchdogSt) : WatchdogSt =
+        { w with checks = Map.add name check w.checks }
+
+    /// Run health checks
+    let watchdogRun (w: WatchdogSt) : Job<SysHealth> = job {
+        w.lastCheck <- DateTime.UtcNow
+        
+        let! results =
+            w.checks
+            |> Map.toArray
+            |> Array.map (fun (name, check) -> job {
+                try
+                    let! resultOpt = jobWithTimeoutMs (int w.conf.timeout.TotalMilliseconds) (check name)
+                    match resultOpt with
+                    | Some health -> return health
+                    | None -> 
+                        return {
+                            name = name
+                            status = HealthSt.Unhealthy "Timeout"
+                            lastCheck = DateTime.UtcNow
+                            responseMs = None
+                        }
+                with ex ->
+                    return {
+                        name = name
+                        status = HealthSt.Unhealthy ex.Message
+                        lastCheck = DateTime.UtcNow
+                        responseMs = None
+                    }
+            })
+            |> Job.conCollect
+        
+        let overall =
+            if results |> Seq.forall (fun r -> r.status = HealthSt.Healthy) then
+                HealthSt.Healthy
+            elif results |> Seq.exists (fun r -> match r.status with HealthSt.Unhealthy _ -> true | _ -> false) then
+                HealthSt.Unhealthy "Component unhealthy"
+            else
+                HealthSt.Degraded "Component degraded"
+        
+        return {
+            overall = overall
+            components = results |> Seq.toList
+            uptime = DateTime.UtcNow - w.startTime
+            startTime = w.startTime
+        }
+    }
+
+    /// Memory health check
+    let memoryHealthCheck (maxMb: int64) : HealthCheck =
+        fun name -> job {
+            let usedMb = GC.GetTotalMemory(false) / (1024L * 1024L)
+            let status =
+                if usedMb > maxMb then HealthSt.Unhealthy $"Memory: {usedMb}MB > {maxMb}MB"
+                elif usedMb > maxMb * 80L / 100L then HealthSt.Degraded $"Memory high: {usedMb}MB"
+                else HealthSt.Healthy
+            return {
+                name = name
+                status = status
+                lastCheck = DateTime.UtcNow
+                responseMs = None
+            }
+        }
+
+
+
+    // --- PATCH: compile_pipeline (priority 29) ---
+
+    // =========================================================================
+    // PARALLEL COMPILE PIPELINE ENHANCEMENTS (using Hopac)
+    // =========================================================================
+
+    /// Compilation stage result
+    type StageRes<'a> = {
+        result: 'a
+        durationMs: float
+        errors: (int * int * string) list
+        warnings: (int * int * string) list
+    }
+
+    /// Module compile context
+    type ModuleCtx = {
+        path: string
+        source: string
+        hash: string
+        deps: string Set
+        tokenized: Job<StageRes<obj>>
+        parsed: Job<StageRes<obj>>
+        typechecked: Job<StageRes<obj>>
+        codegen: System.Collections.Concurrent.ConcurrentDictionary<string, Job<StageRes<string>>>
+    }
+
+    /// Package compile context  
+    type PackageCtx = {
+        id: int
+        path: string
+        modules: System.Collections.Concurrent.ConcurrentDictionary<string, ModuleCtx>
+        depOrder: string[]
+        pkgEnv: Job<obj>
+    }
+
+    /// Compile coordinator
+    type CompileCoord = {
+        packages: System.Collections.Concurrent.ConcurrentDictionary<string, PackageCtx>
+        moduleCache: IncrCache<string, ModuleCtx>
+        workers: int
+        mutable modulesCompiled: int64
+        mutable packagesCompiled: int64
+        mutable cacheHits: int64
+    }
+
+    /// Create compile coordinator
+    let createCompileCoord (workers: int) : CompileCoord = {
+        packages = System.Collections.Concurrent.ConcurrentDictionary()
+        moduleCache = createIncrCache (fun path -> job {
+            return Unchecked.defaultof<ModuleCtx>, Set.empty
+        })
+        workers = workers
+        modulesCompiled = 0L
+        packagesCompiled = 0L
+        cacheHits = 0L
+    }
+
+    /// Compile module with pipeline
+    let compileModulePipeline (coord: CompileCoord) (path: string) (source: string) : Job<ModuleCtx> = job {
+        let hash = source.GetHashCode().ToString()
+        
+        System.Threading.Interlocked.Increment(&coord.modulesCompiled) |> ignore
+        
+        // Create promises for each stage using Hopac.memo
+        let tokenized = 
+            job {
+                let sw = System.Diagnostics.Stopwatch.StartNew()
+                // Tokenize here
+                sw.Stop()
+                return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
+            } |> Hopac.memo
+        
+        let parsed =
+            job {
+                let! _ = tokenized
+                let sw = System.Diagnostics.Stopwatch.StartNew()
+                // Parse here
+                sw.Stop()
+                return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
+            } |> Hopac.memo
+        
+        let typechecked =
+            job {
+                let! _ = parsed
+                let sw = System.Diagnostics.Stopwatch.StartNew()
+                // Typecheck here
+                sw.Stop()
+                return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
+            } |> Hopac.memo
+        
+        return {
+            path = path
+            source = source
+            hash = hash
+            deps = Set.empty
+            tokenized = tokenized
+            parsed = parsed
+            typechecked = typechecked
+            codegen = System.Collections.Concurrent.ConcurrentDictionary()
+        }
+    }
+
+    /// Compile package with parallel modules
+    let compilePackagePipeline 
+        (coord: CompileCoord) 
+        (pkgPath: string) 
+        (modulePaths: string[]) 
+        (readSource: string -> Job<string>)
+        : Job<PackageCtx> = job {
+        
+        let pkgId = pkgPath.GetHashCode()
+        System.Threading.Interlocked.Increment(&coord.packagesCompiled) |> ignore
+        
+        let moduleCtxs = System.Collections.Concurrent.ConcurrentDictionary<string, ModuleCtx>()
+        
+        // Compile all modules in parallel
+        do! parIterBounded coord.workers (fun path -> job {
+                let! source = readSource path
+                let! ctx = compileModulePipeline coord path source
+                moduleCtxs.[path] <- ctx
+            }) modulePaths
+        
+        // Compute package env
+        let pkgEnv =
+            job {
+                let! moduleResults =
+                    moduleCtxs.Values
+                    |> Seq.map (fun ctx -> ctx.typechecked)
+                    |> Seq.toArray
+                    |> Job.conCollect
+                return obj()
+            } |> Hopac.memo
+        
+        let ctx = {
+            id = pkgId
+            path = pkgPath
+            modules = moduleCtxs
+            depOrder = modulePaths
+            pkgEnv = pkgEnv
+        }
+        
+        coord.packages.[pkgPath] <- ctx
+        return ctx
+    }
+
+
+
+    // --- PATCH: hot_reload (priority 30) ---
+
+    // =========================================================================
+    // HOT RELOAD SUPPORT (using Hopac)
+    // =========================================================================
+
+    /// File change event
+    [<RequireQualifiedAccess>]
+    type FileEvt =
+        | Created of string
+        | Modified of string
+        | Deleted of string
+        | Renamed of string * string
+
+    /// File watcher state
+    type FileWatcherSt = {
+        watcher: System.IO.FileSystemWatcher
+        events: Mailbox<FileEvt>
+        debounceMs: int
+        pending: System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>
+    }
+
+    /// Create file watcher with debouncing
+    let createFileWatcher (dir: string) (pattern: string) (debounceMs: int) : Job<FileWatcherSt> = job {
+        let events = Mailbox<FileEvt>()
+        let pending = System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>()
+        
+        let watcher = new System.IO.FileSystemWatcher(dir)
+        watcher.NotifyFilter <- 
+            System.IO.NotifyFilters.LastWrite ||| 
+            System.IO.NotifyFilters.FileName ||| 
+            System.IO.NotifyFilters.Size
+        watcher.Filter <- pattern
+        watcher.IncludeSubdirectories <- true
+        
+        let sendDebounced path evt =
+            pending.[path] <- DateTime.UtcNow
+            async {
+                do! Async.Sleep debounceMs
+                match pending.TryGetValue(path) with
+                | true, time when (DateTime.UtcNow - time).TotalMilliseconds >= float debounceMs ->
+                    pending.TryRemove(path) |> ignore
+                    Hopac.start (Mailbox.send events evt)
+                | _ -> ()
+            } |> Async.Start
+        
+        watcher.Changed.Add(fun e -> 
+            sendDebounced e.FullPath (FileEvt.Modified e.FullPath))
+        watcher.Created.Add(fun e -> 
+            sendDebounced e.FullPath (FileEvt.Created e.FullPath))
+        watcher.Deleted.Add(fun e -> 
+            Hopac.start (Mailbox.send events (FileEvt.Deleted e.FullPath)))
+        watcher.Renamed.Add(fun e -> 
+            Hopac.start (Mailbox.send events (FileEvt.Renamed(e.OldFullPath, e.FullPath))))
+        
+        watcher.EnableRaisingEvents <- true
+        
+        return {
+            watcher = watcher
+            events = events
+            debounceMs = debounceMs
+            pending = pending
+        }
+    }
+
+    /// Process file changes in batches
+    let processChanges 
+        (fw: FileWatcherSt) 
+        (handler: FileEvt[] -> Job<unit>)
+        (batchTimeoutMs: int)
+        : Job<unit> =
+        
+        let rec loop (batch: FileEvt list) (deadline: DateTime option) = job {
+            let! evtOpt =
+                match deadline with
+                | Some d ->
+                    let remaining = (d - DateTime.UtcNow).TotalMilliseconds |> int
+                    if remaining <= 0 then
+                        Job.result None
+                    else
+                        jobWithTimeoutMs remaining (Mailbox.take fw.events)
+                | None ->
+                    job {
+                        let! evt = Mailbox.take fw.events
+                        return Some evt
+                    }
+            
+            match evtOpt with
+            | Some evt ->
+                let newBatch = evt :: batch
+                let newDeadline = 
+                    deadline 
+                    |> Option.defaultValue (DateTime.UtcNow.AddMilliseconds(float batchTimeoutMs))
+                    |> Some
+                return! loop newBatch newDeadline
+                
+            | None when not (List.isEmpty batch) ->
+                do! handler (List.rev batch |> Array.ofList)
+                return! loop [] None
+                
+            | None ->
+                return! loop [] None
+        }
+        
+        loop [] None
+
+    /// Stop file watcher
+    let stopFileWatcher (fw: FileWatcherSt) : unit =
+        fw.watcher.EnableRaisingEvents <- false
+        fw.watcher.Dispose()
+
+
 
     // open FSharpx.Collections
 
