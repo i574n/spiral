@@ -7606,7 +7606,7 @@ module spiral_compiler =
 
     /// ### rdata_free_vars
     let rdata_free_vars call_data =
-        let m = HashSet(HashIdentity.Structural)
+        let m = HashSet<int>()
         let free_vars = ResizeArray()
         let rec g = function // Note: Using the same scheme as in `data_free_vars` would give wrong results here. Comparing the tags instead is a necessity.
             | RePair(C'((a,b),tag)) -> if m.Add tag then g a; g b
@@ -8237,10 +8237,10 @@ module spiral_compiler =
 
         let jp_method_inflight =
             new System.Threading.ThreadLocal<System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty []>>>(fun () ->
-                new System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty []>>(HashIdentity.Structural))
+                new System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty []>>(HashIdentity.Reference))
         let jp_type_inflight =
             new System.Threading.ThreadLocal<System.Collections.Generic.HashSet<ConsedNode<Ty []>>>(fun () ->
-                new System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Structural))
+                new System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Reference))
         let jp_sched =
             let stack_bytes = jp_stack_mb * 1024 * 1024
             let create : Hopac.Scheduler.Create =
@@ -8372,7 +8372,7 @@ module spiral_compiler =
 
                     Utils.memoize join_point_closure (fun _ ->
 
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>(HashIdentity.Structural), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Structural)
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference)
 
                     ) (s.backend, body)
                 let call_args, env_global_value =
@@ -8685,7 +8685,7 @@ module spiral_compiler =
                 let env_global_term = scope.term.free_vars |> Array.map (fun i -> v s i)
                 let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>), hc_table =
                     Utils.memoize join_point_type (fun _ ->
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Structural), HashConsTable()
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Reference), HashConsTable()
                     ) body
                 let join_point_key = lock hc_table (fun () -> hc_table.Add(env_global_type))
                 let jp_cell = dict.GetOrAdd(join_point_key, fun _ -> { ev = new System.Threading.ManualResetEventSlim(false); owner = 0; value = None })
@@ -9108,7 +9108,7 @@ module spiral_compiler =
 
                     Utils.memoize join_point_method (fun _ ->
 
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option>(HashIdentity.Structural), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, System.Threading.ManualResetEventSlim>(HashIdentity.Structural)
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference)
 
                     ) (backend', body)
                 let call_args, env_global_value =
