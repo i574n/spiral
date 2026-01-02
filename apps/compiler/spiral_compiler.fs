@@ -3437,6 +3437,22 @@ module spiral_compiler =
             if x |> Hopac.Promise.Now.isFulfilled
             then x |> Hopac.Promise.Now.get |> f
             else Hopac.Infixes.(>>=*) x f
+        // Runtime Hopac re-export e utilitários base (definir antes de uso para evitar FS0039).
+        open System.Threading.Tasks
+
+        let inline start (j: Job<unit>) = Hopac.start j
+        let inline queue (j: Job<unit>) = Hopac.queue j
+        let inline server x = Hopac.server x
+        let inline run (j: Job<'a>) : 'a = Hopac.run j
+        let inline startAsTask (j: Job<'a>) : Task<'a> = Hopac.startAsTask j
+        let inline queueAsTask (j: Job<'a>) : Task<'a> = Hopac.queueAsTask j
+
+        let inline awaitUnitTask (t: Task) : Job<unit> = Hopac.Job.awaitUnitTask t
+        let inline awaitTask (t: Task<'a>) : Job<'a> = Job.fromAsync (Async.AwaitTask t)
+
+        // Sleep/timeout como Job, para remover Async.Sleep e Alt ambiguo do resto do arquivo.
+        let inline sleepMs (ms: int) : Job<unit> = awaitUnitTask (Task.Delay ms)
+
 
         /// ## BlockBundling
         open Hopac.Extensions
@@ -3444,9 +3460,9 @@ module spiral_compiler =
         /// Run a Hopac Job/Alt with a timeout (ms), returning None on timeout.
         /// Implemented via Tasks to avoid Alt/Job operator overload pitfalls.
         let jobWithTimeoutMs (timeoutMs: int) (work: Job<'a>) : Job<'a option> = job {
-            let workT = Hopac.startAsTask work
+            let workT = startAsTask work
             let timeoutT = System.Threading.Tasks.Task.Delay timeoutMs
-            let! completed = System.Threading.Tasks.Task.WhenAny(workT :> System.Threading.Tasks.Task, timeoutT :> System.Threading.Tasks.Task)
+            let! completed = System.Threading.Tasks.Task.WhenAny(workT :> System.Threading.Tasks.Task, timeoutT)
             if obj.ReferenceEquals(completed, (workT :> System.Threading.Tasks.Task)) then
                 let! r = workT
                 return Some r
@@ -3790,7 +3806,7 @@ module spiral_compiler =
                         if attempt = conf.maxAttempts then
                             return Error (List.rev (ex :: errors))
                         else
-                            do! timeOutMillis (int delay.TotalMilliseconds)
+                            do! sleepMs (int delay.TotalMilliseconds)
                             let nextDelay = 
                                 TimeSpan.FromTicks(int64 (float delay.Ticks * conf.backoffMult))
                                 |> min conf.maxDelay
@@ -4236,7 +4252,7 @@ module spiral_compiler =
                 else
                     let needed = count - bucket.tokens
                     let waitMs = int (needed / bucket.refillRate * 1000.0)
-                    do! timeOutMillis (max 1 waitMs)
+                    do! sleepMs (max 1 waitMs)
                     return! loop ()
             }
             loop ()
@@ -4866,23 +4882,23 @@ module spiral_compiler =
 
             let sendDebounced path evt =
                 pending.[path] <- DateTime.UtcNow
-                async {
-                    do! Async.Sleep debounceMs
+                start (job {
+                    do! sleepMs debounceMs
                     match pending.TryGetValue(path) with
                     | true, time when (DateTime.UtcNow - time).TotalMilliseconds >= float debounceMs ->
                         pending.TryRemove(path) |> ignore
-                        Hopac.start (Mailbox.send events evt)
+                        start (Mailbox.send events evt)
                     | _ -> ()
-                } |> Async.Start
+                })
 
             watcher.Changed.Add(fun e -> 
                 sendDebounced e.FullPath (FileEvt.Modified e.FullPath))
             watcher.Created.Add(fun e -> 
                 sendDebounced e.FullPath (FileEvt.Created e.FullPath))
             watcher.Deleted.Add(fun e -> 
-                Hopac.start (Mailbox.send events (FileEvt.Deleted e.FullPath)))
+                start (Mailbox.send events (FileEvt.Deleted e.FullPath)))
             watcher.Renamed.Add(fun e -> 
-                Hopac.start (Mailbox.send events (FileEvt.Renamed(e.OldFullPath, e.FullPath))))
+                start (Mailbox.send events (FileEvt.Renamed(e.OldFullPath, e.FullPath))))
 
             watcher.EnableRaisingEvents <- true
 
@@ -4940,9 +4956,6 @@ module spiral_compiler =
             fw.watcher.EnableRaisingEvents <- false
             fw.watcher.Dispose()
 
-        /// Default parallelism for CPU-bound pure code (sync). Kept conservative to reduce thrash in Notebook/Interactive.
-        let defaultConcurrency : int = max 1 (System.Environment.ProcessorCount)
-
         /// Parallel map for pure functions (sync), bounded via ParallelOptions.
         /// This is intentionally *not* Hopac-based to avoid deadlocks if called inside running Hopac Jobs.
         let parMapBoundedSync (concurrency: int) (f: 'a -> 'b) (items: 'a[]) : 'b[] =
@@ -4956,6 +4969,65 @@ module spiral_compiler =
                     results.[i] <- f items.[i]
                 ) |> ignore
                 results
+
+        // === HopacExtensions: camada atômica, uma única boca para o paralelismo ===
+        // Controle via env: SPIRAL_HOPAC_PAR (int > 0). Se ausente, usa o número de CPUs.
+        let defaultConcurrency : int =
+            let v = System.Environment.GetEnvironmentVariable("SPIRAL_HOPAC_PAR")
+            match v with
+            | null | "" ->
+                let n = System.Environment.ProcessorCount
+                if n <= 1 then 1 else n
+            | s ->
+                match System.Int32.TryParse(s) with
+                | true, n when n > 0 -> n
+                | _ ->
+                    let n = System.Environment.ProcessorCount
+                    if n <= 1 then 1 else n
+
+        // Array ops paralelos, limitados e determinísticos por índice (ordem preservada).
+        module A =
+            let inline map (f: 'a -> 'b) (xs: 'a[]) : 'b[] =
+                parMapBoundedSync defaultConcurrency f xs
+
+            let inline mapi (f: int -> 'a -> 'b) (xs: 'a[]) : 'b[] =
+                if xs.Length = 0 then [||]
+                elif xs.Length = 1 then [| f 0 xs.[0] |]
+                else
+                    let results = Array.zeroCreate<'b> xs.Length
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
+                        results.[i] <- f i xs.[i]
+                    ) |> ignore
+                    results
+
+            let inline iter (f: 'a -> unit) (xs: 'a[]) : unit =
+                if xs.Length = 0 then ()
+                elif xs.Length = 1 then f xs.[0]
+                else
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
+                        f xs.[i]
+                    ) |> ignore
+
+            let inline iteri (f: int -> 'a -> unit) (xs: 'a[]) : unit =
+                if xs.Length = 0 then ()
+                elif xs.Length = 1 then f 0 xs.[0]
+                else
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
+                        f i xs.[i]
+                    ) |> ignore
+
+            let inline choose (f: 'a -> 'b option) (xs: 'a[]) : 'b[] =
+                // Primeiro mapeia em paralelo, depois filtra em ordem (estável) num passo sequencial.
+                let tmp = map f xs
+                Microsoft.FSharp.Collections.Array.choose id tmp
+
+            let inline collect (f: 'a -> 'b[]) (xs: 'a[]) : 'b[] =
+                // Primeiro gera chunks em paralelo, depois achata em ordem.
+                let chunks = map f xs
+                Microsoft.FSharp.Collections.Array.collect id chunks
 
 
     open HopacExtensions
@@ -7356,7 +7428,7 @@ module spiral_compiler =
             filled_top = filled_top
             top_env_additions = top_env_additions
             offset = bundle_range expr |> fst |> fun x -> x.line
-            hovers = hover_types.ToArray() |> Array.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
+            hovers = hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
             errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, show_type_error top_env b)
             }
 
@@ -8073,7 +8145,7 @@ module spiral_compiler =
         let pat_ref_ty = Dictionary(HashIdentity.Reference)
         let scope (env : LowerEnv) x =
             let v = scope.[x]
-            let fv v env = v |> Set.toArray |> Array.map (fun i -> Map.find i env)
+            let fv v env = v |> Set.toArray |> HopacExtensions.A.map (fun i -> Map.find i env)
             let sz = function Some(min',max') -> max' - min' + 1 | None -> 0
             let scope : Scope = {
                 term = {|free_vars = fv v.term.vars env.term.var; stack_size = sz v.term.range|}
@@ -9002,8 +9074,8 @@ module spiral_compiler =
                             res <- RePair(hc(f elems.[i], res))
                         res
                     | DSymbol a -> ReSymbol a
-                    | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
-                    | DForall(a,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
+                    | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,HopacExtensions.A.map f b,c))
+                    | DForall(a,b,c,_,_) -> ReFunction(hc(a,HopacExtensions.A.map f b,c))
                     | DExists(a,b) -> ReExists(hc(a,f b))
                     | DRecord l -> ReRecord(hc(Map.map (fun _ -> f) l))
                     | DV(L(_,ty) as t) -> call_args.Add t; ReV(hc (call_args.Count-1,ty))
@@ -9018,7 +9090,7 @@ module spiral_compiler =
                 visiting.Remove x |> ignore
                 m.TryAdd(x,v) |> ignore
                 v
-        let x = Array.map f call_data
+        let x = HopacExtensions.A.map f call_data
         call_args.ToArray(),x
 
     /// ### rename_global_term
@@ -9051,8 +9123,8 @@ module spiral_compiler =
                         for i = elems.Count - 1 downto 0 do
                             res <- DPair(f elems.[i], res)
                         res
-                    | DForall(body,a,b,c,d) -> DForall(body,Array.map f a,b,c,d)
-                    | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,Array.map f a,b,c,d)
+                    | DForall(body,a,b,c,d) -> DForall(body,HopacExtensions.A.map f a,b,c,d)
+                    | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,HopacExtensions.A.map f a,b,c,d)
                     | DExists(annot,a) -> DExists(annot, f a)
                     | DRecord l -> DRecord(Map.map (fun _ -> f) l)
                     | DV(L(_,ty)) -> let x = DV(L(s.i.Value,ty)) in s.i.Value <- s.i.Value + 1; x
@@ -9068,7 +9140,7 @@ module spiral_compiler =
                 visiting.Remove x |> ignore
                 m.TryAdd(x,v) |> ignore
                 v
-        {s with env_global_term = Array.map f s.env_global_term}
+        {s with env_global_term = HopacExtensions.A.map f s.env_global_term}
 
     /// ### data_free_vars
     let data_free_vars call_data =
@@ -9078,7 +9150,7 @@ module spiral_compiler =
             if m.Add x then
                 match x with
                 | DPair(a,b) -> f a; f b
-                | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> Array.iter f a
+                | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
                 | DRecord l -> Map.iter (fun _ -> f) l
                 | DV(L _ as t) -> free_vars.Add t
                 | DExists(_,a) | DUnion(a,_) | DNominal(a,_) -> f a
@@ -9108,8 +9180,8 @@ module spiral_compiler =
                     for i = elems.Count - 1 downto 0 do
                         res <- DPair(f elems.[i], res)
                     res
-                | DForall(body,a,b,c,d) -> DForall(body,Array.map f a,b,c,d)
-                | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,Array.map f a,b,c,d)
+                | DForall(body,a,b,c,d) -> DForall(body,HopacExtensions.A.map f a,b,c,d)
+                | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,HopacExtensions.A.map f a,b,c,d)
                 | DExists(annot,a) -> DExists(annot, f a)
                 | DRecord l -> DRecord(Map.map (fun _ -> f) l)
                 | DV(tyv) -> DV(d[tyv])
@@ -9137,13 +9209,13 @@ module spiral_compiler =
         let free_vars = ResizeArray()
         let rec g = function // Note: Using the same scheme as in `data_free_vars` would give wrong results here. Comparing the tags instead is a necessity.
             | RePair(C'((a,b),tag)) -> if m.Add tag then g a; g b
-            | ReForall(C'((_,a,_),tag)) | ReFunction(C'((_,a,_),tag)) -> if m.Add tag then Array.iter g a
+            | ReForall(C'((_,a,_),tag)) | ReFunction(C'((_,a,_),tag)) -> if m.Add tag then HopacExtensions.A.iter g a
             | ReRecord(C'(l,tag)) -> if m.Add tag then Map.iter (fun _ -> g) l
             | ReV(C'((a,b),tag)) -> if m.Add tag then free_vars.Add(L(a,b))
             | ReExists(C'((_,a),tag)) | ReUnion(C'((a,_),tag)) | ReNominal(C'((a,_),tag)) -> if m.Add tag then g a
-            | ReHashMap(C'(x,tag)) -> if m.Add tag then Array.iter (fun (k,v) -> g k; g v) x
+            | ReHashMap(C'(x,tag)) -> if m.Add tag then HopacExtensions.A.iter (fun (k,v) -> g k; g v) x
             | ReSymbol _ | ReLit _ | ReTLit _ | ReB -> ()
-        Array.iter g call_data
+        HopacExtensions.A.iter g call_data
         free_vars.ToArray()
 
     /// ### data_term_vars'
@@ -9151,7 +9223,7 @@ module spiral_compiler =
         let term_vars = ResizeArray(64)
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> Array.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DLit _ | DV _ as x -> term_vars.Add(x)
             | DExists(_,a) | DUnion(a,_) | DNominal(a,_) -> f a
@@ -9166,7 +9238,7 @@ module spiral_compiler =
         let term_vars = ResizeArray(64)
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> Array.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DLit _ | DV _
             | DExists _ | DUnion _ | DNominal _ as x -> term_vars.Add(x)
@@ -9181,7 +9253,7 @@ module spiral_compiler =
         let term_vars = ResizeArray(64)
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> Array.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DLit x -> term_vars.Add(WLit x)
             | DV x -> term_vars.Add(WV x)
@@ -9276,7 +9348,7 @@ module spiral_compiler =
             | DFunction _ -> p 20 "? -> ?"
             | DForall _ -> p 0 "forall ?. ?"
             | DExists(a,b) ->
-                let a = Array.map (show_ty >> sprintf "(%s)") a |> String.concat " "
+                let a = HopacExtensions.A.map (show_ty >> sprintf "(%s)") a |> String.concat " "
                 p 0 $"exists {a}. %s{f 0 b}"
             | DRecord l -> sprintf "{%s}" (l |> Map.toList |> List.map (fun ((_,k),v) -> sprintf "%s : %s" k (f -1 v)) |> String.concat "; ")
             | DLit a -> show_lit a
@@ -10020,7 +10092,7 @@ module spiral_compiler =
                                     res
                                 | DNominal(DForall(body,term,ty,sz_term,sz_ty), b') ->
                                     dirty <- true
-                                    DNominal(DForall(body, Array.map f term, ty, sz_term, sz_ty), b')
+                                    DNominal(DForall(body, HopacExtensions.A.map f term, ty, sz_term, sz_ty), b')
                                 | DNominal(DExists(vars_type,term), b') -> dirty <- true; DNominal(DExists(vars_type, f term), b')
                                 | DNominal(DRecord a,b') -> dirty <- true; DNominal(DRecord (Map.map (fun _ v -> f v) a), b')
                                 | DNominal(DUnion(DPair(DSymbol k,v),u),b') ->
@@ -10102,7 +10174,7 @@ module spiral_compiler =
                                     res
                                 | DNominal(DForall(body,term,ty,sz_term,sz_ty), b') ->
                                     dirty <- true
-                                    DNominal(DForall(body, Array.map f term, ty, sz_term, sz_ty), b')
+                                    DNominal(DForall(body, HopacExtensions.A.map f term, ty, sz_term, sz_ty), b')
                                 | DNominal(DExists(vars_type,term), b') ->
                                     dirty <- true
                                     DNominal(DExists(vars_type, f term), b')
@@ -10204,12 +10276,12 @@ module spiral_compiler =
             | TMetaV i -> YMetavar i
             | TArrow'(scope,i,body) ->
                 assert (i = scope.ty.free_vars.Length)
-                YTypeFunction(body,Array.map (vt s) scope.ty.free_vars,scope.term.stack_size,scope.ty.stack_size)
+                YTypeFunction(body,HopacExtensions.A.map (vt s) scope.ty.free_vars,scope.term.stack_size,scope.ty.stack_size)
             | TForall' _ -> YForall
             | TExists -> YExists
             | TJoinPoint'(r,scope,body) ->
-                let env_global_type = scope.ty.free_vars |> Array.map (fun i -> vt s i)
-                let env_global_term = scope.term.free_vars |> Array.map (fun i -> v s i)
+                let env_global_type = scope.ty.free_vars |> HopacExtensions.A.map (fun i -> vt s i)
+                let env_global_term = scope.term.free_vars |> HopacExtensions.A.map (fun i -> v s i)
                 let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>), hc_table =
                     Utils.memoize join_point_type (fun _ ->
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Reference), HashConsTable()
@@ -10545,11 +10617,11 @@ module spiral_compiler =
 
             let eforall (free_vars : Scope,i,body) =
                 assert (free_vars.ty.free_vars.Length = i)
-                DForall(body,Array.map (v s) free_vars.term.free_vars,Array.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
+                DForall(body,HopacExtensions.A.map (v s) free_vars.term.free_vars,HopacExtensions.A.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
 
             let efun (free_vars : Scope,i,body,annot) =
                 assert (free_vars.term.free_vars.Length = i)
-                DFunction(body,annot,Array.map (v s) free_vars.term.free_vars,Array.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
+                DFunction(body,annot,HopacExtensions.A.map (v s) free_vars.term.free_vars,HopacExtensions.A.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
 
             let enominal (r,a,b) =
                 let a = term s a
@@ -10627,8 +10699,8 @@ module spiral_compiler =
             | ERecBlock _ -> failwith "Compiler error: Recursive blocks should be inlined and eliminated during the prepass."
             | EJoinPoint _ -> failwith "Compiler error: Raw join points should be transformed during the prepass."
             | EJoinPoint'(r,scope,body,annot,backend,jp_name) ->
-                let env_global_type = Array.map (vt s) scope.ty.free_vars
-                let env_global_term = Array.map (v s) scope.term.free_vars
+                let env_global_type = HopacExtensions.A.map (vt s) scope.ty.free_vars
+                let env_global_term = HopacExtensions.A.map (v s) scope.term.free_vars
 
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
                 let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option>), hc_table, dict_ev =
@@ -11033,7 +11105,7 @@ module spiral_compiler =
                                 let r = apply s (on_fail, DB) |> dyn false s
                                 seq_apply s r, data_to_ty s r
                             let on_succ =
-                                Array.mapi (fun i (k,v) ->
+                                HopacExtensions.A.mapi (fun i (k,v) ->
                                     let cse = Dictionary(HashIdentity.Structural)
                                     cse.Add(key,DLit(LitInt32 i))
                                     let s = {s with cse = cse :: s.cse; seq = ResizeArray()}
@@ -12406,7 +12478,7 @@ module spiral_compiler =
                 let x = env.ty_to_data x
                 let a, b =
                     match x with
-                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> HopacExtensions.A.collect snd, a
                     | _ -> data_free_vars x, Map.empty
                 {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
@@ -12443,9 +12515,9 @@ module spiral_compiler =
                         r
                     else dict.[x]
 
-        let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+        let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litFsharp a
-        let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
+        let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
 
         let global' =
             let has_added = HashSet env.globals
@@ -12474,7 +12546,7 @@ module spiral_compiler =
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tup_ty t)) |> String.concat ", "
+        and args_tys x = x |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             x
             |> HopacExtensions.parMapBoundedSync HopacExtensions.defaultConcurrency (fun b ->
@@ -12492,14 +12564,14 @@ module spiral_compiler =
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                 text.ToString()
             )
-            |> Array.iter (fun t -> s.text.Append t |> ignore)
+            |> HopacExtensions.A.iter (fun t -> s.text.Append t |> ignore)
         and tup x =
             match data_term_vars x with
             | [||] -> "()"
             | [|x|] -> show_w x
-            | x -> Array.map show_w x |> String.concat ", " |> sprintf "struct (%s)"
+            | x -> HopacExtensions.A.map show_w x |> String.concat ", " |> sprintf "struct (%s)"
         and tup_ty x =
-            match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,x)) -> tyv x) with
+            match env.ty_to_data x |> data_free_vars |> HopacExtensions.A.map (fun (L(_,x)) -> tyv x) with
             | [||] -> "unit"
             | [|x|] -> x
             | x -> String.concat " * " x |> sprintf "struct (%s)"
@@ -12514,7 +12586,7 @@ module spiral_compiler =
                 match data_free_vars x with
                 | [||] -> "()"
                 | [|x|] -> f x
-                | x -> Array.map f x |> String.concat ", " |> sprintf "struct (%s)"
+                | x -> HopacExtensions.A.map f x |> String.concat ", " |> sprintf "struct (%s)"
             let simple x =
                 match d with
                 | None -> x
@@ -12529,9 +12601,9 @@ module spiral_compiler =
                     match x with
                     | WV(L(i',_)) -> sprintf "l%i = v%i" i i'
                     | WLit x -> sprintf "l%i = %s" i (litFsharp x)
-                a |> data_term_vars |> Array.mapi f |> String.concat "; "
+                a |> data_term_vars |> HopacExtensions.A.mapi f |> String.concat "; "
             let layout_index i x =
-                x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
+                x |> HopacExtensions.A.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
                 |> String.concat ", "
                 |> function "" -> () | x -> simple x
             let length (a,b) =
@@ -12574,7 +12646,7 @@ module spiral_compiler =
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
                 complex <| fun s ->
                 line s (sprintf "match v%i with" i)
-                Array.iteri (fun i x ->
+                HopacExtensions.A.iteri (fun i x ->
                     line s (sprintf "| %i ->" i)
                     binds (indent s) x
                     ) on_succ
@@ -12618,7 +12690,7 @@ module spiral_compiler =
                 let vars =
                     match data_term_vars b with
                     | [||] -> ""
-                    | x -> Array.map show_w x |> String.concat ", " |> sprintf "(%s)"
+                    | x -> HopacExtensions.A.map show_w x |> String.concat ", " |> sprintf "(%s)"
                 match c.layout with
                 | UHeap -> sprintf "UH%i_%i%s" (uheap c.cases).tag i vars
                 | UStack -> sprintf "US%i_%i%s" (ustack c.cases).tag i vars
@@ -12742,12 +12814,12 @@ module spiral_compiler =
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecFsharp = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat "; "
+            let b = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat "; "
             if b = "" then line s (sprintf "Heap%i() = class end" x.tag)
             else line s (sprintf "Heap%i = {%s}" x.tag b)
             )
         and mut : _ -> LayoutRecFsharp = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "mutable l%i : %s" i (tyv t)) |> String.concat "; "
+            let b = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "mutable l%i : %s" i (tyv t)) |> String.concat "; "
             if b = "" then line s (sprintf "Mut%i() = class end" x.tag)
             else line s (sprintf "Mut%i = {%s}" x.tag b)
             )
@@ -12757,7 +12829,7 @@ module spiral_compiler =
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
                 | [||] -> line (indent s) (sprintf "| UH%i_%i" x.tag i)
-                | a -> line (indent s) (sprintf "| UH%i_%i of %s" x.tag i (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat " * "))
+                | a -> line (indent s) (sprintf "| UH%i_%i of %s" x.tag i (a |> HopacExtensions.A.map (fun (L(_,t)) -> tyv t) |> String.concat " * "))
                 i <- i+1
                 )
             )
@@ -12767,7 +12839,7 @@ module spiral_compiler =
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
                 | [||] -> line (indent s) (sprintf "| US%i_%i" x.tag i)
-                | a -> line (indent s) (sprintf "| US%i_%i of %s" x.tag i (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%i_%i : %s" i i' (tyv t)) |> String.concat " * "))
+                | a -> line (indent s) (sprintf "| US%i_%i of %s" x.tag i (a |> HopacExtensions.A.mapi (fun i' (L(_,t)) -> sprintf "f%i_%i : %s" i i' (tyv t)) |> String.concat " * "))
                 i <- i+1
                 )
             )
@@ -12793,7 +12865,7 @@ module spiral_compiler =
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun s x ->
                 let domain =
-                    match x.domain_args |> Array.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tyv t)) with
+                    match x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tyv t)) with
                     | [||] -> "()"
                     | [|x|] -> sprintf "(%s)" x
                     | x -> String.concat ", " x |> sprintf "struct (%s)"
@@ -12917,7 +12989,7 @@ module spiral_compiler =
                 let x = env.ty_to_data x
                 let a, b =
                     match x with
-                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> HopacExtensions.A.collect snd, a
                     | _ -> data_free_vars x, Map.empty
                 {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
@@ -12954,9 +13026,9 @@ module spiral_compiler =
                         r
                     else dict.[x]
 
-        let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+        let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litGleam a
-        let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
+        let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
 
         let global' =
             let has_added = HashSet env.globals
@@ -12990,7 +13062,7 @@ module spiral_compiler =
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i :    %s" i (tup_ty t)) |> String.concat ", "
+        and args_tys x = x |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i :    %s" i (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             x
             |> HopacExtensions.parMapBoundedSync HopacExtensions.defaultConcurrency (fun b ->
@@ -13008,14 +13080,14 @@ module spiral_compiler =
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                 text.ToString()
             )
-            |> Array.iter (fun t -> s.text.Append t |> ignore)
+            |> HopacExtensions.A.iter (fun t -> s.text.Append t |> ignore)
         and tup x =
             match data_term_vars x with
             | [||] -> "Nil      "
             | [|x|] -> show_w x
-            | x -> $"""#({x |> Array.map show_w |> String.concat ", "})      """
+            | x -> $"""#({x |> HopacExtensions.A.map show_w |> String.concat ", "})      """
         and tup_ty x =
-            match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,x)) -> tyv x) with
+            match env.ty_to_data x |> data_free_vars |> HopacExtensions.A.map (fun (L(_,x)) -> tyv x) with
             | [||] -> "Nil       "
             | [|x|] -> x
             | x -> String.concat ", " x |> sprintf "#(%s)       "
@@ -13045,7 +13117,7 @@ module spiral_compiler =
                 match data_free_vars x with
                 | [||] -> "Nil         "
                 | [|x|] -> f x
-                | x -> Array.map f x |> String.concat ", " |> sprintf "#(%s)         "
+                | x -> HopacExtensions.A.map f x |> String.concat ", " |> sprintf "#(%s)         "
             let simple x =
                 match d with
                 | None -> x
@@ -13068,9 +13140,9 @@ module spiral_compiler =
                     match x with
                     | WV(L(i',_)) -> sprintf "l%i :  v%i" i i'
                     | WLit x -> sprintf "l%i :  %s" i (litGleam x)
-                a |> data_term_vars |> Array.mapi f |> String.concat ", "
+                a |> data_term_vars |> HopacExtensions.A.mapi f |> String.concat ", "
             let layout_index i x =
-                x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
+                x |> HopacExtensions.A.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
                 |> String.concat ", "
                 |> function "" -> () | x -> simple x
             let length (a,b) =
@@ -13116,16 +13188,16 @@ module spiral_compiler =
             | TyWhile(a, b) ->
                 let id = while_id
                 while_id <- while_id + 1
-                let loopVars = snd a |> Array.map (fun (L(i,_)) -> i)
+                let loopVars = snd a |> HopacExtensions.A.map (fun (L(i,_)) -> i)
                 let loopVarSet = Set.ofArray loopVars
 
-                let fvData d = data_free_vars d |> Array.map (fun (L(i,_)) -> i) |> Set.ofArray
+                let fvData d = data_free_vars d |> HopacExtensions.A.map (fun (L(i,_)) -> i) |> Set.ofArray
                 let rec fvOp a =
                     let fromData l = l |> List.fold (fun acc d -> Set.union acc (fvData d)) Set.empty
                     match a with
                     | TyMacro l -> l |> List.choose (function CMTerm(d,_) -> Some (fvData d) | _ -> None) |> List.fold Set.union Set.empty
                     | TyIf(cond,tr,fl) -> Set.unionMany [fvData cond; fvBinds tr; fvBinds fl]
-                    | TyJoinPoint(_,args) -> args |> Array.map (fun (L(i,_)) -> i) |> Set.ofArray
+                    | TyJoinPoint(_,args) -> args |> HopacExtensions.A.map (fun (L(i,_)) -> i) |> Set.ofArray
                     | TyUnionUnbox(is,_,on_succs,on_fail) ->
                         let isSet = is |> List.map (fun (L(i,_)) -> i) |> Set.ofList
                         let succVars = on_succs |> Map.fold (fun acc _ (pats,bnds) ->
@@ -13144,11 +13216,11 @@ module spiral_compiler =
                     | TyApply(L(i,_),d) -> Set.add i (fvData d)
                     | TyOp(_,l) -> fromData l
                     | TyWhile((_,args),body) ->
-                        let argsSet = args |> Array.map (fun (L(i,_)) -> i) |> Set.ofArray
+                        let argsSet = args |> HopacExtensions.A.map (fun (L(i,_)) -> i) |> Set.ofArray
                         Set.difference argsSet (fvBinds body)
                     | TyDo body | TyIndent body -> fvBinds body
                     | TyIntSwitch(L(i,_),on_succs,on_fail) ->
-                        let succVars = on_succs |> Array.map fvBinds |> Array.fold Set.union Set.empty
+                        let succVars = on_succs |> HopacExtensions.A.map fvBinds |> Array.fold Set.union Set.empty
                         Set.unionMany [Set.singleton i; succVars; fvBinds on_fail]
                     | TySizeOf _ | TyBackend _ -> Set.empty
 
@@ -13172,14 +13244,14 @@ module spiral_compiler =
                 let freeInBody = Set.difference (fvBinds b) loopVarSet
                 let capturedVars = Set.difference freeInBody loopVarSet |> Set.toArray |> Array.sort
 
-                let loopParams = Array.append (Array.map (sprintf "v%i") loopVars) (Array.map (sprintf "v%i") capturedVars)
+                let loopParams = Array.append (HopacExtensions.A.map (sprintf "v%i") loopVars) (HopacExtensions.A.map (sprintf "v%i") capturedVars)
                 let paramList = loopParams |> String.concat ", "
                 let retVars = Array.append loopVars capturedVars
                 let retPat =
                     match retVars with
                     | [||] -> "Nil"
                     | [|x|] -> sprintf "v%i" x
-                    | xs -> sprintf "#(%s)" (xs |> Array.map (sprintf "v%i") |> String.concat ", ")
+                    | xs -> sprintf "#(%s)" (xs |> HopacExtensions.A.map (sprintf "v%i") |> String.concat ", ")
 
                 print
                     false
@@ -13210,7 +13282,7 @@ module spiral_compiler =
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
                 complex <| fun s ->
                 line s (sprintf "case v%i   {" i)
-                Array.iteri (fun i x ->
+                HopacExtensions.A.iteri (fun i x ->
                     line (indent s) (sprintf "%i ->   {" i)
                     binds (indent (indent s)) x
                     line (indent s) "}   "
@@ -13259,7 +13331,7 @@ module spiral_compiler =
                 let vars =
                     match data_term_vars b with
                     | [||] -> ""
-                    | x -> Array.map show_w x |> String.concat ", " |> sprintf "(%s)"
+                    | x -> HopacExtensions.A.map show_w x |> String.concat ", " |> sprintf "(%s)"
                 match c.layout with
                 | UHeap -> sprintf "Uh%ii%i%s" (uheap c.cases).tag i vars
                 | UStack -> sprintf "Us%ii%i%s" (ustack c.cases).tag i vars
@@ -13332,7 +13404,7 @@ module spiral_compiler =
                             let vars =
                                 match free_vars.[key', key] with
                                 | [||] -> ""
-                                | xs -> xs |> Array.map (fun (L(_, t)) -> atom t) |> String.concat ", " |> sprintf "(%s)"
+                                | xs -> xs |> HopacExtensions.A.map (fun (L(_, t)) -> atom t) |> String.concat ", " |> sprintf "(%s)"
                             sprintf "%s%ii%i%s" prefix tag i vars
                         | YLayout(_, lay) as t ->
                             let name, tag, free_vars =
@@ -13342,14 +13414,14 @@ module spiral_compiler =
                                 | StackMutable -> raise_codegen_error "Compiler error: The Gleam backend doesn't support stack mutable layout types."
                             let vars =
                                 free_vars
-                                |> Array.map (fun (L(i, t)) -> sprintf "l%i: %s" i (atom t))
+                                |> HopacExtensions.A.map (fun (L(i, t)) -> sprintf "l%i: %s" i (atom t))
                                 |> String.concat ", "
                             if vars = "" then sprintf "%s%i()" name tag else sprintf "%s%i(%s)" name tag vars
                         | YFun _ -> raise_codegen_error "Compiler error: Cannot compute a default value for a function type in Gleam codegen."
                         | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
                         | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
                         | t ->
-                            match env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, t)) -> atom t) with
+                            match env.ty_to_data t |> data_free_vars |> HopacExtensions.A.map (fun (L(_, t)) -> atom t) with
                             | [||] -> "Nil"
                             | [|x|] -> x
                             | xs -> xs |> String.concat ", " |> sprintf "#(%s)"
@@ -13490,12 +13562,12 @@ module spiral_compiler =
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecGleam = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat ", "
+            let b = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat ", "
             if b = "" then line s (sprintf "Heap%i { Heap%i() }" x.tag x.tag)
             else line s (sprintf "Heap%i { Heap%i(%s) }" x.tag x.tag b)
             )
         and mut : _ -> LayoutRecGleam = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat ", "
+            let b = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat ", "
             if b = "" then line s (sprintf "Mut%i { Mut%i() }" x.tag x.tag)
             else line s (sprintf "Mut%i { Mut%i(%s) }" x.tag x.tag b)
             )
@@ -13505,7 +13577,7 @@ module spiral_compiler =
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
                 | [||] -> line (indent s) (sprintf "Uh%ii%i" x.tag i)
-                | a -> line (indent s) (sprintf "Uh%ii%i(%s)" x.tag i (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "))
+                | a -> line (indent s) (sprintf "Uh%ii%i(%s)" x.tag i (a |> HopacExtensions.A.map (fun (L(_,t)) -> tyv t) |> String.concat ", "))
                 i <- i+1
                 )
             line s "}"
@@ -13516,7 +13588,7 @@ module spiral_compiler =
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
                 | [||] -> line (indent s) (sprintf "Us%ii%i" x.tag i)
-                | a -> line (indent s) (sprintf "Us%ii%i(%s)" x.tag i (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%ii%i : %s" i i' (tyv t)) |> String.concat ", "))
+                | a -> line (indent s) (sprintf "Us%ii%i(%s)" x.tag i (a |> HopacExtensions.A.mapi (fun i' (L(_,t)) -> sprintf "f%ii%i : %s" i i' (tyv t)) |> String.concat ", "))
                 i <- i+1
                 )
             line s "}"
@@ -13561,7 +13633,7 @@ module spiral_compiler =
                 (fun s x ->
                 let fv_tys =
                     x.free_vars
-                    |> Array.map (fun (L(_, t)) -> tyv t)
+                    |> HopacExtensions.A.map (fun (L(_, t)) -> tyv t)
 
                 let dom_ty =
                     match x.domain_args with
@@ -13569,7 +13641,7 @@ module spiral_compiler =
                     | [| L(_, t) |] -> tyv t
                     | many ->
                         many
-                        |> Array.map (fun (L(_, t)) -> tyv t)
+                        |> HopacExtensions.A.map (fun (L(_, t)) -> tyv t)
                         |> String.concat ", "
                         |> sprintf "#(%s)"
 
@@ -13586,7 +13658,7 @@ module spiral_compiler =
                     | arr ->
                         let names =
                             arr
-                            |> Array.mapi (fun idx (L(i,_)) -> sprintf "v%i" i)
+                            |> HopacExtensions.A.mapi (fun idx (L(i,_)) -> sprintf "v%i" i)
                             |> String.concat ", "
                         Some (sprintf "let #(%s) = capt" names)
 
@@ -13604,7 +13676,7 @@ module spiral_compiler =
                 | many ->
                     let names =
                         many
-                        |> Array.mapi (fun idx (L(i, _)) -> sprintf "v%i" i)
+                        |> HopacExtensions.A.mapi (fun idx (L(i, _)) -> sprintf "v%i" i)
                         |> String.concat ", "
                     line (indent (indent s)) (sprintf "let #(%s) = dom" names)
 
@@ -13734,7 +13806,7 @@ module spiral_compiler =
                 let x = env.ty_to_data x
                 let a, b =
                     match x with
-                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> HopacExtensions.A.collect snd, a
                     | _ -> data_free_vars x, Map.empty
                 {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
@@ -13771,9 +13843,9 @@ module spiral_compiler =
                         r
                     else dict.[x]
 
-        let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+        let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litLua a
-        let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
+        let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
 
         let global' =
             let has_added = HashSet env.globals
@@ -13804,7 +13876,7 @@ module spiral_compiler =
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i" i) |> String.concat ", "
+        and args_tys x = x |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i" i) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             x
             |> HopacExtensions.parMapBoundedSync HopacExtensions.defaultConcurrency (fun b ->
@@ -13822,18 +13894,18 @@ module spiral_compiler =
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                 text.ToString()
             )
-            |> Array.iter (fun t -> s.text.Append t |> ignore)
+            |> HopacExtensions.A.iter (fun t -> s.text.Append t |> ignore)
         and tup x =
             match data_term_vars x with
             | [||] -> "nil      "
             | [|x|] -> show_w x
             | x ->
                 x
-                |> Array.mapi (fun i v -> sprintf "[%i]=%s" (i+1) (show_w v))
+                |> HopacExtensions.A.mapi (fun i v -> sprintf "[%i]=%s" (i+1) (show_w v))
                 |> String.concat ", "
                 |> sprintf "{ %s }"
         and tup_ty x =
-            match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,x)) -> tyv x) with
+            match env.ty_to_data x |> data_free_vars |> HopacExtensions.A.map (fun (L(_,x)) -> tyv x) with
             | [||] -> "nil       "
             | [|x|] -> x
             | x -> String.concat ", " x |> sprintf "#(%s)       "
@@ -13857,7 +13929,7 @@ module spiral_compiler =
                 match data_free_vars x with
                 | [||] -> "nil         "
                 | [|x|] -> f x
-                | x -> Array.map f x |> String.concat ", " |> sprintf "%s                  "
+                | x -> HopacExtensions.A.map f x |> String.concat ", " |> sprintf "%s                  "
             let simple x =
                 match d with
                 | None -> $"return {x}           "
@@ -13888,9 +13960,9 @@ module spiral_compiler =
                     match x with
                     | WV(L(i',_)) -> sprintf "l%i = v%i" i i'
                     | WLit x -> sprintf "l%i = %s" i (litLua x)
-                a |> data_term_vars |> Array.mapi f |> String.concat ", "
+                a |> data_term_vars |> HopacExtensions.A.mapi f |> String.concat ", "
             let layout_index i x =
-                x |> Array.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
+                x |> HopacExtensions.A.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
                 |> String.concat ", "
                 |> function "" -> () | x -> simple x
             let length (a,b) =
@@ -13916,7 +13988,7 @@ module spiral_compiler =
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Lua backend does not support nesting other backends."
             | TyWhile(a, b) ->
                 let binds_in_loop (s : CodegenEnv) (x : TypedBind []) =
-                    Array.iter (function
+                    HopacExtensions.A.iter (function
                         | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                         | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                         | TyLocalReturnData(DB,trace) -> ()
@@ -13936,7 +14008,7 @@ module spiral_compiler =
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
                 complex <| fun s ->
                 line s (sprintf "local __switch = v%i" i)
-                Array.iteri (fun i x ->
+                HopacExtensions.A.iteri (fun i x ->
                     if i = 0 then
                         line s (sprintf "if __switch == %i then" i)
                     else
@@ -14016,7 +14088,7 @@ module spiral_compiler =
                 let vars =
                     match data_term_vars b with
                     | [||] -> ""
-                    | x -> Array.mapi (fun _j v -> show_w v) x |> String.concat ", "
+                    | x -> HopacExtensions.A.mapi (fun _j v -> show_w v) x |> String.concat ", "
                 match c.layout with
                 | UHeap -> $"Uh{(uheap c.cases).tag}i{i}({vars})"
                 | UStack -> $"Us{(ustack c.cases).tag}i{i}({vars})"
@@ -14158,16 +14230,16 @@ module spiral_compiler =
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecLua = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i" i) |> String.concat ", "
+            let b = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "l%i" i) |> String.concat ", "
             if b = "" then line s (sprintf "Heap%i = function() return { __tag = \"Heap%i\" } end" x.tag x.tag)
             else line s (sprintf "Heap%i = function(%s) return { __tag = \"Heap%i\", %s } end" x.tag b x.tag b)
             )
         and mut : _ -> LayoutRecLua = layout (fun s x ->
-            let b = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i" i) |> String.concat ", "
+            let b = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "l%i" i) |> String.concat ", "
             if b = ""
             then line s (sprintf "Mut%i = function() return { __tag = \"Mut%i\" } end" x.tag x.tag)
             else
-                let b' = x.free_vars |> Array.map (fun (L(i,t)) -> sprintf "l%i = l%i" i i) |> String.concat ", "
+                let b' = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "l%i = l%i" i i) |> String.concat ", "
                 line s (sprintf "Mut%i = function(%s) return { __tag = \"Mut%i\", %s } end" x.tag b x.tag b')
             )
         and uheap : _ -> UnionRecLua = union (fun s x ->
@@ -14177,8 +14249,8 @@ module spiral_compiler =
                 match a with
                 | [||] -> line s (sprintf "function Uh%ii%i() return { tag = \"Uh%ii%i\" } end" tag i tag i)
                 | a ->
-                    let params' = a |> Array.mapi (fun j _ -> sprintf "v%i" j) |> String.concat ", "
-                    let fields = a |> Array.mapi (fun j _ -> sprintf " _%i = v%i" (j+1) j) |> String.concat ", "
+                    let params' = a |> HopacExtensions.A.mapi (fun j _ -> sprintf "v%i" j) |> String.concat ", "
+                    let fields = a |> HopacExtensions.A.mapi (fun j _ -> sprintf " _%i = v%i" (j+1) j) |> String.concat ", "
                     line s (sprintf "function Uh%ii%i(%s) return { tag = \"Uh%ii%i\", %s } end" tag i params' tag i fields)
                 i <- i + 1
             )
@@ -14190,8 +14262,8 @@ module spiral_compiler =
                 match a with
                 | [||] -> line s (sprintf "function Us%ii%i() return { tag = \"Us%ii%i\" } end" tag i tag i)
                 | a ->
-                    let params' = a |> Array.mapi (fun j _ -> sprintf "v%i" j) |> String.concat ", "
-                    let fields = a |> Array.mapi (fun j _ -> sprintf " _%i = v%i" (j+1) j) |> String.concat ", "
+                    let params' = a |> HopacExtensions.A.mapi (fun j _ -> sprintf "v%i" j) |> String.concat ", "
+                    let fields = a |> HopacExtensions.A.mapi (fun j _ -> sprintf " _%i = v%i" (j+1) j) |> String.concat ", "
                     line s (sprintf "function Us%ii%i(%s) return { tag = \"Us%ii%i\", %s } end" tag i params' tag i fields)
                 i <- i + 1
             )
@@ -14230,10 +14302,10 @@ module spiral_compiler =
                     match x.free_vars with
                     | [||] -> "local __capt = nil"
                     | arr ->
-                        let names = arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-                        sprintf "local %s = capt[1], %s" (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) (names |> SpiralSm.replace (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) "" |> SpiralSm.trim)
+                        let names = arr |> HopacExtensions.A.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+                        sprintf "local %s = capt[1], %s" (arr |> HopacExtensions.A.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) (names |> SpiralSm.replace (arr |> HopacExtensions.A.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) "" |> SpiralSm.trim)
                 line s (sprintf "function closure%i(capt)" x.tag)
-                if x.free_vars.Length > 0 then line (indent s) (sprintf "local %s = (table.unpack or unpack)(capt)" (x.free_vars |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
+                if x.free_vars.Length > 0 then line (indent s) (sprintf "local %s = (table.unpack or unpack)(capt)" (x.free_vars |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
                 match x.domain_args with
                 | [||] ->
                     line (indent s) "return function(dom)"
@@ -14280,7 +14352,7 @@ module spiral_compiler =
         let mutable v = Map.empty
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> Array.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DV x -> v <- varc_add x 1 v
             | DExists(_,a) | DUnion(a,_) | DNominal(a,_) -> f a
@@ -14394,7 +14466,7 @@ module spiral_compiler =
                     ) on_succs'
                 Option.iter (binds Set.empty increfed_vars) on_fail'
             | TyIntSwitch(_,on_succs',on_fail') ->
-                Array.iter (binds Set.empty increfed_vars) on_succs'
+                HopacExtensions.A.iter (binds Set.empty increfed_vars) on_succs'
                 binds Set.empty increfed_vars on_fail'
         binds new_vars increfed_vars x
 
@@ -14430,7 +14502,7 @@ module spiral_compiler =
             | BindsTailEnd
             | BindsLocal of TyV []
 
-        let term_vars_to_tysC x = x |> Array.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
+        let term_vars_to_tysC x = x |> HopacExtensions.A.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
         let binds_last_dataC x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
 
         type UnionRecC = {tag : int; free_vars : Map<int * string, TyV[]>}
@@ -14496,7 +14568,7 @@ module spiral_compiler =
                         let x = env.ty_to_data x
                         let a, b =
                             match x with
-                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> HopacExtensions.A.collect snd, a
                             | _ -> data_free_vars x, Map.empty
                         {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (7).\nGot: %s{show_ty x}"
@@ -14552,14 +14624,14 @@ module spiral_compiler =
 
             let cfun' show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
-                let f (a : Ty, b : Ty) = {tag=dict.Count; domain_args_ty=a |> env.ty_to_data |> data_free_vars |> Array.map (fun (L(_,t)) -> t); range=b}
+                let f (a : Ty, b : Ty) = {tag=dict.Count; domain_args_ty=a |> env.ty_to_data |> data_free_vars |> HopacExtensions.A.map (fun (L(_,t)) -> t); range=b}
                 fun x ->
                     let mutable dirty = false
                     let r = memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
 
-            let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+            let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
 
             let tmp =
                 let mutable i = 0u
@@ -14572,7 +14644,7 @@ module spiral_compiler =
             let import x = global' $"#include <{x}>"
             let import' x = global' $"#include \"{x}\""
 
-            let tyvs_to_tys (x : TyV []) = Array.map (fun (L(i,t)) -> t) x
+            let tyvs_to_tys (x : TyV []) = HopacExtensions.A.map (fun (L(i,t)) -> t) x
 
             let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x) s BindsTailEnd x
             and return_local s ret (x : string) =
@@ -14582,7 +14654,7 @@ module spiral_compiler =
                 | ret ->
                     let tmp_i = tmp()
                     line s $"{tup_ty_tyvs ret} tmp{tmp_i} = {x};"
-                    Array.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> line' s
+                    HopacExtensions.A.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> line' s
             and binds (vars : RefcVars) (s : CodegenEnv) (ret : BindsReturnC) (stmts : TypedBind []) =
                 let tup_destruct (a,b) =
                     Array.map2 (fun (L(i,_)) b ->
@@ -14590,7 +14662,7 @@ module spiral_compiler =
                         | WLit b -> $"v{i} = {lit b};"
                         | WV (L(i',_)) -> $"v{i} = v{i'};"
                         ) a b
-                Array.iter (fun x ->
+                HopacExtensions.A.iter (fun x ->
                     // This complicated looking piece of code is responsible for putting the incref and decref statements at the beginning of every
                     // statement. It's actually the only place where ref counting code is outputted in the codegen.
                     let _ =
@@ -14604,7 +14676,7 @@ module spiral_compiler =
                     match x with
                     | TyLet(d,trace,a) ->
                         try let d = data_free_vars d
-                            let decl_vars = Array.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
+                            let decl_vars = HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
                             match a with
                             | TyMacro a ->
                                 let m = a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup_data x) | CMType x -> tup_ty x | CMTypeLit x -> type_lit x) |> String.concat ""
@@ -14616,7 +14688,7 @@ module spiral_compiler =
                                     if d.Length = q.Length-1 then
                                         let w = StringBuilder(m.Length+8)
                                         let tag (L(i,_)) = i : int
-                                        Array.iteri (fun i v -> w.Append(q.[i]).Append('v').Append(tag v) |> ignore) d
+                                        HopacExtensions.A.iteri (fun i v -> w.Append(q.[i]).Append('v').Append(tag v) |> ignore) d
                                         w.Append(q.[d.Length]).Append(';').ToString() |> line s
                                     else
                                         raise_codegen_error "The special \\v macro requires the same number of free vars in its binding as there are \\v in the code."
@@ -14654,7 +14726,7 @@ module spiral_compiler =
                 | YLayout(_,Heap) as a -> g (fun () ->  $"HeapDecref{(heap a).tag}({f v});")
                 | YLayout(_,HeapMutable) as a -> g (fun () ->  $"MutDecref{(mut a).tag}({f v});")
                 | _ -> None
-            and refc_change' (f : int * Ty -> string) count (x : TyV []) : string [] = Array.choose (refc_change'' f count) x
+            and refc_change' (f : int * Ty -> string) count (x : TyV []) : string [] = HopacExtensions.A.choose (refc_change'' f count) x
             and refc_change f c x = refc_change' (fun (i,t) -> f i) c x
             and refc_varc x =
                 let ar = ResizeArray(Map.count x)
@@ -14663,9 +14735,9 @@ module spiral_compiler =
             //and refc_incr x : string [] = refc_change (fun i -> $"v{i}") 1 x
             //and refc_decr x : string [] = refc_change (fun i -> $"v{i}") -1 x
             and show_w = function WV(L(i,_)) -> sprintf "v%i" i | WLit a -> lit a
-            and args' b = data_term_vars b |> Array.map show_w |> String.concat ", "
+            and args' b = data_term_vars b |> HopacExtensions.A.map show_w |> String.concat ", "
             and tup_term_vars x =
-                let args = Array.map show_w x |> String.concat ", "
+                let args = HopacExtensions.A.map show_w x |> String.concat ", "
                 if 1 < x.Length then sprintf "TupleCreate%i(%s)" (tup (term_vars_to_tysC x)).tag args else args
             and tup_data x = tup_term_vars (data_term_vars x)
             and tup_ty_tys = function
@@ -14786,7 +14858,7 @@ module spiral_compiler =
                     line s (sprintf "switch (v%i) {" v_i)
                     let _ =
                         let s = indent s
-                        Array.iteri (fun i x ->
+                        HopacExtensions.A.iteri (fun i x ->
                             line s (sprintf "case %i: {" i)
                             binds (indent s) ret x
                             line (indent s) "break;"
@@ -14814,7 +14886,7 @@ module spiral_compiler =
                             List.iter2 (fun (L(data_i,_)) a ->
                                 let a, s = data_free_vars a, indent s
                                 let qs = ResizeArray(a.Length)
-                                Array.iteri (fun field_i (L(v_i,t) as v) ->
+                                HopacExtensions.A.iteri (fun field_i (L(v_i,t) as v) ->
                                     if Set.contains v decr = false then qs.Add $"{tyv t} v{v_i} = v{data_i}{acs}case{union_i}.v{field_i};"
                                     ) a
                                 line' s qs
@@ -14949,7 +15021,7 @@ module spiral_compiler =
                     | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                     |> return'
             and print_ordered_args s v = // Unlike C# for example, C keeps the struct fields in input order. To reduce padding, it is best to order the fields from largest to smallest.
-                order_argsC v |> Array.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
+                order_argsC v |> HopacExtensions.A.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_templ is_while fun_name : _ -> MethodRecC =
                 jp (fun ((jp_body,key & (C(args,_))),i) ->
                     let jp_dict,_,_ = env.join_point_method.[jp_body]
@@ -14958,7 +15030,7 @@ module spiral_compiler =
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun _ s_typ s_fun x ->
                     let ret_ty = tup_ty x.range
-                    let args = x.free_vars |> Array.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
+                    let args = x.free_vars |> HopacExtensions.A.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
                     let fun_name = Option.defaultValue fun_name x.name
                     line s_fun (sprintf "%s %s%i(%s){" ret_ty fun_name x.tag args)
                     binds_start (if is_while then [||] else x.free_vars) (indent s_fun) x.body
@@ -14984,7 +15056,7 @@ module spiral_compiler =
                         let s_typ = indent s_typ
                         line s_typ $"int refc;"
                         line s_typ $"void (*decref_fptr)(Closure{i} *);"
-                        match x.domain_args |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", " with
+                        match x.domain_args |> HopacExtensions.A.map (fun (L(_,t)) -> tyv t) |> String.concat ", " with
                         | "" -> $"{range} (*fptr)(Closure{i} *);"
                         | domain_args_ty -> $"{range} (*fptr)(Closure{i} *, {domain_args_ty});"
                         |> line s_typ
@@ -14999,19 +15071,19 @@ module spiral_compiler =
 
                     print_decref s_fun $"ClosureDecref{i}" $"Closure{i}" $"ClosureDecrefBody{i}"
 
-                    match x.domain_args |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
+                    match x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
                     | "" -> sprintf "%s ClosureMethod%i(Closure%i * x){" range i i
                     | domain_args -> sprintf "%s ClosureMethod%i(Closure%i * x, %s){" range i i domain_args
                     |> line s_fun
                     let _ =
                         let s_fun = indent s_fun
-                        x.free_vars |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i} = x->v{i};") |> line' s_fun
+                        x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i} = x->v{i};") |> line' s_fun
                         line s_fun $"ClosureDecref{i}(x);"
                         binds_start x.domain_args s_fun x.body
                     line s_fun "}"
 
                     let fun_tag = (cfun (x.domain,x.range)).tag
-                    let free_vars = x.free_vars |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}")
+                    let free_vars = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}")
                     line s_fun (sprintf "Fun%i * ClosureCreate%i(%s){" fun_tag i (String.concat ", " free_vars))
                     let _ =
                         let s_fun = indent s_fun
@@ -15019,7 +15091,7 @@ module spiral_compiler =
                         line s_fun "x->refc = 1;"
                         line s_fun $"x->decref_fptr = ClosureDecref{i};"
                         line s_fun $"x->fptr = ClosureMethod{i};"
-                        x.free_vars |> Array.map (fun (L(i,_)) -> $"x->v{i} = v{i};")  |> line' s_fun
+                        x.free_vars |> HopacExtensions.A.map (fun (L(i,_)) -> $"x->v{i} = v{i};")  |> line' s_fun
                         line s_fun $"return (Fun{fun_tag} *) x;"
                     line s_fun "}"
                     )
@@ -15032,7 +15104,7 @@ module spiral_compiler =
                         let s_typ = indent s_typ
                         line s_typ $"int refc;"
                         line s_typ $"void (*decref_fptr)(Fun{i} *);"
-                        match x.domain_args_ty |> Array.map tyv |> String.concat ", " with
+                        match x.domain_args_ty |> HopacExtensions.A.map tyv |> String.concat ", " with
                         | "" -> $"{range} (*fptr)(Fun{i} *);"
                         | domain_args_ty -> $"{range} (*fptr)(Fun{i} *, {domain_args_ty});"
                         |> line s_typ
@@ -15042,10 +15114,10 @@ module spiral_compiler =
                 tuple (fun _ s_typ s_fun x ->
                     let name = sprintf "Tuple%i" x.tag
                     line s_typ "typedef struct {"
-                    x.tys |> Array.mapi (fun i x -> L(i,x)) |> print_ordered_args (indent s_typ)
+                    x.tys |> HopacExtensions.A.mapi (fun i x -> L(i,x)) |> print_ordered_args (indent s_typ)
                     line s_typ (sprintf "} %s;" name)
 
-                    let args = x.tys |> Array.mapi (fun i x -> $"{tyv x} v{i}")
+                    let args = x.tys |> HopacExtensions.A.mapi (fun i x -> $"{tyv x} v{i}")
                     line s_fun (sprintf "static inline %s TupleCreate%i(%s){" name x.tag (String.concat ", " args))
                     let _ =
                         let s_fun = indent s_fun
@@ -15056,8 +15128,8 @@ module spiral_compiler =
                     )
             and assign_mut : _ -> TupleRecC =
                 tuple (fun _ s_typ s_fun x ->
-                    let tyvs = Array.mapi (fun i t -> L(i,t)) x.tys
-                    let args = Array.mapi (fun i t -> let t = tyv t in $"{t} * a{i}, {t} b{i}") x.tys |> String.concat ", "
+                    let tyvs = HopacExtensions.A.mapi (fun i t -> L(i,t)) x.tys
+                    let args = HopacExtensions.A.mapi (fun i t -> let t = tyv t in $"{t} * a{i}, {t} b{i}") x.tys |> String.concat ", "
                     line s_fun (sprintf "static inline void AssignMut%i(%s){" x.tag args)
                     let _ =
                         let s_fun = indent s_fun
@@ -15068,7 +15140,7 @@ module spiral_compiler =
                     )
             and assign_array : _ -> TupleRecC =
                 tuple (fun _ s_typ s_fun x ->
-                    let tyvs, t = Array.mapi (fun i t -> L(i,t)) x.tys, tup_ty_tys x.tys
+                    let tyvs, t = HopacExtensions.A.mapi (fun i t -> L(i,t)) x.tys, tup_ty_tys x.tys
                     line s_fun (sprintf "static inline void AssignArray%i(%s * a, %s b){" x.tag t t)
                     let _ =
                         let s_fun = indent s_fun
@@ -15104,7 +15176,7 @@ module spiral_compiler =
 
                     print_decref s_fun $"{name}Decref{i}" name' $"{name}DecrefBody{i}"
 
-                    let args = x.free_vars |> Array.map (fun (L(i,x)) -> $"{tyv x} v{i}")
+                    let args = x.free_vars |> HopacExtensions.A.map (fun (L(i,x)) -> $"{tyv x} v{i}")
                     line s_fun (sprintf "%s * %sCreate%i(%s){" name' name i (String.concat ", " args))
                     let _ =
                         let s_fun = indent s_fun
@@ -15179,7 +15251,7 @@ module spiral_compiler =
                         print_decref s_fun $"UHDecref{i}" $"UH{i}" $"UHDecrefBody{i}"
 
                     map_iteri (fun tag (_, k) v ->
-                        let args = v |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", "
+                        let args = v |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", "
                         if is_stack then
                             line s_fun (sprintf "US%i US%i_%i(%s) { // %s" i i tag args k)
                             let _ =
@@ -15187,7 +15259,7 @@ module spiral_compiler =
                                 line s_fun $"US{i} x;"
                                 line s_fun $"x.tag = {tag};"
                                 if v.Length <> 0 then
-                                    v |> Array.map (fun (L(i,t)) -> $"x.case{tag}.v{i} = v{i};") |> line' s_fun
+                                    v |> HopacExtensions.A.map (fun (L(i,t)) -> $"x.case{tag}.v{i} = v{i};") |> line' s_fun
                                 line s_fun "return x;"
                             line s_fun "}"
                         else
@@ -15198,7 +15270,7 @@ module spiral_compiler =
                                 line s_fun $"x->tag = {tag};"
                                 line s_fun "x->refc = 1;"
                                 if v.Length <> 0 then
-                                    v |> Array.map (fun (L(i,t)) -> $"x->case{tag}.v{i} = v{i};") |> line' s_fun
+                                    v |> HopacExtensions.A.map (fun (L(i,t)) -> $"x->case{tag}.v{i} = v{i};") |> line' s_fun
                                 line s_fun $"return x;"
                             line s_fun "}"
                         ) x.free_vars
@@ -15372,7 +15444,7 @@ module spiral_compiler =
             | BindsTailEnd
             | BindsLocal of TyV []
 
-        let term_vars_to_tysCpp x = x |> Array.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
+        let term_vars_to_tysCpp x = x |> HopacExtensions.A.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
         let binds_last_dataCpp x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
 
         type LayoutRecCpp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
@@ -15427,7 +15499,7 @@ module spiral_compiler =
                         let x = part_eval_env.ty_to_data x
                         let a, b =
                             match x with
-                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> HopacExtensions.A.collect snd, a
                             | _ -> data_free_vars x, Map.empty
                         {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (1).\nGot: %s{show_ty x}"
@@ -15484,7 +15556,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
 
-            let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+            let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
 
             let tmp =
                 let mutable i = 0u
@@ -15497,7 +15569,7 @@ module spiral_compiler =
             let import x = global' $"#include <{x}>"
             let import' x = global' $"#include \"{x}\""
 
-            let tyvs_to_tys (x : TyV []) = Array.map (fun (L(i,t)) -> t) x
+            let tyvs_to_tys (x : TyV []) = HopacExtensions.A.map (fun (L(i,t)) -> t) x
 
             let rec binds_start (s : CodegenEnv) (x : TypedBind []) = binds (Stack()) s BindsTailEnd x
             and return_local s ret (x : string) =
@@ -15507,7 +15579,7 @@ module spiral_compiler =
                 | ret ->
                     let tmp_i = tmp()
                     line s $"{tup_ty_tyvs ret} tmp{tmp_i} = {x};"
-                    Array.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> lineCpp' s
+                    HopacExtensions.A.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> lineCpp' s
             and get_layout_rec lay a =
                 match lay with
                 | Heap -> heap a
@@ -15524,7 +15596,7 @@ module spiral_compiler =
                     match x with
                     | TyLet(d,trace,a) ->
                         try let d = data_free_vars d
-                            let decl_vars () = Array.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
+                            let decl_vars () = HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
                             let layout_index layout (x'_i : int) (x' : TyV []) =
                                 match layout with
                                 | Heap | HeapMutable -> Array.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.base->v{i'};") d x' |> lineCpp' s
@@ -15569,7 +15641,7 @@ module spiral_compiler =
                                         if d.Length = q.Length-1 then
                                             let w = StringBuilder(m.Length+8)
                                             let tag (L(i,_)) = i : int
-                                            Array.iteri (fun i v -> w.Append(q.[i]).Append('v').Append(tag v) |> ignore) d
+                                            HopacExtensions.A.iteri (fun i v -> w.Append(q.[i]).Append('v').Append(tag v) |> ignore) d
                                             w.Append(q.[d.Length]).Append(';').ToString() |> line s
                                             true
                                         else
@@ -15625,9 +15697,9 @@ module spiral_compiler =
                     ) stmts
                 |> ignore
             and show_w = function WV(L(i,_)) -> sprintf "v%i" i | WLit a -> lit a
-            and args' b = data_term_vars b |> Array.map show_w |> String.concat ", "
+            and args' b = data_term_vars b |> HopacExtensions.A.map show_w |> String.concat ", "
             and tup_term_vars x =
-                let args = Array.map show_w x |> String.concat ", "
+                let args = HopacExtensions.A.map show_w x |> String.concat ", "
                 if 1 < x.Length then sprintf "Tuple%i{%s}" (tup (term_vars_to_tysCpp x)).tag args else args
             and tup_data x = tup_term_vars (data_term_vars x)
             and tup_ty_tys = function
@@ -15741,7 +15813,7 @@ module spiral_compiler =
                     line s (sprintf "switch (v%i) {" v_i)
                     let _ =
                         let s = indent s
-                        Array.iteri (fun i x ->
+                        HopacExtensions.A.iteri (fun i x ->
                             line s (sprintf "case %i: {" i)
                             binds (indent s) ret x
                             line (indent s) "break;"
@@ -15768,7 +15840,7 @@ module spiral_compiler =
                             List.iter2 (fun (L(data_i,_)) a ->
                                 let a, s = data_free_vars a, indent s
                                 let qs = ResizeArray(a.Length)
-                                Array.iteri (fun field_i (L(v_i,t) as v) ->
+                                HopacExtensions.A.iteri (fun field_i (L(v_i,t) as v) ->
                                     qs.Add $"{tyv t} v{v_i} = v{data_i}{acs}case{union_i}.v{field_i};"
                                     ) a
                                 lineCpp' s qs
@@ -15907,7 +15979,7 @@ module spiral_compiler =
                     | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                     |> return'
             and print_ordered_args s v = // Unlike C# for example, C keeps the struct fields in input order. To reduce padding, it is best to order the fields from largest to smallest.
-                order_args v |> Array.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
+                order_args v |> HopacExtensions.A.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_template is_while : _ -> MethodRecCpp =
                 jp (fun ((jp_body,key & (C(args,_))),i) ->
                     let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
@@ -15917,7 +15989,7 @@ module spiral_compiler =
                     ) (fun s_fwd s_typ s_fun x ->
                     let ret_ty = tup_ty x.range
                     let fun_name = Option.defaultValue (if is_while then "while_method_" else "method_") x.name
-                    let args = x.free_vars |> Array.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
+                    let args = x.free_vars |> HopacExtensions.A.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
                     let inline_ =
                         if is_while then "inline "
                         else
@@ -15934,7 +16006,7 @@ module spiral_compiler =
                     | YPair(a,b) -> a :: loop b
                     | a -> [a]
                 let mutable count = count_start
-                let rename x = Array.map (fun (L(i,t)) -> let x = L(count,t) in count <- count+1; x) x
+                let rename x = HopacExtensions.A.map (fun (L(i,t)) -> let x = L(count,t) in count <- count+1; x) x
                 let mutable i = 0
                 loop domain |> List.choose (fun x ->
                     let n = part_eval_env.ty_to_data x |> data_free_vars
@@ -15957,11 +16029,11 @@ module spiral_compiler =
                     let args = closure_args |> List.map (fun (i,ty,_) -> $"{ty} tup{i}") |> String.concat ", "
                     let print_body s_fun =
                         let s_fun = indent s_fun
-                        x.free_vars |> Array.map (fun (L(i,t)) ->
+                        x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) ->
                             $"{tyv t} & v{i} = this->v{i};"
                             ) |> String.concat " " |> line s_fun
                         closure_args |> List.map (fun (i'',_,vars) ->
-                            Array.mapi (fun i' (L(i,t)) ->
+                            HopacExtensions.A.mapi (fun i' (L(i,t)) ->
                                 if vars.Length <> 1 then $"{tyv t} v{i} = tup{i''}.v{i'};"
                                 else $"{tyv t} v{i} = tup{i''};"
                                 ) vars
@@ -15998,11 +16070,11 @@ module spiral_compiler =
                                 | _ ->
                                     let constructor_args =
                                         x.free_vars
-                                        |> Array.map (fun (L(i,t)) -> $"{tyv t} _v{i}")
+                                        |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} _v{i}")
                                         |> String.concat ", "
                                     let initializer_args =
                                         x.free_vars
-                                        |> Array.map (fun (L(i,t)) -> $"v{i}(_v{i})")
+                                        |> HopacExtensions.A.map (fun (L(i,t)) -> $"v{i}(_v{i})")
                                         |> String.concat ", "
                                     line s_typ $"{code_env.__device__}Closure{i}({constructor_args}) : {initializer_args} {{ }}"
                             let () = // destructor
@@ -16011,7 +16083,7 @@ module spiral_compiler =
                                 | FT_Closure ->
                                     let destructor_calls =
                                         x.free_vars
-                                        |> Array.choose (fun (L(i,t)) ->
+                                        |> HopacExtensions.A.choose (fun (L(i,t)) ->
                                             if is_numeric t || is_char t then None else
                                             Some $"destroy(v{i});"
                                             )
@@ -16036,10 +16108,10 @@ module spiral_compiler =
                     let name = sprintf "Tuple%i" x.tag
                     line s_fwd $"struct {name};"
                     line s_typ $"struct {name} {{"
-                    x.tys |> Array.mapi (fun i x -> L(i,x)) |> print_ordered_args (indent s_typ)
+                    x.tys |> HopacExtensions.A.mapi (fun i x -> L(i,x)) |> print_ordered_args (indent s_typ)
                     let concat x = String.concat ", " x
-                    let args = x.tys |> Array.mapi (fun i x -> $"{tyv x} t{i}")
-                    let con_init = x.tys |> Array.mapi (fun i x -> $"v{i}(t{i})")
+                    let args = x.tys |> HopacExtensions.A.mapi (fun i x -> $"{tyv x} t{i}")
+                    let con_init = x.tys |> HopacExtensions.A.mapi (fun i x -> $"v{i}(t{i})")
                     if args.Length <> 0 then
                         line (indent s_typ) $"{code_env.__device__}{name}() = default;"
                         line (indent s_typ) $"{code_env.__device__}{name}({concat args}) : {concat con_init} {{}}"
@@ -16057,8 +16129,8 @@ module spiral_compiler =
                         let () = // constructors
                             let s_typ = indent s_typ
                             let concat x = String.concat ", " x
-                            let args = v |> Array.map (fun (L(i,x)) -> $"{tyv x} t{i}")
-                            let con_init = v |> Array.map (fun (L(i,x)) -> $"v{i}(t{i})")
+                            let args = v |> HopacExtensions.A.map (fun (L(i,x)) -> $"{tyv x} t{i}")
+                            let con_init = v |> HopacExtensions.A.map (fun (L(i,x)) -> $"v{i}(t{i})")
                             if v.Length <> 0 then
                                 line s_typ $"{code_env.__device__}Union{i}_{tag}({concat args}) : {concat con_init} {{}}"
                                 line s_typ $"{code_env.__device__}Union{i}_{tag}() = delete;"
@@ -16171,8 +16243,8 @@ module spiral_compiler =
                         if is_heap then line s_typ "int refc{0};"
                         x.free_vars |> print_ordered_args s_typ
                         let concat x = String.concat ", " x
-                        let args = x.free_vars |> Array.map (fun (L(i,x)) -> $"{tyv x} t{i}")
-                        let con_init = x.free_vars |> Array.map (fun (L(i,x)) -> $"v{i}(t{i})")
+                        let args = x.free_vars |> HopacExtensions.A.map (fun (L(i,x)) -> $"{tyv x} t{i}")
+                        let con_init = x.free_vars |> HopacExtensions.A.map (fun (L(i,x)) -> $"v{i}(t{i})")
                         if args.Length <> 0 then
                             line s_typ $"{code_env.__device__}{name}() = default;"
                             line s_typ $"{code_env.__device__}{name}({concat args}) : {concat con_init} {{}}"
@@ -16220,7 +16292,7 @@ module spiral_compiler =
                     | DB -> "void"
                     | _ -> er()
                 let s = {text=StringBuilder(); indent=0}
-                let args = vs |> Array.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
+                let args = vs |> HopacExtensions.A.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
                 line s $"extern \"C\" __global__ {ret_ty} entry%i{code_env.main_defs.Count}(%s{args}) {{"
                 binds_start (indent s) x
                 line s "}"
@@ -16253,7 +16325,7 @@ module spiral_compiler =
             let append_lines (l : string seq) = (StringBuilder(), l) ||> Seq.fold (fun s -> s.AppendLine)
             let indent_lines (x : string) =
                 x.Split('\n')
-                |> Array.map (fun x -> if x <> "" then $"    {x}" else x)
+                |> HopacExtensions.A.map (fun x -> if x <> "" then $"    {x}" else x)
                 |> fun x -> StringBuilder().AppendJoin("", x)
 
             let aux_library_code =
@@ -16356,8 +16428,8 @@ module spiral_compiler =
             | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
         let show_w = function WV(L(i,_)) -> sprintf "v%i" i | WLit a -> litPython a
-        let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-        let args' b = data_term_vars b |> Array.map show_w |> String.concat ", "
+        let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+        let args' b = data_term_vars b |> HopacExtensions.A.map show_w |> String.concat ", "
         let primPython x = show_primt x
         let cupy_ty x =
             match x with
@@ -16427,7 +16499,7 @@ module spiral_compiler =
                         let x = part_eval_env.ty_to_data x
                         let a, b =
                             match x with
-                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> HopacExtensions.A.collect snd, a
                             | _ -> data_free_vars x, Map.empty
                         {data=x; free_vars=a; free_vars_by_key=b; tag=System.Threading.Interlocked.Increment(&next_tag)}
                     | _ -> raise_codegen_error $"Compiler error: Expected a layout type (5).\nGot: %s{show_ty x}"
@@ -16462,9 +16534,9 @@ module spiral_compiler =
                 let tup_destruct (a,b) =
                     if 0 < Array.length a then
                         let a = args a
-                        let b = Array.map show_w (data_term_vars b) |> String.concat ", "
+                        let b = HopacExtensions.A.map show_w (data_term_vars b) |> String.concat ", "
                         sprintf "%s = %s" a b |> line s
-                Array.iter (fun x ->
+                HopacExtensions.A.iter (fun x ->
                     let _ =
                         let f (g : System.Collections.Concurrent.ConcurrentDictionary<_,_>) = match g.TryGetValue(x) with true, x -> Seq.toArray x | _ -> [||]
                         match args (f g_decr) with "" -> () | x -> sprintf "del %s" x |> line s
@@ -16483,12 +16555,12 @@ module spiral_compiler =
                     ) stmts
                 if s.text.Length = s_len then line s "pass"
             and tup_data' x =
-                match Array.map show_w (data_term_vars x) with
+                match HopacExtensions.A.map show_w (data_term_vars x) with
                 | [||] -> ""
                 | [|x|] -> x
                 | args -> String.concat ", " args
             and tup_data x =
-                match Array.map show_w (data_term_vars x) with
+                match HopacExtensions.A.map show_w (data_term_vars x) with
                 | [||] -> "None"
                 | [|x|] -> x
                 | args -> sprintf "(%s)" (String.concat ", " args)
@@ -16510,13 +16582,13 @@ module spiral_compiler =
                 | YPrim a -> primPython a
                 | YArray a -> "(cp if cuda else np).ndarray"
                 | YFun(a,b,FT_Vanilla) ->
-                    let a = part_eval_env.ty_to_data a |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
+                    let a = part_eval_env.ty_to_data a |> data_free_vars |> HopacExtensions.A.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
                     $"Callable[[{a}], {tup_ty b}]"
                 | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
                 | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
                 | a -> raise_codegen_error $"Complier error: Type not supported in the codegen.\nGot: %A{a}"
             and tup_ty x =
-                match part_eval_env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) with
+                match part_eval_env.ty_to_data x |> data_free_vars |> HopacExtensions.A.map (fun (L(_,t)) -> tyv t) with
                 | [||] -> "None"
                 | [|x|] -> x
                 | x -> String.concat ", " x |> sprintf "Tuple[%s]"
@@ -16531,7 +16603,7 @@ module spiral_compiler =
                     | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
                     | JPClosure(a,b) -> sprintf "Closure%i(%s)" (closure (a,b)).tag args
                 let layout_index i x' =
-                    x' |> Array.map (fun (L(i',_)) -> $"v{i}.v{i'}")
+                    x' |> HopacExtensions.A.map (fun (L(i',_)) -> $"v{i}.v{i'}")
                     |> String.concat ", "
                     |> return'
 
@@ -16567,7 +16639,7 @@ module spiral_compiler =
                 | TyIndent a ->
                     binds g_decr (indent s) ret a
                 | TyIntSwitch(L(v_i,_),on_succ,on_fail) ->
-                    Array.iteri (fun i x ->
+                    HopacExtensions.A.iteri (fun i x ->
                         if i = 0 then line s $"if v{v_i} == {i}:"
                         else line s $"elif v{v_i} == {i}:"
                         binds g_decr (indent s) ret x
@@ -16719,24 +16791,24 @@ module spiral_compiler =
                 let by_tag =
                     x.free_vars
                     |> Map.toArray
-                    |> Array.map (fun (k,a) ->
+                    |> HopacExtensions.A.map (fun (k,a) ->
                         let name = snd k
                         k, x.tags.[name], a
                     )
                     |> fun arr ->
                         if arr.Length = 0 then arr
                         else
-                            let tags = arr |> Array.map (fun (_,i,_) -> i)
+                            let tags = arr |> HopacExtensions.A.map (fun (_,i,_) -> i)
                             let min_tag = tags |> Array.min
                             let max_tag = tags |> Array.max
                             if min_tag <> 0 || max_tag <> arr.Length - 1 || (tags |> Array.distinct |> Array.length) <> arr.Length then
                                 raise_codegen_error $"Compiler error: Non-contiguous union tags in Python codegen. Got min={min_tag} max={max_tag} len={arr.Length}"
                             arr |> Array.sortBy (fun (_,i,_) -> i)
                 by_tag
-                |> Array.iter (fun (k,i,a) ->
+                |> HopacExtensions.A.iter (fun (k,i,a) ->
                     line s $"class UH{x.tag}_{i}(NamedTuple): # {snd k}"
                     let s = indent s
-                    a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
+                    a |> HopacExtensions.A.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
                     line s $"tag = {i}"
                 )
                 )
@@ -16744,24 +16816,24 @@ module spiral_compiler =
                 let by_tag =
                     x.free_vars
                     |> Map.toArray
-                    |> Array.map (fun (k,a) ->
+                    |> HopacExtensions.A.map (fun (k,a) ->
                         let name = snd k
                         k, x.tags.[name], a
                     )
                     |> fun arr ->
                         if arr.Length = 0 then arr
                         else
-                            let tags = arr |> Array.map (fun (_,i,_) -> i)
+                            let tags = arr |> HopacExtensions.A.map (fun (_,i,_) -> i)
                             let min_tag = tags |> Array.min
                             let max_tag = tags |> Array.max
                             if min_tag <> 0 || max_tag <> arr.Length - 1 || (tags |> Array.distinct |> Array.length) <> arr.Length then
                                 raise_codegen_error $"Compiler error: Non-contiguous union tags in Python codegen. Got min={min_tag} max={max_tag} len={arr.Length}"
                             arr |> Array.sortBy (fun (_,i,_) -> i)
                 by_tag
-                |> Array.iter (fun (k,i,a) ->
+                |> HopacExtensions.A.iter (fun (k,i,a) ->
                     line s $"class US{x.tag}_{i}(NamedTuple): # {snd k}"
                     let s = indent s
-                    a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
+                    a |> HopacExtensions.A.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
                     line s $"tag = {i}"
                 )
                 let cases = Array.init x.free_vars.Count (fun i -> $"\"US{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
@@ -16771,14 +16843,14 @@ module spiral_compiler =
                 line s $"class Heap{x.tag}(NamedTuple):"
                 let s = indent s
                 if x.free_vars.Length = 0 then line s "pass"
-                else x.free_vars |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
+                else x.free_vars |> HopacExtensions.A.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
                 )
             and mut : _ -> LayoutRecPython = layout (fun s x ->
                 line s "@dataclass"
                 line s $"class Mut{x.tag}:"
                 let s = indent s
                 if x.free_vars.Length = 0 then line s "pass"
-                else x.free_vars |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
+                else x.free_vars |> HopacExtensions.A.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
                 )
             and method : _ -> MethodRecPython =
                 jp false (fun ((jp_body,key & (C(args,_))),i) ->
@@ -16787,7 +16859,7 @@ module spiral_compiler =
                     | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun s x ->
-                    let method_args = x.free_vars |> Array.map (fun (L(i,t)) -> $"v{i} : {tyv t}") |> String.concat ", "
+                    let method_args = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"v{i} : {tyv t}") |> String.concat ", "
                     line s $"def method{x.tag}({method_args}) -> {tup_ty x.range}:"
                     binds_start x.free_vars (indent s) x.body
                     )
@@ -16802,17 +16874,17 @@ module spiral_compiler =
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     ) (fun s x ->
-                    let env_args = x.free_vars |> Array.map (fun (L(i,t)) -> $"env_v{i} : {tyv t}") |> String.concat ", "
+                    let env_args = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"env_v{i} : {tyv t}") |> String.concat ", "
                     line s $"def Closure{x.tag}({env_args}):"
                     let s = indent s
-                    let inner_args = x.domain_args |> Array.map (fun (L(i,t)) -> $"v{i} : {tyv t}") |> String.concat ", "
+                    let inner_args = x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> $"v{i} : {tyv t}") |> String.concat ", "
                     line s $"def inner({inner_args}) -> {tup_ty x.range}:"
                     let _ =
                         let s = indent s
                         if x.free_vars.Length > 0 then
-                            let nonlocal_args = x.free_vars |> Array.map (fun (L(i,t)) -> $"env_v{i}") |> String.concat ", "
+                            let nonlocal_args = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"env_v{i}") |> String.concat ", "
                             line s $"nonlocal {nonlocal_args}"
-                            x.free_vars |> Array.map (fun (L(i,t)) -> $"v{i} = env_v{i}") |> String.concat "; " |> line s
+                            x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"v{i} = env_v{i}") |> String.concat "; " |> line s
                         binds_start x.free_vars s x.body
                     line s "return inner"
                     )
@@ -16949,7 +17021,7 @@ module spiral_compiler =
     /// ### tokenize_replace
     /// Replaces the token lines and updates the errors given the edit.
     let tokenize_replace (lines : _ PersistentVector PersistentVector, errors : _ list) (edit : SpiEdit) =
-        let toks, ers = Array.map tokenize edit.lines |> Array.unzip
+        let toks, ers = HopacExtensions.A.map tokenize edit.lines |> Array.unzip
         let lines = replace edit.from edit.nearTo toks lines
         let errors =
             let adj = edit.lines.Length - (edit.nearTo - edit.from)
@@ -17259,7 +17331,7 @@ module spiral_compiler =
     let wdiff_proj_files_update_packages (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init : 'state) =
         if state.init = init then state else
         let uids_file, uids_directory = Array.zeroCreate state.uids_file.Length, Array.zeroCreate state.uids_directory.Length
-        let uids = Array.map fst state.uids_file
+        let uids = HopacExtensions.A.map fst state.uids_file
         {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init state.files}
 
     /// ### wdiff_proj_files
@@ -17693,9 +17765,9 @@ module spiral_compiler =
         (many expr |>> fun l ->
             let _ =
                 l |> List.toArray
-                |> Array.choose (function | File(_,(a,b),_,_) -> Some (b,a) | _ -> None)
+                |> HopacExtensions.A.choose (function | File(_,(a,b),_,_) -> Some (b,a) | _ -> None)
                 |> Array.groupBy fst
-                |> Array.choose (fun (a,b) -> if b.Length > 1 then Some (Array.map snd b) else None)
+                |> HopacExtensions.A.choose (fun (a,b) -> if b.Length > 1 then Some (HopacExtensions.A.map snd b) else None)
                 |> add_to_exception_list p DuplicateFiles
             l
             ) p
@@ -17731,7 +17803,7 @@ module spiral_compiler =
     /// ### tab_positions
     let tab_positions (str : string): VSCRange [] =
         let mutable line = -1
-        lines str |> Array.choose (fun x ->
+        lines str |> HopacExtensions.A.choose (fun x ->
             line <- line + 1
             let x = {|line=line; character=x.IndexOf("\t")|}
             if x.character <> -1 then Some(x,{|x with character=x.character+1|}) else None
@@ -17756,13 +17828,13 @@ module spiral_compiler =
         record_reduce fields (schema, []) >>= fun (range,(schema,l)) p ->
             let l = List.toArray l
             let _ =
-                let names = Array.map snd l
+                let names = HopacExtensions.A.map snd l
                 Set fields_necessary - Set names
                 |> Set.toArray
                 |> add_to_exception_list p (fun fields -> MissingNecessaryRecordFields(fields,range))
             let _ =
                 Array.groupBy snd l
-                |> Array.choose (fun (k, v) -> if v.Length > 1 then Some (Array.map fst v) else None)
+                |> HopacExtensions.A.choose (fun (k, v) -> if v.Length > 1 then Some (HopacExtensions.A.map fst v) else None)
                 |> add_to_exception_list p DuplicateRecordFields
 
             Reply(schema)
@@ -17818,15 +17890,15 @@ module spiral_compiler =
 
         |> Result.mapError (fun x ->
             let fatal_error = function
-                | Tabs l -> l |> Array.map (fun r -> r, "Tab not allowed.")
+                | Tabs l -> l |> HopacExtensions.A.map (fun r -> r, "Tab not allowed.")
                 | ParserError(x,r) -> [|r, (lines x).[3..] |> String.concat "\n"|]
-            let inline duplicate er = Array.collect (fun l -> let er = er (Array.length l) in Array.map (fun r -> r, er) l)
+            let inline duplicate er = HopacExtensions.A.collect (fun l -> let er = er (Array.length l) in HopacExtensions.A.map (fun r -> r, er) l)
             let resumable_error = function
                 | DuplicateFiles l -> duplicate (sprintf "Duplicate name. Count: %i") l
                 | DuplicateRecordFields l -> duplicate (sprintf "Duplicate record field. Count: %i") l
                 | MissingNecessaryRecordFields (l,r) -> [|r, sprintf "Record is missing the fields: %s" (String.concat ", " l)|]
             match x with
-            | ResumableError x -> Array.collect resumable_error x
+            | ResumableError x -> HopacExtensions.A.collect resumable_error x
             | ConfigFatalError x -> fatal_error x
             |> Array.toList
             )
@@ -18372,7 +18444,7 @@ module spiral_compiler =
     /// ### package_ids_update
     let package_ids_update (packages : SchemaEnv) package_ids (dirty_packages : string HashSet) =
         let adds,removals = dirty_packages |> Seq.toArray |> Array.partition (fun x -> Map.containsKey x packages)
-        let adds = adds |> Array.filter (fun x -> Map.containsKey x (fst package_ids) = false) |> Array.mapi (fun i x -> (i,x))
+        let adds = adds |> Array.filter (fun x -> Map.containsKey x (fst package_ids) = false) |> HopacExtensions.A.mapi (fun i x -> (i,x))
         let package_ids, removed_pids = removals |> Array.fold (fun ((a,b),l as s) x -> match Map.tryFind x a with Some x' -> (Map.remove x a, Map.remove x' b), x' :: l | None -> s) (package_ids,[])
         removed_pids,
         if Array.isEmpty adds then package_ids else
@@ -18475,7 +18547,7 @@ module spiral_compiler =
     let file_delete default_env s (files : string []) =
         let deleted_modules = HashSet()
         let deleted_packages = HashSet()
-        files |> Array.iter (fun k ->
+        files |> HopacExtensions.A.iter (fun k ->
             s.packages |> Map.iter (fun k' _ -> if (spiproj_suffix k').StartsWith(k) then deleted_packages.Add(k') |> ignore)
             s.modules |> Map.iter (fun k' _ -> if k'.StartsWith(k) then deleted_modules.Add(k') |> ignore)
             )
@@ -18509,12 +18581,12 @@ module spiral_compiler =
         let update (s : AttentionState) (modules,packages,supervisor) = {modules = add s.modules modules; packages = add s.packages packages; supervisor = supervisor; old_packages = s.supervisor.packages}
         let rec loop (s : AttentionState) =
             let clear uri =
-                Hopac.start (Ch.send errors.tokenizer {|uri=uri; errors=[]|})
-                Hopac.start (Ch.send errors.parser {|uri=uri; errors=[]|})
-                Hopac.start (Ch.send errors.typer {|uri=uri; errors=[]|})
-            let send_tokenizer uri x = Hopac.start (Ch.send errors.tokenizer {|uri=uri; errors=x|})
-            let clear_parse uri = Hopac.start (Ch.send errors.parser {|uri=uri; errors=[]|})
-            let clear_typer uri = Hopac.start (Ch.send errors.typer {|uri=uri; errors=[]|})
+                HopacExtensions.start (Ch.send errors.tokenizer {|uri=uri; errors=[]|})
+                HopacExtensions.start (Ch.send errors.parser {|uri=uri; errors=[]|})
+                HopacExtensions.start (Ch.send errors.typer {|uri=uri; errors=[]|})
+            let send_tokenizer uri x = HopacExtensions.start (Ch.send errors.tokenizer {|uri=uri; errors=x|})
+            let clear_parse uri = HopacExtensions.start (Ch.send errors.parser {|uri=uri; errors=[]|})
+            let clear_typer uri = HopacExtensions.start (Ch.send errors.typer {|uri=uri; errors=[]|})
             let clear_old_package x = Map.tryFind x s.old_packages |> Option.iter (fun x ->
                 let rec loop = function
                     | FileHierarchy.File(_,(_,pdir),_) -> clear (file_uri pdir)
@@ -18530,7 +18602,7 @@ module spiral_compiler =
                     if List.isEmpty ers then next ers'
                     else
                         let ers = List.append ers ers'
-                        Hopac.start (Ch.send src {|uri=uri; errors=ers|})
+                        HopacExtensions.start (Ch.send src {|uri=uri; errors=ers|})
                         next ers
 
             let loop_module (s : AttentionState) mpath (m : ModuleState) =
@@ -18574,7 +18646,7 @@ module spiral_compiler =
                         match Map.tryFind x s.supervisor.packages with
                         | Some v -> List.concat [v.errors_parse; v.errors_modules; v.errors_packages]
                         | None -> []
-                    Hopac.start (Ch.send errors.package ({|uri=file_uri(spiproj_suffix x); errors=package_errors|}))
+                    HopacExtensions.start (Ch.send errors.package ({|uri=file_uri(spiproj_suffix x); errors=package_errors|}))
                     clear_old_package x
                     match Map.tryFind x (fst s.supervisor.package_ids) with
                     | Some uid ->
@@ -18677,10 +18749,10 @@ module spiral_compiler =
 
     /// ### supervisor_server
     let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorErrorSources) req =
-        let fatal x = Hopac.start (Ch.send errors.fatal x)
-        let handle_packages (dirty_packages,s) = Hopac.start (Ch.send atten ([||],dirty_packages,s)); s
-        let handle_file_packages file (dirty_packages,s) = Hopac.start (Ch.send atten ([|file|],dirty_packages,s)); s
-        let handle_files_packages (dirty_files,(dirty_packages,s)) = Hopac.start (Ch.send atten (dirty_files,dirty_packages,s)); s
+        let fatal x = HopacExtensions.start (Ch.send errors.fatal x)
+        let handle_packages (dirty_packages,s) = HopacExtensions.start (Ch.send atten ([||],dirty_packages,s)); s
+        let handle_file_packages file (dirty_packages,s) = HopacExtensions.start (Ch.send atten ([|file|],dirty_packages,s)); s
+        let handle_files_packages (dirty_files,(dirty_packages,s)) = HopacExtensions.start (Ch.send atten (dirty_files,dirty_packages,s)); s
         let loop (s : SupervisorState) = req >>- function
             | SupervisorReq.ProjectFileChange x | SupervisorReq.ProjectFileOpen x -> proj_open default_env s (dir x.uri,Some x.spiprojText) |> handle_packages
             | SupervisorReq.FileOpen x ->
@@ -18702,7 +18774,7 @@ module spiral_compiler =
                     | Error er -> fatal er; s
             | SupervisorReq.FileDelete x ->
                 trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileDelete / x: {x}") _locals
-                file_delete default_env s (Array.map file x.uris) |> handle_files_packages
+                file_delete default_env s (HopacExtensions.A.map file x.uris) |> handle_files_packages
             | SupervisorReq.ProjectFileLinks(x,res) ->
                 let l =
                     match Map.tryFind (dir x.uri) s.packages with
@@ -18722,7 +18794,7 @@ module spiral_compiler =
                         and list l = List.iter loop l
                         list x.schema.modules
                         l
-                Hopac.start (IVar.fill res l)
+                HopacExtensions.start (IVar.fill res l)
                 s
             | SupervisorReq.ProjectCodeActions(x,res) ->
                 let z =
@@ -18758,7 +18830,7 @@ module spiral_compiler =
                         and actions_modules l = List.iter actions_module l
                         actions_modules x.schema.modules
                         z
-                Hopac.start (IVar.fill res z)
+                HopacExtensions.start (IVar.fill res z)
                 s
             | SupervisorReq.ProjectCodeActionExecute(x,res) ->
                 let error, s =
@@ -18766,7 +18838,7 @@ module spiral_compiler =
                     | Error x -> Some x, s
                     | Ok null -> None, proj_open default_env s (dir x.uri,None) |> handle_packages
                     | Ok path -> None, file_delete default_env s [|path|] |> handle_files_packages
-                Hopac.start (IVar.fill res {|result=error|})
+                HopacExtensions.start (IVar.fill res {|result=error|})
                 s
             | SupervisorReq.FileTokenRange(x, res) ->
                 let v =
@@ -18782,14 +18854,14 @@ module spiral_compiler =
 
                 match v with
                 | Some v ->
-                    Hopac.start (semantic_tokens v.parser >>= (vscode_tokens x.range >> IVar.fill res))
+                    HopacExtensions.start (semantic_tokens v.parser >>= (vscode_tokens x.range >> IVar.fill res))
                 | None ->
                     if x.uri |> SpiralSm.starts_with "vscode-notebook-cell" |> not then
                         trace Debug
                             (fun () -> $"Supervisor.supervisor_server.FileTokenRange")
                             (fun () -> $"module=None / x.uri: {x.uri} / {_locals ()}")
 
-                    Hopac.start (IVar.fill res [||])
+                    HopacExtensions.start (IVar.fill res [||])
                 s
             | SupervisorReq.HoverAt(x,res) ->
                 let file = file x.uri
@@ -18819,7 +18891,7 @@ module spiral_compiler =
                             if x.offset <= pos.line then loop (Some x) b
                             // If the block is over the offset that means the previous one must be the right choice.
                             else go_hover s
-                    Hopac.start (loop None x.result)
+                    HopacExtensions.start (loop None x.result)
                 let rec go_file uids_file trees =
                     let rec loop = function
                         | ProjFilesTree.File(uid,file',_) -> if file = file' then go_block (Array.get uids_file uid |> fst); true else false
@@ -18838,7 +18910,7 @@ module spiral_compiler =
                             | Some x -> go_file x.files.uids_file x.files.files.tree
                         else
                             go_parent x.Parent
-                if go_parent (Directory.GetParent(file)) = false then Hopac.start (IVar.fill res None)
+                if go_parent (Directory.GetParent(file)) = false then HopacExtensions.start (IVar.fill res None)
                 s
             | SupervisorReq.BuildFile (x, res) ->
                 let backend = x.backend
@@ -18852,7 +18924,7 @@ module spiral_compiler =
                                 let file = Path.ChangeExtension(file,null) // null removes the extension from path.
                                 do! System.IO.File.WriteAllTextAsync(file + x.file_extension, x.code) |> Async.AwaitTask
                         })
-                        |> Hopac.start
+                        |> HopacExtensions.start
                         l
                         |> List.map (fun x -> x.code)
                         |> String.concat "\n"
@@ -18860,11 +18932,11 @@ module spiral_compiler =
                         |> IVar.fill res
                     | BuildFatalError x as x' ->
                         trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildFatalError x: %A{x}") _locals
-                        Hopac.start (Ch.send errors.fatal x)
+                        HopacExtensions.start (Ch.send errors.fatal x)
                         IVar.fill res None
                     | BuildErrorTrace(a,b) as x' ->
                         trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildErrorTrace x': %A{x'}") _locals
-                        Hopac.start (Ch.send errors.traced {|trace=a; message=b|})
+                        HopacExtensions.start (Ch.send errors.traced {|trace=a; message=b|})
                         IVar.fill res None
                     | BuildSkip ->
                         trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip") _locals
@@ -18873,7 +18945,7 @@ module spiral_compiler =
                     trace Verbose (fun () -> $"""Supervisor.supervisor_server.BuildFile.file_build / modules: %A{s.modules.Keys |> SpiralSm.concat ", "} / packages: %A{s.packages.Keys |> SpiralSm.concat ", "} / package_ids: %A{s.package_ids |> fst |> fun x -> x.Keys |> SpiralSm.concat ", "}""") _locals
                     let a,b = tc.files.uids_file.[mid]
                     let x,_x = prepass.files.uids_file.[mid]
-                    Hopac.start (a.state >>= fun (has_error',_) ->
+                    HopacExtensions.start (a.state >>= fun (has_error',_) ->
                         b >>= fun (has_error,_) ->
                         if has_error || has_error' then fatal $"File {Path.GetFileNameWithoutExtension file} has a type error somewhere in its path."; Job.unit() else
                         Stream.foldFun (fun _ (_,_,env) -> env) prepassTop_env_empty x.result >>= fun env ->
@@ -18914,20 +18986,19 @@ module spiral_compiler =
                                         if System.IO.Directory.Exists traceDir then
                                             let guid = System.DateTime.Now |> SpiralDateTime.new_guid_from_date_time
                                             let trace_file = traceDir </> $"{guid}_error.json"
-                                            async {
+                                            HopacExtensions.start (job {
                                                 try
-                                                    do! $"{ex}" |> SpiralFileSystem.write_all_text_async trace_file
+                                                    do! Job.fromAsync ($"{ex}" |> SpiralFileSystem.write_all_text_async trace_file)
                                                 with ex ->
                                                     trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: {ex |> SpiralSm.format_exception}") _locals
-                                            }
-                                            |> Async.Start
+                                            })
                                         trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: %A{ex}") _locals
                                         BuildFatalError(ex.Message)
                             | None -> BuildFatalError $"Cannot find `main` in file {Path.GetFileNameWithoutExtension file}."
 
                         // The partial evaluator is using too much stack space, so as a temporary fix, I am running it on a separate thread with much more of it.
                         let result = IVar()
-                        let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> Hopac.start), 1 <<< 30) // Stack space = 2 ** 30 = 1GB
+                        let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> HopacExtensions.start), 1 <<< 30) // Stack space = 2 ** 30 = 1GB
                         thread.Start()
                         result >>= handle_build_result
                         )
@@ -19065,7 +19136,7 @@ module spiral_compiler =
 
         let error_ch_create msg =
             let x = Ch()
-            Hopac.server (Job.forever (Ch.take x >>= (
+            HopacExtensions.server (Job.forever (Ch.take x >>= (
                 msg >> fun (x : ClientErrorsRes) ->
                     Hopac.Job.awaitUnitTask (
                         task {
@@ -19089,15 +19160,15 @@ module spiral_compiler =
         let supervisor = Ch()
         let atten = Ch()
 
-        do Hopac.server (attention_server errors atten)
+        do HopacExtensions.server (attention_server errors atten)
 
         let args = [| "--port"; "0" |]
         let env = startupParse args
-        do Hopac.start (supervisor_server env atten errors supervisor)
+        do HopacExtensions.start (supervisor_server env atten errors supervisor)
 
         let job_null job =
             job
-            |> Hopac.start
+            |> HopacExtensions.start
             task { return null }
         let serialize (x : obj) =
             match x with
@@ -19108,7 +19179,7 @@ module spiral_compiler =
             let res = IVar()
             let job' =
                 job res
-            Hopac.queueAsTask (job' >>=. IVar.read res >>- serialize)
+            HopacExtensions.queueAsTask (job' >>=. IVar.read res >>- serialize)
         {|
             job_null = job_null
             job_val = job_val
@@ -19154,7 +19225,7 @@ module spiral_compiler =
                     System.Environment.Exit 1
             }
 
-            parentAsyncChild |> Async.Start
+            HopacExtensions.start (Job.fromAsync parentAsyncChild)
 
     /// ## SpiralHub
     // open System
@@ -19176,7 +19247,7 @@ module spiral_compiler =
         inherit Hub()
 
         member _.ClientToServerMsg (x : string) =
-            let job_null job = Hopac.start job; task { return null }
+            let job_null job = HopacExtensions.start job; task { return null }
 
             let serialize (x : obj) =
                 match x with
@@ -19184,7 +19255,7 @@ module spiral_compiler =
                 | :? Option<string> as x -> x.Value
                 | _ -> FSharp.Json.Json.serialize x
 
-            let job_val job = let res = IVar() in Hopac.queueAsTask (job res >>=. IVar.read res >>- serialize)
+            let job_val job = let res = IVar() in HopacExtensions.queueAsTask (job res >>=. IVar.read res >>- serialize)
             let supervisor = supervisor.supervisor_ch
 
             let client_req = FSharp.Json.Json.deserialize x
@@ -19197,14 +19268,13 @@ module spiral_compiler =
                     let guid = System.DateTime.Now |> SpiralDateTime.new_guid_from_date_time
                     let trace_file = traceDir </> $"{guid}_{req_name}.json"
 
-                    async {
-                        do! Async.Sleep 500
+                    HopacExtensions.start (job {
+                        do! HopacExtensions.sleepMs 500
                         try
-                            do! x |> SpiralFileSystem.write_all_text_async trace_file
+                            do! Job.fromAsync (SpiralFileSystem.write_all_text_async trace_file x)
                         with ex ->
                             trace Critical (fun () -> $"SpiralHub.ClientToServerMsg / ex: {ex |> SpiralSm.format_exception}") _locals
-                    }
-                    |> Async.Start
+                    })
 
             match client_req with
             | ProjectFileOpen x -> job_null (supervisor *<+ SupervisorReq.ProjectFileOpen x)
@@ -19220,16 +19290,14 @@ module spiral_compiler =
             | BuildFile x -> job_val (fun res -> supervisor *<+ SupervisorReq.BuildFile(x,res))
             | Ping _ -> task { return null }
             | Exit _ ->
-                async {
+                task {
                     trace Debug (fun () -> "Supervisor.SpiralHub.ClientToServerMsg / exiting...") _locals
-                    async {
-                        do! Async.Sleep 300
+                    HopacExtensions.start (job {
+                        do! HopacExtensions.sleepMs 300
                         System.Diagnostics.Process.GetCurrentProcess().Kill ()
-                    }
-                    |> Async.Start
+                    })
                     return null
                 }
-                |> Async.StartAsTask
 
     /// ## main
     open Microsoft.AspNetCore.Builder
