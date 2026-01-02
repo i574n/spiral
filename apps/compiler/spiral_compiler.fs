@@ -5030,6 +5030,15 @@ module spiral_compiler =
                 Microsoft.FSharp.Collections.Array.collect id chunks
 
 
+        // Array ops sequenciais (para trechos com estado mutável não-thread-safe).
+        module S =
+            let inline map (f: 'a -> 'b) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.map f xs
+            let inline mapi (f: int -> 'a -> 'b) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.mapi f xs
+            let inline iter (f: 'a -> unit) (xs: 'a[]) : unit = Microsoft.FSharp.Collections.Array.iter f xs
+            let inline iteri (f: int -> 'a -> unit) (xs: 'a[]) : unit = Microsoft.FSharp.Collections.Array.iteri f xs
+            let inline choose (f: 'a -> 'b option) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.choose f xs
+            let inline collect (f: 'a -> 'b[]) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.collect f xs
+
     open HopacExtensions
     open Hopac
     open Hopac.Infixes
@@ -9074,8 +9083,8 @@ module spiral_compiler =
                             res <- RePair(hc(f elems.[i], res))
                         res
                     | DSymbol a -> ReSymbol a
-                    | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,HopacExtensions.A.map f b,c))
-                    | DForall(a,b,c,_,_) -> ReFunction(hc(a,HopacExtensions.A.map f b,c))
+                    | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,HopacExtensions.S.map f b,c))
+                    | DForall(a,b,c,_,_) -> ReFunction(hc(a,HopacExtensions.S.map f b,c))
                     | DExists(a,b) -> ReExists(hc(a,f b))
                     | DRecord l -> ReRecord(hc(Map.map (fun _ -> f) l))
                     | DV(L(_,ty) as t) -> call_args.Add t; ReV(hc (call_args.Count-1,ty))
@@ -9090,7 +9099,7 @@ module spiral_compiler =
                 visiting.Remove x |> ignore
                 m.TryAdd(x,v) |> ignore
                 v
-        let x = HopacExtensions.A.map f call_data
+        let x = HopacExtensions.S.map f call_data
         call_args.ToArray(),x
 
     /// ### rename_global_term
@@ -9099,48 +9108,52 @@ module spiral_compiler =
     // references to unused nodes to end up in anywhere other than join point keys (which will be weak).
     let rename_global_term (s : LangEnv) =
         let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
-        let visiting = HashSet(HashIdentity.Reference)
-        let rec f x =
+        let rec f (visiting: HashSet<Data>) x =
             match m.TryGetValue x with
             | true, v -> v
             | false, _ ->
                 if visiting.Add x = false then
                     raise_type_error s "Compiler error: Cyclic compile-time value detected during global-term renaming."
-                let v =
-                    match x with
-                    | DPair _ ->
-                        // Avoid stack overflows on long right-nested pairs.
-                        let elems = ResizeArray<Data>()
-                        let mutable cur = x
-                        while (
-                            match cur with
-                            | DPair(a,b) -> elems.Add a; cur <- b; true
-                            | _ -> false
-                        ) do
-                            ()
-                        let tail = f cur
-                        let mutable res = tail
-                        for i = elems.Count - 1 downto 0 do
-                            res <- DPair(f elems.[i], res)
-                        res
-                    | DForall(body,a,b,c,d) -> DForall(body,HopacExtensions.A.map f a,b,c,d)
-                    | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,HopacExtensions.A.map f a,b,c,d)
-                    | DExists(annot,a) -> DExists(annot, f a)
-                    | DRecord l -> DRecord(Map.map (fun _ -> f) l)
-                    | DV(L(_,ty)) -> let x = DV(L(s.i.Value,ty)) in s.i.Value <- s.i.Value + 1; x
-                    | DUnion(a,b) -> DUnion(f a,b)
-                    | DNominal(a,b) -> DNominal(f a,b)
-                    | DSymbol _ | DLit _ | DTLit _ | DB as x -> x
-                    | DHashMap(x,is_writable) when is_writable.Value = false ->
-                        let q = OrderedDictionary(HashIdentity.Reference)
-                        x |> Seq.iter (fun kv -> q.Add(f kv.Key, f kv.Value))
-                        DHashMap(q,is_writable)
-                    | DHashMap _ -> raise_type_error s "The mutable compile time HashMap needs to be made immutable before it can be renamed."
-                    | DHashSet _ -> raise_type_error s "The mutable compile-time HashSets cannot be renamed."
-                visiting.Remove x |> ignore
-                m.TryAdd(x,v) |> ignore
-                v
-        {s with env_global_term = HopacExtensions.A.map f s.env_global_term}
+                try
+                    let v =
+                        match x with
+                        | DPair _ ->
+                            // Avoid stack overflows on long right-nested pairs.
+                            let elems = ResizeArray<Data>()
+                            let mutable cur = x
+                            while (
+                                match cur with
+                                | DPair(a,b) -> elems.Add a; cur <- b; true
+                                | _ -> false
+                            ) do
+                                ()
+                            let tail = f visiting cur
+                            let mutable res = tail
+                            for i = elems.Count - 1 downto 0 do
+                                res <- DPair(f visiting elems.[i], res)
+                            res
+                        | DForall(body,a,b,c,d) -> DForall(body,HopacExtensions.S.map (f visiting) a,b,c,d)
+                        | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,HopacExtensions.S.map (f visiting) a,b,c,d)
+                        | DExists(annot,a) -> DExists(annot, f visiting a)
+                        | DRecord l -> DRecord(Map.map (fun _ -> f visiting) l)
+                        | DV(L(_,ty)) -> let x = DV(L(s.i.Value,ty)) in s.i.Value <- s.i.Value + 1; x
+                        | DUnion(a,b) -> DUnion(f visiting a,b)
+                        | DNominal(a,b) -> DNominal(f visiting a,b)
+                        | DSymbol _ | DLit _ | DTLit _ | DB as x -> x
+                        | DHashMap(x,is_writable) when is_writable.Value = false ->
+                            let q = OrderedDictionary(HashIdentity.Reference)
+                            x |> Seq.iter (fun kv -> q.Add(f visiting kv.Key, f visiting kv.Value))
+                            DHashMap(q,is_writable)
+                        | DHashMap _ -> raise_type_error s "The mutable compile time HashMap needs to be made immutable before it can be renamed."
+                        | DHashSet _ -> raise_type_error s "The mutable compile-time HashSets cannot be renamed."
+                    m.TryAdd(x,v) |> ignore
+                    v
+                finally
+                    visiting.Remove x |> ignore
+        let f0 x =
+            let visiting = HashSet(HashIdentity.Reference)
+            f visiting x
+        {s with env_global_term = HopacExtensions.A.map f0 s.env_global_term}
 
     /// ### data_free_vars
     let data_free_vars call_data =
@@ -9150,7 +9163,7 @@ module spiral_compiler =
             if m.Add x then
                 match x with
                 | DPair(a,b) -> f a; f b
-                | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
+                | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.S.iter f a
                 | DRecord l -> Map.iter (fun _ -> f) l
                 | DV(L _ as t) -> free_vars.Add t
                 | DExists(_,a) | DUnion(a,_) | DNominal(a,_) -> f a
@@ -9223,7 +9236,7 @@ module spiral_compiler =
         let term_vars = ResizeArray(64)
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.S.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DLit _ | DV _ as x -> term_vars.Add(x)
             | DExists(_,a) | DUnion(a,_) | DNominal(a,_) -> f a
@@ -9238,7 +9251,7 @@ module spiral_compiler =
         let term_vars = ResizeArray(64)
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.S.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DLit _ | DV _
             | DExists _ | DUnion _ | DNominal _ as x -> term_vars.Add(x)
@@ -9253,7 +9266,7 @@ module spiral_compiler =
         let term_vars = ResizeArray(64)
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.S.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DLit x -> term_vars.Add(WLit x)
             | DV x -> term_vars.Add(WV x)
@@ -14352,7 +14365,7 @@ module spiral_compiler =
         let mutable v = Map.empty
         let rec f = function
             | DPair(a,b) -> f a; f b
-            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.A.iter f a
+            | DForall(_,a,_,_,_) | DFunction(_,_,a,_,_,_) -> HopacExtensions.S.iter f a
             | DRecord l -> Map.iter (fun _ -> f) l
             | DV x -> v <- varc_add x 1 v
             | DExists(_,a) | DUnion(a,_) | DNominal(a,_) -> f a
@@ -18547,7 +18560,7 @@ module spiral_compiler =
     let file_delete default_env s (files : string []) =
         let deleted_modules = HashSet()
         let deleted_packages = HashSet()
-        files |> HopacExtensions.A.iter (fun k ->
+        files |> HopacExtensions.S.iter (fun k ->
             s.packages |> Map.iter (fun k' _ -> if (spiproj_suffix k').StartsWith(k) then deleted_packages.Add(k') |> ignore)
             s.modules |> Map.iter (fun k' _ -> if k'.StartsWith(k) then deleted_modules.Add(k') |> ignore)
             )
