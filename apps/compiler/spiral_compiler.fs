@@ -7935,6 +7935,9 @@ module spiral_compiler =
         globals : ResizeArray<string>
         }
 
+    /// ### JPTypeCell (local no peval para suportar join-points de tipo em paralelo)
+    type JPTypeCell<'a> = { ev: System.Threading.ManualResetEventSlim; mutable owner: int; mutable value: 'a option }
+
     /// ### peval
     let peval (env : PartEvalTopEnv) (x : E) =
         let join_point_method = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
@@ -7942,9 +7945,7 @@ module spiral_compiler =
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
         let backend_strings = HashConsTable()
         let backend_strings_lock = obj()
-        let backend_switch_validate_all = ref true
-        let backend_switch_lock = obj()
-
+        let backend_switch_validate_all = new System.Threading.ThreadLocal<bool>(fun () -> true)
         // Hopac: parallel join point workers (peval)
 
         let inline capture_edi (e: exn) = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture e
@@ -7952,6 +7953,11 @@ module spiral_compiler =
         let jp_exns : System.Collections.Concurrent.ConcurrentQueue<System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentQueue()
         let jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
+
+        let inline jp_throw_if_any () =
+            let mutable edi = Unchecked.defaultof<_>
+            if jp_exns.TryDequeue(&edi) then edi.Throw()
+
 
         let jp_dop =
             match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_DOP" with
@@ -7977,29 +7983,63 @@ module spiral_compiler =
                 | true, v when v > 0 -> v
                 | _ -> System.Int32.MaxValue
 
-        // Diagnostics / watchdog for parallel peval (helps identify non-termination / starvation on large files)
-        let inline read_env_i64 (name: string) (def: int64) =
-            match System.Environment.GetEnvironmentVariable name with
-            | null | "" -> def
+        let jp_wait_ms =
+            match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_JP_WAIT_MS" with
+            | null | "" -> 300000
             | x ->
-                match System.Int64.TryParse x with
+                match Int32.TryParse x with
+                | true, v when v >= 0 -> v
+                | _ -> 300000
+
+        let peval_mem_limit_mb =
+            match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_MEM_LIMIT_MB" with
+            | null | "" -> 6144
+            | x ->
+                match Int32.TryParse x with
                 | true, v -> v
-                | _ -> def
+                | _ -> 6144
+        let peval_mem_limit_mb = if peval_mem_limit_mb <= 0 then 0 else peval_mem_limit_mb
 
-        let peval_sw = System.Diagnostics.Stopwatch.StartNew()
+        let peval_abort_ms =
+            match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_ABORT_MS" with
+            | null | "" -> 0
+            | x ->
+                match Int32.TryParse x with
+                | true, v -> max 0 v
+                | _ -> 0
 
-        // Periodic diagnostic output (ms). 0 disables periodic output.
+
+        let peval_started = System.Diagnostics.Stopwatch.StartNew()
+        let mutable jp_total_started : int64 = 0L
+
+        // Extra diag: keep a sample Spiral trace for each join point name.
+        let jp_name_traces : System.Collections.Concurrent.ConcurrentDictionary<string, Trace> =
+            System.Collections.Concurrent.ConcurrentDictionary(System.StringComparer.Ordinal)
+
+        let jp_name_counts : System.Collections.Concurrent.ConcurrentDictionary<string, int> =
+            System.Collections.Concurrent.ConcurrentDictionary(System.StringComparer.Ordinal)
+
+        let inline read_env_i64 (name: string) (default_value: int64) : int64 =
+            match System.Environment.GetEnvironmentVariable(name) with
+            | null | "" -> default_value
+            | v ->
+                match System.Int64.TryParse v with
+                | true, x -> x
+                | _ -> default_value
+
+        // Diag controls (set to 0 to disable):
+        // - SPIRAL_PEVAL_DIAG_PERIOD_MS: how often to print progress while waiting.
+        // - SPIRAL_PEVAL_DIAG_ABORT_MS: abort after this elapsed time.
+        // - SPIRAL_PEVAL_DIAG_WAIT_MS: wait slice used by waits.
+        // - SPIRAL_PEVAL_DIAG_JP_SPEC_CAP: abort if total JP specializations reach this number.
         let diag_period_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_PERIOD_MS" 30000L
-        // Abort after this many ms with a detailed diagnostic (0 disables abort).
         let diag_abort_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_ABORT_MS" 420000L
-        // Wait slice used by internal waits (ms).
-        let diag_wait_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_WAIT_MS" 1000L
-        // Optional cap: if total join-point specializations exceeds this, abort with diagnostic (0 disables).
+        let diag_wait_ms = max 1L (read_env_i64 "SPIRAL_PEVAL_DIAG_WAIT_MS" 500L)
         let diag_jp_spec_cap = read_env_i64 "SPIRAL_PEVAL_DIAG_JP_SPEC_CAP" 0L
         let diag_jp_name_spec_cap = read_env_i64 "SPIRAL_PEVAL_DIAG_JP_NAME_SPEC_CAP" 0L
 
         let inline read_env_bool (name: string) (def: bool) =
-            match System.Environment.GetEnvironmentVariable name with
+            match System.Environment.GetEnvironmentVariable(name) with
             | null | "" -> def
             | x ->
                 match x.Trim().ToLowerInvariant() with
@@ -8010,202 +8050,173 @@ module spiral_compiler =
         let jp_force_async_unannot = read_env_bool "SPIRAL_PEVAL_FORCE_ASYNC_UNANNOTATED" true
         let jp_force_async_types = read_env_bool "SPIRAL_PEVAL_FORCE_ASYNC_TYPES" true
 
-        let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
-        let jp_name_last_trace_short = System.Collections.Concurrent.ConcurrentDictionary<string, string>(System.StringComparer.Ordinal)
-        let jp_name_last_trace_full = System.Collections.Concurrent.ConcurrentDictionary<string, string>(System.StringComparer.Ordinal)
-
-        let inline trace_frame (x: Range) =
-            let line = (fst x.range).line + 1
-            let col = (fst x.range).character + 1
-            sprintf "%s:%d:%d" x.path line col
-
-        let trace_dedup (xs: Trace) =
-            let rec loop (last: Range option) (acc: Range list) (xs: Trace) =
-                match xs with
-                | [] -> List.rev acc
-                | x :: rest ->
-                    match last with
-                    | Some y when x.path = y.path && fst x.range = fst y.range -> loop last acc rest
-                    | _ -> loop (Some x) (x :: acc) rest
-            loop None [] xs
-
-        let trace_to_string_short (xs: Trace) =
-            let frames = trace_dedup xs |> List.map trace_frame
-            if frames.IsEmpty then "<no-trace>"
-            else
-                let top = if frames.Length > 8 then frames |> List.take 8 else frames
-                System.String.Join(" <- ", top)
-
-        let trace_to_string_full (xs: Trace) =
-            let frames = trace_dedup xs |> List.map trace_frame
-            if frames.IsEmpty then "<no-trace>"
-            else System.String.Join("\n", frames)
-
         let inline record_jp_diag (jp_name: string option) (trace: Trace) =
             let name = defaultArg jp_name "<anon>"
             jp_name_counts.AddOrUpdate(name, 1, (fun _ v -> v + 1)) |> ignore
-            jp_name_last_trace_short.[name] <- trace_to_string_short trace
-            jp_name_last_trace_full.[name] <- trace_to_string_full trace
-
+            jp_name_traces.AddOrUpdate(name, trace, (fun _ _ -> trace)) |> ignore
 
         let mutable diag_last_ms = 0L
         let mutable diag_last_wait = ""
 
-        let inline get_private_bytes () =
-            try
-                System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64
-            with _ -> 0L
+        let inline format_range (r: Range) =
+            let p = if System.String.IsNullOrWhiteSpace r.path then "<unknown>" else r.path
+            let (sp, _) = r.range
+            sprintf "%s:%d:%d" p (sp.line + 1) (sp.character + 1)
+
+        let inline format_trace (t: Trace) =
+            // Keep it compact, but still locatable: file:line:col per frame.
+            let sb = System.Text.StringBuilder()
+            let mutable last = ""
+            let mutable n = 0
+            for r in t do
+                if n < 24 then
+                    let s = format_range r
+                    if s <> last then
+                        if n > 0 then sb.AppendLine() |> ignore
+                        sb.Append("    at ").Append(s) |> ignore
+                        last <- s
+                        n <- n + 1
+            sb.ToString()
 
         let inline diag_specs_total () =
-            let mutable total = 0
-            for KeyValue(_, (dict, _, _)) in join_point_method do
-                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
-                total <- total + dict.Count
-            for KeyValue(_, (dict, _, _)) in join_point_closure do
-                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
-                total <- total + dict.Count
-            for KeyValue(_, (dict, _, _)) in join_point_type do
-                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
-                total <- total + dict.Count
-            total
+            let mutable jm_specs = 0
+            let mutable jc_specs = 0
+            let mutable jt_specs = 0
+            let mutable ev_total = 0
+            let mutable ev_not_set = 0
+            
+            for kvp in join_point_method do
+                let (d : System.Collections.Concurrent.ConcurrentDictionary<_,_>, _, ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>) = kvp.Value
+                jm_specs <- jm_specs + d.Count
+                ev_total <- ev_total + ev.Count
+                for kvp2 in ev do
+                    if not kvp2.Value.IsSet then ev_not_set <- ev_not_set + 1
+            
+            for kvp in join_point_closure do
+                let (d : System.Collections.Concurrent.ConcurrentDictionary<_,_>, _, ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>) = kvp.Value
+                jc_specs <- jc_specs + d.Count
+                ev_total <- ev_total + ev.Count
+                for kvp2 in ev do
+                    if not kvp2.Value.IsSet then ev_not_set <- ev_not_set + 1
+            
+            for kvp in join_point_type do
+                let (d : System.Collections.Concurrent.ConcurrentDictionary<_,_>, _) = kvp.Value
+                jt_specs <- jt_specs + d.Count
+            
+            struct(jm_specs, jc_specs, jt_specs, ev_total, ev_not_set)
+        let diag_snapshot (reason: string) =
+            let proc = System.Diagnostics.Process.GetCurrentProcess()
+            let elapsed_ms = peval_started.ElapsedMilliseconds
+            let private_bytes = proc.PrivateMemorySize64
+            let gc_total_bytes = System.GC.GetTotalMemory(false)
 
-        let diag_snapshot () =
-
-            let elapsed_ms = peval_sw.ElapsedMilliseconds
-            let pb = get_private_bytes ()
-            let gc_total = System.GC.GetTotalMemory(false)
-            let server_gc =
-                try System.Runtime.GCSettings.IsServerGC
-                with _ -> false
-
-            let mutable method_groups = 0
-            let mutable method_specs = 0
-            let mutable closure_groups = 0
-            let mutable closure_specs = 0
-            let mutable type_groups = 0
-            let mutable type_specs = 0
-            let mutable events_total = 0
-            let mutable events_not_set = 0
-            for KeyValue(_, (dict, _, dict_ev)) in join_point_method do
-                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
-                let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
-                method_groups <- method_groups + 1
-                method_specs <- method_specs + dict.Count
-                for KeyValue(_, ev) in dict_ev do
-                    events_total <- events_total + 1
-                    let ev = (ev : System.Threading.ManualResetEventSlim)
-                    if not ev.IsSet then events_not_set <- events_not_set + 1
-
-            for KeyValue(_, (dict, _, dict_ev)) in join_point_closure do
-                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
-                let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
-                closure_groups <- closure_groups + 1
-                closure_specs <- closure_specs + dict.Count
-                for KeyValue(_, ev) in dict_ev do
-                    events_total <- events_total + 1
-                    let ev = (ev : System.Threading.ManualResetEventSlim)
-                    if not ev.IsSet then events_not_set <- events_not_set + 1
-
-            for KeyValue(_, (dict, _, dict_ev)) in join_point_type do
-                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
-                let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
-                type_groups <- type_groups + 1
-                type_specs <- type_specs + dict.Count
-                for KeyValue(_, ev) in dict_ev do
-                    events_total <- events_total + 1
-                    let ev = (ev : System.Threading.ManualResetEventSlim)
-                    if not ev.IsSet then events_not_set <- events_not_set + 1
-
-
-
-            let entries0 : System.Collections.Generic.KeyValuePair<string,int>[] = jp_name_counts.ToArray()
-            let entries = entries0 |> Array.sortByDescending (fun kv -> kv.Value)
+            let struct(jm_specs, jc_specs, jt_specs, ev_total, ev_not_set) = diag_specs_total()
+            // Top join point names (by specialization count), plus a sample Spiral trace.
+            let top =
+                jp_name_counts
+                |> Seq.map (fun kvp -> kvp.Key, kvp.Value)
+                |> Seq.sortByDescending snd
+                |> Seq.truncate 7
+                |> Seq.toArray
 
             let top_names =
-                let sbn = System.Text.StringBuilder()
-                let n = min 20 entries.Length
-                for i = 0 to n - 1 do
-                    let kv = entries.[i]
-                    let name = kv.Key
-                    let count = kv.Value
-                    let mutable tr = ""
-                    match jp_name_last_trace_short.TryGetValue name with
-                    | true, t when t <> "" -> tr <- t
-                    | _ -> ()
-                    if i > 0 then sbn.Append("; ") |> ignore
-                    if tr <> "" then sbn.AppendFormat("{0}={1} @ {2}", name, count, tr) |> ignore
-                    else sbn.AppendFormat("{0}={1}", name, count) |> ignore
-                sbn.ToString()
+                top
+                |> Seq.map (fun (k,v) -> sprintf "%s=%d" k v)
+                |> String.concat "; "
 
             let top_traces =
-                let sbt = System.Text.StringBuilder()
-                let n = min 5 entries.Length
-                for i = 0 to n - 1 do
-                    let kv = entries.[i]
-                    let name = kv.Key
-                    let count = kv.Value
+                top
+                |> Seq.map (fun (k,v) ->
                     let tr =
-                        match jp_name_last_trace_full.TryGetValue name with
-                        | true, t when t <> "" -> t
-                        | _ -> "<no-trace>"
-                    if i > 0 then sbt.AppendLine() |> ignore
-                    sbt.AppendFormat("  jp={0} count={1}", name, count) |> ignore
-                    sbt.AppendLine() |> ignore
-                    sbt.Append(tr) |> ignore
-                sbt.ToString()
+                        match jp_name_traces.TryGetValue k with
+                        | true, t when not (isNull (box t)) && t.Length > 0 -> format_trace t
+                        | _ -> "    <no trace captured>"
+                    sprintf "  %s (%d)\n%s" k v tr)
+                |> String.concat "\n"
 
             let sb = System.Text.StringBuilder()
             sb.AppendLine("SPIRAL PEVAL DIAG") |> ignore
-            sb.AppendFormat("  elapsed_ms={0}", elapsed_ms) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  private_bytes={0}", pb) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  gc_total_bytes={0}", gc_total) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  server_gc={0}", server_gc) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  hopac_workers={0}", jp_dop) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  pending_jobs={0}", jp_cd.CurrentCount) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  jp_method_groups={0} jp_method_specs={1}", method_groups, method_specs) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  jp_closure_groups={0} jp_closure_specs={1}", closure_groups, closure_specs) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  jp_type_groups={0} jp_type_specs={1}", type_groups, type_specs) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  jp_events_total={0} jp_events_not_set={1}", events_total, events_not_set) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  last_wait={0}", diag_last_wait) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  top_jp_names={0}", top_names) |> ignore; sb.AppendLine() |> ignore
+            sb.Append("  reason=").AppendLine(reason) |> ignore
+            sb.Append("  elapsed_ms=").AppendLine(string elapsed_ms) |> ignore
+            sb.Append("  private_bytes=").AppendLine(string private_bytes) |> ignore
+            sb.Append("  gc_total_bytes=").AppendLine(string gc_total_bytes) |> ignore
+            sb.Append("  server_gc=").AppendLine(string System.Runtime.GCSettings.IsServerGC) |> ignore
+            sb.Append("  hopac_workers=").AppendLine(string jp_dop) |> ignore
+            sb.Append("  pending_jobs=").AppendLine(string jp_cd.CurrentCount) |> ignore
+            sb.Append("  jp_total_started=").AppendLine(string jp_total_started) |> ignore
+            sb.Append("  jp_method_groups=").Append(string join_point_method.Count).Append(" jp_method_specs=").AppendLine(string jm_specs) |> ignore
+            sb.Append("  jp_closure_groups=").Append(string join_point_closure.Count).Append(" jp_closure_specs=").AppendLine(string jc_specs) |> ignore
+            sb.Append("  jp_type_groups=").Append(string join_point_type.Count).Append(" jp_type_specs=").AppendLine(string jt_specs) |> ignore
+            sb.Append("  jp_events_total=").Append(string ev_total).Append(" jp_events_not_set=").AppendLine(string ev_not_set) |> ignore
+            sb.Append("  last_wait=").AppendLine(diag_last_wait) |> ignore
+            sb.Append("  top_jp_names=").AppendLine(top_names) |> ignore
             sb.AppendLine("  top_jp_traces=") |> ignore
-            if top_traces <> "" then sb.AppendLine(top_traces) |> ignore
+            sb.AppendLine(top_traces) |> ignore
             sb.ToString()
 
         let diag_print (force: bool) =
-            let now = peval_sw.ElapsedMilliseconds
-            if force || (diag_period_ms > 0L && now - diag_last_ms >= diag_period_ms) then
-                diag_last_ms <- now
-                System.Console.Error.WriteLine(diag_snapshot ())
-
-        let diag_abort_if_needed (where: string) =
-            let now = peval_sw.ElapsedMilliseconds
-            if diag_abort_ms > 0L && now >= diag_abort_ms then
-                diag_last_wait <- where
-                raise (System.Exception(diag_snapshot ()))
-            if diag_jp_spec_cap > 0L then
-                let total = diag_specs_total () |> int64
-                if total >= diag_jp_spec_cap then
-                    diag_last_wait <- where
-                    raise (System.Exception(diag_snapshot ()))
-            if diag_jp_name_spec_cap > 0L then
-                for KeyValue(name, count) in jp_name_counts do
-                    if int64 count >= diag_jp_name_spec_cap then
-                        diag_last_wait <- where
-                        raise (System.Exception(diag_snapshot ()))
-
-
-        let inline jp_ev_wait (where: string) (ev: System.Threading.ManualResetEventSlim) =
-            diag_last_wait <- where
-            if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && diag_jp_name_spec_cap <= 0L then
-                ev.Wait()
+            if diag_period_ms <= 0L && not force then ()
             else
-                let slice = int (max 1L diag_wait_ms)
-                while not (ev.Wait(slice)) do
+                let now = peval_started.ElapsedMilliseconds
+                if force || now - diag_last_ms >= diag_period_ms then
+                    diag_last_ms <- now
+                    System.Console.Error.WriteLine(diag_snapshot (if force then "force" else "tick"))
+
+        let inline get_private_mb () =
+            int64 (System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024L / 1024L)
+
+        let inline peval_abort (reason: string) =
+            diag_print true
+            raise (System.Exception(diag_snapshot reason))
+
+        let inline diag_abort_if_needed (where: string) =
+            // Hard limits (legacy watchdog vars).
+            if peval_abort_ms > 0 && peval_started.ElapsedMilliseconds >= int64 peval_abort_ms then
+                peval_abort (sprintf "Timed out. (SPIRAL_PEVAL_ABORT_MS=%d)" peval_abort_ms)
+            if peval_mem_limit_mb > 0 then
+                let mb = get_private_mb ()
+                if mb >= int64 peval_mem_limit_mb then
+                    peval_abort (sprintf "Exceeded mem limit. (SPIRAL_PEVAL_MEM_LIMIT_MB=%d, private_mb=%d)" peval_mem_limit_mb mb)
+
+            // Diag-driven limits.
+            if diag_abort_ms > 0L && peval_started.ElapsedMilliseconds >= diag_abort_ms then
+                peval_abort (sprintf "Diag timeout. (SPIRAL_PEVAL_DIAG_ABORT_MS=%d)" diag_abort_ms)
+            if diag_jp_spec_cap > 0L then
+                let struct(jm_specs, jc_specs, jt_specs, _, _) = diag_specs_total()
+                let total = int64 jm_specs + int64 jc_specs + int64 jt_specs
+                if total >= diag_jp_spec_cap then
+                    peval_abort (sprintf "JP specialization cap hit. (SPIRAL_PEVAL_DIAG_JP_SPEC_CAP=%d, total=%d)" diag_jp_spec_cap total)
+
+            if diag_jp_name_spec_cap > 0L then
+                let mutable max_name = ""
+                let mutable max_count = 0L
+                for kvp in jp_name_counts do
+                    let c = int64 kvp.Value
+                    if c > max_count then
+                        max_count <- c
+                        max_name <- kvp.Key
+                if max_count >= diag_jp_name_spec_cap then
+                    peval_abort (sprintf "JP name specialization cap hit. (SPIRAL_PEVAL_DIAG_JP_NAME_SPEC_CAP=%A, name=%s, count=%A)" diag_jp_name_spec_cap max_name max_count)
+
+        let inline peval_watchdog (where: string) =
+            diag_abort_if_needed where
+
+        let inline jp_ev_wait (where: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
+            diag_last_wait <- where
+            let start_ms = peval_started.ElapsedMilliseconds
+            let slice = int diag_wait_ms
+            let mutable done_ = false
+            while not done_ do
+                if ev.Wait(slice) then
+                    done_ <- true
+                else
                     diag_print false
                     diag_abort_if_needed where
-
-
+                    jp_throw_if_any()
+                    if jp_wait_ms > 0 then
+                        let waited = peval_started.ElapsedMilliseconds - start_ms
+                        if waited >= int64 jp_wait_ms then
+                            peval_abort (sprintf "Timed out waiting (%s). %s" where details)
         let jp_sched =
             let stack_bytes = jp_stack_mb * 1024 * 1024
             let create : Hopac.Scheduler.Create =
@@ -8217,45 +8228,55 @@ module spiral_compiler =
                 }
             Hopac.Scheduler.create create
 
+
+        // Thread-safe global emission from parallel peval jobs
+        let globals_seen = System.Collections.Concurrent.ConcurrentDictionary<string, byte>()
+        let globals_queue = System.Collections.Concurrent.ConcurrentQueue<string>()
+        let inline globals_add (s: LangEnv) (x: string) =
+            if globals_seen.TryAdd(x, 0uy) then globals_queue.Enqueue x
+        let inline globals_flush (s: LangEnv) =
+            let mutable v = Unchecked.defaultof<string>
+            while globals_queue.TryDequeue(&v) do s.globals.Add v
+
+
+        // Per-thread recursion guard for join-point methods (prevents false recursion errors under parallelism).
+        let jp_method_inflight : System.Threading.ThreadLocal<System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty []>>> =
+            new System.Threading.ThreadLocal<_>(fun () -> System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty []>>(HashIdentity.Structural))
+
+
         let inline jp_start (thunk : unit -> unit) =
+            let validate_all_snapshot = backend_switch_validate_all.Value
+            let n = System.Threading.Interlocked.Increment(&jp_total_started)
+            if (n &&& 4095L) = 0L then peval_watchdog "jp_start"
             if jp_cd.CurrentCount >= jp_max_pending then
                 thunk ()
             else
                 jp_cd.AddCount() |> ignore
                 diag_abort_if_needed "jp_start"
                 Hopac.Scheduler.queueIgnore jp_sched (job {
+                    let old_validate_all = backend_switch_validate_all.Value
+                    backend_switch_validate_all.Value <- validate_all_snapshot
                     try
                         try thunk ()
                         with e -> jp_exns.Enqueue (capture_edi e)
                     finally
+                        backend_switch_validate_all.Value <- old_validate_all
                         jp_cd.Signal() |> ignore
                     })
 
-        let inline jp_wait () =
+        let inline jp_wait (s: LangEnv) =
             jp_cd.Signal() |> ignore
-            if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && diag_jp_name_spec_cap <= 0L then
+            if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && peval_abort_ms <= 0 && peval_mem_limit_mb <= 0 then
                 jp_cd.Wait()
             else
                 let slice = int (max 1L diag_wait_ms)
                 while not (jp_cd.Wait(slice)) do
                     diag_print false
                     diag_abort_if_needed "jp_wait"
-
+                    jp_throw_if_any()
+            globals_flush s
             Hopac.Scheduler.wait jp_sched
             Hopac.Scheduler.kill jp_sched
-
-        let inline jp_throw_if_any () =
-            let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
-            if jp_exns.TryDequeue(&edi) then edi.Throw()
-        // Thread-safe global emission from parallel peval jobs
-        let globals_seen = System.Collections.Concurrent.ConcurrentDictionary<string, byte>()
-        let globals_q : System.Collections.Concurrent.ConcurrentQueue<string> = System.Collections.Concurrent.ConcurrentQueue()
-        let inline globals_add (_s: LangEnv) (x: string) =
-            if globals_seen.TryAdd(x, 0uy) then globals_q.Enqueue x
-        let inline globals_flush (s: LangEnv) =
-            let mutable x = Unchecked.defaultof<string>
-            while globals_q.TryDequeue(&x) do
-                s.globals.Add x
 
         let inline map_try_find_by_string (key : string) (m : Map<int * string, 'v>) : 'v option =
             let mutable r = None
@@ -8340,9 +8361,9 @@ module spiral_compiler =
 
                     ) (s.backend, body)
                 let call_args, env_global_value =
-                    lock hc_table (fun () -> data_to_rdata s hc_table gl_term)
+                    data_to_rdata s hc_table gl_term
                 let join_point_key =
-                    lock hc_table (fun () -> hc_table.Add(env_global_value, s.env_global_type, fun_ty))
+                    hc_table.Add(env_global_value, s.env_global_type, fun_ty)
                 let jp_ev = dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
 
                 match fun_ty with
@@ -8384,7 +8405,9 @@ module spiral_compiler =
                     // Another worker is/was computing it.
                     match dict.TryGetValue(join_point_key) with
                     | true, Some _ -> ()
-                    | _ -> jp_ev_wait "JP.wait" jp_ev; jp_throw_if_any ()
+                    | _ ->
+                        jp_ev_wait "closure_join_point_wait" (sprintf "key=%O" join_point_key) jp_ev
+                        jp_throw_if_any()
                 join_point_key, call_args, fun_ty
             push_typedop s (TyJoinPoint(JPClosure((s.backend,body),join_point_key),call_args)) fun_ty, fun_ty
         and data_to_ty s x =
@@ -8465,30 +8488,7 @@ module spiral_compiler =
                                     push_typedop_no_rewrite s (TyUnionBox(k,f v,u)) b'
                                 | DNominal(DUnion(_, _),_) -> raise_type_error s "Compiler error: Union should always have a tag in the first argument."
                                 | DNominal(DFunction _,_) -> raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data x)
-                                | DNominal(a,b') ->
-                                    dirty <- true
-                                    match a with
-                                    | DNominal _ ->
-                                        // Collapse consecutive nominal wrappers to avoid stack overflows on deep nests.
-                                        let wrappers = ResizeArray<_>()
-                                        let mutable cur = x
-                                        let mutable core = Unchecked.defaultof<Data>
-                                        let mutable done' = false
-                                        while not done' do
-                                            match cur with
-                                            | DNominal(DNominal _ as a', b'') ->
-                                                wrappers.Add b''
-                                                cur <- a'
-                                            | _ ->
-                                                core <- cur
-                                                done' <- true
-                                        let core' = f core
-                                        let mutable res = core'
-                                        for i = wrappers.Count - 1 downto 0 do
-                                            res <- DNominal(res, wrappers.[i])
-                                        res
-                                    | _ ->
-                                        DNominal(f a,b')
+                                | DNominal(a,b') -> dirty <- true; DNominal(f a,b')
                                 | DFunction(body,Some annot,term',ty',sz_term,sz_ty) -> dirty <- true; closure_convert s (body,annot,term',ty',sz_term,sz_ty) |> fst
                                 | DFunction(_,None,_,_,_,_) -> raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data x)
                             m.[x] <- v
@@ -8555,28 +8555,7 @@ module spiral_compiler =
                                     raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data x)
                                 | DNominal(a,b') ->
                                     dirty <- true
-                                    match a with
-                                    | DNominal _ ->
-                                        // Collapse consecutive nominal wrappers to avoid stack overflows on deep nests.
-                                        let wrappers = ResizeArray<_>()
-                                        let mutable cur = x
-                                        let mutable core = Unchecked.defaultof<Data>
-                                        let mutable done' = false
-                                        while not done' do
-                                            match cur with
-                                            | DNominal(DNominal _ as a', b'') ->
-                                                wrappers.Add b''
-                                                cur <- a'
-                                            | _ ->
-                                                core <- cur
-                                                done' <- true
-                                        let core' = f core
-                                        let mutable res = core'
-                                        for i = wrappers.Count - 1 downto 0 do
-                                            res <- DNominal(res, wrappers.[i])
-                                        res
-                                    | _ ->
-                                        DNominal(f a,b')
+                                    DNominal(f a,b')
                                 | DFunction(body,Some annot,term',ty',sz_term,sz_ty) ->
                                     dirty <- true
                                     closure_convert s (body,annot,term',ty',sz_term,sz_ty) |> fst
@@ -8647,57 +8626,68 @@ module spiral_compiler =
             | TJoinPoint'(r,scope,body) ->
                 let env_global_type = scope.ty.free_vars |> Array.map (fun i -> vt s i)
                 let env_global_term = scope.term.free_vars |> Array.map (fun i -> v s i)
-                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Ty option>), hc_table, (_dict_ev : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, System.Threading.ManualResetEventSlim>) =
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>), hc_table =
                     Utils.memoize join_point_type (fun _ ->
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Ty option>(HashIdentity.Structural), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, System.Threading.ManualResetEventSlim>(HashIdentity.Structural)
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Structural), HashConsTable()
                     ) body
-                let join_point_key =
-                    lock hc_table (fun () -> hc_table.Add(env_global_type))
-                match dict.TryGetValue(join_point_key) with
-                | true, Some ret_ty -> ret_ty
-                | true, None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
-                | false, _ ->
-                    let jp_ev = _dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
-                    if dict.TryAdd(join_point_key, None) then
-                        jp_ev.Reset()
-                        record_jp_diag (Some "<type>") (r :: s.trace)
-                        assert (0 = scope.term.free_vars.Length)
-                        let run () =
-                            try
-                                let s : LangEnv = {
-                                    trace = r :: s.trace
-                                    seq = ResizeArray()
-                                    cse = [Dictionary(HashIdentity.Structural)]
-                                    unions = Map.empty
-                                    i = ref 0
-                                    env_global_type = env_global_type
-                                    env_global_term = env_global_term
-                                    env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
-                                    env_stack_term = Array.zeroCreate<_> scope.term.stack_size
-                                    backend = s.backend
-                                    globals = s.globals
-                                    }
-                                let s = rename_global_term s
-                                let ret_ty = ty s body
-                                dict.[join_point_key] <- Some ret_ty
-                                ret_ty
-                            finally
-                                jp_ev.Set()
-                                let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
-                                _dict_ev.TryRemove(join_point_key, &_ev) |> ignore
-                        if jp_force_async_types then
-                            jp_start (fun () -> ignore (run ()))
-                            jp_ev_wait "JPType.wait" jp_ev; jp_throw_if_any ()
-                            match dict.TryGetValue(join_point_key) with
-                            | true, Some ret_ty -> ret_ty
-                            | _ -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
-                        else
-                            run()
+                let join_point_key = hc_table.Add(env_global_type)
+                let jp_cell = dict.GetOrAdd(join_point_key, fun _ -> { ev = new System.Threading.ManualResetEventSlim(false); owner = 0; value = None })
+                match jp_cell.value with
+                | Some ret_ty -> ret_ty
+                | None ->
+                    let tid = try System.Threading.Thread.CurrentThread.ManagedThreadId with _ -> 0
+                    let owner0 = jp_cell.owner
+                    if owner0 = tid && owner0 <> 0 then
+                        raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                    elif owner0 <> 0 then
+                        jp_ev_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ev
+                        jp_throw_if_any ()
+                        match jp_cell.value with
+                        | Some ret_ty -> ret_ty
+                        | None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
                     else
-                        jp_ev_wait "JPType.wait" jp_ev; jp_throw_if_any ()
-                        match dict.TryGetValue(join_point_key) with
-                        | true, Some ret_ty -> ret_ty
-                        | _ -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                        if System.Threading.Interlocked.CompareExchange(&jp_cell.owner, -1, 0) = 0 then
+                            jp_cell.ev.Reset()
+                            record_jp_diag (Some "<type>") (r :: s.trace)
+                            assert (0 = scope.term.free_vars.Length)
+                            let run () =
+                                try
+                                    jp_cell.owner <- (try System.Threading.Thread.CurrentThread.ManagedThreadId with _ -> 0)
+                                    let s : LangEnv = {
+                                        trace = r :: s.trace
+                                        seq = ResizeArray()
+                                        cse = [Dictionary(HashIdentity.Structural)]
+                                        unions = Map.empty
+                                        i = ref 0
+                                        env_global_type = env_global_type
+                                        env_global_term = env_global_term
+                                        env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                                        env_stack_term = Array.zeroCreate<_> scope.term.stack_size
+                                        backend = s.backend
+                                        globals = s.globals
+                                        }
+                                    let s = rename_global_term s
+                                    let ret_ty = ty s body
+                                    jp_cell.value <- Some ret_ty
+                                finally
+                                    jp_cell.owner <- 0
+                                    jp_cell.ev.Set()
+                            if jp_force_async_types then
+                                jp_start run
+                                jp_ev_wait "JPType.wait" (sprintf "key=%O" join_point_key) jp_cell.ev
+                                jp_throw_if_any ()
+                            else
+                                run()
+                            match jp_cell.value with
+                            | Some ret_ty -> ret_ty
+                            | None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                        else
+                            jp_ev_wait "JPType.wait" (sprintf "key=%O" join_point_key) jp_cell.ev
+                            jp_throw_if_any ()
+                            match jp_cell.value with
+                            | Some ret_ty -> ret_ty
+                            | None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+
             | TB _ -> YB
             | TLit(_,x) -> YLit x
             | TV i -> vt s i
@@ -9058,53 +9048,68 @@ module spiral_compiler =
 
                     ) (backend', body)
                 let call_args, env_global_value =
-                    lock hc_table (fun () -> data_to_rdata s hc_table env_global_term)
+                    data_to_rdata s hc_table env_global_term
                 let join_point_key =
-                    lock hc_table (fun () -> hc_table.Add(env_global_value, env_global_type))
+                    hc_table.Add(env_global_value, env_global_type)
                 let jp_ev = dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
 
                 let ret_ty =
                     match dict.TryGetValue(join_point_key) with
                     | true, (_, Some ret_ty, _) -> ret_ty
-                    | true, (_, None, _) -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                    | true, (_, None, _) ->
+                        // Another worker might be computing it; only treat it as recursion if *this* thread is inside the same join-point key.
+                        if jp_method_inflight.Value.Contains join_point_key then
+                            raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                        else
+                            jp_ev_wait "JPMethod.wait" (sprintf "key=%O backend=%O jp_name=%A" join_point_key backend' jp_name) jp_ev
+                            jp_throw_if_any()
+                            match dict.TryGetValue(join_point_key) with
+                            | true, (_, Some ret_ty, _) -> ret_ty
+                            | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
                     | false, _ ->
                         let annot_val = Option.map (ty s) annot
                         if dict.TryAdd(join_point_key, (None, annot_val, jp_name)) then
                             jp_ev.Reset()
                             record_jp_diag jp_name (r :: s.trace)
                             let run () =
+                                let inflight = jp_method_inflight.Value
+                                inflight.Add join_point_key |> ignore
                                 try
-                                    let s : LangEnv = {
-                                        trace = r :: s.trace
-                                        seq = ResizeArray()
-                                        cse = [Dictionary(HashIdentity.Structural)]
-                                        unions = Map.empty
-                                        i = ref 0
-                                        env_global_type = env_global_type
-                                        env_global_term = env_global_term
-                                        env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
-                                        env_stack_term = Array.zeroCreate<_> scope.term.stack_size
-                                        backend = backend'
-                                        globals = s.globals
-                                        }
-                                    let s = rename_global_term s
-                                    let seq,ty = term_scope'' s body annot_val
-                                    dict.[join_point_key] <- (Some seq, Some ty, jp_name)
-                                    annot_val |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
-                                    ty
+                                    try
+                                        let s : LangEnv = {
+                                            trace = r :: s.trace
+                                            seq = ResizeArray()
+                                            cse = [Dictionary(HashIdentity.Structural)]
+                                            unions = Map.empty
+                                            i = ref 0
+                                            env_global_type = env_global_type
+                                            env_global_term = env_global_term
+                                            env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                                            env_stack_term = Array.zeroCreate<_> scope.term.stack_size
+                                            backend = backend'
+                                            globals = s.globals
+                                            }
+                                        let s = rename_global_term s
+                                        let seq,ty = term_scope'' s body annot_val
+                                        dict.[join_point_key] <- (Some seq, Some ty, jp_name)
+                                        annot_val |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
+                                        ty
+                                    finally
+                                        jp_ev.Set()
+                                        let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
+                                        dict_ev.TryRemove(join_point_key, &_ev) |> ignore
                                 finally
-                                    jp_ev.Set()
-                                    let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
-                                    dict_ev.TryRemove(join_point_key, &_ev) |> ignore
+                                    inflight.Remove join_point_key |> ignore
                             match annot_val with
                             | Some ret_ty ->
+                                // Annotated: can proceed immediately; compute asynchronously.
                                 jp_start (fun () -> ignore (run()))
                                 ret_ty
                             | None ->
                                 if jp_force_async_unannot then
-                                    jp_start (fun () -> ignore (run ()))
-                                    jp_ev_wait "JPMethod.wait" jp_ev
-                                    jp_throw_if_any ()
+                                    jp_start (fun () -> ignore (run()))
+                                    jp_ev_wait "JPMethod.wait" (sprintf "key=%O backend=%O jp_name=%A" join_point_key backend' jp_name) jp_ev
+                                    jp_throw_if_any()
                                     match dict.TryGetValue(join_point_key) with
                                     | true, (_, Some ret_ty, _) -> ret_ty
                                     | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
@@ -9114,7 +9119,8 @@ module spiral_compiler =
                             match dict.TryGetValue(join_point_key) with
                             | true, (_, Some ret_ty, _) -> ret_ty
                             | _ ->
-                                jp_ev_wait "JP.wait" jp_ev; jp_throw_if_any ()
+                                jp_ev_wait "JPMethod.wait" (sprintf "key=%O backend=%O jp_name=%A" join_point_key backend' jp_name) jp_ev
+                                jp_throw_if_any ()
                                 match dict.TryGetValue(join_point_key) with
                                 | true, (_, Some ret_ty, _) -> ret_ty
                                 | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
@@ -9555,7 +9561,7 @@ module spiral_compiler =
                     | None -> t <- Some t'
                 match term s a with
                 | DRecord l ->
-                    if lock backend_switch_lock (fun () -> backend_switch_validate_all.Value) = false then
+                    if backend_switch_validate_all.Value = false then
                         match map_try_find_by_string s.backend.node l with
                         | Some b ->
                             let d' = apply s (b, DB)
@@ -9571,14 +9577,14 @@ module spiral_compiler =
                                 validate_type (data_to_ty s d')
                                 d <- Some d'
                             else
-                                let old = lock backend_switch_lock (fun () -> backend_switch_validate_all.Value)
-                                lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- false)
+                                let old = backend_switch_validate_all.Value
+                                backend_switch_validate_all.Value <- false
                                 try
                                     let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend)}
                                     let d' = apply s (b, DB)
                                     validate_type (data_to_ty s d')
                                 finally
-                                    lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- old)
+                                    backend_switch_validate_all.Value <- old
                         )
                 | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
                 match d with
@@ -10666,9 +10672,8 @@ module spiral_compiler =
         match x with
         | EFun'(r,_,_,_,_) ->
             let res = term_scope s (EApply(r,x,EB r))
-            jp_wait ()
+            jp_wait s
             jp_throw_if_any ()
-            globals_flush s
             res, {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
