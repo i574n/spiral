@@ -130,6 +130,7 @@ module spiral_compiler =
         let mutable limit: int = 3
         let mutable is_finalized: bool = false
         let mutable counter: int = 0
+        let sync_root = obj()
 
         member private t.Resize() =
             let next_table_length x = x*3/2+3
@@ -159,30 +160,32 @@ module spiral_compiler =
             total_size <- total_size'
 
         member t.Add(x: 'a): ConsedNode<'a> =
-            let hkey = hash x
-            let table = table
-            let bucket = table.[(hkey &&& Int32.MaxValue) % Array.length table]
-            let sz = bucket.Count
+            lock sync_root (fun () ->
+                let hkey = hash x
+                let table = table
+                let bucket = table.[(hkey &&& Int32.MaxValue) % Array.length table]
+                let sz = bucket.Count
 
-            let rec loop empty_pos i =
-                if i < sz then
-                    match bucket.[i].Target with
-                    | null -> loop i (i+1)
-                    | :? ConsedNode<'a> as y when hkey = y.hkey && x = y.node -> y
-                    | _ -> loop empty_pos (i+1)
-                else
-                    let node = {node=x; hkey=hkey; tag=counter}
-                    counter <- counter+1
-                    if empty_pos <> -1 then
-                        let mutable m = bucket.[empty_pos]
-                        m.Target <- node
+                let rec loop empty_pos i =
+                    if i < sz then
+                        match bucket.[i].Target with
+                        | null -> loop i (i+1)
+                        | :? ConsedNode<'a> as y when hkey = y.hkey && x = y.node -> y
+                        | _ -> loop empty_pos (i+1)
                     else
-                        bucket.Add (GCHandle.Alloc(node,GCHandleType.Weak))
-                        total_size <- total_size+1
-                        if total_size > limit * Array.length table then t.Resize()
-                    node
+                        let node = {node=x; hkey=hkey; tag=counter}
+                        counter <- counter+1
+                        if empty_pos <> -1 then
+                            let mutable m = bucket.[empty_pos]
+                            m.Target <- node
+                        else
+                            bucket.Add (GCHandle.Alloc(node,GCHandleType.Weak))
+                            total_size <- total_size+1
+                            if total_size > limit * Array.length table then t.Resize()
+                        node
 
-            loop -1 0 // `-1` indicates the state of no empty bucket
+                loop -1 0 // `-1` indicates the state of no empty bucket
+            )
 
         override __.Finalize() =
             if is_finalized = false then
@@ -266,10 +269,11 @@ module spiral_compiler =
     let list_try_zip a b = try Some (List.zip a b) with _ -> None
 
     /// ### get_default
-    let inline get_default (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) k def =
-        match memo_dict.TryGetValue k with
-        | true, v -> v
-        | false, _ -> def()
+    let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
+        let mutable v = Unchecked.defaultof<^V>
+        if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
+        else def()
+
 
     /// ### memoize'
     let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
@@ -281,7 +285,10 @@ module spiral_compiler =
     let inline memoize (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
-        | false, _ -> let v = f k in memo_dict.TryAdd(k,v) |> ignore; v
+        | false, _ -> 
+            let v = f k 
+            if memo_dict.TryAdd(k,v) then v
+            else memo_dict.[k]
 
     /// ### lines
     let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
@@ -306,14 +313,44 @@ module spiral_compiler =
     //let pr x = Hopac.run (Ch.send print_ch (x.ToString()))
 
     module Utils =
-        let memoize x =
-            memoize x
+        open System
+        open System.Collections.Generic
+        open System.Collections.Concurrent
+        open System.Runtime.CompilerServices
 
-        let get_default x =
-            get_default x
+        /// ### list_try_zip
+        let list_try_zip a b =
+            try Some (List.zip a b) with _ -> None
 
-        let list_try_zip x =
-            list_try_zip x
+        /// ### get_default
+        let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
+            let mutable v = Unchecked.defaultof<^V>
+            if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
+            else def()
+
+        /// ### memoize'
+        let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
+            match memo_dict.TryGetValue k with
+            | true, v -> v
+            | false, _ ->
+                let v = f k
+                memo_dict.Add(k,v)
+                v
+
+        /// ### memoize
+        let inline memoize (memo_dict: ConcurrentDictionary<_,_>) f k =
+            match memo_dict.TryGetValue k with
+            | true, v -> v
+            | false, _ ->
+                let v = f k
+                if memo_dict.TryAdd(k,v) then v
+                else memo_dict.[k]
+
+        /// ### file_uri
+        let file_uri (x : string) =
+            let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
+            trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
+            result
 
     /// ## ParserCombinators
 
@@ -7422,7 +7459,21 @@ module spiral_compiler =
                     raise_type_error d "Compiler error: Cyclic compile-time value detected while hashing join point environment."
                 let v =
                     match x with
-                    | DPair(a,b) -> RePair(hc(f a, f b))
+                    | DPair _ ->
+                        // Avoid stack overflows on long right-nested pairs.
+                        let elems = ResizeArray<Data>()
+                        let mutable cur = x
+                        while (
+                            match cur with
+                            | DPair(a,b) -> elems.Add a; cur <- b; true
+                            | _ -> false
+                        ) do
+                            ()
+                        let tail = f cur
+                        let mutable res = tail
+                        for i = elems.Count - 1 downto 0 do
+                            res <- RePair(hc(f elems.[i], res))
+                        res
                     | DSymbol a -> ReSymbol a
                     | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
                     | DForall(a,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
@@ -7458,7 +7509,21 @@ module spiral_compiler =
                     raise_type_error s "Compiler error: Cyclic compile-time value detected during global-term renaming."
                 let v =
                     match x with
-                    | DPair(a,b) -> DPair(f a, f b)
+                    | DPair _ ->
+                        // Avoid stack overflows on long right-nested pairs.
+                        let elems = ResizeArray<Data>()
+                        let mutable cur = x
+                        while (
+                            match cur with
+                            | DPair(a,b) -> elems.Add a; cur <- b; true
+                            | _ -> false
+                        ) do
+                            ()
+                        let tail = f cur
+                        let mutable res = tail
+                        for i = elems.Count - 1 downto 0 do
+                            res <- DPair(f elems.[i], res)
+                        res
                     | DForall(body,a,b,c,d) -> DForall(body,Array.map f a,b,c,d)
                     | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,Array.map f a,b,c,d)
                     | DExists(annot,a) -> DExists(annot, f a)
@@ -7501,7 +7566,21 @@ module spiral_compiler =
         let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let rec f x =
             Utils.memoize m (function
-                | DPair(a,b) -> DPair(f a, f b)
+                | DPair _ as x ->
+                    // Avoid stack overflows on long right-nested pairs.
+                    let elems = ResizeArray<Data>()
+                    let mutable cur = x
+                    while (
+                        match cur with
+                        | DPair(a,b) -> elems.Add a; cur <- b; true
+                        | _ -> false
+                    ) do
+                        ()
+                    let tail = f cur
+                    let mutable res = tail
+                    for i = elems.Count - 1 downto 0 do
+                        res <- DPair(f elems.[i], res)
+                    res
                 | DForall(body,a,b,c,d) -> DForall(body,Array.map f a,b,c,d)
                 | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,Array.map f a,b,c,d)
                 | DExists(annot,a) -> DExists(annot, f a)
@@ -7849,8 +7928,8 @@ module spiral_compiler =
 
     /// ### PartEvalResult
     type PartEvalResult = {
-        join_point_method : Dictionary<string ConsedNode * E,Dictionary<ConsedNode<RData [] * Ty []>,TypedBind [] option * Ty option * string option> * HashConsTable>
-        join_point_closure : Dictionary<string ConsedNode * E,Dictionary<ConsedNode<RData [] * Ty [] * Ty>,(Data * TypedBind []) option> * HashConsTable>
+        join_point_method : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, System.Threading.ManualResetEventSlim>>
+        join_point_closure : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>>
         ty_to_data : Ty -> Data
         nominal_apply : Ty -> Ty
         globals : ResizeArray<string>
@@ -7862,13 +7941,338 @@ module spiral_compiler =
         let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
         let backend_strings = HashConsTable()
+        let backend_strings_lock = obj()
         let backend_switch_validate_all = ref true
+        let backend_switch_lock = obj()
+
+        // Hopac: parallel join point workers (peval)
+
+        let inline capture_edi (e: exn) = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture e
+
+        let jp_exns : System.Collections.Concurrent.ConcurrentQueue<System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
+            System.Collections.Concurrent.ConcurrentQueue()
+        let jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
+
+        let jp_dop =
+            match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_DOP" with
+            | null | "" -> max 1 (Environment.ProcessorCount * 8)
+            | x ->
+                match Int32.TryParse x with
+                | true, v -> max 1 v
+                | _ -> max 1 (Environment.ProcessorCount * 8)
+
+        let jp_stack_mb =
+            match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_HOPAC_STACK_MB" with
+            | null | "" -> 64
+            | x ->
+                match Int32.TryParse x with
+                | true, v -> max 1 v
+                | _ -> 64
+
+        let jp_max_pending =
+            match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_JP_MAX_PENDING" with
+            | null | "" -> System.Int32.MaxValue
+            | x ->
+                match Int32.TryParse x with
+                | true, v when v > 0 -> v
+                | _ -> System.Int32.MaxValue
+
+        // Diagnostics / watchdog for parallel peval (helps identify non-termination / starvation on large files)
+        let inline read_env_i64 (name: string) (def: int64) =
+            match System.Environment.GetEnvironmentVariable name with
+            | null | "" -> def
+            | x ->
+                match System.Int64.TryParse x with
+                | true, v -> v
+                | _ -> def
+
+        let peval_sw = System.Diagnostics.Stopwatch.StartNew()
+
+        // Periodic diagnostic output (ms). 0 disables periodic output.
+        let diag_period_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_PERIOD_MS" 30000L
+        // Abort after this many ms with a detailed diagnostic (0 disables abort).
+        let diag_abort_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_ABORT_MS" 420000L
+        // Wait slice used by internal waits (ms).
+        let diag_wait_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_WAIT_MS" 1000L
+        // Optional cap: if total join-point specializations exceeds this, abort with diagnostic (0 disables).
+        let diag_jp_spec_cap = read_env_i64 "SPIRAL_PEVAL_DIAG_JP_SPEC_CAP" 0L
+        let diag_jp_name_spec_cap = read_env_i64 "SPIRAL_PEVAL_DIAG_JP_NAME_SPEC_CAP" 0L
+
+        let inline read_env_bool (name: string) (def: bool) =
+            match System.Environment.GetEnvironmentVariable name with
+            | null | "" -> def
+            | x ->
+                match x.Trim().ToLowerInvariant() with
+                | "1" | "true" | "yes" | "y" | "on" -> true
+                | "0" | "false" | "no" | "n" | "off" -> false
+                | _ -> def
+
+        let jp_force_async_unannot = read_env_bool "SPIRAL_PEVAL_FORCE_ASYNC_UNANNOTATED" true
+        let jp_force_async_types = read_env_bool "SPIRAL_PEVAL_FORCE_ASYNC_TYPES" true
+
+        let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
+        let jp_name_last_trace_short = System.Collections.Concurrent.ConcurrentDictionary<string, string>(System.StringComparer.Ordinal)
+        let jp_name_last_trace_full = System.Collections.Concurrent.ConcurrentDictionary<string, string>(System.StringComparer.Ordinal)
+
+        let inline trace_frame (x: Range) =
+            let line = (fst x.range).line + 1
+            let col = (fst x.range).character + 1
+            sprintf "%s:%d:%d" x.path line col
+
+        let trace_dedup (xs: Trace) =
+            let rec loop (last: Range option) (acc: Range list) (xs: Trace) =
+                match xs with
+                | [] -> List.rev acc
+                | x :: rest ->
+                    match last with
+                    | Some y when x.path = y.path && fst x.range = fst y.range -> loop last acc rest
+                    | _ -> loop (Some x) (x :: acc) rest
+            loop None [] xs
+
+        let trace_to_string_short (xs: Trace) =
+            let frames = trace_dedup xs |> List.map trace_frame
+            if frames.IsEmpty then "<no-trace>"
+            else
+                let top = if frames.Length > 8 then frames |> List.take 8 else frames
+                System.String.Join(" <- ", top)
+
+        let trace_to_string_full (xs: Trace) =
+            let frames = trace_dedup xs |> List.map trace_frame
+            if frames.IsEmpty then "<no-trace>"
+            else System.String.Join("\n", frames)
+
+        let inline record_jp_diag (jp_name: string option) (trace: Trace) =
+            let name = defaultArg jp_name "<anon>"
+            jp_name_counts.AddOrUpdate(name, 1, (fun _ v -> v + 1)) |> ignore
+            jp_name_last_trace_short.[name] <- trace_to_string_short trace
+            jp_name_last_trace_full.[name] <- trace_to_string_full trace
+
+
+        let mutable diag_last_ms = 0L
+        let mutable diag_last_wait = ""
+
+        let inline get_private_bytes () =
+            try
+                System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64
+            with _ -> 0L
+
+        let inline diag_specs_total () =
+            let mutable total = 0
+            for KeyValue(_, (dict, _, _)) in join_point_method do
+                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
+                total <- total + dict.Count
+            for KeyValue(_, (dict, _, _)) in join_point_closure do
+                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
+                total <- total + dict.Count
+            for KeyValue(_, (dict, _, _)) in join_point_type do
+                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
+                total <- total + dict.Count
+            total
+
+        let diag_snapshot () =
+
+            let elapsed_ms = peval_sw.ElapsedMilliseconds
+            let pb = get_private_bytes ()
+            let gc_total = System.GC.GetTotalMemory(false)
+            let server_gc =
+                try System.Runtime.GCSettings.IsServerGC
+                with _ -> false
+
+            let mutable method_groups = 0
+            let mutable method_specs = 0
+            let mutable closure_groups = 0
+            let mutable closure_specs = 0
+            let mutable type_groups = 0
+            let mutable type_specs = 0
+            let mutable events_total = 0
+            let mutable events_not_set = 0
+            for KeyValue(_, (dict, _, dict_ev)) in join_point_method do
+                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
+                let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
+                method_groups <- method_groups + 1
+                method_specs <- method_specs + dict.Count
+                for KeyValue(_, ev) in dict_ev do
+                    events_total <- events_total + 1
+                    let ev = (ev : System.Threading.ManualResetEventSlim)
+                    if not ev.IsSet then events_not_set <- events_not_set + 1
+
+            for KeyValue(_, (dict, _, dict_ev)) in join_point_closure do
+                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
+                let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
+                closure_groups <- closure_groups + 1
+                closure_specs <- closure_specs + dict.Count
+                for KeyValue(_, ev) in dict_ev do
+                    events_total <- events_total + 1
+                    let ev = (ev : System.Threading.ManualResetEventSlim)
+                    if not ev.IsSet then events_not_set <- events_not_set + 1
+
+            for KeyValue(_, (dict, _, dict_ev)) in join_point_type do
+                let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
+                let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
+                type_groups <- type_groups + 1
+                type_specs <- type_specs + dict.Count
+                for KeyValue(_, ev) in dict_ev do
+                    events_total <- events_total + 1
+                    let ev = (ev : System.Threading.ManualResetEventSlim)
+                    if not ev.IsSet then events_not_set <- events_not_set + 1
+
+
+
+            let entries0 : System.Collections.Generic.KeyValuePair<string,int>[] = jp_name_counts.ToArray()
+            let entries = entries0 |> Array.sortByDescending (fun kv -> kv.Value)
+
+            let top_names =
+                let sbn = System.Text.StringBuilder()
+                let n = min 20 entries.Length
+                for i = 0 to n - 1 do
+                    let kv = entries.[i]
+                    let name = kv.Key
+                    let count = kv.Value
+                    let mutable tr = ""
+                    match jp_name_last_trace_short.TryGetValue name with
+                    | true, t when t <> "" -> tr <- t
+                    | _ -> ()
+                    if i > 0 then sbn.Append("; ") |> ignore
+                    if tr <> "" then sbn.AppendFormat("{0}={1} @ {2}", name, count, tr) |> ignore
+                    else sbn.AppendFormat("{0}={1}", name, count) |> ignore
+                sbn.ToString()
+
+            let top_traces =
+                let sbt = System.Text.StringBuilder()
+                let n = min 5 entries.Length
+                for i = 0 to n - 1 do
+                    let kv = entries.[i]
+                    let name = kv.Key
+                    let count = kv.Value
+                    let tr =
+                        match jp_name_last_trace_full.TryGetValue name with
+                        | true, t when t <> "" -> t
+                        | _ -> "<no-trace>"
+                    if i > 0 then sbt.AppendLine() |> ignore
+                    sbt.AppendFormat("  jp={0} count={1}", name, count) |> ignore
+                    sbt.AppendLine() |> ignore
+                    sbt.Append(tr) |> ignore
+                sbt.ToString()
+
+            let sb = System.Text.StringBuilder()
+            sb.AppendLine("SPIRAL PEVAL DIAG") |> ignore
+            sb.AppendFormat("  elapsed_ms={0}", elapsed_ms) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  private_bytes={0}", pb) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  gc_total_bytes={0}", gc_total) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  server_gc={0}", server_gc) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  hopac_workers={0}", jp_dop) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  pending_jobs={0}", jp_cd.CurrentCount) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  jp_method_groups={0} jp_method_specs={1}", method_groups, method_specs) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  jp_closure_groups={0} jp_closure_specs={1}", closure_groups, closure_specs) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  jp_type_groups={0} jp_type_specs={1}", type_groups, type_specs) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  jp_events_total={0} jp_events_not_set={1}", events_total, events_not_set) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  last_wait={0}", diag_last_wait) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  top_jp_names={0}", top_names) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendLine("  top_jp_traces=") |> ignore
+            if top_traces <> "" then sb.AppendLine(top_traces) |> ignore
+            sb.ToString()
+
+        let diag_print (force: bool) =
+            let now = peval_sw.ElapsedMilliseconds
+            if force || (diag_period_ms > 0L && now - diag_last_ms >= diag_period_ms) then
+                diag_last_ms <- now
+                System.Console.Error.WriteLine(diag_snapshot ())
+
+        let diag_abort_if_needed (where: string) =
+            let now = peval_sw.ElapsedMilliseconds
+            if diag_abort_ms > 0L && now >= diag_abort_ms then
+                diag_last_wait <- where
+                raise (System.Exception(diag_snapshot ()))
+            if diag_jp_spec_cap > 0L then
+                let total = diag_specs_total () |> int64
+                if total >= diag_jp_spec_cap then
+                    diag_last_wait <- where
+                    raise (System.Exception(diag_snapshot ()))
+            if diag_jp_name_spec_cap > 0L then
+                for KeyValue(name, count) in jp_name_counts do
+                    if int64 count >= diag_jp_name_spec_cap then
+                        diag_last_wait <- where
+                        raise (System.Exception(diag_snapshot ()))
+
+
+        let inline jp_ev_wait (where: string) (ev: System.Threading.ManualResetEventSlim) =
+            diag_last_wait <- where
+            if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && diag_jp_name_spec_cap <= 0L then
+                ev.Wait()
+            else
+                let slice = int (max 1L diag_wait_ms)
+                while not (ev.Wait(slice)) do
+                    diag_print false
+                    diag_abort_if_needed where
+
+
+        let jp_sched =
+            let stack_bytes = jp_stack_mb * 1024 * 1024
+            let create : Hopac.Scheduler.Create =
+                { Hopac.Scheduler.Create.Def with
+                    NumWorkers = Some jp_dop
+                    MaxStackSize = Some stack_bytes
+                    Foreground = Some false
+                    TopLevelHandler = Some (fun e -> job { jp_exns.Enqueue (capture_edi e); return () })
+                }
+            Hopac.Scheduler.create create
+
+        let inline jp_start (thunk : unit -> unit) =
+            if jp_cd.CurrentCount >= jp_max_pending then
+                thunk ()
+            else
+                jp_cd.AddCount() |> ignore
+                diag_abort_if_needed "jp_start"
+                Hopac.Scheduler.queueIgnore jp_sched (job {
+                    try
+                        try thunk ()
+                        with e -> jp_exns.Enqueue (capture_edi e)
+                    finally
+                        jp_cd.Signal() |> ignore
+                    })
+
+        let inline jp_wait () =
+            jp_cd.Signal() |> ignore
+            if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && diag_jp_name_spec_cap <= 0L then
+                jp_cd.Wait()
+            else
+                let slice = int (max 1L diag_wait_ms)
+                while not (jp_cd.Wait(slice)) do
+                    diag_print false
+                    diag_abort_if_needed "jp_wait"
+
+            Hopac.Scheduler.wait jp_sched
+            Hopac.Scheduler.kill jp_sched
+
+        let inline jp_throw_if_any () =
+            let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
+            if jp_exns.TryDequeue(&edi) then edi.Throw()
+        // Thread-safe global emission from parallel peval jobs
+        let globals_seen = System.Collections.Concurrent.ConcurrentDictionary<string, byte>()
+        let globals_q : System.Collections.Concurrent.ConcurrentQueue<string> = System.Collections.Concurrent.ConcurrentQueue()
+        let inline globals_add (_s: LangEnv) (x: string) =
+            if globals_seen.TryAdd(x, 0uy) then globals_q.Enqueue x
+        let inline globals_flush (s: LangEnv) =
+            let mutable x = Unchecked.defaultof<string>
+            while globals_q.TryDequeue(&x) do
+                s.globals.Add x
 
         let inline map_try_find_by_string (key : string) (m : Map<int * string, 'v>) : 'v option =
             let mutable r = None
             for KeyValue((_, k), v) in m do
                 if k = key then r <- Some v
             r
+
+        let dyn_ctx = new System.Threading.ThreadLocal<_>(fun () -> Dictionary<ResizeArray<TypedBind>, struct(Dictionary<_,_> * HashSet<_> * int ref)>(HashIdentity.Reference))
+        let dyn_ctx_limit =
+            // Unlimited by default; set SPIRAL_DYN_CTX_LIMIT to a positive integer to enable periodic clearing.
+            match System.Environment.GetEnvironmentVariable("SPIRAL_DYN_CTX_LIMIT") with
+            | null | "" -> -1
+            | v ->
+                match System.Int32.TryParse v with
+                | true, x when x > 0 -> x
+                | _ -> -1
+
 
         let rec ty_to_data s x =
             let f = ty_to_data s
@@ -7928,47 +8332,80 @@ module spiral_compiler =
                     match ty s annot with
                     | YFun(a,b,_) as x -> a,b,x
                     | annot -> raise_type_error s <| sprintf "Expected a function type in annotation during closure conversion. Got: %s" (show_ty annot)
-                let dict, hc_table = Utils.memoize join_point_closure (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (s.backend, body)
-                let call_args, env_global_value = data_to_rdata s hc_table gl_term
-                let join_point_key = hc_table.Add(env_global_value, s.env_global_type, fun_ty)
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>), hc_table, dict_ev =
+
+                    Utils.memoize join_point_closure (fun _ ->
+
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>(HashIdentity.Structural), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Structural)
+
+                    ) (s.backend, body)
+                let call_args, env_global_value =
+                    lock hc_table (fun () -> data_to_rdata s hc_table gl_term)
+                let join_point_key =
+                    lock hc_table (fun () -> hc_table.Add(env_global_value, s.env_global_type, fun_ty))
+                let jp_ev = dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
 
                 match fun_ty with
                 | YFun(_,_,FT_Pointer) when call_args.Length <> 0 -> raise_type_error s "Function pointers shouldn't have any runtime free variables in their environment."
                 | _ -> ()
 
-                match dict.TryGetValue(join_point_key) with
-                | true, _ -> ()
-                | false, _ ->
-                    let s = rename_global_term s
-                    let domain_data = ty_to_data s domain
-                    s.env_stack_term.[0] <- domain_data
-                    dict.[join_point_key] <- None
-                    let seq,ty = term_scope'' s body (Some fun_ty)
-                    dict.[join_point_key] <- Some(domain_data, seq)
-                    let ty =
-                        match ty with
-                        | YRecord a ->
-                            a
-                            |> Seq.map (fun (KeyValue ((i, k), v)) ->
-                                let i =
-                                    match range with
-                                    | YRecord a ->
-                                        a |> Map.tryPick (fun (i', k') _ -> if k = k' then Some i' else None)
-                                    | _ -> None
-                                    |> Option.defaultValue i
-                                (i, k), v
-                            )
-                            |> Map.ofSeq
-                            |> YRecord
-                        | _ -> ty
-                    if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
+                if dict.TryAdd(join_point_key, None) then
+                    jp_ev.Reset()
+                    let run () =
+                        try
+                            let s = rename_global_term s
+                            let domain_data = ty_to_data s domain
+                            s.env_stack_term.[0] <- domain_data
+                            let seq,ty = term_scope'' s body (Some fun_ty)
+                            dict.[join_point_key] <- Some(domain_data, seq)
+                            let ty =
+                                match ty with
+                                | YRecord a ->
+                                    a
+                                    |> Seq.map (fun (KeyValue ((i, k), v)) ->
+                                        let i =
+                                            match range with
+                                            | YRecord a ->
+                                                a |> Map.tryPick (fun (i', k') _ -> if k = k' then Some i' else None)
+                                            | _ -> None
+                                            |> Option.defaultValue i
+                                        (i, k), v
+                                    )
+                                    |> Map.ofSeq
+                                    |> YRecord
+                                | _ -> ty
+                            if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
+                        finally
+                            jp_ev.Set()
+                            let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
+                            dict_ev.TryRemove(join_point_key, &_ev) |> ignore
+                    jp_start run
+                else
+                    // Another worker is/was computing it.
+                    match dict.TryGetValue(join_point_key) with
+                    | true, Some _ -> ()
+                    | _ -> jp_ev_wait "JP.wait" jp_ev; jp_throw_if_any ()
                 join_point_key, call_args, fun_ty
             push_typedop s (TyJoinPoint(JPClosure((s.backend,body),join_point_key),call_args)) fun_ty, fun_ty
         and data_to_ty s x =
             let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
             let rec f x =
                 Utils.memoize m (function
-                    | DPair(a,b) -> YPair(f a, f b)
+                    | DPair _ as x ->
+                        // Avoid stack overflows on long right-nested pairs.
+                        let elems = ResizeArray<Data>()
+                        let mutable cur = x
+                        while (
+                            match cur with
+                            | DPair(a,b) -> elems.Add a; cur <- b; true
+                            | _ -> false
+                        ) do
+                            ()
+                        let tail_ty = f cur
+                        let mutable res = tail_ty
+                        for i = elems.Count - 1 downto 0 do
+                            res <- YPair(f elems.[i], res)
+                        res
                     | DSymbol a -> YSymbol a
                     | DRecord l -> YRecord(Map.map (fun _ -> f) l)
                     | DUnion(_,a) -> YUnion a
@@ -7985,36 +8422,176 @@ module spiral_compiler =
                     ) x
             f x
         and dyn do_lit s x =
-            let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
-            let visiting = HashSet(HashIdentity.Reference)
             let mutable dirty = false
-            let rec f x =
-                match m.TryGetValue x with
-                | true, v -> v
-                | false, _ ->
-                    if visiting.Add x = false then
-                        raise_type_error s "Compiler error: Cyclic compile-time value detected during dyn."
-                    let v =
-                        match x with
-                        | DPair(a,b) -> DPair(f a, f b)
-                        | DB | DV _ | DTLit _ | DSymbol _ as a -> a
-                        | DRecord l -> DRecord(Map.map (fun _ -> f) l)
-                        | DNominal(DUnion(DPair(DSymbol k,v),b),b') -> dirty <- true; push_typedop_no_rewrite s (TyUnionBox(k,f v,b)) b'
-                        | DUnion _ -> raise_type_error s "Compiler error: Malformed union"
-                        | DNominal(a,b) -> DNominal(f a,b)
-                        | DLit (LitString _ as v) -> dirty <- true; push_op s Dyn x (lit_to_ty v)
-                        | DLit v as x -> if do_lit then dirty <- true; push_op_no_rewrite s Dyn x (lit_to_ty v) else x
-                        | DFunction(body,Some annot,term',ty',sz_term,sz_ty) -> dirty <- true; closure_convert s (body,annot,term',ty',sz_term,sz_ty) |> fst
-                        | DFunction(_,None,_,_,_,_) -> raise_type_error s "Cannot convert a function that is not annotated into a runtime variable."
-                        | DExists _ -> raise_type_error s "Cannot dyn an existential into a runtime var."
-                        | DForall _ -> raise_type_error s "Cannot dyn a forall into a runtime var."
-                        | DHashSet _ -> raise_type_error s "Cannot dyn a compile time HashSet into a runtime var."
-                        | DHashMap _ -> raise_type_error s "Cannot dyn a compile time HashMap into a runtime var."
-                    visiting.Remove x |> ignore
-                    m.TryAdd(x,v) |> ignore
-                    v
-            let v = f x
-            if dirty then v else x
+            if do_lit then
+                let m = Dictionary<_,_>(HashIdentity.Reference)
+                let visiting = HashSet<_>(HashIdentity.Reference)
+                let rec f x =
+                    match m.TryGetValue x with
+                    | true, v -> v
+                    | _ ->
+                        if visiting.Add x = false then
+                            raise_type_error s <| sprintf "Compiler error: Dyn cycle detected.\nData: %s" (show_data x)
+                        try
+                            let v =
+                                match x with
+                                | DV _ | DB | DExists _ | DForall _ | DRecord _ | DUnion _ | DHashSet _ | DHashMap _ -> x
+                                | DTLit x -> dirty <- true; DLit x
+                                | DLit _ as x -> x
+                                | DSymbol x -> dirty <- true; DLit (LitString x)
+                                | DPair _ ->
+                                    dirty <- true
+                                    // Avoid stack overflows on long right-nested pairs.
+                                    let elems = ResizeArray<Data>()
+                                    let mutable cur = x
+                                    while (
+                                        match cur with
+                                        | DPair(a,b) -> elems.Add a; cur <- b; true
+                                        | _ -> false
+                                    ) do
+                                        ()
+                                    let tail = f cur
+                                    let mutable res = tail
+                                    for i = elems.Count - 1 downto 0 do
+                                        res <- DPair(f elems.[i], res)
+                                    res
+                                | DNominal(DForall(body,term,ty,sz_term,sz_ty), b') ->
+                                    dirty <- true
+                                    DNominal(DForall(body, Array.map f term, ty, sz_term, sz_ty), b')
+                                | DNominal(DExists(vars_type,term), b') -> dirty <- true; DNominal(DExists(vars_type, f term), b')
+                                | DNominal(DRecord a,b') -> dirty <- true; DNominal(DRecord (Map.map (fun _ v -> f v) a), b')
+                                | DNominal(DUnion(DPair(DSymbol k,v),u),b') ->
+                                    dirty <- true
+                                    push_typedop_no_rewrite s (TyUnionBox(k,f v,u)) b'
+                                | DNominal(DUnion(_, _),_) -> raise_type_error s "Compiler error: Union should always have a tag in the first argument."
+                                | DNominal(DFunction _,_) -> raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data x)
+                                | DNominal(a,b') ->
+                                    dirty <- true
+                                    match a with
+                                    | DNominal _ ->
+                                        // Collapse consecutive nominal wrappers to avoid stack overflows on deep nests.
+                                        let wrappers = ResizeArray<_>()
+                                        let mutable cur = x
+                                        let mutable core = Unchecked.defaultof<Data>
+                                        let mutable done' = false
+                                        while not done' do
+                                            match cur with
+                                            | DNominal(DNominal _ as a', b'') ->
+                                                wrappers.Add b''
+                                                cur <- a'
+                                            | _ ->
+                                                core <- cur
+                                                done' <- true
+                                        let core' = f core
+                                        let mutable res = core'
+                                        for i = wrappers.Count - 1 downto 0 do
+                                            res <- DNominal(res, wrappers.[i])
+                                        res
+                                    | _ ->
+                                        DNominal(f a,b')
+                                | DFunction(body,Some annot,term',ty',sz_term,sz_ty) -> dirty <- true; closure_convert s (body,annot,term',ty',sz_term,sz_ty) |> fst
+                                | DFunction(_,None,_,_,_,_) -> raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data x)
+                            m.[x] <- v
+                            v
+                        finally
+                            visiting.Remove x |> ignore
+                let v = f x
+                if dirty then v else x
+            else
+                let ctx = dyn_ctx.Value
+                if dyn_ctx_limit > 0 && ctx.Count > dyn_ctx_limit then ctx.Clear()
+                let key = s.seq
+                let struct(m, visiting, depth) =
+                    match ctx.TryGetValue key with
+                    | true, v -> v
+                    | _ ->
+                        let v = struct(Dictionary<_,_>(HashIdentity.Reference), HashSet<_>(HashIdentity.Reference), ref 0)
+                        ctx.[key] <- v
+                        v
+                let depth0 = !depth
+                depth := depth0 + 1
+                if depth0 = 0 then (m.Clear(); visiting.Clear())
+                let rec f x =
+                    match m.TryGetValue x with
+                    | true, v -> v
+                    | _ ->
+                        if visiting.Add x = false then
+                            raise_type_error s <| sprintf "Compiler error: Dyn cycle detected.\nData: %s" (show_data x)
+                        try
+                            let v =
+                                match x with
+                                | DV _ | DB | DExists _ | DForall _ | DRecord _ | DUnion _ | DTLit _ | DSymbol _ | DLit _ | DHashSet _ | DHashMap _ -> x
+                                | DPair _ ->
+                                    dirty <- true
+                                    // Avoid stack overflows on long right-nested pairs.
+                                    let elems = ResizeArray<Data>()
+                                    let mutable cur = x
+                                    while (
+                                        match cur with
+                                        | DPair(a,b) -> elems.Add a; cur <- b; true
+                                        | _ -> false
+                                    ) do
+                                        ()
+                                    let tail = f cur
+                                    let mutable res = tail
+                                    for i = elems.Count - 1 downto 0 do
+                                        res <- DPair(f elems.[i], res)
+                                    res
+                                | DNominal(DForall(body,term,ty,sz_term,sz_ty), b') ->
+                                    dirty <- true
+                                    DNominal(DForall(body, Array.map f term, ty, sz_term, sz_ty), b')
+                                | DNominal(DExists(vars_type,term), b') ->
+                                    dirty <- true
+                                    DNominal(DExists(vars_type, f term), b')
+                                | DNominal(DRecord a,b') ->
+                                    dirty <- true
+                                    DNominal(DRecord (Map.map (fun _ v -> f v) a), b')
+                                | DNominal(DUnion(DPair(DSymbol k,v),u),b') ->
+                                    dirty <- true
+                                    push_typedop_no_rewrite s (TyUnionBox(k,f v,u)) b'
+                                | DNominal(DUnion(_, _),_) ->
+                                    raise_type_error s "Compiler error: Union should always have a tag in the first argument."
+                                | DNominal(DFunction _,_) ->
+                                    raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data x)
+                                | DNominal(a,b') ->
+                                    dirty <- true
+                                    match a with
+                                    | DNominal _ ->
+                                        // Collapse consecutive nominal wrappers to avoid stack overflows on deep nests.
+                                        let wrappers = ResizeArray<_>()
+                                        let mutable cur = x
+                                        let mutable core = Unchecked.defaultof<Data>
+                                        let mutable done' = false
+                                        while not done' do
+                                            match cur with
+                                            | DNominal(DNominal _ as a', b'') ->
+                                                wrappers.Add b''
+                                                cur <- a'
+                                            | _ ->
+                                                core <- cur
+                                                done' <- true
+                                        let core' = f core
+                                        let mutable res = core'
+                                        for i = wrappers.Count - 1 downto 0 do
+                                            res <- DNominal(res, wrappers.[i])
+                                        res
+                                    | _ ->
+                                        DNominal(f a,b')
+                                | DFunction(body,Some annot,term',ty',sz_term,sz_ty) ->
+                                    dirty <- true
+                                    closure_convert s (body,annot,term',ty',sz_term,sz_ty) |> fst
+                                | DFunction(_,None,_,_,_,_) ->
+                                    raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data x)
+                            m.[x] <- v
+                            v
+                        finally
+                            visiting.Remove x |> ignore
+
+                let v = f x
+                depth := depth0
+                if depth0 = 0 then ctx.Remove key |> ignore
+                if dirty then v else x
+
         and term_real_nominal s x =
             let s = {s with seq=ResizeArray(); cse=Dictionary(HashIdentity.Structural) :: s.cse}
             term s x |> data_to_ty s
@@ -8068,34 +8645,59 @@ module spiral_compiler =
             | TForall' _ -> YForall
             | TExists -> YExists
             | TJoinPoint'(r,scope,body) ->
-                let env_global_type = Array.map (vt s) scope.ty.free_vars
-                let env_global_term = Array.map (v s) scope.term.free_vars
-
-                let dict, hc_table = Utils.memoize join_point_type (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) body
-                let join_point_key = hc_table.Add(env_global_type)
+                let env_global_type = scope.ty.free_vars |> Array.map (fun i -> vt s i)
+                let env_global_term = scope.term.free_vars |> Array.map (fun i -> v s i)
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Ty option>), hc_table, (_dict_ev : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, System.Threading.ManualResetEventSlim>) =
+                    Utils.memoize join_point_type (fun _ ->
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Ty option>(HashIdentity.Structural), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, System.Threading.ManualResetEventSlim>(HashIdentity.Structural)
+                    ) body
+                let join_point_key =
+                    lock hc_table (fun () -> hc_table.Add(env_global_type))
                 match dict.TryGetValue(join_point_key) with
                 | true, Some ret_ty -> ret_ty
                 | true, None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
                 | false, _ ->
-                    assert (0 = scope.term.free_vars.Length)
-                    let s : LangEnv = {
-                        trace = r :: s.trace
-                        seq = ResizeArray()
-                        cse = [Dictionary(HashIdentity.Structural)]
-                        unions = Map.empty
-                        i = ref 0
-                        env_global_type = env_global_type
-                        env_global_term = env_global_term
-                        env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
-                        env_stack_term = Array.zeroCreate<_> scope.term.stack_size
-                        backend = s.backend
-                        globals = s.globals
-                        }
-                    let s = rename_global_term s
-                    dict.[join_point_key] <- None
-                    let ret_ty = ty s body
-                    dict.[join_point_key] <- Some ret_ty
-                    ret_ty
+                    let jp_ev = _dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
+                    if dict.TryAdd(join_point_key, None) then
+                        jp_ev.Reset()
+                        record_jp_diag (Some "<type>") (r :: s.trace)
+                        assert (0 = scope.term.free_vars.Length)
+                        let run () =
+                            try
+                                let s : LangEnv = {
+                                    trace = r :: s.trace
+                                    seq = ResizeArray()
+                                    cse = [Dictionary(HashIdentity.Structural)]
+                                    unions = Map.empty
+                                    i = ref 0
+                                    env_global_type = env_global_type
+                                    env_global_term = env_global_term
+                                    env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                                    env_stack_term = Array.zeroCreate<_> scope.term.stack_size
+                                    backend = s.backend
+                                    globals = s.globals
+                                    }
+                                let s = rename_global_term s
+                                let ret_ty = ty s body
+                                dict.[join_point_key] <- Some ret_ty
+                                ret_ty
+                            finally
+                                jp_ev.Set()
+                                let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
+                                _dict_ev.TryRemove(join_point_key, &_ev) |> ignore
+                        if jp_force_async_types then
+                            jp_start (fun () -> ignore (run ()))
+                            jp_ev_wait "JPType.wait" jp_ev; jp_throw_if_any ()
+                            match dict.TryGetValue(join_point_key) with
+                            | true, Some ret_ty -> ret_ty
+                            | _ -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                        else
+                            run()
+                    else
+                        jp_ev_wait "JPType.wait" jp_ev; jp_throw_if_any ()
+                        match dict.TryGetValue(join_point_key) with
+                        | true, Some ret_ty -> ret_ty
+                        | _ -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
             | TB _ -> YB
             | TLit(_,x) -> YLit x
             | TV i -> vt s i
@@ -8167,9 +8769,8 @@ module spiral_compiler =
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
 
-            let global' =
-                let has_added = HashSet s.globals
-                fun x -> if has_added.Add(x) then s.globals.Add x
+            let global' (x: string) = globals_add s x
+
 
             let term2 s a b = term s a, term s b
             let term3 s a b c = term s a, term s b, term s c
@@ -8448,36 +9049,75 @@ module spiral_compiler =
                 let env_global_type = Array.map (vt s) scope.ty.free_vars
                 let env_global_term = Array.map (v s) scope.term.free_vars
 
-                let backend' = match backend with None -> s.backend | Some (_,backend) -> backend_strings.Add backend
-                let dict, hc_table = Utils.memoize join_point_method (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (backend', body)
-                let call_args, env_global_value = data_to_rdata s hc_table env_global_term
-                let join_point_key = hc_table.Add(env_global_value, env_global_type)
+                let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option>), hc_table, dict_ev =
+
+                    Utils.memoize join_point_method (fun _ ->
+
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option>(HashIdentity.Structural), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, System.Threading.ManualResetEventSlim>(HashIdentity.Structural)
+
+                    ) (backend', body)
+                let call_args, env_global_value =
+                    lock hc_table (fun () -> data_to_rdata s hc_table env_global_term)
+                let join_point_key =
+                    lock hc_table (fun () -> hc_table.Add(env_global_value, env_global_type))
+                let jp_ev = dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
 
                 let ret_ty =
                     match dict.TryGetValue(join_point_key) with
                     | true, (_, Some ret_ty, _) -> ret_ty
                     | true, (_, None, _) -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
                     | false, _ ->
-                        let s : LangEnv = {
-                            trace = r :: s.trace
-                            seq = ResizeArray()
-                            cse = [Dictionary(HashIdentity.Structural)]
-                            unions = Map.empty
-                            i = ref 0
-                            env_global_type = env_global_type
-                            env_global_term = env_global_term
-                            env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
-                            env_stack_term = Array.zeroCreate<_> scope.term.stack_size
-                            backend = backend'
-                            globals = s.globals
-                            }
-                        let s = rename_global_term s
-                        let annot = Option.map (ty s) annot
-                        dict.[join_point_key] <- (None, annot, jp_name)
-                        let seq,ty = term_scope'' s body annot
-                        dict.[join_point_key] <- (Some seq, Some ty, jp_name)
-                        annot |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
-                        ty
+                        let annot_val = Option.map (ty s) annot
+                        if dict.TryAdd(join_point_key, (None, annot_val, jp_name)) then
+                            jp_ev.Reset()
+                            record_jp_diag jp_name (r :: s.trace)
+                            let run () =
+                                try
+                                    let s : LangEnv = {
+                                        trace = r :: s.trace
+                                        seq = ResizeArray()
+                                        cse = [Dictionary(HashIdentity.Structural)]
+                                        unions = Map.empty
+                                        i = ref 0
+                                        env_global_type = env_global_type
+                                        env_global_term = env_global_term
+                                        env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                                        env_stack_term = Array.zeroCreate<_> scope.term.stack_size
+                                        backend = backend'
+                                        globals = s.globals
+                                        }
+                                    let s = rename_global_term s
+                                    let seq,ty = term_scope'' s body annot_val
+                                    dict.[join_point_key] <- (Some seq, Some ty, jp_name)
+                                    annot_val |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
+                                    ty
+                                finally
+                                    jp_ev.Set()
+                                    let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
+                                    dict_ev.TryRemove(join_point_key, &_ev) |> ignore
+                            match annot_val with
+                            | Some ret_ty ->
+                                jp_start (fun () -> ignore (run()))
+                                ret_ty
+                            | None ->
+                                if jp_force_async_unannot then
+                                    jp_start (fun () -> ignore (run ()))
+                                    jp_ev_wait "JPMethod.wait" jp_ev
+                                    jp_throw_if_any ()
+                                    match dict.TryGetValue(join_point_key) with
+                                    | true, (_, Some ret_ty, _) -> ret_ty
+                                    | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                                else
+                                    run ()
+                        else
+                            match dict.TryGetValue(join_point_key) with
+                            | true, (_, Some ret_ty, _) -> ret_ty
+                            | _ ->
+                                jp_ev_wait "JP.wait" jp_ev; jp_throw_if_any ()
+                                match dict.TryGetValue(join_point_key) with
+                                | true, (_, Some ret_ty, _) -> ret_ty
+                                | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
 
                 match backend with
                 | None -> push_typedop_no_rewrite s (TyJoinPoint(JPMethod((backend',body),join_point_key),call_args)) ret_ty
@@ -8915,7 +9555,7 @@ module spiral_compiler =
                     | None -> t <- Some t'
                 match term s a with
                 | DRecord l ->
-                    if backend_switch_validate_all.Value = false then
+                    if lock backend_switch_lock (fun () -> backend_switch_validate_all.Value) = false then
                         match map_try_find_by_string s.backend.node l with
                         | Some b ->
                             let d' = apply s (b, DB)
@@ -8931,14 +9571,14 @@ module spiral_compiler =
                                 validate_type (data_to_ty s d')
                                 d <- Some d'
                             else
-                                let old = backend_switch_validate_all.Value
-                                backend_switch_validate_all.Value <- false
+                                let old = lock backend_switch_lock (fun () -> backend_switch_validate_all.Value)
+                                lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- false)
                                 try
-                                    let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend}
+                                    let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend)}
                                     let d' = apply s (b, DB)
                                     validate_type (data_to_ty s d')
                                 finally
-                                    backend_switch_validate_all.Value <- old
+                                    lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- old)
                         )
                 | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
                 match d with
@@ -10017,14 +10657,19 @@ module spiral_compiler =
             env_global_term = [||]
             env_stack_type = [||]
             env_stack_term = [||]
-            backend = backend_strings.Add env.backend
+            backend = lock backend_strings_lock (fun () -> backend_strings.Add env.backend)
             globals = ResizeArray ()
             }
         let ty_to_data x = ty_to_data {s with i = ref 0} x
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
 
         match x with
-        | EFun'(r,_,_,_,_) -> term_scope s (EApply(r,x,EB r)), {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
+        | EFun'(r,_,_,_,_) ->
+            let res = term_scope s (EApply(r,x,EB r))
+            jp_wait ()
+            jp_throw_if_any ()
+            globals_flush s
+            res, {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
 
@@ -10535,7 +11180,8 @@ module spiral_compiler =
             )
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_))),i) ->
-                match (fst env.join_point_method.[jp_body]).[key] with
+                let jp_dict,_,_ = env.join_point_method.[jp_body]
+                match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
@@ -10546,7 +11192,8 @@ module spiral_compiler =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
                 | YFun(domain,range,FT_Vanilla) ->
-                    match (fst env.join_point_closure.[jp_body]).[key] with
+                    let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                    match jp_dict.[key] with
                     | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
@@ -11283,7 +11930,8 @@ module spiral_compiler =
             )
         and method : _ -> MethodRecGleam =
             jp (fun ((jp_body,key & (C(args,_))),i) ->
-                match (fst env.join_point_method.[jp_body]).[key] with
+                let jp_dict,_,_ = env.join_point_method.[jp_body]
+                match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
@@ -11304,7 +11952,8 @@ module spiral_compiler =
                 (fun ((jp_body, key & (C(args, _, fun_ty))), i) ->
                 match fun_ty with
                 | YFun (domain, range, FT_Vanilla) ->
-                    match (fst env.join_point_closure.[jp_body]).[key] with
+                    let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                    match jp_dict.[key] with
                     | Some (domain_args, body) ->
                         {   tag = i
                             free_vars = rdata_free_vars args
@@ -11956,7 +12605,8 @@ module spiral_compiler =
         )
         and method : _ -> MethodRecLua =
             jp (fun ((jp_body,key & (C(args,_))),i) ->
-                match (fst env.join_point_method.[jp_body]).[key] with
+                let jp_dict,_,_ = env.join_point_method.[jp_body]
+                match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
@@ -11969,7 +12619,8 @@ module spiral_compiler =
                 (fun ((jp_body, key & (C(args, _, fun_ty))), i) ->
                 match fun_ty with
                 | YFun (domain, range, FT_Vanilla) ->
-                    match (fst env.join_point_closure.[jp_body]).[key] with
+                    let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                    match jp_dict.[key] with
                     | Some (domain_args, body) ->
                         {   tag = i
                             free_vars = rdata_free_vars args
@@ -12099,11 +12750,12 @@ module spiral_compiler =
     let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
         let used_vars = refc_used_vars x
         let g_incr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
-        let g_decr : Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
+        let g_decr : Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set> = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
         let g_op : Dictionary<TypedBind, _> = Dictionary(HashIdentity.Reference)
         let g_op_decr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
 
         let add (d : Dictionary<TypedBind, TyV Set>) k x = if Set.isEmpty x then () else d.Add(k,x)
+        let add_cd (d : Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set>) k x = if Set.isEmpty x then () else d.TryAdd(k,x) |> ignore
         let add' (d : Dictionary<TypedBind, Map<TyV,int>>) k x = if Map.isEmpty x then () else d.Add(k,x)
         let fv x = x |> data_free_vars |> Set
         let rec binds (new_vars : TyV Set) (increfed_vars : TyV Set) (k : TypedBind []) =
@@ -12113,7 +12765,7 @@ module spiral_compiler =
 
                 let used_vars = used_vars.[k]
                 let decref_vars = increfed_vars - used_vars
-                add g_decr k decref_vars
+                add_cd g_decr k decref_vars
                 let r = increfed_vars - decref_vars
                 match k with
                 | TyLet(d,_,o) ->
@@ -12234,9 +12886,9 @@ module spiral_compiler =
                 let s_typ = {text=StringBuilder(); indent=0}
                 let s_fun = {text=StringBuilder(); indent=0}
                 show s_typ_fwd s_typ s_fun r
-                let f (a : _ System.Collections.Concurrent.ConcurrentQueue) (b : CodegenEnv) =
+                let f (a : System.Collections.Concurrent.ConcurrentQueue<string>) (b : CodegenEnv) =
                     let text = b.text.ToString()
-                    if text <> "" then a.TryAdd(text) |> ignore
+                    if text <> "" then a.Enqueue(text)
                 f fwd_dcls s_typ_fwd
                 f types s_typ
                 f functions s_fun
@@ -12349,9 +13001,11 @@ module spiral_compiler =
                     // This complicated looking piece of code is responsible for putting the incref and decref statements at the beginning of every
                     // statement. It's actually the only place where ref counting code is outputted in the codegen.
                     let _ =
-                        let f k = get_default k x (fun () -> Set.empty)
-                        let f' k = get_default k x (fun () -> Map.empty)
-                        let incr, decr, op, op_decr = varc_set (f vars.g_incr) 1, varc_set (f vars.g_decr) -1, f' vars.g_op, varc_set (f vars.g_op_decr) -1
+                        let incr0 = get_default vars.g_incr x (fun () -> Set.empty)
+                        let decr0 = get_default vars.g_decr x (fun () -> Set.empty)
+                        let op0 = get_default vars.g_op x (fun () -> Map.empty)
+                        let op_decr0 = get_default vars.g_op_decr x (fun () -> Set.empty)
+                        let incr, decr, op, op_decr = varc_set incr0 1, varc_set decr0 -1, op0, varc_set op_decr0 -1
                         let incr, decr = varc_union incr decr |> varc_union op |> varc_union op_decr |> Map.partition (fun _ v -> 0 < v)
                         refc_varc incr |> line' s; refc_varc decr |> line' s
                     match x with
@@ -12705,7 +13359,8 @@ module spiral_compiler =
                 order_argsC v |> Array.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_templ is_while fun_name : _ -> MethodRecC =
                 jp (fun ((jp_body,key & (C(args,_))),i) ->
-                    match (fst env.join_point_method.[jp_body]).[key] with
+                    let jp_dict,_,_ = env.join_point_method.[jp_body]
+                    match jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=name}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun _ s_typ s_fun x ->
@@ -12722,7 +13377,8 @@ module spiral_compiler =
                 jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
-                        match (fst env.join_point_closure.[jp_body]).[key] with
+                        let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                        match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
@@ -13065,9 +13721,9 @@ module spiral_compiler =
         type codegen_env =
             {
                 globals : string ResizeArray
-                fwd_dcls : string ResizeArray
-                types : string System.Collections.Concurrent.ConcurrentQueue
-                functions : string System.Collections.Concurrent.ConcurrentQueue
+                fwd_dcls : System.Collections.Concurrent.ConcurrentQueue<string>
+                types : System.Collections.Concurrent.ConcurrentQueue<string>
+                functions : System.Collections.Concurrent.ConcurrentQueue<string>
                 main_defs : string ResizeArray
                 backend_name : string
                 __device__ : string
@@ -13076,9 +13732,9 @@ module spiral_compiler =
             static member Create(backend_name,__device__) =
                 {
                     globals = ResizeArray()
-                    fwd_dcls = ResizeArray()
-                    types = ResizeArray()
-                    functions = ResizeArray()
+                    fwd_dcls = System.Collections.Concurrent.ConcurrentQueue<string>()
+                    types = System.Collections.Concurrent.ConcurrentQueue<string>()
+                    functions = System.Collections.Concurrent.ConcurrentQueue<string>()
                     main_defs = ResizeArray()
                     backend_name = backend_name
                     __device__ = __device__
@@ -13161,9 +13817,9 @@ module spiral_compiler =
                 let s_typ = {text=StringBuilder(); indent=0}
                 let s_fun = {text=StringBuilder(); indent=0}
                 show s_typ_fwd s_typ s_fun r
-                let f (a : _ System.Collections.Concurrent.ConcurrentQueue) (b : CodegenEnv) =
+                let f (a : System.Collections.Concurrent.ConcurrentQueue<string>) (b : CodegenEnv) =
                     let text = b.text.ToString()
-                    if text <> "" then a.TryAdd(text) |> ignore
+                    if text <> "" then a.Enqueue(text)
                 f code_env.fwd_dcls s_typ_fwd
                 f code_env.types s_typ
                 f code_env.functions s_fun
@@ -13661,7 +14317,8 @@ module spiral_compiler =
                 order_args v |> Array.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_template is_while : _ -> MethodRecCpp =
                 jp (fun ((jp_body,key & (C(args,_))),i) ->
-                    match (fst part_eval_env.join_point_method.[jp_body]).[key] with
+                    let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                    match jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=Option.map fix_method_name name}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun s_fwd s_typ s_fun x ->
@@ -13696,7 +14353,8 @@ module spiral_compiler =
                 jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,t) ->
-                        match (fst part_eval_env.join_point_closure.[jp_body]).[key] with
+                        let jp_dict,_,_ = part_eval_env.join_point_closure.[jp_body]
+                        match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
@@ -13976,7 +14634,7 @@ module spiral_compiler =
                 code_env.main_defs.Add(s.text.ToString())
 
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env x =
-            let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>HashIdentity.Structural
+            let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let host_code_env = codegen_env.Create("Cpp", "")
             let device_code_env = codegen_env.Create("Cuda", "__device__ ")
 
@@ -13990,7 +14648,8 @@ module spiral_compiler =
                 | "Cuda" ->
                     Utils.memoize g (fun (jp_body,key & C(args,_)) ->
                         let args = rdata_free_vars args
-                        match (fst part_eval_env.join_point_method.[jp_body]).[key] with
+                        let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                        match jp_dict.[key] with
                         | Some a, Some _, _ -> cuda_codegen (Cuda(args, a))
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                         $"Device::entry{g.Count}"
@@ -14151,7 +14810,7 @@ module spiral_compiler =
                 let s = {text=StringBuilder(); indent=0}
                 show s r
                 let text = s.text.ToString()
-                if is_type then code_env.types.Add(text) else code_env.functions.Add(text)
+                if is_type then code_env.types.Enqueue(text) else code_env.functions.Enqueue(text)
 
             let union show =
                 let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
@@ -14214,7 +14873,7 @@ module spiral_compiler =
                         sprintf "%s = %s" a b |> line s
                 Array.iter (fun x ->
                     let _ =
-                        let f (g : Dictionary<_,_>) = match g.TryGetValue(x) with true, x -> Seq.toArray x | _ -> [||]
+                        let f (g : System.Collections.Concurrent.ConcurrentDictionary<_,_>) = match g.TryGetValue(x) with true, x -> Seq.toArray x | _ -> [||]
                         match args (f g_decr) with "" -> () | x -> sprintf "del %s" x |> line s
                     match x with
                     | TyLet(d,trace,a) ->
@@ -14463,7 +15122,7 @@ module spiral_compiler =
                     |> return'
             and uheap : _ -> UnionRecPython = union (fun s x ->
                 let cases = Array.init x.free_vars.Count (fun i -> $"\"UH{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
-                code_env.fwd_dcls.Add $"UH{x.tag} = {cases}"
+                code_env.fwd_dcls.Enqueue $"UH{x.tag} = {cases}"
                 let by_tag =
                     x.free_vars
                     |> Map.toArray
@@ -14530,7 +15189,8 @@ module spiral_compiler =
                 )
             and method : _ -> MethodRecPython =
                 jp false (fun ((jp_body,key & (C(args,_))),i) ->
-                    match (fst part_eval_env.join_point_method.[jp_body]).[key] with
+                    let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                    match jp_dict.[key] with
                     | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun s x ->
@@ -14542,7 +15202,8 @@ module spiral_compiler =
                 jp true (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
-                        match (fst part_eval_env.join_point_closure.[jp_body]).[key] with
+                        let jp_dict,_,_ = part_eval_env.join_point_closure.[jp_body]
+                        match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
@@ -14589,7 +15250,7 @@ module spiral_compiler =
 
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env (x : TypedBind[]) =
             let cuda_kernels = StringBuilder().AppendLine("kernel = r\"\"\"")
-            let g = Dictionary(HashIdentity.Structural)
+            let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
 
             let host_code_env = CodegenCpp.codegen_env.Create("Python", "")
             let device_code_env = CodegenCpp.codegen_env.Create("Cuda", "__device__ ")
@@ -14605,7 +15266,8 @@ module spiral_compiler =
                     | "Cuda" ->
                         Utils.memoize g (fun (jp_body,key & C(args,_)) ->
                             let args = rdata_free_vars args
-                            match (fst part_eval_env.join_point_method.[jp_body]).[key] with
+                            let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                            match jp_dict.[key] with
                             | Some a, Some _, _ -> cuda_codegen (CodegenCpp.Cuda(args,a))
                             | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                             $"entry{g.Count}"
@@ -14839,7 +15501,7 @@ module spiral_compiler =
     let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens Block list) =
         let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
         // Offset should be ignored when memoizing the results of parsing.
-        List.iter (fun (a,b) -> dict.Add(a,b.block)) state.blocks
+        List.iter (fun (a,b) -> dict.TryAdd(a,b.block) |> ignore) state.blocks
         let blocks = unparsed_blocks |> List.map (fun x ->
             x.block, {block=memoize dict (fun a -> Promise.Now.withValue ((parse_block default_env state.is_top_down) a)) x.block; offset=x.offset}
             )
@@ -16672,7 +17334,7 @@ module spiral_compiler =
 
                         // The partial evaluator is using too much stack space, so as a temporary fix, I am running it on a separate thread with much more of it.
                         let result = IVar()
-                        let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> Hopac.start), 1 <<< 31) // Stack space = 2 ** 31 = 2GB
+                        let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> Hopac.start), 1 <<< 30) // Stack space = 2 ** 30 = 1GB
                         thread.Start()
                         result >>= handle_build_result
                         )
