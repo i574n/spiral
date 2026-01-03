@@ -5001,6 +5001,19 @@ module spiral_compiler =
                     ) |> ignore
                     results
 
+            
+            let inline map2 (f: 'a -> 'b -> 'c) (xs: 'a[]) (ys: 'b[]) : 'c[] =
+                if xs.Length <> ys.Length then invalidArg "ys" "Array lengths do not match in map2."
+                if xs.Length = 0 then [||]
+                elif xs.Length = 1 then [| f xs.[0] ys.[0] |]
+                else
+                    let results = Array.zeroCreate<'c> xs.Length
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
+                        results.[i] <- f xs.[i] ys.[i]
+                    ) |> ignore
+                    results
+
             let inline iter (f: 'a -> unit) (xs: 'a[]) : unit =
                 if xs.Length = 0 then ()
                 elif xs.Length = 1 then f xs.[0]
@@ -5574,6 +5587,25 @@ module spiral_compiler =
 
     /// ### InferEnv
     type InferEnv = { ty : Map<string,T>; term : Map<string,T>; constraints : Map<string,ConstraintOrModule> }
+    /// ### loc_env
+    let loc_env (x: TopEnv) : InferEnv = { term = x.term; ty = x.ty; constraints = x.constraints }
+
+    /// ### lit
+    let lit = function
+        | LitUInt8 _ -> TyPrim UInt8T
+        | LitUInt16 _ -> TyPrim UInt16T
+        | LitUInt32 _ -> TyPrim UInt32T
+        | LitUInt64 _ -> TyPrim UInt64T
+        | LitInt8 _ -> TyPrim Int8T
+        | LitInt16 _ -> TyPrim Int16T
+        | LitInt32 _ -> TyPrim Int32T
+        | LitInt64 _ -> TyPrim Int64T
+        | LitFloat32 _ -> TyPrim Float32T
+        | LitFloat64 _ -> TyPrim Float64T
+        | LitBool _ -> TyPrim BoolT
+        | LitString _ -> TyPrim StringT
+        | LitChar _ -> TyPrim CharT
+
 
     /// ### kind_get
     let kind_get x =
@@ -6056,28 +6088,6 @@ module spiral_compiler =
         | UnusedTypeVariable vars -> sprintf "The type variables %s are unused in the function's type signature." (vars |> String.concat ", ")
         | CompilerError x -> x
 
-    /// ### loc_env
-    let loc_env (x : TopEnv) = {term=x.term; ty=x.ty; constraints=x.constraints}
-
-    /// ### names_of
-    let names_of vars = List.map (fun x -> x.name) vars |> Set
-
-    /// ### lit
-    let lit = function
-        | LitUInt8 _ -> TyPrim UInt8T
-        | LitUInt16 _ -> TyPrim UInt16T
-        | LitUInt32 _ -> TyPrim UInt32T
-        | LitUInt64 _ -> TyPrim UInt64T
-        | LitInt8 _ -> TyPrim Int8T
-        | LitInt16 _ -> TyPrim Int16T
-        | LitInt32 _ -> TyPrim Int32T
-        | LitInt64 _ -> TyPrim Int64T
-        | LitFloat32 _ -> TyPrim Float32T
-        | LitFloat64 _ -> TyPrim Float64T
-        | LitBool _ -> TyPrim BoolT
-        | LitString _ -> TyPrim StringT
-        | LitChar _ -> TyPrim CharT
-
     /// ### autogen_name_in_fun
     let autogen_name_in_fun (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'%i" i else sprintf "'%c" x
 
@@ -6148,8 +6158,8 @@ module spiral_compiler =
         let used_vars = f x
         Seq.iter (h.Add >> ignore) (outside_foralls - used_vars)
         if 0 < h.Count then
-            errors.Add(r, UnusedTypeVariable (Seq.toList h))
-
+            let vars = h |> Seq.toList |> List.sort
+            errors.Add(r, UnusedTypeVariable vars)
     /// ### assert_foralls_used
     let assert_foralls_used errors r x = assert_foralls_used' errors Set.empty r x
 
@@ -8789,7 +8799,7 @@ module spiral_compiler =
                                                 | t' -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
                                             let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
                                             loop [] t
-                                        | _ -> failwith "Compiler error: Expected a join point with a gadt union."
+                                        | _ -> failwith "error[EJPX002]: internal compiler error\n  |\n  = expected: join point with GADT union\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
                                     Map.add name (loop_outer bodyt |> process_term) term
                                 else
                                     let rec loop vars = function
@@ -8800,7 +8810,7 @@ module spiral_compiler =
                                             match t with
                                             | TB _ -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
                                             | _ -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
-                                        | _ -> failwith "Compiler error: Expected a join point with an union."
+                                        | _ -> failwith "error[EJPX001]: internal compiler error\n  |\n  = expected: join point with union\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
                                     Map.add name (loop [] bodyt |> process_term) term
                                 ) term l
                         | _ ->
@@ -8811,7 +8821,7 @@ module spiral_compiler =
                                     match t with
                                     | TB _ -> ENominal(r,EB r,t')
                                     | _ -> EFun(r,0,ENominal(r,EV 0,t'),Some(TFun(t,t',FT_Vanilla)))
-                                | _ -> failwith "Compiler error: Expected a join point."
+                                | _ -> failwith "error[EJPX000]: internal compiler error\n  |\n  = expected: join point\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
                             Map.add name (loop [] bodyt |> process_term) term
                     term,Map.add name nom ty', Map.add at_tag_i {|body=bodyt; name=name|} nominals, i+1
                     ) (Map.empty, Map.empty, Map.empty, top_env.nominals_next_tag) l
@@ -8978,7 +8988,7 @@ module spiral_compiler =
 
     /// ### JoinPointKey
     type JoinPointKey =
-        | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty []>
+        | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
         | JPClosure of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
 
     /// ### JoinPointCall
@@ -9020,7 +9030,7 @@ module spiral_compiler =
         | TyDo of TypedBind []
         | TyIndent of TypedBind []
         | TyJoinPoint of JoinPointCall
-        | TyBackend of (string ConsedNode * E) * ConsedNode<RData [] * Ty []> * Range
+        | TyBackend of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty> * Range
 
     /// ### UnionRewrite
     type UnionRewrite = UnionData of string * Data | UnionBlockers of string Set
@@ -9038,9 +9048,251 @@ module spiral_compiler =
         env_stack_term : Data []
         backend : string ConsedNode
         globals : ResizeArray<string>
+        join_point_method_key_names : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>
+        join_point_closure_key_names : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>
+        jp_method_stack : System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>
+        jp_type_stack : System.Collections.Generic.HashSet<ConsedNode<Ty []>>
         }
 
-    /// ### PartEvalTopEnv
+    /// ### show_ty
+    let show_ty x =
+        let rec f prec x =
+            let p = p prec
+            match x with
+            | YVoid -> "void"
+            | YB -> "()"
+            | YLit x -> show_lit x
+            | YPair(a,b) -> p 25 (sprintf "%s * %s" (f 25 a) (f 24 b))
+            | YSymbol x -> sprintf ".%s" x
+            | YTypeFunction _ -> p 0 (sprintf "? => ?")
+            | YForall -> p 0 (sprintf "forall ?. ?")
+            | YExists -> p 0 (sprintf "exists ?. ?")
+            | YRecord l -> sprintf "{%s}" (l |> Map.toList |> List.map (fun ((_,k),v) -> sprintf "%s : %s" k (f -1 v)) |> String.concat "; ")
+            | YUnion l -> sprintf "{%s}" (l.Item.cases |> Map.toList |> List.map (fun ((_,k),v) -> sprintf "%s : %s" k (f -1 v)) |> String.concat " | ")
+            | YPrim x -> show_primt x
+            | YArray a -> p 30 (sprintf "array_base %s" (f 30 a))
+            | YFun(a,b,FT_Vanilla) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
+            | YFun(a,b,FT_Pointer) -> p 20 (sprintf "fptr (%s -> %s)" (f 20 a) (f 19 b))
+            | YFun(a,b,FT_Closure) -> p 20 (sprintf "closure (%s -> %s)" (f 20 a) (f 19 b))
+            | YMacro a -> p 30 (List.map (function TypeLit a | Type a -> f -1 a | Text a -> a) a |> String.concat "")
+            | YApply(a,b) -> p 30 (sprintf "%s %s" (f 29 a) (f 30 b))
+            | YLayout(a,b) -> p 30 (sprintf "%s %s" (show_layout_type b) (f 30 a))
+            | YNominal x -> x.node.name
+            | YMetavar _ -> "?"
+        f -1 x
+    /// ### DiagSidecar
+    /// Best-effort, non-blocking telemetry buffer for diagnostics.
+    /// Enabled when SPIRAL_DIAG_SIDECAR=1. Designed to survive heavy parallel builds.
+    module DiagSidecar =
+        open System
+        open System.Collections.Concurrent
+
+        let private maxItems = 256
+        let private q = ConcurrentQueue<string>()
+
+        let inline enabled () =
+            Environment.GetEnvironmentVariable("SPIRAL_DIAG_SIDECAR") = "1"
+
+        let emit (msg: string) =
+            if enabled () then
+                q.Enqueue msg
+                // best-effort trim: we prefer losing oldest telemetry to blocking the compiler.
+                while q.Count > maxItems do
+                    let mutable v = Unchecked.defaultof<string>
+                    q.TryDequeue(&v) |> ignore
+
+        let snapshot (maxTake: int) : string list =
+            if not (enabled ()) then []
+            else
+                let arr = q.ToArray()
+                if arr.Length = 0 then []
+                else
+                    let n = if maxTake < 0 then 0 else min maxTake arr.Length
+                    arr.[arr.Length - n ..] |> Array.toList
+
+    /// ### format_jp_annot_mismatch
+    /// Rust-ish, multi-line diagnostic for join-point annotation mismatches.
+    /// Keep this definition after Ty + show_ty (no forward references).
+    let format_jp_annot_mismatch
+        (d: LangEnv)
+        (kind: string)
+        (tag: int)
+        (key: obj)
+        (jp_name: string option)
+        (got: Ty)
+        (expected: Ty)
+        : string =
+            let name_from_tables =
+                match kind with
+                | "method" ->
+                    match key with
+                    | :? ConsedNode<RData [] * Ty [] * Ty> as k ->
+                        match d.join_point_method_key_names.TryGetValue k with
+                        | true, n -> Some n
+                        | _ -> None
+                    | _ -> None
+                | "closure" ->
+                    match key with
+                    | :? ConsedNode<RData [] * Ty [] * Ty> as k ->
+                        match d.join_point_closure_key_names.TryGetValue k with
+                        | true, n -> Some n
+                        | _ -> None
+                    | _ -> None
+                | _ -> None
+
+            let name =
+                match jp_name, name_from_tables with
+                | Some n, _ when n <> "" -> n
+                | _, Some n when n <> "" -> n
+                | _ -> "<anonymous>"
+
+            let backend = d.backend.node
+
+            let show_pos (p: VSCPos) = sprintf "%d:%d" (p.line + 1) (p.character + 1)
+
+            let show_site (r: Range) =
+                let (p0, p1) = r.range
+                sprintf "%s:({ line = %d; character = %d }, { line = %d; character = %d })"
+                    r.path (p0.line + 1) (p0.character + 1) (p1.line + 1) (p1.character + 1)
+
+            let primary_site =
+                match d.trace with
+                | r :: _ ->
+                    let (p0, _) = r.range
+                    sprintf "%s:%s" r.path (show_pos p0)
+                | [] -> "<unknown>"
+
+            let env_is1 (name: string) =
+                match System.Environment.GetEnvironmentVariable name with
+                | null | "" -> false
+                | "1" | "true" | "True" | "yes" | "YES" -> true
+                | _ -> false
+
+            let trace_pretty =
+                match d.trace with
+                | [] -> "<empty trace>"
+                | _ ->
+                    let rec dedup acc = function
+                        | a :: b :: rest when a = b -> dedup acc (b :: rest)
+                        | a :: rest -> dedup (a :: acc) rest
+                        | [] -> List.rev acc
+
+                    let frames =
+                        d.trace
+                        |> List.map show_site
+                        |> dedup []
+
+                    if env_is1 "SPIRAL_DIAG_TRACE_FULL" then
+                        let shown = frames |> List.truncate 80
+
+                        let body =
+                            shown
+                            |> List.mapi (fun i s -> sprintf "  %2d: %s" (i + 1) s)
+                            |> String.concat "\n"
+
+                        let frames_len = List.length frames
+                        let shown_len = List.length shown
+
+                        if frames_len > shown_len then
+                            body + sprintf "\n  ... (%d more)" (frames_len - shown_len)
+                        else body
+                    else
+                        let shown = frames |> List.truncate 24
+                        "  " + (String.concat " <- " shown)
+
+            let fun_diff =
+                match expected, got with
+                | YFun (arg_expected, ret_expected, _), YFun (arg_got, ret_got, _) ->
+                    if show_ty arg_expected = show_ty arg_got && show_ty ret_expected = show_ty ret_got then
+                        ""
+                    else
+                        sprintf
+                            "  = note: param differs: expected %s, found %s\n  = note: return differs: expected %s, found %s\n"
+                            (show_ty arg_expected) (show_ty arg_got) (show_ty ret_expected) (show_ty ret_got)
+                | _ -> ""
+
+            let inflight_method_tags_sample =
+                d.jp_method_stack |> Seq.truncate 12 |> Seq.map (fun x -> x.tag) |> Seq.toArray
+            let inflight_type_tags_sample =
+                d.jp_type_stack |> Seq.truncate 12 |> Seq.map (fun x -> x.tag) |> Seq.toArray
+
+            let inflight_method =
+                if d.jp_method_stack.Count > 0 then
+                    sprintf "  = note: inflight(method) count=%d sample_tags=%A\n" d.jp_method_stack.Count inflight_method_tags_sample
+                else ""
+
+            let inflight_type =
+                if d.jp_type_stack.Count > 0 then
+                    sprintf "  = note: inflight(type) count=%d sample_tags=%A\n" d.jp_type_stack.Count inflight_type_tags_sample
+                else ""
+
+            let sidecar_pretty =
+                match DiagSidecar.snapshot 12 with
+                | [] -> ""
+                | xs ->
+                    let body =
+                        xs
+                        |> List.mapi (fun i s -> sprintf "  %2d: %s" (i + 1) s)
+                        |> String.concat "\n"
+                    sprintf "  |\n  = sidecar (SPIRAL_DIAG_SIDECAR=1):\n%s\n" body
+
+            let key_repr_pretty =
+                match key with
+                | :? ConsedNode<RData [] * Ty [] * Ty> as k ->
+                    let (env_term, env_type, annot) = k.node
+                    let salt =
+                        if env_term.Length > 0 then
+                            match env_term.[env_term.Length - 1] with
+                            | ReSymbol s when s.StartsWith("jp@") || s.StartsWith("jp_type@") -> Some s
+                            | _ -> None
+                        else None
+                    let salt_line =
+                        match salt with
+                        | Some s -> sprintf " (salt=%s)" s
+                        | None -> ""
+                    sprintf "<tag %d>%s env_term.len=%d env_type.len=%d annot=%s"
+                        k.tag salt_line env_term.Length env_type.Length (show_ty annot)
+                | _ -> sprintf "%O" key
+
+            let source_snip =
+                if env_is1 "SPIRAL_DIAG_SOURCE" then
+                    match d.trace with
+                    | r :: _ ->
+                        try
+                            if System.IO.File.Exists r.path then
+                                let lines = System.IO.File.ReadAllLines r.path
+                                let (p0, _) = r.range
+                                if p0.line >= 0 && p0.line < lines.Length then
+                                    let ltxt = lines.[p0.line].Replace("\t","    ")
+                                    let caretPad = String.replicate (max 0 p0.character) " "
+                                    sprintf "  |\n  = source:\n  | %4d | %s\n  |      | %s^\n" (p0.line + 1) ltxt caretPad
+                                else ""
+                            else ""
+                        with _ -> ""
+                    | _ -> ""
+                else ""
+
+            sprintf
+                """error[EJP0002]: join point annotation mismatch
+  --> %s
+%s  |
+  = join-point: %s (kind=%s, tag=%d)
+  = backend: %s
+  = key: <tag %d>
+  = key_repr: %s
+  |
+  = declared (annotation): %s
+  = found (body): %s
+%s%s%s%s  |
+  = trace:
+%s
+  |
+  help: make the annotation match the body. If this appears only under parallel builds, try SPIRAL_HOPAC_PAR=1 to confirm an interleaving/cache race (and optionally SPIRAL_DIAG_SIDECAR=1 for extra telemetry, and SPIRAL_DIAG_TRACE_FULL=1 for a full trace).
+"""
+                primary_site source_snip name kind tag backend tag key_repr_pretty (show_ty expected) (show_ty got)
+                fun_diff inflight_method inflight_type sidecar_pretty trace_pretty
+
+/// ### PartEvalTopEnv
     type PartEvalTopEnv = {
         prototypes_instances : Dictionary<GlobalId * GlobalId, E>
         nominals : Dictionary<GlobalId, Nominal>
@@ -9094,8 +9346,8 @@ module spiral_compiler =
                     | DNominal(a,b) -> ReNominal(hc(f a,b))
                     | DB -> ReB
                     | DHashMap(x,is_writable) when is_writable.Value = false -> x |> Seq.map (fun kv -> f kv.Key, f kv.Value) |> Seq.toArray |> hc |> ReHashMap
-                    | DHashMap _ -> raise_type_error d "The mutable compile time HashMap needs to be made immutable before it can be passed through a join point."
-                    | DHashSet _ -> raise_type_error d "The mutable compile-time HashSet cannot be passed through join points."
+                    | DHashMap _ -> raise_type_error d "error[EJP0005]: mutable compile-time HashMap cannot cross a join point boundary\n  |\n  help: freeze/clone the HashMap into an immutable representation before passing it through a join point; mutable state across join points breaks determinism (and races under parallel compilation).\n"
+                    | DHashSet _ -> raise_type_error d "error[EJP0006]: mutable compile-time HashSet cannot cross a join point boundary\n  |\n  help: rewrite the HashSet usage to an immutable set (or convert to an array/list) before passing it through a join point; mutable shared state can corrupt evaluation under parallel compilation.\n"
                 visiting.Remove x |> ignore
                 m.TryAdd(x,v) |> ignore
                 v
@@ -9323,33 +9575,6 @@ module spiral_compiler =
     /// ### cse_add
     let cse_add (d: LangEnv) k v = (List.head d.cse).Add(k,v)
 
-    /// ### show_ty
-    let show_ty x =
-        let rec f prec x =
-            let p = p prec
-            match x with
-            | YVoid -> "void"
-            | YB -> "()"
-            | YLit x -> show_lit x
-            | YPair(a,b) -> p 25 (sprintf "%s * %s" (f 25 a) (f 24 b))
-            | YSymbol x -> sprintf ".%s" x
-            | YTypeFunction _ -> p 0 (sprintf "? => ?")
-            | YForall -> p 0 (sprintf "forall ?. ?")
-            | YExists -> p 0 (sprintf "exists ?. ?")
-            | YRecord l -> sprintf "{%s}" (l |> Map.toList |> List.map (fun ((_,k),v) -> sprintf "%s : %s" k (f -1 v)) |> String.concat "; ")
-            | YUnion l -> sprintf "{%s}" (l.Item.cases |> Map.toList |> List.map (fun ((_,k),v) -> sprintf "%s : %s" k (f -1 v)) |> String.concat " | ")
-            | YPrim x -> show_primt x
-            | YArray a -> p 30 (sprintf "array_base %s" (f 30 a))
-            | YFun(a,b,FT_Vanilla) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
-            | YFun(a,b,FT_Pointer) -> p 20 (sprintf "fptr (%s -> %s)" (f 20 a) (f 19 b))
-            | YFun(a,b,FT_Closure) -> p 20 (sprintf "closure (%s -> %s)" (f 20 a) (f 19 b))
-            | YMacro a -> p 30 (List.map (function TypeLit a | Type a -> f -1 a | Text a -> a) a |> String.concat "")
-            | YApply(a,b) -> p 30 (sprintf "%s %s" (f 29 a) (f 30 b))
-            | YLayout(a,b) -> p 30 (sprintf "%s %s" (show_layout_type b) (f 30 a))
-            | YNominal x -> x.node.name
-            | YMetavar _ -> "?"
-        f -1 x
-
     /// ### show_data
     let show_data x =
         let rec f prec x =
@@ -9540,7 +9765,7 @@ module spiral_compiler =
 
     /// ### PartEvalResult
     type PartEvalResult = {
-        join_point_method : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, System.Threading.ManualResetEventSlim>>
+        join_point_method : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>>
         join_point_closure : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>>
         ty_to_data : Ty -> Data
         nominal_apply : Ty -> Ty
@@ -9551,9 +9776,17 @@ module spiral_compiler =
 
     /// ### peval
     let peval (env : PartEvalTopEnv) (x : E) =
-        let join_point_method = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
-        let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
-        let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
+        // Comparer for join point body keys: backend by structural equality, body by physical identity.
+        // This avoids unsound cache collisions between alpha-equal bodies coming from different scopes/modules.
+        let jp_body_key_comparer =
+            { new System.Collections.Generic.IEqualityComparer<string ConsedNode * E> with
+                member _.Equals((b1,e1),(b2,e2)) = b1 = b2 && LanguagePrimitives.PhysicalEquality e1 e2
+                member _.GetHashCode((b,e)) = (hash b) ^^^ (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode e)
+            }
+
+        let join_point_method = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
+        let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
+        let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let backend_strings = HashConsTable()
         let backend_strings_lock = obj()
         let backend_switch_validate_all = ref true
@@ -9637,10 +9870,40 @@ module spiral_compiler =
 
         let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
         let jp_name_traces = System.Collections.Concurrent.ConcurrentDictionary<string, Trace>(System.StringComparer.Ordinal)
-        let inline trace_frame (x: Range) =
+        let jp_method_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
+        let jp_method_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Trace>(HashIdentity.Reference)
+        let jp_type_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Trace>(HashIdentity.Reference)
+
+        let inline jp_method_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>) =
+            try
+                stack
+                |> Seq.truncate 16
+                |> Seq.map (fun k ->
+                    match jp_method_key_names.TryGetValue k with
+                    | true, name -> name
+                    | _ -> sprintf "%O" k)
+                |> Seq.toArray
+                |> fun a -> System.String.Join(" ; ", a)
+            with _ -> "<unavailable>"
+
+        let inline jp_type_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<Ty []>>) =
+            try
+                stack
+                |> Seq.truncate 16
+                |> Seq.map (fun k -> sprintf "%O" k)
+                |> Seq.toArray
+                |> fun a -> System.String.Join(" ; ", a)
+            with _ -> "<unavailable>"
+
+        let inline trace_frame_short (x: Range) =
             let line = (fst x.range).line + 1
             let col = (fst x.range).character + 1
             sprintf "%s:%d:%d" x.path line col
+
+        let inline trace_frame_rust (x: Range) =
+            let (p0, p1) = x.range
+            sprintf "%s:({ line = %d; character = %d }, { line = %d; character = %d })"
+                x.path (p0.line + 1) (p0.character + 1) (p1.line + 1) (p1.character + 1)
 
         let trace_dedup (xs: Trace) =
             let rec loop (last: Range option) (acc: Range list) (xs: Trace) =
@@ -9653,21 +9916,47 @@ module spiral_compiler =
             loop None [] xs
 
         let trace_to_string_short (xs: Trace) =
-            let frames = trace_dedup xs |> List.map trace_frame
+            let frames = trace_dedup xs |> List.map trace_frame_short
             if frames.IsEmpty then "<no-trace>"
             else
                 let top = if frames.Length > 8 then frames |> List.take 8 else frames
                 System.String.Join(" <- ", top)
 
         let trace_to_string_full (xs: Trace) =
-            let frames = trace_dedup xs |> List.map trace_frame
+            let frames = trace_dedup xs |> List.map trace_frame_rust
             if frames.IsEmpty then "<no-trace>"
-            else System.String.Join("\n", frames)
+            else
+                let maxFrames =
+                    match System.Environment.GetEnvironmentVariable("SPIRAL_DIAG_TRACE_MAX") with
+                    | null | "" -> 80
+                    | s ->
+                        match System.Int32.TryParse s with
+                        | true, v when v > 0 -> v
+                        | _ -> 80
+                let shown = if frames.Length > maxFrames then frames |> List.take maxFrames else frames
+                let body =
+                    shown
+                    |> List.mapi (fun i s -> sprintf "  %2d: %s" (i + 1) s)
+                    |> String.concat "\n"
+                if frames.Length > shown.Length then body + sprintf "\n  ... (%d more)" (frames.Length - shown.Length)
+                else body
 
         let inline record_jp_diag (jp_name: string option) (trace: Trace) =
             let name = defaultArg jp_name "<anon>"
             jp_name_counts.AddOrUpdate(name, 1, (fun _ v -> v + 1)) |> ignore
             jp_name_traces.AddOrUpdate(name, trace, (fun _ _ -> trace)) |> ignore
+        let inline record_jp_diag_method (key: ConsedNode<RData [] * Ty [] * Ty>) (jp_name: string option) (trace: Trace) =
+            DiagSidecar.emit (sprintf "jp.method tag=%d name=%s" key.tag (defaultArg jp_name "<anon>"))
+            record_jp_diag jp_name trace
+            let name = defaultArg jp_name "<anon>"
+            jp_method_key_names.AddOrUpdate(key, name, (fun _ _ -> name)) |> ignore
+            jp_method_key_traces.AddOrUpdate(key, trace, (fun _ _ -> trace)) |> ignore
+
+        let inline record_jp_diag_type (key: ConsedNode<Ty []>) (trace: Trace) =
+            DiagSidecar.emit (sprintf "jp.type tag=%d" key.tag)
+            record_jp_diag (Some "<type>") trace
+            jp_type_key_traces.AddOrUpdate(key, trace, (fun _ _ -> trace)) |> ignore
+
         let mutable diag_last_ms = 0L
         let mutable diag_last_wait = ""
 
@@ -9847,12 +10136,26 @@ module spiral_compiler =
 
 
 
+        // NOTE: With Hopac-based parallel compilation, different jobs can interleave on the same worker thread.
+        // ThreadLocal inflight tracking can therefore produce false "recursive join point" positives.
+        // We use AsyncLocal to scope inflight tracking to the logical execution context.
+        let inline get_async_local (al: System.Threading.AsyncLocal<'T>) (mk: unit -> 'T) =
+            let v = al.Value
+            if obj.ReferenceEquals(v, null) then
+                let v2 = mk()
+                al.Value <- v2
+                v2
+            else v
+
+        let inline mk_jp_method_inflight () =
+            new System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Reference)
+        let inline mk_jp_type_inflight () =
+            new System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Reference)
+
         let jp_method_inflight =
-            new System.Threading.ThreadLocal<System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty []>>>(fun () ->
-                new System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty []>>(HashIdentity.Reference))
+            new System.Threading.AsyncLocal<System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>>()
         let jp_type_inflight =
-            new System.Threading.ThreadLocal<System.Collections.Generic.HashSet<ConsedNode<Ty []>>>(fun () ->
-                new System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Reference))
+            new System.Threading.AsyncLocal<System.Collections.Generic.HashSet<ConsedNode<Ty []>>>()
         let jp_sched =
             let stack_bytes = jp_stack_mb * 1024 * 1024
             let create : Hopac.Scheduler.Create =
@@ -9972,6 +10275,10 @@ module spiral_compiler =
             env_stack_term = Array.zeroCreate<_> sz_term
             backend = s.backend
             globals = s.globals
+            join_point_method_key_names = s.join_point_method_key_names
+            join_point_closure_key_names = s.join_point_closure_key_names
+            jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+            jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
             }
         and closure_convert s (body,annot,gl_term,gl_ty,sz_term,sz_ty as args) =
             let join_point_key, call_args, fun_ty =
@@ -9991,6 +10298,10 @@ module spiral_compiler =
                     data_to_rdata s hc_table gl_term
                 let join_point_key =
                     lock hc_table (fun () -> hc_table.Add(env_global_value, s.env_global_type, fun_ty))
+                let _ =
+                    // best-effort, stable-ish label to improve join-point diagnostics
+                    let name = sprintf "closure<%d>" join_point_key.tag
+                    s.join_point_closure_key_names.TryAdd(join_point_key, name) |> ignore
                 let jp_ev = dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
 
                 match fun_ty with
@@ -10299,33 +10610,60 @@ module spiral_compiler =
                     Utils.memoize join_point_type (fun _ ->
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Reference), HashConsTable()
                     ) body
-                let join_point_key = lock hc_table (fun () -> hc_table.Add(env_global_type))
+                let jp_key_range_enable =
+                    match System.Environment.GetEnvironmentVariable("SPIRAL_JP_KEY_RANGE") with
+                    | null | "" -> true
+                    | "0" | "false" | "False" | "FALSE" -> false
+                    | _ -> true
+
+                let env_global_type_key =
+                    if jp_key_range_enable then
+                        let (sp, ep) = r.range
+                        let rk = sprintf "jp_type@%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character
+                        Array.append env_global_type [| YLit (LitString rk) |]
+                    else env_global_type
+
+                let join_point_key = lock hc_table (fun () -> hc_table.Add(env_global_type_key))
                 let jp_cell = dict.GetOrAdd(join_point_key, fun _ -> { ev = new System.Threading.ManualResetEventSlim(false); owner = 0; value = None })
                 match jp_cell.value with
                 | Some ret_ty -> ret_ty
                 | None ->
+                    // Recursion guard based on per-evaluation stack (not per-thread).
+                    if s.jp_type_stack.Contains join_point_key then
+                        let cur = trace_to_string_short (r :: s.trace)
+                        let first_seen =
+                            match jp_type_key_traces.TryGetValue join_point_key with
+                            | true, tr -> trace_to_string_short tr
+                            | _ -> "<unknown>"
+                        let stack_prev = jp_type_stack_preview s.jp_type_stack
+                        raise_type_error (add_trace s r)
+                            (sprintf "error[EJP0001]: recursive join point requires annotation\n  |\n  = kind: type\n  = key: %O\n  = jp_type_stack: %d\n  = stack: %s\n  = first_seen: %s\n  = trace: %s\n  |\n  help: add an explicit annotation to break the cycle; if this appears only under parallel builds, set SPIRAL_HOPAC_PAR=1 to confirm an interleaving/race.\n"
+                                join_point_key s.jp_type_stack.Count stack_prev first_seen cur)
                     let tid = try System.Threading.Thread.CurrentThread.ManagedThreadId with _ -> 0
                     let owner0 = jp_cell.owner
                     if owner0 = tid && owner0 <> 0 then
-                        raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                        raise_type_error (add_trace s r) "error[EJP0004]: illegal unboxing of type join point during definition\n  |\n  help: avoid forcing/unboxing the join point value while its body is still being evaluated. This can happen via re-entrancy, speculative evaluation, or parallel interleaving.\n"
                     elif owner0 <> 0 then
                         jp_ev_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ev
                         jp_throw_if_any ()
                         match jp_cell.value with
                         | Some ret_ty -> ret_ty
-                        | None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                        | None -> raise_type_error (add_trace s r) "error[EJP0004]: illegal unboxing of type join point during definition\n  |\n  help: avoid forcing/unboxing the join point value while its body is still being evaluated. This can happen via re-entrancy, speculative evaluation, or parallel interleaving.\n"
                     else
                         // Try to become the scheduler/owner of this type join point.
                         if System.Threading.Interlocked.CompareExchange(&jp_cell.owner, -1, 0) = 0 then
                             jp_cell.ev.Reset()
-                            record_jp_diag (Some "<type>") (r :: s.trace)
+                            record_jp_diag_type join_point_key (r :: s.trace)
                             assert (0 = scope.term.free_vars.Length)
                             let run () =
-                                let inflight = jp_type_inflight.Value
+                                let inflight = get_async_local jp_type_inflight mk_jp_type_inflight
                                 let inflight_added = inflight.Add join_point_key
                                 try
                                     // Mark real computing thread id (helps detect true recursive unboxing).
                                     jp_cell.owner <- (try System.Threading.Thread.CurrentThread.ManagedThreadId with _ -> 0)
+                                    let jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                    let jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
+                                    jp_type_stack.Add join_point_key |> ignore
                                     let s : LangEnv = {
                                         trace = r :: s.trace
                                         seq = ResizeArray()
@@ -10338,6 +10676,10 @@ module spiral_compiler =
                                         env_stack_term = Array.zeroCreate<_> scope.term.stack_size
                                         backend = s.backend
                                         globals = s.globals
+                                        join_point_method_key_names = s.join_point_method_key_names
+                                        join_point_closure_key_names = s.join_point_closure_key_names
+                                        jp_method_stack = jp_method_stack
+                                        jp_type_stack = jp_type_stack
                                         }
                                     let s = rename_global_term s
                                     let ret_ty = ty s body
@@ -10355,14 +10697,14 @@ module spiral_compiler =
                                 run()
                             match jp_cell.value with
                             | Some ret_ty -> ret_ty
-                            | None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                            | None -> raise_type_error (add_trace s r) "error[EJP0004]: illegal unboxing of type join point during definition\n  |\n  help: avoid forcing/unboxing the join point value while its body is still being evaluated. This can happen via re-entrancy, speculative evaluation, or parallel interleaving.\n"
                         else
                             // Another worker started computing it.
                             jp_ev_wait "JPType.wait" (sprintf "key=%O" join_point_key) jp_cell.ev
                             jp_throw_if_any ()
                             match jp_cell.value with
                             | Some ret_ty -> ret_ty
-                            | None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                            | None -> raise_type_error (add_trace s r) "error[EJP0004]: illegal unboxing of type join point during definition\n  |\n  help: avoid forcing/unboxing the join point value while its body is still being evaluated. This can happen via re-entrancy, speculative evaluation, or parallel interleaving.\n"
 
             | TB _ -> YB
             | TLit(_,x) -> YLit x
@@ -10710,46 +11052,115 @@ module spiral_compiler =
             | ERecursiveForall'(_,free_vars,i,body) -> eforall (free_vars,i,body.Value)
             | ERecursive a -> term s a.Value
             | ERecBlock _ -> failwith "Compiler error: Recursive blocks should be inlined and eliminated during the prepass."
-            | EJoinPoint _ -> failwith "Compiler error: Raw join points should be transformed during the prepass."
+            | EJoinPoint _ -> failwith "error[EJPX003]: internal compiler error\n  |\n  = raw join point survived prepass\n  help: this indicates a missing transformation pass; capture the stack trace and prepass inputs.\n"
             | EJoinPoint'(r,scope,body,annot,backend,jp_name) ->
                 let env_global_type = HopacExtensions.A.map (vt s) scope.ty.free_vars
                 let env_global_term = HopacExtensions.A.map (v s) scope.term.free_vars
 
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
-                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option>), hc_table, dict_ev =
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option>), hc_table, dict_ev =
 
                     Utils.memoize join_point_method (fun _ ->
 
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, TypedBind [] option * Ty option * string option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty []>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference)
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference)
 
                     ) (backend', body)
+                // NOTE: join-point bodies can be polymorphic; when the same body is reached through different
+                // instantiations, caching solely by the free-variable environment can accidentally reuse the wrong
+                // specialization (especially under parallel builds). We therefore salt the key with the local
+                // annotation type when one is available at this call site.
+                let annot_ty_for_key : Ty option =
+                    try Option.map (ty s) annot
+                    with _ -> None
+                let env_global_type_key =
+                    match annot_ty_for_key with
+                    | Some t -> Array.append env_global_type [| t |]
+                    | None -> env_global_type
+
                 let call_args, env_global_value =
                     data_to_rdata s hc_table env_global_term
+
+                // Join-point key salting: by default we include a stable range fingerprint in the key.
+                // This avoids accidental key/tag reuse under parallel builds (hash-cons interleavings / cache races),
+                // at the cost of fewer reuse opportunities. Disable with SPIRAL_JP_KEY_RANGE=0 if you need to
+                // compare perf or bisect a regression.
+                let jp_key_range_enable =
+                    match System.Environment.GetEnvironmentVariable("SPIRAL_JP_KEY_RANGE") with
+                    | null | "" -> true
+                    | "0" | "false" | "False" | "FALSE" -> false
+                    | _ -> true
+
+                let rk_opt =
+                    if jp_key_range_enable then
+                        let (sp, ep) = r.range
+                        Some (sprintf "jp@%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character)
+                    else None
+
+                let env_global_value_key =
+                    match rk_opt with
+                    | Some rk -> Array.append env_global_value [| ReSymbol rk |]
+                    | None -> env_global_value
+
                 let join_point_key =
-                    lock hc_table (fun () -> hc_table.Add(env_global_value, env_global_type))
+                    lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, defaultArg annot_ty_for_key YVoid))
+                let _ =
+                    // record a stable label for better join-point diagnostics
+                    let base_name =
+                        match jp_name with
+                        | Some n when n <> "" -> n
+                        | _ -> sprintf "<anonymous:%d>" join_point_key.tag
+                    let name =
+                        match rk_opt with
+                        | Some rk -> base_name + " @" + rk
+                        | None -> base_name
+                    s.join_point_method_key_names.TryAdd(join_point_key, name) |> ignore
                 let jp_ev = dict_ev.GetOrAdd(join_point_key, fun _ -> new System.Threading.ManualResetEventSlim(false))
 
                 let ret_ty =
                     match dict.TryGetValue(join_point_key) with
                     | true, (_, Some ret_ty, _) -> ret_ty
-                    | true, (_, None, _) ->
-                        let inflight = jp_method_inflight.Value
-                        if inflight.Contains join_point_key then
-                            raise_type_error (add_trace s r) "Recursive join points must be annotated."
-                        else
+                    | true, (call_args0, None, jp_name) ->
+                        let jp = defaultArg jp_name "<anon>"
+
+                        // If an annotation is available at this call site, inject it into the spec to break recursive cycles.
+                        let annot_val_local = annot_ty_for_key
+
+                        match annot_val_local with
+                        | Some t ->
+                            dict.[join_point_key] <- (call_args0, Some t, jp_name)
+                            t
+                        | None ->
+                            // Another worker is computing this spec...if we are already inside its evaluation stack, waiting would deadlock.
+                            if s.jp_method_stack.Contains join_point_key then
+                                let cur = trace_to_string_short (r :: s.trace)
+                                let snap = diag_snapshot (sprintf "JPMethod.recursive jp=%s" jp)
+                                let ev_set = try jp_ev.IsSet with _ -> false
+                                let first_seen =
+                                    match jp_method_key_traces.TryGetValue join_point_key with
+                                    | true, tr -> trace_to_string_short tr
+                                    | _ ->
+                                        match jp_name_traces.TryGetValue jp with
+                                        | true, tr -> trace_to_string_short tr
+                                        | _ -> "<unknown>"
+                                let stack_prev = jp_method_stack_preview s.jp_method_stack
+                                raise_type_error (add_trace s r)
+                                    (sprintf "error[EJP0001]: recursive join point requires annotation\n  |\n  = kind: method\n  = join-point: %s\n  = key: %O\n  = backend: %O\n  = ev_set: %b\n  = jp_method_stack: %d\n  |\n  = stack: %s\n  = first_seen: %s\n  = snapshot:\n%s\n  = trace: %s\n  |\n  help: add an explicit annotation (return type) to the join point to break the cycle; if this appears only under parallel builds, set SPIRAL_HOPAC_PAR=1 to confirm an interleaving/race.\n"
+                                        jp join_point_key backend' ev_set s.jp_method_stack.Count stack_prev first_seen snap cur)
+                            else
                             jp_ev_wait "JPMethod.wait" (sprintf "key=%O backend=%O" join_point_key backend') jp_ev
                             jp_throw_if_any ()
                             match dict.TryGetValue(join_point_key) with
-                            | true, (_, Some ret_ty, _) -> ret_ty
-                            | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                            | true, (_, Some ret_ty, jp_name) -> ret_ty
+                            | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: recursive join point requires annotation\n  |\n  = kind: method\n  = join-point: %s\n  = key: %O\n  = backend: %O\n  |\n  help: add an explicit annotation (return type) to the join point to break the cycle; if this appears only under parallel builds, set SPIRAL_HOPAC_PAR=1 to confirm an interleaving/race.\n" (defaultArg jp_name "<anon>") join_point_key backend')
                     | false, _ ->
                         let annot_val = Option.map (ty s) annot
                         if dict.TryAdd(join_point_key, (None, annot_val, jp_name)) then
                             jp_ev.Reset()
-                            record_jp_diag jp_name (r :: s.trace)
+                            record_jp_diag_method join_point_key jp_name (r :: s.trace)
                             let run () =
-                                let inflight = jp_method_inflight.Value
-                                let inflight_added = inflight.Add join_point_key
+                                let jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                let jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
+                                jp_method_stack.Add join_point_key |> ignore
                                 try
                                     let s : LangEnv = {
                                         trace = r :: s.trace
@@ -10763,14 +11174,21 @@ module spiral_compiler =
                                         env_stack_term = Array.zeroCreate<_> scope.term.stack_size
                                         backend = backend'
                                         globals = s.globals
+                                        join_point_method_key_names = s.join_point_method_key_names
+                                        join_point_closure_key_names = s.join_point_closure_key_names
+                                        jp_method_stack = jp_method_stack
+                                        jp_type_stack = jp_type_stack
                                         }
                                     let s = rename_global_term s
                                     let seq,ty = term_scope'' s body annot_val
                                     dict.[join_point_key] <- (Some seq, Some ty, jp_name)
-                                    annot_val |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
+                                    match annot_val with
+                                    | Some annot when show_ty ty <> show_ty annot ->
+                                        let s' = add_trace s r
+                                        raise_type_error s' (format_jp_annot_mismatch s' "method" join_point_key.tag (box join_point_key) jp_name ty annot)
+                                    | _ -> ()
                                     ty
                                 finally
-                                    if inflight_added then inflight.Remove join_point_key |> ignore
                                     jp_ev.Set()
                                     let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
                                     dict_ev.TryRemove(join_point_key, &_ev) |> ignore
@@ -10784,8 +11202,8 @@ module spiral_compiler =
                                     jp_ev_wait "JPMethod.wait" (sprintf "key=%O backend=%O" join_point_key backend') jp_ev
                                     jp_throw_if_any ()
                                     match dict.TryGetValue(join_point_key) with
-                                    | true, (_, Some ret_ty, _) -> ret_ty
-                                    | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                                    | true, (_, Some ret_ty, jp_name) -> ret_ty
+                                    | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: recursive join point requires annotation\n  |\n  = kind: method\n  = join-point: %s\n  = key: %O\n  = backend: %O\n  |\n  help: add an explicit annotation (return type) to the join point to break the cycle; if this appears only under parallel builds, set SPIRAL_HOPAC_PAR=1 to confirm an interleaving/race.\n" (defaultArg jp_name "<anon>") join_point_key backend')
                                 else
                                     run ()
                         else
@@ -10794,8 +11212,8 @@ module spiral_compiler =
                             | _ ->
                                 jp_ev_wait "JP.wait" (sprintf "key=%O" join_point_key) jp_ev; jp_throw_if_any ()
                                 match dict.TryGetValue(join_point_key) with
-                                | true, (_, Some ret_ty, _) -> ret_ty
-                                | _ -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                                | true, (_, Some ret_ty, jp_name) -> ret_ty
+                                | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: recursive join point requires annotation\n  |\n  = kind: method\n  = join-point: %s\n  = key: %O\n  = backend: %O\n  |\n  help: add an explicit annotation (return type) to the join point to break the cycle; if this appears only under parallel builds, set SPIRAL_HOPAC_PAR=1 to confirm an interleaving/race.\n" (defaultArg jp_name "<anon>") join_point_key backend')
 
                 match backend with
                 | None -> push_typedop_no_rewrite s (TyJoinPoint(JPMethod((backend',body),join_point_key),call_args)) ret_ty
@@ -11288,7 +11706,7 @@ module spiral_compiler =
                         | body, YB & ty -> push_typedop s (TyWhile(cond,body)) ty
                         | _, ty -> raise_type_error s <| sprintf "The body of the while loop must be of type unit.\nGot: %s" (show_ty ty)
                     | _ -> raise_type_error s <| sprintf "The conditional of the while loop must be of type bool.\nGot: %s" (show_ty ty)
-                | _ -> raise_type_error s "The body of the conditional of the while loop must be a solitary join point."
+                | _ -> raise_type_error s "error[EJP0010]: invalid while-conditional\n  |\n  = expected: solitary join point in while conditional body\n  help: rewrite the while condition to a single join point (no sequencing or extra binds).\n"
             | EOp(_,Do,[body]) ->
                 match term_scope s body with
                 | body, YB & ty -> push_typedop s (TyDo body) ty
@@ -12337,6 +12755,10 @@ module spiral_compiler =
             env_stack_term = [||]
             backend = lock backend_strings_lock (fun () -> backend_strings.Add env.backend)
             globals = ResizeArray ()
+            join_point_method_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
+            join_point_closure_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
+            jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Reference)
+            jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Reference)
             }
         let ty_to_data x = ty_to_data {s with i = ref 0} x
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
@@ -12857,7 +13279,7 @@ module spiral_compiler =
                 )
             )
         and method : _ -> MethodRecFsharp =
-            jp (fun ((jp_body,key & (C(args,_))),i) ->
+            jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                 let jp_dict,_,_ = env.join_point_method.[jp_body]
                 match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
@@ -12875,7 +13297,7 @@ module spiral_compiler =
                     | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
-                | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
+                | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
                 ) (fun s x ->
                 let domain =
                     match x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tyv t)) with
@@ -13607,7 +14029,7 @@ module spiral_compiler =
             line s "}"
             )
         and method : _ -> MethodRecGleam =
-            jp (fun ((jp_body,key & (C(args,_))),i) ->
+            jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                 let jp_dict,_,_ = env.join_point_method.[jp_body]
                 match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
@@ -13642,7 +14064,7 @@ module spiral_compiler =
                 | YFun (_, _, _) ->
                     raise_codegen_error "Non-standard functions are not supported in the Gleam backend."
                 | _ ->
-                    raise_codegen_error "Compiler error: Unexpected type in the closure join point.")
+                    raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n")
                 (fun s x ->
                 let fv_tys =
                     x.free_vars
@@ -14282,7 +14704,7 @@ module spiral_compiler =
             )
         )
         and method : _ -> MethodRecLua =
-            jp (fun ((jp_body,key & (C(args,_))),i) ->
+            jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                 let jp_dict,_,_ = env.join_point_method.[jp_body]
                 match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
@@ -14309,7 +14731,7 @@ module spiral_compiler =
                 | YFun (_, _, _) ->
                     raise_codegen_error "Non-standard functions are not supported in the Lua backend."
                 | _ ->
-                    raise_codegen_error "Compiler error: Unexpected type in the closure join point.")
+                    raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n")
                 (fun s x ->
                 let fv_bind =
                     match x.free_vars with
@@ -14670,7 +15092,7 @@ module spiral_compiler =
                     HopacExtensions.A.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> line' s
             and binds (vars : RefcVars) (s : CodegenEnv) (ret : BindsReturnC) (stmts : TypedBind []) =
                 let tup_destruct (a,b) =
-                    Array.map2 (fun (L(i,_)) b ->
+                    HopacExtensions.A.map2 (fun (L(i,_)) b ->
                         match b with
                         | WLit b -> $"v{i} = {lit b};"
                         | WV (L(i',_)) -> $"v{i} = v{i'};"
@@ -14836,7 +15258,7 @@ module spiral_compiler =
                     | BindsTailEnd -> line s $"return {x};"
                 let layout_index (x'_i : int) (x' : TyV []) =
                     match ret with
-                    | BindsLocal x -> Array.map2 (fun (L(i,_)) (L(i',_)) -> $"v{i} = v{x'_i}->v{i'};") x x' |> line' s
+                    | BindsLocal x -> HopacExtensions.A.map2 (fun (L(i,_)) (L(i',_)) -> $"v{i} = v{x'_i}->v{i'};") x x' |> line' s
                     | BindsTailEnd -> raise_codegen_error "Compiler error: Layout index should never come in end position."
                 let jp (a,b') =
                     let args = args b'
@@ -14953,7 +15375,7 @@ module spiral_compiler =
                         match s with
                         | DRecord l -> l |> Map.pick (fun (_,k') v -> if k' = k then Some v else None)
                         | _ -> raise_codegen_error "Compiler error: Expected a record.") q.data b
-                    Array.map2 (fun (L(i',_)) b -> $"&(v{i}->v{i'}), {show_w b}") (data_free_vars a) (data_term_vars c) |> String.concat ", "
+                    HopacExtensions.A.map2 (fun (L(i',_)) b -> $"&(v{i}->v{i'}), {show_w b}") (data_free_vars a) (data_term_vars c) |> String.concat ", "
                     |> sprintf "AssignMut%i(%s)" (assign_mut (tyvs_to_tys q.free_vars)).tag |> return'
                 | TyArrayLiteral(a,b') ->
                     let b = List.map tup_data b' |> String.concat "," |> sprintf "{%s}"
@@ -15036,7 +15458,7 @@ module spiral_compiler =
             and print_ordered_args s v = // Unlike C# for example, C keeps the struct fields in input order. To reduce padding, it is best to order the fields from largest to smallest.
                 order_argsC v |> HopacExtensions.A.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_templ is_while fun_name : _ -> MethodRecC =
-                jp (fun ((jp_body,key & (C(args,_))),i) ->
+                jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                     let jp_dict,_,_ = env.join_point_method.[jp_body]
                     match jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=name}
@@ -15060,7 +15482,7 @@ module spiral_compiler =
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
-                    | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
+                    | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
                     ) (fun _ s_typ s_fun x ->
                     let i, range = x.tag, tup_ty x.range
                     line s_typ (sprintf "typedef struct Closure%i Closure%i;" i i)
@@ -15600,7 +16022,7 @@ module spiral_compiler =
                 | StackMutable -> stack_mut a
             and binds (unroll : Stack<int>) (s : CodegenEnv) (ret : BindsReturnCpp) (stmts : TypedBind []) =
                 let tup_destruct (a,b) =
-                    Array.map2 (fun (L(i,_)) b ->
+                    HopacExtensions.A.map2 (fun (L(i,_)) b ->
                         match b with
                         | WLit b -> $"v{i} = {lit b};"
                         | WV (L(i',_)) -> $"v{i} = v{i'};"
@@ -15612,8 +16034,8 @@ module spiral_compiler =
                             let decl_vars () = HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
                             let layout_index layout (x'_i : int) (x' : TyV []) =
                                 match layout with
-                                | Heap | HeapMutable -> Array.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.base->v{i'};") d x' |> lineCpp' s
-                                | StackMutable -> Array.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.v{i'};") d x' |> lineCpp' s
+                                | Heap | HeapMutable -> HopacExtensions.A.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.base->v{i'};") d x' |> lineCpp' s
+                                | StackMutable -> HopacExtensions.A.map2 (fun (L(i,t)) (L(i',_)) -> $"{tyv t} & v{i} = v{x'_i}.v{i'};") d x' |> lineCpp' s
                             match a with
                             | TyToLayout(a,YLayout(_,StackMutable) & b) ->
                                 match d with
@@ -15691,7 +16113,7 @@ module spiral_compiler =
                                         let args = args b'
                                         line s $"Fun{y.tag} v{i}{{new Closure{x.tag}{{{args}}}}};"
                                     true
-                                | _ -> raise_codegen_error "Compiler error: Expected a single variable on the left side of a closure join point."
+                                | _ -> raise_codegen_error "error[EJPX005]: internal compiler error\n  |\n  = expected: single variable LHS in closure join point\n  help: capture the stack trace and the offending AST node.\n"
                             | _ ->
                                 decl_vars() |> lineCpp' s
                                 op unroll s (BindsLocal d) a
@@ -15906,10 +16328,10 @@ module spiral_compiler =
                                         | DRecord l -> l |> Map.pick (fun (_, k') v' -> if k = k' then Some v' else None)
                                         | _ -> raise_codegen_error "Compiler error: Expected a record.")
                                     (mut t).data b
-                            Array.map2 (fun (L(i',_)) b -> $"v{i}.base->v{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
+                            HopacExtensions.A.map2 (fun (L(i',_)) b -> $"v{i}.base->v{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
                         | StackMutable ->
                             let a = List.fold (fun s k -> match s with DRecord l -> l |> Map.pick (fun (_, k') v' -> if k = k' then Some v' else None) | _ -> raise_codegen_error "Compiler error: Expected a record.") (stack_mut t).data b
-                            Array.map2 (fun (L(i',_)) b -> $"v{i}.v{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
+                            HopacExtensions.A.map2 (fun (L(i',_)) b -> $"v{i}.v{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
                         | Heap -> raise_codegen_error "Compiler error (1): TyLayoutMutableSet should only be HeapMutable or StackMutable."
                     | _ -> raise_codegen_error "Compiler error (2): TyLayoutMutableSet should only be HeapMutable or StackMutable."
                     |> String.concat " " |> line s
@@ -15994,7 +16416,7 @@ module spiral_compiler =
             and print_ordered_args s v = // Unlike C# for example, C keeps the struct fields in input order. To reduce padding, it is best to order the fields from largest to smallest.
                 order_args v |> HopacExtensions.A.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_template is_while : _ -> MethodRecCpp =
-                jp (fun ((jp_body,key & (C(args,_))),i) ->
+                jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                     let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
                     match jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=Option.map fix_method_name name}
@@ -16035,7 +16457,7 @@ module spiral_compiler =
                         match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
-                    | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
+                    | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
                     ) (fun _ s_typ s_fun x ->
                     let i, range = x.tag, tup_ty x.range
                     let closure_args = closure_args x.domain x.free_vars.Length
@@ -16324,7 +16746,7 @@ module spiral_compiler =
                 let backend_name = (fst jp_body).node
                 match backend_name with
                 | "Cuda" ->
-                    Utils.memoize g (fun (jp_body,key & C(args,_)) ->
+                    Utils.memoize g (fun (jp_body,key & C(args,_,_)) ->
                         let args = rdata_free_vars args
                         let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
                         match jp_dict.[key] with
@@ -16866,7 +17288,7 @@ module spiral_compiler =
                 else x.free_vars |> HopacExtensions.A.iter (fun (L(i,t)) -> line s $"v{i} : {tyv t}")
                 )
             and method : _ -> MethodRecPython =
-                jp false (fun ((jp_body,key & (C(args,_))),i) ->
+                jp false (fun ((jp_body,key & (C(args,_,_))),i) ->
                     let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
                     match jp_dict.[key] with
                     | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
@@ -16885,7 +17307,7 @@ module spiral_compiler =
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
-                    | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
+                    | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
                     ) (fun s x ->
                     let env_args = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"env_v{i} : {tyv t}") |> String.concat ", "
                     line s $"def Closure{x.tag}({env_args}):"
@@ -16942,7 +17364,7 @@ module spiral_compiler =
                     let backend_name = (fst jp_body).node
                     match backend_name with
                     | "Cuda" ->
-                        Utils.memoize g (fun (jp_body,key & C(args,_)) ->
+                        Utils.memoize g (fun (jp_body,key & C(args,_,_)) ->
                             let args = rdata_free_vars args
                             let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
                             match jp_dict.[key] with
