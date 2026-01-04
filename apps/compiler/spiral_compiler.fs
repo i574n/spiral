@@ -9374,6 +9374,178 @@ module spiral_compiler =
         /// Get deep call site statistics
         let getDeepSites () = deepCallSites.ToArray() |> Array.toList
 
+
+
+    
+
+    /// ### EvalCycleGuard
+    /// Tracks active evaluation nodes (by object identity hash) per thread.
+    /// If we re-enter `term` on the same node before completing, we likely hit a
+    /// semantic cycle (e.g. recursive join-point body without an annotation) or a cache
+    /// corruption that makes evaluation bounce between the same nodes. This guard turns
+    /// an eventual StackOverflow into a typed diagnostic (EJP0011).
+    /// Tracks active evaluation nodes per-thread using reference equality (no hash collisions).
+    /// We allow limited re-entrancy (stdlib init patterns can re-enter), emit a warning on first re-entry,
+    /// and only throw EJP0011 when the same node re-enters too many times without unwinding.
+    module EvalCycleGuard =
+        open System
+        open System.Threading
+        open System.Collections.Generic
+        open System.Runtime.CompilerServices
+
+        type private RefEqComparer() =
+            interface IEqualityComparer<obj> with
+                member _.Equals(a,b) = obj.ReferenceEquals(a,b)
+                member _.GetHashCode(a) = RuntimeHelpers.GetHashCode(a)
+
+        // node -> reentry count
+        let private active = new ThreadLocal<Dictionary<obj,int>>(fun () -> Dictionary<obj,int>(RefEqComparer()))
+
+        /// Returns the current re-entry count after entering (1 means first entry).
+        let enter (node: obj) : int =
+            let d = active.Value
+            match d.TryGetValue(node) with
+            | true, n ->
+                let n' = n + 1
+                d.[node] <- n'
+                n'
+            | false, _ ->
+                d.[node] <- 1
+                1
+
+        /// Decrements the re-entry count; removes node when it reaches 0.
+        let exit (node: obj) : unit =
+            let d = active.Value
+            match d.TryGetValue(node) with
+            | true, n when n <= 1 ->
+                d.Remove(node) |> ignore
+            | true, n ->
+                d.[node] <- n - 1
+            | _ -> ()
+
+        let snapshotHashes (n: int) : int[] =
+            active.Value.Keys |> Seq.truncate n |> Seq.map RuntimeHelpers.GetHashCode |> Seq.toArray
+
+    /// ### EvalCycleGuardKey
+    /// Versão "por chave" (string) do guard de ciclo, para quando o nó sendo avaliado é struct/value-type
+    /// e o boxing quebra a identidade por referência. A chave padrão é o range (path:linha:col-inicio/fim).
+    module EvalCycleGuardKey =
+        open System
+        open System.Threading
+        open System.Collections.Generic
+
+        // key -> reentry count
+        let private active = new ThreadLocal<Dictionary<string,int>>(fun () -> Dictionary<string,int>(StringComparer.Ordinal))
+
+        /// Returns the current re-entry count after entering (1 means first entry).
+        let enter (key: string) : int =
+            let d = active.Value
+            match d.TryGetValue key with
+            | true, n ->
+                let n' = n + 1
+                d.[key] <- n'
+                n'
+            | _ ->
+                d.[key] <- 1
+                1
+
+        let exit (key: string) =
+            let d = active.Value
+            match d.TryGetValue key with
+            | true, n when n <= 1 ->
+                d.Remove(key) |> ignore
+            | true, n ->
+                d.[key] <- n - 1
+            | _ -> ()
+
+        let snapshotKeys (n: int) : string[] =
+            active.Value.Keys |> Seq.truncate n |> Seq.toArray
+/// ### Range helpers (prepass / evaluation)
+    /// These helpers are used by diagnostics and recursion guards. They intentionally prefer
+    /// whatever range is available in the node itself, and fall back to the current trace (if any)
+    /// or to an unknown range.
+    let private vscpos0 : VSCPos = {| line = 0; character = 0 |}
+    let private vscrange0 : VSCRange = (vscpos0, vscpos0)
+    let private range0 : Range = { path = "<unknown>"; range = vscrange0 }
+
+    let rec range_of_tprepass_or (fallback: Range) (x: TPrepass) : Range =
+        match x with
+        | TForall'(r,_,_,_) -> r
+        | TForall(r,_,_) -> r
+        | TJoinPoint'(r,_,_) -> r
+        | TJoinPoint(r,_) -> r
+        | TB r -> r
+        | TLit(r,_) -> r
+        | TPair(r,_,_) -> r
+        | TRecord(r,_) -> r
+        | TUnion(r,_) -> r
+        | TSymbol(r,_) -> r
+        | TApply(r,_,_) -> r
+        | TTerm(r,_) -> r
+        | TMacro(r,_) -> r
+        | TTypecase(r,_,_) -> r
+        | TArrow(_,b) -> range_of_tprepass_or fallback b
+        | TArrow'(_,_,b) -> range_of_tprepass_or fallback b
+        | TFun(a,b,_) ->
+            // Prefer left, but if it is also unknown fall back to right.
+            let ra = range_of_tprepass_or fallback a
+            if ra.path <> "<unknown>" then ra else range_of_tprepass_or fallback b
+        | TLayout(a,_) -> range_of_tprepass_or fallback a
+        | TArray a -> range_of_tprepass_or fallback a
+        | TPatternRef a -> range_of_tprepass_or fallback !a
+        | TV _ | TPrim _ | TNominal _ | TExists | TModule _ | TMetaV _ -> fallback
+
+    let rec range_of_e_or (fallback: Range) (x: E) : Range =
+        match x with
+        | EFun(r,_,_,_) -> r
+        | EFun'(r,_,_,_,_) -> r
+        | EForall(r,_,_) -> r
+        | EForall'(r,_,_,_) -> r
+        | ERecursiveFun'(r,_,_,_,_) -> r
+        | ERecursiveForall'(r,_,_,_) -> r
+        | EJoinPoint(r,_,_,_,_) -> r
+        | EJoinPoint'(r,_,_,_,_,_) -> r
+        | EB r -> r
+        | ELit(r,_) -> r
+        | EDefaultLit(r,_,_) -> r
+        | ESymbol(r,_) -> r
+        | EType(r,_) -> r
+        | EApply(r,_,_) -> r
+        | EArray(r,_,_) -> r
+        | ETypeApply(r,_,_) -> r
+        | ERecBlock(r,_,_) -> r
+        | ERecordWith(r,_,_,_) -> r
+        | EOp(r,_,_) -> r
+        | EAnnot(r,_,_) -> r
+        | EIfThenElse(r,_,_,_) -> r
+        | EIfThen(r,_,_) -> r
+        | EPair(r,_,_) -> r
+        | ESeq(r,_,_) -> r
+        | EMutableSet(r,_,_,_) -> r
+        | EReal(r,_) -> r
+        | EExists(r,_,_) -> r
+        | EMacro(r,_,_) -> r
+        | EPrototypeApply(r,_,_) -> r
+        | ENominal(r,_,_) -> r
+        | ELet(r,_,_,_) -> r
+        | EUnbox(r,_,_,_,_,_) -> r
+        | EExistsTest(r,_,_,_,_,_) -> r
+        | EPairTest(r,_,_,_,_,_) -> r
+        | ESymbolTest(r,_,_,_,_) -> r
+        | ERecordTest(r,_,_,_,_) -> r
+        | EAnnotTest(r,_,_,_,_) -> r
+        | EUnitTest(r,_,_,_) -> r
+        | ENominalTest(r,_,_,_,_,_) -> r
+        | ELitTest(r,_,_,_,_) -> r
+        | EDefaultLitTest(r,_,_,_,_,_) -> r
+        | ETypecase(r,_,_) -> r
+        | EV _ -> fallback
+        | EModule _ -> fallback
+        | ERecursive a -> range_of_e_or fallback !a
+        | EPatternRef a -> range_of_e_or fallback !a
+        | EPatternMiss a -> range_of_e_or fallback a
+        | ETypePatternMiss a -> range_of_tprepass_or fallback a
+        | EPatternMemo a -> range_of_e_or fallback a
     /// ### SuspectCache
     /// Track cache keys that produced type mismatches (EJP0007).
     /// Keys marked as suspect are treated with extra caution during retry.
@@ -9566,6 +9738,16 @@ module spiral_compiler =
         /// EJP0008: Deep recursion cache corruption
         let [<Literal>] EJP0008 = "EJP0008"
 
+
+        /// EJP0009: Term/type recursion depth exceeded (stack overflow preemption)
+        let [<Literal>] EJP0009 = "EJP0009"
+
+
+        /// EJP0010: Insufficient execution stack (preempted stack overflow)
+        let [<Literal>] EJP0010 = "EJP0010"
+
+        /// EJP0011: Re-entrant term evaluation cycle detected
+        let [<Literal>] EJP0011 = "EJP0011"
         /// Classify an error message to an EJP code
         let classifyError (msg: string) : string option =
             if msg.Contains("Expected a function") && 
@@ -9587,6 +9769,9 @@ module spiral_compiler =
             | "EJP0003" -> "Type error during parallel evaluation"
             | "EJP0007" -> "Apply type mismatch: primitive where callable expected"
             | "EJP0008" -> "Deep recursion cache corruption"
+            | "EJP0009" -> "Term/type recursion depth exceeded"
+            | "EJP0010" -> "Insufficient execution stack (stack overflow preempted)"
+            | "EJP0011" -> "Re-entrant term evaluation cycle detected"
             | _ -> "Unknown error"
 
     /// ### format_jp_annot_mismatch
@@ -10377,6 +10562,18 @@ module spiral_compiler =
         let jp_force_async_unannot = read_env_bool "SPIRAL_PEVAL_FORCE_ASYNC_UNANNOTATED" true
         let jp_force_async_types = read_env_bool "SPIRAL_PEVAL_FORCE_ASYNC_TYPES" true
 
+        // Scheduling mode for join-point workers:
+        // - Hopac scheduler maximizes locality but can deadlock if a worker blocks waiting on an event.
+        // - ThreadPool scheduling avoids Hopac worker starvation when joins are blocking.
+        // Default: ThreadPool. Set SPIRAL_PEVAL_JP_THREADPOOL=0 to force Hopac scheduling.
+        let jp_use_threadpool = read_env_bool "SPIRAL_PEVAL_JP_THREADPOOL" true
+
+        // When diagnostics trip time/spec caps, prefer a "soft abort": disable parallel join-points and keep going.
+        // Set SPIRAL_PEVAL_DIAG_HARD_ABORT=1 to keep legacy behavior (throw immediately).
+        let jp_diag_hard_abort = read_env_bool "SPIRAL_PEVAL_DIAG_HARD_ABORT" false
+        let mutable jp_parallel_enabled = true
+        let mutable diag_abort_armed = true
+
         let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
         let jp_mismatch_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
         let jp_name_traces = System.Collections.Concurrent.ConcurrentDictionary<string, Trace>(System.StringComparer.Ordinal)
@@ -10580,12 +10777,22 @@ module spiral_compiler =
             sb.AppendFormat("  gc_total_bytes={0}", gc_total) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  server_gc={0}", server_gc) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  hopac_workers={0}", jp_dop) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  jp_sched_mode={0}", (if jp_use_threadpool then "threadpool" else "hopac")) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  jp_parallel_enabled={0}", jp_parallel_enabled) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_total_started={0}", jp_total_started) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  pending_jobs={0}", jp_cd.CurrentCount) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_method_groups={0} jp_method_specs={1}", method_groups, method_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_closure_groups={0} jp_closure_specs={1}", closure_groups, closure_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_type_groups={0} jp_type_specs={1}", type_groups, type_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_events_total={0} jp_events_not_set={1}", events_total, events_not_set) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  cache_generation={0}", CacheGeneration.current ()) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  suspect_keys={0}", SuspectCache.currentCount ()) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  bitmamba={0}", BitMamba.getSummary ()) |> ignore; sb.AppendLine() |> ignore
+            let reasons =
+                try CacheGeneration.getRecentReasons () |> List.truncate 5 |> String.concat " | "
+                with _ -> ""
+            if reasons <> "" then
+                sb.AppendFormat("  cache_invalidation_reasons={0}", reasons) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  last_wait={0}", diag_last_wait) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  top_jp_names={0}", top_names) |> ignore; sb.AppendLine() |> ignore
             sb.AppendLine("  top_jp_traces=") |> ignore
@@ -10605,9 +10812,16 @@ module spiral_compiler =
             diag_print true
             raise (System.Exception(diag_snapshot reason))
 
+        let diag_soft_abort (where: string) (reason: string) =
+            if jp_parallel_enabled then
+                jp_parallel_enabled <- false
+                DiagSidecar.emit (sprintf "SPIRAL PEVAL DIAG soft_abort where=%s reason=%s" where reason)
+            // Always print a snapshot when we disable parallelism so the log is actionable.
+            diag_print true
+
         let diag_abort_if_needed (where: string) =
             let now = peval_sw.ElapsedMilliseconds
-            // Legacy watchdog variables (optional).
+            // Legacy watchdog variables (optional). These remain hard aborts.
             if peval_abort_ms > 0L && now >= peval_abort_ms then
                 diag_last_wait <- where
                 peval_abort (sprintf "Timed out. (SPIRAL_PEVAL_ABORT_MS=%d)" peval_abort_ms)
@@ -10616,21 +10830,36 @@ module spiral_compiler =
                 if mb >= peval_mem_limit_mb then
                     diag_last_wait <- where
                     peval_abort (sprintf "Memory limit reached. (SPIRAL_PEVAL_MEM_LIMIT_MB=%d, private_mb=%d)" peval_mem_limit_mb mb)
-            // Diagnostic aborts.
-            if diag_abort_ms > 0L && now >= diag_abort_ms then
-                diag_last_wait <- where
-                peval_abort (sprintf "Timed out. (SPIRAL_PEVAL_DIAG_ABORT_MS=%d)" diag_abort_ms)
-            if diag_jp_spec_cap > 0L then
-                let total = diag_specs_total () |> int64
-                if total >= diag_jp_spec_cap then
-                    diag_last_wait <- where
-                    peval_abort (sprintf "Join-point specialization cap reached. (SPIRAL_PEVAL_DIAG_JP_SPEC_CAP=%d, total=%d)" diag_jp_spec_cap total)
-            if diag_jp_name_spec_cap > 0L then
-                for KeyValue(name, count) in jp_name_counts do
-                    if int64 count >= diag_jp_name_spec_cap then
-                        diag_last_wait <- where
-                        peval_abort (sprintf "Join-point name cap reached. (SPIRAL_PEVAL_DIAG_JP_NAME_SPEC_CAP=%d, name=%s, count=%d)" diag_jp_name_spec_cap name count)
 
+            // Diagnostic aborts. Soft by default: disable parallel join-points and keep going.
+            if diag_abort_armed then
+                if diag_abort_ms > 0L && now >= diag_abort_ms then
+                    diag_last_wait <- where
+                    if jp_diag_hard_abort then
+                        peval_abort (sprintf "Timed out. (SPIRAL_PEVAL_DIAG_ABORT_MS=%d)" diag_abort_ms)
+                    else
+                        diag_abort_armed <- false
+                        diag_soft_abort where (sprintf "Timed out. (SPIRAL_PEVAL_DIAG_ABORT_MS=%d)" diag_abort_ms)
+
+                if diag_jp_spec_cap > 0L then
+                    let total = diag_specs_total () |> int64
+                    if total >= diag_jp_spec_cap then
+                        diag_last_wait <- where
+                        if jp_diag_hard_abort then
+                            peval_abort (sprintf "Join-point spec cap exceeded. (SPIRAL_PEVAL_DIAG_JP_SPEC_CAP=%d, total=%d)" diag_jp_spec_cap total)
+                        else
+                            diag_abort_armed <- false
+                            diag_soft_abort where (sprintf "Join-point spec cap exceeded. cap=%d total=%d" diag_jp_spec_cap total)
+
+                if diag_jp_name_spec_cap > 0L then
+                    for KeyValue(name, count) in jp_name_counts do
+                        if int64 count >= diag_jp_name_spec_cap then
+                            diag_last_wait <- where
+                            if jp_diag_hard_abort then
+                                peval_abort (sprintf "Join-point name cap exceeded. (SPIRAL_PEVAL_DIAG_JP_NAME_SPEC_CAP=%d, name=%s, count=%d)" diag_jp_name_spec_cap name count)
+                            else
+                                diag_abort_armed <- false
+                                diag_soft_abort where (sprintf "Join-point name cap exceeded. cap=%d name=%s count=%d" diag_jp_name_spec_cap name count)
         let inline jp_ev_wait (where: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
             let w = if System.String.IsNullOrWhiteSpace(details) then where else where + " :: " + details
             diag_last_wait <- w
@@ -10678,21 +10907,30 @@ module spiral_compiler =
             Hopac.Scheduler.create create
 
         let inline jp_start (thunk : unit -> unit) =
-            if jp_cd.CurrentCount >= jp_max_pending then
+            if (not jp_parallel_enabled) || jp_cd.CurrentCount >= jp_max_pending then
                 thunk ()
             else
                 jp_cd.AddCount() |> ignore
                 let n = System.Threading.Interlocked.Increment(&jp_total_started)
                 if (n &&& 4095L) = 0L then diag_print false
                 diag_abort_if_needed "jp_start"
-                Hopac.Scheduler.queueIgnore jp_sched (job {
-                    try
-                        try thunk ()
-                        with e -> jp_exns.Enqueue (capture_edi e)
-                    finally
-                        jp_cd.Signal() |> ignore
-                    })
-
+                if jp_use_threadpool then
+                    let cb = System.Threading.WaitCallback(fun _ ->
+                        try
+                            try thunk ()
+                            with e -> jp_exns.Enqueue (capture_edi e)
+                        finally
+                            jp_cd.Signal() |> ignore
+                    )
+                    System.Threading.ThreadPool.UnsafeQueueUserWorkItem(cb, null) |> ignore
+                else
+                    Hopac.Scheduler.queueIgnore jp_sched (job {
+                        try
+                            try thunk ()
+                            with e -> jp_exns.Enqueue (capture_edi e)
+                        finally
+                            jp_cd.Signal() |> ignore
+                        })
         let inline jp_wait () =
             jp_cd.Signal() |> ignore
             if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && diag_jp_name_spec_cap <= 0L then
@@ -11103,19 +11341,105 @@ module spiral_compiler =
             | YApply(a,b) ->
                 match nominal_type_apply s a with
                 | YTypeFunction(body,gl_ty,sz_term,sz_ty) ->
-                    let s =
-                        {s with
-                            env_global_type = gl_ty
-                            env_global_term = [||]
-                            env_stack_type = Array.zeroCreate<_> sz_ty
-                            env_stack_term = Array.zeroCreate<_> sz_term
-                            }
+                    let s = { s with env_global_type = gl_ty; env_global_term = [||]; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                     s.env_stack_type.[0] <- b
                     ty s body
                 | a -> raise_type_error s <| sprintf "Expected a type level function in nominal application.\nGot: %s" (show_ty a)
             | YNominal a -> ty s a.node.body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
         and ty s x =
+            // ### v61: ty recursion guard (preempt stack overflow with depth+stack checks)
+            let fallback = match s.trace with | r :: _ -> r | [] -> range0
+            let r0 = range_of_tprepass_or fallback x
+            let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
+            let depth = RecursionTracker.enter site
+            use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
+
+            // ### v67: cycle + stack guards (reference-eq, allow limited re-entrancy; throw only when excessive)
+            let nodeObj = box x
+            let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
+            let reCount = EvalCycleGuard.enter nodeObj
+            // Guard adicional por chave estável (range), funciona mesmo quando RawExpr é struct
+            let (a0,b0) = r0.range
+            let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
+            let reKey = EvalCycleGuardKey.enter nodeKey
+            let max_reentry =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
+                | null | "" -> 8
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n >= 1 -> n
+                    | _ -> 8
+            let max_reentry_key =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
+                | null | "" -> 32
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n >= 2 -> n
+                    | _ -> 32
+            if reCount > 1 then
+                if reCount = 2 then
+                    DiagSidecar.emit (sprintf "EJP0011W ty re-entry (non-fatal): nodeId=%d depth=%d site=%s" nodeId depth site)
+                if reCount > max_reentry then
+                    let newGen = CacheGeneration.invalidate (sprintf "%s ty cycle (excessive re-entry=%d/%d): nodeId=%d depth=%d site=%s" EJPCodes.EJP0011 reCount max_reentry nodeId depth site)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_cycle" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (sprintf "%s ty cycle detected: nodeId=%d depth=%d site=%s gen=%d re=%d/%d" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry)
+                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant ty evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry)
+            if reKey > 1 then
+                if reKey = 2 then
+                    DiagSidecar.emit (sprintf "EJP0011W term re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
+                if reKey > max_reentry_key then
+                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle (key) detected (re-entry=%d/%d): key=%s depth=%d site=%s" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_cycle_key" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (sprintf "%s term cycle (key) detected: key=%s depth=%d site=%s gen=%d re=%d/%d" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key)
+                    raise_type_error (add_trace s r0) (sprintf "%s Evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key)
+
+            use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
+            use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
+
+            let max_depth =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_TY_MAX_DEPTH" with
+                | null | "" -> 512
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n > 50 -> n
+                    | _ -> 512
+
+            let deepSitesShort () =
+                RecursionTracker.getDeepSites()
+                |> List.sortByDescending (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> kv.Value)
+                |> List.truncate 8
+                |> List.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
+                |> String.concat ";"
+
+            let inline stack_check (tag: string) =
+                try
+                    System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                with :? System.InsufficientExecutionStackException ->
+                    let newGen = CacheGeneration.invalidate (sprintf "%s: insufficient execution stack (ty) depth=%d site=%s tag=%s" EJPCodes.EJP0010 depth site tag)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
+                    let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                    let deepSites = deepSitesShort ()
+                    DiagSidecar.emit (sprintf "%s ty insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
+                    raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in type evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
+
+            // Stack guard mais agressivo para evitar StackOverflow (especialmente com lambdas locais grandes).
+            // A cadência aumenta com a profundidade: checamos pouco no início e muito quando está ficando perigoso.
+            if depth <= 32 then
+                if (depth &&& 15) = 0 then stack_check "d<=32"
+            elif depth <= 128 then
+                if (depth &&& 3) = 0 then stack_check "d<=128"
+            else
+                if (depth &&& 1) = 0 then stack_check "d>128"
+
+            if depth > max_depth then
+                let newGen = CacheGeneration.invalidate (sprintf "%s: ty depth exceeded depth=%d max=%d site=%s" EJPCodes.EJP0009 depth max_depth site)
+                jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
+                let deepSites = deepSitesShort ()
+                let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                DiagSidecar.emit (sprintf "%s ty recursion depth exceeded depth=%d max=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth site newGen deepSites reasons)
+                raise_type_error (add_trace s r0) (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+
             match x with
             | TPatternRef _ -> failwith "Compiler error: TPatternRef should have been eliminated during the prepass."
             | TForall _ | TArrow _ | TJoinPoint _ -> failwith "Compiler error: Should have been transformed during the prepass."
@@ -11420,13 +11744,7 @@ module spiral_compiler =
                 | YMetavar _ | YNominal _ | YApply _ as a -> YApply(a,ty s b)
                 | YTypeFunction(body,gl_ty,sz_term,sz_ty) ->
                     let b = ty s b
-                    let s =
-                        {s with
-                            env_global_type = gl_ty
-                            env_global_term = [||]
-                            env_stack_type = Array.zeroCreate<_> sz_ty
-                            env_stack_term = Array.zeroCreate<_> sz_term
-                            }
+                    let s = { s with env_global_type = gl_ty; env_global_term = [||]; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                     s.env_stack_type.[0] <- b
                     ty s body
                 | a -> raise_type_error s <| sprintf "Expected a record, nominal or a type function. Or a metavar when in typecase.\nGot: %s" (show_ty a)
@@ -11440,6 +11758,89 @@ module spiral_compiler =
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
 
+            // ### v61: term recursion guard (preempt stack overflow with depth+stack checks)
+            let fallback = match s.trace with | r :: _ -> r | [] -> range0
+            let r0 = range_of_e_or fallback x
+            let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
+
+            // ### v71: eager stack guard (prevent hard StackOverflow by probing on every entry)
+            // EnsureSufficientExecutionStack throws InsufficientExecutionStackException before StackOverflow would terminate the process.
+            try
+                System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+            with :? System.InsufficientExecutionStackException ->
+                let newGen = CacheGeneration.invalidate (System.String.Format("{0}: term eager insufficient_stack site={1}", EJPCodes.EJP0010, site))
+                jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|term_eager_insufficient_stack", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
+                let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                let deepSites = RecursionTracker.getDeepSites() |> Seq.truncate 8 |> Seq.map (fun (KeyValue(k,v)) -> System.String.Format("{0}={1}", k, v)) |> String.concat ";"
+                DiagSidecar.emit (System.String.Format("{0} term eager insufficient_stack gen={1} site={2} deepSites=[{3}] reasons=[{4}]", EJPCodes.EJP0010, newGen, site, deepSites, reasons))
+                raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in term (eager guard) at {1} (gen={2})", EJPCodes.EJP0010, site, newGen))
+
+            let depth = RecursionTracker.enter site
+            use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
+
+            // ### v67: cycle + stack guards (reference-eq, allow limited re-entrancy; throw only when excessive)
+            let nodeObj = box x
+            let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
+            let reCount = EvalCycleGuard.enter nodeObj
+            let max_reentry =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
+                | null | "" -> 8
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n >= 1 -> n
+                    | _ -> 8
+            if reCount > 1 then
+                if reCount = 2 then
+                    DiagSidecar.emit (sprintf "EJP0011W term re-entry (non-fatal): nodeId=%d depth=%d site=%s" nodeId depth site)
+                if reCount > max_reentry then
+                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle (excessive re-entry=%d/%d): nodeId=%d depth=%d site=%s" EJPCodes.EJP0011 reCount max_reentry nodeId depth site)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_cycle" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (sprintf "%s term cycle detected: nodeId=%d depth=%d site=%s gen=%d re=%d/%d" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry)
+                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry)
+            use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
+
+            let max_depth =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_TERM_MAX_DEPTH" with
+                | null | "" -> 160
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n > 50 -> n
+                    | _ -> 160
+
+            let deepSitesShort () =
+                RecursionTracker.getDeepSites()
+                |> List.sortByDescending (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> kv.Value)
+                |> List.truncate 8
+                |> List.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
+                |> String.concat ";"
+
+            let inline stack_check (tag: string) =
+                try
+                    System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                with :? System.InsufficientExecutionStackException ->
+                    let newGen = CacheGeneration.invalidate (sprintf "%s: insufficient execution stack (term) depth=%d site=%s tag=%s" EJPCodes.EJP0010 depth site tag)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
+                    let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                    let deepSites = deepSitesShort ()
+                    DiagSidecar.emit (sprintf "%s term insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
+                    raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
+
+            if depth <= 64 then
+                if (depth &&& 63) = 0 then stack_check "d<=64"
+            elif depth <= 256 then
+                if (depth &&& 7) = 0 then stack_check "d<=256"
+            else
+                if (depth &&& 1) = 0 then stack_check "d>256"
+
+            if depth > max_depth then
+                let newGen = CacheGeneration.invalidate (sprintf "%s: term depth exceeded depth=%d max=%d site=%s" EJPCodes.EJP0009 depth max_depth site)
+                jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
+                let deepSites = deepSitesShort ()
+                let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                DiagSidecar.emit (sprintf "%s term recursion depth exceeded depth=%d max=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth site newGen deepSites reasons)
+                raise_type_error (add_trace s r0) (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+
+
             let global' (x: string) = globals_add s x
 
 
@@ -11448,33 +11849,38 @@ module spiral_compiler =
             let type_apply s a b =
                 match a with
                 | DForall(body,gl_term,gl_ty,sz_term,sz_ty) ->
-                    let s =
-                        {s with
-                            env_global_type = gl_ty
-                            env_global_term = gl_term
-                            env_stack_type = Array.zeroCreate<_> sz_ty
-                            env_stack_term = Array.zeroCreate<_> sz_term
-                            }
+                    let s = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                     s.env_stack_type.[0] <- b
                     term s body
                 | DV(L(_,YForall)) -> raise_type_error s <| sprintf "Cannot apply a runtime forall during the partial evaluation stage."
                 | a -> raise_type_error s <| sprintf "Expected a forall.\nGot: %s" (show_data a)
+            let rec apply s (a0, b0) =
+                // ### v71: eager stack guard + iterative nominal unwrapping
+                // apply participates in the term<->apply recursion; guard here too so we never hard-crash.
+                try
+                    System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                with :? System.InsufficientExecutionStackException ->
+                    let newGen = CacheGeneration.invalidate (System.String.Format("{0}: apply insufficient_stack site={1}", EJPCodes.EJP0010, site))
+                    jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|apply_insufficient_stack", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (System.String.Format("{0} apply insufficient_stack gen={1} site={2} depth={3}", EJPCodes.EJP0010, newGen, site, RecursionTracker.currentDepth()))
+                    raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in apply at {1} (gen={2})", EJPCodes.EJP0010, site, newGen))
 
-            let rec apply s = function
-                | DNominal(DUnion _,_), _ -> raise_type_error s "Unions cannot be applied."
-                | DNominal(a,_), b -> apply s (a,b)
+                let mutable a = a0
+                let mutable b = b0
+                let mutable unwrapping = true
+                while unwrapping do
+                    match a with
+                    | DNominal(DUnion _, _) -> raise_type_error s "Unions cannot be applied."
+                    | DNominal(a', _) -> a <- a'
+                    | _ -> unwrapping <- false
+
+                match a, b with
                 | DRecord a, DSymbol b ->
                     match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
                     | Some a -> a
                     | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record." b
                 | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
-                    let s : LangEnv =
-                        {s with
-                            env_global_type = gl_ty
-                            env_global_term = gl_term
-                            env_stack_type = Array.zeroCreate<_> sz_ty
-                            env_stack_term = Array.zeroCreate<_> sz_term
-                            }
+                    let s : LangEnv = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                     s.env_stack_term.[0] <- b
                     term s body
                 | DV(L(_,YForall)), _ -> raise_type_error s "Cannot apply a runtime forall, and not with a term. Foralls have to be known at compile time and applied with a type."
@@ -11534,6 +11940,7 @@ module spiral_compiler =
                                 EJPCodes.EJP0008 depth newGen)
 
                     raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s" (show_data a)
+
 
             let rec if_ s cond on_succ on_fail =
                 let lit_tr = DLit(LitBool true)
@@ -12119,59 +12526,113 @@ module spiral_compiler =
                 type_apply s (term s a) (ty s b)
             | ERecordWith(r,vars,withs,withouts) ->
                 let s = add_trace s r
-                let map x =
-                    let fold f a b = List.fold f b a
-                    let var r a =
-                        match term s a with
-                        | DSymbol a -> a
-                        | a -> raise_type_error (add_trace s r) <| sprintf "Expected a symbol.\nGot: %s" (show_data a)
-                    x |> fold (fun m x ->
-                        let sym a b =
-                            let i =
-                                m
-                                |> Map.tryPick (fun (i, k) _v -> if k = a then Some i else None)
-                                |> Option.defaultValue m.Count
-                            Map.add (i, a) (term s b) m
-                        let sym_mod r a b =
-                            match m |> Map.tryPick (fun (i, k) v -> if k = a then Some (i, v) else None) with
-                            | Some (i, a') -> Map.add (i, a) (apply s (term s b, a')) m
-                            | None -> raise_type_error (add_trace s r) "Cannot find key %s in record." a
-                        match x with
-                        | RSymbol((_,a),b) -> sym a b
-                        | RSymbolModify((r,a),b) -> sym_mod r a b
-                        | RVar((r,a),b) -> sym (var r a) b
-                        | RVarModify((r,a),b) -> sym_mod r (var r a) b
-                        ) withs
-                    |> fold (fun m -> function
-                        | WSymbol(r,a) ->
-                            m |> Map.filter (fun (_, k) _ -> k <> a)
-                        | WVar(r,a) ->
-                            m |> Map.filter (fun (_, k) _ -> k <> var r a)
-                        ) withouts
+                let base_s = s
 
-                let rec dive m = function
-                    | (r,x) :: xs ->
-                        let s = add_trace s r
-                        match term s x with
-                        | DSymbol b ->
-                            let v =
-                                m |> Map.tryPick (fun (i, k) v -> if k = b then Some (i, v) else None)
-                            match v with
-                            | Some (i, DRecord a) -> Map.add (i, b) (DRecord (dive a xs)) m
-                            | Some a -> raise_type_error s <| sprintf "Expected a record as the result of indexing.\nGot: %s" (show_data (a |> snd))
-                            // match Map.tryFind b m with
-                            // | Some (DRecord a) -> Map.add b (DRecord (dive a xs)) m
-                            // | Some a -> raise_type_error s <| sprintf "Expected a record as the result of indexing.\nGot: %s" (show_data a)
-                            | None -> raise_type_error s <| sprintf "Cannot find the key %s in a record." b
-                        | b -> raise_type_error s <| sprintf "Expected a symbol.\nGot: %s" (show_data b)
-                    | [] -> m |> map
+                // ### v69: stack-safe RecordWith
+                // List.fold on very long lists can StackOverflow before term's own stack guards trigger.
+                // We therefore use explicit while loops and occasional EnsureSufficientExecutionStack checks.
+                let inline stack_check_every (i: int) (tag: string) =
+                    if (i &&& 255) = 0 then
+                        try
+                            System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                        with :? System.InsufficientExecutionStackException ->
+                            let newGen = CacheGeneration.invalidate (Microsoft.FSharp.Core.Printf.sprintf "%s recordwith_insufficient_stack" EJPCodes.EJP0010)
+                            jp_mismatch_counts.AddOrUpdate(sprintf "%s_recordwith_%s" EJPCodes.EJP0010 tag, 1, (fun _ n -> n + 1)) |> ignore
+                            let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                            let deepSites = deepSitesShort ()
+                            DiagSidecar.emit (sprintf "%s RecordWith insufficient_stack tag=%s i=%d gen=%d depth=%d deep=[%s] reasons=[%s]" EJPCodes.EJP0010 tag i newGen (RecursionTracker.currentDepth()) deepSites reasons)
+                            raise_type_error (add_trace base_s r) (sprintf "%s Stack too deep while evaluating record-with (%s, i=%d, gen=%d)." EJPCodes.EJP0010 tag i newGen)
+
+                let inline try_pick_key (key: string) (m: Map<int * string, Data>) =
+                    m |> Map.tryPick (fun (i, k) v -> if k = key then Some (i, v) else None)
+
+                let var r a =
+                    match term base_s a with
+                    | DSymbol a -> a
+                    | a -> raise_type_error (add_trace base_s r) <| sprintf "Expected a symbol.\nGot: %s" (show_data a)
+
+                let apply_map (m0: Map<int * string, Data>) =
+                    let mutable m = m0
+                    let mutable wi = 0
+                    let mutable xs = withs
+                    while not xs.IsEmpty do
+                        match xs with
+                        | x :: rest ->
+                            stack_check_every wi "withs"
+                            let sym a b =
+                                let i =
+                                    m
+                                    |> Map.tryPick (fun (i, k) _ -> if k = a then Some i else None)
+                                    |> Option.defaultValue m.Count
+                                m <- Map.add (i, a) (term base_s b) m
+                            let sym_mod r a b =
+                                match try_pick_key a m with
+                                | Some (i, a') -> m <- Map.add (i, a) (apply base_s (term base_s b, a')) m
+                                | None -> raise_type_error (add_trace base_s r) <| sprintf "Cannot find key %s in record." a
+                            match x with
+                            | RSymbol((_, a), b) -> sym a b
+                            | RSymbolModify((r, a), b) -> sym_mod r a b
+                            | RVar((r, a), b) -> sym (var r a) b
+                            | RVarModify((r, a), b) -> sym_mod r (var r a) b
+                            xs <- rest
+                            wi <- wi + 1
+                        | [] -> ()
+                    let mutable wo = 0
+                    let mutable ys = withouts
+                    while not ys.IsEmpty do
+                        match ys with
+                        | x :: rest ->
+                            stack_check_every (wi + wo) "withouts"
+                            match x with
+                            | WSymbol(_, a) ->
+                                m <- m |> Map.filter (fun (_, k) _ -> k <> a)
+                            | WVar(r, a) ->
+                                let a = var r a
+                                m <- m |> Map.filter (fun (_, k) _ -> k <> a)
+                            ys <- rest
+                            wo <- wo + 1
+                        | [] -> ()
+                    if wi > 8192 || wo > 8192 then
+                        DiagSidecar.emit (sprintf "RecordWith large lists: withs=%d withouts=%d depth=%d" wi wo (RecursionTracker.currentDepth()))
+                    m
+
+                let update_nested (root: Map<int * string, Data>) (xs: (Range * E) list) =
+                    let path = ResizeArray<struct(Range * string)>()
+                    let mutable cur = xs
+                    while not cur.IsEmpty do
+                        match cur with
+                        | (r, x) :: rest ->
+                            let s1 = add_trace base_s r
+                            match term s1 x with
+                            | DSymbol k -> path.Add(struct(r, k))
+                            | k -> raise_type_error s1 <| sprintf "Expected a symbol.\nGot: %s" (show_data k)
+                            cur <- rest
+                        | [] -> ()
+                    let mutable curMap = root
+                    let parents = ResizeArray<struct(int * string * Map<int * string, Data>)>()
+                    for i = 0 to path.Count - 1 do
+                        let struct(r, k) = path.[i]
+                        let s1 = add_trace base_s r
+                        match try_pick_key k curMap with
+                        | Some (idx, DRecord sub) ->
+                            parents.Add(struct(idx, k, curMap))
+                            curMap <- sub
+                        | Some (_, v) ->
+                            raise_type_error s1 <| sprintf "Expected a record as the result of indexing.\nGot: %s" (show_data v)
+                        | None ->
+                            raise_type_error s1 <| sprintf "Cannot find the key %s in a record." k
+                    let mutable updated = apply_map curMap
+                    for i = parents.Count - 1 downto 0 do
+                        let struct(idx, k, parent) = parents.[i]
+                        updated <- Map.add (idx, k) (DRecord updated) parent
+                    updated
 
                 match vars with
-                | (r,x) :: xs ->
-                    match term s x with
-                    | DRecord l -> dive l xs
-                    | a -> raise_type_error s <| sprintf "Expected a record.\nGot: %s" (show_data a)
-                | [] -> map Map.empty
+                | (r, x) :: xs ->
+                    match term base_s x with
+                    | DRecord l -> update_nested l xs
+                    | a -> raise_type_error base_s <| sprintf "Expected a record.\nGot: %s" (show_data a)
+                | [] -> apply_map Map.empty
                 |> DRecord
             | EPatternMemo _ | EReal _ -> failwith "Compiler error: Should have been eliminated during the prepass."
             | EModule a -> DRecord(a |> Seq.map (fun (KeyValue (k, v)) -> (a.Count, k), (v |> term s)) |> Map.ofSeq)
@@ -12327,15 +12788,15 @@ module spiral_compiler =
                 let on_fail = term s on_fail
                 let mutable case_ty = None
                 let s' () = {s with cse = Dictionary(HashIdentity.Structural) :: s.cse; seq = ResizeArray()}
-                let assert_case_ty s x =
-                    let x_ty' = data_to_ty s x
-                    match case_ty with
-                    | Some x_ty -> if x_ty' <> x_ty then raise_type_error s <| sprintf "One union case has a different return than the previous one.\nGot: %s\nExpected: %s" (show_ty x_ty') (show_ty x_ty)
-                    | None -> case_ty <- Some x_ty'
-                let run s x =
-                    let x = apply s x |> dyn false s
-                    assert_case_ty s x
-                    seq_apply s x
+                let assert_case_ty s x = let x_ty' = data_to_ty s x in match case_ty with | Some x_ty when x_ty' <> x_ty -> raise_type_error s <| sprintf "One union case has a different return than the previous one.\nGot: %s\nExpected: %s" (show_ty x_ty') (show_ty x_ty) | Some _ -> () | None -> case_ty <- Some x_ty'
+                let run s x = let x = apply s x |> dyn false s in (assert_case_ty s x; seq_apply s x)
+
+
+
+
+
+
+
                 let case_on_fail () = run (s'()) (on_fail, DB)
                 let key_value = function
                     | DPair(DSymbol k, a) -> k, a
@@ -12464,20 +12925,41 @@ module spiral_compiler =
                 let s = add_trace s r
                 match v s bind with
                 | DRecord l ->
-                    let rec loop = function
-                        | x :: x' ->
-                            let sym a b =
-                                match l |> Map.tryPick (fun (_, k) v -> if k = a then Some v else None) with
-                                | Some a -> store_term s b a; loop x'
-                                | None -> term s on_fail
-                            match x with
-                            | Symbol((_,a),b) -> sym a b
-                            | Var((r,a),b) ->
-                                match term s a with
-                                | DSymbol a -> sym a b
-                                | a -> raise_type_error (add_trace s r) <| sprintf "Expected a symbol.\nGot: %s" (show_data a)
-                        | [] -> term s on_succ
-                    loop a
+                    // ### v71: stack-safe RecordTest (avoid recursive loop over long field match lists)
+                    let mutable xs = a
+                    let mutable i = 0
+                    let mutable res : Data option = None
+                    while res.IsNone do
+                        if (i &&& 255) = 0 then
+                            try
+                                System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                            with :? System.InsufficientExecutionStackException ->
+                                let site = "record_test"
+                                let newGen = CacheGeneration.invalidate (sprintf "%s insufficient_stack" site)
+                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|%s" EJPCodes.EJP0010 site, 1, (fun _ n -> n + 1)) |> ignore
+                                DiagSidecar.emit (sprintf "%s gen=%d" site newGen)
+                                raise_type_error s (sprintf "%s (gen=%d)" site newGen)
+                        match xs with
+                        | [] ->
+                            res <- Some (term s on_succ)
+                        | x :: rest ->
+                            let (key, bvar) =
+                                match x with
+                                | Symbol((_,a),b) -> a, b
+                                | Var((r,a),b) ->
+                                    match term s a with
+                                    | DSymbol a -> a, b
+                                    | a -> raise_type_error (add_trace s r) <| sprintf "Expected a symbol.\nGot: %s" (show_data a)
+                            match l |> Map.tryPick (fun (_, k) v -> if k = key then Some v else None) with
+                            | Some v ->
+                                store_term s bvar v
+                                xs <- rest
+                                i <- i + 1
+                            | None ->
+                                res <- Some (term s on_fail)
+                    match res with
+                    | Some v -> v
+                    | None -> failwith "Compiler error: RecordTest loop produced no result."
                 | _ -> term s on_fail
             | EAnnotTest(r,a,bind,on_succ,on_fail) -> let s = add_trace s r in if data_to_ty s (v s bind) = ty s a then term s on_succ else term s on_fail
             | EUnitTest(r,bind,on_succ,on_fail) -> let s = add_trace s r in match v s bind with DB -> term s on_succ | _ -> term s on_fail
