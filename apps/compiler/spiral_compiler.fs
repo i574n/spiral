@@ -27,7 +27,45 @@ module spiral_compiler =
     // #endif
 
     open System
+    open System.Threading
     open FSharpx.Collections
+
+    /// ### InterlockedEx
+    /// Helpers to avoid inref/byref overload friction (especially with F# ref cells).
+    module InterlockedEx =
+        let inline readInt64Ref (x: int64 ref) = Interlocked.Read(&x.contents)
+        let inline incrInt64Ref (x: int64 ref) = Interlocked.Increment(&x.contents)
+        let inline addInt64Ref (x: int64 ref) (n: int64) = Interlocked.Add(&x.contents, n)
+
+
+
+    /// ### DiagSidecar
+    /// Best-effort, non-blocking telemetry buffer for diagnostics.
+    /// Always enabled in v43+ for better parallel debugging. Lightweight enough to leave on.
+    module DiagSidecar =
+        open System
+        open System.Collections.Concurrent
+
+        let private maxItems = 512  // Increased buffer
+        let private q = ConcurrentQueue<string>()
+
+        let inline enabled () = true  // v43: always on
+
+        let emit (msg: string) =
+            q.Enqueue msg
+            // best-effort trim: we prefer losing oldest telemetry to blocking the compiler.
+            while q.Count > maxItems do
+                let mutable v = Unchecked.defaultof<string>
+                q.TryDequeue(&v) |> ignore
+
+        let snapshot (maxTake: int) : string list =
+            let arr = q.ToArray()
+            if arr.Length = 0 then []
+            else
+                let n = if maxTake < 0 then 0 else min maxTake arr.Length
+                arr.[arr.Length - n ..] |> Array.toList
+
+
 
     /// ### range_checks
     let range_checks from near_to vec =
@@ -4969,33 +5007,47 @@ module spiral_compiler =
                     results.[i] <- f items.[i]
                 ) |> ignore
                 results
-
         // === HopacExtensions: camada atômica, uma única boca para o paralelismo ===
         // Controle via env: SPIRAL_HOPAC_PAR (int > 0). Se ausente, usa o número de CPUs.
-        let defaultConcurrency : int =
-            let v = System.Environment.GetEnvironmentVariable("SPIRAL_HOPAC_PAR")
-            match v with
-            | null | "" ->
-                let n = System.Environment.ProcessorCount
-                if n <= 1 then 1 else n
-            | s ->
-                match System.Int32.TryParse(s) with
-                | true, n when n > 0 -> n
-                | _ ->
+        // v49: inclui override em runtime para retries/diagnósticos (não depende de env var).
+        let mutable private forcedConcurrency = 0
+
+        let forceConcurrency (n: int) =
+            let n = max 1 n
+            System.Threading.Volatile.Write(&forcedConcurrency, n)
+            DiagSidecar.emit (sprintf "HopacExtensions.forceConcurrency: %d" n)
+
+        let clearForcedConcurrency () =
+            System.Threading.Volatile.Write(&forcedConcurrency, 0)
+            DiagSidecar.emit "HopacExtensions.clearForcedConcurrency"
+
+        let defaultConcurrency () : int =
+            let forced = System.Threading.Volatile.Read(&forcedConcurrency)
+            if forced > 0 then forced
+            else
+                let v = System.Environment.GetEnvironmentVariable("SPIRAL_HOPAC_PAR")
+                match v with
+                | null | "" ->
                     let n = System.Environment.ProcessorCount
                     if n <= 1 then 1 else n
+                | s ->
+                    match System.Int32.TryParse(s) with
+                    | true, n when n > 0 -> n
+                    | _ ->
+                        let n = System.Environment.ProcessorCount
+                        if n <= 1 then 1 else n
 
-        // Array ops paralelos, limitados e determinísticos por índice (ordem preservada).
+        // Array ops paralelos, limitados e determinísticos por índice (ordem preservada)., limitados e determinísticos por índice (ordem preservada).
         module A =
             let inline map (f: 'a -> 'b) (xs: 'a[]) : 'b[] =
-                parMapBoundedSync defaultConcurrency f xs
+                parMapBoundedSync (defaultConcurrency()) f xs
 
             let inline mapi (f: int -> 'a -> 'b) (xs: 'a[]) : 'b[] =
                 if xs.Length = 0 then [||]
                 elif xs.Length = 1 then [| f 0 xs.[0] |]
                 else
                     let results = Array.zeroCreate<'b> xs.Length
-                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 (defaultConcurrency()))
                     System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
                         results.[i] <- f i xs.[i]
                     ) |> ignore
@@ -5008,7 +5060,7 @@ module spiral_compiler =
                 elif xs.Length = 1 then [| f xs.[0] ys.[0] |]
                 else
                     let results = Array.zeroCreate<'c> xs.Length
-                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 (defaultConcurrency()))
                     System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
                         results.[i] <- f xs.[i] ys.[i]
                     ) |> ignore
@@ -5018,7 +5070,7 @@ module spiral_compiler =
                 if xs.Length = 0 then ()
                 elif xs.Length = 1 then f xs.[0]
                 else
-                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 (defaultConcurrency()))
                     System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
                         f xs.[i]
                     ) |> ignore
@@ -5027,7 +5079,7 @@ module spiral_compiler =
                 if xs.Length = 0 then ()
                 elif xs.Length = 1 then f 0 xs.[0]
                 else
-                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 defaultConcurrency)
+                    let opts = System.Threading.Tasks.ParallelOptions(MaxDegreeOfParallelism = max 1 (defaultConcurrency()))
                     System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
                         f i xs.[i]
                     ) |> ignore
@@ -8962,6 +9014,13 @@ module spiral_compiler =
     // tags and tag_cases are straightforward mapping from cases for the sake of efficiency.
     and Union = {|cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool|} H
 
+    /// ### UnionView
+    type UnionView = {| cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool |}
+
+    let inline union_view (h: Union) : UnionView = h.Item
+    let inline union_cases (h: Union) : Map<int * string, Ty> = (union_view h).cases
+
+
     /// ### TermVar
     type TermVar =
         | WV of TyV
@@ -9102,33 +9161,6 @@ module spiral_compiler =
         | YPrim _ | YLit _ -> true
         | _ -> false
 
-    /// ### DiagSidecar
-    /// Best-effort, non-blocking telemetry buffer for diagnostics.
-    /// Always enabled in v43+ for better parallel debugging. Lightweight enough to leave on.
-    module DiagSidecar =
-        open System
-        open System.Collections.Concurrent
-
-        let private maxItems = 512  // Increased buffer
-        let private q = ConcurrentQueue<string>()
-
-        let inline enabled () = true  // v43: always on
-
-        let emit (msg: string) =
-            q.Enqueue msg
-            // best-effort trim: we prefer losing oldest telemetry to blocking the compiler.
-            while q.Count > maxItems do
-                let mutable v = Unchecked.defaultof<string>
-                q.TryDequeue(&v) |> ignore
-
-        let snapshot (maxTake: int) : string list =
-            let arr = q.ToArray()
-            if arr.Length = 0 then []
-            else
-                let n = if maxTake < 0 then 0 else min maxTake arr.Length
-                arr.[arr.Length - n ..] |> Array.toList
-
-
     /// ### RetryTracker
     /// Thread-safe tracking of retry attempts for EJP0003 type errors.
     /// Helps detect when retries are resolving issues vs when they're failing consistently.
@@ -9137,30 +9169,30 @@ module spiral_compiler =
         open System.Collections.Concurrent
         open System.Threading
 
-        let private attemptCount = ref 0
-        let private successCount = ref 0
-        let private failCount = ref 0
+        let mutable private attemptCount = 0
+        let mutable private successCount = 0
+        let mutable private failCount = 0
         let private inRetry = new ThreadLocal<int>(fun () -> 0)
 
         let isInRetry () = inRetry.Value > 0
 
         let enterRetry () =
             inRetry.Value <- inRetry.Value + 1
-            Interlocked.Increment(attemptCount) |> ignore
+            Interlocked.Increment(&attemptCount) |> ignore
 
         let exitRetrySuccess () =
             inRetry.Value <- max 0 (inRetry.Value - 1)
-            Interlocked.Increment(successCount) |> ignore
+            Interlocked.Increment(&successCount) |> ignore
 
         let exitRetryFail () =
             inRetry.Value <- max 0 (inRetry.Value - 1)
-            Interlocked.Increment(failCount) |> ignore
+            Interlocked.Increment(&failCount) |> ignore
 
         let getStats () =
-            sprintf "attempts=%d success=%d fail=%d" !attemptCount !successCount !failCount
+            sprintf "attempts=%d success=%d fail=%d" attemptCount successCount failCount
 
         let logIfActive () =
-            let a, s, f = !attemptCount, !successCount, !failCount
+            let a, s, f = attemptCount, successCount, failCount
             if a > 0 then
                 DiagSidecar.emit (sprintf "RetryTracker: %s" (getStats ()))
 
@@ -9255,6 +9287,307 @@ module spiral_compiler =
                     Some (sprintf "cluster=%s count=%d near=[%s]" clusterKey c near)
                 with _ ->
                     None
+
+    /// ### CacheGeneration
+    /// Global generation counter for cache invalidation in deep recursion scenarios.
+    /// When cache corruption is detected (EJP0007/EJP0008), incrementing the generation
+    /// marks all older entries as stale, enabling clean retry without full cache flush.
+    module CacheGeneration =
+        open System
+        open System.Threading
+
+        let mutable private generation = 0L
+        let private lastInvalidationTime = ref DateTime.MinValue
+        let private invalidationReasons = System.Collections.Concurrent.ConcurrentQueue<string>()
+
+        /// Get current generation number
+        let current () = Interlocked.Read(&generation)
+
+        /// Invalidate cache generation with a reason string for diagnostics
+        let invalidate (reason: string) =
+            let newGen = Interlocked.Increment(&generation)
+            lastInvalidationTime := DateTime.UtcNow
+            invalidationReasons.Enqueue(sprintf "[gen=%d] %s @ %s" newGen reason (DateTime.UtcNow.ToString("HH:mm:ss.fff")))
+            // Keep only last 32 reasons
+            while invalidationReasons.Count > 32 do
+                let mutable v = Unchecked.defaultof<string>
+                invalidationReasons.TryDequeue(&v) |> ignore
+            DiagSidecar.emit (sprintf "CacheGeneration.invalidate: gen=%d reason=%s" newGen reason)
+            newGen
+
+        /// Snapshot recent invalidation reasons (most recent first), for diagnostics
+        let reasonsSnapshot (n: int) : string list =
+            try
+                invalidationReasons.ToArray()
+                |> Array.rev
+                |> (fun a -> if n <= 0 then [||] else a |> Array.truncate (min n a.Length))
+                |> Array.toList
+            with _ -> []
+
+        /// Check if a generation is stale (older than current)
+        let isStale (g: int64) = g < Interlocked.Read(&generation)
+
+        /// Get recent invalidation reasons for diagnostics
+        let getRecentReasons () = invalidationReasons.ToArray() |> Array.toList
+
+    /// ### RecursionTracker
+    /// Thread-local recursion depth tracking for detecting deep nesting scenarios
+    /// like sm'.replicate → join_body_unit loops that trigger cache corruption.
+    module RecursionTracker =
+        open System
+        open System.Threading
+        open System.Collections.Concurrent
+
+        let private threadDepth = new ThreadLocal<int>(fun () -> 0)
+        let mutable private maxObserved = 0
+        let private deepCallSites = ConcurrentDictionary<string, int>()
+
+        /// Enter a recursive context, returns current depth
+        let enter (site: string) : int =
+            let d = threadDepth.Value + 1
+            threadDepth.Value <- d
+            // Track max observed depth
+            let mutable current = maxObserved
+            while d > current && Interlocked.CompareExchange(&maxObserved, d, current) <> current do
+                current <- maxObserved
+            // Track deep call sites (> 50 depth)
+            if d > 50 then
+                deepCallSites.AddOrUpdate(site, 1, (fun _ n -> n + 1)) |> ignore
+            d
+
+        /// Exit a recursive context
+        let exit () =
+            threadDepth.Value <- max 0 (threadDepth.Value - 1)
+
+        /// Get current recursion depth for this thread
+        let currentDepth () = threadDepth.Value
+
+        /// Check if currently in deep recursion (> 100)
+        let isDeep () = threadDepth.Value > 100
+
+        /// Check if moderately deep (> 50)
+        let isModeratelyDeep () = threadDepth.Value > 50
+
+        /// Get max observed depth across all threads
+        let getMaxObserved () = maxObserved
+
+        /// Get deep call site statistics
+        let getDeepSites () = deepCallSites.ToArray() |> Array.toList
+
+    /// ### SuspectCache
+    /// Track cache keys that produced type mismatches (EJP0007).
+    /// Keys marked as suspect are treated with extra caution during retry.
+    module SuspectCache =
+        open System
+        open System.Collections.Concurrent
+
+        type SuspectEntry = {
+            generation: int64
+            timestamp: DateTime
+            depth: int
+            errorType: string
+            hitCount: int
+        }
+
+        let private suspects = ConcurrentDictionary<int, SuspectEntry>()  // key hash -> entry
+        let private maxEntries = 1000
+
+        /// Hash a cache key for tracking
+        let private hashKey (key: obj) : int =
+            try key.GetHashCode() with _ -> 0
+
+        /// Mark a key as suspect
+        let mark (key: obj) (errorType: string) =
+            let h = hashKey key
+            let depth = RecursionTracker.currentDepth ()
+            let gen = CacheGeneration.current ()
+            let entry = {
+                generation = gen
+                timestamp = DateTime.UtcNow
+                depth = depth
+                errorType = errorType
+                hitCount = 1
+            }
+            suspects.AddOrUpdate(h, entry, (fun _ existing ->
+                { existing with hitCount = existing.hitCount + 1; timestamp = DateTime.UtcNow }
+            )) |> ignore
+            // Trim if too large (remove oldest 10%)
+            if suspects.Count > maxEntries then
+                let toRemove =
+                    suspects.ToArray()
+                    |> Array.sortBy (fun kv -> kv.Value.timestamp)
+                    |> Array.take (maxEntries / 10)
+                for kv in toRemove do
+                    suspects.TryRemove(kv.Key) |> ignore
+            DiagSidecar.emit (sprintf "SuspectCache.mark: hash=%d depth=%d error=%s" h depth errorType)
+
+        /// Check if a key is suspect in current generation
+        let isSuspect (key: obj) : bool =
+            let h = hashKey key
+            match suspects.TryGetValue(h) with
+            | true, entry -> not (CacheGeneration.isStale entry.generation)
+            | _ -> false
+
+        /// Check if a key is suspect and return entry
+        let tryGetSuspect (key: obj) : SuspectEntry option =
+            let h = hashKey key
+            match suspects.TryGetValue(h) with
+            | true, entry when not (CacheGeneration.isStale entry.generation) -> Some entry
+            | _ -> None
+
+        /// Clear suspects for a generation (after successful retry)
+        let clearForGeneration (gen: int64) =
+            let toRemove =
+                suspects.ToArray()
+                |> Array.filter (fun kv -> kv.Value.generation <= gen)
+            for kv in toRemove do
+                suspects.TryRemove(kv.Key) |> ignore
+            DiagSidecar.emit (sprintf "SuspectCache.clearForGeneration: gen=%d removed=%d" gen toRemove.Length)
+
+        /// Get recent suspects for diagnostics
+        let getRecent (n: int) : (int * SuspectEntry) list =
+            suspects.ToArray()
+            |> Array.sortByDescending (fun kv -> kv.Value.timestamp)
+            |> Array.truncate n
+            |> Array.map (fun kv -> kv.Key, kv.Value)
+            |> Array.toList
+
+        /// Get count of suspects in current generation
+        let currentCount () =
+            let gen = CacheGeneration.current ()
+            suspects.ToArray()
+            |> Array.filter (fun kv -> kv.Value.generation = gen)
+            |> Array.length
+
+    /// ### BitMamba
+    /// Neural network stub for predictive cache management.
+    /// Uses Mamba-inspired selective state space approach: track access patterns
+    /// and predict which cache entries are likely to be problematic.
+    /// Full ML integration pending; current implementation uses heuristics.
+    module BitMamba =
+        open System
+        open System.Collections.Concurrent
+
+        type AccessPattern = {
+            keyHash: int
+            depth: int
+            generation: int64
+            threadId: int
+            timestamp: DateTime
+            wasSuspect: bool
+        }
+
+        type Prediction =
+            | LikelyValid
+            | LikelySuspect
+            | Unknown
+
+        let private recentAccesses = ConcurrentQueue<AccessPattern>()
+        let private maxHistory = 256
+        let private keyStats = ConcurrentDictionary<int, int * int>()  // hash -> (accesses, failures)
+
+        /// Record a cache access for pattern learning
+        let recordAccess (key: obj) =
+            let h = try key.GetHashCode() with _ -> 0
+            let pattern = {
+                keyHash = h
+                depth = RecursionTracker.currentDepth ()
+                generation = CacheGeneration.current ()
+                threadId = try System.Threading.Thread.CurrentThread.ManagedThreadId with _ -> 0
+                timestamp = DateTime.UtcNow
+                wasSuspect = SuspectCache.isSuspect key
+            }
+            recentAccesses.Enqueue(pattern)
+            while recentAccesses.Count > maxHistory do
+                let mutable v = Unchecked.defaultof<AccessPattern>
+                recentAccesses.TryDequeue(&v) |> ignore
+            // Update key stats
+            keyStats.AddOrUpdate(h, (1, 0), (fun _ (a, f) -> (a + 1, f))) |> ignore
+
+        /// Record a failure for a key
+        let recordFailure (key: obj) =
+            let h = try key.GetHashCode() with _ -> 0
+            keyStats.AddOrUpdate(h, (1, 1), (fun _ (a, f) -> (a + 1, f + 1))) |> ignore
+
+        /// Predict if a key access is likely to succeed or fail
+        /// Heuristic implementation: uses failure rate and depth correlation
+        let predict (key: obj) : Prediction =
+            let h = try key.GetHashCode() with _ -> 0
+            let depth = RecursionTracker.currentDepth ()
+
+            // Check key-specific stats
+            match keyStats.TryGetValue(h) with
+            | true, (accesses, failures) when accesses > 5 ->
+                let failRate = float failures / float accesses
+                if failRate > 0.3 then LikelySuspect
+                elif failRate < 0.05 then LikelyValid
+                else Unknown
+            | _ -> Unknown
+            |> fun initial ->
+                // Deep recursion increases suspicion
+                if depth > 100 then
+                    match initial with
+                    | Unknown -> LikelySuspect
+                    | _ -> initial
+                else initial
+
+        /// Should we preemptively retry before waiting for cache?
+        /// Heuristic: retry if in deep recursion with suspect patterns
+        let shouldPreemptiveRetry () : bool =
+            let depth = RecursionTracker.currentDepth ()
+            let suspectCount = SuspectCache.currentCount ()
+            // Preemptive retry if: deep recursion AND we've seen suspects this generation
+            depth > 75 && suspectCount > 0
+
+        /// Get pattern summary for diagnostics
+        let getSummary () : string =
+            let patterns = recentAccesses.ToArray()
+            let depths = patterns |> Array.map (fun p -> p.depth)
+            let avgDepth = if depths.Length > 0 then Array.averageBy float depths else 0.0
+            let suspectRate = 
+                if patterns.Length > 0 then
+                    float (patterns |> Array.filter (fun p -> p.wasSuspect) |> Array.length) / float patterns.Length
+                else 0.0
+            sprintf "patterns=%d avgDepth=%.1f suspectRate=%.2f" patterns.Length avgDepth suspectRate
+
+    /// ### EJPCodes
+    /// Centralized error code definitions and classification.
+    /// EJP = Error in Join Point processing
+    module EJPCodes =
+        /// EJP0002: Join point annotation type mismatch
+        let [<Literal>] EJP0002 = "EJP0002"
+
+        /// EJP0003: Type error during parallel evaluation (race condition)
+        let [<Literal>] EJP0003 = "EJP0003"
+
+        /// EJP0007: Apply type mismatch - primitive where callable expected
+        let [<Literal>] EJP0007 = "EJP0007"
+
+        /// EJP0008: Deep recursion cache corruption
+        let [<Literal>] EJP0008 = "EJP0008"
+
+        /// Classify an error message to an EJP code
+        let classifyError (msg: string) : string option =
+            if msg.Contains("Expected a function") && 
+               (msg.Contains("Got: i32") || msg.Contains("Got: i64") || 
+                msg.Contains("Got: f32") || msg.Contains("Got: f64") ||
+                msg.Contains("Got: bool")) then
+                Some EJP0007
+            elif msg.Contains("type mismatch") || msg.Contains("Cannot apply") then
+                Some EJP0003
+            elif msg.Contains("annotation") && msg.Contains("mismatch") then
+                Some EJP0002
+            else
+                None
+
+        /// Get error description
+        let describe (code: string) : string =
+            match code with
+            | "EJP0002" -> "Join point annotation type mismatch"
+            | "EJP0003" -> "Type error during parallel evaluation"
+            | "EJP0007" -> "Apply type mismatch: primitive where callable expected"
+            | "EJP0008" -> "Deep recursion cache corruption"
+            | _ -> "Unknown error"
 
     /// ### format_jp_annot_mismatch
     /// Rust-ish, multi-line diagnostic for join-point annotation mismatches.
@@ -9941,8 +10274,8 @@ module spiral_compiler =
 
     /// ### PartEvalResult
     type PartEvalResult = {
-        join_point_method : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>>
-        join_point_closure : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>>
+        join_point_method : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim> * int64>
+        join_point_closure : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim> * int64>
         ty_to_data : Ty -> Data
         nominal_apply : Ty -> Ty
         globals : ResizeArray<string>
@@ -10144,13 +10477,13 @@ module spiral_compiler =
 
         let inline diag_specs_total () =
             let mutable total = 0
-            for KeyValue(_, (dict, _, _)) in join_point_method do
+            for KeyValue(_, (dict, _, _, _)) in join_point_method do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 total <- total + dict.Count
-            for KeyValue(_, (dict, _, _)) in join_point_closure do
+            for KeyValue(_, (dict, _, _, _)) in join_point_closure do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 total <- total + dict.Count
-            for KeyValue(_, (dict, _)) in join_point_type do
+            for KeyValue(_, (dict, _, _)) in join_point_type do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 total <- total + dict.Count
             total
@@ -10172,7 +10505,7 @@ module spiral_compiler =
             let mutable type_specs = 0
             let mutable events_total = 0
             let mutable events_not_set = 0
-            for KeyValue(_, (dict, _, dict_ev)) in join_point_method do
+            for KeyValue(_, (dict, _, dict_ev, _)) in join_point_method do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
                 method_groups <- method_groups + 1
@@ -10182,7 +10515,7 @@ module spiral_compiler =
                     let ev = (ev : System.Threading.ManualResetEventSlim)
                     if not ev.IsSet then events_not_set <- events_not_set + 1
 
-            for KeyValue(_, (dict, _, dict_ev)) in join_point_closure do
+            for KeyValue(_, (dict, _, dict_ev, _)) in join_point_closure do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 let dict_ev = (dict_ev : System.Collections.Concurrent.ConcurrentDictionary<_, System.Threading.ManualResetEventSlim>)
                 closure_groups <- closure_groups + 1
@@ -10192,7 +10525,7 @@ module spiral_compiler =
                     let ev = (ev : System.Threading.ManualResetEventSlim)
                     if not ev.IsSet then events_not_set <- events_not_set + 1
 
-            for KeyValue(_, (dict, _)) in join_point_type do
+            for KeyValue(_, (dict, _, _)) in join_point_type do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 type_groups <- type_groups + 1
                 type_specs <- type_specs + dict.Count
@@ -10464,13 +10797,25 @@ module spiral_compiler =
                     match ty s annot with
                     | YFun(a,b,_) as x -> a,b,x
                     | annot -> raise_type_error s <| sprintf "Expected a function type in annotation during closure conversion. Got: %s" (show_ty annot)
-                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>), hc_table, dict_ev =
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>), hc_table, dict_ev, cache_gen =
 
                     Utils.memoize join_point_closure (fun _ ->
 
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference)
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, (Data * TypedBind []) option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference), CacheGeneration.current ()
 
                     ) (s.backend, body)
+
+                let dict, hc_table, dict_ev =
+                    if CacheGeneration.isStale cache_gen then
+                        let fresh =
+                            (System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference),
+                             HashConsTable(),
+                             System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference),
+                             CacheGeneration.current ())
+                        join_point_closure.[(s.backend, body)] <- fresh
+                        let (d,h,e,_) = fresh
+                        d,h,e
+                    else dict, hc_table, dict_ev
                 let call_args, env_global_value =
                     data_to_rdata s hc_table gl_term
                 let join_point_key =
@@ -10783,10 +11128,22 @@ module spiral_compiler =
             | TJoinPoint'(r,scope,body) ->
                 let env_global_type = scope.ty.free_vars |> HopacExtensions.A.map (fun i -> vt s i)
                 let env_global_term = scope.term.free_vars |> HopacExtensions.A.map (fun i -> v s i)
-                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>), hc_table =
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>), hc_table, cache_gen =
                     Utils.memoize join_point_type (fun _ ->
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Reference), HashConsTable()
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
                     ) body
+
+                let dict, hc_table =
+                    if CacheGeneration.isStale cache_gen then
+                        let fresh =
+                            (System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference),
+                             HashConsTable(),
+                             CacheGeneration.current ())
+                        join_point_type.[body] <- fresh
+                        let (d,h,_) = fresh
+                        d,h
+                    else dict, hc_table
+
                 let jp_key_range_enable =
                     match System.Environment.GetEnvironmentVariable("SPIRAL_JP_KEY_RANGE") with
                     | null | "" -> true
@@ -10860,76 +11217,137 @@ module spiral_compiler =
                                         }
                                     let s = rename_global_term s
 
-                                    // Enhanced error handling for JPType: retry on type errors that look like parallel race conditions.
-                                    // v42: Always attempt retry on type-class mismatch errors.
-                                    let mutable ret_ty_result = Unchecked.defaultof<Ty>
-                                    let mutable retry_needed_type = false
-                                    let mutable original_exn_type : exn option = None
+                                    // ### v44: Enhanced cascading retry with cache generation tracking ###
+                                    // Track recursion depth for adaptive retry strategies
+                                    let recursion_site = sprintf "JPType@%s:%d" r.path (fst r.range).line
+                                    let entry_depth = RecursionTracker.enter recursion_site
 
-                                    // v43: Always retry unless explicitly disabled. Default 3 attempts.
-                                    let retry_enabled_type =
+                                    // Record access for BitMamba pattern learning
+                                    BitMamba.recordAccess join_point_key
+
+                                    // v44: Adaptive max_retries based on recursion depth
+                                    let retry_enabled =
                                         System.Environment.GetEnvironmentVariable "SPIRAL_NO_RETRY" <> "1"
 
-                                    let max_retries_type = 3  // v43: hardcoded sensible default
+                                    let max_retries =
+                                        if RecursionTracker.isDeep () then 5  // More retries in deep recursion
+                                        elif RecursionTracker.isModeratelyDeep () then 4
+                                        else 3
 
-                                    let mutable retry_count_type = 0
+                                    let mutable ret_ty_result = Unchecked.defaultof<Ty>
+                                    let mutable retry_count = 0
+                                    let mutable last_error : exn option = None
+                                    let mutable succeeded = false
+                                    let start_generation = CacheGeneration.current ()
 
-                                    try
-                                        ret_ty_result <- ty s body
-                                    with
-                                    | :? PartEvalTypeError as e when
-                                        retry_enabled_type &&
-                                        retry_count_type < max_retries_type &&
-                                        (e.Data1.Contains("Expected a function") ||
-                                         e.Data1.Contains("Got: i32") ||
-                                         e.Data1.Contains("Got: i64") ||
-                                         e.Data1.Contains("Got: f32") ||
-                                         e.Data1.Contains("Got: f64") ||
-                                         e.Data1.Contains("Got: bool") ||
-                                         e.Data1.Contains("type mismatch") ||
-                                         e.Data1.Contains("Cannot apply")) ->
-                                        retry_needed_type <- true
-                                        original_exn_type <- Some (e :> exn)
+                                    // BitMamba preemptive: if patterns suggest cache corruption, skip attempt-0 and force fresh inference state.
+                                    if retry_enabled && retry_count = 0 then
+                                        let pred = BitMamba.predict join_point_key
+                                        if pred = BitMamba.LikelySuspect || BitMamba.shouldPreemptiveRetry() then
+                                            let newGen = CacheGeneration.invalidate (sprintf "BitMamba preemptive retry JPType depth=%d pred=%A" entry_depth pred)
+                                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|type_preemptive" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
+                                            DiagSidecar.emit (sprintf "%s BitMamba preemptive retry JPType (depth=%d pred=%A) gen=%d" EJPCodes.EJP0008 entry_depth pred newGen)
+                                            retry_count <- 1
 
-                                    if retry_needed_type then
-                                        retry_count_type <- retry_count_type + 1
-                                        RetryTracker.enterRetry ()
-                                        System.Threading.Thread.Sleep(retry_count_type * 5)  // 5ms, 10ms backoff
-                                        try
-                                            let s_retry : LangEnv = {
-                                                trace = r :: s.trace
-                                                seq = ResizeArray()
-                                                cse = [Dictionary(HashIdentity.Structural)]
-                                                unions = Map.empty
-                                                i = ref 0
-                                                env_global_type = env_global_type
-                                                env_global_term = env_global_term
-                                                env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
-                                                env_stack_term = Array.zeroCreate<_> scope.term.stack_size
-                                                backend = s.backend
-                                                globals = s.globals
-                                                join_point_method_key_names = s.join_point_method_key_names
-                                                join_point_closure_key_names = s.join_point_closure_key_names
-                                                jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
-                                                jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
+                                    // Cascading retry loop with exponential backoff
+                                    let try_eval_type (attempt: int) =
+                                        let s_eval : LangEnv =
+                                            if attempt = 0 then s
+                                            else
+                                                // Fresh state for retry
+                                                let s_retry = {
+                                                    trace = r :: s.trace
+                                                    seq = ResizeArray()
+                                                    cse = [Dictionary(HashIdentity.Structural)]
+                                                    unions = Map.empty
+                                                    i = ref 0
+                                                    env_global_type = env_global_type
+                                                    env_global_term = env_global_term
+                                                    env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                                                    env_stack_term = Array.zeroCreate<_> scope.term.stack_size
+                                                    backend = s.backend
+                                                    globals = s.globals
+                                                    join_point_method_key_names = s.join_point_method_key_names
+                                                    join_point_closure_key_names = s.join_point_closure_key_names
+                                                    jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                                    jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                                 }
-                                            let s_retry = rename_global_term s_retry
-                                            ret_ty_result <- ty s_retry body
-                                            RetryTracker.exitRetrySuccess ()
-                                            jp_mismatch_counts.AddOrUpdate("EJP0003|type_retry_success", 1, (fun _ n -> n + 1)) |> ignore
-                                            DiagSidecar.emit (sprintf "EJP0003 JPType retry succeeded (attempt %d)" retry_count_type)
+                                                rename_global_term s_retry
+                                        ty s_eval body
+
+                                    while not succeeded && retry_count <= max_retries do
+                                        try
+                                            if retry_count > 0 then
+                                                RetryTracker.enterRetry ()
+                                                // v44: Exponential backoff: 10ms, 30ms, 70ms, 150ms...
+                                                let delay = 10 * (pown 2 (retry_count - 1)) - 10 + 10
+                                                System.Threading.Thread.Sleep(delay)
+                                                DiagSidecar.emit (sprintf "JPType retry attempt %d/%d (depth=%d delay=%dms gen=%d)" 
+                                                    retry_count max_retries entry_depth delay (CacheGeneration.current ()))
+
+                                            ret_ty_result <- try_eval_type retry_count
+                                            succeeded <- true
+
+                                            if retry_count > 0 then
+                                                RetryTracker.exitRetrySuccess ()
+                                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|type_retry_success" EJPCodes.EJP0003, 1, (fun _ n -> n + 1)) |> ignore
+                                                DiagSidecar.emit (sprintf "%s JPType retry succeeded (attempt %d depth=%d)" EJPCodes.EJP0003 retry_count entry_depth)
+                                                // Clear suspects for this generation on success
+                                                SuspectCache.clearForGeneration start_generation
+
                                         with
-                                        | _ ->
-                                            RetryTracker.exitRetryFail ()
-                                            jp_mismatch_counts.AddOrUpdate("EJP0003|type_retry_failed", 1, (fun _ n -> n + 1)) |> ignore
-                                            DiagSidecar.emit (sprintf "EJP0003 JPType retry failed (attempt %d)" retry_count_type)
-                                            match original_exn_type with
-                                            | Some e -> raise e
-                                            | None -> ()
+                                        | :? PartEvalTypeError as e when
+                                            retry_enabled &&
+                                            retry_count < max_retries &&
+                                            (e.Data1.Contains("Expected a function") ||
+                                             e.Data1.Contains("Got: i32") ||
+                                             e.Data1.Contains("Got: i64") ||
+                                             e.Data1.Contains("Got: f32") ||
+                                             e.Data1.Contains("Got: f64") ||
+                                             e.Data1.Contains("Got: bool") ||
+                                             e.Data1.Contains("type mismatch") ||
+                                             e.Data1.Contains("Cannot apply")) ->
+                                            // Close out bookkeeping for this failed retry attempt (attempt>0).
+                                            if retry_count > 0 then RetryTracker.exitRetryFail ()
+
+                                            // Mark key as suspect
+                                            let errorCode = EJPCodes.classifyError e.Data1 |> Option.defaultValue EJPCodes.EJP0003
+                                            SuspectCache.mark join_point_key errorCode
+                                            BitMamba.recordFailure join_point_key
+
+                                            // v44: EJP0008 detection for deep recursion cache corruption
+                                            if entry_depth > 50 then
+                                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: deep recursion error at depth %d" entry_depth)
+                                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|deep_recursion_invalidate" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
+                                                DiagSidecar.emit (sprintf "%s deep recursion cache corruption detected (depth=%d) - invalidated to gen=%d" 
+                                                    EJPCodes.EJP0008 entry_depth newGen)
+
+                                            last_error <- Some (e :> exn)
+                                            retry_count <- retry_count + 1
+
+                                            if retry_count > 0 && retry_count <= max_retries then
+                                                // Continue retry loop
+                                                ()
+                                            else
+                                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|type_retry_exhausted" EJPCodes.EJP0003, 1, (fun _ n -> n + 1)) |> ignore
+                                                DiagSidecar.emit (sprintf "%s JPType retries exhausted (attempts=%d depth=%d)" EJPCodes.EJP0003 retry_count entry_depth)
+                                                raise e
+                                        | e ->
+                                            // Non-retryable error
+                                            if retry_count > 0 then RetryTracker.exitRetryFail ()
+                                            raise e
+
+
+                                    // Handle case where loop exits without success
+                                    if not succeeded then
+                                        match last_error with
+                                        | Some e -> raise e
+                                        | None -> failwith "JPType evaluation failed without exception"
 
                                     let ret_ty = ret_ty_result
                                     jp_cell.value <- Some ret_ty
                                 finally
+                                    RecursionTracker.exit ()
                                     jp_cell.owner <- 0
                                     jp_cell.ev.Set()
                                     if inflight_added then inflight.Remove join_point_key |> ignore
@@ -11079,6 +11497,7 @@ module spiral_compiler =
                     | Heap | StackMutable | HeapMutable -> push_typedop_no_rewrite s key ret_ty
                 | DV(L(_,YLayout _)), b -> raise_type_error s <| sprintf "Expected a symbol as the index into the layout type.\nGot: %s" (show_data b)
                 | a, b ->
+                    // ### v44: Enhanced EJP0007 handling with depth tracking and cache management ###
                     // EJP0007: Apply type mismatch - often indicates cache corruption under parallel builds.
                     // When we get a primitive (like i32) where a function is expected, it's almost always
                     // due to a race condition in the join point cache.
@@ -11087,9 +11506,32 @@ module spiral_compiler =
                         | DV(L(_, YPrim _)) | DLit _ -> true
                         | _ -> false
 
+                    let depth = RecursionTracker.currentDepth ()
+                    let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                    let gen0 = CacheGeneration.current ()
+                    let site =
+                        match s.trace with
+                        | r :: _ ->
+                            let (a,_) = r.range
+                            sprintf "%s:%d:%d" r.path a.line a.character
+                        | _ -> "unknown"
+
                     if is_primitive_mismatch then
-                        jp_mismatch_counts.AddOrUpdate("EJP0007|apply_primitive", 1, (fun _ n -> n + 1)) |> ignore
-                        DiagSidecar.emit (sprintf "EJP0007 apply mismatch: expected callable, got %s" (show_data a))
+                        // Record for pattern learning
+                        BitMamba.recordFailure a
+
+                        // Mark as suspect in cache
+                        SuspectCache.mark a EJPCodes.EJP0007
+
+                        jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_primitive" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
+                        DiagSidecar.emit (sprintf "%s apply mismatch: expected callable, got %s (depth=%d)" EJPCodes.EJP0007 (show_data a) depth)
+
+                        // v44: EJP0008 detection - deep recursion cache corruption
+                        if depth > 50 then
+                            let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d" depth)
+                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_deep_recursion" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
+                            DiagSidecar.emit (sprintf "%s deep recursion cache corruption in apply (depth=%d) - invalidated to gen=%d" 
+                                EJPCodes.EJP0008 depth newGen)
 
                     raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s" (show_data a)
 
@@ -11244,7 +11686,7 @@ module spiral_compiler =
                     match a with
                     | DPair(DSymbol k, v) ->
                         let v_ty = data_to_ty s v
-                        match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) h.Item.cases with
+                        match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) (union_cases h) with
                         | Some v_ty' when v_ty = v_ty' -> DNominal(DUnion(a,h),b)
                         | Some v_ty' -> raise_type_error s <| sprintf "For key %s, The type of the value does not match the union case.\nGot: %s\nExpected: %s" k (show_ty v_ty) (show_ty v_ty')
                         | None -> raise_type_error s <| sprintf "The union does not have key %s.\nGot: %s" k (show_ty b)
@@ -11316,13 +11758,26 @@ module spiral_compiler =
                 let env_global_term = HopacExtensions.A.map (v s) scope.term.free_vars
 
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
-                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option>), hc_table, dict_ev =
+                let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option>), hc_table, dict_ev, cache_gen =
 
                     Utils.memoize join_point_method (fun _ ->
 
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference)
+                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option>(HashIdentity.Reference), HashConsTable(), System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim>(HashIdentity.Reference), CacheGeneration.current ()
 
                     ) (backend', body)
+
+                let dict, hc_table, dict_ev =
+                    if CacheGeneration.isStale cache_gen then
+                        let fresh =
+                            (System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference),
+                             HashConsTable(),
+                             System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference),
+                             CacheGeneration.current ())
+                        join_point_method.[(backend', body)] <- fresh
+                        let (d,h,e,_) = fresh
+                        d,h,e
+                    else dict, hc_table, dict_ev
+
                 // NOTE: join-point bodies can be polymorphic; when the same body is reached through different
                 // instantiations, caching solely by the free-variable environment can accidentally reuse the wrong
                 // specialization (especially under parallel builds). We therefore salt the key with the local
@@ -11439,30 +11894,87 @@ module spiral_compiler =
                                         }
                                     let s = rename_global_term s
 
-                                    // Enhanced error handling: retry on type errors that look like parallel race conditions.
-                                    // v43: Aggressive retry - always enabled, higher retry count, broader error patterns.
-                                    let mutable seq_result = Unchecked.defaultof<_>
-                                    let mutable ty_result = Unchecked.defaultof<_>
-                                    let mutable retry_needed = false
-                                    let mutable original_exn : exn option = None
+                                    // ### v46: Cascading retry loop (JPMethod) aligned with JPType + BitMamba preemptive ###
+                                    // Track recursion depth for adaptive retry strategies
+                                    let recursion_site = sprintf "JPMethod@%s:%d" r.path (fst r.range).line
+                                    let entry_depth = RecursionTracker.enter recursion_site
 
-                                    // v43: Always retry unless explicitly disabled. Default 3 attempts.
-                                    let retry_enabled_ejp0003 =
+                                    // Record access for BitMamba pattern learning
+                                    BitMamba.recordAccess join_point_key
+
+                                    let retry_enabled =
                                         System.Environment.GetEnvironmentVariable "SPIRAL_NO_RETRY" <> "1"
 
-                                    let max_retries = 3  // v43: hardcoded sensible default
+                                    // Adaptive max_retries based on recursion depth
+                                    let max_retries =
+                                        if RecursionTracker.isDeep () then 5
+                                        elif RecursionTracker.isModeratelyDeep () then 4
+                                        else 3
 
+                                    let start_generation = CacheGeneration.current ()
+
+                                    // Evaluate the join-point body with either current env (attempt=0) or a fresh inference state (attempt>0).
+                                    let try_eval_method (attempt: int) =
+                                        let s_eval : LangEnv =
+                                            if attempt = 0 then s
+                                            else
+                                                let s_retry : LangEnv = {
+                                                    trace = r :: s.trace
+                                                    seq = ResizeArray()
+                                                    cse = [Dictionary(HashIdentity.Structural)]
+                                                    unions = Map.empty
+                                                    i = ref 0
+                                                    env_global_type = env_global_type
+                                                    env_global_term = env_global_term
+                                                    env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                                                    env_stack_term = Array.zeroCreate<_> scope.term.stack_size
+                                                    backend = backend'
+                                                    globals = s.globals
+                                                    join_point_method_key_names = s.join_point_method_key_names
+                                                    join_point_closure_key_names = s.join_point_closure_key_names
+                                                    jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                                    jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
+                                                    }
+                                                rename_global_term s_retry
+                                        term_scope'' s_eval body annot_val
+
+                                    let mutable seq_result = Unchecked.defaultof<_>
+                                    let mutable ty_result = Unchecked.defaultof<_>
                                     let mutable retry_count = 0
+                                    let mutable last_error : exn option = None
+                                    let mutable succeeded = false
 
-                                    let rec try_eval () =
+                                    // BitMamba preemptive: if the patterns look corrupt, skip attempt-0.
+                                    if retry_enabled && retry_count = 0 then
+                                        let pred = BitMamba.predict join_point_key
+                                        if pred = BitMamba.LikelySuspect || BitMamba.shouldPreemptiveRetry() then
+                                            let newGen = CacheGeneration.invalidate (sprintf "BitMamba preemptive retry JPMethod depth=%d pred=%A" entry_depth pred)
+                                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|method_preemptive" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
+                                            DiagSidecar.emit (sprintf "%s BitMamba preemptive retry JPMethod (depth=%d pred=%A) gen=%d" EJPCodes.EJP0008 entry_depth pred newGen)
+                                            retry_count <- 1
+
+                                    while not succeeded && retry_count <= max_retries do
                                         try
-                                            let seq, ty = term_scope'' s body annot_val
+                                            if retry_count > 0 then
+                                                RetryTracker.enterRetry ()
+                                                let delay = 10 * (pown 2 (retry_count - 1)) - 10 + 10
+                                                System.Threading.Thread.Sleep(delay)
+                                                DiagSidecar.emit (sprintf "JPMethod retry attempt %d/%d (depth=%d delay=%dms gen=%d)" retry_count max_retries entry_depth delay (CacheGeneration.current ()))
+
+                                            let seq, ty = try_eval_method retry_count
                                             seq_result <- seq
                                             ty_result <- ty
-                                            true
+                                            succeeded <- true
+
+                                            if retry_count > 0 then
+                                                RetryTracker.exitRetrySuccess ()
+                                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|method_retry_success" EJPCodes.EJP0003, 1, (fun _ n -> n + 1)) |> ignore
+                                                DiagSidecar.emit (sprintf "%s JPMethod retry succeeded (attempt %d depth=%d)" EJPCodes.EJP0003 retry_count entry_depth)
+                                                SuspectCache.clearForGeneration start_generation
+
                                         with
                                         | :? PartEvalTypeError as e when
-                                            retry_enabled_ejp0003 &&
+                                            retry_enabled &&
                                             retry_count < max_retries &&
                                             (e.Data1.Contains("Expected a function") ||
                                              e.Data1.Contains("Got: i32") ||
@@ -11472,59 +11984,30 @@ module spiral_compiler =
                                              e.Data1.Contains("Got: bool") ||
                                              e.Data1.Contains("type mismatch") ||
                                              e.Data1.Contains("Cannot apply")) ->
-                                            // EJP0003: Type error that might be a parallel race condition.
-                                            retry_needed <- true
-                                            original_exn <- Some (e :> exn)
-                                            false
+                                            // Close out bookkeeping for this failed retry attempt (attempt>0).
+                                            if retry_count > 0 then RetryTracker.exitRetryFail ()
 
-                                    if not (try_eval ()) && retry_needed then
-                                        // Retry with fresh state. Add small delay to let other threads settle.
-                                        retry_count <- retry_count + 1
-                                        RetryTracker.enterRetry ()
-                                        System.Threading.Thread.Sleep(retry_count * 5)  // 5ms, 10ms backoff
+                                            let errorCode = EJPCodes.classifyError e.Data1 |> Option.defaultValue EJPCodes.EJP0003
+                                            SuspectCache.mark join_point_key errorCode
+                                            BitMamba.recordFailure join_point_key
 
-                                        try
-                                            let s_retry : LangEnv = {
-                                                trace = r :: s.trace
-                                                seq = ResizeArray()
-                                                cse = [Dictionary(HashIdentity.Structural)]
-                                                unions = Map.empty
-                                                i = ref 0
-                                                env_global_type = env_global_type
-                                                env_global_term = env_global_term
-                                                env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
-                                                env_stack_term = Array.zeroCreate<_> scope.term.stack_size
-                                                backend = backend'
-                                                globals = s.globals
-                                                join_point_method_key_names = s.join_point_method_key_names
-                                                join_point_closure_key_names = s.join_point_closure_key_names
-                                                jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
-                                                jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
-                                                }
-                                            let s_retry = rename_global_term s_retry
-                                            let seq2, ty2 = term_scope'' s_retry body annot_val
-                                            seq_result <- seq2
-                                            ty_result <- ty2
-                                            RetryTracker.exitRetrySuccess ()
-                                            // Log successful retry.
-                                            let range_pretty =
-                                                let (sp, ep) = r.range
-                                                sprintf "%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character
-                                            jp_mismatch_counts.AddOrUpdate("EJP0003|retry_success", 1, (fun _ n -> n + 1)) |> ignore
-                                            DiagSidecar.emit (sprintf "EJP0003 retry succeeded for %s at %s (attempt %d)" (defaultArg jp_name "<anon>") range_pretty retry_count)
-                                        with
-                                        | _ ->
-                                            // Retry also failed; log and re-raise original.
-                                            RetryTracker.exitRetryFail ()
-                                            let range_pretty =
-                                                let (sp, ep) = r.range
-                                                sprintf "%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character
-                                            jp_mismatch_counts.AddOrUpdate("EJP0003|retry_failed", 1, (fun _ n -> n + 1)) |> ignore
-                                            DiagSidecar.emit (sprintf "EJP0003 retry failed for %s at %s (attempt %d)" (defaultArg jp_name "<anon>") range_pretty retry_count)
-                                            match original_exn with
-                                            | Some e -> raise e
-                                            | None -> ()
+                                            // EJP0008 detection for deep recursion
+                                            if entry_depth > 50 then
+                                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: JPMethod error at depth %d" entry_depth)
+                                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|method_deep_recursion" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
+                                                DiagSidecar.emit (sprintf "%s deep recursion in JPMethod (depth=%d) - invalidated to gen=%d" EJPCodes.EJP0008 entry_depth newGen)
 
+                                            last_error <- Some (e :> exn)
+                                            retry_count <- retry_count + 1
+
+                                        | e ->
+                                            if retry_count > 0 then RetryTracker.exitRetryFail ()
+                                            raise e
+
+                                    if not succeeded then
+                                        match last_error with
+                                        | Some e -> raise e
+                                        | None -> failwith "JPMethod evaluation failed without exception"
                                     let seq, ty = seq_result, ty_result
                                     dict.[join_point_key] <- (Some seq, Some ty, jp_name)
                                     match annot_val with
@@ -11578,6 +12061,7 @@ module spiral_compiler =
                                     | _ -> ()
                                     ty
                                 finally
+                                    RecursionTracker.exit ()
                                     jp_ev.Set()
                                     let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
                                     dict_ev.TryRemove(join_point_key, &_ev) |> ignore
@@ -11784,7 +12268,7 @@ module spiral_compiler =
                 | DNominal(DUnion(DPair(DSymbol k',a),_),_) -> if k = k' then run s a else term s on_fail
                 | DNominal(DV(L(_,YUnion h) & i),_) ->
                     let body blk =
-                        match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) h.Item.cases with
+                        match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) (union_cases h) with
                         | Some v when Set.contains k blk = false ->
                             let on_succ, ret_ty =
                                 let a = ty_to_data s v
@@ -11830,7 +12314,7 @@ module spiral_compiler =
                                     Map.add k ([a], seq_apply s x) m, case_ty
                                 else
                                     m, case_ty
-                                ) (Map.empty,None) h.Item.cases
+                                ) (Map.empty,None) (union_cases h)
                         push_typedop_no_rewrite s (TyUnionUnbox([i],h,cases,None)) (Option.get case_ty)
                     match Map.tryFind i s.unions with
                     | Some (UnionData (k,a)) -> run s (DPair(DSymbol k, a))
@@ -11856,19 +12340,26 @@ module spiral_compiler =
                 let key_value = function
                     | DPair(DSymbol k, a) -> k, a
                     | _ -> failwith "Compiler error: Malformed union."
+                let union_sig (h: Union) =
+                    union_cases h
+                    |> Seq.map (fun (KeyValue((_,k),v)) -> k, show_ty v)
+                    |> Seq.sortBy fst
+                    |> Seq.toArray
+                let union_sig_eq h h' = union_sig h = union_sig h'
                 match term s a, term s b with
-                | DNominal(DUnion(_,h),_), DNominal(DUnion(_,h'),_) when h <> h' ->
-                    raise_type_error s <| sprintf "The two variables have different union types.\nGot: %s\nGot: %s" (show_ty (YUnion h)) (show_ty (YUnion h'))
-                | DNominal(DUnion(a,_),_), DNominal(DUnion(a',_),_) ->
+                | DNominal(DUnion(a,h),_), DNominal(DUnion(a',h'),_) ->
+                    if h <> h' && not (union_sig_eq h h') then
+                        raise_type_error s <| sprintf "The two variables have different union types.\nGot: %s\nGot: %s\nGot_dbg: %A\nGot_dbg: %A" (show_ty (YUnion h)) (show_ty (YUnion h')) (union_sig h) (union_sig h')
                     let k,a = key_value a
                     let k',a' = key_value a'
                     if k = k' then apply s (on_succ, DPair(DSymbol k, DPair(a, a')))
                     else apply s (on_fail, DB)
-                | DNominal(DV(L(_,YUnion h)),_), DNominal(DUnion(_,h'),_) | DNominal(DUnion(_,h),_), DNominal(DV(L(_,YUnion h')),_) when h <> h' ->
-                    raise_type_error s <| sprintf "The two variables have different union types.\nGot: %s\nGot: %s" (show_ty (YUnion h)) (show_ty (YUnion h'))
+                | DNominal(DV(L(_,YUnion h)),_), DNominal(DUnion(_,h'),_)
+                | DNominal(DUnion(_,h),_), DNominal(DV(L(_,YUnion h')),_) when h <> h' && not (union_sig_eq h h') ->
+                    raise_type_error s <| sprintf "The two variables have different union types.\nGot: %s\nGot: %s\nGot_dbg: %A\nGot_dbg: %A" (show_ty (YUnion h)) (show_ty (YUnion h')) (union_sig h) (union_sig h')
                 | DNominal(DV(L(_,YUnion h) & i),_), DNominal(DUnion(a',_),_) ->
                     let k,a' = key_value a'
-                    let v = h.Item.cases |> Map.pick (fun (_, name') v -> if k = name' then Some v else None)
+                    let v = union_cases h |> Map.pick (fun (_, name') v -> if k = name' then Some v else None)
                     let case_on_succ =
                         let s = s'()
                         let a = ty_to_data s v
@@ -11877,7 +12368,7 @@ module spiral_compiler =
                     push_typedop_no_rewrite s (TyUnionUnbox([i],h,Map.add k case_on_succ Map.empty,Some (case_on_fail()))) (Option.get case_ty)
                 | DNominal(DUnion(a,_),_), DNominal(DV(L(_,YUnion h) & i'),_) ->
                     let k,a = key_value a
-                    let v = h.Item.cases |> Map.pick (fun (_, name') v -> if k = name' then Some v else None)
+                    let v = union_cases h |> Map.pick (fun (_, name') v -> if k = name' then Some v else None)
                     let case_on_succ =
                         let s = s'()
                         let a' = ty_to_data s v
@@ -11897,7 +12388,7 @@ module spiral_compiler =
                                                 Map.add i' (UnionData (k,a')) u
                                                 }
                             [a;a'], run s (on_succ, DPair(DSymbol k, DPair(a, a')))
-                            ) h.Item.cases
+                            ) (union_cases h)
                         |> Seq.map (fun (KeyValue ((_, k), v)) -> k, v)
                         |> Map.ofSeq
                     push_typedop_no_rewrite s (TyUnionUnbox([i;i'],h,cases_on_succ,Some (case_on_fail()))) (Option.get case_ty)
@@ -13373,7 +13864,7 @@ module spiral_compiler =
         and args_tys x = x |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             x
-            |> HopacExtensions.parMapBoundedSync HopacExtensions.defaultConcurrency (fun b ->
+            |> HopacExtensions.parMapBoundedSync (HopacExtensions.defaultConcurrency()) (fun b ->
                 let text = StringBuilder()
                 let s' = {text=text; indent=s.indent}
                 match b with
@@ -13669,7 +14160,7 @@ module spiral_compiler =
             )
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                let jp_dict,_,_ = env.join_point_method.[jp_body]
+                let jp_dict,_,_,_ = env.join_point_method.[jp_body]
                 match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -13681,7 +14172,7 @@ module spiral_compiler =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
                 | YFun(domain,range,FT_Vanilla) ->
-                    let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                    let jp_dict,_,_,_ = env.join_point_closure.[jp_body]
                     match jp_dict.[key] with
                     | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -13889,7 +14380,7 @@ module spiral_compiler =
         and args_tys x = x |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i :    %s" i (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             x
-            |> HopacExtensions.parMapBoundedSync HopacExtensions.defaultConcurrency (fun b ->
+            |> HopacExtensions.parMapBoundedSync (HopacExtensions.defaultConcurrency()) (fun b ->
                 let text = StringBuilder()
                 let s' = {text=text; indent=s.indent}
                 match b with
@@ -14419,7 +14910,7 @@ module spiral_compiler =
             )
         and method : _ -> MethodRecGleam =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                let jp_dict,_,_ = env.join_point_method.[jp_body]
+                let jp_dict,_,_,_ = env.join_point_method.[jp_body]
                 match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -14441,7 +14932,7 @@ module spiral_compiler =
                 (fun ((jp_body, key & (C(args, _, fun_ty))), i) ->
                 match fun_ty with
                 | YFun (domain, range, FT_Vanilla) ->
-                    let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                    let jp_dict,_,_,_ = env.join_point_closure.[jp_body]
                     match jp_dict.[key] with
                     | Some (domain_args, body) ->
                         {   tag = i
@@ -14703,7 +15194,7 @@ module spiral_compiler =
         and args_tys x = x |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i" i) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             x
-            |> HopacExtensions.parMapBoundedSync HopacExtensions.defaultConcurrency (fun b ->
+            |> HopacExtensions.parMapBoundedSync (HopacExtensions.defaultConcurrency()) (fun b ->
                 let text = StringBuilder()
                 let s' = {text=text; indent=s.indent}
                 match b with
@@ -15094,7 +15585,7 @@ module spiral_compiler =
         )
         and method : _ -> MethodRecLua =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                let jp_dict,_,_ = env.join_point_method.[jp_body]
+                let jp_dict,_,_,_ = env.join_point_method.[jp_body]
                 match jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -15108,7 +15599,7 @@ module spiral_compiler =
                 (fun ((jp_body, key & (C(args, _, fun_ty))), i) ->
                 match fun_ty with
                 | YFun (domain, range, FT_Vanilla) ->
-                    let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                    let jp_dict,_,_,_ = env.join_point_closure.[jp_body]
                     match jp_dict.[key] with
                     | Some (domain_args, body) ->
                         {   tag = i
@@ -15848,7 +16339,7 @@ module spiral_compiler =
                 order_argsC v |> HopacExtensions.A.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_templ is_while fun_name : _ -> MethodRecC =
                 jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                    let jp_dict,_,_ = env.join_point_method.[jp_body]
+                    let jp_dict,_,_,_ = env.join_point_method.[jp_body]
                     match jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=name}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -15866,7 +16357,7 @@ module spiral_compiler =
                 jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
-                        let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                        let jp_dict,_,_,_ = env.join_point_closure.[jp_body]
                         match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -16806,7 +17297,7 @@ module spiral_compiler =
                 order_args v |> HopacExtensions.A.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_template is_while : _ -> MethodRecCpp =
                 jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                    let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                    let jp_dict,_,_,_ = part_eval_env.join_point_method.[jp_body]
                     match jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=Option.map fix_method_name name}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -16842,7 +17333,7 @@ module spiral_compiler =
                 jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,t) ->
-                        let jp_dict,_,_ = part_eval_env.join_point_closure.[jp_body]
+                        let jp_dict,_,_,_ = part_eval_env.join_point_closure.[jp_body]
                         match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -17137,7 +17628,7 @@ module spiral_compiler =
                 | "Cuda" ->
                     Utils.memoize g (fun (jp_body,key & C(args,_,_)) ->
                         let args = rdata_free_vars args
-                        let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                        let jp_dict,_,_,_ = part_eval_env.join_point_method.[jp_body]
                         match jp_dict.[key] with
                         | Some a, Some _, _ -> cuda_codegen (Cuda(args, a))
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -17678,7 +18169,7 @@ module spiral_compiler =
                 )
             and method : _ -> MethodRecPython =
                 jp false (fun ((jp_body,key & (C(args,_,_))),i) ->
-                    let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                    let jp_dict,_,_,_ = part_eval_env.join_point_method.[jp_body]
                     match jp_dict.[key] with
                     | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -17691,7 +18182,7 @@ module spiral_compiler =
                 jp true (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
-                        let jp_dict,_,_ = part_eval_env.join_point_closure.[jp_body]
+                        let jp_dict,_,_,_ = part_eval_env.join_point_closure.[jp_body]
                         match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -17755,7 +18246,7 @@ module spiral_compiler =
                     | "Cuda" ->
                         Utils.memoize g (fun (jp_body,key & C(args,_,_)) ->
                             let args = rdata_free_vars args
-                            let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
+                            let jp_dict,_,_,_ = part_eval_env.join_point_method.[jp_body]
                             match jp_dict.[key] with
                             | Some a, Some _, _ -> cuda_codegen (CodegenCpp.Cuda(args,a))
                             | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -19788,20 +20279,77 @@ module spiral_compiler =
                                         BuildOk (codegen file b a)
                                     let build codegen backend file_extension =
                                         build_many (fun file b a -> [{|code = codegen b a; file_extension = file_extension|}]) backend
-                                    match backend with
-                                    | "Gleam" -> build codegenGleam "Gleam" ".gleam"
-                                    | "Lua" -> build codegenLua "Lua" ".lua"
-                                    | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
-                                    | "C" -> build CodegenC.codegenC "C" ".c"
-                                    | "Python + Cuda" -> build_many (CodegenPython.codegen default_env) "Python"
-                                    | "Cpp + Cuda" -> build_many (CodegenCpp.codegen default_env) "Cpp"
 
-                                    | "Cuda C++" -> BuildFatalError "The host C++ backend originally made for FPGAs, and then ported to Cuda has been removed in v2.10.0 of Spiral. Please use an earlier version to access it." // Date: 5/8/2024
-                                    | "Python" -> BuildFatalError "The prototype Python backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023
-                                    | "UPMEM: Python + C" -> BuildFatalError "The UPMEM Python + C backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023
-                                    | "HLS C++" -> BuildFatalError "The HLS C++ backend has been replaced by the Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 10/17/2023
-                                    | "Cython*" | "Cython" -> BuildFatalError "The Cython backend has been replaced by the Python one in v2.3.1 of Spiral. Please use an earlier version to access it." // Date: 12/27/2022
-                                    | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
+                                    let do_build () =
+                                        match backend with
+                                        | "Gleam" -> build codegenGleam "Gleam" ".gleam"
+                                        | "Lua" -> build codegenLua "Lua" ".lua"
+                                        | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
+                                        | "C" -> build CodegenC.codegenC "C" ".c"
+                                        | "Python + Cuda" -> build_many (CodegenPython.codegen default_env) "Python"
+                                        | "Cpp + Cuda" -> build_many (CodegenCpp.codegen default_env) "Cpp"
+                                        | "Cuda C++" -> BuildFatalError "Cuda C++ backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 5/8/2024
+                                        | "Python" -> BuildFatalError "Python backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 11/3/2023
+                                        | "UPMEM: Python + C" -> BuildFatalError "UPMEM backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 11/3/2023
+                                        | "HLS C++" -> BuildFatalError "HLS C++ backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 10/17/2023
+                                        | "Cython*" | "Cython" -> BuildFatalError "Cython backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 12/27/2022
+                                        | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
+
+                                    let rec attempt_build (attempt: int) (max_attempts: int) =
+                                        try
+                                            do_build ()
+                                        with
+                                            | :? PartEvalTypeError as e when attempt + 1 < max_attempts ->
+                                                let msg = e.Data1
+                                                match EJPCodes.classifyError msg with
+                                                | Some code when code = EJPCodes.EJP0007 ->
+                                                    let gen_before = CacheGeneration.current ()
+                                                    let gen_after = CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
+                                                    HopacExtensions.forceConcurrency 1
+                                                    let trace_lines, _ = show_trace s e.Data0 e.Data1
+                                                    let sidecar = DiagSidecar.snapshot 128
+                                                    let reasons = CacheGeneration.reasonsSnapshot 64
+                                                    let suspects =
+                                                        SuspectCache.getRecent 32
+                                                        |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h se.generation se.depth se.hitCount se.errorType se.timestamp)
+                                                    DiagSidecar.emit (sprintf "BuildFile.retry: EJP0007 gen=%d->%d attempt=%d file=%s backend=%s" gen_before gen_after attempt file backend)
+                                                    if System.IO.Directory.Exists traceDir then
+                                                        let guid = System.DateTime.Now |> SpiralDateTime.new_guid_from_date_time
+                                                        let diag_file = traceDir </> $"{guid}_EJP0007_retry.txt"
+                                                        let diag =
+                                                            [ sprintf "EJP0007 retry diagnostics"
+                                                              sprintf "file=%s" file
+                                                              sprintf "backend=%s" backend
+                                                              sprintf "attempt=%d" attempt
+                                                              sprintf "gen=%d -> %d" gen_before gen_after
+                                                              "---- message ----"
+                                                              msg
+                                                              "---- trace ----" ] @ trace_lines @
+                                                            [ "---- sidecar ----" ] @ sidecar @
+                                                            [ "---- cache invalidations ----" ] @ reasons @
+                                                            [ "---- suspects ----" ] @ suspects
+                                                            |> String.concat "\n"
+                                                        HopacExtensions.start (job {
+                                                            try
+                                                                do! Job.fromAsync (diag |> SpiralFileSystem.write_all_text_async diag_file)
+                                                            with ex ->
+                                                                trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / diag write ex: {ex |> SpiralSm.format_exception}") _locals
+                                                        })
+                                                    attempt_build (attempt + 1) max_attempts
+                                                | _ ->
+                                                    reraise ()
+                                            | :? PartEvalTypeError as _ ->
+                                                reraise ()
+                                            | :? CodegenError as _ ->
+                                                reraise ()
+                                            | :? CodegenErrorWithPos as _ ->
+                                                reraise ()
+
+                                    try
+                                        attempt_build 0 2
+                                    finally
+                                        HopacExtensions.clearForcedConcurrency ()
+
                                 with
                                     | :? PartEvalTypeError as e -> BuildErrorTrace(show_trace s e.Data0 e.Data1)
                                     | :? CodegenError as e -> BuildFatalError(e.Data1)
@@ -19814,7 +20362,7 @@ module spiral_compiler =
                                                 try
                                                     do! Job.fromAsync ($"{ex}" |> SpiralFileSystem.write_all_text_async trace_file)
                                                 with ex ->
-                                                    trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: {ex |> SpiralSm.format_exception}") _locals
+                                                    trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: {ex |> SpiralSm.format_exception}") _locals
                                             })
                                         trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: %A{ex}") _locals
                                         BuildFatalError(ex.Message)
