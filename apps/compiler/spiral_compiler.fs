@@ -9378,6 +9378,57 @@ module spiral_compiler =
 
     
 
+    /// ### BigStack
+    /// Executes a thunk on a fresh thread with an explicitly larger stack.
+    /// Used as a last-resort mitigation when mutual recursion (term<->apply) trips EnsureSufficientExecutionStack.
+    module BigStack =
+        open System
+        open System.Threading
+
+        let private active : ThreadLocal<int> = new ThreadLocal<int>(fun () -> 0)
+
+        let isActive () = active.Value > 0
+
+        let private envInt (name: string) (def: int) (minV: int) (maxV: int) =
+            match Environment.GetEnvironmentVariable name with
+            | null | "" -> def
+            | s ->
+                match Int32.TryParse s with
+                | true, v ->
+                    if v < minV then minV elif v > maxV then maxV else v
+                | _ -> def
+
+        let private stackBytesDefault () =
+            // Default 64 MiB (fits deep compile-time folds, still reasonable)
+            let mb = envInt "SPIRAL_BIGSTACK_MB" 64 8 512
+            mb * 1024 * 1024
+
+        /// Returns Some result if spawned, or None if already running on a big stack.
+        let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
+            if isActive () then None
+            else
+                let mutable res = Unchecked.defaultof<'T>
+                let mutable err : exn option = None
+                let stackBytes = stackBytesDefault ()
+                let th =
+                    new Thread(ThreadStart(fun () ->
+                        active.Value <- active.Value + 1
+                        try
+                            try
+                                res <- f ()
+                            with e ->
+                                err <- Some e
+                        finally
+                            active.Value <- max 0 (active.Value - 1)
+                    ), stackBytes)
+                th.IsBackground <- true
+                try th.Name <- sprintf "spiral.bigstack.%s" tag with _ -> ()
+                th.Start()
+                th.Join()
+                match err with
+                | Some e -> raise e
+                | None -> Some res
+
     /// ### EvalCycleGuard
     /// Tracks active evaluation nodes (by object identity hash) per thread.
     /// If we re-enter `term` on the same node before completing, we likely hit a
@@ -11421,11 +11472,16 @@ module spiral_compiler =
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
                     DiagSidecar.emit (sprintf "%s ty insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
+                    let inline envTrue (v: string) =
+                        match v with
+                        | null | "" -> false
+                        | "1" | "true" | "TRUE" | "True" | "yes" | "YES" | "Yes" -> true
+                        | _ -> false
+                    let nonfatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_NONFATAL"))
                     let fatal =
                         match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
-                        | "1" -> true
-                        | "true" | "TRUE" | "True" -> true
-                        | _ -> false
+                        | null | "" -> not nonfatal
+                        | v -> envTrue v
                     if fatal then
                         raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in type evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
                     else
@@ -11791,16 +11847,21 @@ module spiral_compiler =
                         |> Seq.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
                         |> String.concat ";"
                     DiagSidecar.emit (sprintf "%s term_eager_insufficient_stack gen=%d site=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 newGen site deepSites reasons)
+                    let inline envTrue (v: string) =
+                        match v with
+                        | null | "" -> false
+                        | "1" | "true" | "TRUE" | "True" | "yes" | "YES" | "Yes" -> true
+                        | _ -> false
+                    let nonfatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_NONFATAL"))
                     let fatal =
                         match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
-                        | "1" -> true
-                        | "true" | "TRUE" | "True" -> true
-                        | _ -> false
+                        | null | "" -> not nonfatal
+                        | v -> envTrue v
                     if fatal then
                         raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term (eager guard) at %s (gen=%d)" EJPCodes.EJP0010 site newGen)
                     else
                         ()
-let depth = RecursionTracker.enter site
+            let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
 
             // ### v67: cycle + stack guards (reference-eq, allow limited re-entrancy; throw only when excessive)
@@ -11848,11 +11909,16 @@ let depth = RecursionTracker.enter site
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
                     DiagSidecar.emit (sprintf "%s term insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
+                    let inline envTrue (v: string) =
+                        match v with
+                        | null | "" -> false
+                        | "1" | "true" | "TRUE" | "True" | "yes" | "YES" | "Yes" -> true
+                        | _ -> false
+                    let nonfatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_NONFATAL"))
                     let fatal =
                         match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
-                        | "1" -> true
-                        | "true" | "TRUE" | "True" -> true
-                        | _ -> false
+                        | null | "" -> not nonfatal
+                        | v -> envTrue v
                     if fatal then
                         raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
                     else
@@ -11884,95 +11950,140 @@ let depth = RecursionTracker.enter site
                 | DForall(body,gl_term,gl_ty,sz_term,sz_ty) ->
                     let s = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                     s.env_stack_type.[0] <- b
-                    term s body
+                    // ### v78: idem para aplicação de forall: folds profundos via tipos podem cair em StackOverflow sem aviso de stack baixa.
+                    let curDepth = RecursionTracker.currentDepth ()
+                    let bigDepth =
+                        match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TERM_DEPTH" with
+                        | null | "" -> 32
+                        | v ->
+                            match System.Int32.TryParse v with
+                            | true, n when n >= 0 -> n
+                            | _ -> 32
+                    if curDepth >= bigDepth then
+                        match BigStack.tryRun "term" (fun () -> term s body) with
+                        | Some v ->
+                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_bigstack_ok" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
+                            v
+                        | None ->
+                            term s body
+                    else
+                        term s body
                 | DV(L(_,YForall)) -> raise_type_error s <| sprintf "Cannot apply a runtime forall during the partial evaluation stage."
                 | a -> raise_type_error s <| sprintf "Expected a forall.\nGot: %s" (show_data a)
             let rec apply s (a0, b0) =
-                // ### v71: eager stack guard + iterative nominal unwrapping
+                // ### v75: stack guard + one-shot big-stack fallback (evita falha em folds profundos no bootstrap/stdlib)
                 // apply participates in the term<->apply recursion; guard here too so we never hard-crash.
+                let mutable stack_fallback : Data option = None
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
                 with :? System.InsufficientExecutionStackException ->
-                    let newGen = CacheGeneration.invalidate (System.String.Format("{0}: apply insufficient_stack site={1}", EJPCodes.EJP0010, site))
-                    jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|apply_insufficient_stack", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
-                    DiagSidecar.emit (System.String.Format("{0} apply insufficient_stack gen={1} site={2} depth={3}", EJPCodes.EJP0010, newGen, site, RecursionTracker.currentDepth()))
-                    raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in apply at {1} (gen={2})", EJPCodes.EJP0010, site, newGen))
+                    // v75: tente reexecutar em thread com stack maior (uma vez por thread)
+                    try
+                        stack_fallback <- BigStack.tryRun "apply" (fun () -> apply s (a0, b0))
+                    with :? System.InsufficientExecutionStackException ->
+                        stack_fallback <- None
+                    if stack_fallback.IsNone then
+                        let newGen = CacheGeneration.invalidate (System.String.Format("{0}: apply insufficient_stack site={1}", EJPCodes.EJP0010, site))
+                        jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|apply_insufficient_stack", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
+                        DiagSidecar.emit (System.String.Format("{0} apply insufficient_stack gen={1} site={2} depth={3}", EJPCodes.EJP0010, newGen, site, RecursionTracker.currentDepth()))
+                        raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in apply at {1} (gen={2})", EJPCodes.EJP0010, site, newGen))
 
-                let mutable a = a0
-                let mutable b = b0
-                let mutable unwrapping = true
-                while unwrapping do
-                    match a with
-                    | DNominal(DUnion _, _) -> raise_type_error s "Unions cannot be applied."
-                    | DNominal(a', _) -> a <- a'
-                    | _ -> unwrapping <- false
-
-                match a, b with
-                | DRecord a, DSymbol b ->
-                    match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
-                    | Some a -> a
-                    | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record." b
-                | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
-                    let s : LangEnv = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
-                    s.env_stack_term.[0] <- b
-                    term s body
-                | DV(L(_,YForall)), _ -> raise_type_error s "Cannot apply a runtime forall, and not with a term. Foralls have to be known at compile time and applied with a type."
-                | DForall _, _ -> raise_type_error s "Cannot apply a forall with a term."
-                | DV(L(_,YFun(domain,range,t) & a_ty) & a), b ->
-                    let b = dyn false s b
-                    let b_ty = data_to_ty s b
-                    if domain = b_ty then push_typedop_no_rewrite s (TyApply(a,b)) range
-                    else raise_type_error s <| sprintf "Cannot apply an argument of type %s to a function of type: %s" (show_ty b_ty) (show_ty a_ty)
-                | DV(L(i,YLayout(ty,layout)) as tyv) as a, DSymbol b ->
-                    let key = TyLayoutIndexByKey(tyv, b)
-                    let ret_ty =
-                        match ty with
-                        | YRecord r ->
-                            match r |> Map.tryPick (fun (i, k) v -> if k = b then Some (i,v) else None) with
-                            | Some (_i, a) -> a
-                            | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the layout type's record." b
-                        | _ -> raise_type_error s <| sprintf "Expected a record inside the layout type.\nGot: %s" (show_ty ty)
-                    match layout with
-                    | Heap | StackMutable | HeapMutable -> push_typedop_no_rewrite s key ret_ty
-                | DV(L(_,YLayout _)), b -> raise_type_error s <| sprintf "Expected a symbol as the index into the layout type.\nGot: %s" (show_data b)
-                | a, b ->
-                    // ### v44: Enhanced EJP0007 handling with depth tracking and cache management ###
-                    // EJP0007: Apply type mismatch - often indicates cache corruption under parallel builds.
-                    // When we get a primitive (like i32) where a function is expected, it's almost always
-                    // due to a race condition in the join point cache.
-                    let is_primitive_mismatch =
+                match stack_fallback with
+                | Some v -> v
+                | None ->
+                    let mutable a = a0
+                    let mutable b = b0
+                    let mutable unwrapping = true
+                    while unwrapping do
                         match a with
-                        | DV(L(_, YPrim _)) | DLit _ -> true
-                        | _ -> false
+                        | DNominal(DUnion _, _) -> raise_type_error s "Unions cannot be applied."
+                        | DNominal(a', _) -> a <- a'
+                        | _ -> unwrapping <- false
 
-                    let depth = RecursionTracker.currentDepth ()
-                    let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
-                    let gen0 = CacheGeneration.current ()
-                    let site =
-                        match s.trace with
-                        | r :: _ ->
-                            let (a,_) = r.range
-                            sprintf "%s:%d:%d" r.path a.line a.character
-                        | _ -> "unknown"
+                    match a, b with
+                    | DRecord a, DSymbol b ->
+                        match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
+                        | Some a -> a
+                        | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record." b
+                    | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
+                        let s : LangEnv = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
+                        s.env_stack_term.[0] <- b
+                        // ### v78: StackOverflow pode ocorrer sem InsufficientExecutionStackException (tailcalls/trampolim).
+                        // Mitigação: quando já estamos em recursão moderada, reexecute este term em thread com stack maior (uma vez por thread).
+                        let curDepth = RecursionTracker.currentDepth ()
+                        let bigDepth =
+                            match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TERM_DEPTH" with
+                            | null | "" -> 32
+                            | v ->
+                                match System.Int32.TryParse v with
+                                | true, n when n >= 0 -> n
+                                | _ -> 32
+                        if curDepth >= bigDepth then
+                            match BigStack.tryRun "term" (fun () -> term s body) with
+                            | Some v ->
+                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_bigstack_ok" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
+                                v
+                            | None ->
+                                term s body
+                        else
+                            term s body
+                    | DV(L(_,YForall)), _ -> raise_type_error s "Cannot apply a runtime forall, and not with a term. Foralls have to be known at compile time and applied with a type."
+                    | DForall _, _ -> raise_type_error s "Cannot apply a forall with a term."
+                    | DV(L(_,YFun(domain,range,t) & a_ty) & a), b ->
+                        let b = dyn false s b
+                        let b_ty = data_to_ty s b
+                        if domain = b_ty then push_typedop_no_rewrite s (TyApply(a,b)) range
+                        else raise_type_error s <| sprintf "Cannot apply an argument of type %s to a function of type: %s" (show_ty b_ty) (show_ty a_ty)
+                    | DV(L(i,YLayout(ty,layout)) as tyv) as a, DSymbol b ->
+                        let key = TyLayoutIndexByKey(tyv, b)
+                        let ret_ty =
+                            match ty with
+                            | YRecord r ->
+                                match r |> Map.tryPick (fun (i, k) v -> if k = b then Some (i,v) else None) with
+                                | Some (_i, a) -> a
+                                | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the layout type's record." b
+                            | _ -> raise_type_error s <| sprintf "Expected a record inside the layout type.\nGot: %s" (show_ty ty)
+                        match layout with
+                        | Heap | StackMutable | HeapMutable -> push_typedop_no_rewrite s key ret_ty
+                    | DV(L(_,YLayout _)), b -> raise_type_error s <| sprintf "Expected a symbol as the index into the layout type.\nGot: %s" (show_data b)
+                    | a, b ->
+                        // ### v44: Enhanced EJP0007 handling with depth tracking and cache management ###
+                        // EJP0007: Apply type mismatch - often indicates cache corruption under parallel builds.
+                        // When we get a primitive (like i32) where a function is expected, it's almost always
+                        // due to a race condition in the join point cache.
+                        let is_primitive_mismatch =
+                            match a with
+                            | DV(L(_, YPrim _)) | DLit _ -> true
+                            | _ -> false
 
-                    if is_primitive_mismatch then
-                        // Record for pattern learning
-                        BitMamba.recordFailure a
+                        let depth = RecursionTracker.currentDepth ()
+                        let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                        let gen0 = CacheGeneration.current ()
+                        let site =
+                            match s.trace with
+                            | r :: _ ->
+                                let (a,_) = r.range
+                                sprintf "%s:%d:%d" r.path a.line a.character
+                            | _ -> "unknown"
 
-                        // Mark as suspect in cache
-                        SuspectCache.mark a EJPCodes.EJP0007
+                        if is_primitive_mismatch then
+                            // Record for pattern learning
+                            BitMamba.recordFailure a
 
-                        jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_primitive" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
-                        DiagSidecar.emit (sprintf "%s apply mismatch: expected callable, got %s (depth=%d)" EJPCodes.EJP0007 (show_data a) depth)
+                            // Mark as suspect in cache
+                            SuspectCache.mark a EJPCodes.EJP0007
 
-                        // v44: EJP0008 detection - deep recursion cache corruption
-                        if depth > 50 then
-                            let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d" depth)
-                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_deep_recursion" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
-                            DiagSidecar.emit (sprintf "%s deep recursion cache corruption in apply (depth=%d) - invalidated to gen=%d" 
-                                EJPCodes.EJP0008 depth newGen)
+                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_primitive" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
+                            DiagSidecar.emit (sprintf "%s apply mismatch: expected callable, got %s (depth=%d)" EJPCodes.EJP0007 (show_data a) depth)
 
-                    raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s" (show_data a)
+                            // v44: EJP0008 detection - deep recursion cache corruption
+                            if depth > 50 then
+                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d" depth)
+                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_deep_recursion" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
+                                DiagSidecar.emit (sprintf "%s deep recursion cache corruption in apply (depth=%d) - invalidated to gen=%d" 
+                                    EJPCodes.EJP0008 depth newGen)
+
+                        raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s" (show_data a)
 
 
             let rec if_ s cond on_succ on_fail =
