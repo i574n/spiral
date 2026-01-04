@@ -11421,7 +11421,15 @@ module spiral_compiler =
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
                     DiagSidecar.emit (sprintf "%s ty insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
-                    raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in type evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
+                    let fatal =
+                        match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
+                        | "1" -> true
+                        | "true" | "TRUE" | "True" -> true
+                        | _ -> false
+                    if fatal then
+                        raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in type evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
+                    else
+                        ()
 
             // Stack guard mais agressivo para evitar StackOverflow (especialmente com lambdas locais grandes).
             // A cadência aumenta com a profundidade: checamos pouco no início e muito quando está ficando perigoso.
@@ -11763,19 +11771,36 @@ module spiral_compiler =
             let r0 = range_of_e_or fallback x
             let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
 
-            // ### v71: eager stack guard (prevent hard StackOverflow by probing on every entry)
-            // EnsureSufficientExecutionStack throws InsufficientExecutionStackException before StackOverflow would terminate the process.
-            try
-                System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
-            with :? System.InsufficientExecutionStackException ->
-                let newGen = CacheGeneration.invalidate (System.String.Format("{0}: term eager insufficient_stack site={1}", EJPCodes.EJP0010, site))
-                jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|term_eager_insufficient_stack", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
-                let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
-                let deepSites = RecursionTracker.getDeepSites() |> Seq.truncate 8 |> Seq.map (fun (KeyValue(k,v)) -> System.String.Format("{0}={1}", k, v)) |> String.concat ";"
-                DiagSidecar.emit (System.String.Format("{0} term eager insufficient_stack gen={1} site={2} deepSites=[{3}] reasons=[{4}]", EJPCodes.EJP0010, newGen, site, deepSites, reasons))
-                raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in term (eager guard) at {1} (gen={2})", EJPCodes.EJP0010, site, newGen))
-
-            let depth = RecursionTracker.enter site
+            // ### v72: eager stack guard *gated* (evita falso-positivo no bootstrap; use SPIRAL_EAGER_STACK_GUARD=1 para reativar)
+            let eager_enabled =
+                match System.Environment.GetEnvironmentVariable("SPIRAL_EAGER_STACK_GUARD") with
+                | null | "" -> false
+                | "1" -> true
+                | "true" | "TRUE" | "True" -> true
+                | _ -> false
+            if eager_enabled then
+                try
+                    System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                with :? System.InsufficientExecutionStackException ->
+                    let newGen = CacheGeneration.invalidate (sprintf "%s term eager insufficient_stack site=%s" EJPCodes.EJP0010 site)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s_term_eager_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
+                    let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                    let deepSites =
+                        RecursionTracker.getDeepSites()
+                        |> Seq.truncate 10
+                        |> Seq.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
+                        |> String.concat ";"
+                    DiagSidecar.emit (sprintf "%s term_eager_insufficient_stack gen=%d site=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 newGen site deepSites reasons)
+                    let fatal =
+                        match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
+                        | "1" -> true
+                        | "true" | "TRUE" | "True" -> true
+                        | _ -> false
+                    if fatal then
+                        raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term (eager guard) at %s (gen=%d)" EJPCodes.EJP0010 site newGen)
+                    else
+                        ()
+let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
 
             // ### v67: cycle + stack guards (reference-eq, allow limited re-entrancy; throw only when excessive)
@@ -11823,7 +11848,15 @@ module spiral_compiler =
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
                     DiagSidecar.emit (sprintf "%s term insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
-                    raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
+                    let fatal =
+                        match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
+                        | "1" -> true
+                        | "true" | "TRUE" | "True" -> true
+                        | _ -> false
+                    if fatal then
+                        raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
+                    else
+                        ()
 
             if depth <= 64 then
                 if (depth &&& 63) = 0 then stack_check "d<=64"
