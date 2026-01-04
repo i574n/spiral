@@ -9398,10 +9398,17 @@ module spiral_compiler =
                     if v < minV then minV elif v > maxV then maxV else v
                 | _ -> def
 
-        let private stackBytesDefault () =
-            // Default 64 MiB (fits deep compile-time folds, still reasonable)
-            let mb = envInt "SPIRAL_BIGSTACK_MB" 64 8 512
-            mb * 1024 * 1024
+        let private stackBytesFor (tag: string) : int * int =
+            // Default 128 MiB (mais margem para folds profundos); override via SPIRAL_BIGSTACK_MB ou SPIRAL_BIGSTACK_MB_<TAG>
+            let mbGlobal = envInt "SPIRAL_BIGSTACK_MB" 128 8 512
+            let tagKey = "SPIRAL_BIGSTACK_MB_" + tag.ToUpperInvariant()
+            let mb = envInt tagKey mbGlobal 8 512
+            mb, (mb * 1024 * 1024)
+
+        /// Retorna a MB configurada para o tag (apenas diagnóstico).
+        let getMb (tag: string) =
+            let mb,_ = stackBytesFor tag
+            mb
 
         /// Returns Some result if spawned, or None if already running on a big stack.
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
@@ -9409,7 +9416,7 @@ module spiral_compiler =
             else
                 let mutable res = Unchecked.defaultof<'T>
                 let mutable err : exn option = None
-                let stackBytes = stackBytesDefault ()
+                let mb, stackBytes = stackBytesFor tag
                 let th =
                     new Thread(ThreadStart(fun () ->
                         active.Value <- active.Value + 1
@@ -9423,8 +9430,19 @@ module spiral_compiler =
                     ), stackBytes)
                 th.IsBackground <- true
                 try th.Name <- sprintf "spiral.bigstack.%s" tag with _ -> ()
+                try
+                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s mb=%d bytes=%d parent_tid=%d" tag mb stackBytes System.Threading.Thread.CurrentThread.ManagedThreadId)
+                with _ -> ()
                 th.Start()
                 th.Join()
+                try
+                    let ok = err.IsNone
+                    let et =
+                        match err with
+                        | Some e -> e.GetType().FullName
+                        | None -> ""
+                    DiagSidecar.emit (sprintf "BIGSTACK done tag=%s child_tid=%d ok=%b err=%s" tag th.ManagedThreadId ok et)
+                with _ -> ()
                 match err with
                 | Some e -> raise e
                 | None -> Some res
@@ -9705,9 +9723,33 @@ module spiral_compiler =
             | LikelySuspect
             | Unknown
 
+        type KeyStat = {
+            accesses: int
+            failures: int
+            generation: int64
+            lastTs: DateTime
+        }
+
         let private recentAccesses = ConcurrentQueue<AccessPattern>()
         let private maxHistory = 256
-        let private keyStats = ConcurrentDictionary<int, int * int>()  // hash -> (accesses, failures)
+
+        // v83: keep stats scoped to the current cache generation to avoid "sticky" false positives after invalidations.
+        // hash -> per-generation (accesses, failures). Resets automatically when generation changes.
+        let private keyStats = ConcurrentDictionary<int, KeyStat>()
+
+        let private updateStat (h: int) (f: KeyStat -> KeyStat) =
+            let gen = CacheGeneration.current ()
+            let now = DateTime.UtcNow
+            keyStats.AddOrUpdate(
+                h,
+                (fun _ -> f { accesses = 0; failures = 0; generation = gen; lastTs = now }),
+                (fun _ old ->
+                    let baseStat =
+                        if old.generation = gen then old
+                        else { accesses = 0; failures = 0; generation = gen; lastTs = now }
+                    f { baseStat with lastTs = now }
+                )
+            ) |> ignore
 
         /// Record a cache access for pattern learning
         let recordAccess (key: obj) =
@@ -9724,35 +9766,35 @@ module spiral_compiler =
             while recentAccesses.Count > maxHistory do
                 let mutable v = Unchecked.defaultof<AccessPattern>
                 recentAccesses.TryDequeue(&v) |> ignore
-            // Update key stats
-            keyStats.AddOrUpdate(h, (1, 0), (fun _ (a, f) -> (a + 1, f))) |> ignore
+            updateStat h (fun st -> { st with accesses = st.accesses + 1 })
 
         /// Record a failure for a key
         let recordFailure (key: obj) =
             let h = try key.GetHashCode() with _ -> 0
-            keyStats.AddOrUpdate(h, (1, 1), (fun _ (a, f) -> (a + 1, f + 1))) |> ignore
+            updateStat h (fun st -> { st with accesses = st.accesses + 1; failures = st.failures + 1 })
 
         /// Predict if a key access is likely to succeed or fail
-        /// Heuristic implementation: uses failure rate and depth correlation
+        /// Heuristic implementation: uses failure rate and depth correlation (scoped per generation).
         let predict (key: obj) : Prediction =
             let h = try key.GetHashCode() with _ -> 0
             let depth = RecursionTracker.currentDepth ()
+            let gen = CacheGeneration.current ()
 
-            // Check key-specific stats
-            match keyStats.TryGetValue(h) with
-            | true, (accesses, failures) when accesses > 5 ->
-                let failRate = float failures / float accesses
-                if failRate > 0.3 then LikelySuspect
-                elif failRate < 0.05 then LikelyValid
-                else Unknown
-            | _ -> Unknown
-            |> fun initial ->
-                // Deep recursion increases suspicion
-                if depth > 100 then
-                    match initial with
-                    | Unknown -> LikelySuspect
-                    | _ -> initial
-                else initial
+            let initial =
+                match keyStats.TryGetValue(h) with
+                | true, st when st.generation = gen && st.accesses >= 8 && st.failures > 0 ->
+                    let failRate = float st.failures / float st.accesses
+                    if failRate > 0.35 then LikelySuspect
+                    elif failRate < 0.05 && st.accesses > 24 then LikelyValid
+                    else Unknown
+                | _ -> Unknown
+
+            // Deep recursion increases suspicion only if we have *some* evidence of trouble in this generation.
+            if depth > 100 then
+                match initial with
+                | Unknown when SuspectCache.currentCount() > 0 -> LikelySuspect
+                | _ -> initial
+            else initial
 
         /// Should we preemptively retry before waiting for cache?
         /// Heuristic: retry if in deep recursion with suspect patterns
@@ -9767,11 +9809,20 @@ module spiral_compiler =
             let patterns = recentAccesses.ToArray()
             let depths = patterns |> Array.map (fun p -> p.depth)
             let avgDepth = if depths.Length > 0 then Array.averageBy float depths else 0.0
-            let suspectRate = 
+            let suspectRate =
                 if patterns.Length > 0 then
                     float (patterns |> Array.filter (fun p -> p.wasSuspect) |> Array.length) / float patterns.Length
                 else 0.0
-            sprintf "patterns=%d avgDepth=%.1f suspectRate=%.2f" patterns.Length avgDepth suspectRate
+
+            let gen = CacheGeneration.current ()
+            let stats = keyStats.ToArray()
+            let keys = stats.Length
+            let genFailKeys =
+                stats
+                |> Array.filter (fun kv -> kv.Value.generation = gen && kv.Value.failures > 0)
+                |> Array.length
+
+            sprintf "patterns=%d avgDepth=%.1f suspectRate=%.2f keys=%d genFailKeys=%d" patterns.Length avgDepth suspectRate keys genFailKeys
 
     /// ### EJPCodes
     /// Centralized error code definitions and classification.
@@ -10622,6 +10673,14 @@ module spiral_compiler =
         // When diagnostics trip time/spec caps, prefer a "soft abort": disable parallel join-points and keep going.
         // Set SPIRAL_PEVAL_DIAG_HARD_ABORT=1 to keep legacy behavior (throw immediately).
         let jp_diag_hard_abort = read_env_bool "SPIRAL_PEVAL_DIAG_HARD_ABORT" false
+        // v83: manter o stderr "parseável" quando stdout carrega frames/JSON do dotnet-interactive.
+        // Por padrão, o tick periódico imprime uma linha-resumo; habilite snapshot completo com SPIRAL_PEVAL_DIAG_VERBOSE=1.
+        let jp_diag_verbose = read_env_bool "SPIRAL_PEVAL_DIAG_VERBOSE" false
+        // Top-traces completos são caros e podem inundar logs; habilite só quando estiver triando starvation/ciclos.
+        let jp_diag_include_top_traces = read_env_bool "SPIRAL_PEVAL_DIAG_INCLUDE_TOP_TRACES" false
+
+        let diag_console_lock = obj()
+
         let mutable jp_parallel_enabled = true
         let mutable diag_abort_armed = true
 
@@ -10804,22 +10863,20 @@ module spiral_compiler =
                 sbn.ToString()
 
             let top_traces =
-                let sbt = System.Text.StringBuilder()
-                let n = min 5 entries.Length
-                for i = 0 to n - 1 do
-                    let kv = entries.[i]
-                    let name = kv.Key
-                    let count = kv.Value
-                    let tr =
-                        match jp_name_traces.TryGetValue name with
-                        | true, t -> trace_to_string_full t
-                        | _ -> "<no-trace>"
-                    if i > 0 then sbt.AppendLine() |> ignore
-                    sbt.AppendFormat("  jp={0} count={1}", name, count) |> ignore
-                    sbt.AppendLine() |> ignore
-                    sbt.Append(tr) |> ignore
-                sbt.ToString()
-
+                if jp_diag_include_top_traces then
+                    let sbt = System.Text.StringBuilder()
+                    let n = min 5 entries.Length
+                    for i = 0 to n - 1 do
+                        let kv = entries.[i]
+                        let name = kv.Key
+                        let count = kv.Value
+                        let tr =
+                            match jp_name_traces.TryGetValue name with
+                            | true, t -> trace_to_string_full t
+                            | _ -> "<no trace>"
+                        sbt.AppendFormat("  - {0} ({1})\n{2}", name, count, tr) |> ignore
+                    sbt.ToString()
+                else ""
             let sb = System.Text.StringBuilder()
             sb.AppendLine("SPIRAL PEVAL DIAG") |> ignore
             sb.AppendFormat("  reason={0}", reason) |> ignore; sb.AppendLine() |> ignore
@@ -10846,16 +10903,63 @@ module spiral_compiler =
                 sb.AppendFormat("  cache_invalidation_reasons={0}", reasons) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  last_wait={0}", diag_last_wait) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  top_jp_names={0}", top_names) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendLine("  top_jp_traces=") |> ignore
-            if top_traces <> "" then sb.AppendLine(top_traces) |> ignore
+            if jp_diag_include_top_traces then
+                sb.AppendLine("  top_jp_traces=") |> ignore
+                if top_traces <> "" then sb.AppendLine(top_traces) |> ignore
             sb.ToString()
+
+
+        let diag_snapshot_short (reason: string) =
+            let elapsed_ms = peval_sw.ElapsedMilliseconds
+            let pb = try System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 with _ -> 0L
+            let gc_total = try GC.GetTotalMemory(false) with _ -> 0L
+
+            let top_names =
+                try
+                    let entries0 : System.Collections.Generic.KeyValuePair<string,int>[] = jp_name_counts.ToArray()
+                    let entries = entries0 |> Array.sortByDescending (fun kv -> kv.Value)
+                    let sbn = System.Text.StringBuilder()
+                    let n = min 6 entries.Length
+                    for i = 0 to n - 1 do
+                        let kv = entries.[i]
+                        if i > 0 then sbn.Append(";") |> ignore
+                        sbn.AppendFormat("{0}={1}", kv.Key, kv.Value) |> ignore
+                    sbn.ToString()
+                with _ -> "<unavailable>"
+
+            let sb = System.Text.StringBuilder()
+            sb.Append("SPIRAL PEVAL DIAG") |> ignore
+            sb.AppendFormat(" reason={0}", reason) |> ignore
+            sb.AppendFormat(" elapsed_ms={0}", elapsed_ms) |> ignore
+            sb.AppendFormat(" private_bytes={0}", pb) |> ignore
+            sb.AppendFormat(" gc_total_bytes={0}", gc_total) |> ignore
+            sb.AppendFormat(" hopac_workers={0}", jp_dop) |> ignore
+            sb.AppendFormat(" jp_sched_mode={0}", (if jp_use_threadpool then "threadpool" else "hopac")) |> ignore
+            sb.AppendFormat(" jp_parallel_enabled={0}", jp_parallel_enabled) |> ignore
+            sb.AppendFormat(" jp_total_started={0}", jp_total_started) |> ignore
+            sb.AppendFormat(" pending_jobs={0}", jp_cd.CurrentCount) |> ignore
+            sb.AppendFormat(" cache_generation={0}", CacheGeneration.current ()) |> ignore
+            sb.AppendFormat(" suspect_keys={0}", SuspectCache.currentCount ()) |> ignore
+            sb.AppendFormat(" bitmamba={0}", BitMamba.getSummary ()) |> ignore
+            sb.AppendFormat(" last_wait={0}", diag_last_wait) |> ignore
+            sb.AppendFormat(" top_jp_names={0}", top_names) |> ignore
+            sb.ToString()
+
+        let diag_write_err (s: string) =
+            lock diag_console_lock (fun () -> System.Console.Error.WriteLine(s))
 
         let diag_print (force: bool) =
             let now = peval_sw.ElapsedMilliseconds
             if force || (diag_period_ms > 0L && now - diag_last_ms >= diag_period_ms) then
                 diag_last_ms <- now
-                System.Console.Error.WriteLine(diag_snapshot (if force then "force" else "tick"))
-
+                if force || jp_diag_verbose then
+                    let snap = diag_snapshot (if force then "force" else "tick")
+                    DiagSidecar.emit snap
+                    diag_write_err snap
+                else
+                    let snap = diag_snapshot_short "tick"
+                    DiagSidecar.emit snap
+                    diag_write_err snap
         let inline get_private_mb () =
             int64 (System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024L / 1024L)
 
@@ -11416,11 +11520,11 @@ module spiral_compiler =
             let reKey = EvalCycleGuardKey.enter nodeKey
             let max_reentry =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
-                | null | "" -> 8
+                | null | "" -> 64
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
-                    | _ -> 8
+                    | _ -> 64
             let max_reentry_key =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
                 | null | "" -> 32
@@ -11428,23 +11532,32 @@ module spiral_compiler =
                     match System.Int32.TryParse v with
                     | true, n when n >= 2 -> n
                     | _ -> 32
+            let hashSnapShort () =
+                EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
+            let keySnapShort () =
+                EvalCycleGuardKey.snapshotKeys 12 |> String.concat " | "
             if reCount > 1 then
                 if reCount = 2 then
                     DiagSidecar.emit (sprintf "EJP0011W ty re-entry (non-fatal): nodeId=%d depth=%d site=%s" nodeId depth site)
                 if reCount > max_reentry then
-                    let newGen = CacheGeneration.invalidate (sprintf "%s ty cycle (excessive re-entry=%d/%d): nodeId=%d depth=%d site=%s" EJPCodes.EJP0011 reCount max_reentry nodeId depth site)
+                    let hs = hashSnapShort ()
+                    let ks = keySnapShort ()
+                    let big = BigStack.isActive()
+                    let newGen = CacheGeneration.invalidate (sprintf "%s ty cycle: re=%d/%d nodeId=%d depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reCount max_reentry nodeId depth site big hs ks)
                     jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_cycle" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
-                    DiagSidecar.emit (sprintf "%s ty cycle detected: nodeId=%d depth=%d site=%s gen=%d re=%d/%d" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry)
-                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant ty evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry)
+                    DiagSidecar.emit (sprintf "%s ty cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry big hs ks)
+                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
             if reKey > 1 then
                 if reKey = 2 then
-                    DiagSidecar.emit (sprintf "EJP0011W term re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
+                    DiagSidecar.emit (sprintf "EJP0011W ty re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
                 if reKey > max_reentry_key then
-                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle (key) detected (re-entry=%d/%d): key=%s depth=%d site=%s" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site)
-                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_cycle_key" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
-                    DiagSidecar.emit (sprintf "%s term cycle (key) detected: key=%s depth=%d site=%s gen=%d re=%d/%d" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key)
-                    raise_type_error (add_trace s r0) (sprintf "%s Evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key)
-
+                    let hs = hashSnapShort ()
+                    let ks = keySnapShort ()
+                    let big = BigStack.isActive()
+                    let newGen = CacheGeneration.invalidate (sprintf "%s ty cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_cycle_key" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (sprintf "%s ty cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key big hs ks)
+                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
 
@@ -11821,6 +11934,44 @@ module spiral_compiler =
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
+            // ### v81: pivot preemptivo para BigStack em recursão profunda de term (evita EJP0010/StackOverflow antes dos guards dispararem)
+            // Regra: quando a profundidade do thread atual já passou do limiar, migre a avaliação inteira deste nó para uma thread com stack maior.
+            // Isso é mais confiável do que depender de EnsureSufficientExecutionStack, que pode falhar “tarde demais” em frames grandes.
+            let fallback = match s.trace with | r :: _ -> r | [] -> range0
+            let r0 = range_of_e_or fallback x
+            let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
+
+            let inline envInt (name: string) (def: int) (minV: int) (maxV: int) =
+                match System.Environment.GetEnvironmentVariable name with
+                | null | "" -> def
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n ->
+                        if n < minV then minV elif n > maxV then maxV else n
+                    | _ -> def
+
+            let depth0 = RecursionTracker.currentDepth()
+            let pivotDepth = envInt "SPIRAL_BIGSTACK_TERM_DEPTH" 32 8 4096
+            let pivotStride = envInt "SPIRAL_BIGSTACK_TERM_STRIDE" 16 1 2048
+            let pivot =
+                depth0 >= pivotDepth &&
+                (depth0 % pivotStride = 0) &&
+                BigStack.isActive() = false
+
+            if pivot then
+                match BigStack.tryRun "term" (fun () -> term_core s x) with
+                | Some v ->
+                    let maxObs = RecursionTracker.getMaxObserved()
+                    let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                    let mb = BigStack.getMb "term"
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_bigstack_pivot_ok" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (sprintf "%s term bigstack_pivot_ok site=%s depth0=%d maxObs=%d stride=%d pivotDepth=%d tid=%d mb=%d" EJPCodes.EJP0010 site depth0 maxObs pivotStride pivotDepth tid mb)
+                    v
+                | None -> term_core s x
+            else
+                term_core s x
+
+        and term_core (s : LangEnv) x =
 
             // ### v61: term recursion guard (preempt stack overflow with depth+stack checks)
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
@@ -11864,26 +12015,56 @@ module spiral_compiler =
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
 
-            // ### v67: cycle + stack guards (reference-eq, allow limited re-entrancy; throw only when excessive)
+            // ### v82: cycle + stack guards (ref-eq + stable key), allow wider benign re-entrancy; throw only when excessive
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
             let reCount = EvalCycleGuard.enter nodeObj
+            // Guard adicional por chave estável (range), ajuda a diagnosticar ciclos mesmo quando a identidade do nó oscila
+            let (a0,b0) = r0.range
+            let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
+            let reKey = EvalCycleGuardKey.enter nodeKey
             let max_reentry =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
-                | null | "" -> 8
+                | null | "" -> 64
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
-                    | _ -> 8
+                    | _ -> 64
+            let max_reentry_key =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
+                | null | "" -> 64
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n >= 2 -> n
+                    | _ -> 64
+            let hashSnapShort () =
+                EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
+            let keySnapShort () =
+                EvalCycleGuardKey.snapshotKeys 12 |> String.concat " | "
             if reCount > 1 then
                 if reCount = 2 then
                     DiagSidecar.emit (sprintf "EJP0011W term re-entry (non-fatal): nodeId=%d depth=%d site=%s" nodeId depth site)
                 if reCount > max_reentry then
-                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle (excessive re-entry=%d/%d): nodeId=%d depth=%d site=%s" EJPCodes.EJP0011 reCount max_reentry nodeId depth site)
+                    let hs = hashSnapShort ()
+                    let ks = keySnapShort ()
+                    let big = BigStack.isActive()
+                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle: re=%d/%d nodeId=%d depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reCount max_reentry nodeId depth site big hs ks)
                     jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_cycle" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
-                    DiagSidecar.emit (sprintf "%s term cycle detected: nodeId=%d depth=%d site=%s gen=%d re=%d/%d" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry)
-                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry)
+                    DiagSidecar.emit (sprintf "%s term cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry big hs ks)
+                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
+            if reKey > 1 then
+                if reKey = 2 then
+                    DiagSidecar.emit (sprintf "EJP0011W term re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
+                if reKey > max_reentry_key then
+                    let hs = hashSnapShort ()
+                    let ks = keySnapShort ()
+                    let big = BigStack.isActive()
+                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_cycle_key" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (sprintf "%s term cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key big hs ks)
+                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
+            use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
 
             let max_depth =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_TERM_MAX_DEPTH" with
@@ -11950,24 +12131,7 @@ module spiral_compiler =
                 | DForall(body,gl_term,gl_ty,sz_term,sz_ty) ->
                     let s = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                     s.env_stack_type.[0] <- b
-                    // ### v78: idem para aplicação de forall: folds profundos via tipos podem cair em StackOverflow sem aviso de stack baixa.
-                    let curDepth = RecursionTracker.currentDepth ()
-                    let bigDepth =
-                        match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TERM_DEPTH" with
-                        | null | "" -> 32
-                        | v ->
-                            match System.Int32.TryParse v with
-                            | true, n when n >= 0 -> n
-                            | _ -> 32
-                    if curDepth >= bigDepth then
-                        match BigStack.tryRun "term" (fun () -> term s body) with
-                        | Some v ->
-                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_bigstack_ok" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
-                            v
-                        | None ->
-                            term s body
-                    else
-                        term s body
+                    term s body
                 | DV(L(_,YForall)) -> raise_type_error s <| sprintf "Cannot apply a runtime forall during the partial evaluation stage."
                 | a -> raise_type_error s <| sprintf "Expected a forall.\nGot: %s" (show_data a)
             let rec apply s (a0, b0) =
@@ -11985,11 +12149,28 @@ module spiral_compiler =
                     if stack_fallback.IsNone then
                         let newGen = CacheGeneration.invalidate (System.String.Format("{0}: apply insufficient_stack site={1}", EJPCodes.EJP0010, site))
                         jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|apply_insufficient_stack", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
-                        DiagSidecar.emit (System.String.Format("{0} apply insufficient_stack gen={1} site={2} depth={3}", EJPCodes.EJP0010, newGen, site, RecursionTracker.currentDepth()))
-                        raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in apply at {1} (gen={2})", EJPCodes.EJP0010, site, newGen))
+                        let depthA = RecursionTracker.currentDepth()
+                        let maxObs = RecursionTracker.getMaxObserved()
+                        let deepSites = deepSitesShort ()
+                        let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                        let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                        let bigActive = BigStack.isActive()
+                        let mbApply = BigStack.getMb "apply"
+                        let traceShort =
+                            s.trace
+                            |> List.truncate 6
+                            |> List.map (fun r -> let (a,_) = r.range in sprintf "%s:%d:%d" r.path a.line a.character)
+                            |> String.concat " <- "
+                        DiagSidecar.emit (System.String.Format("{0} apply insufficient_stack gen={1} site={2} depth={3} maxObs={4} tid={5} bigActive={6} mb={7} trace={8} deepSites=[{9}] reasons=[{10}]",
+                            EJPCodes.EJP0010, newGen, site, depthA, maxObs, tid, bigActive, mbApply, traceShort, deepSites, reasons))
+                        raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in apply at {1} (gen={2} depth={3} maxObs={4} tid={5} bigActive={6} mb={7})",
+                            EJPCodes.EJP0010, site, newGen, depthA, maxObs, tid, bigActive, mbApply))
 
                 match stack_fallback with
-                | Some v -> v
+                | Some v ->
+                    jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|apply_bigstack_ok", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
+                    DiagSidecar.emit (System.String.Format("{0} apply bigstack_ok site={1} depth={2}", EJPCodes.EJP0010, site, RecursionTracker.currentDepth()))
+                    v
                 | None ->
                     let mutable a = a0
                     let mutable b = b0
@@ -12008,25 +12189,7 @@ module spiral_compiler =
                     | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
                         let s : LangEnv = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                         s.env_stack_term.[0] <- b
-                        // ### v78: StackOverflow pode ocorrer sem InsufficientExecutionStackException (tailcalls/trampolim).
-                        // Mitigação: quando já estamos em recursão moderada, reexecute este term em thread com stack maior (uma vez por thread).
-                        let curDepth = RecursionTracker.currentDepth ()
-                        let bigDepth =
-                            match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TERM_DEPTH" with
-                            | null | "" -> 32
-                            | v ->
-                                match System.Int32.TryParse v with
-                                | true, n when n >= 0 -> n
-                                | _ -> 32
-                        if curDepth >= bigDepth then
-                            match BigStack.tryRun "term" (fun () -> term s body) with
-                            | Some v ->
-                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_bigstack_ok" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
-                                v
-                            | None ->
-                                term s body
-                        else
-                            term s body
+                        term s body
                     | DV(L(_,YForall)), _ -> raise_type_error s "Cannot apply a runtime forall, and not with a term. Foralls have to be known at compile time and applied with a type."
                     | DForall _, _ -> raise_type_error s "Cannot apply a forall with a term."
                     | DV(L(_,YFun(domain,range,t) & a_ty) & a), b ->
