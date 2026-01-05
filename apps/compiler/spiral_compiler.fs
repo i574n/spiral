@@ -11528,13 +11528,16 @@ module spiral_compiler =
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
-            let max_reentry =
+            let max_reentry0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
                 | null | "" -> 64
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
                     | _ -> 64
+            let max_reentry =
+                // Em BigStack, recursões finitas (ex.: folds de reflexão/stdlib) podem reentrar no mesmo nó por mais tempo.
+                if BigStack.isActive() then max max_reentry0 256 else max_reentry0
             let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
                 | null | "" -> 64
@@ -11574,13 +11577,31 @@ module spiral_compiler =
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
 
-            let max_depth =
+            let max_depth_base =
+
+
                 match System.Environment.GetEnvironmentVariable "SPIRAL_TY_MAX_DEPTH" with
-                | null | "" -> 1024
+
+
+                | null | "" -> 2048
+
+
                 | v ->
+
+
                     match System.Int32.TryParse v with
+
+
                     | true, n when n > 50 -> n
-                    | _ -> 1024
+
+
+                    | _ -> 2048
+
+
+            // Em BigStack, loops finitos de staging podem exigir muito mais profundidade (ex.: geração em listm'.spi).
+
+
+            let max_depth = if BigStack.isActive() then max max_depth_base 8192 else max_depth_base
 
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -11627,7 +11648,9 @@ module spiral_compiler =
                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
                 let deepSites = deepSitesShort ()
                 let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
-                DiagSidecar.emit (sprintf "%s ty recursion depth exceeded depth=%d max=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth site newGen deepSites reasons)
+                let bigActive = BigStack.isActive()
+                let mbTy = BigStack.getMb "ty"
+                DiagSidecar.emit (sprintf "%s ty recursion depth exceeded depth=%d max=%d base=%d bigActive=%b mb=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth max_depth_base bigActive mbTy site newGen deepSites reasons)
                 raise_type_error (add_trace s r0) (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
 
             match x with
@@ -12036,20 +12059,25 @@ module spiral_compiler =
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
-            let max_reentry =
+            let max_reentry0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
                 | null | "" -> 64
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
                     | _ -> 64
-            let max_reentry_key =
+            let max_reentry =
+                // Em BigStack, reentrância por nó tende a representar recursão finita (ex.: listm'.spi) — evite falso-positivo conservador.
+                if BigStack.isActive() then max max_reentry0 2048 else max_reentry0
+            let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
                 | null | "" -> 64
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 2 -> n
                     | _ -> 64
+            let max_reentry_key =
+                if BigStack.isActive() then max max_reentry_key0 2048 else max_reentry_key0
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
