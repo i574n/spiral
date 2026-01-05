@@ -10608,6 +10608,10 @@ module spiral_compiler =
             System.Collections.Concurrent.ConcurrentQueue()
         let jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
 
+        // v101: custom join-point work queue. Waiting threads will "help" by executing queued work.
+        let jp_work_q : System.Collections.Concurrent.ConcurrentQueue<unit -> unit> = System.Collections.Concurrent.ConcurrentQueue()
+        let jp_work_sem = new System.Threading.SemaphoreSlim(0, System.Int32.MaxValue)
+
 
         let inline jp_throw_if_any () =
             let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
@@ -10616,7 +10620,7 @@ module spiral_compiler =
 
         let jp_dop =
             match Environment.GetEnvironmentVariable "SPIRAL_PEVAL_DOP" with
-            | null | "" -> max 1 (Environment.ProcessorCount * 8)
+            | null | "" -> max 1 (Environment.ProcessorCount)
             | x ->
                 match Int32.TryParse x with
                 | true, v -> max 1 v
@@ -10693,7 +10697,7 @@ module spiral_compiler =
 
         let diag_console_lock = obj()
 
-        let mutable jp_parallel_enabled = read_env_bool "SPIRAL_PEVAL_JP_PARALLEL" true
+        let mutable jp_parallel_enabled = true
         let mutable diag_abort_armed = true
 
         let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
@@ -10980,10 +10984,8 @@ module spiral_compiler =
             raise (System.Exception(diag_snapshot reason))
 
         let diag_soft_abort (where: string) (reason: string) =
-            if jp_parallel_enabled then
-                jp_parallel_enabled <- false
-                DiagSidecar.emit (sprintf "SPIRAL PEVAL DIAG soft_abort where=%s reason=%s" where reason)
-            // Always print a snapshot when we disable parallelism so the log is actionable.
+            // v101: do not disable parallelism on soft diagnostic triggers; keep full concurrency and just emit snapshots.
+            DiagSidecar.emit (sprintf "SPIRAL PEVAL DIAG soft_abort where=%s reason=%s" where reason)
             diag_print true
 
         let diag_abort_if_needed (where: string) =
@@ -11028,100 +11030,141 @@ module spiral_compiler =
                                 diag_abort_armed <- false
                                 diag_soft_abort where (sprintf "Join-point name cap exceeded. cap=%d name=%s count=%d" diag_jp_name_spec_cap name count)
         let inline jp_ev_wait (where: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
+            // v101: "help while waiting" — instead of blocking a worker thread, steal and execute other JP work.
             let w = if System.String.IsNullOrWhiteSpace(details) then where else where + " :: " + details
             diag_last_wait <- w
-            if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && diag_jp_name_spec_cap <= 0L then
-                ev.Wait()
+
+            let inline help_once () =
+                let mutable thunk = Unchecked.defaultof<unit -> unit>
+                if jp_work_q.TryDequeue(&thunk) then
+                    try
+                        try thunk ()
+                        with e -> jp_exns.Enqueue (capture_edi e)
+                    finally
+                        jp_cd.Signal() |> ignore
+                    true
+                else false
+
+            if ev.IsSet then
+                jp_throw_if_any ()
             else
-                let slice = int (max 1L diag_wait_ms)
-                while not (ev.Wait(slice)) do
-                    diag_print false
-                    diag_abort_if_needed w
-                    jp_throw_if_any ()
+                let mutable spin = System.Threading.SpinWait()
+                let mutable last_diag = peval_sw.ElapsedMilliseconds
+                while not ev.IsSet do
+                    // try to make progress by executing other queued work
+                    if help_once () then
+                        spin.Reset()
+                    else
+                        // periodic diagnostic tick without disabling parallelism
+                        let now = peval_sw.ElapsedMilliseconds
+                        if diag_period_ms > 0L && now - last_diag >= diag_period_ms then
+                            last_diag <- now
+                            diag_print false
+                        diag_abort_if_needed "jp_ev_wait"
+                        spin.SpinOnce()
+                        if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
+                jp_throw_if_any ()
 
+        // v101: dedicated join-point worker threads backed by a global work queue (keeps CPU saturated and avoids deadlocks).
+        let jp_stack_bytes =
+            let b = jp_stack_mb * 1024 * 1024
+            if b < (1 * 1024 * 1024) then (1 * 1024 * 1024)
+            elif b > (512 * 1024 * 1024) then (512 * 1024 * 1024)
+            else b
 
+        let jp_cancel = new System.Threading.CancellationTokenSource()
+        let mutable jp_workers : System.Threading.Thread[] = [||]
+        let jp_worker_ids = System.Collections.Concurrent.ConcurrentDictionary<int, byte>()
+        let mutable jp_workers_started = false
 
+        let start_jp_workers () =
+            if not jp_workers_started then
+                jp_workers_started <- true
+                let dop = max 1 jp_dop
+                jp_workers <-
+                    Array.init dop (fun i ->
+                        let threadStart = System.Threading.ThreadStart(fun () ->
+                            jp_worker_ids.TryAdd(System.Threading.Thread.CurrentThread.ManagedThreadId, 0uy) |> ignore
+                            let mutable spin = System.Threading.SpinWait()
+                            while not jp_cancel.IsCancellationRequested do
+                                let mutable thunk = Unchecked.defaultof<unit -> unit>
+                                if jp_work_q.TryDequeue(&thunk) then
+                                    spin.Reset()
+                                    try
+                                        try thunk ()
+                                        with e -> jp_exns.Enqueue (capture_edi e)
+                                    finally
+                                        jp_cd.Signal() |> ignore
+                                else
+                                    // Fast path: consume semaphore token if any (best-effort signal), otherwise spin/yield.
+                                    if jp_work_sem.Wait(0) then ()
+                                    else
+                                        spin.SpinOnce()
+                                        if (spin.Count &&& 8191) = 0 then System.Threading.Thread.Yield() |> ignore
+                        )
+                        let t = new System.Threading.Thread(threadStart, jp_stack_bytes)
+                        t.IsBackground <- true
+                        t.Name <- sprintf "spiral.jp.%d" i
+                        t.Start()
+                        t
+                    )
 
-        // NOTE: With Hopac-based parallel compilation, different jobs can interleave on the same worker thread.
-        // ThreadLocal inflight tracking can therefore produce false "recursive join point" positives.
-        // We use AsyncLocal to scope inflight tracking to the logical execution context.
-        let inline get_async_local (al: System.Threading.AsyncLocal<'T>) (mk: unit -> 'T) =
-            let v = al.Value
-            if obj.ReferenceEquals(v, null) then
-                let v2 = mk()
-                al.Value <- v2
-                v2
-            else v
-
-        let inline mk_jp_method_inflight () =
-            new System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Reference)
-        let inline mk_jp_type_inflight () =
-            new System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Reference)
-
-        let jp_method_inflight =
-            new System.Threading.AsyncLocal<System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>>()
-        let jp_type_inflight =
-            new System.Threading.AsyncLocal<System.Collections.Generic.HashSet<ConsedNode<Ty []>>>()
-        let jp_sched =
-            let stack_bytes = jp_stack_mb * 1024 * 1024
-            let create : Hopac.Scheduler.Create =
-                { Hopac.Scheduler.Create.Def with
-                    NumWorkers = Some jp_dop
-                    MaxStackSize = Some stack_bytes
-                    Foreground = Some false
-                    TopLevelHandler = Some (fun e -> job { jp_exns.Enqueue (capture_edi e); return () })
-                }
-            Hopac.Scheduler.create create
+        // Start workers eagerly so early phases do not run single-threaded.
+        start_jp_workers ()
 
         let inline jp_start (thunk : unit -> unit) =
             if (not jp_parallel_enabled) || jp_cd.CurrentCount >= jp_max_pending then
                 thunk ()
             else
+                start_jp_workers ()
                 jp_cd.AddCount() |> ignore
                 let n = System.Threading.Interlocked.Increment(&jp_total_started)
                 if (n &&& 4095L) = 0L then diag_print false
                 diag_abort_if_needed "jp_start"
-                if jp_use_threadpool then
-                    let cb = System.Threading.WaitCallback(fun _ ->
-                        try
-                            try thunk ()
-                            with e -> jp_exns.Enqueue (capture_edi e)
-                        finally
-                            jp_cd.Signal() |> ignore
-                    )
-                    System.Threading.ThreadPool.UnsafeQueueUserWorkItem(cb, null) |> ignore
-                else
-                    Hopac.Scheduler.queueIgnore jp_sched (job {
-                        try
-                            try thunk ()
-                            with e -> jp_exns.Enqueue (capture_edi e)
-                        finally
-                            jp_cd.Signal() |> ignore
-                        })
+                jp_work_q.Enqueue(thunk)
+                jp_work_sem.Release() |> ignore
+
         let inline jp_wait () =
+            // Release the initial count.
             jp_cd.Signal() |> ignore
-            if diag_period_ms <= 0L && diag_abort_ms <= 0L && diag_jp_spec_cap <= 0L && diag_jp_name_spec_cap <= 0L then
-                jp_cd.Wait()
+
+            // Keep executing queued work while waiting for all tasks to complete.
+            let mutable spin = System.Threading.SpinWait()
+            let inline help_once () =
+                let mutable thunk = Unchecked.defaultof<unit -> unit>
+                if jp_work_q.TryDequeue(&thunk) then
+                    try
+                        try thunk ()
+                        with e -> jp_exns.Enqueue (capture_edi e)
+                    finally
+                        jp_cd.Signal() |> ignore
+                    true
+                else false
+
+            while not (jp_cd.Wait(0)) do
+                diag_abort_if_needed "jp_wait"
                 jp_throw_if_any ()
-            else
-                let slice = int (max 1L diag_wait_ms)
-                while not (jp_cd.Wait(slice)) do
-                    diag_print false
-                    diag_abort_if_needed "jp_wait"
-                    jp_throw_if_any ()
+                if help_once () then
+                    spin.Reset()
+                else
+                    spin.SpinOnce()
+                    if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
 
             jp_throw_if_any ()
-            Hopac.Scheduler.wait jp_sched
-            Hopac.Scheduler.kill jp_sched
-        // Thread-safe global emission from parallel peval jobs
-        let globals_seen = System.Collections.Concurrent.ConcurrentDictionary<string, byte>()
-        let globals_q : System.Collections.Concurrent.ConcurrentQueue<string> = System.Collections.Concurrent.ConcurrentQueue()
-        let inline globals_add (_s: LangEnv) (x: string) =
-            if globals_seen.TryAdd(x, 0uy) then globals_q.Enqueue x
-        let inline globals_flush (s: LangEnv) =
-            let mutable x = Unchecked.defaultof<string>
-            while globals_q.TryDequeue(&x) do
-                s.globals.Add x
+
+            // Stop workers for this peval run (avoid leaking spinning threads across builds).
+            try
+                jp_cancel.Cancel()
+                // Wake any workers that are parked on the semaphore.
+                for _i = 0 to (jp_workers.Length + 2) do
+                    jp_work_sem.Release() |> ignore
+            with _ -> ()
+
+            let cur = System.Threading.Thread.CurrentThread.ManagedThreadId
+            for t in jp_workers do
+                try
+                    if t.ManagedThreadId <> cur then t.Join(10) |> ignore
+                with _ -> ()
 
         let inline map_try_find_by_string (key : string) (m : Map<int * string, 'v>) : 'v option =
             let mutable r = None
