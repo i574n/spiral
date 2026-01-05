@@ -9398,40 +9398,50 @@ module spiral_compiler =
                     if v < minV then minV elif v > maxV then maxV else v
                 | _ -> def
 
-        let private stackBytesFor (tag: string) : int * int =
-            // Default 128 MiB (mais margem para folds profundos); override via SPIRAL_BIGSTACK_MB ou SPIRAL_BIGSTACK_MB_<TAG>
+        let private stackBytesFor (tag: string) (nestLevel: int) : int * int =
+            // Default 128 MiB; override via SPIRAL_BIGSTACK_MB ou SPIRAL_BIGSTACK_MB_<TAG>.
+            // v95: escalonamento por nesting (propaga parentNest entre threads): mb = min(512, mbBase * 2^(nestLevel-1)).
+            //      teto de nesting via SPIRAL_BIGSTACK_MAX_NEST (default 2).
             let mbGlobal = envInt "SPIRAL_BIGSTACK_MB" 128 8 512
             let tagKey = "SPIRAL_BIGSTACK_MB_" + tag.ToUpperInvariant()
-            let mb = envInt tagKey mbGlobal 8 512
+            let mbBase = envInt tagKey mbGlobal 8 512
+            let pow = max 0 (nestLevel - 1) |> min 8
+            let scale = 1 <<< pow
+            let mb = min 512 (mbBase * scale)
             mb, (mb * 1024 * 1024)
 
-        /// Retorna a MB configurada para o tag (apenas diagnóstico).
+        /// Retorna a MB efetiva para o próximo spawn do tag (considera nesting atual).
         let getMb (tag: string) =
-            let mb,_ = stackBytesFor tag
+            let nestLevel = active.Value + 1
+            let mb,_ = stackBytesFor tag nestLevel
             mb
 
-        /// Returns Some result if spawned, or None if already running on a big stack.
+        /// Returns Some result if spawned, or None if nesting já atingiu o teto.
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
-            if isActive () then None
+            let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 2 1 8
+            let parentNest = active.Value
+            if parentNest >= maxNest then None
             else
+                let nestLevel = parentNest + 1
                 let mutable res = Unchecked.defaultof<'T>
                 let mutable err : exn option = None
-                let mb, stackBytes = stackBytesFor tag
+                let mb, stackBytes = stackBytesFor tag nestLevel
                 let th =
                     new Thread(ThreadStart(fun () ->
-                        active.Value <- active.Value + 1
+                        // v95: propagate nesting level across threads so we can escalate and also cap nesting deterministically.
+                        active.Value <- nestLevel
                         try
                             try
                                 res <- f ()
                             with e ->
                                 err <- Some e
                         finally
-                            active.Value <- max 0 (active.Value - 1)
+                            active.Value <- parentNest
                     ), stackBytes)
                 th.IsBackground <- true
                 try th.Name <- sprintf "spiral.bigstack.%s" tag with _ -> ()
                 try
-                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s mb=%d bytes=%d parent_tid=%d" tag mb stackBytes System.Threading.Thread.CurrentThread.ManagedThreadId)
+                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes System.Threading.Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 th.Start()
                 th.Join()
@@ -9441,7 +9451,7 @@ module spiral_compiler =
                         match err with
                         | Some e -> e.GetType().FullName
                         | None -> ""
-                    DiagSidecar.emit (sprintf "BIGSTACK done tag=%s child_tid=%d ok=%b err=%s" tag th.ManagedThreadId ok et)
+                    DiagSidecar.emit (sprintf "BIGSTACK done tag=%s child_tid=%d ok=%b err=%s nest=%d/%d parent_tid=%d" tag th.ManagedThreadId ok et nestLevel maxNest System.Threading.Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 match err with
                 | Some e -> raise e
@@ -11525,13 +11535,16 @@ module spiral_compiler =
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
                     | _ -> 64
-            let max_reentry_key =
+            let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
-                | null | "" -> 32
+                | null | "" -> 64
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 2 -> n
-                    | _ -> 32
+                    | _ -> 64
+            let max_reentry_key =
+                // Em BigStack, o re-entry por chave tende a ser finito porém longo; evite falso-positivo conservador.
+                if BigStack.isActive() then max max_reentry_key0 256 else max_reentry_key0
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -11563,11 +11576,11 @@ module spiral_compiler =
 
             let max_depth =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_TY_MAX_DEPTH" with
-                | null | "" -> 512
+                | null | "" -> 1024
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n > 50 -> n
-                    | _ -> 512
+                    | _ -> 1024
 
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -21152,10 +21165,12 @@ module spiral_compiler =
                                             | :? CodegenErrorWithPos as _ ->
                                                 reraise ()
 
-                                    try
-                                        attempt_build 0 2
-                                    finally
-                                        HopacExtensions.clearForcedConcurrency ()
+                                    let build_result =
+                                        try
+                                            attempt_build 0 2
+                                        finally
+                                            HopacExtensions.clearForcedConcurrency ()
+                                    build_result
 
                                 with
                                     | :? PartEvalTypeError as e -> BuildErrorTrace(show_trace s e.Data0 e.Data1)
