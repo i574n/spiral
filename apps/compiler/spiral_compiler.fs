@@ -6,6 +6,10 @@ namespace Polyglot
 
 module spiral_compiler =
 
+    /// ### EC_PROGRESS v103
+    /// Correção estrutural: em record literals aninhados de LangEnv dentro de JPType/JPMethod, os campos globals_lock/globals_seen haviam ficado fora do alinhamento do bloco (offside), fazendo o parser encerrar o record cedo e transformar as linhas seguintes em expressões booleanas; daí surgiam cascatas de FS0003/FS0001 ("value is not a function", bool vs ResizeArray/HashSet). A v103 realinha esses dois campos ao mesmo nível de indent do campo globals imediatamente acima em todos os pontos aninhados.
+    /// Próximo passo na direção 100% CPU: consolidar um modelo singleflight por chave (JPType/JPMethod) com helping-wait, eliminar esperas bloqueantes residuais e reduzir duplicação de trabalho para controlar GC e manter workers sempre alimentados.
+
     /// ## spiral_compiler
     open FSharp.Core
 
@@ -9107,6 +9111,8 @@ module spiral_compiler =
         env_stack_term : Data []
         backend : string ConsedNode
         globals : ResizeArray<string>
+        globals_lock : obj
+        globals_seen : System.Collections.Concurrent.ConcurrentDictionary<string, byte>
         join_point_method_key_names : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>
         join_point_closure_key_names : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>
         jp_method_stack : System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>
@@ -10537,6 +10543,15 @@ module spiral_compiler =
     /// ### add_trace
     let add_trace (s : LangEnv) r = {s with trace = r :: s.trace}
 
+    let inline globals_add (s : LangEnv) (x : string) =
+        // Thread-safe global snippet accumulation (used during codegen).
+        // Avoids global locks in the hot path by using a concurrent membership set; only new inserts take the lock.
+        if s.globals_seen.TryAdd(x, 0uy) then
+            lock s.globals_lock (fun () -> s.globals.Add x)
+        x
+
+    let inline globals_flush (_s : LangEnv) = ()
+
     /// ### store_term
     let store_term (s : LangEnv) i v = s.env_stack_term.[i-s.env_global_term.Length] <- v
 
@@ -10586,6 +10601,15 @@ module spiral_compiler =
     let peval (env : PartEvalTopEnv) (x : E) =
         // Comparer for join point body keys: backend by structural equality, body by physical identity.
         // This avoids unsound cache collisions between alpha-equal bodies coming from different scopes/modules.
+        let jp_type_inflight = System.Threading.AsyncLocal<System.Collections.Generic.HashSet<ConsedNode<Ty []>>>()
+        let mk_jp_type_inflight () = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Reference)
+        let inline get_async_local (slot : System.Threading.AsyncLocal<'T>) (mk : unit -> 'T) : 'T =
+            let v = slot.Value
+            if obj.ReferenceEquals(v, null) then
+                let v2 = mk()
+                slot.Value <- v2
+                v2
+            else v
         let jp_body_key_comparer =
             { new System.Collections.Generic.IEqualityComparer<string ConsedNode * E> with
                 member _.Equals((b1,e1),(b2,e2)) = b1 = b2 && LanguagePrimitives.PhysicalEquality e1 e2
@@ -11233,6 +11257,8 @@ module spiral_compiler =
             env_stack_term = Array.zeroCreate<_> sz_term
             backend = s.backend
             globals = s.globals
+            globals_lock = s.globals_lock
+            globals_seen = s.globals_seen
             join_point_method_key_names = s.join_point_method_key_names
             join_point_closure_key_names = s.join_point_closure_key_names
             jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
@@ -11792,6 +11818,8 @@ module spiral_compiler =
                                         env_stack_term = Array.zeroCreate<_> scope.term.stack_size
                                         backend = s.backend
                                         globals = s.globals
+                                        globals_lock = s.globals_lock
+                                        globals_seen = s.globals_seen
                                         join_point_method_key_names = s.join_point_method_key_names
                                         join_point_closure_key_names = s.join_point_closure_key_names
                                         jp_method_stack = jp_method_stack
@@ -11849,6 +11877,8 @@ module spiral_compiler =
                                                     env_stack_term = Array.zeroCreate<_> scope.term.stack_size
                                                     backend = s.backend
                                                     globals = s.globals
+                                                    globals_lock = s.globals_lock
+                                                    globals_seen = s.globals_seen
                                                     join_point_method_key_names = s.join_point_method_key_names
                                                     join_point_closure_key_names = s.join_point_closure_key_names
                                                     jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
@@ -12699,6 +12729,8 @@ module spiral_compiler =
                                         env_stack_term = Array.zeroCreate<_> scope.term.stack_size
                                         backend = backend'
                                         globals = s.globals
+                                        globals_lock = s.globals_lock
+                                        globals_seen = s.globals_seen
                                         join_point_method_key_names = s.join_point_method_key_names
                                         join_point_closure_key_names = s.join_point_closure_key_names
                                         jp_method_stack = jp_method_stack
@@ -12742,6 +12774,8 @@ module spiral_compiler =
                                                     env_stack_term = Array.zeroCreate<_> scope.term.stack_size
                                                     backend = backend'
                                                     globals = s.globals
+                                                    globals_lock = s.globals_lock
+                                                    globals_seen = s.globals_seen
                                                     join_point_method_key_names = s.join_point_method_key_names
                                                     join_point_closure_key_names = s.join_point_closure_key_names
                                                     jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
@@ -14376,7 +14410,7 @@ module spiral_compiler =
                         // trace Verbose (fun () -> $"PartEval.peval / | EOp(_,Global & op,[a]) -> / s.i.contents: %A{s.i.contents} / s.cse.count: %A{s.cse |> List.map _.Count} / s.backend.node: %A{s.backend.node} / op: %A{op} / a': %A{a'} / env.backend: %A{env.backend} / x_: %A{x_} / text: %A{text}") _locals
                     // && s.i.contents < 2
                     // && s.cse |> List.map _.Count |> List.filter ((=) 0) |> List.length = 2
-                        global' text
+                        global' text |> ignore
                     push_op_no_rewrite s op a YB
                 | a -> raise_type_error s $"Expected a string literal.\nGot: {show_data a}"
             | EOp(_,ToPythonRecord,[a]) ->
@@ -14522,6 +14556,8 @@ module spiral_compiler =
             env_stack_term = [||]
             backend = lock backend_strings_lock (fun () -> backend_strings.Add env.backend)
             globals = ResizeArray ()
+            globals_lock = obj()
+            globals_seen = System.Collections.Concurrent.ConcurrentDictionary<string, byte>()
             join_point_method_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
             join_point_closure_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
             jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Reference)
