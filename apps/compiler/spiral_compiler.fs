@@ -10681,7 +10681,7 @@ module spiral_compiler =
 
         let diag_console_lock = obj()
 
-        let mutable jp_parallel_enabled = true
+        let mutable jp_parallel_enabled = read_env_bool "SPIRAL_PEVAL_JP_PARALLEL" true
         let mutable diag_abort_armed = true
 
         let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
@@ -12066,13 +12066,16 @@ module spiral_compiler =
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
 
-            let max_depth =
+            let max_depth_base =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_TERM_MAX_DEPTH" with
-                | null | "" -> 160
+                | null | "" -> 512
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n > 50 -> n
-                    | _ -> 160
+                    | _ -> 512
+            // Em BigStack podemos tolerar recursões finitas bem mais profundas sem risco de StackOverflow;
+            // mantenha um piso alto para evitar falso-positivo em loops recursivos da stdlib (ex.: listm'.spi).
+            let max_depth = if BigStack.isActive() then max max_depth_base 2048 else max_depth_base
 
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -12117,7 +12120,16 @@ module spiral_compiler =
                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
                 let deepSites = deepSitesShort ()
                 let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
-                DiagSidecar.emit (sprintf "%s term recursion depth exceeded depth=%d max=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth site newGen deepSites reasons)
+                let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                let bigActive = BigStack.isActive()
+                let mbTerm = BigStack.getMb "term"
+                let maxObs = RecursionTracker.getMaxObserved()
+                let traceShort =
+                    s.trace
+                    |> List.truncate 8
+                    |> List.map (fun r -> let (a,_) = r.range in sprintf "%s:%d:%d" r.path a.line a.character)
+                    |> String.concat " <- "
+                DiagSidecar.emit (sprintf "%s term recursion depth exceeded depth=%d max=%d maxObs=%d site=%s gen=%d tid=%d bigActive=%b mb=%d trace=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth maxObs site newGen tid bigActive mbTerm traceShort deepSites reasons)
                 raise_type_error (add_trace s r0) (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
 
 
@@ -21093,6 +21105,9 @@ module spiral_compiler =
                                                 match EJPCodes.classifyError msg with
                                                 | Some code when code = EJPCodes.EJP0007 ->
                                                     let gen_before = CacheGeneration.current ()
+                                                    let prev_jp_par = Environment.GetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL")
+                                                    // For retry determinism: disable internal join-point parallel scheduling during this retry.
+                                                    Environment.SetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL", "0")
                                                     let gen_after = CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
                                                     HopacExtensions.forceConcurrency 1
                                                     let trace_lines, _ = show_trace s e.Data0 e.Data1
@@ -21102,29 +21117,32 @@ module spiral_compiler =
                                                         SuspectCache.getRecent 32
                                                         |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h se.generation se.depth se.hitCount se.errorType se.timestamp)
                                                     DiagSidecar.emit (sprintf "BuildFile.retry: EJP0007 gen=%d->%d attempt=%d file=%s backend=%s" gen_before gen_after attempt file backend)
-                                                    if System.IO.Directory.Exists traceDir then
-                                                        let guid = System.DateTime.Now |> SpiralDateTime.new_guid_from_date_time
-                                                        let diag_file = traceDir </> $"{guid}_EJP0007_retry.txt"
-                                                        let diag =
-                                                            [ sprintf "EJP0007 retry diagnostics"
-                                                              sprintf "file=%s" file
-                                                              sprintf "backend=%s" backend
-                                                              sprintf "attempt=%d" attempt
-                                                              sprintf "gen=%d -> %d" gen_before gen_after
-                                                              "---- message ----"
-                                                              msg
-                                                              "---- trace ----" ] @ trace_lines @
-                                                            [ "---- sidecar ----" ] @ sidecar @
-                                                            [ "---- cache invalidations ----" ] @ reasons @
-                                                            [ "---- suspects ----" ] @ suspects
-                                                            |> String.concat "\n"
-                                                        HopacExtensions.start (job {
-                                                            try
-                                                                do! Job.fromAsync (diag |> SpiralFileSystem.write_all_text_async diag_file)
-                                                            with ex ->
-                                                                trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / diag write ex: {ex |> SpiralSm.format_exception}") _locals
-                                                        })
-                                                    attempt_build (attempt + 1) max_attempts
+                                                    let diag =
+                                                        [ sprintf "EJP0007 retry diagnostics"
+                                                          sprintf "file=%s" file
+                                                          sprintf "backend=%s" backend
+                                                          sprintf "attempt=%d/%d" (attempt + 1) max_attempts
+                                                          sprintf "gen=%d -> %d" gen_before gen_after
+                                                          sprintf "jp_parallel_forced=0 (env SPIRAL_PEVAL_JP_PARALLEL=0)"
+                                                          "---- message ----"
+                                                          msg
+                                                          "---- trace ----" ] @ trace_lines @
+                                                        [ "---- sidecar ----" ] @ sidecar @
+                                                        [ "---- cache invalidations ----" ] @ reasons @
+                                                        [ "---- suspects ----" ] @ suspects
+                                                        |> String.concat "\n"
+                                                    let diag_block = $"=== EJP0007 RETRY DIAG BEGIN ===\n{diag}\n=== EJP0007 RETRY DIAG END ==="
+                                                    trace Warning (fun () -> diag_block) _locals
+                                                    try
+                                                        attempt_build (attempt + 1) max_attempts
+                                                    finally
+                                                        try
+                                                            // Restore SPIRAL_PEVAL_JP_PARALLEL to its previous state.
+                                                            match prev_jp_par with
+                                                            | null -> Environment.SetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL", null)
+                                                            | v -> Environment.SetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL", v)
+                                                        with _ -> ()
+                                                        HopacExtensions.clearForcedConcurrency ()
                                                 | _ ->
                                                     reraise ()
                                             | :? PartEvalTypeError as _ ->
