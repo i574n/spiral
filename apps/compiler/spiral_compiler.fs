@@ -9417,6 +9417,7 @@ module spiral_compiler =
             mb
 
         /// Returns Some result if spawned, or None if nesting já atingiu o teto.
+                /// Returns Some result if spawned, or None if nesting já atingiu o teto.
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
             let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 2 1 8
             let parentNest = active.Value
@@ -9425,10 +9426,11 @@ module spiral_compiler =
                 let nestLevel = parentNest + 1
                 let mutable res = Unchecked.defaultof<'T>
                 let mutable err : exn option = None
+                let mutable childTid = -1
                 let mb, stackBytes = stackBytesFor tag nestLevel
                 let th =
                     new Thread(ThreadStart(fun () ->
-                        // v95: propagate nesting level across threads so we can escalate and also cap nesting deterministically.
+                        childTid <- Thread.CurrentThread.ManagedThreadId
                         active.Value <- nestLevel
                         try
                             try
@@ -9441,7 +9443,7 @@ module spiral_compiler =
                 th.IsBackground <- true
                 try th.Name <- sprintf "spiral.bigstack.%s" tag with _ -> ()
                 try
-                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes System.Threading.Thread.CurrentThread.ManagedThreadId)
+                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 th.Start()
                 th.Join()
@@ -9451,7 +9453,7 @@ module spiral_compiler =
                         match err with
                         | Some e -> e.GetType().FullName
                         | None -> ""
-                    DiagSidecar.emit (sprintf "BIGSTACK done tag=%s child_tid=%d ok=%b err=%s nest=%d/%d parent_tid=%d" tag th.ManagedThreadId ok et nestLevel maxNest System.Threading.Thread.CurrentThread.ManagedThreadId)
+                    DiagSidecar.emit (sprintf "BIGSTACK done tag=%s child_tid=%d ok=%b err=%s nest=%d/%d parent_tid=%d" tag childTid ok et nestLevel maxNest Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 match err with
                 | Some e -> raise e
@@ -11537,7 +11539,7 @@ module spiral_compiler =
                     | _ -> 64
             let max_reentry =
                 // Em BigStack, recursões finitas (ex.: folds de reflexão/stdlib) podem reentrar no mesmo nó por mais tempo.
-                if BigStack.isActive() then max max_reentry0 256 else max_reentry0
+                if BigStack.isActive() then max max_reentry0 1024 else max_reentry0
             let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
                 | null | "" -> 64
@@ -11547,7 +11549,7 @@ module spiral_compiler =
                     | _ -> 64
             let max_reentry_key =
                 // Em BigStack, o re-entry por chave tende a ser finito porém longo; evite falso-positivo conservador.
-                if BigStack.isActive() then max max_reentry_key0 256 else max_reentry_key0
+                if BigStack.isActive() then max max_reentry_key0 1024 else max_reentry_key0
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -21144,9 +21146,22 @@ module spiral_compiler =
                                             | :? PartEvalTypeError as e when attempt + 1 < max_attempts ->
                                                 let msg = e.Data1
                                                 match EJPCodes.classifyError msg with
-                                                | Some code when code = EJPCodes.EJP0007 ->
+                                                | Some code when code = EJPCodes.EJP0007 || code = EJPCodes.EJP0011 || code = EJPCodes.EJP0009 || code = EJPCodes.EJP0010 || code = EJPCodes.EJP0008 ->
                                                     let gen_before = CacheGeneration.current ()
                                                     let prev_jp_par = Environment.GetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL")
+                                                    let prev_re_key = Environment.GetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY_KEY")
+                                                    let prev_re = Environment.GetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY")
+                                                    let prev_ty_depth = Environment.GetEnvironmentVariable("SPIRAL_TY_MAX_DEPTH")
+                                                    let prev_term_depth = Environment.GetEnvironmentVariable("SPIRAL_TERM_MAX_DEPTH")
+                                                    let prev_big_nest = Environment.GetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST")
+                                                    let prev_big_mb = Environment.GetEnvironmentVariable("SPIRAL_BIGSTACK_MB")
+                                                    // Retry safety envelope: widen re-entry/depth limits and allow limited BigStack escalation.
+                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY_KEY", "4096")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY", "8192")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_TY_MAX_DEPTH", "8192")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_TERM_MAX_DEPTH", "8192")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST", "4")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MB", "256")
                                                     // For retry determinism: disable internal join-point parallel scheduling during this retry.
                                                     Environment.SetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL", "0")
                                                     let gen_after = CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
@@ -21159,7 +21174,7 @@ module spiral_compiler =
                                                         |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h se.generation se.depth se.hitCount se.errorType se.timestamp)
                                                     DiagSidecar.emit (sprintf "BuildFile.retry: EJP0007 gen=%d->%d attempt=%d file=%s backend=%s" gen_before gen_after attempt file backend)
                                                     let diag =
-                                                        [ sprintf "EJP0007 retry diagnostics"
+                                                        [ sprintf $"{code} retry diagnostics"
                                                           sprintf "file=%s" file
                                                           sprintf "backend=%s" backend
                                                           sprintf "attempt=%d/%d" (attempt + 1) max_attempts
@@ -21172,12 +21187,25 @@ module spiral_compiler =
                                                         [ "---- cache invalidations ----" ] @ reasons @
                                                         [ "---- suspects ----" ] @ suspects
                                                         |> String.concat "\n"
-                                                    let diag_block = $"=== EJP0007 RETRY DIAG BEGIN ===\n{diag}\n=== EJP0007 RETRY DIAG END ==="
+                                                    let diag_block = $"=== {code} RETRY DIAG BEGIN ===
+{diag}
+=== {code} RETRY DIAG END ==="
                                                     trace Warning (fun () -> diag_block) _locals
                                                     try
                                                         attempt_build (attempt + 1) max_attempts
                                                     finally
                                                         try
+                                                            try
+                                                                let restoreEnv (name: string) (prev: string) =
+                                                                    if isNull prev then Environment.SetEnvironmentVariable(name, null)
+                                                                    else Environment.SetEnvironmentVariable(name, prev)
+                                                                restoreEnv "SPIRAL_EVAL_MAX_REENTRY_KEY" prev_re_key
+                                                                restoreEnv "SPIRAL_EVAL_MAX_REENTRY" prev_re
+                                                                restoreEnv "SPIRAL_TY_MAX_DEPTH" prev_ty_depth
+                                                                restoreEnv "SPIRAL_TERM_MAX_DEPTH" prev_term_depth
+                                                                restoreEnv "SPIRAL_BIGSTACK_MAX_NEST" prev_big_nest
+                                                                restoreEnv "SPIRAL_BIGSTACK_MB" prev_big_mb
+                                                            with _ -> ()
                                                             // Restore SPIRAL_PEVAL_JP_PARALLEL to its previous state.
                                                             match prev_jp_par with
                                                             | null -> Environment.SetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL", null)
@@ -21193,9 +21221,18 @@ module spiral_compiler =
                                             | :? CodegenErrorWithPos as _ ->
                                                 reraise ()
 
+                                    let max_attempts =
+                                        match Environment.GetEnvironmentVariable "SPIRAL_BUILD_RETRY" with
+                                        | null | "" -> 3
+                                        | v ->
+                                            match System.Int32.TryParse v with
+                                            | true, n when n < 1 -> 1
+                                            | true, n when n > 8 -> 8
+                                            | true, n -> n
+                                            | _ -> 3
                                     let build_result =
                                         try
-                                            attempt_build 0 2
+                                            attempt_build 0 max_attempts
                                         finally
                                             HopacExtensions.clearForcedConcurrency ()
                                     build_result
