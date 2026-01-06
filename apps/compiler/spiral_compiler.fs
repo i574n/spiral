@@ -10708,7 +10708,7 @@ module spiral_compiler =
         // - Hopac scheduler maximizes locality but can deadlock if a worker blocks waiting on an event.
         // - ThreadPool scheduling avoids Hopac worker starvation when joins are blocking.
         // Default: ThreadPool. Set SPIRAL_PEVAL_JP_THREADPOOL=0 to force Hopac scheduling.
-        let jp_use_threadpool = read_env_bool "SPIRAL_PEVAL_JP_THREADPOOL" true
+        let jp_use_threadpool = read_env_bool "SPIRAL_PEVAL_JP_THREADPOOL" false
 
         // When diagnostics trip time/spec caps, prefer a "soft abort": disable parallel join-points and keep going.
         // Set SPIRAL_PEVAL_DIAG_HARD_ABORT=1 to keep legacy behavior (throw immediately).
@@ -11078,7 +11078,9 @@ module spiral_compiler =
                 while not ev.IsSet do
                     let curGen = CacheGeneration.current()
                     if curGen <> gen0 then
-                        raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ev_wait (from %d to %d) :: %s" gen0 curGen w))
+                        // v107: include a full diagnostic snapshot in the exception message.
+                        let snap = diag_snapshot (sprintf "gen_change jp_ev_wait from=%d to=%d :: %s" gen0 curGen w)
+                        raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ev_wait (from %d to %d) :: %s\n%s" gen0 curGen w snap))
                     // try to make progress by executing other queued work
                     if help_once () then
                         spin.Reset()
@@ -11160,6 +11162,8 @@ module spiral_compiler =
             // Release the initial count.
             jp_cd.Signal() |> ignore
             let gen0 = CacheGeneration.current()
+            let mutable gen_new = gen0
+            let mutable gen_changed = false
 
             // Keep executing queued work while waiting for all tasks to complete.
             let mutable spin = System.Threading.SpinWait()
@@ -11174,33 +11178,42 @@ module spiral_compiler =
                     true
                 else false
 
-            while not (jp_cd.Wait(0)) do
-                diag_abort_if_needed "jp_wait"
-                if CacheGeneration.current() <> gen0 then
-                    raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_wait (from %d to %d)" gen0 (CacheGeneration.current())))
-                jp_throw_if_any ()
-                if help_once () then
-                    spin.Reset()
-                else
-                    spin.SpinOnce()
-                    if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
-
-            jp_throw_if_any ()
-
-            // Stop workers for this peval run (avoid leaking spinning threads across builds).
             try
-                jp_cancel.Cancel()
-                // Wake any workers that are parked on the semaphore.
-                for _i = 0 to (jp_workers.Length + 2) do
-                    jp_work_sem.Release() |> ignore
-            with _ -> ()
+                while (not gen_changed) && not (jp_cd.Wait(0)) do
+                    diag_abort_if_needed "jp_wait"
+                    gen_new <- CacheGeneration.current()
+                    if gen_new > gen0 then
+                        gen_changed <- true
+                    else
+                        jp_throw_if_any ()
+                        if help_once () then
+                            spin.Reset()
+                        else
+                            spin.SpinOnce()
+                            if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
 
-            let cur = System.Threading.Thread.CurrentThread.ManagedThreadId
-            for t in jp_workers do
+                if gen_changed then
+                    // Important: do not raise inside the loop; always stop workers first to avoid leaking/jamming.
+                    // v107: include a full diagnostic snapshot in the exception message.
+                    let snap = diag_snapshot (sprintf "gen_change jp_wait from=%d to=%d" gen0 gen_new)
+                    jp_exns.Enqueue (capture_edi (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_wait (from %d to %d)\n%s" gen0 gen_new snap)))
+            finally
+                // Stop workers for this peval run (avoid leaking spinning threads across builds).
                 try
-                    if t.ManagedThreadId <> cur then t.Join(10) |> ignore
+                    jp_cancel.Cancel()
+                    // Wake any workers that are parked on the semaphore.
+                    for _i = 0 to (jp_workers.Length + 2) do
+                        jp_work_sem.Release() |> ignore
                 with _ -> ()
 
+                let cur = System.Threading.Thread.CurrentThread.ManagedThreadId
+                for t in jp_workers do
+                    try
+                        if t.ManagedThreadId <> cur then t.Join(10) |> ignore
+                    with _ -> ()
+
+
+            jp_throw_if_any ()
         let inline map_try_find_by_string (key : string) (m : Map<int * string, 'v>) : 'v option =
             let mutable r = None
             for KeyValue((_, k), v) in m do
@@ -21252,24 +21265,30 @@ module spiral_compiler =
                                                     Environment.SetEnvironmentVariable("SPIRAL_TERM_MAX_DEPTH", "8192")
                                                     Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST", "4")
                                                     Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MB", "256")
-                                                    // For retry determinism: disable internal join-point parallel scheduling during this retry.
-                                                    Environment.SetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL", "0")
-                                                    let gen_after = CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
-                                                    HopacExtensions.forceConcurrency 1
+                                                    let is_gen_wait =
+                                                        code = EJPCodes.EJP0008 && msg.Contains("generation changed while waiting")
+                                                    if not is_gen_wait then
+                                                        // For retry determinism: disable internal join-point parallel scheduling during this retry.
+                                                        Environment.SetEnvironmentVariable("SPIRAL_PEVAL_JP_PARALLEL", "0")
+                                                    let gen_after =
+                                                        if is_gen_wait then CacheGeneration.current ()
+                                                        else CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
+                                                    if not is_gen_wait then HopacExtensions.forceConcurrency 1
+                                                    else System.Threading.Thread.Yield() |> ignore
                                                     let trace_lines, _ = show_trace s e.Data0 e.Data1
                                                     let sidecar = DiagSidecar.snapshot 128
                                                     let reasons = CacheGeneration.reasonsSnapshot 64
                                                     let suspects =
                                                         SuspectCache.getRecent 32
                                                         |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h se.generation se.depth se.hitCount se.errorType se.timestamp)
-                                                    DiagSidecar.emit (sprintf "BuildFile.retry: EJP0007 gen=%d->%d attempt=%d file=%s backend=%s" gen_before gen_after attempt file backend)
+                                                    DiagSidecar.emit (sprintf "BuildFile.retry: %s gen=%d->%d attempt=%d file=%s backend=%s gen_wait=%b" code gen_before gen_after attempt file backend is_gen_wait)
                                                     let diag =
                                                         [ sprintf $"{code} retry diagnostics"
                                                           sprintf "file=%s" file
                                                           sprintf "backend=%s" backend
                                                           sprintf "attempt=%d/%d" (attempt + 1) max_attempts
                                                           sprintf "gen=%d -> %d" gen_before gen_after
-                                                          sprintf "jp_parallel_forced=0 (env SPIRAL_PEVAL_JP_PARALLEL=0)"
+                                                          sprintf "jp_parallel=%s" (if is_gen_wait then "kept (generation-change retry)" else "forced=0 (env SPIRAL_PEVAL_JP_PARALLEL=0)")
                                                           "---- message ----"
                                                           msg
                                                           "---- trace ----" ] @ trace_lines @
@@ -21313,7 +21332,7 @@ module spiral_compiler =
 
                                     let max_attempts =
                                         match Environment.GetEnvironmentVariable "SPIRAL_BUILD_RETRY" with
-                                        | null | "" -> 3
+                                        | null | "" -> 6
                                         | v ->
                                             match System.Int32.TryParse v with
                                             | true, n when n < 1 -> 1
