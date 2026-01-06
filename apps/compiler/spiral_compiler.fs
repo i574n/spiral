@@ -11057,6 +11057,7 @@ module spiral_compiler =
             // v101: "help while waiting" — instead of blocking a worker thread, steal and execute other JP work.
             let w = if System.String.IsNullOrWhiteSpace(details) then where else where + " :: " + details
             diag_last_wait <- w
+            let gen0 = CacheGeneration.current()
 
             let inline help_once () =
                 let mutable thunk = Unchecked.defaultof<unit -> unit>
@@ -11075,6 +11076,9 @@ module spiral_compiler =
                 let mutable spin = System.Threading.SpinWait()
                 let mutable last_diag = peval_sw.ElapsedMilliseconds
                 while not ev.IsSet do
+                    let curGen = CacheGeneration.current()
+                    if curGen <> gen0 then
+                        raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ev_wait (from %d to %d) :: %s" gen0 curGen w))
                     // try to make progress by executing other queued work
                     if help_once () then
                         spin.Reset()
@@ -11145,12 +11149,17 @@ module spiral_compiler =
                 let n = System.Threading.Interlocked.Increment(&jp_total_started)
                 if (n &&& 4095L) = 0L then diag_print false
                 diag_abort_if_needed "jp_start"
-                jp_work_q.Enqueue(thunk)
+                let gen0 = CacheGeneration.current()
+                jp_work_q.Enqueue(fun () ->
+                    if CacheGeneration.current() <> gen0 then ()
+                    else thunk ()
+                )
                 jp_work_sem.Release() |> ignore
 
         let inline jp_wait () =
             // Release the initial count.
             jp_cd.Signal() |> ignore
+            let gen0 = CacheGeneration.current()
 
             // Keep executing queued work while waiting for all tasks to complete.
             let mutable spin = System.Threading.SpinWait()
@@ -11167,6 +11176,8 @@ module spiral_compiler =
 
             while not (jp_cd.Wait(0)) do
                 diag_abort_if_needed "jp_wait"
+                if CacheGeneration.current() <> gen0 then
+                    raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_wait (from %d to %d)" gen0 (CacheGeneration.current())))
                 jp_throw_if_any ()
                 if help_once () then
                     spin.Reset()
