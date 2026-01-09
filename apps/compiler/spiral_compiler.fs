@@ -7,7 +7,7 @@ namespace Polyglot
 module spiral_compiler =
 
     /// ### EC_PROGRESS v107-alpha11
-    /// Stack overflow fix: peval on BigStack, nested pivots (ty/term/if_/apply/term_scope''), 512MB×16 nest, depth 32768
+    /// Stack overflow fix: RecursionTracker depth inherited across BigStack threads, pivots every 20-30 depth, 256MB×32 nest
     /// Correção estrutural: em record literals aninhados de LangEnv dentro de JPType/JPMethod, os campos globals_lock/globals_seen haviam ficado fora do alinhamento do bloco (offside), fazendo o parser encerrar o record cedo e transformar as linhas seguintes em expressões booleanas; daí surgiam cascatas de FS0003/FS0001 ("value is not a function", bool vs ResizeArray/HashSet). A v103 realinha esses dois campos ao mesmo nível de indent do campo globals imediatamente acima em todos os pontos aninhados.
     /// Próximo passo na direção 100% CPU: consolidar um modelo singleflight por chave (JPType/JPMethod) com helping-wait, eliminar esperas bloqueantes residuais e reduzir duplicação de trabalho para controlar GC e manter workers sempre alimentados.
 
@@ -9399,6 +9399,9 @@ module spiral_compiler =
         /// Get current recursion depth for this thread
         let currentDepth () = threadDepth.Value
 
+        /// Set recursion depth directly (for BigStack thread inheritance)
+        let setDepth (d: int) = threadDepth.Value <- d
+
         /// Check if currently in deep recursion (> 100)
         let isDeep () = threadDepth.Value > 100
 
@@ -9436,11 +9439,10 @@ module spiral_compiler =
                 | _ -> def
 
         let private stackBytesFor (tag: string) (nestLevel: int) : int * int =
-            // v107-alpha11: 512MB base, up to 8 nesting levels for deep recursive staging
-            let mbGlobal = envInt "SPIRAL_BIGSTACK_MB" 512 8 512
+            // v107-alpha11: 256MB base stack - large enough for deep recursion, small enough to allocate reliably
+            let mbGlobal = envInt "SPIRAL_BIGSTACK_MB" 256 8 1024
             let tagKey = "SPIRAL_BIGSTACK_MB_" + tag.ToUpperInvariant()
-            let mbBase = envInt tagKey mbGlobal 8 512
-            // No scaling needed since we're at max already
+            let mbBase = envInt tagKey mbGlobal 8 1024
             let mb = mbBase
             mb, (mb * 1024 * 1024)
 
@@ -9451,13 +9453,14 @@ module spiral_compiler =
             mb
 
         /// Returns Some result if spawned, or None if nesting já atingiu o teto.
-                /// Returns Some result if spawned, or None if nesting já atingiu o teto.
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
-            let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 16 1 32  // v107-alpha11: allow up to 16 nested stacks
+            let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 32 1 64  // v107-alpha11: 32 levels at 256MB each = 8GB total
             let parentNest = active.Value
             if parentNest >= maxNest then None
             else
                 let nestLevel = parentNest + 1
+                // v107-alpha11: Capture parent's RecursionTracker depth to inherit in child
+                let parentRecDepth = RecursionTracker.currentDepth()
                 let mutable res = Unchecked.defaultof<'T>
                 let mutable err : exn option = None
                 let mutable childTid = -1
@@ -9466,6 +9469,8 @@ module spiral_compiler =
                     new Thread(ThreadStart(fun () ->
                         childTid <- Thread.CurrentThread.ManagedThreadId
                         active.Value <- nestLevel
+                        // v107-alpha11: Inherit parent's recursion depth so pivots continue correctly
+                        RecursionTracker.setDepth parentRecDepth
                         try
                             try
                                 res <- f ()
@@ -9477,7 +9482,7 @@ module spiral_compiler =
                 th.IsBackground <- true
                 try th.Name <- sprintf "spiral.bigstack.%s" tag with _ -> ()
                 try
-                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes Thread.CurrentThread.ManagedThreadId)
+                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d recDepth=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes parentRecDepth Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 th.Start()
                 th.Join()
@@ -11390,7 +11395,7 @@ module spiral_compiler =
                             // v107-alpha11: Nested BigStack pivot for deep closure evaluation
                             let depth = RecursionTracker.currentDepth()
                             let seq,ty =
-                                if depth > 16 && depth % 8 = 0 then
+                                if depth >= 20 && depth % 20 = 0 then
                                     match BigStack.tryRun "term_scope_closure" (fun () -> term_scope'' s body (Some fun_ty)) with
                                     | Some r -> r
                                     | None -> term_scope'' s body (Some fun_ty)
@@ -11668,33 +11673,9 @@ module spiral_compiler =
             | YNominal a -> ty s a.node.body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
         and ty s x =
-            // ### v61: ty recursion guard (preempt stack overflow with depth+stack checks)
-            let fallback = match s.trace with | r :: _ -> r | [] -> range0
-            let r0 = range_of_tprepass_or fallback x
-            let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
-
-            // v107-alpha11: Aggressive nested BigStack pivots for deep ty recursion
+            // v107-alpha11: Nested BigStack pivot for deep ty recursion
             let depth0 = RecursionTracker.currentDepth()
-            let pivotDepth =
-                match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TY_DEPTH" with
-                | null | "" -> 4  // Very low threshold
-                | v ->
-                    match System.Int32.TryParse v with
-                    | true, n when n >= 2 && n <= 4096 -> n
-                    | _ -> 4
-            let pivotStride =
-                match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TY_STRIDE" with
-                | null | "" -> 2  // Check every 2 levels
-                | v ->
-                    match System.Int32.TryParse v with
-                    | true, n when n >= 1 && n <= 2048 -> n
-                    | _ -> 2
-            // v107-alpha11: Allow nested pivots even when BigStack is already active
-            let shouldPivot =
-                depth0 >= pivotDepth &&
-                (depth0 % pivotStride = 0)
-
-            if shouldPivot then
+            if depth0 >= 30 && depth0 % 30 = 0 then
                 match BigStack.tryRun "ty" (fun () -> ty_core s x) with
                 | Some v -> v
                 | None -> ty_core s x  // Nesting exhausted, continue on current stack
@@ -11718,24 +11699,24 @@ module spiral_compiler =
             let reKey = EvalCycleGuardKey.enter nodeKey
             let max_reentry0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
-                | null | "" -> 64
+                | null | "" -> 16384  // v107-alpha11: increased from 64 to handle deep staging loops
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
-                    | _ -> 64
+                    | _ -> 16384
             let max_reentry =
                 // Em BigStack, recursões finitas (ex.: folds de reflexão/stdlib) podem reentrar no mesmo nó por mais tempo.
-                if BigStack.isActive() then max max_reentry0 16384 else max_reentry0  // v107-alpha11: 16384 for deep stdlib
+                if BigStack.isActive() then max max_reentry0 65536 else max_reentry0  // v107-alpha11: 65536 for extreme recursion
             let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
-                | null | "" -> 64
+                | null | "" -> 16384  // v107-alpha11: increased from 64 to handle deep staging loops
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 2 -> n
-                    | _ -> 64
+                    | _ -> 16384
             let max_reentry_key =
                 // Em BigStack, o re-entry por chave tende a ser finito porém longo; evite falso-positivo conservador.
-                if BigStack.isActive() then max max_reentry_key0 16384 else max_reentry_key0  // v107-alpha11: 16384 for deep stdlib
+                if BigStack.isActive() then max max_reentry_key0 65536 else max_reentry_key0  // v107-alpha11: 65536 for extreme recursion
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -11787,9 +11768,9 @@ module spiral_compiler =
 
 
             // Em BigStack, loops finitos de staging podem exigir muito mais profundidade (ex.: geração em listm'.spi).
-            // v107-alpha11: increased from 8192 to 32768 to handle deep recursive staging in listm'.spi
+            // v107-alpha11: increased to 65536 to handle deep recursive staging in listm'.spi
 
-            let max_depth = if BigStack.isActive() then max max_depth_base 32768 else max_depth_base
+            let max_depth = if BigStack.isActive() then max max_depth_base 65536 else max_depth_base
 
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -12162,31 +12143,10 @@ module spiral_compiler =
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
-            // ### v81: pivot preemptivo para BigStack em recursão profunda de term (evita EJP0010/StackOverflow antes dos guards dispararem)
-            // Regra: quando a profundidade do thread atual já passou do limiar, migre a avaliação inteira deste nó para uma thread com stack maior.
-            // Isso é mais confiável do que depender de EnsureSufficientExecutionStack, que pode falhar “tarde demais” em frames grandes.
-            let fallback = match s.trace with | r :: _ -> r | [] -> range0
-            let r0 = range_of_e_or fallback x
-            let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
-
-            let inline envInt (name: string) (def: int) (minV: int) (maxV: int) =
-                match System.Environment.GetEnvironmentVariable name with
-                | null | "" -> def
-                | v ->
-                    match System.Int32.TryParse v with
-                    | true, n ->
-                        if n < minV then minV elif n > maxV then maxV else n
-                    | _ -> def
-
+            // v107-alpha11: Nested BigStack pivot for deep term recursion
+            // When depth reaches thresholds, spawn a new BigStack thread to get fresh stack space
             let depth0 = RecursionTracker.currentDepth()
-            let pivotDepth = envInt "SPIRAL_BIGSTACK_TERM_DEPTH" 4 2 4096  // v107-alpha11: very aggressive
-            let pivotStride = envInt "SPIRAL_BIGSTACK_TERM_STRIDE" 4 1 2048   // v107-alpha11: every 4 levels for nested
-            // v107-alpha11: Allow nested pivots even when BigStack is already active
-            let pivot =
-                depth0 >= pivotDepth &&
-                (depth0 % pivotStride = 0)
-
-            if pivot then
+            if depth0 >= 30 && depth0 % 30 = 0 then
                 match BigStack.tryRun "term" (fun () -> term_core s x) with
                 | Some v -> v
                 | None -> term_core s x  // Nesting exhausted, continue on current stack
@@ -12247,23 +12207,23 @@ module spiral_compiler =
             let reKey = EvalCycleGuardKey.enter nodeKey
             let max_reentry0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY" with
-                | null | "" -> 64
+                | null | "" -> 16384  // v107-alpha11: increased from 64 to handle deep staging loops
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
-                    | _ -> 64
+                    | _ -> 16384
             let max_reentry =
                 // Em BigStack, reentrância por nó tende a representar recursão finita (ex.: listm'.spi) — evite falso-positivo conservador.
-                if BigStack.isActive() then max max_reentry0 16384 else max_reentry0  // v107-alpha11: higher limit for deep stdlib recursion
+                if BigStack.isActive() then max max_reentry0 65536 else max_reentry0  // v107-alpha11: 65536 for extreme recursion
             let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
-                | null | "" -> 64
+                | null | "" -> 16384  // v107-alpha11: increased from 64 to handle deep staging loops
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 2 -> n
-                    | _ -> 64
+                    | _ -> 16384
             let max_reentry_key =
-                if BigStack.isActive() then max max_reentry_key0 16384 else max_reentry_key0  // v107-alpha11: higher limit
+                if BigStack.isActive() then max max_reentry_key0 65536 else max_reentry_key0  // v107-alpha11: 65536 for extreme recursion
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -12303,8 +12263,8 @@ module spiral_compiler =
             // Em BigStack podemos tolerar recursões finitas bem mais profundas sem risco de StackOverflow;
             // mantenha um piso alto para evitar falso-positivo em loops recursivos da stdlib (ex.: listm'.spi).
             // v107-alpha10: aligned with ty depth (8192) to avoid EJP0009 in deeply recursive staging loops.
-            // v107-alpha11: increased from 8192 to 32768 to handle listm'.spi deep recursion
-            let max_depth = if BigStack.isActive() then max max_depth_base 32768 else max_depth_base
+            // v107-alpha11: increased to 65536 to handle listm'.spi deep recursion
+            let max_depth = if BigStack.isActive() then max max_depth_base 65536 else max_depth_base
 
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -12378,7 +12338,7 @@ module spiral_compiler =
             let rec apply s (a0, b0) =
                 // v107-alpha11: Nested BigStack pivot for deep apply recursion
                 let depth0 = RecursionTracker.currentDepth()
-                if depth0 >= 6 && depth0 % 6 = 0 then
+                if depth0 >= 30 && depth0 % 30 = 0 then
                     match BigStack.tryRun "apply" (fun () -> apply_core s (a0, b0)) with
                     | Some v -> v
                     | None -> apply_core s (a0, b0)
@@ -12511,7 +12471,7 @@ module spiral_compiler =
             let rec if_ s cond on_succ on_fail =
                 // v107-alpha11: Nested BigStack pivot for deep if_ recursion
                 let depth0 = RecursionTracker.currentDepth()
-                if depth0 >= 8 && depth0 % 8 = 0 then
+                if depth0 >= 30 && depth0 % 30 = 0 then
                     match BigStack.tryRun "if_" (fun () -> if_core s cond on_succ on_fail) with
                     | Some v -> v
                     | None -> if_core s cond on_succ on_fail
@@ -12925,7 +12885,7 @@ module spiral_compiler =
                                                 rename_global_term s_retry
                                         // v107-alpha11: Nested BigStack pivot for deep method body evaluation
                                         let depth = RecursionTracker.currentDepth()
-                                        if depth > 16 && depth % 8 = 0 then
+                                        if depth >= 20 && depth % 20 = 0 then
                                             match BigStack.tryRun "term_scope_method" (fun () -> term_scope'' s_eval body annot_val) with
                                             | Some r -> r
                                             | None -> term_scope'' s_eval body annot_val
@@ -13022,7 +12982,7 @@ module spiral_compiler =
                                                 // v107-alpha11: Nested BigStack pivot for deep retry evaluation
                                                 let depth = RecursionTracker.currentDepth()
                                                 let seq2, ty2 =
-                                                    if depth > 16 && depth % 8 = 0 then
+                                                    if depth >= 20 && depth % 20 = 0 then
                                                         match BigStack.tryRun "term_scope_retry" (fun () -> term_scope'' s_retry body annot_val) with
                                                         | Some r -> r
                                                         | None -> term_scope'' s_retry body annot_val
@@ -21434,12 +21394,12 @@ module spiral_compiler =
                                                     let prev_big_nest = Environment.GetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST")
                                                     let prev_big_mb = Environment.GetEnvironmentVariable("SPIRAL_BIGSTACK_MB")
                                                     // Retry safety envelope: widen re-entry/depth limits and allow limited BigStack escalation.
-                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY_KEY", "16384")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY", "32768")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_TY_MAX_DEPTH", "32768")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_TERM_MAX_DEPTH", "32768")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST", "16")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MB", "512")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY_KEY", "65536")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY", "65536")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_TY_MAX_DEPTH", "65536")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_TERM_MAX_DEPTH", "65536")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST", "32")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MB", "256")
                                                     let is_gen_wait =
                                                         code = EJPCodes.EJP0008 && msg.Contains("generation changed while waiting")
                                                     if not is_gen_wait then
