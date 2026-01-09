@@ -6,8 +6,8 @@ namespace Polyglot
 
 module spiral_compiler =
 
-    /// ### EC_PROGRESS v107-alpha11
-    /// Stack overflow fix: RecursionTracker depth inherited across BigStack threads, pivots every 20-30 depth, 256MB×32 nest
+    /// ### EC_PROGRESS v107-alpha12
+    /// Stack overflow fix: emergency BigStack pivot via EnsureSufficientExecutionStack in term_core, ty_core, if_core
     /// Correção estrutural: em record literals aninhados de LangEnv dentro de JPType/JPMethod, os campos globals_lock/globals_seen haviam ficado fora do alinhamento do bloco (offside), fazendo o parser encerrar o record cedo e transformar as linhas seguintes em expressões booleanas; daí surgiam cascatas de FS0003/FS0001 ("value is not a function", bool vs ResizeArray/HashSet). A v103 realinha esses dois campos ao mesmo nível de indent do campo globals imediatamente acima em todos os pontos aninhados.
     /// Próximo passo na direção 100% CPU: consolidar um modelo singleflight por chave (JPType/JPMethod) com helping-wait, eliminar esperas bloqueantes residuais e reduzir duplicação de trabalho para controlar GC e manter workers sempre alimentados.
 
@@ -9452,6 +9452,9 @@ module spiral_compiler =
             let mb,_ = stackBytesFor tag nestLevel
             mb
 
+        /// Returns current nesting level
+        let getNest () = active.Value
+
         /// Returns Some result if spawned, or None if nesting já atingiu o teto.
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
             let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 32 1 64  // v107-alpha11: 32 levels at 256MB each = 8GB total
@@ -9459,8 +9462,8 @@ module spiral_compiler =
             if parentNest >= maxNest then None
             else
                 let nestLevel = parentNest + 1
-                // v107-alpha11: Capture parent's RecursionTracker depth to inherit in child
-                let parentRecDepth = RecursionTracker.currentDepth()
+                // v107-alpha11: Reset depth to 1 so child gets fresh pivot opportunities
+                // This is better than inheriting because each 256MB stack needs its own pivot cycle
                 let mutable res = Unchecked.defaultof<'T>
                 let mutable err : exn option = None
                 let mutable childTid = -1
@@ -9469,8 +9472,8 @@ module spiral_compiler =
                     new Thread(ThreadStart(fun () ->
                         childTid <- Thread.CurrentThread.ManagedThreadId
                         active.Value <- nestLevel
-                        // v107-alpha11: Inherit parent's recursion depth so pivots continue correctly
-                        RecursionTracker.setDepth parentRecDepth
+                        // v107-alpha11: Reset depth to 1 (not 0, so first call increments to 2 and we pivot at 30)
+                        RecursionTracker.setDepth 1
                         try
                             try
                                 res <- f ()
@@ -9482,7 +9485,7 @@ module spiral_compiler =
                 th.IsBackground <- true
                 try th.Name <- sprintf "spiral.bigstack.%s" tag with _ -> ()
                 try
-                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d recDepth=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes parentRecDepth Thread.CurrentThread.ManagedThreadId)
+                    DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 th.Start()
                 th.Join()
@@ -11683,6 +11686,17 @@ module spiral_compiler =
                 ty_core s x
 
         and ty_core s x =
+            // ### v107-alpha11: Emergency BigStack pivot when stack is low
+            try
+                System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+            with :? System.InsufficientExecutionStackException ->
+                match BigStack.tryRun "ty_emergency" (fun () -> ty_core s x) with
+                | Some v -> v
+                | None ->
+                    let fallback = match s.trace with | r :: _ -> r | [] -> range0
+                    let r0 = range_of_tprepass_or fallback x
+                    raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in ty (BigStack exhausted)" EJPCodes.EJP0010)
+
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_tprepass_or fallback x
             let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
@@ -12142,58 +12156,42 @@ module spiral_compiler =
             | TNominal i -> YNominal env.nominals.[i]
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
-        and term (s : LangEnv) x =
-            // v107-alpha11: Nested BigStack pivot for deep term recursion
-            // When depth reaches thresholds, spawn a new BigStack thread to get fresh stack space
+        and [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>] term (s : LangEnv) x =
+            // v107-alpha11: Aggressive BigStack pivot - spawn new stack whenever depth exceeds threshold
+            // After each pivot, child resets to depth 1, so we get fresh stack every ~10 calls
             let depth0 = RecursionTracker.currentDepth()
-            if depth0 >= 30 && depth0 % 30 = 0 then
+            if depth0 > 10 then
                 match BigStack.tryRun "term" (fun () -> term_core s x) with
                 | Some v -> v
-                | None -> term_core s x  // Nesting exhausted, continue on current stack
+                | None ->
+                    // Nesting exhausted - emit diagnostic and continue on current stack
+                    try DiagSidecar.emit (sprintf "BIGSTACK_EXHAUSTED term depth=%d nest=%d" depth0 (BigStack.getNest())) with _ -> ()
+                    term_core s x
             else
                 term_core s x
 
         and term_core (s : LangEnv) x =
+
+            // ### v107-alpha11: Emergency BigStack pivot when stack is low
+            // Always check stack, pivot to BigStack if insufficient instead of throwing
+            try
+                System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+            with :? System.InsufficientExecutionStackException ->
+                // Stack is running low - emergency pivot to BigStack
+                match BigStack.tryRun "term_emergency" (fun () -> term_core s x) with
+                | Some v -> v
+                | None ->
+                    // BigStack nesting exhausted - this is a true stack overflow scenario
+                    let fallback = match s.trace with | r :: _ -> r | [] -> range0
+                    let r0 = range_of_e_or fallback x
+                    let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
+                    raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in term at %s (BigStack exhausted)" EJPCodes.EJP0010 site)
 
             // ### v61: term recursion guard (preempt stack overflow with depth+stack checks)
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_e_or fallback x
             let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
 
-            // ### v72: eager stack guard *gated* (evita falso-positivo no bootstrap; use SPIRAL_EAGER_STACK_GUARD=1 para reativar)
-            let eager_enabled =
-                match System.Environment.GetEnvironmentVariable("SPIRAL_EAGER_STACK_GUARD") with
-                | null | "" -> false
-                | "1" -> true
-                | "true" | "TRUE" | "True" -> true
-                | _ -> false
-            if eager_enabled then
-                try
-                    System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
-                with :? System.InsufficientExecutionStackException ->
-                    let newGen = CacheGeneration.invalidate (sprintf "%s term eager insufficient_stack site=%s" EJPCodes.EJP0010 site)
-                    jp_mismatch_counts.AddOrUpdate(sprintf "%s_term_eager_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
-                    let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
-                    let deepSites =
-                        RecursionTracker.getDeepSites()
-                        |> Seq.truncate 10
-                        |> Seq.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
-                        |> String.concat ";"
-                    DiagSidecar.emit (sprintf "%s term_eager_insufficient_stack gen=%d site=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 newGen site deepSites reasons)
-                    let inline envTrue (v: string) =
-                        match v with
-                        | null | "" -> false
-                        | "1" | "true" | "TRUE" | "True" | "yes" | "YES" | "Yes" -> true
-                        | _ -> false
-                    let nonfatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_NONFATAL"))
-                    let fatal =
-                        match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
-                        | null | "" -> not nonfatal
-                        | v -> envTrue v
-                    if fatal then
-                        raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term (eager guard) at %s (gen=%d)" EJPCodes.EJP0010 site newGen)
-                    else
-                        ()
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
 
@@ -12479,6 +12477,16 @@ module spiral_compiler =
                     if_core s cond on_succ on_fail
 
             and if_core s cond on_succ on_fail =
+                // ### v107-alpha11: Emergency BigStack pivot when stack is low
+                try
+                    System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                with :? System.InsufficientExecutionStackException ->
+                    match BigStack.tryRun "if_emergency" (fun () -> if_core s cond on_succ on_fail) with
+                    | Some v -> v
+                    | None ->
+                        let r0 = match s.trace with | r :: _ -> r | [] -> range0
+                        raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in if_ (BigStack exhausted)" EJPCodes.EJP0010)
+
                 let lit_tr = DLit(LitBool true)
                 let lit_fl = DLit(LitBool false)
                 let cond =
