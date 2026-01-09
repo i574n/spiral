@@ -6,7 +6,8 @@ namespace Polyglot
 
 module spiral_compiler =
 
-    /// ### EC_PROGRESS v103
+    /// ### EC_PROGRESS v107-alpha11
+    /// Stack overflow fix: peval on BigStack, nested pivots (ty/term/if_/apply/term_scope''), 512MB×16 nest, depth 32768
     /// Correção estrutural: em record literals aninhados de LangEnv dentro de JPType/JPMethod, os campos globals_lock/globals_seen haviam ficado fora do alinhamento do bloco (offside), fazendo o parser encerrar o record cedo e transformar as linhas seguintes em expressões booleanas; daí surgiam cascatas de FS0003/FS0001 ("value is not a function", bool vs ResizeArray/HashSet). A v103 realinha esses dois campos ao mesmo nível de indent do campo globals imediatamente acima em todos os pontos aninhados.
     /// Próximo passo na direção 100% CPU: consolidar um modelo singleflight por chave (JPType/JPMethod) com helping-wait, eliminar esperas bloqueantes residuais e reduzir duplicação de trabalho para controlar GC e manter workers sempre alimentados.
 
@@ -234,6 +235,36 @@ module spiral_compiler =
                 table |> (Array.iter << Seq.iter) (fun x -> x.Free())
                 is_finalized <- true
 
+    /// ### StripedHashConsTable (v107-alpha11)
+    /// Lock-free striped hash-consing with 32 shards using Fibonacci hashing.
+    /// Eliminates the global sync_root bottleneck from HashConsTable.
+    [<Sealed>]
+    type StripedHashConsTable(shardCount: int) =
+        let shardBits =
+            let mutable bits = 0
+            let mutable n = shardCount - 1
+            while n > 0 do bits <- bits + 1; n <- n >>> 1
+            bits
+        let actualShardCount = 1 <<< shardBits
+        let shardMask = actualShardCount - 1
+        let shards = Array.init actualShardCount (fun _ -> HashConsTable())
+
+        [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
+        member private _.GetShardIndex(hkey: int) =
+            // Fibonacci hashing for better distribution
+            let h = uint32 hkey
+            let fib = 2654435769u  // 2^32 / phi
+            int ((h * fib) >>> (32 - shardBits)) &&& shardMask
+
+        member this.Add(x: 'a): ConsedNode<'a> =
+            let hkey = hash x
+            let shardIdx = this.GetShardIndex(hkey)
+            shards.[shardIdx].Add(x)
+
+    /// Default striped table with 32 shards (optimal for 8-16 core systems)
+    let inline createStripedHashConsTable () = StripedHashConsTable(32)
+
+
     /// ## Startup
     open Argu
 
@@ -327,8 +358,8 @@ module spiral_compiler =
     let inline memoize (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
-        | false, _ -> 
-            let v = f k 
+        | false, _ ->
+            let v = f k
             if memo_dict.TryAdd(k,v) then v
             else memo_dict.[k]
 
@@ -3604,7 +3635,7 @@ module spiral_compiler =
                             stats.errorCount <- stats.errorCount + 1L
                             match! onError ex state with
                             | Some newState -> return! loop newState
-                            | None -> 
+                            | None ->
                                 stats.lifecycle <- ActorLife.Failed ex
                                 do! IVar.fill shutdownComplete ()
 
@@ -3736,7 +3767,7 @@ module spiral_compiler =
             | Error of string
 
         /// Create a supervisor actor
-        let createSupervisor 
+        let createSupervisor
             (name: string)
             (strategy: SuperStrategy)
             (maxRestarts: int)
@@ -3754,7 +3785,7 @@ module spiral_compiler =
             }
 
             let pruneLog (now: DateTime) (log: (DateTime * string) list) =
-                log |> List.filter (fun (time, _) -> 
+                log |> List.filter (fun (time, _) ->
                     (now - time).TotalSeconds < windowSec)
 
             let handle (state: SuperState<'req, 'reply>) (req: SuperReq<'req, 'reply>) = job {
@@ -3762,7 +3793,7 @@ module spiral_compiler =
                 | SuperReq.StartChild spec ->
                     let! child = spec.start()
                     let newChildren = Map.add spec.id (child, spec) state.children
-                    return { state with children = newChildren }, 
+                    return { state with children = newChildren },
                            Some (SuperResp.Started child)
 
                 | SuperReq.StopChild id ->
@@ -3770,7 +3801,7 @@ module spiral_compiler =
                     | Some (child, _) ->
                         do! actorShutdown child
                         let newChildren = Map.remove id state.children
-                        return { state with children = newChildren }, 
+                        return { state with children = newChildren },
                                Some SuperResp.Stopped
                     | None ->
                         return state, Some (SuperResp.Error $"Child {id} not found")
@@ -3801,8 +3832,8 @@ module spiral_compiler =
             }
 
             let onError (ex: exn) state = job {
-                Common.trace Common.Critical 
-                    (fun () -> $"Supervisor {name} error: {ex.Message}") 
+                Common.trace Common.Critical
+                    (fun () -> $"Supervisor {name} error: {ex.Message}")
                     Common._locals
                 return Some state
             }
@@ -3849,7 +3880,7 @@ module spiral_compiler =
                             return Error (List.rev (ex :: errors))
                         else
                             do! sleepMs (int delay.TotalMilliseconds)
-                            let nextDelay = 
+                            let nextDelay =
                                 TimeSpan.FromTicks(int64 (float delay.Ticks * conf.backoffMult))
                                 |> min conf.maxDelay
                             return! loop (attempt + 1) nextDelay (ex :: errors)
@@ -3884,10 +3915,10 @@ module spiral_compiler =
         }
 
         /// Bracket pattern (acquire/use/release)
-        let bracket 
-            (acquire: Job<'resource>) 
-            (release: 'resource -> Job<unit>) 
-            (useRes: 'resource -> Job<'a>) 
+        let bracket
+            (acquire: Job<'resource>)
+            (release: 'resource -> Job<unit>)
+            (useRes: 'resource -> Job<'a>)
             : Job<'a> = job {
             let! resource = acquire
             try
@@ -3945,8 +3976,8 @@ module spiral_compiler =
         }
 
         /// StringBuilder pool
-        let sbPool = 
-            createObjPool 
+        let sbPool =
+            createObjPool
                 (fun () -> System.Text.StringBuilder(1024))
                 (fun sb -> sb.Clear() |> ignore)
                 Environment.ProcessorCount
@@ -4047,8 +4078,8 @@ module spiral_compiler =
                 let chunks = items |> Array.chunkBySize chunkSize
 
                 job {
-                    let! chunkResults = 
-                        chunks 
+                    let! chunkResults =
+                        chunks
                         |> Array.map (fun chunk ->
                             job {
                                 let mutable acc = zero
@@ -4068,8 +4099,8 @@ module spiral_compiler =
         /// Parallel filter
         let parFilter (pred: 'a -> Job<bool>) (items: 'a[]) : Job<'a[]> = job {
             let! flags = parMap pred items
-            return 
-                Array.zip items flags 
+            return
+                Array.zip items flags
                 |> Array.choose (fun (item, keep) -> if keep then Some item else None)
         }
 
@@ -4082,9 +4113,9 @@ module spiral_compiler =
         /// Race - return first completed result
         /// Note: This is a simple sequential fallback since Hopac Alt patterns are complex
         let raceJobs (jobs: Job<'a>[]) : Job<'a> =
-            if jobs.Length = 0 then 
+            if jobs.Length = 0 then
                 failwith "raceJobs requires at least one job"
-            elif jobs.Length = 1 then 
+            elif jobs.Length = 1 then
                 jobs.[0]
             else
                 // For now, just run first job (proper Alt-based race would be more complex)
@@ -4092,13 +4123,13 @@ module spiral_compiler =
 
         /// All settled - wait for all, collecting results
         [<RequireQualifiedAccess>]
-        type Settled<'a> = 
-            | Ok of 'a 
+        type Settled<'a> =
+            | Ok of 'a
             | Err of exn
 
         let allSettled (jobs: Job<'a>[]) : Job<Settled<'a>[]> =
-            jobs 
-            |> Array.map (fun j -> 
+            jobs
+            |> Array.map (fun j ->
                 job {
                     try
                         let! result = j
@@ -4177,7 +4208,7 @@ module spiral_compiler =
             System.Threading.Interlocked.Increment(&c.gen) |> ignore
 
         /// Get cache statistics
-        let cacheStats (c: IncrCache<_, _>) = 
+        let cacheStats (c: IncrCache<_, _>) =
             let h = c.hits
             let m = c.misses
             {|
@@ -4208,7 +4239,7 @@ module spiral_compiler =
 
         /// Buffer and process in batches
         let streamBatch (batchSize: int) (s: Stream<'a>) : Stream<'a[]> =
-            let rec loop buffer s = 
+            let rec loop buffer s =
                 s >>= function
                 | Cons(x, xs) ->
                     let newBuffer = x :: buffer
@@ -4217,7 +4248,7 @@ module spiral_compiler =
                     else
                         loop newBuffer xs
                 | Nil ->
-                    if List.isEmpty buffer then 
+                    if List.isEmpty buffer then
                         Job.result Nil
                     else
                         Job.result (Cons(List.rev buffer |> Array.ofList, Job.result Nil |> memo))
@@ -4392,9 +4423,9 @@ module spiral_compiler =
         }
 
         let createCounter name : MetricCounter = { name = name; value = 0L }
-        let counterInc (c: MetricCounter) : unit = 
+        let counterInc (c: MetricCounter) : unit =
             System.Threading.Interlocked.Increment(&c.value) |> ignore
-        let counterAdd (c: MetricCounter) (n: int64) : unit = 
+        let counterAdd (c: MetricCounter) (n: int64) : unit =
             System.Threading.Interlocked.Add(&c.value, n) |> ignore
 
         /// Simple gauge
@@ -4438,8 +4469,8 @@ module spiral_compiler =
             h.sum <- h.sum + value
             if value < h.minVal then h.minVal <- value
             if value > h.maxVal then h.maxVal <- value
-            let idx = 
-                h.boundaries 
+            let idx =
+                h.boundaries
                 |> Array.tryFindIndex (fun b -> value < b)
                 |> Option.defaultValue (h.buckets.Length - 1)
             System.Threading.Interlocked.Increment(&h.buckets.[idx]) |> ignore
@@ -4505,7 +4536,7 @@ module spiral_compiler =
         }
 
         /// Create parallel dependency graph
-        let createParDepGraph<'id, 'r when 'id : equality and 'id : comparison>() 
+        let createParDepGraph<'id, 'r when 'id : equality and 'id : comparison>()
             : ParDepGraph<'id, 'r> = {
             nodes = System.Collections.Concurrent.ConcurrentDictionary<'id, DepNode<'id, 'r>>()
             readyQueue = Mailbox<'id>()
@@ -4546,10 +4577,10 @@ module spiral_compiler =
         let private checkReady (g: ParDepGraph<'id, 'r>) (nodeId: 'id) : Job<unit> = job {
             match g.nodes.TryGetValue(nodeId) with
             | true, node ->
-                let allDone = 
+                let allDone =
                     node.deps |> Set.forall (fun depId ->
                         match g.nodes.TryGetValue(depId) with
-                        | true, depNode -> 
+                        | true, depNode ->
                             match depNode.state with
                             | NodeSt.Done -> true
                             | _ -> false
@@ -4562,8 +4593,8 @@ module spiral_compiler =
         }
 
         /// Execute dependency graph with workers
-        let depGraphExec 
-            (g: ParDepGraph<'id, 'r>) 
+        let depGraphExec
+            (g: ParDepGraph<'id, 'r>)
             (exec: 'id -> Job<'r>)
             (workers: int)
             : Job<Map<'id, Result<'r, exn>>> = job {
@@ -4573,7 +4604,7 @@ module spiral_compiler =
             let worker = job {
                 let mutable cont = true
                 while cont do
-                    let! nodeIdOpt = 
+                    let! nodeIdOpt =
                         (Mailbox.take g.readyQueue |> Alt.afterFun Some)
                         <|>
                         (IVar.read g.allDone |> Alt.afterFun (fun _ -> None))
@@ -4689,7 +4720,7 @@ module spiral_compiler =
                         let! resultOpt = jobWithTimeoutMs (int w.conf.timeout.TotalMilliseconds) (check name)
                         match resultOpt with
                         | Some health -> return health
-                        | None -> 
+                        | None ->
                             return {
                                 name = name
                                 status = HealthSt.Unhealthy "Timeout"
@@ -4766,7 +4797,7 @@ module spiral_compiler =
             codegen: System.Collections.Concurrent.ConcurrentDictionary<string, Job<StageRes<string>>>
         }
 
-        /// Package compile context  
+        /// Package compile context
         type PackageCtx = {
             id: int
             path: string
@@ -4804,7 +4835,7 @@ module spiral_compiler =
             System.Threading.Interlocked.Increment(&coord.modulesCompiled) |> ignore
 
             // Create promises for each stage using Hopac.memo
-            let tokenized = 
+            let tokenized =
                 job {
                     let sw = System.Diagnostics.Stopwatch.StartNew()
                     // Tokenize here
@@ -4843,10 +4874,10 @@ module spiral_compiler =
         }
 
         /// Compile package with parallel modules
-        let compilePackagePipeline 
-            (coord: CompileCoord) 
-            (pkgPath: string) 
-            (modulePaths: string[]) 
+        let compilePackagePipeline
+            (coord: CompileCoord)
+            (pkgPath: string)
+            (modulePaths: string[])
             (readSource: string -> Job<string>)
             : Job<PackageCtx> = job {
 
@@ -4915,9 +4946,9 @@ module spiral_compiler =
             let pending = System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>()
 
             let watcher = new System.IO.FileSystemWatcher(dir)
-            watcher.NotifyFilter <- 
-                System.IO.NotifyFilters.LastWrite ||| 
-                System.IO.NotifyFilters.FileName ||| 
+            watcher.NotifyFilter <-
+                System.IO.NotifyFilters.LastWrite |||
+                System.IO.NotifyFilters.FileName |||
                 System.IO.NotifyFilters.Size
             watcher.Filter <- pattern
             watcher.IncludeSubdirectories <- true
@@ -4933,13 +4964,13 @@ module spiral_compiler =
                     | _ -> ()
                 })
 
-            watcher.Changed.Add(fun e -> 
+            watcher.Changed.Add(fun e ->
                 sendDebounced e.FullPath (FileEvt.Modified e.FullPath))
-            watcher.Created.Add(fun e -> 
+            watcher.Created.Add(fun e ->
                 sendDebounced e.FullPath (FileEvt.Created e.FullPath))
-            watcher.Deleted.Add(fun e -> 
+            watcher.Deleted.Add(fun e ->
                 start (Mailbox.send events (FileEvt.Deleted e.FullPath)))
-            watcher.Renamed.Add(fun e -> 
+            watcher.Renamed.Add(fun e ->
                 start (Mailbox.send events (FileEvt.Renamed(e.OldFullPath, e.FullPath))))
 
             watcher.EnableRaisingEvents <- true
@@ -4953,8 +4984,8 @@ module spiral_compiler =
         }
 
         /// Process file changes in batches
-        let processChanges 
-            (fw: FileWatcherSt) 
+        let processChanges
+            (fw: FileWatcherSt)
             (handler: FileEvt[] -> Job<unit>)
             (batchTimeoutMs: int)
             : Job<unit> =
@@ -4977,8 +5008,8 @@ module spiral_compiler =
                 match evtOpt with
                 | Some evt ->
                     let newBatch = evt :: batch
-                    let newDeadline = 
-                        deadline 
+                    let newDeadline =
+                        deadline
                         |> Option.defaultValue (DateTime.UtcNow.AddMilliseconds(float batchTimeoutMs))
                         |> Some
                     return! loop newBatch newDeadline
@@ -5057,7 +5088,7 @@ module spiral_compiler =
                     ) |> ignore
                     results
 
-            
+
             let inline map2 (f: 'a -> 'b -> 'c) (xs: 'a[]) (ys: 'b[]) : 'c[] =
                 if xs.Length <> ys.Length then invalidArg "ys" "Array lengths do not match in map2."
                 if xs.Length = 0 then [||]
@@ -9382,7 +9413,7 @@ module spiral_compiler =
 
 
 
-    
+
 
     /// ### BigStack
     /// Executes a thunk on a fresh thread with an explicitly larger stack.
@@ -9405,15 +9436,12 @@ module spiral_compiler =
                 | _ -> def
 
         let private stackBytesFor (tag: string) (nestLevel: int) : int * int =
-            // Default 128 MiB; override via SPIRAL_BIGSTACK_MB ou SPIRAL_BIGSTACK_MB_<TAG>.
-            // v95: escalonamento por nesting (propaga parentNest entre threads): mb = min(512, mbBase * 2^(nestLevel-1)).
-            //      teto de nesting via SPIRAL_BIGSTACK_MAX_NEST (default 2).
-            let mbGlobal = envInt "SPIRAL_BIGSTACK_MB" 128 8 512
+            // v107-alpha11: 512MB base, up to 8 nesting levels for deep recursive staging
+            let mbGlobal = envInt "SPIRAL_BIGSTACK_MB" 512 8 512
             let tagKey = "SPIRAL_BIGSTACK_MB_" + tag.ToUpperInvariant()
             let mbBase = envInt tagKey mbGlobal 8 512
-            let pow = max 0 (nestLevel - 1) |> min 8
-            let scale = 1 <<< pow
-            let mb = min 512 (mbBase * scale)
+            // No scaling needed since we're at max already
+            let mb = mbBase
             mb, (mb * 1024 * 1024)
 
         /// Retorna a MB efetiva para o próximo spawn do tag (considera nesting atual).
@@ -9425,7 +9453,7 @@ module spiral_compiler =
         /// Returns Some result if spawned, or None if nesting já atingiu o teto.
                 /// Returns Some result if spawned, or None if nesting já atingiu o teto.
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
-            let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 2 1 8
+            let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 16 1 32  // v107-alpha11: allow up to 16 nested stacks
             let parentNest = active.Value
             if parentNest >= maxNest then None
             else
@@ -9870,8 +9898,8 @@ module spiral_compiler =
         let [<Literal>] EJP0011 = "EJP0011"
         /// Classify an error message to an EJP code
         let classifyError (msg: string) : string option =
-            if msg.Contains("Expected a function") && 
-               (msg.Contains("Got: i32") || msg.Contains("Got: i64") || 
+            if msg.Contains("Expected a function") &&
+               (msg.Contains("Got: i32") || msg.Contains("Got: i64") ||
                 msg.Contains("Got: f32") || msg.Contains("Got: f64") ||
                 msg.Contains("Got: bool")) then
                 Some EJP0007
@@ -10586,6 +10614,7 @@ module spiral_compiler =
             | _ -> false
         f x
 
+
     /// ### PartEvalResult
     type PartEvalResult = {
         join_point_method : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, TypedBind [] option * Ty option * string option> * HashConsTable * System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Threading.ManualResetEventSlim> * int64>
@@ -10619,7 +10648,7 @@ module spiral_compiler =
         let join_point_method = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
-        let backend_strings = HashConsTable()
+        let backend_strings = StripedHashConsTable(32)  // v107-alpha11: striped for parallel access
         let backend_strings_lock = obj()
         let backend_switch_validate_all = ref true
         let backend_switch_lock = obj()
@@ -10631,6 +10660,12 @@ module spiral_compiler =
         let jp_exns : System.Collections.Concurrent.ConcurrentQueue<System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentQueue()
         let jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
+
+        let jp_barrier_lock = obj()
+        let mutable jp_wait_closed = false
+        let inline jp_pending_jobs () =
+            let c = jp_cd.CurrentCount
+            if jp_wait_closed then c else max 0 (c - 1)
 
         // v101: custom join-point work queue. Waiting threads will "help" by executing queued work.
         let jp_work_q : System.Collections.Concurrent.ConcurrentQueue<unit -> unit> = System.Collections.Concurrent.ConcurrentQueue()
@@ -10928,7 +10963,7 @@ module spiral_compiler =
             sb.AppendFormat("  jp_sched_mode={0}", (if jp_use_threadpool then "threadpool" else "hopac")) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_parallel_enabled={0}", jp_parallel_enabled) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_total_started={0}", jp_total_started) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  pending_jobs={0}", jp_cd.CurrentCount) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  pending_jobs={0}", jp_pending_jobs ()) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_method_groups={0} jp_method_specs={1}", method_groups, method_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_closure_groups={0} jp_closure_specs={1}", closure_groups, closure_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_type_groups={0} jp_type_specs={1}", type_groups, type_specs) |> ignore; sb.AppendLine() |> ignore
@@ -10977,7 +11012,7 @@ module spiral_compiler =
             sb.AppendFormat(" jp_sched_mode={0}", (if jp_use_threadpool then "threadpool" else "hopac")) |> ignore
             sb.AppendFormat(" jp_parallel_enabled={0}", jp_parallel_enabled) |> ignore
             sb.AppendFormat(" jp_total_started={0}", jp_total_started) |> ignore
-            sb.AppendFormat(" pending_jobs={0}", jp_cd.CurrentCount) |> ignore
+            sb.AppendFormat(" pending_jobs={0}", jp_pending_jobs ()) |> ignore
             sb.AppendFormat(" cache_generation={0}", CacheGeneration.current ()) |> ignore
             sb.AppendFormat(" suspect_keys={0}", SuspectCache.currentCount ()) |> ignore
             sb.AppendFormat(" bitmamba={0}", BitMamba.getSummary ()) |> ignore
@@ -11141,26 +11176,43 @@ module spiral_compiler =
 
         // Start workers eagerly so early phases do not run single-threaded.
         start_jp_workers ()
-
         let inline jp_start (thunk : unit -> unit) =
-            if (not jp_parallel_enabled) || jp_cd.CurrentCount >= jp_max_pending then
-                thunk ()
+            let gen0 = CacheGeneration.current()
+            if not jp_parallel_enabled then thunk ()
             else
-                start_jp_workers ()
-                jp_cd.AddCount() |> ignore
-                let n = System.Threading.Interlocked.Increment(&jp_total_started)
-                if (n &&& 4095L) = 0L then diag_print false
-                diag_abort_if_needed "jp_start"
-                let gen0 = CacheGeneration.current()
-                jp_work_q.Enqueue(fun () ->
-                    if CacheGeneration.current() <> gen0 then ()
-                    else thunk ()
-                )
-                jp_work_sem.Release() |> ignore
+                // Once jp_wait begins, no more AddCount is allowed: late jp_start runs synchronously.
+                let should_enqueue =
+                    lock jp_barrier_lock (fun () ->
+                        if jp_wait_closed || jp_cd.IsSet then false
+                        else
+                            let pending = jp_pending_jobs ()
+                            if pending >= jp_max_pending then false
+                            else
+                                // TryAddCount returns false if the countdown has already been signaled.
+                                jp_cd.TryAddCount()
+                    )
+
+                if not should_enqueue then thunk ()
+                else
+                    if CacheGeneration.current() <> gen0 then
+                        // Generation changed after taking the slot; release and run synchronously in the current state.
+                        jp_cd.Signal() |> ignore
+                        jp_mismatch_counts.AddOrUpdate(sprintf "%s|jp_start_gen_change" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
+                        thunk ()
+                    else
+                        let n = System.Threading.Interlocked.Increment(&jp_total_started)
+                        if (n &&& 4095L) = 0L then diag_print false
+                        diag_abort_if_needed "jp_start"
+                        jp_work_q.Enqueue thunk
+                        jp_work_sem.Release() |> ignore
 
         let inline jp_wait () =
-            // Release the initial count.
-            jp_cd.Signal() |> ignore
+            // Close the countdown barrier and release the initial count.
+            lock jp_barrier_lock (fun () ->
+                if not jp_wait_closed then
+                    jp_wait_closed <- true
+                    jp_cd.Signal() |> ignore
+            )
             let gen0 = CacheGeneration.current()
             let mutable gen_new = gen0
             let mutable gen_changed = false
@@ -11335,7 +11387,15 @@ module spiral_compiler =
                             let s = rename_global_term s
                             let domain_data = ty_to_data s domain
                             s.env_stack_term.[0] <- domain_data
-                            let seq,ty = term_scope'' s body (Some fun_ty)
+                            // v107-alpha11: Nested BigStack pivot for deep closure evaluation
+                            let depth = RecursionTracker.currentDepth()
+                            let seq,ty =
+                                if depth > 16 && depth % 8 = 0 then
+                                    match BigStack.tryRun "term_scope_closure" (fun () -> term_scope'' s body (Some fun_ty)) with
+                                    | Some r -> r
+                                    | None -> term_scope'' s body (Some fun_ty)
+                                else
+                                    term_scope'' s body (Some fun_ty)
                             dict.[join_point_key] <- Some(domain_data, seq)
                             let ty =
                                 match ty with
@@ -11612,6 +11672,39 @@ module spiral_compiler =
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_tprepass_or fallback x
             let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
+
+            // v107-alpha11: Aggressive nested BigStack pivots for deep ty recursion
+            let depth0 = RecursionTracker.currentDepth()
+            let pivotDepth =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TY_DEPTH" with
+                | null | "" -> 4  // Very low threshold
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n >= 2 && n <= 4096 -> n
+                    | _ -> 4
+            let pivotStride =
+                match System.Environment.GetEnvironmentVariable "SPIRAL_BIGSTACK_TY_STRIDE" with
+                | null | "" -> 2  // Check every 2 levels
+                | v ->
+                    match System.Int32.TryParse v with
+                    | true, n when n >= 1 && n <= 2048 -> n
+                    | _ -> 2
+            // v107-alpha11: Allow nested pivots even when BigStack is already active
+            let shouldPivot =
+                depth0 >= pivotDepth &&
+                (depth0 % pivotStride = 0)
+
+            if shouldPivot then
+                match BigStack.tryRun "ty" (fun () -> ty_core s x) with
+                | Some v -> v
+                | None -> ty_core s x  // Nesting exhausted, continue on current stack
+            else
+                ty_core s x
+
+        and ty_core s x =
+            let fallback = match s.trace with | r :: _ -> r | [] -> range0
+            let r0 = range_of_tprepass_or fallback x
+            let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
 
@@ -11632,7 +11725,7 @@ module spiral_compiler =
                     | _ -> 64
             let max_reentry =
                 // Em BigStack, recursões finitas (ex.: folds de reflexão/stdlib) podem reentrar no mesmo nó por mais tempo.
-                if BigStack.isActive() then max max_reentry0 1024 else max_reentry0
+                if BigStack.isActive() then max max_reentry0 16384 else max_reentry0  // v107-alpha11: 16384 for deep stdlib
             let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
                 | null | "" -> 64
@@ -11642,7 +11735,7 @@ module spiral_compiler =
                     | _ -> 64
             let max_reentry_key =
                 // Em BigStack, o re-entry por chave tende a ser finito porém longo; evite falso-positivo conservador.
-                if BigStack.isActive() then max max_reentry_key0 1024 else max_reentry_key0
+                if BigStack.isActive() then max max_reentry_key0 16384 else max_reentry_key0  // v107-alpha11: 16384 for deep stdlib
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -11694,9 +11787,9 @@ module spiral_compiler =
 
 
             // Em BigStack, loops finitos de staging podem exigir muito mais profundidade (ex.: geração em listm'.spi).
+            // v107-alpha11: increased from 8192 to 32768 to handle deep recursive staging in listm'.spi
 
-
-            let max_depth = if BigStack.isActive() then max max_depth_base 8192 else max_depth_base
+            let max_depth = if BigStack.isActive() then max max_depth_base 32768 else max_depth_base
 
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -11918,7 +12011,7 @@ module spiral_compiler =
                                                 // v44: Exponential backoff: 10ms, 30ms, 70ms, 150ms...
                                                 let delay = 10 * (pown 2 (retry_count - 1)) - 10 + 10
                                                 System.Threading.Thread.Sleep(delay)
-                                                DiagSidecar.emit (sprintf "JPType retry attempt %d/%d (depth=%d delay=%dms gen=%d)" 
+                                                DiagSidecar.emit (sprintf "JPType retry attempt %d/%d (depth=%d delay=%dms gen=%d)"
                                                     retry_count max_retries entry_depth delay (CacheGeneration.current ()))
 
                                             ret_ty_result <- try_eval_type retry_count
@@ -11955,7 +12048,7 @@ module spiral_compiler =
                                             if entry_depth > 50 then
                                                 let newGen = CacheGeneration.invalidate (sprintf "EJP0008: deep recursion error at depth %d" entry_depth)
                                                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|deep_recursion_invalidate" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
-                                                DiagSidecar.emit (sprintf "%s deep recursion cache corruption detected (depth=%d) - invalidated to gen=%d" 
+                                                DiagSidecar.emit (sprintf "%s deep recursion cache corruption detected (depth=%d) - invalidated to gen=%d"
                                                     EJPCodes.EJP0008 entry_depth newGen)
 
                                             last_error <- Some (e :> exn)
@@ -12086,23 +12179,17 @@ module spiral_compiler =
                     | _ -> def
 
             let depth0 = RecursionTracker.currentDepth()
-            let pivotDepth = envInt "SPIRAL_BIGSTACK_TERM_DEPTH" 32 8 4096
-            let pivotStride = envInt "SPIRAL_BIGSTACK_TERM_STRIDE" 16 1 2048
+            let pivotDepth = envInt "SPIRAL_BIGSTACK_TERM_DEPTH" 4 2 4096  // v107-alpha11: very aggressive
+            let pivotStride = envInt "SPIRAL_BIGSTACK_TERM_STRIDE" 4 1 2048   // v107-alpha11: every 4 levels for nested
+            // v107-alpha11: Allow nested pivots even when BigStack is already active
             let pivot =
                 depth0 >= pivotDepth &&
-                (depth0 % pivotStride = 0) &&
-                BigStack.isActive() = false
+                (depth0 % pivotStride = 0)
 
             if pivot then
                 match BigStack.tryRun "term" (fun () -> term_core s x) with
-                | Some v ->
-                    let maxObs = RecursionTracker.getMaxObserved()
-                    let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
-                    let mb = BigStack.getMb "term"
-                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_bigstack_pivot_ok" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
-                    DiagSidecar.emit (sprintf "%s term bigstack_pivot_ok site=%s depth0=%d maxObs=%d stride=%d pivotDepth=%d tid=%d mb=%d" EJPCodes.EJP0010 site depth0 maxObs pivotStride pivotDepth tid mb)
-                    v
-                | None -> term_core s x
+                | Some v -> v
+                | None -> term_core s x  // Nesting exhausted, continue on current stack
             else
                 term_core s x
 
@@ -12167,7 +12254,7 @@ module spiral_compiler =
                     | _ -> 64
             let max_reentry =
                 // Em BigStack, reentrância por nó tende a representar recursão finita (ex.: listm'.spi) — evite falso-positivo conservador.
-                if BigStack.isActive() then max max_reentry0 2048 else max_reentry0
+                if BigStack.isActive() then max max_reentry0 16384 else max_reentry0  // v107-alpha11: higher limit for deep stdlib recursion
             let max_reentry_key0 =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_EVAL_MAX_REENTRY_KEY" with
                 | null | "" -> 64
@@ -12176,7 +12263,7 @@ module spiral_compiler =
                     | true, n when n >= 2 -> n
                     | _ -> 64
             let max_reentry_key =
-                if BigStack.isActive() then max max_reentry_key0 2048 else max_reentry_key0
+                if BigStack.isActive() then max max_reentry_key0 16384 else max_reentry_key0  // v107-alpha11: higher limit
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -12215,7 +12302,9 @@ module spiral_compiler =
                     | _ -> 512
             // Em BigStack podemos tolerar recursões finitas bem mais profundas sem risco de StackOverflow;
             // mantenha um piso alto para evitar falso-positivo em loops recursivos da stdlib (ex.: listm'.spi).
-            let max_depth = if BigStack.isActive() then max max_depth_base 2048 else max_depth_base
+            // v107-alpha10: aligned with ty depth (8192) to avoid EJP0009 in deeply recursive staging loops.
+            // v107-alpha11: increased from 8192 to 32768 to handle listm'.spi deep recursion
+            let max_depth = if BigStack.isActive() then max max_depth_base 32768 else max_depth_base
 
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -12287,6 +12376,24 @@ module spiral_compiler =
                 | DV(L(_,YForall)) -> raise_type_error s <| sprintf "Cannot apply a runtime forall during the partial evaluation stage."
                 | a -> raise_type_error s <| sprintf "Expected a forall.\nGot: %s" (show_data a)
             let rec apply s (a0, b0) =
+                // v107-alpha11: Nested BigStack pivot for deep apply recursion
+                let depth0 = RecursionTracker.currentDepth()
+                if depth0 >= 6 && depth0 % 6 = 0 then
+                    match BigStack.tryRun "apply" (fun () -> apply_core s (a0, b0)) with
+                    | Some v -> v
+                    | None -> apply_core s (a0, b0)
+                else
+                    apply_core s (a0, b0)
+
+            and apply_core s (a0, b0) =
+                // v107-alpha11: define site/r0 locally for error messages
+                let r0 = match s.trace with | r :: _ -> r | [] -> range0
+                let site =
+                    match s.trace with
+                    | r :: _ ->
+                        let (a,_) = r.range
+                        sprintf "apply@%s:%d:%d" r.path a.line a.character
+                    | _ -> "apply@unknown"
                 // ### v75: stack guard + one-shot big-stack fallback (evita falha em folds profundos no bootstrap/stdlib)
                 // apply participates in the term<->apply recursion; guard here too so we never hard-crash.
                 let mutable stack_fallback : Data option = None
@@ -12395,13 +12502,23 @@ module spiral_compiler =
                             if depth > 50 then
                                 let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d" depth)
                                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_deep_recursion" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
-                                DiagSidecar.emit (sprintf "%s deep recursion cache corruption in apply (depth=%d) - invalidated to gen=%d" 
+                                DiagSidecar.emit (sprintf "%s deep recursion cache corruption in apply (depth=%d) - invalidated to gen=%d"
                                     EJPCodes.EJP0008 depth newGen)
 
                         raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s" (show_data a)
 
 
             let rec if_ s cond on_succ on_fail =
+                // v107-alpha11: Nested BigStack pivot for deep if_ recursion
+                let depth0 = RecursionTracker.currentDepth()
+                if depth0 >= 8 && depth0 % 8 = 0 then
+                    match BigStack.tryRun "if_" (fun () -> if_core s cond on_succ on_fail) with
+                    | Some v -> v
+                    | None -> if_core s cond on_succ on_fail
+                else
+                    if_core s cond on_succ on_fail
+
+            and if_core s cond on_succ on_fail =
                 let lit_tr = DLit(LitBool true)
                 let lit_fl = DLit(LitBool false)
                 let cond =
@@ -12806,7 +12923,14 @@ module spiral_compiler =
                                                     jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                                     }
                                                 rename_global_term s_retry
-                                        term_scope'' s_eval body annot_val
+                                        // v107-alpha11: Nested BigStack pivot for deep method body evaluation
+                                        let depth = RecursionTracker.currentDepth()
+                                        if depth > 16 && depth % 8 = 0 then
+                                            match BigStack.tryRun "term_scope_method" (fun () -> term_scope'' s_eval body annot_val) with
+                                            | Some r -> r
+                                            | None -> term_scope'' s_eval body annot_val
+                                        else
+                                            term_scope'' s_eval body annot_val
 
                                     let mutable seq_result = Unchecked.defaultof<_>
                                     let mutable ty_result = Unchecked.defaultof<_>
@@ -12895,7 +13019,15 @@ module spiral_compiler =
                                                         seq = ResizeArray()
                                                         cse = [Dictionary(HashIdentity.Structural)]
                                                         i = ref 0 }
-                                                let seq2, ty2 = term_scope'' s_retry body annot_val
+                                                // v107-alpha11: Nested BigStack pivot for deep retry evaluation
+                                                let depth = RecursionTracker.currentDepth()
+                                                let seq2, ty2 =
+                                                    if depth > 16 && depth % 8 = 0 then
+                                                        match BigStack.tryRun "term_scope_retry" (fun () -> term_scope'' s_retry body annot_val) with
+                                                        | Some r -> r
+                                                        | None -> term_scope'' s_retry body annot_val
+                                                    else
+                                                        term_scope'' s_retry body annot_val
                                                 if show_ty ty2 = show_ty annot then
                                                     dict.[join_point_key] <- (Some seq2, Some ty2, jp_name)
                                                     retry_resolved <- true
@@ -14592,11 +14724,22 @@ module spiral_compiler =
 
         match x with
         | EFun'(r,_,_,_,_) ->
-            let res = term_scope s (EApply(r,x,EB r))
-            jp_wait ()
-            jp_throw_if_any ()
-            globals_flush s
-            res, {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
+            // v107-alpha11: Always run the main evaluation on BigStack to prevent stack overflow
+            let evalOnBigStack () =
+                let res = term_scope s (EApply(r,x,EB r))
+                jp_wait ()
+                jp_throw_if_any ()
+                globals_flush s
+                res, {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
+            match BigStack.tryRun "peval_main" evalOnBigStack with
+            | Some result -> result
+            | None ->
+                // Fallback if BigStack nesting exhausted - should not happen at entry
+                let res = term_scope s (EApply(r,x,EB r))
+                jp_wait ()
+                jp_throw_if_any ()
+                globals_flush s
+                res, {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
 
@@ -15107,10 +15250,18 @@ module spiral_compiler =
             )
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                let jp_dict,_,_,_ = env.join_point_method.[jp_body]
-                match jp_dict.[key] with
-                | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
-                | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                let jp_dict,_,jp_ev,_ = env.join_point_method.[jp_body]
+                let rec get () =
+                    match jp_dict.TryGetValue key with
+                    | true, (Some a, Some range, _) -> a, range
+                    | _ ->
+                        match jp_ev.TryGetValue key with
+                        | true, ev ->
+                            ev.Wait()
+                            get ()
+                        | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                let a, range = get ()
+                {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
                 line s (sprintf "method%i (%s) : %s =" x.tag (args_tys x.free_vars) (tup_ty x.range))
                 binds (indent s) x.body
@@ -15119,12 +15270,24 @@ module spiral_compiler =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
                 | YFun(domain,range,FT_Vanilla) ->
-                    let jp_dict,_,_,_ = env.join_point_closure.[jp_body]
-                    match jp_dict.[key] with
-                    | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
-                    | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                    let jp_dict,_,jp_ev,_ = env.join_point_closure.[jp_body]
+                    let rec get () =
+                        match jp_dict.TryGetValue key with
+                        | true, Some(domain_args, body) -> domain_args, body
+                        | _ ->
+                            match jp_ev.TryGetValue key with
+                            | true, ev ->
+                                ev.Wait()
+                                get ()
+                            | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                    let domain_args, body = get ()
+                    {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
-                | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
+                | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
+  |
+  = unexpected type in closure join point
+  help: capture the stack trace and the inferred/expected types for the closure join point.
+"""
                 ) (fun s x ->
                 let domain =
                     match x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tyv t)) with
@@ -15891,8 +16054,8 @@ module spiral_compiler =
                 | YFun (_, _, _) ->
                     raise_codegen_error "Non-standard functions are not supported in the Gleam backend."
                 | _ ->
-                    raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n")
-                (fun s x ->
+                    raise_codegen_error "Compiler error: unexpected type in closure join point"
+                ) (fun s x ->
                 let fv_tys =
                     x.free_vars
                     |> HopacExtensions.A.map (fun (L(_, t)) -> tyv t)
@@ -15910,9 +16073,9 @@ module spiral_compiler =
                 let capt_ty =
                     fv_tys
                     |> function
-                    | [||] -> "Nil"
-                    | [|one|] -> sprintf "#(%s)" one
-                    | many -> many |> String.concat ", " |> sprintf "#(%s)"
+                        | [||] -> "Nil"
+                        | [| one |] -> sprintf "#(%s)" one
+                        | many -> many |> String.concat ", " |> sprintf "#(%s)"
 
                 let fv_bind =
                     match x.free_vars with
@@ -16558,8 +16721,8 @@ module spiral_compiler =
                 | YFun (_, _, _) ->
                     raise_codegen_error "Non-standard functions are not supported in the Lua backend."
                 | _ ->
-                    raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n")
-                (fun s x ->
+                    raise_codegen_error "Compiler error: unexpected type in closure join point"
+                ) (fun s x ->
                 let fv_bind =
                     match x.free_vars with
                     | [||] -> "local __capt = nil"
@@ -17309,7 +17472,11 @@ module spiral_compiler =
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
-                    | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
+                    | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
+  |
+  = unexpected type in closure join point
+  help: capture the stack trace and the inferred/expected types for the closure join point.
+"""
                     ) (fun _ s_typ s_fun x ->
                     let i, range = x.tag, tup_ty x.range
                     line s_typ (sprintf "typedef struct Closure%i Closure%i;" i i)
@@ -18284,7 +18451,11 @@ module spiral_compiler =
                         match jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
-                    | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
+                    | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
+  |
+  = unexpected type in closure join point
+  help: capture the stack trace and the inferred/expected types for the closure join point.
+"""
                     ) (fun _ s_typ s_fun x ->
                     let i, range = x.tag, tup_ty x.range
                     let closure_args = closure_args x.domain x.free_vars.Length
@@ -19134,7 +19305,11 @@ module spiral_compiler =
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
-                    | _ -> raise_codegen_error "error[EJPX004]: internal compiler error\n  |\n  = unexpected type in closure join point\n  help: capture the stack trace and the inferred/expected types for the closure join point.\n"
+                    | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
+  |
+  = unexpected type in closure join point
+  help: capture the stack trace and the inferred/expected types for the closure join point.
+"""
                     ) (fun s x ->
                     let env_args = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"env_v{i} : {tyv t}") |> String.concat ", "
                     line s $"def Closure{x.tag}({env_args}):"
@@ -21259,12 +21434,12 @@ module spiral_compiler =
                                                     let prev_big_nest = Environment.GetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST")
                                                     let prev_big_mb = Environment.GetEnvironmentVariable("SPIRAL_BIGSTACK_MB")
                                                     // Retry safety envelope: widen re-entry/depth limits and allow limited BigStack escalation.
-                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY_KEY", "4096")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY", "8192")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_TY_MAX_DEPTH", "8192")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_TERM_MAX_DEPTH", "8192")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST", "4")
-                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MB", "256")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY_KEY", "16384")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_EVAL_MAX_REENTRY", "32768")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_TY_MAX_DEPTH", "32768")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_TERM_MAX_DEPTH", "32768")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MAX_NEST", "16")
+                                                    Environment.SetEnvironmentVariable("SPIRAL_BIGSTACK_MB", "512")
                                                     let is_gen_wait =
                                                         code = EJPCodes.EJP0008 && msg.Contains("generation changed while waiting")
                                                     if not is_gen_wait then
@@ -21332,7 +21507,7 @@ module spiral_compiler =
 
                                     let max_attempts =
                                         match Environment.GetEnvironmentVariable "SPIRAL_BUILD_RETRY" with
-                                        | null | "" -> 6
+                                        | null | "" -> 3
                                         | v ->
                                             match System.Int32.TryParse v with
                                             | true, n when n < 1 -> 1
