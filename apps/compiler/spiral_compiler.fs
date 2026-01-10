@@ -6,7 +6,9 @@ namespace Polyglot
 
 module spiral_compiler =
 
-    /// ### EC_PROGRESS v107-alpha24
+    /// ### EC_PROGRESS v107-alpha26
+    /// Raised default SPIRAL_TY_MAX_DEPTH from 2048 to 16384 to prevent EJP0009 ty depth exceeded
+    /// This also prevents cascading EJP0008 generation-change failures while jp_wait/jp_ev_wait are blocked
     /// Removed proactive depth-based BigStack spawning that exhausted 32 nesting levels too quickly
     /// The 루프 loop pattern in listm'.spi requires thousands of recursive evaluations
     /// Proactive spawning at depth > 10 caused nest=32 exhaustion after only ~320 calls
@@ -11816,21 +11818,11 @@ module spiral_compiler =
 
 
                 match System.Environment.GetEnvironmentVariable "SPIRAL_TY_MAX_DEPTH" with
-
-
-                | null | "" -> 2048
-
-
+                | null | "" -> 16384
                 | v ->
-
-
                     match System.Int32.TryParse v with
-
-
                     | true, n when n > 50 -> n
-
-
-                    | _ -> 2048
+                    | _ -> 16384
 
 
             // Em BigStack, loops finitos de staging podem exigir muito mais profundidade (ex.: geração em listm'.spi).
@@ -12305,11 +12297,11 @@ module spiral_compiler =
 
             let max_depth_base =
                 match System.Environment.GetEnvironmentVariable "SPIRAL_TERM_MAX_DEPTH" with
-                | null | "" -> 512
+                | null | "" -> 8192
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n > 50 -> n
-                    | _ -> 512
+                    | _ -> 8192
             // Em BigStack podemos tolerar recursões finitas bem mais profundas sem risco de StackOverflow;
             // mantenha um piso alto para evitar falso-positivo em loops recursivos da stdlib (ex.: listm'.spi).
             // v107-alpha10: aligned with ty depth (8192) to avoid EJP0009 in deeply recursive staging loops.
