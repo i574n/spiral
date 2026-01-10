@@ -10803,6 +10803,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
         let jp_method_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Trace>(HashIdentity.Reference)
         let jp_type_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Trace>(HashIdentity.Reference)
 
+        let inline jp_invalidate_bounded (key: string) (maxAttempts: int) (reason: string) =
+            let n = jp_mismatch_counts.AddOrUpdate(key, 1, (fun _ v -> v + 1))
+            let gen =
+                if n <= maxAttempts then CacheGeneration.invalidate reason
+                else CacheGeneration.current()
+            gen, n
+
+
         let inline jp_method_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>) =
             try
                 stack
@@ -11803,8 +11811,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
-                    let newGen = CacheGeneration.invalidate (sprintf "%s ty cycle: re=%d/%d nodeId=%d depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reCount max_reentry nodeId depth site big hs ks)
-                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_cycle" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    let newGen, _invN = jp_invalidate_bounded (sprintf "%s|ty_cycle|%s" EJPCodes.EJP0011 site) 1 (sprintf "%s ty cycle: re=%d/%d nodeId=%d depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reCount max_reentry nodeId depth site big hs ks)
                     DiagSidecar.emit (sprintf "%s ty cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry big hs ks)
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
             if reKey > 1 then
@@ -11814,8 +11821,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
-                    let newGen = CacheGeneration.invalidate (sprintf "%s ty cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
-                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_cycle_key" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    let newGen, _invN = jp_invalidate_bounded (sprintf "%s|ty_cycle_key|%s" EJPCodes.EJP0011 site) 1 (sprintf "%s ty cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
                     DiagSidecar.emit (sprintf "%s ty cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key big hs ks)
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
@@ -12045,7 +12051,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                                         with
                                         | :? PartEvalTypeError as e when
                                             
-                                            retry_count < max_retries &&
+                                            retry_count < max_retries && entry_depth <= 50 &&
                                             (e.Data1.Contains("Expected a function") ||
                                              e.Data1.Contains("Got: i32") ||
                                              e.Data1.Contains("Got: i64") ||
@@ -12233,8 +12239,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
-                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle: re=%d/%d nodeId=%d depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reCount max_reentry nodeId depth site big hs ks)
-                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_cycle" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    let newGen, _invN =
+                        jp_invalidate_bounded (sprintf "%s|term_cycle|%s" EJPCodes.EJP0011 site) 1
+                            (sprintf "%s term cycle: re=%d/%d nodeId=%d depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reCount max_reentry nodeId depth site big hs ks)
                     DiagSidecar.emit (sprintf "%s term cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry big hs ks)
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
             if reKey > 1 then
@@ -12244,8 +12251,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
-                    let newGen = CacheGeneration.invalidate (sprintf "%s term cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
-                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_cycle_key" EJPCodes.EJP0011, 1, (fun _ n -> n + 1)) |> ignore
+                    let newGen, _invN =
+                        jp_invalidate_bounded (sprintf "%s|term_cycle_key|%s" EJPCodes.EJP0011 site) 1
+                            (sprintf "%s term cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
                     DiagSidecar.emit (sprintf "%s term cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key big hs ks)
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
@@ -12436,12 +12444,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
 
                             jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_primitive" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
                             DiagSidecar.emit (sprintf "%s apply mismatch: expected callable, got %s (depth=%d)" EJPCodes.EJP0007 (show_data a) depth)
-
-                            // v44: EJP0008 detection - deep recursion cache corruption
-                            if depth > 50 then
-                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d" depth)
-                                jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_deep_recursion" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
-                                DiagSidecar.emit (sprintf "%s deep recursion cache corruption in apply (depth=%d) - invalidated to gen=%d"
+                            // v45+: bounded invalidation at shallow depth only.
+                            // Deep recursion tends to be deterministic; invalidating here causes a generation storm.
+                            let invKey = sprintf "%s|apply_deep_recursion|%s" EJPCodes.EJP0008 site
+                            let invN = jp_mismatch_counts.AddOrUpdate(invKey, 1, (fun _ n -> n + 1))
+                            if invN <= 1 && depth <= 256 then
+                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d site=%s" depth site)
+                                DiagSidecar.emit (sprintf "%s apply mismatch suspected cache corruption (depth=%d) -> invalidated to gen=%d"
                                     EJPCodes.EJP0008 depth newGen)
 
                         raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s" (show_data a)
@@ -12889,7 +12898,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                                         with
                                         | :? PartEvalTypeError as e when
                                             
-                                            retry_count < max_retries &&
+                                            retry_count < max_retries && entry_depth <= 50 &&
                                             (e.Data1.Contains("Expected a function") ||
                                              e.Data1.Contains("Got: i32") ||
                                              e.Data1.Contains("Got: i64") ||
