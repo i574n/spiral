@@ -6,10 +6,12 @@ namespace Polyglot
 
 module spiral_compiler =
 
-    /// ### EC_PROGRESS v107-alpha13
-    /// Stack overflow fix: emergency BigStack pivot via EnsureSufficientExecutionStack in term_core, ty_core, if_core
-    /// Correção estrutural: em record literals aninhados de LangEnv dentro de JPType/JPMethod, os campos globals_lock/globals_seen haviam ficado fora do alinhamento do bloco (offside), fazendo o parser encerrar o record cedo e transformar as linhas seguintes em expressões booleanas; daí surgiam cascatas de FS0003/FS0001 ("value is not a function", bool vs ResizeArray/HashSet). A v103 realinha esses dois campos ao mesmo nível de indent do campo globals imediatamente acima em todos os pontos aninhados.
-    /// Próximo passo na direção 100% CPU: consolidar um modelo singleflight por chave (JPType/JPMethod) com helping-wait, eliminar esperas bloqueantes residuais e reduzir duplicação de trabalho para controlar GC e manter workers sempre alimentados.
+    /// ### EC_PROGRESS v107-alpha19
+    /// Fixed stack overflow: made BigStack pivots more aggressive (depth > 10 instead of depth >= 20 && % 20)
+    /// Fixed BigStack exhaustion handling: raise EJP0010 error instead of continuing on exhausted stack
+    /// All pivots now fail fast when BigStack.tryRun returns None (32 nesting levels × 256MB = 8GB exhausted)
+    /// Locations fixed: term, ty, apply, if_, term_scope_closure, term_scope_method, term_scope_retry
+    /// Roadmap: singleflight model per key (JPType/JPMethod) with helping-wait to achieve 100% CPU utilization
 
     /// ## spiral_compiler
     open FSharp.Core
@@ -70,7 +72,41 @@ module spiral_compiler =
                 let n = if maxTake < 0 then 0 else min maxTake arr.Length
                 arr.[arr.Length - n ..] |> Array.toList
 
-
+        // v107-alpha18: moved inside DiagSidecar module for proper scoping
+        let mutable private envDumped = 0
+        
+        let private shouldDumpEnvKey (k: string) =
+            if obj.ReferenceEquals(k, null) then false
+            else
+                k.StartsWith("SPIRAL_", StringComparison.OrdinalIgnoreCase)
+                || k.StartsWith("DOTNET_", StringComparison.OrdinalIgnoreCase)
+                || k.StartsWith("COMPLUS_", StringComparison.OrdinalIgnoreCase)
+                || k.StartsWith("COMPlus_", StringComparison.OrdinalIgnoreCase)
+                || k.StartsWith("FSHARP_", StringComparison.OrdinalIgnoreCase)
+                || k.StartsWith("FSharp_", StringComparison.OrdinalIgnoreCase)
+        
+        let emitEnvSnapshotOnce () =
+            if System.Threading.Interlocked.CompareExchange(&envDumped, 1, 0) = 0 then
+                try
+                    emit "---- ENV SNAPSHOT (all) ----"
+                    let vars = Environment.GetEnvironmentVariables()
+                    let keys =
+                        vars.Keys
+                        |> Seq.cast<obj>
+                        |> Seq.choose (fun o -> match o with :? string as s -> Some s | _ -> None)
+                        |> Seq.sort
+                        |> Seq.toArray
+                    for k in keys do
+                        let v =
+                            try
+                                match vars.[k] with
+                                | null -> "<null>"
+                                | x -> x.ToString()
+                            with _ -> "<e>"
+                        emit (sprintf "ENV %s=%s" k v)
+                    emit "---- END ENV SNAPSHOT ----"
+                with ex ->
+                    emit (sprintf "ENV SNAPSHOT FAILED: %s" ex.Message)
 
     /// ### range_checks
     let range_checks from near_to vec =
@@ -9455,6 +9491,11 @@ module spiral_compiler =
         /// Returns current nesting level
         let getNest () = active.Value
 
+
+        // v107-alpha14: expose effective BigStack configuration for diagnostics
+        let getMaxNest () = envInt "SPIRAL_BIGSTACK_MAX_NEST" 32 1 64
+        let getGlobalMb () = envInt "SPIRAL_BIGSTACK_MB" 256 8 1024
+
         /// Returns Some result if spawned, or None if nesting já atingiu o teto.
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
             let maxNest = envInt "SPIRAL_BIGSTACK_MAX_NEST" 32 1 64  // v107-alpha11: 32 levels at 256MB each = 8GB total
@@ -9487,7 +9528,17 @@ module spiral_compiler =
                 try
                     DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d parent_tid=%d" tag nestLevel maxNest mb stackBytes Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
-                th.Start()
+                // v107-alpha14: avoid flowing ExecutionContext/AsyncLocal into BigStack threads
+
+                let flow = System.Threading.ExecutionContext.SuppressFlow()
+
+                try
+
+                    th.Start()
+
+                finally
+
+                    flow.Undo()
                 th.Join()
                 try
                     let ok = err.IsNone
@@ -9583,7 +9634,8 @@ module spiral_compiler =
 
         let snapshotKeys (n: int) : string[] =
             active.Value.Keys |> Seq.truncate n |> Seq.toArray
-/// ### Range helpers (prepass / evaluation)
+
+    /// ### Range helpers (prepass / evaluation)
     /// These helpers are used by diagnostics and recursion guards. They intentionally prefer
     /// whatever range is available in the node itself, and fall back to the current trace (if any)
     /// or to an unknown range.
@@ -10142,7 +10194,7 @@ module spiral_compiler =
                 primary_site source_snip name kind tag backend tag key_repr_pretty (show_ty expected) (show_ty got)
                 fun_diff inflight_method inflight_type nn_pretty sidecar_pretty trace_pretty
 
-/// ### PartEvalTopEnv
+    /// ### PartEvalTopEnv
     type PartEvalTopEnv = {
         prototypes_instances : Dictionary<GlobalId * GlobalId, E>
         nominals : Dictionary<GlobalId, Nominal>
@@ -10636,6 +10688,13 @@ module spiral_compiler =
 
     /// ### peval
     let peval (env : PartEvalTopEnv) (x : E) =
+        // v107-alpha14: always log effective runtime knobs once per process
+        DiagSidecar.emitEnvSnapshotOnce()
+        try
+            DiagSidecar.emit (sprintf "SETTINGS bigstack_mb_global=%d bigstack_max_nest=%d term_mb=%d ty_mb=%d apply_mb=%d if_mb=%d"
+                                    (BigStack.getGlobalMb()) (BigStack.getMaxNest())
+                                    (BigStack.getMb "term") (BigStack.getMb "ty") (BigStack.getMb "apply") (BigStack.getMb "if"))
+        with _ -> ()
         // Comparer for join point body keys: backend by structural equality, body by physical identity.
         // This avoids unsound cache collisions between alpha-equal bodies coming from different scopes/modules.
         let jp_type_inflight = System.Threading.AsyncLocal<System.Collections.Generic.HashSet<ConsedNode<Ty []>>>()
@@ -11395,13 +11454,16 @@ module spiral_compiler =
                             let s = rename_global_term s
                             let domain_data = ty_to_data s domain
                             s.env_stack_term.[0] <- domain_data
-                            // v107-alpha11: Nested BigStack pivot for deep closure evaluation
+                            // v107-alpha19: Aggressive BigStack pivot for deep closure evaluation
                             let depth = RecursionTracker.currentDepth()
                             let seq,ty =
-                                if depth >= 20 && depth % 20 = 0 then
+                                if depth > 10 then
                                     match BigStack.tryRun "term_scope_closure" (fun () -> term_scope'' s body (Some fun_ty)) with
                                     | Some r -> r
-                                    | None -> term_scope'' s body (Some fun_ty)
+                                    | None ->
+                                        // Stack exhausted - raise error instead of continuing
+                                        let r0 = match s.trace with | r :: _ -> r | [] -> range0
+                                        raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in term_scope_closure (BigStack exhausted at depth %d)" EJPCodes.EJP0010 depth)
                                 else
                                     term_scope'' s body (Some fun_ty)
                             dict.[join_point_key] <- Some(domain_data, seq)
@@ -11676,12 +11738,15 @@ module spiral_compiler =
             | YNominal a -> ty s a.node.body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
         and ty s x =
-            // v107-alpha11: Nested BigStack pivot for deep ty recursion
+            // v107-alpha19: Aggressive BigStack pivot for deep ty recursion
             let depth0 = RecursionTracker.currentDepth()
-            if depth0 >= 30 && depth0 % 30 = 0 then
+            if depth0 > 10 then
                 match BigStack.tryRun "ty" (fun () -> ty_core s x) with
                 | Some v -> v
-                | None -> ty_core s x  // Nesting exhausted, continue on current stack
+                | None ->
+                    // Stack exhausted - raise error instead of continuing
+                    let r0 = match s.trace with | r :: _ -> r | [] -> range0
+                    raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in ty (BigStack exhausted at depth %d)" EJPCodes.EJP0010 depth0)
             else
                 ty_core s x
 
@@ -11804,7 +11869,14 @@ module spiral_compiler =
                     jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
-                    DiagSidecar.emit (sprintf "%s ty insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
+                    DiagSidecar.emitEnvSnapshotOnce()
+                    let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                    let bigActive = BigStack.isActive()
+                    let nest = BigStack.getNest()
+                    let mbTy = BigStack.getMb "ty"
+                    let mem = try System.GC.GetTotalMemory(false) with _ -> 0L
+                    DiagSidecar.emit (sprintf "%s ty insufficient_stack depth=%d site=%s gen=%d tag=%s tid=%d bigActive=%b nest=%d mb=%d mem=%d deepSites=[%s] reasons=[%s]"
+                                            EJPCodes.EJP0010 depth site newGen tag tid bigActive nest mbTy mem deepSites reasons)
                     let inline envTrue (v: string) =
                         match v with
                         | null | "" -> false
@@ -11813,21 +11885,22 @@ module spiral_compiler =
                     let nonfatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_NONFATAL"))
                     let fatal =
                         match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
-                        | null | "" -> not nonfatal
+                        | null | "" -> false // v107-alpha14: default is to pivot (non-fatal)
                         | v -> envTrue v
                     if fatal then
                         raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in type evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
                     else
-                        ()
+                        // v107-alpha14: let wrapper catch and pivot onto BigStack
+                        reraise()
 
             // Stack guard mais agressivo para evitar StackOverflow (especialmente com lambdas locais grandes).
             // A cadência aumenta com a profundidade: checamos pouco no início e muito quando está ficando perigoso.
-            if depth <= 32 then
-                if (depth &&& 15) = 0 then stack_check "d<=32"
-            elif depth <= 128 then
-                if (depth &&& 3) = 0 then stack_check "d<=128"
+            if depth <= 16 then
+                if (depth &&& 3) = 0 then stack_check "d<=16"
+            elif depth <= 64 then
+                if (depth &&& 1) = 0 then stack_check "d<=64"
             else
-                if (depth &&& 1) = 0 then stack_check "d>128"
+                stack_check "d>64" 
 
             if depth > max_depth then
                 let newGen = CacheGeneration.invalidate (sprintf "%s: ty depth exceeded depth=%d max=%d site=%s" EJPCodes.EJP0009 depth max_depth site)
@@ -12160,16 +12233,17 @@ module spiral_compiler =
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
-            // v107-alpha11: Aggressive BigStack pivot - spawn new stack whenever depth exceeds threshold
+            // v107-alpha19: Aggressive BigStack pivot - spawn new stack whenever depth exceeds threshold
             // After each pivot, child resets to depth 1, so we get fresh stack every ~10 calls
             let depth0 = RecursionTracker.currentDepth()
             if depth0 > 10 then
                 match BigStack.tryRun "term" (fun () -> term_core s x) with
                 | Some v -> v
                 | None ->
-                    // Nesting exhausted - emit diagnostic and continue on current stack
-                    try DiagSidecar.emit (sprintf "BIGSTACK_EXHAUSTED term depth=%d nest=%d" depth0 (BigStack.getNest())) with _ -> ()
-                    term_core s x
+                    // Stack exhausted - raise error instead of continuing
+                    let fallback = match s.trace with | r :: _ -> r | [] -> range0
+                    let r0 = range_of_e_or fallback x
+                    raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in term (BigStack exhausted at depth %d, nest %d)" EJPCodes.EJP0010 depth0 (BigStack.getNest()))
             else
                 term_core s x
 
@@ -12282,7 +12356,14 @@ module spiral_compiler =
                     jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
-                    DiagSidecar.emit (sprintf "%s term insufficient stack depth=%d site=%s gen=%d tag=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0010 depth site newGen tag deepSites reasons)
+                    DiagSidecar.emitEnvSnapshotOnce()
+                    let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                    let bigActive = BigStack.isActive()
+                    let nest = BigStack.getNest()
+                    let mbTerm = BigStack.getMb "term"
+                    let mem = try System.GC.GetTotalMemory(false) with _ -> 0L
+                    DiagSidecar.emit (sprintf "%s term insufficient_stack depth=%d site=%s gen=%d tag=%s tid=%d bigActive=%b nest=%d mb=%d mem=%d deepSites=[%s] reasons=[%s]"
+                                            EJPCodes.EJP0010 depth site newGen tag tid bigActive nest mbTerm mem deepSites reasons)
                     let inline envTrue (v: string) =
                         match v with
                         | null | "" -> false
@@ -12291,19 +12372,20 @@ module spiral_compiler =
                     let nonfatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_NONFATAL"))
                     let fatal =
                         match System.Environment.GetEnvironmentVariable("SPIRAL_EJP0010_FATAL") with
-                        | null | "" -> not nonfatal
+                        | null | "" -> false // v107-alpha14: default is to pivot (non-fatal)
                         | v -> envTrue v
                     if fatal then
                         raise_type_error (add_trace s r0) (sprintf "%s: insufficient execution stack in term evaluation (depth=%d) at %s (gen=%d)" EJPCodes.EJP0010 depth site newGen)
                     else
-                        ()
+                        // v107-alpha14: let wrapper catch and pivot onto BigStack
+                        reraise()
 
-            if depth <= 64 then
-                if (depth &&& 63) = 0 then stack_check "d<=64"
-            elif depth <= 256 then
-                if (depth &&& 7) = 0 then stack_check "d<=256"
+            if depth <= 32 then
+                if (depth &&& 7) = 0 then stack_check "d<=32"
+            elif depth <= 128 then
+                if (depth &&& 1) = 0 then stack_check "d<=128"
             else
-                if (depth &&& 1) = 0 then stack_check "d>256"
+                stack_check "d>128" 
 
             if depth > max_depth then
                 let newGen = CacheGeneration.invalidate (sprintf "%s: term depth exceeded depth=%d max=%d site=%s" EJPCodes.EJP0009 depth max_depth site)
@@ -12337,12 +12419,15 @@ module spiral_compiler =
                 | DV(L(_,YForall)) -> raise_type_error s <| sprintf "Cannot apply a runtime forall during the partial evaluation stage."
                 | a -> raise_type_error s <| sprintf "Expected a forall.\nGot: %s" (show_data a)
             let rec apply s (a0, b0) =
-                // v107-alpha11: Nested BigStack pivot for deep apply recursion
+                // v107-alpha19: Aggressive BigStack pivot for deep apply recursion
                 let depth0 = RecursionTracker.currentDepth()
-                if depth0 >= 30 && depth0 % 30 = 0 then
+                if depth0 > 10 then
                     match BigStack.tryRun "apply" (fun () -> apply_core s (a0, b0)) with
                     | Some v -> v
-                    | None -> apply_core s (a0, b0)
+                    | None ->
+                        // Stack exhausted - raise error instead of continuing
+                        let r0 = match s.trace with | r :: _ -> r | [] -> range0
+                        raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in apply (BigStack exhausted at depth %d)" EJPCodes.EJP0010 depth0)
                 else
                     apply_core s (a0, b0)
 
@@ -12470,12 +12555,15 @@ module spiral_compiler =
 
 
             let rec if_ s cond on_succ on_fail =
-                // v107-alpha11: Nested BigStack pivot for deep if_ recursion
+                // v107-alpha19: Aggressive BigStack pivot for deep if_ recursion
                 let depth0 = RecursionTracker.currentDepth()
-                if depth0 >= 30 && depth0 % 30 = 0 then
+                if depth0 > 10 then
                     match BigStack.tryRun "if_" (fun () -> if_core s cond on_succ on_fail) with
                     | Some v -> v
-                    | None -> if_core s cond on_succ on_fail
+                    | None ->
+                        // Stack exhausted - raise error instead of continuing
+                        let r0 = match s.trace with | r :: _ -> r | [] -> range0
+                        raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in if_ (BigStack exhausted at depth %d)" EJPCodes.EJP0010 depth0)
                 else
                     if_core s cond on_succ on_fail
 
@@ -12896,12 +12984,14 @@ module spiral_compiler =
                                                     jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                                     }
                                                 rename_global_term s_retry
-                                        // v107-alpha11: Nested BigStack pivot for deep method body evaluation
+                                        // v107-alpha19: Aggressive BigStack pivot for deep method body evaluation
                                         let depth = RecursionTracker.currentDepth()
-                                        if depth >= 20 && depth % 20 = 0 then
+                                        if depth > 10 then
                                             match BigStack.tryRun "term_scope_method" (fun () -> term_scope'' s_eval body annot_val) with
                                             | Some r -> r
-                                            | None -> term_scope'' s_eval body annot_val
+                                            | None ->
+                                                // Stack exhausted - raise error instead of continuing
+                                                raise_type_error (add_trace s r) (sprintf "%s: stack overflow in term_scope_method (BigStack exhausted at depth %d)" EJPCodes.EJP0010 depth)
                                         else
                                             term_scope'' s_eval body annot_val
 
@@ -12992,13 +13082,15 @@ module spiral_compiler =
                                                         seq = ResizeArray()
                                                         cse = [Dictionary(HashIdentity.Structural)]
                                                         i = ref 0 }
-                                                // v107-alpha11: Nested BigStack pivot for deep retry evaluation
+                                                // v107-alpha19: Aggressive BigStack pivot for deep retry evaluation
                                                 let depth = RecursionTracker.currentDepth()
                                                 let seq2, ty2 =
-                                                    if depth >= 20 && depth % 20 = 0 then
+                                                    if depth > 10 then
                                                         match BigStack.tryRun "term_scope_retry" (fun () -> term_scope'' s_retry body annot_val) with
-                                                        | Some r -> r
-                                                        | None -> term_scope'' s_retry body annot_val
+                                                        | Some res -> res
+                                                        | None ->
+                                                            // Stack exhausted - raise error instead of continuing
+                                                            raise_type_error (add_trace s r) (sprintf "%s: stack overflow in term_scope_retry (BigStack exhausted at depth %d)" EJPCodes.EJP0010 depth)
                                                     else
                                                         term_scope'' s_retry body annot_val
                                                 if show_ty ty2 = show_ty annot then
@@ -14707,12 +14799,8 @@ module spiral_compiler =
             match BigStack.tryRun "peval_main" evalOnBigStack with
             | Some result -> result
             | None ->
-                // Fallback if BigStack nesting exhausted - should not happen at entry
-                let res = term_scope s (EApply(r,x,EB r))
-                jp_wait ()
-                jp_throw_if_any ()
-                globals_flush s
-                res, {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
+                // v107-alpha19: raise error - shouldn't happen at entry unless max_nest is misconfigured
+                raise_type_error s (sprintf "%s: stack overflow at peval_main entry (BigStack exhausted - check SPIRAL_BIGSTACK_MAX_NEST)" EJPCodes.EJP0010)
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
 
