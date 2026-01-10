@@ -10755,14 +10755,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
 
 
         // ════════════════════════════════════════════════════════════════════════
-        // PARALLELISM CONFIGURATION (hardcoded SOTA defaults)
         // ════════════════════════════════════════════════════════════════════════
-        // Degree of parallelism: use all available CPU cores
-        let jp_dop = max 1 Environment.ProcessorCount
+        // ════════════════════════════════════════════════════════════════════════
+        // PARALLELISM CONFIGURATION (env override + aggressive defaults)
+        // ════════════════════════════════════════════════════════════════════════
 
+        let inline env_i64 (name: string) (fallback: int64) : int64 =
+            match Environment.GetEnvironmentVariable(name) with
+            | null | "" -> fallback
+            | s ->
+                match System.Int64.TryParse(s.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture) with
+                | true, v -> v
+                | _ -> fallback
+
+        let inline env_i32 (name: string) (fallback: int) : int =
+            match Environment.GetEnvironmentVariable(name) with
+            | null | "" -> fallback
+            | s ->
+                match System.Int32.TryParse(s.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture) with
+                | true, v -> v
+                | _ -> fallback
+
+        // Degree of parallelism: use all available CPU cores unless overridden
+        let jp_dop =
+            let v = env_i32 "SPIRAL_JP_DOP" (max 1 Environment.ProcessorCount)
+            max 1 v
 
         let jp_is_parallel_enabled =
-            // Parallel join-points enabled by default; set SPIRAL_JP_PARALLEL=0/false/no to disable.
             match Environment.GetEnvironmentVariable("SPIRAL_JP_PARALLEL") with
             | null | "" -> true
             | s ->
@@ -10770,35 +10789,40 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                 | "0" | "false" | "no" | "n" -> false
                 | _ -> true
 
-        // Stack size per worker thread: 64MB (ample for deep recursion)
-        let jp_stack_mb = 64
+        // Stack size per worker thread (MB)
+        let jp_stack_mb = max 8 (env_i32 "SPIRAL_JP_STACK_MB" 64)
 
-        // No pending job limit - allow unbounded parallel work
-        let jp_max_pending = System.Int32.MaxValue
+        // Pending job cap (prevents runaway queue + memory blowups)
+        let jp_max_pending =
+            let defaultMax =
+                let v = jp_dop * 4096
+                if v < 16384 then 16384 else v
+            let v = env_i32 "SPIRAL_JP_MAX_PENDING" defaultMax
+            max 1024 (min System.Int32.MaxValue v)
+
+        // How many queued thunks a helper drains per iteration while waiting
+        let jp_help_batch_n =
+            let v = env_i32 "SPIRAL_JP_HELP_BATCH_N" 256
+            max 1 v
 
         let mutable jp_total_started = 0L
 
         let peval_sw = System.Diagnostics.Stopwatch.StartNew()
 
         // ════════════════════════════════════════════════════════════════════════
-        // DIAGNOSTIC CONFIGURATION (SOTA defaults)
+        // DIAGNOSTIC CONFIGURATION
         // ════════════════════════════════════════════════════════════════════════
-        // Periodic status output every 30s
-        let diag_period_ms = 30000L
 
-        // Abort after 10 minutes (guard against infinite loops)
-        let diag_abort_ms = 600000L
+        let diag_period_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_PERIOD_MS" 30000L)
+        let diag_abort_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_ABORT_MS" 600000L)
+        let diag_wait_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_WAIT_MS" 1000L)
+        let diag_jp_spec_cap = max 0L (env_i64 "SPIRAL_JP_SPEC_CAP" 0L)
+        let diag_jp_name_spec_cap = max 0L (env_i64 "SPIRAL_JP_NAME_SPEC_CAP" 0L)
 
-        // Wait slice for internal polling
-        let diag_wait_ms = 1000L
-
-        // No JP spec caps by default (0 = disabled)
-        let diag_jp_spec_cap = 0L
-        let diag_jp_name_spec_cap = 0L
-
-        // Memory guard: abort if process exceeds 16GB
-        let peval_abort_ms = 600000L
-        let peval_mem_limit_mb = 16384L
+        // Hard abort controls (defaults intentionally *on*)
+        let peval_abort_ms = max 0L (env_i64 "SPIRAL_PEVAL_ABORT_MS" 600000L)
+        let peval_mem_limit_mb = max 0L (env_i64 "SPIRAL_PEVAL_MEM_LIMIT_MB" 4096L)
+        let jp_stall_abort_ms = max 0L (env_i64 "SPIRAL_JP_STALL_ABORT_MS" 120000L)
 
         // Always force async dispatch for JPs (maximizes parallelism)
         let jp_force_async_unannot = true
@@ -11167,7 +11191,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
             let inline jp_help_batch () =
                 let mutable did = false
                 let mutable i = 0
-                while i < 64 do
+                while i < jp_help_batch_n do
                     let mutable thunk = Unchecked.defaultof<unit -> unit>
                     if jp_work_q.TryDequeue(&thunk) then
                         did <- true
@@ -11176,7 +11200,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                         with e -> jp_exns.Enqueue (capture_edi e)
                         i <- i + 1
                     else
-                        i <- 64
+                        i <- jp_help_batch_n
                 did
 
             if ev.IsSet then
@@ -11184,6 +11208,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
             else
                 let mutable spin = System.Threading.SpinWait()
                 let mutable last_diag = peval_sw.ElapsedMilliseconds
+
+                // Stall detection: if there are pending jobs but no observable progress for too long, abort.
+                let mutable last_progress_ms = peval_sw.ElapsedMilliseconds
+                let mutable last_progress_started = jp_total_started
+                let mutable last_progress_pending = jp_pending_jobs ()
                 while not ev.IsSet do
                     let curGen = CacheGeneration.current()
                     if curGen <> gen0 then
@@ -11194,6 +11223,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
 
                     // try to make progress by executing other queued work
                     if jp_help_batch () then
+                        // refresh progress counters even if the pending count doesn't change (work was executed)
+                        last_progress_ms <- peval_sw.ElapsedMilliseconds
+                        last_progress_started <- jp_total_started
+                        last_progress_pending <- jp_pending_jobs ()
                         spin.Reset()
                     else
                         // periodic diagnostic tick without disabling parallelism
@@ -11205,9 +11238,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                         spin.SpinOnce()
                         if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
 
+                    // stall check (runs regardless of whether we executed work or spun)
+                    if jp_stall_abort_ms > 0L then
+                        let now = peval_sw.ElapsedMilliseconds
+                        let curPending = jp_pending_jobs ()
+                        let curStarted = jp_total_started
+                        if curPending <> last_progress_pending || curStarted <> last_progress_started then
+                            last_progress_pending <- curPending
+                            last_progress_started <- curStarted
+                            last_progress_ms <- now
+                        elif curPending > 0 && now - last_progress_ms >= jp_stall_abort_ms then
+                            let snap = diag_snapshot (sprintf "stall jp_ev_wait pending=%d started=%d :: %s (%s)" curPending curStarted w details)
+                            raise (PartEvalTypeError([], sprintf "EJP0014: join-point scheduler stalled while waiting for jp_ev_wait for %dms (pending_jobs=%d jp_total_started=%d) :: %s (%s)\n%s" (now - last_progress_ms) curPending curStarted w details snap))
+
                 jp_throw_if_any ()
 
-// v101: dedicated join-point worker threads backed by a global work queue (keeps CPU saturated and avoids deadlocks).
+        // v101: dedicated join-point worker threads backed by a global work queue (keeps CPU saturated and avoids deadlocks).
         let jp_stack_bytes =
             let b = jp_stack_mb * 1024 * 1024
             if b < (1 * 1024 * 1024) then (1 * 1024 * 1024)
@@ -11348,7 +11394,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
             let inline jp_help_batch () =
                 let mutable any = false
                 let mutable i = 0
-                while i < 64 && help_once () do
+                while i < jp_help_batch_n && help_once () do
                     any <- true
                     i <- i + 1
                 any
