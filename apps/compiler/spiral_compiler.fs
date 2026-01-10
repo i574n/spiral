@@ -4,36 +4,39 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v107-alpha43)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v107-alpha45)
     /// 
     /// ARCHITECTURE: Lock-free parallel join-point specialization with Hopac cooperative scheduling.
     /// 
-    /// ALPHA43 KEY CHANGES:
+    /// ALPHA45 KEY CHANGES:
+    /// - WORKER LOOP FIX: Workers now block on semaphore instead of spin-waiting
+    ///   Previously workers would spin with Wait(0), consuming CPU but not waking properly
+    ///   Now workers block with Wait(100ms) and wake immediately when work is available
+    /// - Worker activity tracking: jp_worker_active counts workers actively executing (not waiting)
+    /// - Queue size diagnostic: Shows jp_work_q.Count to identify work pile-up
+    /// - Diagnostic format: pending_jobs + worker_active + queue_size for parallelism debugging
+    ///
+    /// ALPHA44 FIXES (build fixes):
+    /// - Fixed Interlocked.Read/Increment: mutable variables with & syntax instead of ref
+    /// - Fixed jp_pending_count scope: removed from early diagnostic (defined later in peval)
+    ///
+    /// ALPHA43 FEATURES:
     /// - TRUE BitNet B1.58: Ternary neural network weights {-1, 0, +1} for pattern prediction
-    ///   with online learning (verifyPrediction tracks accuracy for adaptive tuning)
-    /// - LoopSpecializationGuard: Caps per-JP-name specializations (default 5000) to prevent 루프 explosion
-    ///   Applied to BOTH JPMethod and JPClosure dispatch paths
-    /// - jp_wait is now non-destructive: jp_wait_closed is diagnostic only, doesn't block jp_start
-    /// - Enhanced diagnostics: pending_count, loopguard summary, wait iteration logging
+    /// - LoopSpecializationGuard: Caps per-JP-name specializations (default 5000)
+    /// - jp_wait is now non-destructive: jp_wait_closed is diagnostic only
     ///
     /// PARALLELISM MODEL:
     /// - Always-open work queue: jp_start enqueues work unconditionally (no gate!)
+    /// - Blocking worker wait: workers block on jp_work_sem.Wait(100ms), wake on Release()
     /// - Work-stealing wait: jp_wait() helps execute queued work while waiting
     /// - Atomic pending counter: Tracks completion without CountdownEvent bottleneck
     /// - Lock-free caches: ConcurrentDictionary with hash-consing for structural sharing
     ///
-    /// BITNET B1.58 INTEGRATION:
-    /// Pattern predictor uses ternary weights for efficient inference:
-    /// - Weight -1: Strongly predicts failure/suspect
-    /// - Weight  0: No prediction (pruned connection)
-    /// - Weight +1: Strongly predicts success/valid
-    /// This achieves similar accuracy to full-precision networks at ~10x lower memory.
-    /// Online learning: verifyPrediction() tracks correctPredictions for accuracy reporting.
-    ///
-    /// LOOP SPECIALIZATION GUARD (EJP0012):
-    /// Caps specializations per JP name (default: 5000) to prevent unbounded growth
-    /// from patterns like 루프 in listm'.spi that create unique keys per iteration.
-    /// Integrated at both JPMethod (hard cap with error) and JPClosure (soft cap with logging).
+    /// WORKER THREAD BEHAVIOR (ALPHA45):
+    /// Workers alternate between blocked (waiting for semaphore) and active (executing thunk).
+    /// When work is enqueued: semaphore.Release() wakes one blocked worker immediately.
+    /// When no work: workers sleep on semaphore, NOT spin-waiting (saves CPU).
+    /// Diagnostic `worker_active` shows how many of `workers` are actually doing work.
     ///
     /// CRITICAL INVARIANT: Never invalidate cache generations during normal operation.
     /// Cache invalidation (CacheGeneration.invalidate) triggers EJP0008 and breaks
@@ -9917,9 +9920,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         let private maxHistory = 256
         let private keyStats = ConcurrentDictionary<int, KeyStat>()
 
-        // Online learning: track prediction accuracy
-        let private predictionCount = ref 0L
-        let private correctPredictions = ref 0L
+        // Online learning: track prediction accuracy (mutable for Interlocked)
+        let mutable private predictionCount = 0L
+        let mutable private correctPredictions = 0L
 
         /// Quantize float feature to int8 range [-127, 127]
         let inline private quantize (x: float) : int =
@@ -10018,7 +10021,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
             
             // Track if prediction was correct
             if (predictedSuspect && actuallyFailed) || (not predictedSuspect && not actuallyFailed) then
-                System.Threading.Interlocked.Increment(correctPredictions) |> ignore
+                System.Threading.Interlocked.Increment(&correctPredictions) |> ignore
 
         /// Predict if a key access is likely to succeed or fail using B1.58 network
         let predict (key: obj) : Prediction =
@@ -10032,7 +10035,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                 elif output.[1] > output.[0] && output.[1] > output.[2] then 1
                 else 2
 
-            System.Threading.Interlocked.Increment(predictionCount) |> ignore
+            System.Threading.Interlocked.Increment(&predictionCount) |> ignore
 
             match maxIdx with
             | 0 -> LikelyValid
@@ -10067,8 +10070,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                 |> Array.filter (fun kv -> kv.Value.generation = gen && kv.Value.failures > 0)
                 |> Array.length
 
-            let preds = System.Threading.Interlocked.Read(predictionCount)
-            let correct = System.Threading.Interlocked.Read(correctPredictions)
+            let preds = System.Threading.Interlocked.Read(&predictionCount)
+            let correct = System.Threading.Interlocked.Read(&correctPredictions)
             let accuracy = if preds > 0L then float correct / float preds else 0.0
 
             sprintf "b158=patterns=%d avgDepth=%.1f suspectRate=%.2f keys=%d genFailKeys=%d preds=%d acc=%.2f" 
@@ -10152,8 +10155,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         /// Names that have exceeded their cap (for fast rejection)
         let private cappedNames = ConcurrentDictionary<string, bool>()
 
-        /// Total rejections
-        let private rejections = ref 0L
+        /// Total rejections (mutable for Interlocked)
+        let mutable private rejections = 0L
 
         /// Check if a JP name has exceeded its specialization cap
         let isExceeded (jpName: string) : bool =
@@ -10164,7 +10167,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         let tryRecordSpecialization (jpName: string) : bool =
             if System.String.IsNullOrEmpty(jpName) then true
             elif cappedNames.ContainsKey(jpName) then
-                System.Threading.Interlocked.Increment(rejections) |> ignore
+                System.Threading.Interlocked.Increment(&rejections) |> ignore
                 false
             else
                 // Limit tracked names to prevent unbounded memory
@@ -10176,7 +10179,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                         cappedNames.TryAdd(jpName, true) |> ignore
                         DiagSidecar.emit (sprintf "EJP0012: specialization cap exceeded for JP '%s' (count=%d max=%d)" 
                             jpName newCount maxSpecsPerName)
-                        System.Threading.Interlocked.Increment(rejections) |> ignore
+                        System.Threading.Interlocked.Increment(&rejections) |> ignore
                         false
                     else
                         true
@@ -10195,7 +10198,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                 |> Array.truncate 5
                 |> Array.map (fun kv -> sprintf "%s=%d" kv.Key kv.Value)
                 |> String.concat "; "
-            let totalRej = System.Threading.Interlocked.Read(rejections)
+            let totalRej = System.Threading.Interlocked.Read(&rejections)
             let cappedCount = cappedNames.Count
             sprintf "loopGuard: tracked=%d capped=%d rejections=%d top=[%s]" 
                 specCounts.Count cappedCount totalRej topNames
@@ -10204,7 +10207,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         let reset () =
             specCounts.Clear()
             cappedNames.Clear()
-            rejections := 0L
+            rejections <- 0L
 
     /// ### format_jp_annot_mismatch
     /// Rust-ish, multi-line diagnostic for join-point annotation mismatches.
@@ -10953,6 +10956,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         // Waiting threads "help" by executing queued work (work-distributing pattern)
         let jp_work_q : System.Collections.Concurrent.ConcurrentQueue<unit -> unit> = System.Collections.Concurrent.ConcurrentQueue()
         let jp_work_sem = new System.Threading.SemaphoreSlim(0, System.Int32.MaxValue)
+        let mutable jp_worker_active = 0L  // ALPHA45: Track how many workers are actively executing (not waiting)
 
 
         let inline jp_throw_if_any () =
@@ -11262,8 +11266,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
             sb.AppendFormat("  jp_sched_mode={0}", (if jp_use_threadpool then "threadpool" else "custom")) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_parallel_enabled={0} jp_wait_closed={1}", jp_parallel_enabled, jp_wait_closed) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_total_started={0}", jp_total_started) |> ignore; sb.AppendLine() |> ignore
-            // Show both pending counts: atomic counter (new) and cd-based (legacy)
-            sb.AppendFormat("  pending_jobs={0} pending_count={1}", jp_pending_jobs (), System.Threading.Interlocked.Read(&jp_pending_count)) |> ignore; sb.AppendLine() |> ignore
+            // Show pending count from legacy CountdownEvent-based tracking + worker activity
+            sb.AppendFormat("  pending_jobs={0} worker_active={1} queue_size={2}", jp_pending_jobs (), System.Threading.Interlocked.Read(&jp_worker_active), jp_work_q.Count) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_method_groups={0} jp_method_specs={1}", method_groups, method_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_closure_groups={0} jp_closure_specs={1}", closure_groups, closure_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_type_groups={0} jp_type_specs={1}", type_groups, type_specs) |> ignore; sb.AppendLine() |> ignore
@@ -11402,9 +11406,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                     let mutable thunk = Unchecked.defaultof<unit -> unit>
                     if jp_work_q.TryDequeue(&thunk) then
                         did <- true
-                        // Thunks are pre-wrapped with bookkeeping
+                        // Track that main thread is helping (ALPHA45)
+                        System.Threading.Interlocked.Increment(&jp_worker_active) |> ignore
                         try thunk ()
                         with e -> jp_exns.Enqueue (capture_edi e)
+                        System.Threading.Interlocked.Decrement(&jp_worker_active) |> ignore
                         i <- i + 1
                     else
                         i <- jp_help_batch_n
@@ -11481,20 +11487,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                     Array.init dop (fun i ->
                         let threadStart = System.Threading.ThreadStart(fun () ->
                             jp_worker_ids.TryAdd(System.Threading.Thread.CurrentThread.ManagedThreadId, 0uy) |> ignore
-                            let mutable spin = System.Threading.SpinWait()
                             while not jp_cancel.IsCancellationRequested do
-                                let mutable thunk = Unchecked.defaultof<unit -> unit>
-                                if jp_work_q.TryDequeue(&thunk) then
-                                    spin.Reset()
-                                    // Thunks are pre-wrapped with bookkeeping (decrement, signal)
-                                    // so workers just execute them directly
-                                    try thunk ()
-                                    with e -> jp_exns.Enqueue (capture_edi e)
-                                else
-                                    if jp_work_sem.Wait(0) then ()
-                                    else
-                                        spin.SpinOnce()
-                                        if (spin.Count &&& 8191) = 0 then System.Threading.Thread.Yield() |> ignore
+                                // ALPHA45 FIX: Block on semaphore instead of spin-waiting
+                                // This ensures workers wake up immediately when work is available
+                                try
+                                    // Wait up to 100ms for work signal (allows periodic cancellation check)
+                                    if jp_work_sem.Wait(100) then
+                                        // Semaphore signaled - try to get work
+                                        let mutable thunk = Unchecked.defaultof<unit -> unit>
+                                        if jp_work_q.TryDequeue(&thunk) then
+                                            System.Threading.Interlocked.Increment(&jp_worker_active) |> ignore
+                                            try thunk ()
+                                            with e -> jp_exns.Enqueue (capture_edi e)
+                                            System.Threading.Interlocked.Decrement(&jp_worker_active) |> ignore
+                                        // else: spurious wakeup, loop back
+                                with :? System.OperationCanceledException -> ()
                         )
                         let t = new System.Threading.Thread(threadStart, jp_stack_bytes)
                         t.IsBackground <- true
@@ -11592,10 +11599,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
             let inline help_once () =
                 let mutable thunk = Unchecked.defaultof<unit -> unit>
                 if jp_work_q.TryDequeue(&thunk) then
+                    // Track main thread helping (ALPHA45)
+                    System.Threading.Interlocked.Increment(&jp_worker_active) |> ignore
                     (try
                         thunk ()  // Thunk is already wrapped to handle decrementing
                      with e ->
                         jp_exns.Enqueue (capture_edi e))
+                    System.Threading.Interlocked.Decrement(&jp_worker_active) |> ignore
                     true
                 else
                     false
