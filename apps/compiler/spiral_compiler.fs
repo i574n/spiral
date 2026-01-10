@@ -4,17 +4,12 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =
-
-    /// ### EC_PROGRESS v107-alpha26
-    /// Raised default SPIRAL_TY_MAX_DEPTH from 2048 to 16384 to prevent EJP0009 ty depth exceeded
-    /// This also prevents cascading EJP0008 generation-change failures while jp_wait/jp_ev_wait are blocked
-    /// Removed proactive depth-based BigStack spawning that exhausted 32 nesting levels too quickly
-    /// The 루프 loop pattern in listm'.spi requires thousands of recursive evaluations
-    /// Proactive spawning at depth > 10 caused nest=32 exhaustion after only ~320 calls
-    /// Now rely solely on EnsureSufficientExecutionStack for reactive BigStack spawning
-    /// This allows unlimited logical recursion while using the 8GB BigStack pool efficiently
-    /// Roadmap: singleflight model per key (JPType/JPMethod) with helping-wait to achieve 100% CPU utilization
+module spiral_compiler =    /// ### EC_PROGRESS v107-alpha31
+    /// Fixes EJP0009 ty depth exceeded (depth=2049 max=2048) by pivoting to BigStack instead of failing.
+    /// - When depth > max_depth on main stack, throw InsufficientExecutionStackException to trigger BigStack pivot
+    /// - Same fix applied to term_core_impl depth check
+    /// - This allows 루프 loop patterns in listm'.spi to proceed on BigStack (limit 65536) instead of failing at 2048
+    /// - Base limits remain at 2048 (conservative on main stack), 65536 on BigStack (via pivot)
 
     /// ## spiral_compiler
     open FSharp.Core
@@ -9186,6 +9181,7 @@ module spiral_compiler =
         join_point_method_key_names : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>
         join_point_closure_key_names : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>
         jp_method_stack : System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>
+        jp_closure_stack : System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>
         jp_type_stack : System.Collections.Generic.HashSet<ConsedNode<Ty []>>
         }
 
@@ -10787,7 +10783,7 @@ module spiral_compiler =
         // Periodic diagnostic output (ms). 0 disables periodic output.
         let diag_period_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_PERIOD_MS" 30000L
         // Abort after this many ms with a detailed diagnostic (0 disables abort).
-        let diag_abort_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_ABORT_MS" 420000L
+        let diag_abort_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_ABORT_MS" 120000L // alpha27: fail fast on stalled waits
         // Wait slice used by internal waits (ms).
         let diag_wait_ms = read_env_i64 "SPIRAL_PEVAL_DIAG_WAIT_MS" 1000L
         // Optional cap: if total join-point specializations exceeds this, abort with diagnostic (0 disables).
@@ -10795,8 +10791,8 @@ module spiral_compiler =
         let diag_jp_name_spec_cap = read_env_i64 "SPIRAL_PEVAL_DIAG_JP_NAME_SPEC_CAP" 0L
 
         // Legacy watchdog variables (optional; default disabled).
-        let peval_abort_ms = read_env_i64 "SPIRAL_PEVAL_ABORT_MS" 0L
-        let peval_mem_limit_mb = read_env_i64 "SPIRAL_PEVAL_MEM_LIMIT_MB" 0L
+        let peval_abort_ms = read_env_i64 "SPIRAL_PEVAL_ABORT_MS" 600000L // alpha27: default global peval abort (10 min)
+        let peval_mem_limit_mb = read_env_i64 "SPIRAL_PEVAL_MEM_LIMIT_MB" 8192L // alpha27: default mem guard (8 GB)
         let inline read_env_bool (name: string) (def: bool) =
             match System.Environment.GetEnvironmentVariable name with
             | null | "" -> def
@@ -11158,22 +11154,28 @@ module spiral_compiler =
                             else
                                 diag_abort_armed <- false
                                 diag_soft_abort where (sprintf "Join-point name cap exceeded. cap=%d name=%s count=%d" diag_jp_name_spec_cap name count)
-        let inline jp_ev_wait (where: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
-            // v101: "help while waiting" — instead of blocking a worker thread, steal and execute other JP work.
-            let w = if System.String.IsNullOrWhiteSpace(details) then where else where + " :: " + details
-            diag_last_wait <- w
+
+        let inline jp_ev_wait (w: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
+            diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
             let gen0 = CacheGeneration.current()
 
-            let inline help_once () =
-                let mutable thunk = Unchecked.defaultof<unit -> unit>
-                if jp_work_q.TryDequeue(&thunk) then
-                    try
-                        try thunk ()
-                        with e -> jp_exns.Enqueue (capture_edi e)
-                    finally
-                        jp_cd.Signal() |> ignore
-                    true
-                else false
+            let inline jp_help_batch () =
+                // Execute a small batch of JP work while waiting to keep CPU busy and reduce scheduling overhead.
+                let mutable did = false
+                let mutable i = 0
+                while i < 64 do
+                    let mutable thunk = Unchecked.defaultof<unit -> unit>
+                    if jp_work_q.TryDequeue(&thunk) then
+                        did <- true
+                        try
+                            try thunk ()
+                            with e -> jp_exns.Enqueue (capture_edi e)
+                        finally
+                            jp_cd.Signal() |> ignore
+                        i <- i + 1
+                    else
+                        i <- 64
+                did
 
             if ev.IsSet then
                 jp_throw_if_any ()
@@ -11184,10 +11186,12 @@ module spiral_compiler =
                     let curGen = CacheGeneration.current()
                     if curGen <> gen0 then
                         // v107: include a full diagnostic snapshot in the exception message.
-                        let snap = diag_snapshot (sprintf "gen_change jp_ev_wait from=%d to=%d :: %s" gen0 curGen w)
-                        raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ev_wait (from %d to %d) :: %s\n%s" gen0 curGen w snap))
+                        let snap = diag_snapshot (sprintf "gen_change jp_ev_wait from=%d to=%d :: %s (%s)" gen0 curGen w details)
+                        raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ev_wait (from %d to %d) :: %s (%s)
+%s" gen0 curGen w details snap))
+
                     // try to make progress by executing other queued work
-                    if help_once () then
+                    if jp_help_batch () then
                         spin.Reset()
                     else
                         // periodic diagnostic tick without disabling parallelism
@@ -11198,9 +11202,10 @@ module spiral_compiler =
                         diag_abort_if_needed "jp_ev_wait"
                         spin.SpinOnce()
                         if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
+
                 jp_throw_if_any ()
 
-        // v101: dedicated join-point worker threads backed by a global work queue (keeps CPU saturated and avoids deadlocks).
+// v101: dedicated join-point worker threads backed by a global work queue (keeps CPU saturated and avoids deadlocks).
         let jp_stack_bytes =
             let b = jp_stack_mb * 1024 * 1024
             if b < (1 * 1024 * 1024) then (1 * 1024 * 1024)
@@ -11300,6 +11305,14 @@ module spiral_compiler =
                     true
                 else false
 
+            let inline jp_help_batch () =
+                let mutable any = false
+                let mutable i = 0
+                while i < 64 && help_once () do
+                    any <- true
+                    i <- i + 1
+                any
+
             try
                 while (not gen_changed) && not (jp_cd.Wait(0)) do
                     diag_abort_if_needed "jp_wait"
@@ -11308,7 +11321,7 @@ module spiral_compiler =
                         gen_changed <- true
                     else
                         jp_throw_if_any ()
-                        if help_once () then
+                        if jp_help_batch () then
                             spin.Reset()
                         else
                             spin.SpinOnce()
@@ -11408,6 +11421,7 @@ module spiral_compiler =
             join_point_method_key_names = s.join_point_method_key_names
             join_point_closure_key_names = s.join_point_closure_key_names
             jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+            jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_closure_stack, HashIdentity.Reference)
             jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
             }
         and closure_convert s (body,annot,gl_term,gl_ty,sz_term,sz_ty as args) =
@@ -11455,6 +11469,7 @@ module spiral_compiler =
                     let run () =
                         try
                             let s = rename_global_term s
+                            s.jp_closure_stack.Add(join_point_key) |> ignore
                             let domain_data = ty_to_data s domain
                             s.env_stack_term.[0] <- domain_data
                             // v107-alpha24: Removed proactive depth-based BigStack spawning
@@ -11479,15 +11494,20 @@ module spiral_compiler =
                                 | _ -> ty
                             if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
                         finally
+                            s.jp_closure_stack.Remove(join_point_key) |> ignore
                             jp_ev.Set()
                             let mutable _ev = Unchecked.defaultof<System.Threading.ManualResetEventSlim>
                             dict_ev.TryRemove(join_point_key, &_ev) |> ignore
                     jp_start run
                 else
-                    // Another worker is/was computing it.
-                    match dict.TryGetValue(join_point_key) with
-                    | true, Some _ -> ()
-                    | _ -> jp_ev_wait "JP.wait" (sprintf "key=%O" join_point_key) jp_ev; jp_throw_if_any ()
+                    // Another worker is/was computing it (or we're recursively requesting it).
+                    if s.jp_closure_stack.Contains(join_point_key) then
+                        // Recursive closure: don't wait on ourselves; emit a join-point call and let the outer computation finish.
+                        ()
+                    else
+                        match dict.TryGetValue(join_point_key) with
+                        | true, Some _ -> ()
+                        | _ -> jp_ev_wait "JP.wait" (sprintf "key=%O" join_point_key) jp_ev; jp_throw_if_any ()
                 join_point_key, call_args, fun_ty
             push_typedop s (TyJoinPoint(JPClosure((s.backend,body),join_point_key),call_args)) fun_ty, fun_ty
         and data_to_ty s x =
@@ -11771,7 +11791,7 @@ module spiral_compiler =
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
-                    | _ -> 16384
+                    | _ -> 2048 // alpha27: safer default; override via env var
             let max_reentry =
                 // Em BigStack, recursões finitas (ex.: folds de reflexão/stdlib) podem reentrar no mesmo nó por mais tempo.
                 if BigStack.isActive() then max max_reentry0 65536 else max_reentry0  // v107-alpha11: 65536 for extreme recursion
@@ -11781,7 +11801,7 @@ module spiral_compiler =
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 2 -> n
-                    | _ -> 16384
+                    | _ -> 2048 // alpha27: safer default; override via env var
             let max_reentry_key =
                 // Em BigStack, o re-entry por chave tende a ser finito porém longo; evite falso-positivo conservador.
                 if BigStack.isActive() then max max_reentry_key0 65536 else max_reentry_key0  // v107-alpha11: 65536 for extreme recursion
@@ -11818,11 +11838,11 @@ module spiral_compiler =
 
 
                 match System.Environment.GetEnvironmentVariable "SPIRAL_TY_MAX_DEPTH" with
-                | null | "" -> 16384
+                | null | "" -> 2048 // alpha27: safer default; override via env var
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n > 50 -> n
-                    | _ -> 16384
+                    | _ -> 2048 // alpha27: safer default; override via env var
 
 
             // Em BigStack, loops finitos de staging podem exigir muito mais profundidade (ex.: geração em listm'.spi).
@@ -11841,7 +11861,7 @@ module spiral_compiler =
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
                 with :? System.InsufficientExecutionStackException ->
-                    let newGen = CacheGeneration.invalidate (sprintf "%s: insufficient execution stack (ty) depth=%d site=%s tag=%s" EJPCodes.EJP0010 depth site tag)
+                    let newGen = CacheGeneration.current() // alpha27: do not invalidate on ty stack guard; avoid gen-change retry loops
                     jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
@@ -11879,14 +11899,20 @@ module spiral_compiler =
                 stack_check "d>64" 
 
             if depth > max_depth then
-                let newGen = CacheGeneration.invalidate (sprintf "%s: ty depth exceeded depth=%d max=%d site=%s" EJPCodes.EJP0009 depth max_depth site)
-                jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
-                let deepSites = deepSitesShort ()
-                let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                 let bigActive = BigStack.isActive()
-                let mbTy = BigStack.getMb "ty"
-                DiagSidecar.emit (sprintf "%s ty recursion depth exceeded depth=%d max=%d base=%d bigActive=%b mb=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth max_depth_base bigActive mbTy site newGen deepSites reasons)
-                raise_type_error (add_trace s r0) (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+                // alpha31: if not on BigStack, pivot instead of failing - allows 루프 loops to proceed on BigStack (limit 65536)
+                if not bigActive then
+                    DiagSidecar.emit (sprintf "%s ty depth pivot (alpha31): depth=%d max=%d site=%s -> pivoting to BigStack" EJPCodes.EJP0009 depth max_depth site)
+                    raise (System.InsufficientExecutionStackException())
+                else
+                    // Truly exceeded even on BigStack (65536) - this is a real problem
+                    let newGen = CacheGeneration.current() // alpha27: do not invalidate on ty depth exceeded; make it a terminal error
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
+                    let deepSites = deepSitesShort ()
+                    let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                    let mbTy = BigStack.getMb "ty"
+                    DiagSidecar.emit (sprintf "%s ty recursion depth exceeded depth=%d max=%d base=%d bigActive=%b mb=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth max_depth_base bigActive mbTy site newGen deepSites reasons)
+                    raise_type_error (add_trace s r0) (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
 
             match x with
             | TPatternRef _ -> failwith "Compiler error: TPatternRef should have been eliminated during the prepass."
@@ -11968,6 +11994,7 @@ module spiral_compiler =
                                     // Mark real computing thread id (helps detect true recursive unboxing).
                                     jp_cell.owner <- (try System.Threading.Thread.CurrentThread.ManagedThreadId with _ -> 0)
                                     let jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                    let jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_closure_stack, HashIdentity.Reference)
                                     let jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                     jp_type_stack.Add join_point_key |> ignore
                                     let s : LangEnv = {
@@ -11987,6 +12014,7 @@ module spiral_compiler =
                                         join_point_method_key_names = s.join_point_method_key_names
                                         join_point_closure_key_names = s.join_point_closure_key_names
                                         jp_method_stack = jp_method_stack
+                                        jp_closure_stack = jp_closure_stack
                                         jp_type_stack = jp_type_stack
                                         }
                                     let s = rename_global_term s
@@ -12046,6 +12074,7 @@ module spiral_compiler =
                                                     join_point_method_key_names = s.join_point_method_key_names
                                                     join_point_closure_key_names = s.join_point_closure_key_names
                                                     jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                                    jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_closure_stack, HashIdentity.Reference)
                                                     jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                                 }
                                                 rename_global_term s_retry
@@ -12253,7 +12282,7 @@ module spiral_compiler =
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 1 -> n
-                    | _ -> 16384
+                    | _ -> 2048 // alpha27: safer default; override via env var
             let max_reentry =
                 // Em BigStack, reentrância por nó tende a representar recursão finita (ex.: listm'.spi) — evite falso-positivo conservador.
                 if BigStack.isActive() then max max_reentry0 65536 else max_reentry0  // v107-alpha11: 65536 for extreme recursion
@@ -12263,7 +12292,7 @@ module spiral_compiler =
                 | v ->
                     match System.Int32.TryParse v with
                     | true, n when n >= 2 -> n
-                    | _ -> 16384
+                    | _ -> 2048 // alpha27: safer default; override via env var
             let max_reentry_key =
                 if BigStack.isActive() then max max_reentry_key0 65536 else max_reentry_key0  // v107-alpha11: 65536 for extreme recursion
             let hashSnapShort () =
@@ -12319,7 +12348,7 @@ module spiral_compiler =
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
                 with :? System.InsufficientExecutionStackException ->
-                    let newGen = CacheGeneration.invalidate (sprintf "%s: insufficient execution stack (term) depth=%d site=%s tag=%s" EJPCodes.EJP0010 depth site tag)
+                    let newGen = CacheGeneration.current() // alpha27: do not invalidate on term stack guard (avoids JP gen-change loops)
                     jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_insufficient_stack" EJPCodes.EJP0010, 1, (fun _ n -> n + 1)) |> ignore
                     let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
                     let deepSites = deepSitesShort ()
@@ -12355,21 +12384,27 @@ module spiral_compiler =
                 stack_check "d>128" 
 
             if depth > max_depth then
-                let newGen = CacheGeneration.invalidate (sprintf "%s: term depth exceeded depth=%d max=%d site=%s" EJPCodes.EJP0009 depth max_depth site)
-                jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
-                let deepSites = deepSitesShort ()
-                let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
-                let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
                 let bigActive = BigStack.isActive()
-                let mbTerm = BigStack.getMb "term"
-                let maxObs = RecursionTracker.getMaxObserved()
-                let traceShort =
-                    s.trace
-                    |> List.truncate 8
-                    |> List.map (fun r -> let (a,_) = r.range in sprintf "%s:%d:%d" r.path a.line a.character)
-                    |> String.concat " <- "
-                DiagSidecar.emit (sprintf "%s term recursion depth exceeded depth=%d max=%d maxObs=%d site=%s gen=%d tid=%d bigActive=%b mb=%d trace=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth maxObs site newGen tid bigActive mbTerm traceShort deepSites reasons)
-                raise_type_error (add_trace s r0) (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+                // alpha31: if not on BigStack, pivot instead of failing - allows deep recursion to proceed on BigStack (limit 65536)
+                if not bigActive then
+                    DiagSidecar.emit (sprintf "%s term depth pivot (alpha31): depth=%d max=%d site=%s -> pivoting to BigStack" EJPCodes.EJP0009 depth max_depth site)
+                    raise (System.InsufficientExecutionStackException())
+                else
+                    // Truly exceeded even on BigStack (65536) - this is a real problem
+                    let newGen = CacheGeneration.current() // alpha27: do not invalidate on term depth guard (avoids JP gen-change loops)
+                    jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
+                    let deepSites = deepSitesShort ()
+                    let reasons = CacheGeneration.reasonsSnapshot 6 |> String.concat " | "
+                    let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
+                    let mbTerm = BigStack.getMb "term"
+                    let maxObs = RecursionTracker.getMaxObserved()
+                    let traceShort =
+                        s.trace
+                        |> List.truncate 8
+                        |> List.map (fun r -> let (a,_) = r.range in sprintf "%s:%d:%d" r.path a.line a.character)
+                        |> String.concat " <- "
+                    DiagSidecar.emit (sprintf "%s term recursion depth exceeded depth=%d max=%d maxObs=%d site=%s gen=%d tid=%d bigActive=%b mb=%d trace=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth maxObs site newGen tid bigActive mbTerm traceShort deepSites reasons)
+                    raise_type_error (add_trace s r0) (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
 
 
             let global' (x: string) = globals_add s x
@@ -12867,6 +12902,7 @@ module spiral_compiler =
                             record_jp_diag_method join_point_key jp_name (r :: s.trace)
                             let run () =
                                 let jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                let jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_closure_stack, HashIdentity.Reference)
                                 let jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                 jp_method_stack.Add join_point_key |> ignore
                                 try
@@ -12887,6 +12923,7 @@ module spiral_compiler =
                                         join_point_method_key_names = s.join_point_method_key_names
                                         join_point_closure_key_names = s.join_point_closure_key_names
                                         jp_method_stack = jp_method_stack
+                                        jp_closure_stack = jp_closure_stack
                                         jp_type_stack = jp_type_stack
                                         }
                                     let s = rename_global_term s
@@ -12932,6 +12969,7 @@ module spiral_compiler =
                                                     join_point_method_key_names = s.join_point_method_key_names
                                                     join_point_closure_key_names = s.join_point_closure_key_names
                                                     jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                                                    jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_closure_stack, HashIdentity.Reference)
                                                     jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                                     }
                                                 rename_global_term s_retry
@@ -14718,6 +14756,7 @@ module spiral_compiler =
             join_point_method_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
             join_point_closure_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
             jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Reference)
+            jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Reference)
             jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(HashIdentity.Reference)
             }
         let ty_to_data x = ty_to_data {s with i = ref 0} x
