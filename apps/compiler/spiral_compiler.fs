@@ -6,7 +6,7 @@ namespace Polyglot
 
 module spiral_compiler =
 
-    /// ### EC_PROGRESS v107-alpha20
+    /// ### EC_PROGRESS v107-alpha24
     /// Removed proactive depth-based BigStack spawning that exhausted 32 nesting levels too quickly
     /// The 루프 loop pattern in listm'.spi requires thousands of recursive evaluations
     /// Proactive spawning at depth > 10 caused nest=32 exhaustion after only ~320 calls
@@ -11455,7 +11455,7 @@ module spiral_compiler =
                             let s = rename_global_term s
                             let domain_data = ty_to_data s domain
                             s.env_stack_term.[0] <- domain_data
-                            // v107-alpha20: Removed proactive depth-based BigStack spawning
+                            // v107-alpha24: Removed proactive depth-based BigStack spawning
                             // Rely on EnsureSufficientExecutionStack in term_core for reactive spawning
                             let seq,ty = term_scope'' s body (Some fun_ty)
                             dict.[join_point_key] <- Some(domain_data, seq)
@@ -11730,7 +11730,7 @@ module spiral_compiler =
             | YNominal a -> ty s a.node.body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
         and ty s x =
-            // v107-alpha20: Removed proactive depth-based BigStack spawning
+            // v107-alpha24: Removed proactive depth-based BigStack spawning
             // Rely only on EnsureSufficientExecutionStack in ty_core for reactive spawning
             ty_core s x
 
@@ -12217,7 +12217,7 @@ module spiral_compiler =
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
-            // v107-alpha20: Removed proactive depth-based BigStack spawning
+            // v107-alpha24: Removed proactive depth-based BigStack spawning
             // Rely only on EnsureSufficientExecutionStack in term_core for reactive spawning
             // This allows unlimited logical recursion while using BigStack pool efficiently
             term_core s x
@@ -12394,7 +12394,7 @@ module spiral_compiler =
                 | DV(L(_,YForall)) -> raise_type_error s <| sprintf "Cannot apply a runtime forall during the partial evaluation stage."
                 | a -> raise_type_error s <| sprintf "Expected a forall.\nGot: %s" (show_data a)
             let rec apply s (a0, b0) =
-                // v107-alpha20: Removed proactive depth-based BigStack spawning
+                // v107-alpha24: Removed proactive depth-based BigStack spawning
                 // Rely only on EnsureSufficientExecutionStack in apply_core for reactive spawning
                 apply_core s (a0, b0)
 
@@ -12522,7 +12522,7 @@ module spiral_compiler =
 
 
             let rec if_ s cond on_succ on_fail =
-                // v107-alpha20: Removed proactive depth-based BigStack spawning
+                // v107-alpha24: Removed proactive depth-based BigStack spawning
                 // Rely only on EnsureSufficientExecutionStack in if_core for reactive spawning
                 if_core s cond on_succ on_fail
 
@@ -12943,7 +12943,7 @@ module spiral_compiler =
                                                     jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
                                                     }
                                                 rename_global_term s_retry
-                                        // v107-alpha20: Removed proactive depth-based BigStack spawning
+                                        // v107-alpha24: Removed proactive depth-based BigStack spawning
                                         // Rely on EnsureSufficientExecutionStack in term_core for reactive spawning
                                         term_scope'' s_eval body annot_val
 
@@ -13034,7 +13034,7 @@ module spiral_compiler =
                                                         seq = ResizeArray()
                                                         cse = [Dictionary(HashIdentity.Structural)]
                                                         i = ref 0 }
-                                                // v107-alpha20: Removed proactive depth-based BigStack spawning
+                                                // v107-alpha24: Removed proactive depth-based BigStack spawning
                                                 // Rely on EnsureSufficientExecutionStack in term_core for reactive spawning
                                                 let seq2, ty2 = term_scope'' s_retry body annot_val
                                                 if show_ty ty2 = show_ty annot then
@@ -15253,18 +15253,149 @@ module spiral_compiler =
                 i <- i+1
                 )
             )
+        and envTrue (v: string) =
+            if isNull v then false
+            else
+                match v.Trim().ToLowerInvariant() with
+                | "1" | "true" | "yes" | "y" | "on" -> true
+                | _ -> false
+
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                let jp_dict,_,jp_ev,_ = env.join_point_method.[jp_body]
-                let rec get () =
-                    match jp_dict.TryGetValue key with
-                    | true, (Some a, Some range, _) -> a, range
-                    | _ ->
-                        match jp_ev.TryGetValue key with
-                        | true, ev ->
-                            ev.Wait()
-                            get ()
-                        | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                let jp_dict,_,jp_ev,jp_pending = env.join_point_method.[jp_body]
+                let jp_body_name =
+                    match jp_body with
+                    | (C b, _) -> b
+                let ret_ty =
+                    match key with
+                    | C(_,_,t) -> t
+                let wait_timeout_ms =
+                    let s = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_TIMEOUT_MS")
+                    match System.Int32.TryParse(s) with
+                    | true, v when v > 0 -> v
+                    | _ -> 60000
+                let wait_log_ms =
+                    let s = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_LOG_MS")
+                    match System.Int32.TryParse(s) with
+                    | true, v when v > 0 -> v
+                    | _ -> 5000
+                let wait_slice_ms =
+                    let s = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_SLICE_MS")
+                    match System.Int32.TryParse(s) with
+                    | true, v when v > 0 -> min 1000 v
+                    | _ -> 50
+                let wait_fatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_FATAL"))
+                let wait_placeholder =
+                    let v = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_PLACEHOLDER")
+                    if isNull v || v = "" then true else envTrue v
+                let mutable env_dumped = false
+                let dump_spiral_env_once () =
+                    if not env_dumped then
+                        env_dumped <- true
+                        try
+                            let pairs =
+                                [|
+                                    for de in System.Environment.GetEnvironmentVariables() do
+                                        let de = de :?> System.Collections.DictionaryEntry
+                                        let k = string de.Key
+                                        if k.StartsWith("SPIRAL_") then
+                                            yield k, string de.Value
+                                |]
+                                |> Array.sortBy fst
+                            DiagSidecar.emit "--- SPIRAL env vars ---"
+                            pairs |> Array.iter (fun (k,v) -> DiagSidecar.emit (sprintf "%s=%s" k v))
+                        with _ -> ()
+                let placeholder () =
+                    let msg =
+                        sprintf "CODEGEN JP PLACEHOLDER method%i body=%s pending=%A dict=%d ev=%d"
+                            i jp_body_name jp_pending jp_dict.Count jp_ev.Count
+                    DiagSidecar.emit msg
+                    [| TyLocalReturnOp([], TyFailwith(ret_ty, DLit(LitString msg)), DB) |], ret_ty
+                let get () =
+                    let sw = System.Diagnostics.Stopwatch.StartNew()
+                    let mutable next_log = int64 wait_log_ms
+                    let rec loop () =
+                        match jp_dict.TryGetValue key with
+                        | true, (Some a, Some range, _) -> a, range
+                        | true, (a_opt, range_opt, _) ->
+                            match jp_ev.TryGetValue key with
+                            | true, ev when ev.IsSet ->
+                                let msg =
+                                    sprintf "CODEGEN JP STUCK method%i body=%s key=%A a=%b range=%b pending=%A dict=%d ev=%d"
+                                        i jp_body_name key a_opt.IsSome range_opt.IsSome jp_pending jp_dict.Count jp_ev.Count
+                                dump_spiral_env_once ()
+                                DiagSidecar.emitEnvSnapshotOnce()
+                                if wait_fatal then raise_codegen_error' [] (None, msg)
+                                elif wait_placeholder then placeholder()
+                                else raise_codegen_error' [] (None, msg)
+                            | true, ev ->
+                                let ms = sw.ElapsedMilliseconds
+                                if ms >= int64 wait_timeout_ms then
+                                    let msg =
+                                        sprintf "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                            wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                    dump_spiral_env_once ()
+                                    DiagSidecar.emitEnvSnapshotOnce()
+                                    if wait_fatal then raise_codegen_error' [] (None, msg)
+                                    elif wait_placeholder then placeholder()
+                                    else raise_codegen_error' [] (None, msg)
+                                else
+                                    if ms >= next_log then
+                                        DiagSidecar.emit
+                                            (sprintf "CODEGEN JP wait %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                                (int ms) i jp_body_name key jp_pending jp_dict.Count jp_ev.Count)
+                                        next_log <- ms + int64 wait_log_ms
+                                    ev.Wait(wait_slice_ms) |> ignore
+                                    loop ()
+                            | _ ->
+                                let msg =
+                                    sprintf "CODEGEN JP MISSING EVENT method%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                        i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                dump_spiral_env_once ()
+                                DiagSidecar.emitEnvSnapshotOnce()
+                                if wait_fatal then raise_codegen_error' [] (None, msg)
+                                elif wait_placeholder then placeholder()
+                                else raise_codegen_error' [] (None, msg)
+                        | _ ->
+                            match jp_ev.TryGetValue key with
+                            | true, ev when ev.IsSet ->
+                                let msg =
+                                    sprintf "CODEGEN JP STUCK method%i body=%s key=%A pending=%A dict=%d ev=%d (no dict entry)"
+                                        i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                dump_spiral_env_once ()
+                                DiagSidecar.emitEnvSnapshotOnce()
+                                if wait_fatal then raise_codegen_error' [] (None, msg)
+                                elif wait_placeholder then placeholder()
+                                else raise_codegen_error' [] (None, msg)
+                            | true, ev ->
+                                let ms = sw.ElapsedMilliseconds
+                                if ms >= int64 wait_timeout_ms then
+                                    let msg =
+                                        sprintf "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                            wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                    dump_spiral_env_once ()
+                                    DiagSidecar.emitEnvSnapshotOnce()
+                                    if wait_fatal then raise_codegen_error' [] (None, msg)
+                                    elif wait_placeholder then placeholder()
+                                    else raise_codegen_error' [] (None, msg)
+                                else
+                                    if ms >= next_log then
+                                        DiagSidecar.emit
+                                            (sprintf "CODEGEN JP wait %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                                (int ms) i jp_body_name key jp_pending jp_dict.Count jp_ev.Count)
+                                        next_log <- ms + int64 wait_log_ms
+                                    ev.Wait(wait_slice_ms) |> ignore
+                                    loop ()
+                            | _ ->
+                                let msg =
+                                    sprintf "CODEGEN JP MISSING method%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                        i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                dump_spiral_env_once ()
+                                DiagSidecar.emitEnvSnapshotOnce()
+                                if wait_fatal then raise_codegen_error' [] (None, msg)
+                                elif wait_placeholder then placeholder()
+                                else raise_codegen_error' [] (None, msg)
+                    loop ()
                 let a, range = get ()
                 {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
@@ -15275,16 +15406,141 @@ module spiral_compiler =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
                 | YFun(domain,range,FT_Vanilla) ->
-                    let jp_dict,_,jp_ev,_ = env.join_point_closure.[jp_body]
-                    let rec get () =
-                        match jp_dict.TryGetValue key with
-                        | true, Some(domain_args, body) -> domain_args, body
-                        | _ ->
-                            match jp_ev.TryGetValue key with
-                            | true, ev ->
-                                ev.Wait()
-                                get ()
-                            | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                    let jp_dict,_,jp_ev,jp_pending = env.join_point_closure.[jp_body]
+                    let jp_body_name =
+                        match jp_body with
+                        | (C b, _) -> b
+                    let range_ty =
+                        match fun_ty with
+                        | YFun(_, r, FT_Vanilla) -> r
+                        | _ -> YB
+                    let wait_timeout_ms =
+                        let s = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_TIMEOUT_MS")
+                        match System.Int32.TryParse(s) with
+                        | true, v when v > 0 -> v
+                        | _ -> 60000
+                    let wait_log_ms =
+                        let s = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_LOG_MS")
+                        match System.Int32.TryParse(s) with
+                        | true, v when v > 0 -> v
+                        | _ -> 5000
+                    let wait_slice_ms =
+                        let s = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_SLICE_MS")
+                        match System.Int32.TryParse(s) with
+                        | true, v when v > 0 -> min 1000 v
+                        | _ -> 50
+                    let wait_fatal = envTrue (System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_FATAL"))
+                    let wait_placeholder =
+                        let v = System.Environment.GetEnvironmentVariable("SPIRAL_CODEGEN_JP_WAIT_PLACEHOLDER")
+                        if isNull v || v = "" then true else envTrue v
+                    let mutable env_dumped = false
+                    let dump_spiral_env_once () =
+                        if not env_dumped then
+                            env_dumped <- true
+                            try
+                                let pairs =
+                                    [|
+                                        for de in System.Environment.GetEnvironmentVariables() do
+                                            let de = de :?> System.Collections.DictionaryEntry
+                                            let k = string de.Key
+                                            if k.StartsWith("SPIRAL_") then
+                                                yield k, string de.Value
+                                    |]
+                                    |> Array.sortBy fst
+                                DiagSidecar.emit "--- SPIRAL env vars ---"
+                                pairs |> Array.iter (fun (k,v) -> DiagSidecar.emit (sprintf "%s=%s" k v))
+                            with _ -> ()
+                    let placeholder () =
+                        let msg =
+                            sprintf "CODEGEN JP PLACEHOLDER closure%i body=%s pending=%A dict=%d ev=%d"
+                                i jp_body_name jp_pending jp_dict.Count jp_ev.Count
+                        DiagSidecar.emit msg
+                        DB, [| TyLocalReturnOp([], TyFailwith(range_ty, DLit(LitString msg)), DB) |]
+                    let get () =
+                        let sw = System.Diagnostics.Stopwatch.StartNew()
+                        let mutable next_log = int64 wait_log_ms
+                        let rec loop () =
+                            match jp_dict.TryGetValue key with
+                            | true, Some x -> x
+                            | true, None ->
+                                match jp_ev.TryGetValue key with
+                                | true, ev when ev.IsSet ->
+                                    let msg =
+                                        sprintf "CODEGEN JP STUCK closure%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                            i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                    dump_spiral_env_once ()
+                                    DiagSidecar.emitEnvSnapshotOnce()
+                                    if wait_fatal then raise_codegen_error' [] (None, msg)
+                                    elif wait_placeholder then placeholder()
+                                    else raise_codegen_error' [] (None, msg)
+                                | true, ev ->
+                                    let ms = sw.ElapsedMilliseconds
+                                    if ms >= int64 wait_timeout_ms then
+                                        let msg =
+                                            sprintf "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                                wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                        dump_spiral_env_once ()
+                                        DiagSidecar.emitEnvSnapshotOnce()
+                                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                                        elif wait_placeholder then placeholder()
+                                        else raise_codegen_error' [] (None, msg)
+                                    else
+                                        if ms >= next_log then
+                                            DiagSidecar.emit
+                                                (sprintf "CODEGEN JP wait %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                                    (int ms) i jp_body_name key jp_pending jp_dict.Count jp_ev.Count)
+                                            next_log <- ms + int64 wait_log_ms
+                                        ev.Wait(wait_slice_ms) |> ignore
+                                        loop ()
+                                | _ ->
+                                    let msg =
+                                        sprintf "CODEGEN JP MISSING EVENT closure%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                            i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                    dump_spiral_env_once ()
+                                    DiagSidecar.emitEnvSnapshotOnce()
+                                    if wait_fatal then raise_codegen_error' [] (None, msg)
+                                    elif wait_placeholder then placeholder()
+                                    else raise_codegen_error' [] (None, msg)
+                            | _ ->
+                                match jp_ev.TryGetValue key with
+                                | true, ev when ev.IsSet ->
+                                    let msg =
+                                        sprintf "CODEGEN JP STUCK closure%i body=%s key=%A pending=%A dict=%d ev=%d (no dict entry)"
+                                            i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                    dump_spiral_env_once ()
+                                    DiagSidecar.emitEnvSnapshotOnce()
+                                    if wait_fatal then raise_codegen_error' [] (None, msg)
+                                    elif wait_placeholder then placeholder()
+                                    else raise_codegen_error' [] (None, msg)
+                                | true, ev ->
+                                    let ms = sw.ElapsedMilliseconds
+                                    if ms >= int64 wait_timeout_ms then
+                                        let msg =
+                                            sprintf "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                                wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                        dump_spiral_env_once ()
+                                        DiagSidecar.emitEnvSnapshotOnce()
+                                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                                        elif wait_placeholder then placeholder()
+                                        else raise_codegen_error' [] (None, msg)
+                                    else
+                                        if ms >= next_log then
+                                            DiagSidecar.emit
+                                                (sprintf "CODEGEN JP wait %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                                    (int ms) i jp_body_name key jp_pending jp_dict.Count jp_ev.Count)
+                                            next_log <- ms + int64 wait_log_ms
+                                        ev.Wait(wait_slice_ms) |> ignore
+                                        loop ()
+                                | _ ->
+                                    let msg =
+                                        sprintf "CODEGEN JP MISSING closure%i body=%s key=%A pending=%A dict=%d ev=%d"
+                                            i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
+                                    dump_spiral_env_once ()
+                                    DiagSidecar.emitEnvSnapshotOnce()
+                                    if wait_fatal then raise_codegen_error' [] (None, msg)
+                                    elif wait_placeholder then placeholder()
+                                    else raise_codegen_error' [] (None, msg)
+                        loop ()
                     let domain_args, body = get ()
                     {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
