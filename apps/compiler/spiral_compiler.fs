@@ -11167,10 +11167,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
 
         let inline diag_specs_total () =
             let mutable total = 0
-            for KeyValue(_, (dict, _, _, _)) in join_point_method do
+            for KeyValue(_, (dict, _, _)) in join_point_method do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 total <- total + dict.Count
-            for KeyValue(_, (dict, _, _, _)) in join_point_closure do
+            for KeyValue(_, (dict, _, _)) in join_point_closure do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 total <- total + dict.Count
             for KeyValue(_, (dict, _, _)) in join_point_type do
@@ -11402,9 +11402,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         // The key insight: we run IVar.read synchronously on the calling thread but
         // with periodic yields to allow Hopac scheduler to make progress.
 
+        let inline hopac_tick () =
+            // Hopac's API differs across versions; if there is no explicit 'tick',
+            // do a very light yield to avoid starvation while we're spinning.
+            System.Threading.Thread.Yield() |> ignore
+
         /// Wait for an IVar to be filled, with cooperative yielding and diagnostics.
         /// This is the Hopac equivalent of the old jp_ev_wait.
-        let inline jp_ivar_wait<'a> (w: string) (details: string) (ivar: Hopac.IVar<'a>) : 'a =
+        let inline jp_ivar_wait (w: string) (details: string) (ivar: Hopac.IVar<'a>) : 'a =
             diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
             let gen0 = CacheGeneration.current()
 
@@ -11427,7 +11432,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                     // Yield to Hopac scheduler periodically to allow other fibers to run
                     if (spin.Count &&& 255) = 0 then
                         // Run a micro-batch of Hopac work
-                        try Hopac.Scheduler.Global.tick() with _ -> ()
+                        hopac_tick ()
 
                     // Periodic diagnostic tick
                     let now = peval_sw.ElapsedMilliseconds
@@ -11448,6 +11453,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
 
                 jp_throw_if_any ()
                 Hopac.IVar.Now.get ivar
+
+        let mutable jp_pending_count = 0L  // Atomic counter of pending jobs
 
         /// ALPHA46: Schedule work via Hopac.queue for cooperative scheduling
         let inline jp_hopac_start (thunk: unit -> unit) =
@@ -11489,7 +11496,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                     diag_abort_if_needed "jp_ev_wait"
                     // Yield to Hopac periodically
                     if (spin.Count &&& 255) = 0 then
-                        try Hopac.Scheduler.Global.tick() with _ -> ()
+                        hopac_tick ()
                     spin.SpinOnce()
                     if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
                 jp_throw_if_any ()
@@ -11501,123 +11508,153 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         // ALPHA46: Hopac-based scheduler replaces custom thread pool
         // Workers are Hopac fibers managed by Hopac.Scheduler.Global
         let jp_cancel = new System.Threading.CancellationTokenSource()
-        let mutable jp_hopac_initialized = false
 
-        let init_hopac_scheduler () =
-            if not jp_hopac_initialized then
-                jp_hopac_initialized <- true
-                // Initialize Hopac scheduler with appropriate parallelism
-                // Hopac auto-configures based on ProcessorCount
-                DiagSidecar.emit (sprintf "ALPHA46: Using Hopac scheduler (ProcessorCount=%d)" Environment.ProcessorCount)
+// ---- SOTA Hopac worker pool (b158 stays embedded elsewhere)
+// We use a bounded work queue (jp_work_q) plus a semaphore (jp_work_sem) for buffering/backpressure,
+// and Hopac workers for work-stealing scheduling. Waiters can also "help" by draining the queue.
+let mutable jp_workers_started = false
+let jp_workers_started_sync = obj()
 
-        // Initialize Hopac eagerly
-        init_hopac_scheduler ()
+let inline jp_note_progress () =
+    last_progress_ms <- peval_sw.ElapsedMilliseconds
 
-        // ════════════════════════════════════════════════════════════════════════
-        // ALPHA46: HOPAC-BASED JP SCHEDULER
-        // ════════════════════════════════════════════════════════════════════════
-        // All JP work is now scheduled via Hopac.queue which uses Hopac's
-        // work-stealing scheduler. This achieves true cooperative parallelism.
+let jp_help_batch (max_n: int) : int =
+    let mutable ran = 0
+    let mutable work = Unchecked.defaultof<unit -> unit>
+    while ran < max_n && jp_work_q.TryDequeue(&work) do
+        ran <- ran + 1
+        work()
+    if ran > 0 then jp_note_progress ()
+    ran
 
-        let mutable jp_pending_count = 0L  // Atomic counter of pending jobs
+let start_jp_workers () =
+    if not jp_workers_started then
+        lock jp_workers_started_sync (fun () ->
+            if not jp_workers_started then
+                jp_workers_started <- true
 
-        /// ALPHA46: Schedule JP work via Hopac - always parallel, no gates
-        let inline jp_start (thunk : unit -> unit) =
-            let gen0 = CacheGeneration.current()
-            
-            // ALPHA46: Always schedule via Hopac - no jp_parallel_enabled gate!
-            // This ensures we always use cooperative scheduling.
-            
-            // Increment pending count
-            System.Threading.Interlocked.Increment(&jp_pending_count) |> ignore
-            System.Threading.Interlocked.Increment(&jp_total_started) |> ignore
+                let worker (_i: int) =
+                    Hopac.job {
+                        do! Hopac.Job.switchToWorker()
+                        let mutable keep_running = true
+                        while keep_running do
+                            // SemaphoreSlim.Wait is blocking, so isolate it to avoid blocking Hopac worker threads.
+                            let! gotWork =
+                                Hopac.Job.isolate (fun () ->
+                                    try
+                                        jp_work_sem.Wait(jp_cancel.Token)
+                                        true
+                                    with :? System.OperationCanceledException ->
+                                        false
+                                )
+                            if not gotWork then
+                                keep_running <- false
+                            else
+                                // Drain a batch; the semaphore token we consumed guarantees at least one item
+                                // was enqueued at some point, but the queue could have been helped/drained.
+                                ignore (jp_help_batch jp_help_batch_n)
+                        return ()
+                    }
 
-            // Track for CountdownEvent (legacy compatibility)
-            let cd_added = lock jp_barrier_lock (fun () ->
-                if jp_cd.IsSet then false
-                else jp_cd.TryAddCount()
-            )
+                for i = 1 to max 1 jp_dop do
+                    Hopac.start (worker i)
+        )
 
-            if CacheGeneration.current() <> gen0 then
-                // Generation changed - run synchronously to avoid stale computation
-                System.Threading.Interlocked.Decrement(&jp_pending_count) |> ignore
-                if cd_added then jp_cd.Signal() |> ignore
-                jp_mismatch_counts.AddOrUpdate(sprintf "%s|jp_start_gen_change" EJPCodes.EJP0008, 1, (fun _ n -> n + 1)) |> ignore
-                thunk ()
+let jp_start (newGen: int) (run: unit -> unit) =
+    if jp_is_parallel_enabled () && jp_dop > 0 then
+        start_jp_workers ()
+
+        let mutable cd_added = false
+        lock jp_barrier_lock (fun () ->
+            if not jp_wait_closed && cache_generation = newGen then
+                cd_added <- jp_cd.TryAddCount()
+        )
+
+        if cd_added then
+            let pending = System.Threading.Interlocked.Increment(&jp_pending_count)
+
+            // Backpressure: if we're beyond the cap, execute inline to prevent unbounded queue growth.
+            if pending > int64 jp_max_pending then
+                try
+                    run ()
+                with e ->
+                    jp_exns.Enqueue(capture_edi e)
+                finally
+                    ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
+                    ignore (jp_cd.Signal())
+                    jp_note_progress ()
             else
-                // Schedule via Hopac
-                let job =
-                    Hopac.Job.thunk (fun () ->
-                        try
-                            try
-                                thunk ()
-                            with e ->
-                                jp_exns.Enqueue (capture_edi e)
-                        finally
-                            System.Threading.Interlocked.Decrement(&jp_pending_count) |> ignore
-                            if cd_added then jp_cd.Signal() |> ignore
-                    )
-                Hopac.queue job |> Hopac.start
+                let work_item () =
+                    ignore (System.Threading.Interlocked.Increment(&jp_total_started))
+                    try
+                        run ()
+                    with e ->
+                        jp_exns.Enqueue(capture_edi e)
+                    finally
+                        ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
+                        ignore (jp_cd.Signal())
+                        jp_note_progress ()
 
-        /// ALPHA46: Wait for all pending work via Hopac cooperative spinning
-        let inline jp_wait () =
-            // Signal the initial count on CountdownEvent (legacy compatibility)
-            let was_closed =
-                lock jp_barrier_lock (fun () ->
-                    let prev = jp_wait_closed
-                    if not jp_wait_closed then
-                        jp_wait_closed <- true
-                        jp_cd.Signal() |> ignore
-                    prev
-                )
-            let gen0 = CacheGeneration.current()
-            let mutable gen_new = gen0
-            let mutable gen_changed = false
+                jp_work_q.Enqueue(work_item)
+                ignore (jp_work_sem.Release())
+                jp_note_progress ()
+        else
+            run ()
+    else
+        run ()
 
-            // ALPHA46: Cooperative spin-wait with Hopac scheduler ticks
-            let mutable spin = System.Threading.SpinWait()
+let jp_ivar_wait (newGen: int) (ivar: Hopac.IVar<Result<PartEvalResult,exn>>) (diag: unit -> unit) : PartEvalResult =
+    let mutable last_pending = System.Threading.Interlocked.Read(&jp_pending_count)
+    let mutable last_started = System.Threading.Interlocked.Read(&jp_total_started)
 
-            try
-                // Wait until all pending work completes OR generation changes
-                let mutable iterations = 0L
-                while (not gen_changed) && (System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (jp_cd.Wait(0))) do
-                    iterations <- iterations + 1L
-                    diag_abort_if_needed "jp_wait"
-                    gen_new <- CacheGeneration.current()
-                    if gen_new > gen0 then
-                        gen_changed <- true
-                    else
-                        jp_throw_if_any ()
-                        // ALPHA46: Yield to Hopac scheduler to allow fibers to run
-                        if (spin.Count &&& 255) = 0 then
-                            try Hopac.Scheduler.Global.tick() with _ -> ()
-                        spin.SpinOnce()
-                        if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
-                
-                // Log wait statistics
-                if iterations > 1000L then
-                    DiagSidecar.emit (sprintf "jp_wait: iterations=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
+    while not ivar.IsFull do
+        // Help make progress while waiting (important for recursive specializations).
+        if jp_is_parallel_enabled () then
+            ignore (jp_help_batch jp_help_batch_n)
 
-                if gen_changed then
-                    let snap = diag_snapshot (sprintf "gen_change jp_wait from=%d to=%d" gen0 gen_new)
-                    jp_exns.Enqueue (capture_edi (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_wait (from %d to %d)\n%s" gen0 gen_new snap)))
-            finally
-                // ALPHA46: Cancel Hopac-based work
-                try jp_cancel.Cancel() with _ -> ()
+        let pending = System.Threading.Interlocked.Read(&jp_pending_count)
+        let started = System.Threading.Interlocked.Read(&jp_total_started)
 
-            jp_throw_if_any ()
-        let inline map_try_find_by_string (key : string) (m : Map<int * string, 'v>) : 'v option =
-            let mutable r = None
-            for KeyValue((_, k), v) in m do
-                if k = key then r <- Some v
-            r
+        if pending <> last_pending || started <> last_started then
+            last_pending <- pending
+            last_started <- started
+            jp_note_progress ()
 
-        let dyn_ctx = new System.Threading.ThreadLocal<_>(fun () -> Dictionary<ResizeArray<TypedBind>, struct(Dictionary<_,_> * HashSet<_> * int ref)>(HashIdentity.Reference))
-        // Dynamic context limit: -1 = unlimited (SOTA default)
-        let dyn_ctx_limit = -1
+        let now_ms = peval_sw.ElapsedMilliseconds
 
+        if jp_stall_abort_ms > 0 && now_ms - last_progress_ms > int64 jp_stall_abort_ms then
+            diag ()
+            raise_error t (EJP0014(now_ms - last_progress_ms, pending, started, cache_generation, newGen))
 
-        let rec ty_to_data s x =
+        if cache_generation <> newGen then
+            diag ()
+            raise_error t (EJP0008(cache_generation, newGen))
+
+        if jp_diag_abort_ms > 0 && jp_diag_abort_ms < int now_ms then
+            jp_diag_hard_abort <- true
+
+        System.Threading.Thread.Yield() |> ignore
+
+    match Hopac.run (Hopac.read ivar) with
+    | Ok x -> x
+    | Error e -> raise e
+
+let jp_wait () =
+    try
+        while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (jp_cd.Wait(0)) do
+            if jp_throw_if_any () then
+                // jp_throw_if_any already raised; keep loop for clarity.
+                ()
+            ignore (jp_help_batch jp_help_batch_n)
+            System.Threading.Thread.Yield() |> ignore
+    finally
+        jp_wait_closed <- true
+        jp_cancel.Cancel()
+        // Release the base barrier count.
+        ignore (jp_cd.Signal())
+        // Wake sleeping workers so they can observe cancellation and exit.
+        ignore (jp_work_sem.Release(max 1 jp_dop))
+let rec ty_to_data s x =
             let f = ty_to_data s
             match x with
             | YVoid -> raise_type_error s "Compiler error: Cannot construct an instance of a void type."
@@ -15228,7 +15265,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                 let msg =
                                     sprintf "CODEGEN JP STUCK method%i body=%s key=%A a=%b range=%b pending=%A dict=%d ev=%d"
                                         i jp_body_name key a_opt.IsSome range_opt.IsSome jp_pending jp_dict.Count jp_ev.Count
-                                dump_spiral_env_once ()
+                                DiagSidecar.dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
@@ -15239,7 +15276,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                     let msg =
                                         sprintf "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    dump_spiral_env_once ()
+                                    DiagSidecar.dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15256,7 +15293,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                 let msg =
                                     sprintf "CODEGEN JP MISSING EVENT method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                         i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                dump_spiral_env_once ()
+                                DiagSidecar.dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
@@ -15267,7 +15304,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                 let msg =
                                     sprintf "CODEGEN JP STUCK method%i body=%s key=%A pending=%A dict=%d ev=%d (no dict entry)"
                                         i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                dump_spiral_env_once ()
+                                DiagSidecar.dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
@@ -15278,7 +15315,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                     let msg =
                                         sprintf "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    dump_spiral_env_once ()
+                                    DiagSidecar.dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15295,7 +15332,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                 let msg =
                                     sprintf "CODEGEN JP MISSING method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                         i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                dump_spiral_env_once ()
+                                DiagSidecar.dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
@@ -15345,7 +15382,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                     let msg =
                                         sprintf "CODEGEN JP STUCK closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    dump_spiral_env_once ()
+                                    DiagSidecar.dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15356,7 +15393,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                         let msg =
                                             sprintf "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                                 wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                        dump_spiral_env_once ()
+                                        DiagSidecar.dump_spiral_env_once ()
                                         DiagSidecar.emitEnvSnapshotOnce()
                                         if wait_fatal then raise_codegen_error' [] (None, msg)
                                         elif wait_placeholder then placeholder()
@@ -15373,7 +15410,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                     let msg =
                                         sprintf "CODEGEN JP MISSING EVENT closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    dump_spiral_env_once ()
+                                    DiagSidecar.dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15384,7 +15421,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                     let msg =
                                         sprintf "CODEGEN JP STUCK closure%i body=%s key=%A pending=%A dict=%d ev=%d (no dict entry)"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    dump_spiral_env_once ()
+                                    DiagSidecar.dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15395,7 +15432,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                         let msg =
                                             sprintf "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                                 wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                        dump_spiral_env_once ()
+                                        DiagSidecar.dump_spiral_env_once ()
                                         DiagSidecar.emitEnvSnapshotOnce()
                                         if wait_fatal then raise_codegen_error' [] (None, msg)
                                         elif wait_placeholder then placeholder()
@@ -15412,7 +15449,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                                     let msg =
                                         sprintf "CODEGEN JP MISSING closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    dump_spiral_env_once ()
+                                    DiagSidecar.dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
