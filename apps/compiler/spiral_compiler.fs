@@ -9382,6 +9382,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
         let private lastInvalidationTime = ref DateTime.MinValue
         let private invalidationReasons = System.Collections.Concurrent.ConcurrentQueue<string>()
 
+        // If cache invalidation is triggered due to suspected cache corruption (eg. apply mismatch),
+        // we want the next build attempt to run JP work sequentially to avoid repeating the same race.
+        // This latch is process-wide; it is reset at the start of each file build attempt loop.
+        let mutable private jp_force_sequential = 0
+
+        let requestSequential () =
+            Interlocked.Exchange(&jp_force_sequential, 1) |> ignore
+
+        let resetSequentialRequest () =
+            Interlocked.Exchange(&jp_force_sequential, 0) |> ignore
+
+        let isSequentialRequested () =
+            Volatile.Read(&jp_force_sequential) = 1
+
         /// Get current generation number
         let current () = Interlocked.Read(&generation)
 
@@ -10746,6 +10760,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
         // Degree of parallelism: use all available CPU cores
         let jp_dop = max 1 Environment.ProcessorCount
 
+
+        let jp_is_parallel_enabled =
+            // Parallel join-points enabled by default; set SPIRAL_JP_PARALLEL=0/false/no to disable.
+            match Environment.GetEnvironmentVariable("SPIRAL_JP_PARALLEL") with
+            | null | "" -> true
+            | s ->
+                match s.Trim().ToLowerInvariant() with
+                | "0" | "false" | "no" | "n" -> false
+                | _ -> true
+
         // Stack size per worker thread: 64MB (ample for deep recursion)
         let jp_stack_mb = 64
 
@@ -10784,7 +10808,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
         let jp_use_threadpool = false
 
         // Hard abort on diagnostic cap hit (don't try to continue)
-        let jp_diag_hard_abort = true
+        let jp_diag_hard_abort = false
 
         // Enable verbose diagnostics and traces for debugging
         let jp_diag_verbose = true
@@ -10792,7 +10816,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
 
         let diag_console_lock = obj()
 
-        let mutable jp_parallel_enabled = true
+        let mutable jp_parallel_enabled = jp_is_parallel_enabled && not (CacheGeneration.isSequentialRequested())
         let mutable diag_abort_armed = true
 
         // Per-JP-name statistics for detecting loop specialization patterns
@@ -12449,6 +12473,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                             let invKey = sprintf "%s|apply_deep_recursion|%s" EJPCodes.EJP0008 site
                             let invN = jp_mismatch_counts.AddOrUpdate(invKey, 1, (fun _ n -> n + 1))
                             if invN <= 1 && depth <= 256 then
+                                CacheGeneration.requestSequential ()
                                 let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d site=%s" depth site)
                                 DiagSidecar.emit (sprintf "%s apply mismatch suspected cache corruption (depth=%d) -> invalidated to gen=%d"
                                     EJPCodes.EJP0008 depth newGen)
@@ -21528,6 +21553,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                                         | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
 
                                     let rec attempt_build (attempt: int) (max_attempts: int) =
+                                        if attempt = 0 then CacheGeneration.resetSequentialRequest ()
                                         try
                                             do_build ()
                                         with
@@ -21553,6 +21579,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine
                                                     let trace_lines, _ = show_trace s e.Data0 e.Data1
                                                     let sidecar = DiagSidecar.snapshot 128
                                                     let reasons = CacheGeneration.reasonsSnapshot 64
+                                                    let had_apply_mismatch = reasons |> List.exists (fun x -> x.Contains("apply mismatch"))
+                                                    if is_gen_wait && had_apply_mismatch then
+                                                        CacheGeneration.requestSequential ()
+                                                        HopacExtensions.forceConcurrency 1
+
                                                     let suspects =
                                                         SuspectCache.getRecent 32
                                                         |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h se.generation se.depth se.hitCount se.errorType se.timestamp)
