@@ -4,10 +4,28 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260110-alpha12)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260111-alpha16)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
+    /// ALPHA16 TASKCANCELEDEXCEPTION FIX:
+    /// Alpha15 workers used CancellationToken with semaphore wait. When compilation ended
+    /// (success OR error like EJP0010), the token was canceled, causing TaskCanceledException
+    /// to propagate through Hopac's internal TaskToJobAwaiter. The F# try-with couldn't catch
+    /// this because it happened at Hopac's scheduler level, not inside the F# code.
+    /// 
+    /// Fixes:
+    /// - Workers use timeout-based polling (100ms) instead of CancellationToken
+    /// - Explicit shutdown flag (jp_workers_shutdown) checked each iteration
+    /// - Outer try-catch wraps entire worker to catch ANY exception (including Task cancellation)
+    /// - Workers exit gracefully instead of crashing with unhandled exceptions
+    /// - Added jp_shutdown_workers() to signal graceful shutdown
+    ///
+    /// ALPHA15 DEADLOCK FIX (retained):
+    /// - Worker count = jp_dop*8 (compensates for blocking in jp_ev_wait)
+    /// - jp_ev_wait drains 64 items per iteration + ThreadPool fallback
+    /// - Concise trace formatting (filename:line:col, max 20 frames)
+    ///
     /// ALPHA12 SOTA IMPLEMENTATION:
     /// This version implements the full SOTA parallel architecture with:
     /// - Hopac-based work scheduling via bounded work queue + work-stealing
@@ -11107,6 +11125,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let col = (fst x.range).character + 1
             sprintf "%s:%d:%d" x.path line col
 
+        /// ALPHA15: Concise trace frame: filename only (no directory), line:col
+        let inline trace_frame_concise (x: Range) =
+            let filename = System.IO.Path.GetFileName(x.path)
+            let line = (fst x.range).line + 1
+            let col = (fst x.range).character + 1
+            sprintf "%s:%d:%d" filename line col
+
         let inline trace_frame_rust (x: Range) =
             let (p0, p1) = x.range
             sprintf "%s:({ line = %d; character = %d }, { line = %d; character = %d })"
@@ -11128,6 +11153,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             else
                 let top = if frames.Length > 8 then frames |> List.take 8 else frames
                 System.String.Join(" <- ", top)
+
+        /// ALPHA15: Concise trace string: filename only (no full paths), line:col, max 20 frames
+        let trace_to_string_concise (xs: Trace) =
+            let frames = trace_dedup xs |> List.map trace_frame_concise
+            if frames.IsEmpty then "<no-trace>"
+            else
+                let maxFrames = 20
+                let shown = if frames.Length > maxFrames then frames |> List.take maxFrames else frames
+                let body =
+                    shown
+                    |> List.mapi (fun i s -> sprintf "   %2d: %s" (i + 1) s)
+                    |> String.concat "\n"
+                if frames.Length > shown.Length then body + sprintf "\n   ... (+%d)" (frames.Length - shown.Length)
+                else body
 
         let trace_to_string_full (xs: Trace) =
             let frames = trace_dedup xs |> List.map trace_frame_rust
@@ -11259,9 +11298,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         let count = kv.Value
                         let tr =
                             match jp_name_traces.TryGetValue name with
-                            | true, t -> trace_to_string_full t
+                            | true, t -> trace_to_string_concise t  // ALPHA15: Use concise format
                             | _ -> "<no trace>"
-                        sbt.AppendFormat("  - {0} ({1})\n{2}", name, count, tr) |> ignore
+                        sbt.AppendFormat("  - {0} ({1})\n{2}\n", name, count, tr) |> ignore
                     sbt.ToString()
                 else ""
             let sb = System.Text.StringBuilder()
@@ -11490,6 +11529,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         // Hopac worker fibers
         let mutable jp_workers_started = false
         let jp_workers_started_sync = obj()
+        let mutable jp_workers_shutdown = false  // ALPHA16: graceful shutdown flag
+        
+        // ALPHA16: Signal workers to shut down gracefully
+        let jp_shutdown_workers () =
+            jp_workers_shutdown <- true
+            // Release semaphore to unblock any waiting workers
+            try for _ in 1 .. (jp_dop * 8 + 16) do ignore (jp_work_sem.Release()) with _ -> ()
         
         let start_jp_workers () =
             if not jp_workers_started then
@@ -11497,28 +11543,38 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     if not jp_workers_started then
                         jp_workers_started <- true
                         
+                        // ALPHA16: Worker with timeout-based polling + outer exception handler
+                        // No CancellationToken to avoid TaskCanceledException cascade
                         let worker (i: int) =
                             Hopac.job {
-                                do! Hopac.Job.switchToWorker()
-                                let mutable keep_running = true
-                                while keep_running do
-                                    let! gotWork =
-                                        Hopac.job {
-                                            try
-                                                do! HopacExtensions.awaitUnitTask (jp_work_sem.WaitAsync(jp_cancel.Token))
-                                                return true
-                                            with :? System.OperationCanceledException ->
-                                                return false
-                                        }
-                                    if not gotWork then
-                                        keep_running <- false
-                                    else
-                                        // Drain batch - semaphore token guarantees work was enqueued
-                                        ignore (jp_help_batch jp_help_batch_n)
-                                return ()
+                                try
+                                    let mutable keep_running = true
+                                    while keep_running && not jp_workers_shutdown do
+                                        // Use 100ms timeout instead of CancellationToken
+                                        let! gotWork =
+                                            Hopac.job {
+                                                try
+                                                    let! waited = jp_work_sem.WaitAsync(100) |> HopacExtensions.awaitTask
+                                                    return waited
+                                                with _ -> return false
+                                            }
+                                        if jp_workers_shutdown then
+                                            keep_running <- false
+                                        elif gotWork then
+                                            // Drain batch - semaphore token guarantees work was enqueued
+                                            ignore (jp_help_batch jp_help_batch_n)
+                                        // else: timeout, loop again and check shutdown flag
+                                    return ()
+                                with _ ->
+                                    // ALPHA16: Silently catch ALL exceptions to prevent cascade
+                                    // Workers exit gracefully on any error (including Task cancellation)
+                                    return ()
                             }
                         
-                        for i = 1 to max 1 jp_dop do
+                        // ALPHA15: Use 8x workers because workers may block in jp_ev_wait
+                        // With blocking synchronization, we need many more fibers than CPU cores
+                        let worker_count = max 8 (jp_dop * 8)
+                        for i = 1 to worker_count do
                             Hopac.start (worker i)
                 )
 
@@ -11599,6 +11655,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             finally
                 // Mark as closed for diagnostics ONLY - does not affect jp_start
                 jp_wait_closed <- true
+                jp_shutdown_workers ()  // ALPHA16: Signal workers to shut down gracefully
                 jp_cancel.Cancel()
                 // Release base barrier count
                 try ignore (jp_cd.Signal()) with _ -> ()
@@ -11606,6 +11663,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 try ignore (jp_work_sem.Release(max 1 jp_dop)) with _ -> ()
 
         // Legacy compatibility wrapper for old ManualResetEventSlim-based code
+        // ALPHA15: More aggressive work-stealing + ThreadPool spawning for blocked workers
         let inline jp_ev_wait (w: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
             diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
             let gen0 = CacheGeneration.current()
@@ -11613,6 +11671,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             else
                 let mutable spin = System.Threading.SpinWait()
                 let mutable last_diag = peval_sw.ElapsedMilliseconds
+                let mutable spawned_helpers = 0
                 while not ev.IsSet do
                     let curGen = CacheGeneration.current()
                     if curGen <> gen0 then
@@ -11623,13 +11682,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         last_diag <- now
                         diag_print false
                     diag_abort_if_needed "jp_ev_wait"
-                    // Work-stealing during wait
-                    if jp_is_parallel_enabled && (spin.Count &&& 15) = 0 then
-                        ignore (jp_help_batch 4)
-                    if (spin.Count &&& 255) = 0 then
+                    
+                    // ALPHA15: More aggressive work-stealing - drain more work, more often
+                    if jp_is_parallel_enabled then
+                        let drained = jp_help_batch 64  // Drain up to 64 items each iteration
+                        
+                        // If we're stuck (nothing to drain) but queue has work, spawn ThreadPool helpers
+                        // This breaks the deadlock when all Hopac workers are blocked
+                        if drained = 0 && spawned_helpers < 4 && spin.Count > 1000 then
+                            let q_count = jp_work_q.Count
+                            if q_count > 0 then
+                                spawned_helpers <- spawned_helpers + 1
+                                System.Threading.ThreadPool.QueueUserWorkItem(fun _ ->
+                                    try ignore (jp_help_batch 256) with _ -> ()
+                                ) |> ignore
+                    
+                    if (spin.Count &&& 63) = 0 then
                         hopac_tick ()
                     spin.SpinOnce()
-                    if (spin.Count &&& 4095) = 0 then System.Threading.Thread.Yield() |> ignore
+                    if (spin.Count &&& 511) = 0 then System.Threading.Thread.Yield() |> ignore
                 jp_throw_if_any ()
 
         let jp_stack_bytes = 8 * 1024 * 1024  // For BigStack compatibility
