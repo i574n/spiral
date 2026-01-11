@@ -141,6 +141,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
     /// Back-compat alias used by newer error paths.
     let dump_spiral_env_once () = DiagSidecar.emitEnvSnapshotOnce ()
 
+    /// ### map_try_find_by_string
+    /// Helper for maps keyed by (id, backend) pairs.
+    let map_try_find_by_string (backend: string) (m: Map<(int * string), 'a>) : 'a option =
+        m |> Map.tryPick (fun (_, b) v -> if b = backend then Some v else None)
+
     /// ### range_checks
     let range_checks from near_to vec =
         if from <= near_to = false then
@@ -11471,9 +11476,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
                             jp_cd.Signal() |> ignore
                             System.Threading.Interlocked.Decrement(&jp_pending_count) |> ignore
                     )
-                Hopac.queue job |> Hopac.start
+                Hopac.start job
             else
-                ()
+                thunk ()
 
         // Legacy compatibility: old jp_ev_wait signature redirects to jp_ivar_wait
         // This function is for transitional use - callers should migrate to jp_ivar_wait
@@ -11505,156 +11510,178 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v10
         // The old jp_workers array and start_jp_workers are no longer needed
         let jp_stack_bytes = 8 * 1024 * 1024  // Kept for BigStack compatibility
 
+        // ALPHA5: canonical scheduler entrypoints used by the rest of the compiler.
+        let inline jp_start (run: unit -> unit) =
+            if jp_is_parallel_enabled && jp_dop > 0 then
+                ignore (System.Threading.Interlocked.Increment(&jp_total_started))
+                jp_hopac_start run
+            else
+                run ()
+
+        let jp_wait () =
+            try
+                while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (jp_cd.Wait(0)) do
+                    jp_throw_if_any ()
+                    System.Threading.Thread.Yield() |> ignore
+            finally
+                jp_wait_closed <- true
+                ignore (jp_cd.Signal())
+
+        #if false
         // ALPHA46: Hopac-based scheduler replaces custom thread pool
         // Workers are Hopac fibers managed by Hopac.Scheduler.Global
         let jp_cancel = new System.Threading.CancellationTokenSource()
 
-// ---- SOTA Hopac worker pool (b158 stays embedded elsewhere)
-// We use a bounded work queue (jp_work_q) plus a semaphore (jp_work_sem) for buffering/backpressure,
-// and Hopac workers for work-stealing scheduling. Waiters can also "help" by draining the queue.
-let mutable jp_workers_started = false
-let jp_workers_started_sync = obj()
-
-let inline jp_note_progress () =
-    last_progress_ms <- peval_sw.ElapsedMilliseconds
-
-let jp_help_batch (max_n: int) : int =
-    let mutable ran = 0
-    let mutable work = Unchecked.defaultof<unit -> unit>
-    while ran < max_n && jp_work_q.TryDequeue(&work) do
-        ran <- ran + 1
-        work()
-    if ran > 0 then jp_note_progress ()
-    ran
-
-let start_jp_workers () =
-    if not jp_workers_started then
-        lock jp_workers_started_sync (fun () ->
+        // ---- SOTA Hopac worker pool (b158 stays embedded elsewhere)
+        // We use a bounded work queue (jp_work_q) plus a semaphore (jp_work_sem) for buffering/backpressure,
+        // and Hopac workers for work-stealing scheduling. Waiters can also "help" by draining the queue.
+        let mutable jp_workers_started = false
+        let jp_workers_started_sync = obj()
+        
+        let inline jp_note_progress () =
+            last_progress_ms <- peval_sw.ElapsedMilliseconds
+        
+        let jp_help_batch (max_n: int) : int =
+            let mutable ran = 0
+            let mutable work = Unchecked.defaultof<unit -> unit>
+            while ran < max_n && jp_work_q.TryDequeue(&work) do
+                ran <- ran + 1
+                work()
+            if ran > 0 then jp_note_progress ()
+            ran
+        
+        let start_jp_workers () =
             if not jp_workers_started then
-                jp_workers_started <- true
-
-                let worker (_i: int) =
-                    Hopac.job {
-                        do! Hopac.Job.switchToWorker()
-                        let mutable keep_running = true
-                        while keep_running do
-                            // SemaphoreSlim.Wait is blocking, so isolate it to avoid blocking Hopac worker threads.
-                            let! gotWork =
-                                Hopac.Job.isolate (fun () ->
-                                    try
-                                        jp_work_sem.Wait(jp_cancel.Token)
-                                        true
-                                    with :? System.OperationCanceledException ->
-                                        false
-                                )
-                            if not gotWork then
-                                keep_running <- false
-                            else
-                                // Drain a batch; the semaphore token we consumed guarantees at least one item
-                                // was enqueued at some point, but the queue could have been helped/drained.
-                                ignore (jp_help_batch jp_help_batch_n)
-                        return ()
-                    }
-
-                for i = 1 to max 1 jp_dop do
-                    Hopac.start (worker i)
-        )
-
-let jp_start (newGen: int) (run: unit -> unit) =
-    if jp_is_parallel_enabled () && jp_dop > 0 then
-        start_jp_workers ()
-
-        let mutable cd_added = false
-        lock jp_barrier_lock (fun () ->
-            if not jp_wait_closed && cache_generation = newGen then
-                cd_added <- jp_cd.TryAddCount()
-        )
-
-        if cd_added then
-            let pending = System.Threading.Interlocked.Increment(&jp_pending_count)
-
-            // Backpressure: if we're beyond the cap, execute inline to prevent unbounded queue growth.
-            if pending > int64 jp_max_pending then
-                try
-                    run ()
-                with e ->
-                    jp_exns.Enqueue(capture_edi e)
-                finally
-                    ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
-                    ignore (jp_cd.Signal())
-                    jp_note_progress ()
-            else
-                let work_item () =
-                    ignore (System.Threading.Interlocked.Increment(&jp_total_started))
-                    try
-                        run ()
-                    with e ->
-                        jp_exns.Enqueue(capture_edi e)
-                    finally
-                        ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
-                        ignore (jp_cd.Signal())
+                lock jp_workers_started_sync (fun () ->
+                    if not jp_workers_started then
+                        jp_workers_started <- true
+        
+                        let worker (_i: int) =
+                            Hopac.job {
+                                do! Hopac.Job.switchToWorker()
+                                let mutable keep_running = true
+                                while keep_running do
+                                    // SemaphoreSlim.WaitAsync is non-blocking; we await it via HopacExtensions.awaitUnitTask.
+                                    let! gotWork =
+                                        Hopac.job {
+                                            try
+                                                do! HopacExtensions.awaitUnitTask (jp_work_sem.WaitAsync(jp_cancel.Token))
+                                                return true
+                                            with :? System.OperationCanceledException ->
+                                                return false
+                                        }
+                                    if not gotWork then
+                                        keep_running <- false
+                                    else
+                                        // Drain a batch; the semaphore token we consumed guarantees at least one item
+                                        // was enqueued at some point, but the queue could have been helped/drained.
+                                        ignore (jp_help_batch jp_help_batch_n)
+                                return ()
+                            }
+        
+                        for i = 1 to max 1 jp_dop do
+                            Hopac.start (worker i)
+                )
+        
+        let jp_start (newGen: int) (run: unit -> unit) =
+            if jp_is_parallel_enabled && jp_dop > 0 then
+                start_jp_workers ()
+        
+                let mutable cd_added = false
+                lock jp_barrier_lock (fun () ->
+                    if not jp_wait_closed && cache_generation = newGen then
+                        cd_added <- jp_cd.TryAddCount()
+                )
+        
+                if cd_added then
+                    let pending = System.Threading.Interlocked.Increment(&jp_pending_count)
+        
+                    // Backpressure: if we're beyond the cap, execute inline to prevent unbounded queue growth.
+                    if pending > int64 jp_max_pending then
+                        try
+                            try
+                                run ()
+                            with e ->
+                                jp_exns.Enqueue(capture_edi e)
+                        finally
+                            ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
+                            ignore (jp_cd.Signal())
+                            jp_note_progress ()
+                    else
+                        let work_item () =
+                            ignore (System.Threading.Interlocked.Increment(&jp_total_started))
+                            try
+                                try
+                                    run ()
+                                with e ->
+                                    jp_exns.Enqueue(capture_edi e)
+                            finally
+                                ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
+                                ignore (jp_cd.Signal())
+                                jp_note_progress ()
+        
+                        jp_work_q.Enqueue(work_item)
+                        ignore (jp_work_sem.Release())
                         jp_note_progress ()
+                else
+                    run ()
+            else
+                run ()
+        
+        let jp_ivar_wait (newGen: int) (ivar: Hopac.IVar<Result<PartEvalResult,exn>>) (diag: unit -> unit) : PartEvalResult =
+            let mutable last_pending = System.Threading.Interlocked.Read(&jp_pending_count)
+            let mutable last_started = System.Threading.Interlocked.Read(&jp_total_started)
+        
+            while not ivar.IsFull do
+                // Help make progress while waiting (important for recursive specializations).
+                if jp_is_parallel_enabled then
+                    ignore (jp_help_batch jp_help_batch_n)
+        
+                let pending = System.Threading.Interlocked.Read(&jp_pending_count)
+                let started = System.Threading.Interlocked.Read(&jp_total_started)
+        
+                if pending <> last_pending || started <> last_started then
+                    last_pending <- pending
+                    last_started <- started
+                    jp_note_progress ()
+        
+                let now_ms = peval_sw.ElapsedMilliseconds
+        
+                if jp_stall_abort_ms > 0 && now_ms - last_progress_ms > int64 jp_stall_abort_ms then
+                    diag ()
+                    raise_error t (EJP0014(now_ms - last_progress_ms, pending, started, cache_generation, newGen))
+        
+                if cache_generation <> newGen then
+                    diag ()
+                    raise_error t (EJP0008(cache_generation, newGen))
+        
+                if jp_diag_abort_ms > 0 && jp_diag_abort_ms < int now_ms then
+                    jp_diag_hard_abort <- true
+        
+                System.Threading.Thread.Yield() |> ignore
+        
+            match Hopac.run (Hopac.read ivar) with
+            | Ok x -> x
+            | Error e -> raise e
+        
+        let jp_wait () =
+            try
+                while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (jp_cd.Wait(0)) do
+                    if jp_throw_if_any () then
+                        // jp_throw_if_any already raised; keep loop for clarity.
+                        ()
+                    ignore (jp_help_batch jp_help_batch_n)
+                    System.Threading.Thread.Yield() |> ignore
+            finally
+                jp_wait_closed <- true
+                jp_cancel.Cancel()
+                // Release the base barrier count.
+                ignore (jp_cd.Signal())
+                // Wake sleeping workers so they can observe cancellation and exit.
+                ignore (jp_work_sem.Release(max 1 jp_dop))
+        #endif
 
-                jp_work_q.Enqueue(work_item)
-                ignore (jp_work_sem.Release())
-                jp_note_progress ()
-        else
-            run ()
-    else
-        run ()
-
-let jp_ivar_wait (newGen: int) (ivar: Hopac.IVar<Result<PartEvalResult,exn>>) (diag: unit -> unit) : PartEvalResult =
-    let mutable last_pending = System.Threading.Interlocked.Read(&jp_pending_count)
-    let mutable last_started = System.Threading.Interlocked.Read(&jp_total_started)
-
-    while not ivar.IsFull do
-        // Help make progress while waiting (important for recursive specializations).
-        if jp_is_parallel_enabled () then
-            ignore (jp_help_batch jp_help_batch_n)
-
-        let pending = System.Threading.Interlocked.Read(&jp_pending_count)
-        let started = System.Threading.Interlocked.Read(&jp_total_started)
-
-        if pending <> last_pending || started <> last_started then
-            last_pending <- pending
-            last_started <- started
-            jp_note_progress ()
-
-        let now_ms = peval_sw.ElapsedMilliseconds
-
-        if jp_stall_abort_ms > 0 && now_ms - last_progress_ms > int64 jp_stall_abort_ms then
-            diag ()
-            raise_error t (EJP0014(now_ms - last_progress_ms, pending, started, cache_generation, newGen))
-
-        if cache_generation <> newGen then
-            diag ()
-            raise_error t (EJP0008(cache_generation, newGen))
-
-        if jp_diag_abort_ms > 0 && jp_diag_abort_ms < int now_ms then
-            jp_diag_hard_abort <- true
-
-        System.Threading.Thread.Yield() |> ignore
-
-    match Hopac.run (Hopac.read ivar) with
-    | Ok x -> x
-    | Error e -> raise e
-
-let jp_wait () =
-    try
-        while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (jp_cd.Wait(0)) do
-            if jp_throw_if_any () then
-                // jp_throw_if_any already raised; keep loop for clarity.
-                ()
-            ignore (jp_help_batch jp_help_batch_n)
-            System.Threading.Thread.Yield() |> ignore
-    finally
-        jp_wait_closed <- true
-        jp_cancel.Cancel()
-        // Release the base barrier count.
-        ignore (jp_cd.Signal())
-        // Wake sleeping workers so they can observe cancellation and exit.
-        ignore (jp_work_sem.Release(max 1 jp_dop))
-let rec ty_to_data s x =
+        let rec ty_to_data s x =
             let f = ty_to_data s
             match x with
             | YVoid -> raise_type_error s "Compiler error: Cannot construct an instance of a void type."
@@ -11919,19 +11946,9 @@ let rec ty_to_data s x =
                 let v = f x
                 if dirty then v else x
             else
-                let ctx = dyn_ctx.Value
-                if dyn_ctx_limit > 0 && ctx.Count > dyn_ctx_limit then ctx.Clear()
-                let key = s.seq
-                let struct(m, visiting, depth) =
-                    match ctx.TryGetValue key with
-                    | true, v -> v
-                    | _ ->
-                        let v = struct(Dictionary<_,_>(HashIdentity.Reference), HashSet<_>(HashIdentity.Reference), ref 0)
-                        ctx.[key] <- v
-                        v
-                let depth0 = !depth
-                depth := depth0 + 1
-                if depth0 = 0 then (m.Clear(); visiting.Clear())
+                let m = Dictionary<_,_>(HashIdentity.Reference)
+                let visiting = HashSet<_>(HashIdentity.Reference)
+                let mutable dirty = false
                 let rec f x =
                     match m.TryGetValue x with
                     | true, v -> v
@@ -12009,8 +12026,6 @@ let rec ty_to_data s x =
                             visiting.Remove x |> ignore
 
                 let v = f x
-                depth := depth0
-                if depth0 = 0 then ctx.Remove key |> ignore
                 if dirty then v else x
 
         and term_real_nominal s x =
@@ -12283,7 +12298,7 @@ let rec ty_to_data s x =
                                     
                                         // Fill IVar to signal completion
                                         Hopac.IVar.fill jp_cell.ivar (Some ret_ty) |> Hopac.start
-                                        ret_ty
+                                        ()
                                     with e ->
                                         // Fill with None so waiters don't hang
                                         try Hopac.IVar.fill jp_cell.ivar None |> Hopac.start with _ -> ()
@@ -15249,10 +15264,11 @@ let rec ty_to_data s x =
 
                 let placeholder () =
                     let msg =
-                        sprintf "CODEGEN JP PLACEHOLDER method%i body=%s pending=%A dict=%d ev=%d"
-                            i jp_body_name jp_pending jp_dict.Count jp_ev.Count
+                        sprintf "CODEGEN JP PLACEHOLDER method%i body=%s key=%A dict=%d"
+                            i jp_body_name key jp_dict.Count
                     DiagSidecar.emit msg
                     [| TyLocalReturnOp([], TyFailwith(ret_ty, DLit(LitString msg)), DB) |], ret_ty
+#if false
                 let get () =
                     let sw = System.Diagnostics.Stopwatch.StartNew()
                     let mutable next_log = int64 wait_log_ms
@@ -15265,7 +15281,7 @@ let rec ty_to_data s x =
                                 let msg =
                                     sprintf "CODEGEN JP STUCK method%i body=%s key=%A a=%b range=%b pending=%A dict=%d ev=%d"
                                         i jp_body_name key a_opt.IsSome range_opt.IsSome jp_pending jp_dict.Count jp_ev.Count
-                                DiagSidecar.dump_spiral_env_once ()
+                                dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
@@ -15276,7 +15292,7 @@ let rec ty_to_data s x =
                                     let msg =
                                         sprintf "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    DiagSidecar.dump_spiral_env_once ()
+                                    dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15293,7 +15309,7 @@ let rec ty_to_data s x =
                                 let msg =
                                     sprintf "CODEGEN JP MISSING EVENT method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                         i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                DiagSidecar.dump_spiral_env_once ()
+                                dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
@@ -15304,7 +15320,7 @@ let rec ty_to_data s x =
                                 let msg =
                                     sprintf "CODEGEN JP STUCK method%i body=%s key=%A pending=%A dict=%d ev=%d (no dict entry)"
                                         i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                DiagSidecar.dump_spiral_env_once ()
+                                dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
@@ -15315,7 +15331,7 @@ let rec ty_to_data s x =
                                     let msg =
                                         sprintf "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    DiagSidecar.dump_spiral_env_once ()
+                                    dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15332,13 +15348,54 @@ let rec ty_to_data s x =
                                 let msg =
                                     sprintf "CODEGEN JP MISSING method%i body=%s key=%A pending=%A dict=%d ev=%d"
                                         i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                DiagSidecar.dump_spiral_env_once ()
+                                dump_spiral_env_once ()
                                 DiagSidecar.emitEnvSnapshotOnce()
                                 if wait_fatal then raise_codegen_error' [] (None, msg)
                                 elif wait_placeholder then placeholder()
                                 else raise_codegen_error' [] (None, msg)
                     loop ()
-                let a, range = get ()
+#endif
+
+                let get_v2 () =
+                    let sw = System.Diagnostics.Stopwatch.StartNew()
+                    let rec loop2 () =
+                        match jp_dict.TryGetValue key with
+                        | true, ivar when ivar.Full ->
+                            let (a_opt, range_opt, _) = Hopac.IVar.Now.get ivar
+                            match a_opt, range_opt with
+                            | Some a, Some range -> a, range
+                            | _ ->
+                                if wait_placeholder then placeholder()
+                                else
+                                    raise_codegen_error'
+                                        []
+                                        (None,
+                                         sprintf
+                                             "CODEGEN JP MALFORMED method%i body=%s key=%A dict=%d"
+                                             i
+                                             jp_body_name
+                                             key
+                                             jp_dict.Count)
+                        | _ ->
+                            if sw.ElapsedMilliseconds >= int64 wait_timeout_ms then
+                                if wait_placeholder then placeholder()
+                                else
+                                    raise_codegen_error'
+                                        []
+                                        (None,
+                                         sprintf
+                                             "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%A dict=%d"
+                                             wait_timeout_ms
+                                             i
+                                             jp_body_name
+                                             key
+                                             jp_dict.Count)
+                            else
+                                System.Threading.Thread.Sleep(wait_slice_ms)
+                                loop2 ()
+                    loop2 ()
+
+                let a, range = get_v2 ()
                 {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
                 line s (sprintf "method%i (%s) : %s =" x.tag (args_tys x.free_vars) (tup_ty x.range))
@@ -15366,10 +15423,11 @@ let rec ty_to_data s x =
 
                     let placeholder () =
                         let msg =
-                            sprintf "CODEGEN JP PLACEHOLDER closure%i body=%s pending=%A dict=%d ev=%d"
-                                i jp_body_name jp_pending jp_dict.Count jp_ev.Count
+                            sprintf "CODEGEN JP PLACEHOLDER closure%i body=%s dict=%d"
+                                i jp_body_name jp_dict.Count
                         DiagSidecar.emit msg
                         DB, [| TyLocalReturnOp([], TyFailwith(range_ty, DLit(LitString msg)), DB) |]
+#if false
                     let get () =
                         let sw = System.Diagnostics.Stopwatch.StartNew()
                         let mutable next_log = int64 wait_log_ms
@@ -15382,7 +15440,7 @@ let rec ty_to_data s x =
                                     let msg =
                                         sprintf "CODEGEN JP STUCK closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    DiagSidecar.dump_spiral_env_once ()
+                                    dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15393,7 +15451,7 @@ let rec ty_to_data s x =
                                         let msg =
                                             sprintf "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                                 wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                        DiagSidecar.dump_spiral_env_once ()
+                                        dump_spiral_env_once ()
                                         DiagSidecar.emitEnvSnapshotOnce()
                                         if wait_fatal then raise_codegen_error' [] (None, msg)
                                         elif wait_placeholder then placeholder()
@@ -15410,7 +15468,7 @@ let rec ty_to_data s x =
                                     let msg =
                                         sprintf "CODEGEN JP MISSING EVENT closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    DiagSidecar.dump_spiral_env_once ()
+                                    dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15421,7 +15479,7 @@ let rec ty_to_data s x =
                                     let msg =
                                         sprintf "CODEGEN JP STUCK closure%i body=%s key=%A pending=%A dict=%d ev=%d (no dict entry)"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    DiagSidecar.dump_spiral_env_once ()
+                                    dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
@@ -15432,7 +15490,7 @@ let rec ty_to_data s x =
                                         let msg =
                                             sprintf "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                                 wait_timeout_ms i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                        DiagSidecar.dump_spiral_env_once ()
+                                        dump_spiral_env_once ()
                                         DiagSidecar.emitEnvSnapshotOnce()
                                         if wait_fatal then raise_codegen_error' [] (None, msg)
                                         elif wait_placeholder then placeholder()
@@ -15449,13 +15507,53 @@ let rec ty_to_data s x =
                                     let msg =
                                         sprintf "CODEGEN JP MISSING closure%i body=%s key=%A pending=%A dict=%d ev=%d"
                                             i jp_body_name key jp_pending jp_dict.Count jp_ev.Count
-                                    DiagSidecar.dump_spiral_env_once ()
+                                    dump_spiral_env_once ()
                                     DiagSidecar.emitEnvSnapshotOnce()
                                     if wait_fatal then raise_codegen_error' [] (None, msg)
                                     elif wait_placeholder then placeholder()
                                     else raise_codegen_error' [] (None, msg)
                         loop ()
-                    let domain_args, body = get ()
+#endif
+
+                    let get_v2 () =
+                        let sw = System.Diagnostics.Stopwatch.StartNew()
+                        let rec loop2 () =
+                            match jp_dict.TryGetValue key with
+                            | true, ivar when ivar.Full ->
+                                match Hopac.IVar.Now.get ivar with
+                                | Some x -> x
+                                | None ->
+                                    if wait_placeholder then placeholder()
+                                    else
+                                        raise_codegen_error'
+                                            []
+                                            (None,
+                                             sprintf
+                                                 "CODEGEN JP MALFORMED closure%i body=%s key=%A dict=%d"
+                                                 i
+                                                 jp_body_name
+                                                 key
+                                                 jp_dict.Count)
+                            | _ ->
+                                if sw.ElapsedMilliseconds >= int64 wait_timeout_ms then
+                                    if wait_placeholder then placeholder()
+                                    else
+                                        raise_codegen_error'
+                                            []
+                                            (None,
+                                             sprintf
+                                                 "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%A dict=%d"
+                                                 wait_timeout_ms
+                                                 i
+                                                 jp_body_name
+                                                 key
+                                                 jp_dict.Count)
+                                else
+                                    System.Threading.Thread.Sleep(wait_slice_ms)
+                                    loop2 ()
+                        loop2 ()
+
+                    let domain_args, body = get_v2 ()
                     {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
                 | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
@@ -16196,7 +16294,11 @@ let rec ty_to_data s x =
         and method : _ -> MethodRecGleam =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                 let jp_dict,_,_ = env.join_point_method.[jp_body]
-                match jp_dict.[key] with
+                let v =
+                    let ivar = jp_dict.[key]
+                    if Hopac.IVar.Now.isFull ivar then Hopac.IVar.Now.get ivar
+                    else Hopac.run (Hopac.IVar.read ivar)
+                match v with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
@@ -16218,7 +16320,7 @@ let rec ty_to_data s x =
                 match fun_ty with
                 | YFun (domain, range, FT_Vanilla) ->
                     let jp_dict,_,_ = env.join_point_closure.[jp_body]
-                    match jp_dict.[key] with
+                    match Hopac.IVar.Now.get jp_dict.[key] with
                     | Some (domain_args, body) ->
                         {   tag = i
                             free_vars = rdata_free_vars args
@@ -16871,7 +16973,7 @@ let rec ty_to_data s x =
         and method : _ -> MethodRecLua =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                 let jp_dict,_,_ = env.join_point_method.[jp_body]
-                match jp_dict.[key] with
+                match Hopac.IVar.Now.get jp_dict.[key] with
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
@@ -16885,7 +16987,7 @@ let rec ty_to_data s x =
                 match fun_ty with
                 | YFun (domain, range, FT_Vanilla) ->
                     let jp_dict,_,_ = env.join_point_closure.[jp_body]
-                    match jp_dict.[key] with
+                    match Hopac.IVar.Now.get jp_dict.[key] with
                     | Some (domain_args, body) ->
                         {   tag = i
                             free_vars = rdata_free_vars args
@@ -17624,7 +17726,15 @@ let rec ty_to_data s x =
                 order_argsC v |> HopacExtensions.A.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
             and method_templ is_while fun_name : _ -> MethodRecC =
                 jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                    let jp_dict,_,_ = env.join_point_method.[jp_body]
+                    let jp_dict_ivar,_,_ = env.join_point_method.[jp_body]
+                    let jp_dict =
+                        let d = System.Collections.Concurrent.ConcurrentDictionary<_,_>()
+                        for KeyValue(k, ivar) in jp_dict_ivar do
+                            let v =
+                                if Hopac.IVar.Now.isFull ivar then Hopac.IVar.Now.get ivar
+                                else Hopac.run (Hopac.IVar.read ivar)
+                            d.[k] <- v
+                        d
                     match jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=name}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
@@ -17643,7 +17753,7 @@ let rec ty_to_data s x =
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
                         let jp_dict,_,_ = env.join_point_closure.[jp_body]
-                        match jp_dict.[key] with
+                        match Hopac.IVar.Now.get jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
@@ -18587,7 +18697,7 @@ let rec ty_to_data s x =
             and method_template is_while : _ -> MethodRecCpp =
                 jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                     let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
-                    match jp_dict.[key] with
+                    match Hopac.IVar.Now.get jp_dict.[key] with
                     | Some a, Some range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=Option.map fix_method_name name}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun s_fwd s_typ s_fun x ->
@@ -18623,7 +18733,7 @@ let rec ty_to_data s x =
                     match fun_ty with
                     | YFun(domain,range,t) ->
                         let jp_dict,_,_ = part_eval_env.join_point_closure.[jp_body]
-                        match jp_dict.[key] with
+                        match Hopac.IVar.Now.get jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
@@ -18922,7 +19032,7 @@ let rec ty_to_data s x =
                     Utils.memoize g (fun (jp_body,key & C(args,_,_)) ->
                         let args = rdata_free_vars args
                         let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
-                        match jp_dict.[key] with
+                        match Hopac.IVar.Now.get jp_dict.[key] with
                         | Some a, Some _, _ -> cuda_codegen (Cuda(args, a))
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                         $"Device::entry{g.Count}"
@@ -19463,7 +19573,7 @@ let rec ty_to_data s x =
             and method : _ -> MethodRecPython =
                 jp false (fun ((jp_body,key & (C(args,_,_))),i) ->
                     let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
-                    match jp_dict.[key] with
+                    match Hopac.IVar.Now.get jp_dict.[key] with
                     | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     ) (fun s x ->
@@ -19476,7 +19586,7 @@ let rec ty_to_data s x =
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
                         let jp_dict,_,_ = part_eval_env.join_point_closure.[jp_body]
-                        match jp_dict.[key] with
+                        match Hopac.IVar.Now.get jp_dict.[key] with
                         | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
@@ -19544,7 +19654,7 @@ let rec ty_to_data s x =
                         Utils.memoize g (fun (jp_body,key & C(args,_,_)) ->
                             let args = rdata_free_vars args
                             let jp_dict,_,_ = part_eval_env.join_point_method.[jp_body]
-                            match jp_dict.[key] with
+                            match Hopac.IVar.Now.get jp_dict.[key] with
                             | Some a, Some _, _ -> cuda_codegen (CodegenCpp.Cuda(args,a))
                             | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                             $"entry{g.Count}"
