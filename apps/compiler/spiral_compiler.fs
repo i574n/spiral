@@ -11107,12 +11107,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let jp_method_rec_placeholders : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Ty> =
             System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Ty>(HashIdentity.Reference)
 
+
+        // Map placeholder Ty -> JP key so we can resolve/deref deterministically (no O(n) scan, no structural collisions).
+        let jp_method_rec_placeholder_keys : System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>> =
+            System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
+
+        let inline jp_method_try_key_of_rec_placeholder (ty: Ty) : ConsedNode<RData [] * Ty [] * Ty> option =
+            match jp_method_rec_placeholder_keys.TryGetValue ty with
+            | true, k -> Some k
+            | false, _ -> None
+
+        let inline jp_method_deref_rec_placeholder (ty: Ty) : Ty =
+            match jp_method_try_key_of_rec_placeholder ty with
+            | Some k ->
+                let v = jp_method_rec_placeholders.[k]
+                // If still unresolved, v = ty (the placeholder).
+                if v = ty then ty else v
+            | None -> ty
+
         let inline jp_method_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (jp: string) : Ty =
             jp_method_rec_placeholders.GetOrAdd(
                 key,
-                System.Func<ConsedNode<RData [] * Ty [] * Ty>, Ty>(fun _ ->
-                    // Placeholder: printable + stable. Resolved later by overwriting the dict entry.
-                    YSymbol (sprintf "JPMethodRecPlaceholder(%s)" jp)
+                System.Func<ConsedNode<RData [] * Ty [] * Ty>, Ty>(fun key ->
+                    // Placeholder: printable + stable. Must be unique per JP key (structural equality), otherwise placeholders can collide (e.g. <anon>) and leak.
+                    let id = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(key)
+                    let ph = YSymbol (sprintf "JPMethodRecPlaceholder(%s#%d)" jp id)
+                    jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
+                    ph
                 )
             )
 
@@ -11749,6 +11770,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | YVoid -> raise_type_error s "Compiler error: Cannot construct an instance of a void type."
             | YB -> DB
             | YPair(a,b) -> DPair(f a, f b)
+            | YSymbol a when a.StartsWith("JPMethodRecPlaceholder(") || a.StartsWith(".JPMethodRecPlaceholder(") ->
+                let r = DV(L(s.i.Value,x))
+                s.i.Value <- s.i.Value + 1
+                r
             | YSymbol a -> DSymbol a
             | YRecord l -> DRecord(Map.map (fun _ -> f) l)
             | YForall | YExists | YUnion _ | YLayout _ | YPrim _ | YArray _ | YFun _ | YMacro _ as x -> let r = DV(L(s.i.Value,x)) in s.i.Value <- s.i.Value + 1; r
@@ -12129,7 +12154,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         and ty s x =
             // v107-alpha24: Removed proactive depth-based BigStack spawning
             // Rely only on EnsureSufficientExecutionStack in ty_core for reactive spawning
-            ty_core s x
+            ty_core s x |> jp_method_deref_rec_placeholder
 
         and ty_core s x =
             // v107-alpha13: emergency stack pivot must return the same type as the normal path
@@ -12818,9 +12843,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         // If one side is a JPMethodRecPlaceholder, treat it as a unification hole and resolve it to the other side.
                         let inline try_resolve_jp_placeholder (a: Ty) (b: Ty) : Ty option =
                             try
-                                jp_method_rec_placeholders
-                                |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
-                                |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
+                                let k_opt =
+                                    match jp_method_try_key_of_rec_placeholder a with
+                                    | Some k -> Some k
+                                    | None ->
+                                        jp_method_rec_placeholders
+                                        |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
+                                k_opt |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
                             with _ -> None
                         match try_resolve_jp_placeholder type_tr type_fl with
                         | Some ty -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) ty
@@ -13446,9 +13475,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                     if ret_ty <> ret_ty' then
                                             let try_resolve_jp_placeholder (a: Ty) (b: Ty) =
                                                 try
-                                                    jp_method_rec_placeholders
-                                                    |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
-                                                    |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
+                                                    let k_opt =
+                                                        match jp_method_try_key_of_rec_placeholder a with
+                                                        | Some k -> Some k
+                                                        | None ->
+                                                            jp_method_rec_placeholders
+                                                            |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
+                                                    k_opt |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
                                                 with _ -> None
                                             match try_resolve_jp_placeholder ret_ty ret_ty' with
                                             | Some ty -> ret_ty2 <- ty
@@ -14577,9 +14610,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 | DSymbol _ -> DLit (LitBool true)
                 | _ -> DLit (LitBool false)
             | EOp(_,VarIs,[a]) ->
-                match term s a with
-                | DNominal(DV _, _) | DV _ -> DLit (LitBool true)
-                | _ -> DLit (LitBool false)
+                let inline is_jp_placeholder (sym: string) =
+                    sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(")
+                let rec is_var = function
+                    | DV _ -> true
+                    | DNominal(d, _) -> is_var d
+                    | DUnion(d, _) -> is_var d
+                    | DSymbol sym when is_jp_placeholder sym -> true
+                    | _ -> false
+                DLit (LitBool (is_var (term s a)))
             | EOp(_,UnionIs,[a]) ->
                 match term s a with
                 | DNominal(DV(L(_,YUnion _)), _) | DNominal(DUnion _, _) -> DLit (LitBool true)
