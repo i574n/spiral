@@ -13455,80 +13455,91 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | EUnbox(r,k,id,a,on_succ,on_fail) ->
                 let s = add_trace s r
                 let run s a = store_term s id a; term s on_succ
+                let union_var_case (h: Union) (i: TyV) =
+                                        let body blk =
+                                            match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) (union_cases h) with
+                                            | Some v when Set.contains k blk = false ->
+                                                let on_succ, ret_ty =
+                                                    let a = ty_to_data s v
+                                                    let s = {s with unions = Map.add i (UnionData (k,a)) s.unions; cse = Dictionary(HashIdentity.Structural) :: s.cse; seq = ResizeArray()}
+                                                    let x = run s a |> dyn false s
+                                                    Map.add k ([a], (seq_apply s x)) Map.empty, data_to_ty s x
+                                                let mutable ret_ty2 = ret_ty
+                                                let on_succ,on_fails =
+                                                    let blk = Set.add k blk
+                                                    if blk.Count = h.Item.cases.Count then on_succ, None // Have to do this otherwise it would have hit EPatternMiss
+                                                    else
+                                                        let on_fails, ret_ty' = term_scope {s with unions = Map.add i (UnionBlockers blk) s.unions} on_fail
+                                                        if ret_ty <> ret_ty' then
+                                                                let try_resolve_jp_placeholder (a: Ty) (b: Ty) =
+                                                                    try
+                                                                        let k_opt =
+                                                                            match jp_method_try_key_of_rec_placeholder a with
+                                                                            | Some k -> Some k
+                                                                            | None ->
+                                                                                jp_method_rec_placeholders
+                                                                                |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
+                                                                        k_opt |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
+                                                                    with _ -> None
+                                                                match try_resolve_jp_placeholder ret_ty ret_ty' with
+                                                                | Some ty -> ret_ty2 <- ty
+                                                                | None ->
+                                                                    match try_resolve_jp_placeholder ret_ty' ret_ty with
+                                                                    | Some ty -> ret_ty2 <- ty
+                                                                    | None ->
+                                                                        raise_type_error s $"The types of two branches of an union unbox do not match.\nGot: {show_ty ret_ty}\nAnd: {show_ty ret_ty'}"
+                                                        match on_fails with
+                                                        | [|TyLocalReturnOp(_,TyUnionUnbox([i'],_,on_succ',on_fail'),_)|] when i = i' -> Map.foldBack Map.add on_succ' on_succ , on_fail'
+                                                        | _ -> on_succ, Some on_fails
+                                                push_typedop_no_rewrite s (TyUnionUnbox([i],h,on_succ,on_fails)) ret_ty2
+                                            | _ -> term s on_fail
+                                        match Map.tryFind i s.unions with
+                                        | Some (UnionData (k',a)) -> if k = k' then run s a else term s on_fail
+                                        | Some (UnionBlockers blk) -> body blk
+                                        | None -> body Set.empty
+
                 match term s a with
                 | DNominal(DUnion(DPair(DSymbol k',a),_),_) -> if k = k' then run s a else term s on_fail
-                | DNominal(DV(L(_,YUnion h) & i),_) ->
-                    let body blk =
-                        match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) (union_cases h) with
-                        | Some v when Set.contains k blk = false ->
-                            let on_succ, ret_ty =
-                                let a = ty_to_data s v
-                                let s = {s with unions = Map.add i (UnionData (k,a)) s.unions; cse = Dictionary(HashIdentity.Structural) :: s.cse; seq = ResizeArray()}
-                                let x = run s a |> dyn false s
-                                Map.add k ([a], (seq_apply s x)) Map.empty, data_to_ty s x
-                            let mutable ret_ty2 = ret_ty
-                            let on_succ,on_fails =
-                                let blk = Set.add k blk
-                                if blk.Count = h.Item.cases.Count then on_succ, None // Have to do this otherwise it would have hit EPatternMiss
-                                else
-                                    let on_fails, ret_ty' = term_scope {s with unions = Map.add i (UnionBlockers blk) s.unions} on_fail
-                                    if ret_ty <> ret_ty' then
-                                            let try_resolve_jp_placeholder (a: Ty) (b: Ty) =
-                                                try
-                                                    let k_opt =
-                                                        match jp_method_try_key_of_rec_placeholder a with
-                                                        | Some k -> Some k
-                                                        | None ->
-                                                            jp_method_rec_placeholders
-                                                            |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
-                                                    k_opt |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
-                                                with _ -> None
-                                            match try_resolve_jp_placeholder ret_ty ret_ty' with
-                                            | Some ty -> ret_ty2 <- ty
-                                            | None ->
-                                                match try_resolve_jp_placeholder ret_ty' ret_ty with
-                                                | Some ty -> ret_ty2 <- ty
-                                                | None ->
-                                                    raise_type_error s $"The types of two branches of an union unbox do not match.\nGot: {show_ty ret_ty}\nAnd: {show_ty ret_ty'}"
-                                    match on_fails with
-                                    | [|TyLocalReturnOp(_,TyUnionUnbox([i'],_,on_succ',on_fail'),_)|] when i = i' -> Map.foldBack Map.add on_succ' on_succ , on_fail'
-                                    | _ -> on_succ, Some on_fails
-                            push_typedop_no_rewrite s (TyUnionUnbox([i],h,on_succ,on_fails)) ret_ty2
-                        | _ -> term s on_fail
-                    match Map.tryFind i s.unions with
-                    | Some (UnionData (k',a)) -> if k = k' then run s a else term s on_fail
-                    | Some (UnionBlockers blk) -> body blk
-                    | None -> body Set.empty
+                | DNominal(DV(L(i0,YSymbol sym)),nom_ty) when sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(") ->
+                    match nominal_type_apply s nom_ty with
+                    | YUnion h -> union_var_case h (L(i0, YUnion h))
+                    | _ -> term s on_fail
+                | DNominal(DV(L(_,YUnion h) & i),_) -> union_var_case h i
                 | _ -> term s on_fail
             | EOp(r,Unbox,[a;on_succ]) ->
                 let s = add_trace s r
                 let on_succ = term s on_succ
                 let run s a = apply s (on_succ,a)
+                let union_var_case (h: Union) (i: TyV) =
+                                        let body blk =
+                                            let cases, case_ty =
+                                                Map.fold (fun (m, case_ty) (_, k) v ->
+                                                    if Set.contains k blk = false then
+                                                        let a = ty_to_data s v
+                                                        let s = {s with unions = Map.add i (UnionData (k,a)) s.unions; cse = Dictionary(HashIdentity.Structural) :: s.cse; seq = ResizeArray()}
+                                                        let x = run s (DPair(DSymbol k, a)) |> dyn false s
+                                                        let x_ty' = data_to_ty s x
+                                                        let case_ty =
+                                                            match case_ty with
+                                                            | Some x_ty when x_ty' <> x_ty -> raise_type_error s <| sprintf "One union case for key %s has a different return that the previous one.\nGot: %s\nExpected: %s" k (show_ty x_ty') (show_ty x_ty)
+                                                            | Some _ -> case_ty
+                                                            | None -> Some x_ty'
+                                                        Map.add k ([a], seq_apply s x) m, case_ty
+                                                    else
+                                                        m, case_ty
+                                                    ) (Map.empty,None) (union_cases h)
+                                            push_typedop_no_rewrite s (TyUnionUnbox([i],h,cases,None)) (Option.get case_ty)
+                                        match Map.tryFind i s.unions with
+                                        | Some (UnionData (k,a)) -> run s (DPair(DSymbol k, a))
+                                        | Some (UnionBlockers blk) -> body blk
+                                        | None -> body Set.empty
                 match term s a with
                 | DNominal(DUnion(a,_),_) -> run s a
-                | DNominal(DV(L(_,YUnion h) & i) & a,_) ->
-                    let body blk =
-                        let cases, case_ty =
-                            Map.fold (fun (m, case_ty) (_, k) v ->
-                                if Set.contains k blk = false then
-                                    let a = ty_to_data s v
-                                    let s = {s with unions = Map.add i (UnionData (k,a)) s.unions; cse = Dictionary(HashIdentity.Structural) :: s.cse; seq = ResizeArray()}
-                                    let x = run s (DPair(DSymbol k, a)) |> dyn false s
-                                    let x_ty' = data_to_ty s x
-                                    let case_ty =
-                                        match case_ty with
-                                        | Some x_ty when x_ty' <> x_ty -> raise_type_error s <| sprintf "One union case for key %s has a different return that the previous one.\nGot: %s\nExpected: %s" k (show_ty x_ty') (show_ty x_ty)
-                                        | Some _ -> case_ty
-                                        | None -> Some x_ty'
-                                    Map.add k ([a], seq_apply s x) m, case_ty
-                                else
-                                    m, case_ty
-                                ) (Map.empty,None) (union_cases h)
-                        push_typedop_no_rewrite s (TyUnionUnbox([i],h,cases,None)) (Option.get case_ty)
-                    match Map.tryFind i s.unions with
-                    | Some (UnionData (k,a)) -> run s (DPair(DSymbol k, a))
-                    | Some (UnionBlockers blk) -> body blk
-                    | None -> body Set.empty
+                | DNominal(DV(L(i0,YSymbol sym)) & _,nom_ty) when sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(") ->
+                    match nominal_type_apply s nom_ty with
+                    | YUnion h -> union_var_case h (L(i0, YUnion h))
+                    | _ -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_data (term s a))
+                | DNominal(DV(L(_,YUnion h) & i) & _,_) -> union_var_case h i
                 | a -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_data a)
             | EOp(r,Unbox2,[a;b;on_succ;on_fail]) ->
                 let s = add_trace s r
@@ -14620,14 +14631,28 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | _ -> false
                 DLit (LitBool (is_var (term s a)))
             | EOp(_,UnionIs,[a]) ->
+                let inline is_jp_placeholder (sym: string) =
+                    sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(")
                 match term s a with
                 | DNominal(DV(L(_,YUnion _)), _) | DNominal(DUnion _, _) -> DLit (LitBool true)
+                | DNominal(DV(L(_,YSymbol sym)), nom_ty) when is_jp_placeholder sym ->
+                    match nominal_type_apply s nom_ty with
+                    | YUnion _ -> DLit (LitBool true)
+                    | _ -> DLit (LitBool false)
                 | _ -> DLit (LitBool false)
             | EOp(_,HeapUnionIs,[a]) ->
+                let inline is_jp_placeholder (sym: string) =
+                    sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(")
                 match term s a with
                 | DNominal(DV(L(_,YUnion x)), _) | DNominal(DUnion(_,x), _) ->
                     match x.Item.layout with UHeap -> true | UStack -> false
                     |> LitBool |> DLit
+                | DNominal(DV(L(_,YSymbol sym)), nom_ty) when is_jp_placeholder sym ->
+                    match nominal_type_apply s nom_ty with
+                    | YUnion x ->
+                        match x.Item.layout with UHeap -> true | UStack -> false
+                        |> LitBool |> DLit
+                    | _ -> DLit (LitBool false)
                 | _ -> DLit (LitBool false)
             | EOp(_,LayoutIs,[a]) ->
                 match term s a with
