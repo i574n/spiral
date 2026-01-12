@@ -10974,6 +10974,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
 
         let jp_exns : System.Collections.Concurrent.ConcurrentQueue<System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentQueue()
+
+        // Per-join-point exception cache: avoids losing the root cause when one waiter dequeues jp_exns first.
+        let jp_method_exns : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
+            System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
+
+        let inline jp_throw_keyed (k: ConsedNode<RData [] * Ty [] * Ty>) =
+            let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
+            if jp_method_exns.TryGetValue(k, &edi) then edi.Throw()
+
         let jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
 
         let jp_barrier_lock = obj()
@@ -11493,6 +11502,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     if curGen <> gen0 then
                         let snap = diag_snapshot (sprintf "gen_change jp_ivar_wait from=%d to=%d :: %s (%s)" gen0 curGen w details)
                         raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ivar_wait (from %d to %d) :: %s (%s)\n%s" gen0 curGen w details snap))
+
+                    // Work-stealing while waiting: help drain queued JP work to avoid deadlocks
+                    if jp_is_parallel_enabled then
+                        let mutable ran = 0
+                        let mutable work = Unchecked.defaultof<unit -> unit>
+                        while ran < 8 && jp_work_q.TryDequeue(&work) do
+                            ran <- ran + 1
+                            try work() with e -> jp_exns.Enqueue(capture_edi e)
+                        if ran > 0 then
+                            last_progress_ms <- peval_sw.ElapsedMilliseconds
 
                     // Yield to Hopac scheduler periodically to allow other fibers to run
                     if (spin.Count &&& 255) = 0 then
@@ -12794,7 +12813,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                 | _ -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
                             | _ -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
                         else push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
-                    else raise_type_error s <| sprintf "Types in branches of If do not match.\nGot: %s and %s" (show_ty type_tr) (show_ty type_fl)
+                    else
+                        // ALPHA47: JPMethod recursion placeholders can leak into branch types during parallel JP evaluation.
+                        // If one side is a JPMethodRecPlaceholder, treat it as a unification hole and resolve it to the other side.
+                        let inline try_resolve_jp_placeholder (a: Ty) (b: Ty) : Ty option =
+                            try
+                                jp_method_rec_placeholders
+                                |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
+                                |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
+                            with _ -> None
+                        match try_resolve_jp_placeholder type_tr type_fl with
+                        | Some ty -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) ty
+                        | None ->
+                            match try_resolve_jp_placeholder type_fl type_tr with
+                            | Some ty -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) ty
+                            | None ->
+                                raise_type_error s <| sprintf "Types in branches of If do not match.\nGot: %s and %s" (show_ty type_tr) (show_ty type_fl)
                 | cond -> raise_type_error s <| sprintf "Expected a bool in conditional.\nGot: %s" (show_data cond)
 
             let eq s a b =
@@ -13002,7 +13036,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         let (_, ret_ty_opt, _) = Hopac.IVar.Now.get existing_ivar
                         match ret_ty_opt with
                         | Some ret_ty -> ret_ty
-                        | None -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP computation completed but no return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
+                        | None ->
+                            jp_throw_keyed join_point_key
+                            raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP computation completed but no return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
                     | true, existing_ivar ->
                         // In progress - wait for it
                         let jp = defaultArg jp_name "<anon>"
@@ -13025,7 +13061,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                             jp_throw_if_any ()
                             match result with
                             | (_, Some ret_ty, _) -> ret_ty
-                            | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP completed without return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
+                            | _ ->
+                                jp_throw_keyed join_point_key
+                                raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP completed without return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
                     | false, _ ->
                         let annot_val = Option.map (ty s) annot
                         // v107-alpha43: Check loop specialization guard before creating new spec
@@ -13094,6 +13132,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                         Hopac.IVar.fill jp_ivar result |> Hopac.start
                                         ty
                                     with e ->
+                                        // Record per-key exn so *all* waiters can rethrow even if jp_exns was already dequeued.
+                                        jp_method_exns.[join_point_key] <- capture_edi e
                                         // Fill with error marker so waiters don't hang forever
                                         try Hopac.IVar.fill jp_ivar (None, None, jp_name) |> Hopac.start with _ -> ()
                                         reraise()
@@ -13112,7 +13152,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                 jp_throw_if_any ()
                                 match result with
                                 | (_, Some ret_ty, _) -> ret_ty
-                                | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP evaluation failed\n  = key: %O\n  = backend: %O\n" join_point_key backend')
+                                | _ ->
+                                    jp_throw_keyed join_point_key
+                                    raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP evaluation failed\n  = key: %O\n  = backend: %O\n" join_point_key backend')
                         else
                             // Lost the race - wait on winner's IVar
                             match dict.TryGetValue(join_point_key) with
@@ -13121,7 +13163,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                 jp_throw_if_any ()
                                 match result with
                                 | (_, Some ret_ty, _) -> ret_ty
-                                | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP completed without return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
+                                | _ ->
+                                    jp_throw_keyed join_point_key
+                                    raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP completed without return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
                             | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP dict inconsistency\n  = key: %O\n" join_point_key)
 
                 match backend with
@@ -13393,16 +13437,30 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                 let s = {s with unions = Map.add i (UnionData (k,a)) s.unions; cse = Dictionary(HashIdentity.Structural) :: s.cse; seq = ResizeArray()}
                                 let x = run s a |> dyn false s
                                 Map.add k ([a], (seq_apply s x)) Map.empty, data_to_ty s x
+                            let mutable ret_ty2 = ret_ty
                             let on_succ,on_fails =
                                 let blk = Set.add k blk
                                 if blk.Count = h.Item.cases.Count then on_succ, None // Have to do this otherwise it would have hit EPatternMiss
                                 else
                                     let on_fails, ret_ty' = term_scope {s with unions = Map.add i (UnionBlockers blk) s.unions} on_fail
-                                    if ret_ty <> ret_ty' then raise_type_error s $"The types of two branches of an union unbox do not match.\nGot: {show_ty ret_ty}\nAnd: {show_ty ret_ty'}"
+                                    if ret_ty <> ret_ty' then
+                                            let try_resolve_jp_placeholder (a: Ty) (b: Ty) =
+                                                try
+                                                    jp_method_rec_placeholders
+                                                    |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
+                                                    |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
+                                                with _ -> None
+                                            match try_resolve_jp_placeholder ret_ty ret_ty' with
+                                            | Some ty -> ret_ty2 <- ty
+                                            | None ->
+                                                match try_resolve_jp_placeholder ret_ty' ret_ty with
+                                                | Some ty -> ret_ty2 <- ty
+                                                | None ->
+                                                    raise_type_error s $"The types of two branches of an union unbox do not match.\nGot: {show_ty ret_ty}\nAnd: {show_ty ret_ty'}"
                                     match on_fails with
                                     | [|TyLocalReturnOp(_,TyUnionUnbox([i'],_,on_succ',on_fail'),_)|] when i = i' -> Map.foldBack Map.add on_succ' on_succ , on_fail'
                                     | _ -> on_succ, Some on_fails
-                            push_typedop_no_rewrite s (TyUnionUnbox([i],h,on_succ,on_fails)) ret_ty
+                            push_typedop_no_rewrite s (TyUnionUnbox([i],h,on_succ,on_fails)) ret_ty2
                         | _ -> term s on_fail
                     match Map.tryFind i s.unions with
                     | Some (UnionData (k',a)) -> if k = k' then run s a else term s on_fail
