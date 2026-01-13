@@ -4,7 +4,7 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260111-alpha49)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260111-alpha57)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -10451,7 +10451,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
     exception PartEvalTypeError of Trace * string
 
     /// ### raise_type_error
-    let raise_type_error (d: LangEnv) x = raise (PartEvalTypeError(d.trace,x))
+    let raise_type_error (d: LangEnv) (x: string) =
+        let x =
+            if x.Contains("\n") then x
+            else x + "\nCompiler: v20260111-alpha57"
+        raise (PartEvalTypeError(d.trace,x))
 
     /// ### data_to_rdata
     let data_to_rdata (d: LangEnv) (hc_table : HashConsTable) call_data =
@@ -11112,22 +11116,93 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let jp_method_rec_placeholder_keys : System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>> =
             System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
 
+
+        // Placeholder id -> JP key mapping for round-tripped placeholders (when the Ty is reconstructed from printed form).
+        let jp_method_rec_placeholder_ids : System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>> =
+            System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
+
         let inline jp_method_try_key_of_rec_placeholder (ty: Ty) : ConsedNode<RData [] * Ty [] * Ty> option =
+            // Fast-path: exact placeholder Ty -> key mapping.
             match jp_method_rec_placeholder_keys.TryGetValue ty with
             | true, k -> Some k
-            | false, _ -> None
+            | false, _ ->
+                // Round-trip path: if the placeholder Ty was reconstructed from printed form,
+                // it might not have been registered in jp_method_rec_placeholder_keys. In that case,
+                // parse the id suffix and consult jp_method_rec_placeholder_ids.
+                let inline try_parse_id (s: string) : int option =
+                    // Expected: "JPMethodRecPlaceholder(vYYYYMMDD-alphaNN;<jp>#<id>)"
+                    let i = s.LastIndexOf '#'
+                    if i <= 0 then None
+                    else
+                        let j0 = s.LastIndexOf ')'
+                        let j = if j0 > i then j0 else s.Length
+                        let n_str = s.Substring(i+1, j-i-1)
+                        match System.Int32.TryParse(n_str) with
+                        | true, n -> Some n
+                        | false, _ -> None
+                match ty with
+                | YSymbol s ->
+                    match try_parse_id s with
+                    | Some id ->
+                        match jp_method_rec_placeholder_ids.TryGetValue id with
+                        | true, k -> Some k
+                        | false, _ -> None
+                    | None -> None
+                | _ -> None
 
         let inline jp_method_deref_rec_placeholder (ty: Ty) : Ty =
             match jp_method_try_key_of_rec_placeholder ty with
             | Some k ->
                 let v = jp_method_rec_placeholders.[k]
                 if v = ty then
-                    // v20260111-alpha49: if still unresolved, fall back to the annotated return type in the key
-                    // to prevent JPMethodRecPlaceholder from leaking into destructuring paths (e.g. listm.foldBack).
+                    // v20260111-alpha57: conservative fallback. Only trust annotated return types that are
+                    // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
                     let (_, _, ret_ty) = k.node
-                    if ret_ty <> ty then ret_ty else ty
+                    let inline is_primitive_like (t: Ty) =
+                        match t with
+                        | YVoid | YB | YLit _ | YPrim _ -> true
+                        | _ -> false
+                    // v20260111-alpha57: allow non-primitive annotated return types (ex: list/record/union/layout)
+                    // to break recursion, but never substitute primitives (ex: i32) which can cause spurious apply mismatches.
+                    if is_primitive_like ret_ty then ty else ret_ty
                 else v
             | None -> ty
+
+        let inline ty_is_jp_method_rec_placeholder (ty: Ty) : bool =
+            match jp_method_try_key_of_rec_placeholder ty with
+            | Some _ -> true
+            | None ->
+                match ty with
+                | YSymbol s when s.Contains("JPMethodRecPlaceholder(") -> true
+                | _ -> false
+
+        let rec ty_eq_allow_jp_placeholders (a: Ty) (b: Ty) : bool =
+            // Treat JP method recursion placeholders as wildcards to break cyclic type validation (Hopac join points).
+            if ty_is_jp_method_rec_placeholder a || ty_is_jp_method_rec_placeholder b then true
+            else
+                match a, b with
+                | YVoid, YVoid -> true
+                | YB, YB -> true
+                | YLit x, YLit y -> x = y
+                | YSymbol x, YSymbol y -> x = y
+                | YPrim x, YPrim y -> x = y
+                | YPair(a1,a2), YPair(b1,b2) -> ty_eq_allow_jp_placeholders a1 b1 && ty_eq_allow_jp_placeholders a2 b2
+                | YArray a1, YArray b1 -> ty_eq_allow_jp_placeholders a1 b1
+                | YApply(a1,a2), YApply(b1,b2) -> ty_eq_allow_jp_placeholders a1 b1 && ty_eq_allow_jp_placeholders a2 b2
+                | YLayout(a1,l1), YLayout(b1,l2) -> l1 = l2 && ty_eq_allow_jp_placeholders a1 b1
+                | YNominal n1, YNominal n2 -> n1 = n2
+                | YUnion u1, YUnion u2 -> u1 = u2
+                | YMetavar x, YMetavar y -> x = y
+                | _ ->
+                    // ALPHA57: last-resort structural equivalence for nominal/opaque types that print identically
+                    // but differ in internal ids (common when core/plugin define parallel primitives like 'string').
+                    let a' = jp_method_deref_rec_placeholder a
+                    let b' = jp_method_deref_rec_placeholder b
+                    (show_ty a') = (show_ty b')
+
+
+
+
 
         let inline jp_method_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (jp: string) : Ty =
             jp_method_rec_placeholders.GetOrAdd(
@@ -11135,8 +11210,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 System.Func<ConsedNode<RData [] * Ty [] * Ty>, Ty>(fun key ->
                     // Placeholder: printable + stable. Must be unique per JP key (structural equality), otherwise placeholders can collide (e.g. <anon>) and leak.
                     let id = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(key)
-                    let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260111-alpha49;%s#%d)" jp id)
+                    let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260111-alpha57;%s#%d)" jp id)
                     jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
+                    jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
                     ph
                 )
             )
@@ -11948,10 +12024,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         for i = elems.Count - 1 downto 0 do
                             res <- YPair(f elems.[i], res)
                         res
-                    | DSymbol a -> YSymbol a
+                    | DSymbol a -> jp_method_deref_rec_placeholder (YSymbol a)
                     | DRecord l -> YRecord(Map.map (fun _ -> f) l)
                     | DUnion(_,a) -> YUnion a
-                    | DNominal(_,a) | DV(L(_,a)) -> a
+                    | DNominal(_,a) | DV(L(_,a)) -> jp_method_deref_rec_placeholder a
                     | DLit x -> lit_to_ty x
                     | DTLit x -> YLit x
                     | DB -> YB
@@ -12337,10 +12413,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let owner0 = jp_cell.owner
                     
                     if owner0 = tid && owner0 <> 0 then
-                        // v20260111-alpha49: break same-thread recursion by returning a placeholder instead of failing.
+                        // v20260111-alpha57: break same-thread recursion by returning a placeholder instead of failing.
                         // This keeps the type JP cache acyclic during definition and pushes failures to a later, more informative point if needed.
                         record_jp_diag_type join_point_key (r :: s.trace)
-                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260111-alpha49;%O)" join_point_key)
+                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260111-alpha57;%O)" join_point_key)
                     elif owner0 <> 0 then
                         // Another thread owns this - wait on IVar cooperatively
                         let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ivar
@@ -12943,8 +13019,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | DPair(DSymbol k, v) ->
                         let v_ty = data_to_ty s v
                         match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) (union_cases h) with
-                        | Some v_ty' when v_ty = v_ty' -> DNominal(DUnion(a,h),b)
-                        | Some v_ty' -> raise_type_error s <| sprintf "For key %s, The type of the value does not match the union case.\nGot: %s\nExpected: %s" k (show_ty v_ty) (show_ty v_ty')
+                        | Some v_ty' when ty_eq_allow_jp_placeholders v_ty v_ty' -> DNominal(DUnion(a,h),b)
+                        | Some v_ty' -> raise_type_error s <| sprintf "For key %s, The type of the value does not match the union case.\nGot: %s\nGot(deref): %s\nExpected: %s\nExpected(deref): %s" k (show_ty v_ty) (show_ty (jp_method_deref_rec_placeholder v_ty)) (show_ty v_ty') (show_ty (jp_method_deref_rec_placeholder v_ty'))
                         | None -> raise_type_error s <| sprintf "The union does not have key %s.\nGot: %s" k (show_ty b)
                     | _ -> raise_type_error s <| sprintf "Expected key/value pair.\nGot: %s" (show_data a)
                 | b' ->
@@ -13402,8 +13478,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha49\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha49\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha57\nGot: %s" (show_data (term s a))
+            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha57\nGot: %s" (show_ty (ty s a))
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -13515,18 +13591,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | YUnion h -> union_var_case h (L(i0, YUnion h))
                     | _ -> term s on_fail
                 | DV(L(i0,YSymbol sym)) when sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(") ->
+                    let try_union_of_ty (t: Ty) =
+                        match t with
+                        | YUnion h -> Some h
+                        | _ ->
+                            match nominal_type_apply s t with
+                            | YUnion h -> Some h
+                            | _ -> None
                     let try_infer_union_from_scrutinee_type () =
                         try
                             match data_to_ty s (term s a) with
                             | YUnion h -> Some h
-                            | t ->
-                                match nominal_type_apply s t with
-                                | YUnion h -> Some h
-                                | _ -> None
+                            | t -> try_union_of_ty t
                         with _ -> None
-                    match jp_method_deref_rec_placeholder (YSymbol sym) with
-                    | YUnion h -> union_var_case h (L(i0, YUnion h))
-                    | _ ->
+                    match try_union_of_ty (jp_method_deref_rec_placeholder (YSymbol sym)) with
+                    | Some h -> union_var_case h (L(i0, YUnion h))
+                    | None ->
                         match try_infer_union_from_scrutinee_type () with
                         | Some h -> union_var_case h (L(i0, YUnion h))
                         | None -> term s on_fail
@@ -14678,7 +14758,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | DNominal(d, _) -> is_var d
                     | DUnion(d, _) -> is_var d
                     | DPair(a,b) -> is_var a || is_var b
-                    | DSymbol sym when is_jp_placeholder sym -> true
+                    | DSymbol _ -> true
                     | DTLit (LitString sym) when is_jp_placeholder sym -> true
                     | DLit (LitString sym) when is_jp_placeholder sym -> true
                     | d ->
