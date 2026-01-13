@@ -4,7 +4,7 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260111-alpha40)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260111-alpha46)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -11131,7 +11131,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 System.Func<ConsedNode<RData [] * Ty [] * Ty>, Ty>(fun key ->
                     // Placeholder: printable + stable. Must be unique per JP key (structural equality), otherwise placeholders can collide (e.g. <anon>) and leak.
                     let id = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(key)
-                    let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260111-alpha40;%s#%d)" jp id)
+                    let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260111-alpha46;%s#%d)" jp id)
                     jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
                     ph
                 )
@@ -13395,8 +13395,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha40\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha40\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha46\nGot: %s" (show_data (term s a))
+            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha46\nGot: %s" (show_ty (ty s a))
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -13508,9 +13508,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | YUnion h -> union_var_case h (L(i0, YUnion h))
                     | _ -> term s on_fail
                 | DV(L(i0,YSymbol sym)) when sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(") ->
+                    let try_infer_union_from_scrutinee_type () =
+                        try
+                            match data_to_ty s (term s a) with
+                            | YUnion h -> Some h
+                            | t ->
+                                match nominal_type_apply s t with
+                                | YUnion h -> Some h
+                                | _ -> None
+                        with _ -> None
                     match jp_method_deref_rec_placeholder (YSymbol sym) with
                     | YUnion h -> union_var_case h (L(i0, YUnion h))
-                    | _ -> term s on_fail
+                    | _ ->
+                        match try_infer_union_from_scrutinee_type () with
+                        | Some h -> union_var_case h (L(i0, YUnion h))
+                        | None -> term s on_fail
                 | DNominal(DV(L(_,YUnion h) & i),_) -> union_var_case h i
                 | _ -> term s on_fail
             | EOp(r,Unbox,[a;on_succ]) ->
@@ -13547,9 +13559,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | YUnion h -> union_var_case h (L(i0, YUnion h))
                     | _ -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_data (term s a))
                 | DV(L(i0,YSymbol sym)) when sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(") ->
+                    let try_infer_union_from_scrutinee_type () =
+                        try
+                            match data_to_ty s (term s a) with
+                            | YUnion h -> Some h
+                            | t ->
+                                match nominal_type_apply s t with
+                                | YUnion h -> Some h
+                                | _ -> None
+                        with _ -> None
                     match jp_method_deref_rec_placeholder (YSymbol sym) with
                     | YUnion h -> union_var_case h (L(i0, YUnion h))
-                    | _ -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_data (term s a))
+                    | _ ->
+                        match try_infer_union_from_scrutinee_type () with
+                        | Some h -> union_var_case h (L(i0, YUnion h))
+                        | None -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_data (term s a))
                 | DNominal(DV(L(_,YUnion h) & i) & _,_) -> union_var_case h i
                 | a -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_data a)
             | EOp(r,Unbox2,[a;b;on_succ;on_fail]) ->
@@ -14632,18 +14656,32 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 | DSymbol _ -> DLit (LitBool true)
                 | _ -> DLit (LitBool false)
             | EOp(_,VarIs,[a]) ->
-                let inline is_jp_placeholder (sym: string) =
+                let inline normalize_sym (sym: string) =
                     let sym = sym.Trim()
-                    let sym = if sym.StartsWith(".") then sym.Substring(1) else sym
-                    sym.StartsWith("JPMethodRecPlaceholder(")
+                    let sym = sym.Trim([|'`'; '"'; ' '|])
+                    sym.TrimStart('.')
+                let inline is_jp_placeholder (sym: string) =
+                    let sym = normalize_sym sym
+                    let ty = YSymbol sym
+                    match jp_method_rec_placeholder_keys.TryGetValue ty with
+                    | true, _ -> true
+                    | _ -> sym.Contains("JPMethodRecPlaceholder(")
                 let rec is_var = function
                     | DV _ -> true
                     | DNominal(d, _) -> is_var d
                     | DUnion(d, _) -> is_var d
-                    | DPair(DSymbol sym, _) when is_jp_placeholder sym -> true
+                    | DPair(a,b) -> is_var a || is_var b
                     | DSymbol sym when is_jp_placeholder sym -> true
-                    | _ -> false
-                DLit (LitBool (is_var (term s a)))
+                    | DTLit (LitString sym) when is_jp_placeholder sym -> true
+                    | DLit (LitString sym) when is_jp_placeholder sym -> true
+                    | d ->
+                        // Conservative fallback: if a JP-method recursion placeholder leaks through wrappers,
+                        // treat it as a variable to avoid list/union destructuring Pattern miss in downstream libraries.
+                        let s = show_data d
+                        s.Contains("JPMethodRecPlaceholder(")
+                let a = term s a
+                DLit (LitBool (is_var a))
+
             | EOp(_,UnionIs,[a]) ->
                 let inline is_jp_placeholder (sym: string) =
                     sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(")
