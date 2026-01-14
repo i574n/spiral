@@ -4,7 +4,7 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha21)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha24)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -10480,7 +10480,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
     let raise_type_error (d: LangEnv) (x: string) =
         let x =
             if x.Contains("Compiler: v20260111-alpha") then x
-            else x + sprintf "\nCompiler: v20260113-alpha21\nTraceDepth: %d" d.trace.Length
+            else x + sprintf "\nCompiler: v20260113-alpha24\nTraceDepth: %d" d.trace.Length
         raise (PartEvalTypeError(d.trace,x))
 
     /// ### data_to_rdata
@@ -11228,25 +11228,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | Some k ->
                 let curGen = CacheGeneration.current()
                 let cell = jp_method_rec_placeholders.[k]
+
+                // Always compute the safe-annotation fallback once; we also apply it when the placeholder is stale.
+                // Without this, a placeholder from a previous cache generation can leak as a term-level DV and explode later
+                // as an apply-mismatch (the .JPMethodRecPlaceholder(...) crash seen in alpha25 logs).
+                let (_, _, ret_ty) = k.node
+                let inline is_hard_primitive_like (t: Ty) =
+                    match t with
+                    | YLit _ | YPrim _ -> true
+                    | _ -> false
+                let inline is_jp_placeholder_like (t: Ty) =
+                    match t with
+                    | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> true
+                    | _ -> false
+                let inline fallback () =
+                    // allow non-primitive annotated return types to break recursion, but never substitute primitives.
+                    if is_jp_placeholder_like ret_ty || is_hard_primitive_like ret_ty then ty else ret_ty
+
                 if cell.gen <> curGen then
                     // Stale generation: treat as unresolved placeholder for this retry attempt.
-                    ty
+                    // Critical: still apply fallback so the stale placeholder cannot leak into term evaluation.
+                    fallback ()
                 else
                     let v = cell.v
                     if v = cell.ph then
-                        // v20260113-alpha21: conservative fallback. Only trust annotated return types that are
+                        // v20260113-alpha26: conservative fallback. Only trust annotated return types that are
                         // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
-                        let (_, _, ret_ty) = k.node
-                        let inline is_primitive_like (t: Ty) =
-                            match t with
-                            | YB | YLit _ | YPrim _ -> true
-                            | _ -> false
-                        let inline is_jp_placeholder_like (t: Ty) =
-                            match t with
-                            | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> true
-                            | _ -> false
-                        // allow non-primitive annotated return types to break recursion, but never substitute primitives.
-                        if is_jp_placeholder_like ret_ty || is_primitive_like ret_ty then ty else ret_ty
+                        fallback ()
                     else v
             | None -> ty
 
@@ -11300,7 +11308,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     System.Func<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell>(fun key ->
                         // Placeholder: printable + unique. Use a monotonic id so different JP keys cannot collide under parallel builds.
                         let id = System.Threading.Interlocked.Increment(&jp_method_rec_placeholder_next_id)
-                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha21;%s#%d)" jp id)
+                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha26;%s#%d)" jp id)
                         jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
                         jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
                         JpMethodRecPlaceholderCell(curGen, ph, ph)
@@ -11314,7 +11322,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 resetCell.v
 
         let inline jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
-            // v20260113-alpha21: generation-aware placeholder resolution + anti-clobber.
+            // v20260113-alpha25: generation-aware placeholder resolution + anti-clobber.
             // We still keep the 'hard primitive vs expected non-primitive' guard, but we also prevent a hard primitive (ex: i32)
             // from overwriting a richer resolved type within the same generation (a common source of spurious EJP0007 apply-mismatch).
             let inline is_primitive_like (t: Ty) =
@@ -11333,7 +11341,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let (_, _, expected_ret_ty) = key.node
             let curGen = CacheGeneration.current()
 
-            if is_hard_primitive_like ty && not (is_primitive_like expected_ret_ty) && not (is_jp_method_placeholder expected_ret_ty) then
+            if is_hard_primitive_like ty && not (is_primitive_like expected_ret_ty) then
                 if jp_diag_verbose then
                     let jp_name =
                         match jp_method_key_names.TryGetValue key with
@@ -11986,7 +11994,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let f = ty_to_data s
             match x with
             | YVoid ->
-                // v20260113-alpha21: The evaluator can transiently demand a term for YVoid during sequencing
+                // v20260113-alpha25: The evaluator can transiently demand a term for YVoid during sequencing
                 // or placeholder materialization under parallel retries. Coerce it to unit data (DB) instead of aborting.
                 // Any semantically invalid usage should reappear later as a type mismatch rather than a fatal abort.
                 DB
@@ -12122,6 +12130,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                         |> Map.ofSeq
                                         |> YRecord
                                     | _ -> ty
+                                let ty_deref = jp_method_deref_rec_placeholder ty
+                                let ty =
+                                    // v20260113-alpha25: under parallel JP recursion, closure bodies can transiently infer a JP placeholder.
+                                    // If the function has an explicit unit return annotation, treat placeholder as unit to avoid spurious hard-fails.
+                                    if range = YB && (ty_is_jp_method_rec_placeholder ty || ty_is_jp_type_rec_placeholder ty || ty_is_jp_method_rec_placeholder ty_deref || ty_is_jp_type_rec_placeholder ty_deref) then
+                                        if jp_diag_verbose then
+                                            DiagSidecar.emit (sprintf "EJP0002W: coerced closure return placeholder to unit\n  got=%s\n  got(deref)=%s\n  expected=%s\n  key=%O"
+                                                (show_ty ty) (show_ty ty_deref) (show_ty range) join_point_key)
+                                        range
+                                    else ty
                                 if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
                                 // ALPHA47: Fill IVar to signal completion
                                 jp_fill_ivar jp_ivar result
@@ -12555,10 +12573,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let owner0 = jp_cell.owner
                     
                     if owner0 = tid && owner0 <> 0 then
-                        // v20260113-alpha21: break same-thread recursion by returning a placeholder instead of failing.
+                        // v20260113-alpha25: break same-thread recursion by returning a placeholder instead of failing.
                         // This keeps the type JP cache acyclic during definition and pushes failures to a later, more informative point if needed.
                         record_jp_diag_type join_point_key (r :: s.trace)
-                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260113-alpha21;%O)" join_point_key)
+                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260113-alpha25;%O)" join_point_key)
                     elif owner0 <> 0 then
                         // Another thread owns this - wait on IVar cooperatively
                         let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ivar
@@ -13113,12 +13131,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 | DV(L(a,a_ty)), DV(L(b,_)) when a = b && is_non_float_primitive a_ty -> LitBool true |> DLit
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
-                    if a_ty = b_ty then
+                    if ty_eq_allow_jp_placeholders a_ty b_ty then
                         match a, b with
                         | DLit (LitBool true), x | x, DLit (LitBool true) -> x
                         | _ ->
-                            if is_primitive a_ty then push_binop s EQ (a,b) (YPrim BoolT)
-                            else raise_type_error s <| sprintf "The type of the two arguments needs to be a primitive type.\nGot: %s" (show_ty a_ty)
+                            let prim_ty_opt =
+                                if is_primitive a_ty then Some a_ty
+                                elif is_primitive b_ty then Some b_ty
+                                else None
+                            match prim_ty_opt with
+                            | Some _ -> push_binop s EQ (a,b) (YPrim BoolT)
+                            | None ->
+                                raise_type_error s <| sprintf "The type of the two arguments needs to be a primitive type.\nGot: %s and %s" (show_ty a_ty) (show_ty b_ty)
                     else
                         raise_type_error s <| sprintf "The two sides need to have the same primitive types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
             let default_lit s (a : string) b =
@@ -13275,7 +13299,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     Array.append env_global_value [| ReSymbol rk |]
 
                 let join_point_key =
-                    lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, defaultArg annot_ty_for_key YVoid))
+                    lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, defaultArg annot_ty_for_key (YSymbol "JPMethodUnknownRet(v20260113-alpha25)")))
                 let _ =
                     // record a stable label for better join-point diagnostics
                     let base_name =
@@ -13335,7 +13359,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                             let snap = diag_snapshot (sprintf "EJP0012: loop specialization cap exceeded for '%s'" jp_name_str)
                             match annot_val with
                             | Some t ->
-                                // v20260113-alpha21: never return a primitive/placeholder annotation for a capped JP.
+                                // v20260113-alpha24: never return a primitive/placeholder annotation for a capped JP.
                                 // Doing so can leak a hard primitive into callable positions and trigger spurious EJP0007.
                                 let inline is_primitive_like (t: Ty) =
                                     match t with
@@ -13663,8 +13687,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha21\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha21\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha24\nGot: %s" (show_data (term s a))
+            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha24\nGot: %s" (show_ty (ty s a))
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -14582,8 +14606,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | a, b -> raise_type_error s <| sprintf "The two literals must be equal in type.\nGot: %s and %s" (show_lit a) (show_lit b)
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
-                    if a_ty = b_ty then
-                        if is_primitive a_ty then push_binop s LT (a,b) (YPrim BoolT)
+                    let prim_ty = if is_primitive a_ty then a_ty elif is_primitive b_ty then b_ty else a_ty
+                    if ty_eq_allow_jp_placeholders a_ty b_ty then
+                        if is_primitive prim_ty then push_binop s LT (a,b) (YPrim BoolT)
                         else raise_type_error s <| sprintf "The type of the two arguments needs to be a primitive type.\nGot: %s" (show_ty a_ty)
                     else
                         raise_type_error s <| sprintf "The two sides need to have the same primitive types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
@@ -14608,8 +14633,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | a, b -> raise_type_error s <| sprintf "The two literals must be equal in type.\nGot: %s and %s" (show_lit a) (show_lit b)
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
-                    if a_ty = b_ty then
-                        if is_primitive a_ty then push_binop s LTE (a,b) (YPrim BoolT)
+                    let prim_ty = if is_primitive a_ty then a_ty elif is_primitive b_ty then b_ty else a_ty
+                    if ty_eq_allow_jp_placeholders a_ty b_ty then
+                        if is_primitive prim_ty then push_binop s LTE (a,b) (YPrim BoolT)
                         else raise_type_error s <| sprintf "The type of the two arguments needs to be a primitive type.\nGot: %s" (show_ty a_ty)
                     else
                         raise_type_error s <| sprintf "The two sides need to have the same primitive types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
@@ -14634,8 +14660,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | a, b -> raise_type_error s <| sprintf "The two literals must be equal in type.\nGot: %s and %s" (show_lit a) (show_lit b)
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
-                    if a_ty = b_ty then
-                        if is_primitive a_ty then push_binop s GT (a,b) (YPrim BoolT)
+                    let prim_ty = if is_primitive a_ty then a_ty elif is_primitive b_ty then b_ty else a_ty
+                    if ty_eq_allow_jp_placeholders a_ty b_ty then
+                        if is_primitive prim_ty then push_binop s GT (a,b) (YPrim BoolT)
                         else raise_type_error s <| sprintf "The type of the two arguments needs to be a primitive type.\nGot: %s" (show_ty a_ty)
                     else
                         raise_type_error s <| sprintf "The two sides need to have the same primitive types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
@@ -14660,8 +14687,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | a, b -> raise_type_error s <| sprintf "The two literals must be equal in type.\nGot: %s and %s" (show_lit a) (show_lit b)
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
-                    if a_ty = b_ty then
-                        if is_primitive a_ty then push_binop s GTE (a,b) (YPrim BoolT)
+                    let prim_ty = if is_primitive a_ty then a_ty elif is_primitive b_ty then b_ty else a_ty
+                    if ty_eq_allow_jp_placeholders a_ty b_ty then
+                        if is_primitive prim_ty then push_binop s GTE (a,b) (YPrim BoolT)
                         else raise_type_error s <| sprintf "The type of the two arguments needs to be a primitive type.\nGot: %s" (show_ty a_ty)
                     else
                         raise_type_error s <| sprintf "The two sides need to have the same primitive types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
@@ -14688,11 +14716,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | DV(L(a,a_ty)), DV(L(b,_)) when a = b && is_non_float_primitive a_ty -> LitBool false |> DLit
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
-                    if a_ty = b_ty then
+                    let prim_ty = if is_primitive a_ty then a_ty elif is_primitive b_ty then b_ty else a_ty
+                    if ty_eq_allow_jp_placeholders a_ty b_ty then
                         match a, b with
                         | DLit (LitBool false), x | x, DLit (LitBool false) -> x
                         | _ ->
-                            if is_primitive a_ty then push_binop s NEQ (a,b) (YPrim BoolT)
+                            if is_primitive prim_ty then push_binop s NEQ (a,b) (YPrim BoolT)
                             else raise_type_error s <| sprintf "The type of the two arguments needs to be a primitive type.\nGot: %s" (show_ty a_ty)
                     else
                         raise_type_error s <| sprintf "The two sides need to have the same primitive types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
