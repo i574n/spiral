@@ -4,7 +4,7 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha17)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha21)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -10157,12 +10157,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                   msg.Contains("Got: f32") || msg.Contains("Got: f64") ||
                   msg.Contains("Got: bool")) then
                 Some EJP0007
+            elif (msg.Contains("annotation of the function does not match its body's type") ||
+                      (msg.Contains("annotation of the function") && msg.Contains("does not match its body's type"))) &&
+                     (msg.Contains("JPMethodRecPlaceholder") || msg.Contains("JPTypeRecPlaceholder")) then
+                // Annotation mismatch where the body is still a JP placeholder: treat as join-point annotation mismatch to allow retry.
+                Some EJP0002
             elif msg.Contains("annotation") && msg.Contains("mismatch") then
                 Some EJP0002
             elif msg.Contains("specialization cap") || msg.Contains(EJP0012) then
                 Some EJP0012
             elif msg.Contains(EJP0008) || msg.Contains("generation changed while waiting") then
                 Some EJP0008
+            elif msg.Contains("variables compared for equality") && msg.Contains("same type") then
+                // Equality arg type mismatch: usually stale cached term/type pairs; retry with invalidation.
+                Some EJP0003
             elif msg.Contains("type mismatch") || msg.Contains("Cannot apply") then
                 Some EJP0003
             else
@@ -10472,7 +10480,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
     let raise_type_error (d: LangEnv) (x: string) =
         let x =
             if x.Contains("Compiler: v20260111-alpha") then x
-            else x + sprintf "\nCompiler: v20260113-alpha17\nTraceDepth: %d" d.trace.Length
+            else x + sprintf "\nCompiler: v20260113-alpha21\nTraceDepth: %d" d.trace.Length
         raise (PartEvalTypeError(d.trace,x))
 
     /// ### data_to_rdata
@@ -10827,6 +10835,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         | YPrim (UInt8T | UInt16T | UInt32T | UInt64T
             | Int8T | Int16T | Int32T | Int64T) -> true
         | _ -> false
+
+    /// ### is_any_int_allow_jp_placeholders
+    /// Like is_any_int, but treats JP*RecPlaceholder symbols as compatible with "some int" during type checking
+    /// so that parallel join-point inference can converge without aborting early on stale annotations.
+    let is_any_int_allow_jp_placeholders = function
+        | t when is_any_int t -> true
+        | YSymbol s when
+            s.StartsWith("JPMethodRecPlaceholder(") || s.StartsWith(".JPMethodRecPlaceholder(") ||
+            s.StartsWith("JPTypeRecPlaceholder(") || s.StartsWith(".JPTypeRecPlaceholder(") -> true
+        | _ -> false
+
 
     /// ### is_int64
     let is_int64 = function
@@ -11215,7 +11234,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 else
                     let v = cell.v
                     if v = cell.ph then
-                        // v20260113-alpha17: conservative fallback. Only trust annotated return types that are
+                        // v20260113-alpha21: conservative fallback. Only trust annotated return types that are
                         // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
                         let (_, _, ret_ty) = k.node
                         let inline is_primitive_like (t: Ty) =
@@ -11281,7 +11300,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     System.Func<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell>(fun key ->
                         // Placeholder: printable + unique. Use a monotonic id so different JP keys cannot collide under parallel builds.
                         let id = System.Threading.Interlocked.Increment(&jp_method_rec_placeholder_next_id)
-                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha17;%s#%d)" jp id)
+                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha21;%s#%d)" jp id)
                         jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
                         jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
                         JpMethodRecPlaceholderCell(curGen, ph, ph)
@@ -11295,7 +11314,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 resetCell.v
 
         let inline jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
-            // v20260113-alpha17: generation-aware placeholder resolution + anti-clobber.
+            // v20260113-alpha21: generation-aware placeholder resolution + anti-clobber.
             // We still keep the 'hard primitive vs expected non-primitive' guard, but we also prevent a hard primitive (ex: i32)
             // from overwriting a richer resolved type within the same generation (a common source of spurious EJP0007 apply-mismatch).
             let inline is_primitive_like (t: Ty) =
@@ -11967,7 +11986,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let f = ty_to_data s
             match x with
             | YVoid ->
-                // v20260113-alpha17: The evaluator can transiently demand a term for YVoid during sequencing
+                // v20260113-alpha21: The evaluator can transiently demand a term for YVoid during sequencing
                 // or placeholder materialization under parallel retries. Coerce it to unit data (DB) instead of aborting.
                 // Any semantically invalid usage should reappear later as a type mismatch rather than a fatal abort.
                 DB
@@ -12536,10 +12555,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let owner0 = jp_cell.owner
                     
                     if owner0 = tid && owner0 <> 0 then
-                        // v20260113-alpha17: break same-thread recursion by returning a placeholder instead of failing.
+                        // v20260113-alpha21: break same-thread recursion by returning a placeholder instead of failing.
                         // This keeps the type JP cache acyclic during definition and pushes failures to a later, more informative point if needed.
                         record_jp_diag_type join_point_key (r :: s.trace)
-                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260113-alpha17;%O)" join_point_key)
+                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260113-alpha21;%O)" join_point_key)
                     elif owner0 <> 0 then
                         // Another thread owns this - wait on IVar cooperatively
                         let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ivar
@@ -13316,7 +13335,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                             let snap = diag_snapshot (sprintf "EJP0012: loop specialization cap exceeded for '%s'" jp_name_str)
                             match annot_val with
                             | Some t ->
-                                // v20260113-alpha17: never return a primitive/placeholder annotation for a capped JP.
+                                // v20260113-alpha21: never return a primitive/placeholder annotation for a capped JP.
                                 // Doing so can leak a hard primitive into callable positions and trigger spurious EJP0007.
                                 let inline is_primitive_like (t: Ty) =
                                     match t with
@@ -13614,9 +13633,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         s0 <- add_trace s0 r
                         match term s0 a with
                         | DB -> x <- b
-                        | DSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") ->
+                        | DSymbol s as a when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") ->
                             if jp_diag_verbose then
-                                DiagSidecar.emit (sprintf "ESEQ.placeholder_as_unit got=%s" s)
+                                DiagSidecar.emit (sprintf "ESEQ.placeholder_as_unit got=%s" (show_data a))
+                            x <- b
+                        | DV(L(_,YSymbol s)) as a when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") ->
+                            if jp_diag_verbose then
+                                DiagSidecar.emit (sprintf "ESEQ.placeholder_as_unit got=%s" (show_data a))
                             x <- b
                         | a -> raise_type_error s0 <| sprintf "Expected unit.\nGot: %s" (show_data a)
                     | _ -> running <- false
@@ -13640,8 +13663,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha17\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha17\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha21\nGot: %s" (show_data (term s a))
+            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha21\nGot: %s" (show_ty (ty s a))
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -14274,7 +14297,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     else raise_type_error s <| sprintf "Cannot index into a string of length %i at index %i." a.Length b
                 | a,b ->
                     match data_to_ty s a, data_to_ty s b with
-                    | YPrim StringT,bt when is_any_int bt -> push_binop s StringIndex (a,b) (YPrim CharT)
+                    | YPrim StringT,bt when is_any_int_allow_jp_placeholders bt -> push_binop s StringIndex (a,b) (YPrim CharT)
                     | a,b -> raise_type_error s <| sprintf "Expected a string and an int as arguments.\nGot: %s\nAnd: %s" (show_ty a) (show_ty b)
             | EOp(_,StringSlice,[a;b;c]) ->
                 match term3 s a b c with
@@ -14284,7 +14307,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     else raise_type_error s <| sprintf "String of length %i's slice from %i to %i is invalid." a.Length b c
                 | a,b,c ->
                     match data_to_ty s a, data_to_ty s b, data_to_ty s c with
-                    | YPrim StringT, bt, ct when is_any_int bt && is_any_int ct -> push_triop s StringSlice (a,b,c) (YPrim StringT)
+                    | YPrim StringT, bt, ct when is_any_int_allow_jp_placeholders bt && is_any_int_allow_jp_placeholders ct -> push_triop s StringSlice (a,b,c) (YPrim StringT)
                     | a,b,c -> raise_type_error s <| sprintf "Expected a string and two ints as arguments.\nGot: %s\nAnd: %s\nAnd: %s" (show_ty a) (show_ty b) (show_ty c)
             | EArray(_,a,b) ->
                 match ty s b with
@@ -14301,7 +14324,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | EOp(_,ArrayCreate,[EType(_,a);b]) ->
                 let a,b = ty s a, term s b
                 match data_to_ty s b with
-                | bt when is_any_int bt -> push_typedop_no_rewrite s (TyArrayCreate(a,b)) (YArray a)
+                | bt when is_any_int_allow_jp_placeholders bt -> push_typedop_no_rewrite s (TyArrayCreate(a,b)) (YArray a)
                 | b -> raise_type_error s <| sprintf "Expected an int as the size of the array.\nGot: %s" (show_ty b)
             | EOp(_,ArrayLength,[EType(_,t);a]) ->
                 let t = ty s t
@@ -14315,7 +14338,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | DV(L(_,YArray ty)) & a ->
                     let b = term s b
                     match data_to_ty s b with
-                    | bt when is_any_int bt -> push_binop_no_rewrite s ArrayIndex (a,b) ty
+                    | bt when is_any_int_allow_jp_placeholders bt -> push_binop_no_rewrite s ArrayIndex (a,b) ty
                     | b -> raise_type_error s <| sprintf "Expected an int as the index argumet.\nGot: %s" (show_ty b)
                 | a -> raise_type_error s <| sprintf "Expected an array_base.\nGot: %s" (show_data a)
             | EOp(_,ArrayIndexSet,[a;b;c]) ->
