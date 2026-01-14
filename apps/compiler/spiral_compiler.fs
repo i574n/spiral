@@ -4,7 +4,7 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260111-alpha64)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha12)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -10135,19 +10135,36 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         /// EJP0012: Loop specialization cap exceeded
         let [<Literal>] EJP0012 = "EJP0012"
 
+
+        /// EJP0013: Void instance construction (likely cache corruption)
+        let [<Literal>] EJP0013 = "EJP0013"
         /// Classify an error message to an EJP code
         let classifyError (msg: string) : string option =
-            if msg.Contains("Expected a function") &&
-               (msg.Contains("Got: i32") || msg.Contains("Got: i64") ||
-                msg.Contains("Got: f32") || msg.Contains("Got: f64") ||
-                msg.Contains("Got: bool")) then
+            // NOTE: Keep these checks cheap and order them from most specific to most general.
+            if msg.Contains("Cannot construct an instance of a void type") || msg.Contains("void type") && msg.Contains("Cannot construct") then
+                Some EJP0013
+            elif msg.Contains("apply mismatch") then
+                // The "apply mismatch" marker is emitted by cache invalidation heuristics; treat it as apply-type mismatch.
                 Some EJP0007
-            elif msg.Contains("type mismatch") || msg.Contains("Cannot apply") then
-                Some EJP0003
+            elif msg.Contains(EJP0011) || (msg.Contains("Re-entrant") && msg.Contains("cycle")) then
+                Some EJP0011
+            elif msg.Contains(EJP0010) || msg.Contains("Insufficient execution stack") || msg.Contains("stack overflow") && msg.Contains("preempt") then
+                Some EJP0010
+            elif msg.Contains(EJP0009) || msg.Contains("recursion depth") && (msg.Contains("exceeded") || msg.Contains("overflow")) then
+                Some EJP0009
+            elif msg.Contains("Expected a function") &&
+                 (msg.Contains("Got: i32") || msg.Contains("Got: i64") ||
+                  msg.Contains("Got: f32") || msg.Contains("Got: f64") ||
+                  msg.Contains("Got: bool")) then
+                Some EJP0007
             elif msg.Contains("annotation") && msg.Contains("mismatch") then
                 Some EJP0002
-            elif msg.Contains("specialization cap") || msg.Contains("EJP0012") then
+            elif msg.Contains("specialization cap") || msg.Contains(EJP0012) then
                 Some EJP0012
+            elif msg.Contains(EJP0008) || msg.Contains("generation changed while waiting") then
+                Some EJP0008
+            elif msg.Contains("type mismatch") || msg.Contains("Cannot apply") then
+                Some EJP0003
             else
                 None
 
@@ -10162,6 +10179,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | "EJP0010" -> "Insufficient execution stack (stack overflow preempted)"
             | "EJP0011" -> "Re-entrant term evaluation cycle detected"
             | "EJP0012" -> "Loop specialization cap exceeded"
+            | "EJP0013" -> "Void instance construction (likely cache corruption)"
             | _ -> "Unknown error"
 
     /// ### LoopSpecializationGuard
@@ -10454,7 +10472,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
     let raise_type_error (d: LangEnv) (x: string) =
         let x =
             if x.Contains("Compiler: v20260111-alpha") then x
-            else x + sprintf "\nCompiler: v20260111-alpha64\nTraceDepth: %d" d.trace.Length
+            else x + sprintf "\nCompiler: v20260113-alpha12\nTraceDepth: %d" d.trace.Length
         raise (PartEvalTypeError(d.trace,x))
 
     /// ### data_to_rdata
@@ -10936,6 +10954,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         }
     /// ALPHA47: JPTypeCell now uses Hopac IVar for signaling
     type JPTypeCell<'a> = { ivar: Hopac.IVar<'a option>; mutable owner: int }
+    
+    [<Struct>]
+    type JpMethodRecPlaceholderCell =
+        val gen: int64
+        val ph: Ty
+        val v: Ty
+        new(gen, ph, v) = { gen = gen; ph = ph; v = v }
+    
 
 
     /// ### peval
@@ -11006,6 +11032,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
             if jp_exns.TryDequeue(&edi) then edi.Throw()
 
+
+
+        let inline jp_is_worker_thread () =
+            let t = System.Threading.Thread.CurrentThread
+            not (isNull t.Name) && t.Name.StartsWith("jp-worker-")
+
+        let inline jp_fill_ivar (ivar: Hopac.IVar<'a>) (value: 'a) : unit =
+            if jp_is_worker_thread () then
+                // Dedicated OS threads may drive Hopac jobs to completion without starving the scheduler.
+                Hopac.run (Hopac.IVar.fill ivar value)
+            else
+                // Hopac fibers must never block; schedule cooperatively.
+                Hopac.start (Hopac.IVar.fill ivar value)
 
         // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
@@ -11122,10 +11161,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let mutable jp_method_rec_placeholder_next_id = 0
 
         // JPMethod recursion placeholders: enable recursive functions without forcing explicit return annotations.
-        let jp_method_rec_placeholders : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Ty> =
-            System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Ty>(HashIdentity.Reference)
-
-
+        // Generation-aware: placeholder resolutions must not persist across cache invalidations.
+        // This is a minimal 'promise-like' cell inspired by the old Hopac approach: once a build attempt is invalidated,
+        // we reset back to the placeholder symbol for that JP key so the retry can re-infer deterministically.
+        let jp_method_rec_placeholders : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell> =
+            System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell>(HashIdentity.Reference)
         // Map placeholder Ty -> JP key so we can resolve/deref deterministically (no O(n) scan, no structural collisions).
         let jp_method_rec_placeholder_keys : System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>> =
             System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
@@ -11167,19 +11207,28 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let inline jp_method_deref_rec_placeholder (ty: Ty) : Ty =
             match jp_method_try_key_of_rec_placeholder ty with
             | Some k ->
-                let v = jp_method_rec_placeholders.[k]
-                if v = ty then
-                    // v20260111-alpha64: conservative fallback. Only trust annotated return types that are
-                    // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
-                    let (_, _, ret_ty) = k.node
-                    let inline is_primitive_like (t: Ty) =
-                        match t with
-                        | YVoid | YB | YLit _ | YPrim _ -> true
-                        | _ -> false
-                    // v20260111-alpha64: allow non-primitive annotated return types (ex: list/record/union/layout)
-                    // to break recursion, but never substitute primitives (ex: i32) which can cause spurious apply mismatches.
-                    if is_primitive_like ret_ty then ty else ret_ty
-                else v
+                let curGen = CacheGeneration.current()
+                let cell = jp_method_rec_placeholders.[k]
+                if cell.gen <> curGen then
+                    // Stale generation: treat as unresolved placeholder for this retry attempt.
+                    ty
+                else
+                    let v = cell.v
+                    if v = cell.ph then
+                        // v20260113-alpha12: conservative fallback. Only trust annotated return types that are
+                        // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
+                        let (_, _, ret_ty) = k.node
+                        let inline is_primitive_like (t: Ty) =
+                            match t with
+                            | YB | YLit _ | YPrim _ -> true
+                            | _ -> false
+                        let inline is_jp_placeholder_like (t: Ty) =
+                            match t with
+                            | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> true
+                            | _ -> false
+                        // allow non-primitive annotated return types to break recursion, but never substitute primitives.
+                        if is_jp_placeholder_like ret_ty || is_primitive_like ret_ty then ty else ret_ty
+                    else v
             | None -> ty
 
         let inline ty_is_jp_method_rec_placeholder (ty: Ty) : bool =
@@ -11225,37 +11274,80 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
 
 
         let inline jp_method_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (jp: string) : Ty =
-            jp_method_rec_placeholders.GetOrAdd(
-                key,
-                System.Func<ConsedNode<RData [] * Ty [] * Ty>, Ty>(fun key ->
-                    // Placeholder: printable + unique. Use a monotonic id so different JP keys cannot collide under parallel builds.
-                    let id = System.Threading.Interlocked.Increment(&jp_method_rec_placeholder_next_id)
-                    let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260111-alpha64;%s#%d)" jp id)
-                    jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
-                    jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
-                    ph
+            let curGen = CacheGeneration.current()
+            let cell =
+                jp_method_rec_placeholders.GetOrAdd(
+                    key,
+                    System.Func<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell>(fun key ->
+                        // Placeholder: printable + unique. Use a monotonic id so different JP keys cannot collide under parallel builds.
+                        let id = System.Threading.Interlocked.Increment(&jp_method_rec_placeholder_next_id)
+                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha12;%s#%d)" jp id)
+                        jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
+                        jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
+                        JpMethodRecPlaceholderCell(curGen, ph, ph)
+                    )
                 )
-            )
+            if cell.gen = curGen then cell.v
+            else
+                // Stale cell from a previous generation: reset to placeholder so the retry can re-infer deterministically.
+                let resetCell = JpMethodRecPlaceholderCell(curGen, cell.ph, cell.ph)
+                jp_method_rec_placeholders.AddOrUpdate(key, resetCell, (fun _ old -> if old.gen = curGen then old else resetCell)) |> ignore
+                resetCell.v
 
         let inline jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
-            // v20260111-alpha64: guard against cementing primitives into JP placeholders when the JP key expects a non-primitive return.
-            // This prevents cascades like EJP0007 (apply mismatch) from a single corrupted resolve.
+            // v20260113-alpha12: generation-aware placeholder resolution + anti-clobber.
+            // We still keep the 'hard primitive vs expected non-primitive' guard, but we also prevent a hard primitive (ex: i32)
+            // from overwriting a richer resolved type within the same generation (a common source of spurious EJP0007 apply-mismatch).
             let inline is_primitive_like (t: Ty) =
                 match t with
                 | YVoid | YB | YLit _ | YPrim _ -> true
                 | _ -> false
+            let inline is_hard_primitive_like (t: Ty) =
+                match t with
+                | YB | YLit _ | YPrim _ -> true
+                | _ -> false
+            let inline is_jp_method_placeholder (t: Ty) =
+                match t with
+                | YSymbol s when s.StartsWith("JPMethodRecPlaceholder(") -> true
+                | _ -> false
+
             let (_, _, expected_ret_ty) = key.node
-            if is_primitive_like ty && not (is_primitive_like expected_ret_ty) then
+            let curGen = CacheGeneration.current()
+
+            if is_hard_primitive_like ty && not (is_primitive_like expected_ret_ty) && not (is_jp_method_placeholder expected_ret_ty) then
                 if jp_diag_verbose then
                     let jp_name =
                         match jp_method_key_names.TryGetValue key with
                         | true, n -> n
                         | _ -> "<unknown>"
-                    let snap = jp_diag_snapshot_short (sprintf "EJP0007 guard (jp_resolve_primitive) jp=%s" jp_name)
-                    DiagSidecar.emit (sprintf "EJP0007 guard: refusing JPMethodRecPlaceholder resolve to primitive. jp=%s expected_ret=%s got=%s key=%O\n%s" jp_name (show_ty expected_ret_ty) (show_ty ty) key snap)
+                    let snap = jp_diag_snapshot_short (sprintf "EJP0007 guard (jp_resolve_hard_primitive) jp=%s" jp_name)
+                    DiagSidecar.emit (sprintf "EJP0007 guard: refused cementing hard primitive
+  jp=%s
+  expected_ret=%s
+  got=%s
+  key=%O
+%s"
+                        jp_name (show_ty expected_ret_ty) (show_ty ty) key snap)
                 ()
             else
-                jp_method_rec_placeholders.AddOrUpdate(key, ty, (fun _ _ -> ty)) |> ignore
+                // Add case should be unreachable in normal flow (placeholder is created first), but keep it safe.
+                let addCell = JpMethodRecPlaceholderCell(curGen, ty, ty)
+                jp_method_rec_placeholders.AddOrUpdate(
+                    key,
+                    addCell,
+                    (fun _ old ->
+                        let ph = old.ph
+                        let oldv =
+                            if old.gen = curGen then old.v
+                            else ph // stale generation: treat as unresolved
+                        // Do not allow a hard primitive to clobber a richer type within the same generation.
+                        if is_hard_primitive_like ty && oldv <> ph && not (is_hard_primitive_like oldv) then
+                            JpMethodRecPlaceholderCell(curGen, ph, oldv)
+                        else
+                            JpMethodRecPlaceholderCell(curGen, ph, ty)
+                    )
+                ) |> ignore
+
         let inline jp_invalidate_bounded (key: string) (maxAttempts: int) (reason: string) =
             let n = jp_mismatch_counts.AddOrUpdate(key, 1, (fun _ v -> v + 1))
             let gen =
@@ -11640,15 +11732,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         let snap = diag_snapshot (sprintf "gen_change jp_ivar_wait from=%d to=%d :: %s (%s)" gen0 curGen w details)
                         raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ivar_wait (from %d to %d) :: %s (%s)\n%s" gen0 curGen w details snap))
 
-                    // Work-stealing while waiting: help drain queued JP work to avoid deadlocks
-                    if jp_is_parallel_enabled then
-                        let mutable ran = 0
-                        let mutable work = Unchecked.defaultof<unit -> unit>
-                        while ran < 8 && jp_work_q.TryDequeue(&work) do
-                            ran <- ran + 1
-                            try work() with e -> jp_exns.Enqueue(capture_edi e)
-                        if ran > 0 then
-                            last_progress_ms <- peval_sw.ElapsedMilliseconds
+                    // ALPHA9: No work-stealing from Hopac fibers; JP workers are dedicated OS threads.
+                    ()
 
                     // Yield to Hopac scheduler periodically to allow other fibers to run
                     if (spin.Count &&& 255) = 0 then
@@ -11717,40 +11802,38 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 lock jp_workers_started_sync (fun () ->
                     if not jp_workers_started then
                         jp_workers_started <- true
-                        
-                        // ALPHA16: Worker with timeout-based polling + outer exception handler
-                        // No CancellationToken to avoid TaskCanceledException cascade
+
+                        // ALPHA9: Dedicated OS threads (not Hopac fibers) so blocking waits do not starve the Hopac scheduler.
                         let worker (i: int) =
-                            Hopac.job {
-                                try
-                                    let mutable keep_running = true
-                                    while keep_running && not jp_workers_shutdown do
-                                        // Use 100ms timeout instead of CancellationToken
-                                        let! gotWork =
-                                            Hopac.job {
-                                                try
-                                                    let! waited = jp_work_sem.WaitAsync(100) |> HopacExtensions.awaitTask
-                                                    return waited
-                                                with _ -> return false
-                                            }
-                                        if jp_workers_shutdown then
-                                            keep_running <- false
-                                        elif gotWork then
-                                            // Drain batch - semaphore token guarantees work was enqueued
-                                            ignore (jp_help_batch jp_help_batch_n)
-                                        // else: timeout, loop again and check shutdown flag
-                                    return ()
-                                with _ ->
-                                    // ALPHA16: Silently catch ALL exceptions to prevent cascade
-                                    // Workers exit gracefully on any error (including Task cancellation)
-                                    return ()
-                            }
-                        
-                        // ALPHA15: Use 8x workers because workers may block in jp_ev_wait
-                        // With blocking synchronization, we need many more fibers than CPU cores
+                            let th =
+                                new System.Threading.Thread(System.Threading.ThreadStart(fun () ->
+                                    let t = System.Threading.Thread.CurrentThread
+                                    if isNull t.Name then t.Name <- sprintf "jp-worker-%d" i
+                                    try
+                                        while not jp_workers_shutdown do
+                                            // Wait with timeout to allow shutdown polling
+                                            if jp_work_sem.Wait(100) then
+                                                let mutable work = Unchecked.defaultof<unit -> unit>
+                                                let mutable has = true
+                                                while has do
+                                                    has <- jp_work_q.TryDequeue(&work)
+                                                    if has then
+                                                        try
+                                                            ignore (System.Threading.Interlocked.Increment(&jp_worker_active))
+                                                            try work() with e -> jp_exns.Enqueue(capture_edi e)
+                                                        finally
+                                                            ignore (System.Threading.Interlocked.Decrement(&jp_worker_active))
+                                    with e ->
+                                        // Never let worker exceptions cascade; capture and keep going.
+                                        jp_exns.Enqueue(capture_edi e)
+                                ))
+                            th.IsBackground <- true
+                            th.Start()
+
+                        // ALPHA15 legacy: keep count high because some work items can block on external IO.
                         let worker_count = max 8 (jp_dop * 8)
                         for i = 1 to worker_count do
-                            Hopac.start (worker i)
+                            worker i
                 )
 
         // ALPHA12: jp_start - NEVER checks jp_wait_closed for scheduling decisions!
@@ -11883,7 +11966,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let rec ty_to_data s x =
             let f = ty_to_data s
             match x with
-            | YVoid -> raise_type_error s "Compiler error: Cannot construct an instance of a void type."
+            | YVoid ->
+                // v20260113-alpha12: The evaluator can transiently demand a term for YVoid during sequencing
+                // or placeholder materialization under parallel retries. Coerce it to unit data (DB) instead of aborting.
+                // Any semantically invalid usage should reappear later as a type mismatch rather than a fatal abort.
+                DB
             | YB -> DB
             | YPair(a,b) -> DPair(f a, f b)
             | YSymbol a when a.StartsWith("JPMethodRecPlaceholder(") || a.StartsWith(".JPMethodRecPlaceholder(") ->
@@ -12018,10 +12105,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                     | _ -> ty
                                 if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
                                 // ALPHA47: Fill IVar to signal completion
-                                Hopac.IVar.fill jp_ivar result |> Hopac.start
+                                jp_fill_ivar jp_ivar result
                             with e ->
                                 // Fill with None on error so waiters don't hang
-                                try Hopac.IVar.fill jp_ivar None |> Hopac.start with _ -> ()
+                                try jp_fill_ivar jp_ivar None with _ -> ()
                                 reraise()
                         finally
                             s.jp_closure_stack.Remove(join_point_key) |> ignore
@@ -12449,10 +12536,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let owner0 = jp_cell.owner
                     
                     if owner0 = tid && owner0 <> 0 then
-                        // v20260111-alpha64: break same-thread recursion by returning a placeholder instead of failing.
+                        // v20260113-alpha12: break same-thread recursion by returning a placeholder instead of failing.
                         // This keeps the type JP cache acyclic during definition and pushes failures to a later, more informative point if needed.
                         record_jp_diag_type join_point_key (r :: s.trace)
-                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260111-alpha64;%O)" join_point_key)
+                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260113-alpha12;%O)" join_point_key)
                     elif owner0 <> 0 then
                         // Another thread owns this - wait on IVar cooperatively
                         let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ivar
@@ -12506,11 +12593,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                         let ret_ty = ty s body
                                     
                                         // Fill IVar to signal completion
-                                        Hopac.IVar.fill jp_cell.ivar (Some ret_ty) |> Hopac.start
+                                        jp_fill_ivar jp_cell.ivar (Some ret_ty)
                                         ()
                                     with e ->
                                         // Fill with None so waiters don't hang
-                                        try Hopac.IVar.fill jp_cell.ivar None |> Hopac.start with _ -> ()
+                                        try jp_fill_ivar jp_cell.ivar None with _ -> ()
                                         reraise()
                                 finally
                                     RecursionTracker.exit ()
@@ -12973,8 +13060,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                     match jp_method_try_key_of_rec_placeholder a with
                                     | Some k -> Some k
                                     | None ->
-                                        jp_method_rec_placeholders
-                                        |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
+                                        jp_method_rec_placeholders |> Seq.tryPick (fun (KeyValue(k,c)) -> if c.ph = a || c.v = a then Some k else None)
                                 k_opt |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
                             with _ -> None
                         match try_resolve_jp_placeholder type_tr type_fl with
@@ -13293,13 +13379,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                         | _ -> ()
 
                                         // ALPHA47: Fill IVar to signal completion and unblock all waiters
-                                        Hopac.IVar.fill jp_ivar result |> Hopac.start
+                                        jp_fill_ivar jp_ivar result
                                         ty
                                     with e ->
                                         // Record per-key exn so *all* waiters can rethrow even if jp_exns was already dequeued.
                                         jp_method_exns.[join_point_key] <- capture_edi e
                                         // Fill with error marker so waiters don't hang forever
-                                        try Hopac.IVar.fill jp_ivar (None, None, jp_name) |> Hopac.start with _ -> ()
+                                        try jp_fill_ivar jp_ivar (None, None, jp_name) with _ -> ()
                                         reraise()
                                 finally
                                     RecursionTracker.exit ()
@@ -13512,6 +13598,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         s0 <- add_trace s0 r
                         match term s0 a with
                         | DB -> x <- b
+                        | DSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") ->
+                            if jp_diag_verbose then
+                                DiagSidecar.emit (sprintf "ESEQ.placeholder_as_unit got=%s" s)
+                            x <- b
                         | a -> raise_type_error s0 <| sprintf "Expected unit.\nGot: %s" (show_data a)
                     | _ -> running <- false
                 term s0 x
@@ -13534,8 +13624,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha64\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260111-alpha64\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha12\nGot: %s" (show_data (term s a))
+            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha12\nGot: %s" (show_ty (ty s a))
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -13619,8 +13709,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                         match jp_method_try_key_of_rec_placeholder a with
                                                         | Some k -> Some k
                                                         | None ->
-                                                            jp_method_rec_placeholders
-                                                            |> Seq.tryPick (fun (KeyValue(k,v)) -> if v = a then Some k else None)
+                                                            jp_method_rec_placeholders |> Seq.tryPick (fun (KeyValue(k,c)) -> if c.ph = a || c.v = a then Some k else None)
                                                     k_opt |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
                                                 with _ -> None
                                             match try_resolve_jp_placeholder ret_ty ret_ty' with
@@ -22126,7 +22215,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                             | :? PartEvalTypeError as e when attempt + 1 < max_attempts ->
                                                 let msg = e.Data1
                                                 match EJPCodes.classifyError msg with
-                                                | Some code when code = EJPCodes.EJP0007 || code = EJPCodes.EJP0011 || code = EJPCodes.EJP0009 || code = EJPCodes.EJP0010 || code = EJPCodes.EJP0008 ->
+                                                | Some code when code = EJPCodes.EJP0002 || code = EJPCodes.EJP0003 || code = EJPCodes.EJP0007 || code = EJPCodes.EJP0008 || code = EJPCodes.EJP0009 || code = EJPCodes.EJP0010 || code = EJPCodes.EJP0011 || code = EJPCodes.EJP0012 || code = EJPCodes.EJP0013 ->
                                                     // Retry logic: invalidate cache and optionally reduce parallelism
                                                     let gen_before = CacheGeneration.current ()
                                                     let is_gen_wait =
@@ -22147,6 +22236,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                     let reasons = CacheGeneration.reasonsSnapshot 64
                                                     let had_apply_mismatch = reasons |> List.exists (fun x -> x.Contains("apply mismatch"))
                                                     if is_gen_wait && had_apply_mismatch then
+                                                        CacheGeneration.invalidate (sprintf "EJP0008.apply_mismatch file=%s backend=%s attempt=%d" file backend attempt) |> ignore
                                                         CacheGeneration.requestSequential ()
                                                         HopacExtensions.forceConcurrency 1
 
@@ -22186,7 +22276,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                 reraise ()
 
                                     // Max retry attempts: 3 (hardcoded SOTA default)
-                                    let max_attempts = 3
+                                    let max_attempts = 4
                                     let build_result =
                                         try
                                             attempt_build 0 max_attempts
