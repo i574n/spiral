@@ -4,7 +4,7 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha24)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha29)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -10837,14 +10837,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         | _ -> false
 
     /// ### is_any_int_allow_jp_placeholders
-    /// Like is_any_int, but treats JP*RecPlaceholder symbols as compatible with "some int" during type checking
-    /// so that parallel join-point inference can converge without aborting early on stale annotations.
+    /// Pragmatic: allow join-point recursion placeholders to pass where an int is expected in core string/array ops.
+    /// Rationale: core/sm.spi uses forall t{int} indices and can leak JPMethodRecPlaceholder during JP waiting; treating it as int
+    /// unblocks codegen without reintroducing global numeric coercions (only call sites that opt-in use this predicate).
     let is_any_int_allow_jp_placeholders = function
-        | t when is_any_int t -> true
-        | YSymbol s when
-            s.StartsWith("JPMethodRecPlaceholder(") || s.StartsWith(".JPMethodRecPlaceholder(") ||
-            s.StartsWith("JPTypeRecPlaceholder(") || s.StartsWith(".JPTypeRecPlaceholder(") -> true
-        | _ -> false
+        | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> true
+        | t -> is_any_int t
 
 
     /// ### is_int64
@@ -11252,7 +11250,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 else
                     let v = cell.v
                     if v = cell.ph then
-                        // v20260113-alpha26: conservative fallback. Only trust annotated return types that are
+                        // v20260113-alpha29: conservative fallback. Only trust annotated return types that are
                         // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
                         fallback ()
                     else v
@@ -11271,10 +11269,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | YSymbol s when s.Contains("JPTypeRecPlaceholder(") -> true
             | _ -> false
 
+        let inline ty_is_jp_method_unknown_ret_placeholder (ty: Ty) : bool =
+            match ty with
+            | YSymbol s when s.Contains("JPMethodUnknownRet(") -> true
+            | _ -> false
+
 
         let rec ty_eq_allow_jp_placeholders (a: Ty) (b: Ty) : bool =
             // Treat JP method recursion placeholders as wildcards to break cyclic type validation (Hopac join points).
-            if ty_is_jp_method_rec_placeholder a || ty_is_jp_method_rec_placeholder b || ty_is_jp_type_rec_placeholder a || ty_is_jp_type_rec_placeholder b then true
+            if ty_is_jp_method_rec_placeholder a || ty_is_jp_method_rec_placeholder b || ty_is_jp_type_rec_placeholder a || ty_is_jp_type_rec_placeholder b || ty_is_jp_method_unknown_ret_placeholder a || ty_is_jp_method_unknown_ret_placeholder b then true
             else
                 match a, b with
                 | YVoid, YVoid -> true
@@ -11308,7 +11311,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     System.Func<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell>(fun key ->
                         // Placeholder: printable + unique. Use a monotonic id so different JP keys cannot collide under parallel builds.
                         let id = System.Threading.Interlocked.Increment(&jp_method_rec_placeholder_next_id)
-                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha26;%s#%d)" jp id)
+                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha29;%s#%d)" jp id)
                         jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
                         jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
                         JpMethodRecPlaceholderCell(curGen, ph, ph)
@@ -13299,7 +13302,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     Array.append env_global_value [| ReSymbol rk |]
 
                 let join_point_key =
-                    lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, defaultArg annot_ty_for_key (YSymbol "JPMethodUnknownRet(v20260113-alpha25)")))
+                    lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, defaultArg annot_ty_for_key (YSymbol "JPMethodUnknownRet(v20260113-alpha29)")))
                 let _ =
                     // record a stable label for better join-point diagnostics
                     let base_name =
@@ -13657,11 +13660,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         s0 <- add_trace s0 r
                         match term s0 a with
                         | DB -> x <- b
-                        | DSymbol s as a when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") ->
+                        | DSymbol s as a when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") || s.Contains("JPMethodUnknownRet(") ->
                             if jp_diag_verbose then
                                 DiagSidecar.emit (sprintf "ESEQ.placeholder_as_unit got=%s" (show_data a))
                             x <- b
-                        | DV(L(_,YSymbol s)) as a when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") ->
+                        | DV(L(_,YSymbol s)) as a when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") || s.Contains("JPMethodUnknownRet(") ->
                             if jp_diag_verbose then
                                 DiagSidecar.emit (sprintf "ESEQ.placeholder_as_unit got=%s" (show_data a))
                             x <- b
