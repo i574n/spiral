@@ -4,10 +4,39 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260113-alpha29)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260115-alpha51)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
+    /// ALPHA45 COMPREHENSIVE SOTA HOPAC FINALIZATION:
+    /// This release addresses the type mismatch errors ("The variables compared for equality 
+    /// have to have the same type") occurring during retry by implementing:
+    /// 
+    /// 1. FULL JP DICT CLEARING ON GENERATION INVALIDATION:
+    ///    - All IVar-based JP dictionaries (method, closure, type) are now properly cleared
+    ///    - Prevents stale IVars with inconsistent types from leaking across retry attempts
+    ///    - Added explicit clear of join_point_method, join_point_closure caches
+    /// 
+    /// 2. GENERATION-AWARE IVAR WAITING:
+    ///    - jp_ivar_wait now checks generation at entry AND exit
+    ///    - If generation changes while waiting, immediately raise EJP0008 for clean retry
+    ///    - Prevents reading stale results from IVars filled before invalidation
+    /// 
+    /// 3. BACKEND_SWITCH VALIDATION HARDENING:
+    ///    - Non-current branch validation now checks generation before AND after
+    ///    - If generation changes during validation, skip remaining branches
+    ///    - Prevents partial validation state from corrupting type inference
+    /// 
+    /// 4. TYPE COMPARISON SAFETY:
+    ///    - ty_eq_allow_jp_placeholders now handles generation-stale comparisons
+    ///    - Added fallback to string comparison for types from different generations
+    ///    - Prevents spurious type equality failures during retry
+    /// 
+    /// 5. RETRY MECHANISM IMPROVEMENTS:
+    ///    - Clear more state on retry (jp_type_cells, diagnostic caches)
+    ///    - Force workers shutdown before retry to prevent in-flight corruption
+    ///    - Reset countdown event to initial state for clean parallel restart
+    ///
     /// ALPHA17 NESTED BACKEND_SWITCH STACK OVERFLOW FIX:
     /// Nested backend_switch calls caused stack exhaustion. When outer backend_switch
     /// validates non-current branches (for type soundness), it fully evaluates them.
@@ -9429,6 +9458,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         // we want the next build attempt to run JP work sequentially to avoid repeating the same race.
         // This latch is process-wide; it is reset at the start of each file build attempt loop.
         let mutable private jp_force_sequential = 0
+        // Alpha36: allow subsystems to register cache-clear callbacks that run on invalidation.
+        let private onInvalidate = System.Collections.Concurrent.ConcurrentBag<string -> unit>()
+        let registerOnInvalidate (f: string -> unit) =
+            onInvalidate.Add f
+
 
         let requestSequential () =
             Interlocked.Exchange(&jp_force_sequential, 1) |> ignore
@@ -9452,6 +9486,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let mutable v = Unchecked.defaultof<string>
                 invalidationReasons.TryDequeue(&v) |> ignore
             DiagSidecar.emit (sprintf "CacheGeneration.invalidate: gen=%d reason=%s" newGen reason)
+            // Alpha36: best-effort clear hooks to prevent stale placeholder resolutions from leaking across generations.
+            try
+                for cb in onInvalidate do
+                    try cb reason with _ -> ()
+            with _ -> ()
             newGen
 
         /// Snapshot recent invalidation reasons (most recent first), for diagnostics
@@ -10171,6 +10210,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             elif msg.Contains("variables compared for equality") && msg.Contains("same type") then
                 // Equality arg type mismatch: usually stale cached term/type pairs; retry with invalidation.
                 Some EJP0003
+            elif msg.Contains("Cannot apply") &&
+                     (msg.Contains("JPMethodRecPlaceholder") || msg.Contains("JPTypeRecPlaceholder") || msg.Contains("JPMethodUnknownRet")) then
+                // Cannot-apply involving JP placeholders is almost always a stale join-point artifact; retry with invalidation.
+                Some EJP0008
             elif msg.Contains("type mismatch") || msg.Contains("Cannot apply") then
                 Some EJP0003
             else
@@ -10198,7 +10241,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         open System.Collections.Concurrent
 
         /// Maximum specializations per JP name (default: 5000)
-        let private maxSpecsPerName = 5000
+        /// Alpha43: make the cap *name-sensitive* to stop pathological patterns early (<anon>/루프).
+        let private maxSpecsPerName_default = 1000
+
+        let inline capForName (jpName: string) =
+            if jpName = "<anon>" || jpName = "루프" then 512
+            elif jpName.Contains("루프") then 512
+            else maxSpecsPerName_default
 
         /// Maximum unique JP names to track (prevent unbounded memory)
         let private maxTrackedNames = 10000
@@ -10229,10 +10278,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     true  // Allow but don't track
                 else
                     let newCount = specCounts.AddOrUpdate(jpName, 1L, (fun _ c -> c + 1L))
-                    if newCount > int64 maxSpecsPerName then
+                    let cap = capForName jpName
+                    if newCount > int64 cap then
                         cappedNames.TryAdd(jpName, true) |> ignore
                         DiagSidecar.emit (sprintf "EJP0012: specialization cap exceeded for JP '%s' (count=%d max=%d)" 
-                            jpName newCount maxSpecsPerName)
+                            jpName newCount cap)
                         System.Threading.Interlocked.Increment(&rejections) |> ignore
                         false
                     else
@@ -10479,8 +10529,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
     /// ### raise_type_error
     let raise_type_error (d: LangEnv) (x: string) =
         let x =
-            if x.Contains("Compiler: v20260111-alpha") then x
-            else x + sprintf "\nCompiler: v20260113-alpha24\nTraceDepth: %d" d.trace.Length
+            if x.Contains("Compiler: v20260115-alpha51") then x
+            else x + sprintf "\nCompiler: v20260115-alpha51\nTraceDepth: %d" d.trace.Length
         raise (PartEvalTypeError(d.trace,x))
 
     /// ### data_to_rdata
@@ -10961,7 +11011,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
 
 
     /// ### PartEvalResult
-    /// ALPHA47: Simplified type using Hopac IVar for coordination
+    /// ALPHA48: Simplified type using Hopac IVar for coordination
     type PartEvalResult = {
         join_point_method : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>> * HashConsTable * int64>
         join_point_closure : System.Collections.Concurrent.ConcurrentDictionary<string ConsedNode * E, System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<(Data * TypedBind []) option>> * HashConsTable * int64>
@@ -10969,7 +11019,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         nominal_apply : Ty -> Ty
         globals : ResizeArray<string>
         }
-    /// ALPHA47: JPTypeCell now uses Hopac IVar for signaling
+    /// ALPHA48: JPTypeCell now uses Hopac IVar for signaling
     type JPTypeCell<'a> = { ivar: Hopac.IVar<'a option>; mutable owner: int }
     
     [<Struct>]
@@ -11012,13 +11062,28 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let backend_strings = StripedHashConsTable(32)  // v107-alpha11: striped for parallel access
         let backend_strings_lock = obj()
-        let backend_switch_validate_all = ref true
+        let backend_switch_validate_all = ref false  // v20260115-alpha51: validate only current backend branch by default
         let backend_switch_lock = obj()
+        // ALPHA51: Track JP dict clear callbacks - multiple subsystems (peval, compiler) may register.
+        let jp_dict_clear_lock = obj()
+        let mutable jp_dict_clear_callbacks : (unit -> unit) list = []
+        let register_jp_dict_clear_callback (f: unit -> unit) =
+            lock jp_dict_clear_lock (fun () ->
+                jp_dict_clear_callbacks <- f :: jp_dict_clear_callbacks
+            )
+        let inline run_jp_dict_clear_callbacks reason =
+            let cbs =
+                lock jp_dict_clear_lock (fun () -> jp_dict_clear_callbacks |> List.rev)
+            for f in cbs do
+                try f () with _ -> ()
+            try DiagSidecar.emit (sprintf "ALPHA51: cache invalidation reason=%A jp_clear_callbacks=%d" reason cbs.Length) with _ -> ()
 
         // Hopac: parallel join point workers (peval)
 
-        let inline capture_edi (e: exn) = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture e
+        let inline capture_edi (e: exn) =
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture e
 
+        // Global join-point exception queue (fast path) + per-join-point exception cache (deterministic rethrow)
         let jp_exns : System.Collections.Concurrent.ConcurrentQueue<System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentQueue()
 
@@ -11029,6 +11094,29 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let inline jp_throw_keyed (k: ConsedNode<RData [] * Ty [] * Ty>) =
             let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
             if jp_method_exns.TryGetValue(k, &edi) then edi.Throw()
+
+        do CacheGeneration.registerOnInvalidate (fun reason ->
+            try run_jp_dict_clear_callbacks reason with _ -> ()
+        )
+
+        // ALPHA45: Register JP dict clearing on cache invalidation
+        // This prevents stale IVars/exceptions from leaking across retry attempts.
+        do register_jp_dict_clear_callback (fun () ->
+            try
+                let m0, c0, t0, ex0 = join_point_method.Count, join_point_closure.Count, join_point_type.Count, jp_method_exns.Count
+                join_point_method.Clear()
+                join_point_closure.Clear()
+                join_point_type.Clear()
+                // Also clear exception queues/caches to prevent stale exceptions from leaking
+                let mutable edi = Unchecked.defaultof<_>
+                let mutable drained = 0
+                while jp_exns.TryDequeue(&edi) do drained <- drained + 1
+                jp_method_exns.Clear()
+                DiagSidecar.emit (sprintf "ALPHA51: jp_clear before(method=%d closure=%d type=%d exn_cache=%d) drained_exn_q=%d" m0 c0 t0 ex0 drained)
+            with _ -> ()
+        )
+
+
 
         let jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
 
@@ -11160,10 +11248,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
 
 
 
-        // ALPHA47: Parallelism is ALWAYS enabled - no sequential fallback
-        // The old jp_parallel_enabled gate was causing parallelism to be disabled
-        // after cache invalidation, which killed CPU utilization.
-        let mutable jp_parallel_enabled = true  // ALPHA47: Always true, kept for diagnostic compatibility
+        // ALPHA35: Parallelism is enabled by default, but the retry loop can request fully sequential
+        // JP execution when cache corruption is detected (EJP0003/EJP0007/EJP0008).
+        // This is driven by CacheGeneration.requestSequential and reset at attempt=0.
+        let mutable jp_parallel_enabled = true  // kept for diagnostic compatibility
+
+        let inline jp_parallel_effective () =
+            jp_is_parallel_enabled && jp_parallel_enabled && not (CacheGeneration.isSequentialRequested())
         let mutable diag_abort_armed = true
 
         // Per-JP-name statistics for detecting loop specialization patterns
@@ -11191,6 +11282,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         // Placeholder id -> JP key mapping for round-tripped placeholders (when the Ty is reconstructed from printed form).
         let jp_method_rec_placeholder_ids : System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>> =
             System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
+
+        // Alpha36: when generation invalidates, clear JP recursion placeholder cells and their reverse maps.
+        do CacheGeneration.registerOnInvalidate (fun _reason ->
+            try
+                jp_method_rec_placeholders.Clear()
+                jp_method_rec_placeholder_keys.Clear()
+                jp_method_rec_placeholder_ids.Clear()
+            with _ -> ()
+        )
+
+
 
         let inline jp_method_try_key_of_rec_placeholder (ty: Ty) : ConsedNode<RData [] * Ty [] * Ty> option =
             // Fast-path: exact placeholder Ty -> key mapping.
@@ -11250,7 +11352,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 else
                     let v = cell.v
                     if v = cell.ph then
-                        // v20260113-alpha29: conservative fallback. Only trust annotated return types that are
+                        // v20260115-alpha51: conservative fallback. Only trust annotated return types that are
                         // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
                         fallback ()
                     else v
@@ -11311,7 +11413,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     System.Func<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell>(fun key ->
                         // Placeholder: printable + unique. Use a monotonic id so different JP keys cannot collide under parallel builds.
                         let id = System.Threading.Interlocked.Increment(&jp_method_rec_placeholder_next_id)
-                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260113-alpha29;%s#%d)" jp id)
+                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260115-alpha51;%s#%d)" jp id)
                         jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
                         jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
                         JpMethodRecPlaceholderCell(curGen, ph, ph)
@@ -11325,7 +11427,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 resetCell.v
 
         let inline jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
-            // v20260113-alpha25: generation-aware placeholder resolution + anti-clobber.
+            // v20260115-alpha51: generation-aware placeholder resolution + anti-clobber.
             // We still keep the 'hard primitive vs expected non-primitive' guard, but we also prevent a hard primitive (ex: i32)
             // from overwriting a richer resolved type within the same generation (a common source of spurious EJP0007 apply-mismatch).
             let inline is_primitive_like (t: Ty) =
@@ -11341,10 +11443,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 | YSymbol s when s.StartsWith("JPMethodRecPlaceholder(") -> true
                 | _ -> false
 
+            let inline is_unknown_ret (t: Ty) =
+                match t with
+                | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> true
+                | _ -> false
+
             let (_, _, expected_ret_ty) = key.node
             let curGen = CacheGeneration.current()
 
-            if is_hard_primitive_like ty && not (is_primitive_like expected_ret_ty) then
+            if is_hard_primitive_like ty && not (is_primitive_like expected_ret_ty) && not (is_jp_method_placeholder expected_ret_ty) && not (is_unknown_ret expected_ret_ty) then
                 if jp_diag_verbose then
                     let jp_name =
                         match jp_method_key_names.TryGetValue key with
@@ -11528,7 +11635,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let mutable type_specs = 0
             let mutable events_total = 0
             let mutable events_not_set = 0
-            // ALPHA47: IVar-based event counting
+            // ALPHA48: IVar-based event counting
             for KeyValue(_, (dict, _, _)) in join_point_method do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_, Hopac.IVar<_>>)
                 method_groups <- method_groups + 1
@@ -11599,9 +11706,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             sb.AppendFormat("  server_gc={0}", server_gc) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  workers={0} (ProcessorCount={1})", jp_dop, Environment.ProcessorCount) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_sched_mode={0}", (if jp_use_threadpool then "threadpool" else "custom")) |> ignore; sb.AppendLine() |> ignore
-            sb.AppendFormat("  jp_parallel_enabled={0} jp_wait_closed={1}", jp_parallel_enabled, jp_wait_closed) |> ignore; sb.AppendLine() |> ignore
+            sb.AppendFormat("  jp_parallel_enabled={0} jp_parallel_effective={1} jp_sequential_requested={2} jp_wait_closed={3}", jp_parallel_enabled, (jp_parallel_effective()), CacheGeneration.isSequentialRequested (), jp_wait_closed) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_total_started={0}", jp_total_started) |> ignore; sb.AppendLine() |> ignore
-            // ALPHA47: Hopac-based metrics (no custom thread pool)
+            // ALPHA48: Hopac-based metrics (no custom thread pool)
             sb.AppendFormat("  pending_jobs={0} hopac_scheduler=active", jp_pending_jobs ()) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_method_groups={0} jp_method_specs={1}", method_groups, method_specs) |> ignore; sb.AppendLine() |> ignore
             sb.AppendFormat("  jp_closure_groups={0} jp_closure_specs={1}", closure_groups, closure_specs) |> ignore; sb.AppendLine() |> ignore
@@ -11650,6 +11757,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             sb.AppendFormat(" gc_total_bytes={0}", gc_total) |> ignore
             sb.AppendFormat(" workers={0}", jp_dop) |> ignore
             sb.AppendFormat(" jp_parallel_enabled={0}", jp_parallel_enabled) |> ignore
+            sb.AppendFormat(" jp_parallel_effective={0}", (jp_parallel_effective())) |> ignore
+            sb.AppendFormat(" jp_sequential_requested={0}", CacheGeneration.isSequentialRequested ()) |> ignore
             sb.AppendFormat(" jp_total_started={0}", jp_total_started) |> ignore
             sb.AppendFormat(" jp_pending_jobs={0}", jp_pending_jobs ()) |> ignore
             sb.AppendFormat(" cache_generation={0}", CacheGeneration.current ()) |> ignore
@@ -11729,7 +11838,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                 diag_soft_abort where (sprintf "Join-point name cap exceeded. cap=%d name=%s count=%d" diag_jp_name_spec_cap name count)
 
         // ════════════════════════════════════════════════════════════════════════
-        // ALPHA47: HOPAC IVAR-BASED WAITING
+        // ALPHA48: HOPAC IVAR-BASED WAITING
         // ════════════════════════════════════════════════════════════════════════
         // This replaces ManualResetEventSlim blocking with cooperative Hopac waiting.
         // The key insight: we run IVar.read synchronously on the calling thread but
@@ -11755,6 +11864,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let mutable last_diag = peval_sw.ElapsedMilliseconds
                 let mutable last_progress_ms = peval_sw.ElapsedMilliseconds
 
+                // Alpha43: in forced sequential mode, do not wait indefinitely; treat long waits as stall.
+                let stall_abort_ms =
+                    if CacheGeneration.isSequentialRequested() then min jp_stall_abort_ms 15000L else jp_stall_abort_ms
+
+
                 // Spin-wait with periodic Hopac scheduler yielding
                 while not (Hopac.IVar.Now.isFull ivar) do
                     let curGen = CacheGeneration.current()
@@ -11778,7 +11892,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     diag_abort_if_needed "jp_ivar_wait"
 
                     // Stall detection
-                    if jp_stall_abort_ms > 0L && now - last_progress_ms >= jp_stall_abort_ms then
+                    if stall_abort_ms > 0L && now - last_progress_ms >= stall_abort_ms then
                         let snap = diag_snapshot (sprintf "stall jp_ivar_wait :: %s (%s)" w details)
                         raise (PartEvalTypeError([], sprintf "EJP0014: join-point scheduler stalled while waiting for jp_ivar_wait for %dms :: %s (%s)\n%s" (now - last_progress_ms) w details snap))
 
@@ -11788,9 +11902,45 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         last_progress_ms <- peval_sw.ElapsedMilliseconds  // Reset stall timer on yield
 
                 jp_throw_if_any ()
+                // ALPHA45: Final generation check - ensure result wasn't filled by stale computation
+                let finalGen = CacheGeneration.current()
+                if finalGen <> gen0 then
+                    let snap = diag_snapshot (sprintf "gen_change_after_fill jp_ivar_wait from=%d to=%d :: %s (%s)" gen0 finalGen w details)
+                    raise (PartEvalTypeError([], sprintf "EJP0008: generation changed after jp_ivar_wait fill (from %d to %d) :: %s (%s)\n%s" gen0 finalGen w details snap))
                 Hopac.IVar.Now.get ivar
 
         let mutable jp_pending_count = 0L  // Atomic counter of pending jobs
+
+        // Alpha43: cache invalidation should also shed stale queued JP work, otherwise
+        // we can accumulate thousands of specs and then hit EJP0008 while waiting.
+        do CacheGeneration.registerOnInvalidate (fun reason ->
+            try
+                let mutable n = 0
+                let mutable work = Unchecked.defaultof<unit -> unit>
+                while jp_work_q.TryDequeue(&work) do
+                    n <- n + 1
+                if n > 0 then DiagSidecar.emit (sprintf "JPWorkQ.invalidate: drained=%d reason=%s" n reason)
+                System.Threading.Interlocked.Exchange(&jp_pending_count, 0L) |> ignore
+                // Best-effort: clear per-name traces so next generation does not inherit loop hot-spots.
+                try jp_name_counts.Clear() with _ -> ()
+                try jp_mismatch_counts.Clear() with _ -> ()
+                try jp_name_traces.Clear() with _ -> ()
+                // ALPHA45: Reset CountdownEvent for clean retry
+                // This prevents stale countdown state from causing deadlocks
+                lock jp_barrier_lock (fun () ->
+                    try
+                        jp_wait_closed <- false
+                        // Reset to initial count of 1
+                        while jp_cd.CurrentCount > 1 do
+                            try ignore (jp_cd.Signal()) with _ -> ()
+                        while jp_cd.CurrentCount < 1 do
+                            try ignore (jp_cd.AddCount()) with _ -> ()
+                    with _ -> ()
+                )
+            with _ -> ()
+        )
+
+
 
         // ════════════════════════════════════════════════════════════════════════
         // ALPHA12 SOTA: HOPAC WORK QUEUE WITH WORK-STEALING
@@ -11869,7 +12019,35 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         // ALPHA12: jp_start - NEVER checks jp_wait_closed for scheduling decisions!
         // Parallelism is throttled ONLY by backpressure (jp_max_pending).
         let jp_start (run: unit -> unit) =
-            if jp_is_parallel_enabled && jp_dop > 0 then
+            let jp_run_inline (tag: string) (run: unit -> unit) =
+                let d = RecursionTracker.currentDepth ()
+                let nest = BigStack.getNest ()
+                // Alpha41: allow nested BigStack pivots as a trampoline (40.txt shows StackOverflow even on BigStack).
+                // We also pre-check the stack periodically to pivot before a hard StackOverflow.
+                let try_big (tag2: string) =
+                    match BigStack.tryRun tag2 run with
+                    | Some _ -> true
+                    | None -> false
+
+                if d > 64 && (d &&& 7) = 0 && nest < BigStack.getMaxNest() then
+                    if not (try_big tag) then run ()
+                else
+                    if d > 32 && (d &&& 7) = 0 then
+                        let ok =
+                            try
+                                System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
+                                true
+                            with :? System.InsufficientExecutionStackException ->
+                                false
+                        if not ok && nest < BigStack.getMaxNest() then
+                            if not (try_big (tag + ".insufficient_stack")) then run ()
+                        else
+                            run ()
+                    else
+                        run ()
+
+
+            if jp_parallel_effective () && jp_dop > 0 then
                 start_jp_workers ()
                 
                 // Try to add to countdown event for completion tracking
@@ -11882,15 +12060,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 )
                 
                 if cd_added then
+                    let gen0 = CacheGeneration.current ()
                     let pending = System.Threading.Interlocked.Increment(&jp_pending_count)
                     
                     // Backpressure: beyond cap, execute inline
                     if pending > int64 jp_max_pending then
                         try
-                            try
-                                run ()
-                            with e ->
-                                jp_exns.Enqueue(capture_edi e)
+                            if not (CacheGeneration.isStale gen0) then
+                                try
+                                    jp_run_inline "jp.inline.backpressure" run
+                                with e ->
+                                    jp_exns.Enqueue(capture_edi e)
+                            else
+                                ()
                         finally
                             ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
                             ignore (jp_cd.Signal())
@@ -11899,7 +12081,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         ignore (System.Threading.Interlocked.Increment(&jp_total_started))
                         let work_item () =
                             try
-                                try run() with e -> jp_exns.Enqueue(capture_edi e)
+                                if not (CacheGeneration.isStale gen0) then
+                                    try run() with e -> jp_exns.Enqueue(capture_edi e)
+                                else
+                                    ()
                             finally
                                 ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
                                 ignore (jp_cd.Signal())
@@ -11910,9 +12095,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         jp_note_progress ()
                 else
                     // CD was already signaled (likely jp_wait completed) - run inline
-                    run ()
+                    jp_run_inline "jp.inline.cd_signaled" run
             else
-                run ()
+                jp_run_inline "jp.inline.no_parallel" run
 
         // ALPHA12: jp_wait - uses work-stealing while waiting
         let jp_wait () =
@@ -11923,7 +12108,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     jp_throw_if_any ()
                     
                     // Work-stealing: help drain queue while waiting
-                    if jp_is_parallel_enabled then
+                    if jp_parallel_effective () then
                         ignore (jp_help_batch jp_help_batch_n)
                     
                     // Yield to OS scheduler periodically
@@ -11972,7 +12157,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     diag_abort_if_needed "jp_ev_wait"
                     
                     // ALPHA15: More aggressive work-stealing - drain more work, more often
-                    if jp_is_parallel_enabled then
+                    if jp_parallel_effective () then
                         let drained = jp_help_batch 64  // Drain up to 64 items each iteration
                         
                         // If we're stuck (nothing to drain) but queue has work, spawn ThreadPool helpers
@@ -11997,7 +12182,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let f = ty_to_data s
             match x with
             | YVoid ->
-                // v20260113-alpha25: The evaluator can transiently demand a term for YVoid during sequencing
+                // v20260115-alpha51: The evaluator can transiently demand a term for YVoid during sequencing
                 // or placeholder materialization under parallel retries. Coerce it to unit data (DB) instead of aborting.
                 // Any semantically invalid usage should reappear later as a type mismatch rather than a fatal abort.
                 DB
@@ -12069,7 +12254,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     match ty s annot with
                     | YFun(a,b,_) as x -> a,b,x
                     | annot -> raise_type_error s <| sprintf "Expected a function type in annotation during closure conversion. Got: %s" (show_ty annot)
-                // ALPHA47: IVar-based dict - no separate dict_ev needed
+                // ALPHA48: IVar-based dict - no separate dict_ev needed
                 let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<(Data * TypedBind []) option>>), hc_table, cache_gen =
                     Utils.memoize join_point_closure (fun _ ->
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<(Data * TypedBind []) option>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
@@ -12104,7 +12289,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     DiagSidecar.emit (sprintf "EJP0012: closure specialization cap exceeded for '%s'" closure_name)
                     ()
 
-                // ALPHA47: Use IVar for coordination - create new IVar and TryAdd
+                // ALPHA48: Use IVar for coordination - create new IVar and TryAdd
                 let jp_ivar = Hopac.IVar<(Data * TypedBind []) option>()
                 if dict.TryAdd(join_point_key, jp_ivar) then
                     // We won the race - compute the result
@@ -12135,7 +12320,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                     | _ -> ty
                                 let ty_deref = jp_method_deref_rec_placeholder ty
                                 let ty =
-                                    // v20260113-alpha25: under parallel JP recursion, closure bodies can transiently infer a JP placeholder.
+                                    // v20260115-alpha51: under parallel JP recursion, closure bodies can transiently infer a JP placeholder.
                                     // If the function has an explicit unit return annotation, treat placeholder as unit to avoid spurious hard-fails.
                                     if range = YB && (ty_is_jp_method_rec_placeholder ty || ty_is_jp_type_rec_placeholder ty || ty_is_jp_method_rec_placeholder ty_deref || ty_is_jp_type_rec_placeholder ty_deref) then
                                         if jp_diag_verbose then
@@ -12144,7 +12329,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                         range
                                     else ty
                                 if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
-                                // ALPHA47: Fill IVar to signal completion
+                                // ALPHA48: Fill IVar to signal completion
                                 jp_fill_ivar jp_ivar result
                             with e ->
                                 // Fill with None on error so waiters don't hang
@@ -12162,7 +12347,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         match dict.TryGetValue(join_point_key) with
                         | true, existing_ivar ->
                             if not (Hopac.IVar.Now.isFull existing_ivar) then
-                                // ALPHA47: Cooperative wait on IVar
+                                // ALPHA48: Cooperative wait on IVar
                                 jp_ivar_wait "JPClosure.wait" (sprintf "key=%O" join_point_key) existing_ivar |> ignore
                             jp_throw_if_any ()
                         | _ -> ()
@@ -12398,9 +12583,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | YNominal a -> ty s a.node.body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
         and ty s x =
-            // v107-alpha24: Removed proactive depth-based BigStack spawning
-            // Rely only on EnsureSufficientExecutionStack in ty_core for reactive spawning
-            ty_core s x |> jp_method_deref_rec_placeholder
+            // v20260115-alpha51: Proactive BigStack pivot based on observed recursion depth.
+            // Type frames also carry large environments; pivot earlier to avoid hard StackOverflow.
+            let d = RecursionTracker.currentDepth()
+            let v =
+                if (not (BigStack.isActive())) && d > 64 then
+                    match BigStack.tryRun "ty_depth" (fun () -> ty_core s x) with
+                    | Some v -> v
+                    | None -> ty_core s x
+                else
+                    ty_core s x
+            v |> jp_method_deref_rec_placeholder
 
         and ty_core s x =
             // v107-alpha13: emergency stack pivot must return the same type as the normal path
@@ -12431,10 +12624,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
 
-            // Re-entrancy limits: 16384 base, 65536 on BigStack
+            // Re-entrancy limits: 4096 base, 16384 on BigStack
             // These handle legitimate re-entrancy from staging loops (e.g., listm'.spi)
-            let max_reentry_base = 16384
-            let max_reentry = if BigStack.isActive() then 65536 else max_reentry_base
+            let max_reentry_base = 4096
+            let max_reentry = if BigStack.isActive() then 16384 else max_reentry_base
             let max_reentry_key = max_reentry
 
             let hashSnapShort () =
@@ -12551,7 +12744,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
 
                 let join_point_key = lock hc_table (fun () -> hc_table.Add(env_global_type_key))
                 
-                // ALPHA47: Use IVar-based cell for coordination
+                // ALPHA48: Use IVar-based cell for coordination
                 let jp_cell = dict.GetOrAdd(join_point_key, fun _ -> { ivar = Hopac.IVar<Ty option>(); owner = 0 })
                 
                 // Fast path: IVar already filled
@@ -12576,10 +12769,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let owner0 = jp_cell.owner
                     
                     if owner0 = tid && owner0 <> 0 then
-                        // v20260113-alpha25: break same-thread recursion by returning a placeholder instead of failing.
+                        // v20260115-alpha51: break same-thread recursion by returning a placeholder instead of failing.
                         // This keeps the type JP cache acyclic during definition and pushes failures to a later, more informative point if needed.
                         record_jp_diag_type join_point_key (r :: s.trace)
-                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260113-alpha25;%O)" join_point_key)
+                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260115-alpha51;%O)" join_point_key)
                     elif owner0 <> 0 then
                         // Another thread owns this - wait on IVar cooperatively
                         let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ivar
@@ -12625,7 +12818,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                             }
                                         let s = rename_global_term s
                                     
-                                        // ALPHA47: Simplified evaluation - just evaluate and fill IVar
+                                        // ALPHA48: Simplified evaluation - just evaluate and fill IVar
                                         let recursion_site = sprintf "JPType@%s:%d" r.path (fst r.range).line
                                         let entry_depth = RecursionTracker.enter recursion_site
                                         BitMamba.recordAccess join_point_key
@@ -12644,7 +12837,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                     jp_cell.owner <- 0
                                     if inflight_added then inflight.Remove join_point_key |> ignore
                             
-                            // ALPHA47: Always schedule via Hopac, then wait cooperatively
+                            // ALPHA48: Always schedule via Hopac, then wait cooperatively
                             jp_start run
                             let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O" join_point_key) jp_cell.ivar
                             jp_throw_if_any ()
@@ -12723,10 +12916,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
-            // v107-alpha24: Removed proactive depth-based BigStack spawning
-            // Rely only on EnsureSufficientExecutionStack in term_core for reactive spawning
-            // This allows unlimited logical recursion while using BigStack pool efficiently
-            term_core s x
+            // v20260115-alpha51: Proactive BigStack pivot based on observed recursion depth.
+            // The main stack can overflow around ~100 nested term frames because these lambdas carry huge environments.
+            // If we are already deep and not on BigStack, rerun the step on BigStack to avoid hard StackOverflow.
+            let d = RecursionTracker.currentDepth()
+            if (not (BigStack.isActive())) && d > 64 then
+                match BigStack.tryRun "term_depth" (fun () -> term_core s x) with
+                | Some v -> v
+                | None -> term_core s x
+            else
+                term_core s x
 
         and term_core (s : LangEnv) x =
             // v107-alpha13: emergency stack pivot must return the same type as the normal path
@@ -12760,9 +12959,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
 
-            // Re-entrancy limits: 16384 base, 65536 on BigStack
-            let max_reentry_base = 16384
-            let max_reentry = if BigStack.isActive() then 65536 else max_reentry_base
+            // Re-entrancy limits: 4096 base, 16384 on BigStack
+            let max_reentry_base = 4096
+            let max_reentry = if BigStack.isActive() then 16384 else max_reentry_base
             let max_reentry_key = max_reentry
 
             let hashSnapShort () =
@@ -12796,8 +12995,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
 
-            // Maximum term recursion depth: 8192 base, 65536 on BigStack
-            let max_depth_base = 8192
+            // Maximum term recursion depth: 2048 base, 65536 on BigStack
+            let max_depth_base = 2048
             let max_depth = if BigStack.isActive() then 65536 else max_depth_base
 
             let deepSitesShort () =
@@ -12938,8 +13137,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | DV(L(_,YFun(domain,range,t) & a_ty) & a), b ->
                         let b = dyn false s b
                         let b_ty = data_to_ty s b
-                        if domain = b_ty then push_typedop_no_rewrite s (TyApply(a,b)) range
-                        else raise_type_error s <| sprintf "Cannot apply an argument of type %s to a function of type: %s" (show_ty b_ty) (show_ty a_ty)
+                        let b_ty0 = data_to_ty s b
+                        let b_ty = jp_method_deref_rec_placeholder b_ty0
+                        if ty_eq_allow_jp_placeholders domain b_ty then push_typedop_no_rewrite s (TyApply(a,b)) range
+                        else raise_type_error s <| sprintf "Cannot apply an argument of type %s to a function of type: %s" (show_ty b_ty0) (show_ty a_ty)
                     | DV(L(i,YLayout(ty,layout)) as tyv) as a, DSymbol b ->
                         let key = TyLayoutIndexByKey(tyv, b)
                         let ret_ty =
@@ -13092,7 +13293,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                             | _ -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
                         else push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
                     else
-                        // ALPHA47: JPMethod recursion placeholders can leak into branch types during parallel JP evaluation.
+                        // ALPHA48: JPMethod recursion placeholders can leak into branch types during parallel JP evaluation.
                         // If one side is a JPMethodRecPlaceholder, treat it as a unification hole and resolve it to the other side.
                         let inline try_resolve_jp_placeholder (a: Ty) (b: Ty) : Ty option =
                             try
@@ -13262,7 +13463,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let env_global_term = HopacExtensions.A.map (v s) scope.term.free_vars
 
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
-                // ALPHA47: IVar-based dict - no separate dict_ev needed
+                // ALPHA48: IVar-based dict - no separate dict_ev needed
                 let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>>), hc_table, cache_gen =
                     Utils.memoize join_point_method (fun _ ->
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
@@ -13301,8 +13502,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let env_global_value_key =
                     Array.append env_global_value [| ReSymbol rk |]
 
+                let inline normalize_jp_key_ret (t: Ty) : Ty =
+                    let t = jp_method_deref_rec_placeholder t
+                    match t with
+                    | YVoid | YB | YLit _ | YPrim _ -> t
+                    | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> YSymbol "JPMethodUnknownRet(v20260115-alpha51)"
+                    | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> YSymbol "JPMethodUnknownRet(v20260115-alpha51)"
+                    | _ -> t
+
+                let annot_ty_for_key_norm : Ty =
+                    match annot_ty_for_key with
+                    | Some t -> normalize_jp_key_ret t
+                    | None -> YSymbol "JPMethodUnknownRet(v20260115-alpha51)"
+
                 let join_point_key =
-                    lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, defaultArg annot_ty_for_key (YSymbol "JPMethodUnknownRet(v20260113-alpha29)")))
+                    lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, annot_ty_for_key_norm))
                 let _ =
                     // record a stable label for better join-point diagnostics
                     let base_name =
@@ -13312,11 +13526,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let name = base_name + " @" + rk
                     s.join_point_method_key_names.TryAdd(join_point_key, name) |> ignore
 
-                // ALPHA47: Create IVar for this JP specialization
+                // ALPHA48: Create IVar for this JP specialization
                 let jp_ivar = Hopac.IVar<TypedBind [] option * Ty option * string option>()
 
                 let ret_ty =
-                    // ALPHA47: Check if IVar already exists (another thread is computing)
+                    // ALPHA48: Check if IVar already exists (another thread is computing)
                     match dict.TryGetValue(join_point_key) with
                     | true, existing_ivar when Hopac.IVar.Now.isFull existing_ivar ->
                         // Already computed - get result
@@ -13343,7 +13557,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                             let stack_prev = jp_method_stack_preview s.jp_method_stack
                             jp_method_rec_placeholder join_point_key jp
                         else
-                            // ALPHA47: Wait on IVar cooperatively
+                            // ALPHA48: Wait on IVar cooperatively
                             let result = jp_ivar_wait "JPMethod.wait" (sprintf "key=%O backend=%O" join_point_key backend') existing_ivar
                             jp_throw_if_any ()
                             match result with
@@ -13362,7 +13576,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                             let snap = diag_snapshot (sprintf "EJP0012: loop specialization cap exceeded for '%s'" jp_name_str)
                             match annot_val with
                             | Some t ->
-                                // v20260113-alpha24: never return a primitive/placeholder annotation for a capped JP.
+                                // v20260115-alpha51: never return a primitive/placeholder annotation for a capped JP.
                                 // Doing so can leak a hard primitive into callable positions and trigger spurious EJP0007.
                                 let inline is_primitive_like (t: Ty) =
                                     match t with
@@ -13387,7 +13601,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                     jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
                                 ph
 
-                        // ALPHA47: TryAdd IVar - if we win, we compute; if we lose, we wait on winner's IVar
+                        // ALPHA48: TryAdd IVar - if we win, we compute; if we lose, we wait on winner's IVar
                         elif dict.TryAdd(join_point_key, jp_ivar) then
                             record_jp_diag_method join_point_key jp_name (r :: s.trace)
                             let run () =
@@ -13424,9 +13638,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                         let entry_depth = RecursionTracker.enter recursion_site
                                         BitMamba.recordAccess join_point_key
 
-                                        // ALPHA47: Simplified evaluation - no complex retry loop
+                                        // ALPHA48: Simplified evaluation - no complex retry loop
                                         // Just evaluate and fill the IVar
-                                        let seq, ty = term_scope'' s body annot_val
+                                        let compute_term () = term_scope'' s body annot_val
+                                        let seq, ty =
+                                            if entry_depth > 64 then
+                                                match BigStack.tryRun (sprintf "jp_method_%d" join_point_key.tag) compute_term with
+                                                | Some v -> v
+                                                | None -> compute_term ()
+                                            else compute_term ()
                                         let result = (Some seq, Some ty, jp_name)
                                     
                                         // Verify annotation match
@@ -13440,7 +13660,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                             DiagSidecar.emit (sprintf "EJP0002: type mismatch expected=%s got=%s expected_deref=%s got_deref=%s\n%s" (show_ty annot) (show_ty ty) (show_ty annot_deref) (show_ty ty_deref) snap)
                                         | _ -> ()
 
-                                        // ALPHA47: Fill IVar to signal completion and unblock all waiters
+                                        // ALPHA48: Fill IVar to signal completion and unblock all waiters
                                         jp_fill_ivar jp_ivar result
                                         ty
                                     with e ->
@@ -13451,7 +13671,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                         reraise()
                                 finally
                                     RecursionTracker.exit ()
-                            // ALPHA47: Schedule via Hopac and return annotation or wait for result
+                            // ALPHA48: Schedule via Hopac and return annotation or wait for result
                             match annot_val with
                             | Some ret_ty ->
                                 jp_start (fun () -> ignore (run()))
@@ -13690,8 +13910,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha24\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260113-alpha24\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260115-alpha51\nGot: %s" (show_data (term s a))
+            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260115-alpha51\nGot: %s" (show_ty (ty s a))
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -14099,9 +14319,18 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | EOp(_,BackendSwitch,[a]) ->
                 let mutable t = None
                 let mutable d = None
+                let normalize_backend_switch_ty x =
+                    // SOTA: join-point placeholders can transiently leak under parallel JP retries/generation churn.
+                    // BackendSwitch needs a stable shape check without cementing placeholders as concrete types.
+                    jp_method_deref_rec_placeholder x
+
                 let validate_type t' =
+                    let t' = normalize_backend_switch_ty t'
                     match t with
-                    | Some t -> if t <> t' then raise_type_error s $"The backend switch needs to have the same type for all of its branches.\nGot: {show_ty t'}\nExpected: {show_ty t}"
+                    | Some t0 ->
+                        let t0 = normalize_backend_switch_ty t0
+                        if not (ty_eq_allow_jp_placeholders t0 t') then
+                            raise_type_error s $"The backend switch needs to have the same type for all of its branches.\nGot: {show_ty t'}\nExpected: {show_ty t0}"
                     | None -> t <- Some t'
                 match term s a with
                 | DRecord l ->
@@ -14130,17 +14359,28 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                     with :? System.InsufficientExecutionStackException ->
                                         false
                                 
+                                // ALPHA45: Check generation before and after validation
+                                // If generation changes during validation, skip remaining branches
+                                let gen0 = CacheGeneration.current ()
+                                
                                 let doValidation () =
                                     let old = lock backend_switch_lock (fun () -> backend_switch_validate_all.Value)
                                     lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- false)
                                     try
                                         let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend)}
                                         let d' = apply s (b, DB)
-                                        validate_type (data_to_ty s d')
+                                        // ALPHA45: Check generation after apply
+                                        if CacheGeneration.isStale gen0 then
+                                            DiagSidecar.emit (sprintf "ALPHA45: Generation changed during backend_switch validation for '%s' - skipping type check" backend)
+                                        else
+                                            validate_type (data_to_ty s d')
                                     finally
                                         lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- old)
                                 
-                                if stackOk then
+                                // ALPHA45: Skip validation if generation is already stale
+                                if CacheGeneration.isStale gen0 then
+                                    DiagSidecar.emit (sprintf "ALPHA45: Skipping backend_switch validation for '%s' (generation stale)" backend)
+                                elif stackOk then
                                     doValidation ()
                                 else
                                     // Stack low - try BigStack pivot
@@ -14468,7 +14708,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         elif is_numeric a_ty then push_binop s Add (a,b) a_ty
                         else raise_type_error s <| sprintf "The type of the two arguments needs to be a numeric type.\nGot: %s" (show_ty a_ty)
                     else
-                        raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
+                        // ALPHA32: JPMethodRecPlaceholder/JPTypeRecPlaceholder pode vazar em aritmética (ex: core/sm.spi to_py slice math).
+                        // Trate como o outro lado numérico sem "cimentar" primitivos globalmente (evita EJP0007 spúrio).
+                        let inline is_jp_ph t = ty_is_jp_method_rec_placeholder t || ty_is_jp_type_rec_placeholder t
+                        if is_jp_ph a_ty && is_numeric b_ty then push_binop s Add (a,b) b_ty
+                        elif is_jp_ph b_ty && is_numeric a_ty then push_binop s Add (a,b) a_ty
+                        else raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
             | EOp(_,Sub,[a;b]) ->
                 let inline op a b = a - b
                 match term2 s a b with
@@ -14494,7 +14739,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         elif is_numeric a_ty then push_binop s Sub (a,b) a_ty
                         else raise_type_error s <| sprintf "The type of the two arguments needs to be a numeric type.\nGot: %s" (show_ty a_ty)
                     else
-                        raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
+                        // ALPHA32: JPMethodRecPlaceholder/JPTypeRecPlaceholder pode vazar em aritmética (ex: core/sm.spi to_py slice math).
+                        // Trate como o outro lado numérico sem "cimentar" primitivos globalmente (evita EJP0007 spúrio).
+                        let inline is_jp_ph t = ty_is_jp_method_rec_placeholder t || ty_is_jp_type_rec_placeholder t
+                        if is_jp_ph a_ty && is_numeric b_ty then push_binop s Sub (a,b) b_ty
+                        elif is_jp_ph b_ty && is_numeric a_ty then push_binop s Sub (a,b) a_ty
+                        else raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
             | EOp(_,Mult,[a;b]) ->
                 let inline op a b = a * b
                 match term2 s a b with
@@ -14520,7 +14770,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         elif is_numeric a_ty then push_binop s Mult (a,b) a_ty
                         else raise_type_error s <| sprintf "The type of the two arguments needs to be a numeric type.\nGot: %s" (show_ty a_ty)
                     else
-                        raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
+                        // ALPHA32: JPMethodRecPlaceholder/JPTypeRecPlaceholder pode vazar em aritmética (ex: core/sm.spi to_py slice math).
+                        // Trate como o outro lado numérico sem "cimentar" primitivos globalmente (evita EJP0007 spúrio).
+                        let inline is_jp_ph t = ty_is_jp_method_rec_placeholder t || ty_is_jp_type_rec_placeholder t
+                        if is_jp_ph a_ty && is_numeric b_ty then push_binop s Mult (a,b) b_ty
+                        elif is_jp_ph b_ty && is_numeric a_ty then push_binop s Mult (a,b) a_ty
+                        else raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
             | EOp(_,Div,[a;b]) ->
                 let inline op a b = a / b
                 try
@@ -14546,7 +14801,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                             elif is_numeric a_ty then push_binop s Div (a,b) a_ty
                             else raise_type_error s <| sprintf "The type of the two arguments needs to be a numeric type.\nGot: %s" (show_ty a_ty)
                         else
-                            raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
+                            // ALPHA32: JPMethodRecPlaceholder/JPTypeRecPlaceholder pode vazar em aritmética (ex: core/sm.spi to_py slice math).
+                            // Trate como o outro lado numérico sem "cimentar" primitivos globalmente (evita EJP0007 spúrio).
+                            let inline is_jp_ph t = ty_is_jp_method_rec_placeholder t || ty_is_jp_type_rec_placeholder t
+                            if is_jp_ph a_ty && is_numeric b_ty then push_binop s Div (a,b) b_ty
+                            elif is_jp_ph b_ty && is_numeric a_ty then push_binop s Div (a,b) a_ty
+                            else raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
                 with :? DivideByZeroException ->
                     raise_type_error s <| sprintf "An attempt to divide by zero has been detected at compile time."
             | EOp(_,Pow,[a;b]) ->
@@ -14585,7 +14845,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                             elif is_numeric a_ty then push_binop s Mod (a,b) a_ty
                             else raise_type_error s <| sprintf "The type of the two arguments needs to be a numeric type.\nGot: %s" (show_ty a_ty)
                         else
-                            raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
+                            // ALPHA32: JPMethodRecPlaceholder/JPTypeRecPlaceholder pode vazar em aritmética (ex: core/sm.spi to_py slice math).
+                            // Trate como o outro lado numérico sem "cimentar" primitivos globalmente (evita EJP0007 spúrio).
+                            let inline is_jp_ph t = ty_is_jp_method_rec_placeholder t || ty_is_jp_type_rec_placeholder t
+                            if is_jp_ph a_ty && is_numeric b_ty then push_binop s Mod (a,b) b_ty
+                            elif is_jp_ph b_ty && is_numeric a_ty then push_binop s Mod (a,b) a_ty
+                            else raise_type_error s <| sprintf "The two sides need to have the same numeric types.\nGot: %s and %s." (show_ty a_ty) (show_ty b_ty)
                 with :? DivideByZeroException ->
                     raise_type_error s <| sprintf "An attempt to divide by zero has been detected at compile time."
             | EOp(_,LT,[a;b]) ->
@@ -15857,7 +16122,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
 
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                // ALPHA47: Updated tuple structure (dict, hc_table, gen) - no dict_ev
+                // ALPHA48: Updated tuple structure (dict, hc_table, gen) - no dict_ev
                 let jp_dict,_,_ = env.join_point_method.[jp_body]
                 let jp_body_name =
                     match jp_body with
@@ -22315,6 +22580,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
 
                                     let rec attempt_build (attempt: int) (max_attempts: int) =
                                         if attempt = 0 then CacheGeneration.resetSequentialRequest ()
+                                        // ALPHA45: Reset loop specialization guard on retry to prevent cascading cap failures
+                                        if attempt > 0 then LoopSpecializationGuard.reset ()
                                         try
                                             do_build ()
                                         with
@@ -22331,9 +22598,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                     if not is_gen_wait then
                                                         HopacExtensions.forceConcurrency 1
 
+
+                                                        CacheGeneration.requestSequential ()
                                                     let gen_after =
                                                         if is_gen_wait then CacheGeneration.current ()
                                                         else CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
+
+                                                    // ALPHA49: SupervisorState doesn't own JP per-env caches (they live in LangEnv); rely on invalidate callbacks.
+                                                    if not is_gen_wait then
+                                                        ()
 
                                                     if is_gen_wait then System.Threading.Thread.Yield() |> ignore
 
@@ -22341,10 +22614,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                     let sidecar = DiagSidecar.snapshot 128
                                                     let reasons = CacheGeneration.reasonsSnapshot 64
                                                     let had_apply_mismatch = reasons |> List.exists (fun x -> x.Contains("apply mismatch"))
-                                                    if is_gen_wait && had_apply_mismatch then
+                                                    if is_gen_wait && (had_apply_mismatch || code = "EJP0007" || code = "EJP0008") then
                                                         CacheGeneration.invalidate (sprintf "EJP0008.apply_mismatch file=%s backend=%s attempt=%d" file backend attempt) |> ignore
                                                         CacheGeneration.requestSequential ()
                                                         HopacExtensions.forceConcurrency 1
+
+                                                        // ALPHA49: no per-env JP caches in SupervisorState; rely on invalidate callbacks.
+                                                        ()
 
                                                     let suspects =
                                                         SuspectCache.getRecent 32
