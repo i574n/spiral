@@ -4,7 +4,7 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20260115-alpha51)
+module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -9642,11 +9642,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 th.Join()
                 try
                     let ok = err.IsNone
+                    let sanitize (s: string) =
+                        if obj.ReferenceEquals(s,null) then ""
+                        else s.Replace("\r"," ").Replace("\n"," ").Trim()
+                    let truncate n (s: string) =
+                        let s = sanitize s
+                        if s.Length > n then s.Substring(0,n) + "..." else s
                     let et =
                         match err with
                         | Some e -> e.GetType().FullName
                         | None -> ""
-                    DiagSidecar.emit (sprintf "BIGSTACK done tag=%s child_tid=%d ok=%b err=%s nest=%d/%d parent_tid=%d" tag childTid ok et nestLevel maxNestingLevels Thread.CurrentThread.ManagedThreadId)
+                    let em =
+                        match err with
+                        | Some e -> truncate 220 e.Message
+                        | None -> ""
+                    let inner =
+                        match err with
+                        | Some e when not (obj.ReferenceEquals(e.InnerException,null)) -> truncate 180 e.InnerException.Message
+                        | _ -> ""
+                    DiagSidecar.emit (sprintf "BIGSTACK done tag=%s child_tid=%d ok=%b err=%s msg=%s inner=%s nest=%d/%d parent_tid=%d" tag childTid ok et em inner nestLevel maxNestingLevels Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 match err with
                 | Some e -> raise e
@@ -9867,19 +9881,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 for kv in toRemove do
                     suspects.TryRemove(kv.Key) |> ignore
             DiagSidecar.emit (sprintf "SuspectCache.mark: hash=%d depth=%d error=%s" h depth errorType)
+        let private isActive (entry: SuspectEntry) =
+            let cur = CacheGeneration.current ()
+            // Keep suspects alive across a small retry window (current + next 2 generations).
+            entry.generation + 2L >= cur
+
+
 
         /// Check if a key is suspect in current generation
         let isSuspect (key: obj) : bool =
             let h = hashKey key
             match suspects.TryGetValue(h) with
-            | true, entry -> not (CacheGeneration.isStale entry.generation)
+            | true, entry -> isActive entry
             | _ -> false
 
         /// Check if a key is suspect and return entry
         let tryGetSuspect (key: obj) : SuspectEntry option =
             let h = hashKey key
             match suspects.TryGetValue(h) with
-            | true, entry when not (CacheGeneration.isStale entry.generation) -> Some entry
+            | true, entry when isActive entry -> Some entry
             | _ -> None
 
         /// Clear suspects for a generation (after successful retry)
@@ -9901,9 +9921,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
 
         /// Get count of suspects in current generation
         let currentCount () =
-            let gen = CacheGeneration.current ()
             suspects.ToArray()
-            |> Array.filter (fun kv -> kv.Value.generation = gen)
+            |> Array.filter (fun kv -> isActive kv.Value)
             |> Array.length
 
     /// ### BitMamba (BitNet B1.58)
@@ -10234,7 +10253,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | _ -> "Unknown error"
 
     /// ### LoopSpecializationGuard
-    /// Prevents unbounded specialization from loop patterns like 루프 in listm'.spi.
+    /// Prevents unbounded specialization from loop patterns like loop in listm'.spi.
     /// These patterns create unique JP keys per iteration, causing exponential growth.
     /// The guard caps specializations per JP name and emits EJP0012 when exceeded.
     module LoopSpecializationGuard =
@@ -10529,8 +10548,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
     /// ### raise_type_error
     let raise_type_error (d: LangEnv) (x: string) =
         let x =
-            if x.Contains("Compiler: v20260115-alpha51") then x
-            else x + sprintf "\nCompiler: v20260115-alpha51\nTraceDepth: %d" d.trace.Length
+            if x.Contains("Compiler: par") then x
+            else x + sprintf "\nCompiler: par\nTraceDepth: %d" d.trace.Length
         raise (PartEvalTypeError(d.trace,x))
 
     /// ### data_to_rdata
@@ -11062,9 +11081,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
         let backend_strings = StripedHashConsTable(32)  // v107-alpha11: striped for parallel access
         let backend_strings_lock = obj()
-        let backend_switch_validate_all = ref false  // v20260115-alpha51: validate only current backend branch by default
+        let backend_switch_validate_all = ref false  // par: validate only current backend branch by default
         let backend_switch_lock = obj()
-        // ALPHA51: Track JP dict clear callbacks - multiple subsystems (peval, compiler) may register.
+        // JP: Track JP dict clear callbacks - multiple subsystems (peval, compiler) may register.
         let jp_dict_clear_lock = obj()
         let mutable jp_dict_clear_callbacks : (unit -> unit) list = []
         let register_jp_dict_clear_callback (f: unit -> unit) =
@@ -11076,7 +11095,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 lock jp_dict_clear_lock (fun () -> jp_dict_clear_callbacks |> List.rev)
             for f in cbs do
                 try f () with _ -> ()
-            try DiagSidecar.emit (sprintf "ALPHA51: cache invalidation reason=%A jp_clear_callbacks=%d" reason cbs.Length) with _ -> ()
+            try DiagSidecar.emit (sprintf "JP: cache invalidation reason=%A jp_clear_callbacks=%d" reason cbs.Length) with _ -> ()
 
         // Hopac: parallel join point workers (peval)
 
@@ -11112,7 +11131,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let mutable drained = 0
                 while jp_exns.TryDequeue(&edi) do drained <- drained + 1
                 jp_method_exns.Clear()
-                DiagSidecar.emit (sprintf "ALPHA51: jp_clear before(method=%d closure=%d type=%d exn_cache=%d) drained_exn_q=%d" m0 c0 t0 ex0 drained)
+                DiagSidecar.emit (sprintf "JP: jp_clear before(method=%d closure=%d type=%d exn_cache=%d) drained_exn_q=%d" m0 c0 t0 ex0 drained)
             with _ -> ()
         )
 
@@ -11352,7 +11371,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 else
                     let v = cell.v
                     if v = cell.ph then
-                        // v20260115-alpha51: conservative fallback. Only trust annotated return types that are
+                        // par: conservative fallback. Only trust annotated return types that are
                         // union-ish; returning a primitive here (ex: i32) can create spurious EJP0007 apply-mismatch.
                         fallback ()
                     else v
@@ -11413,7 +11432,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     System.Func<ConsedNode<RData [] * Ty [] * Ty>, JpMethodRecPlaceholderCell>(fun key ->
                         // Placeholder: printable + unique. Use a monotonic id so different JP keys cannot collide under parallel builds.
                         let id = System.Threading.Interlocked.Increment(&jp_method_rec_placeholder_next_id)
-                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(v20260115-alpha51;%s#%d)" jp id)
+                        let ph = YSymbol (sprintf "JPMethodRecPlaceholder(par;%s#%d)" jp id)
                         jp_method_rec_placeholder_keys.TryAdd(ph, key) |> ignore
                         jp_method_rec_placeholder_ids.TryAdd(id, key) |> ignore
                         JpMethodRecPlaceholderCell(curGen, ph, ph)
@@ -11427,7 +11446,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 resetCell.v
 
         let inline jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
-            // v20260115-alpha51: generation-aware placeholder resolution + anti-clobber.
+            // par: generation-aware placeholder resolution + anti-clobber.
             // We still keep the 'hard primitive vs expected non-primitive' guard, but we also prevent a hard primitive (ex: i32)
             // from overwriting a richer resolved type within the same generation (a common source of spurious EJP0007 apply-mismatch).
             let inline is_primitive_like (t: Ty) =
@@ -12182,7 +12201,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             let f = ty_to_data s
             match x with
             | YVoid ->
-                // v20260115-alpha51: The evaluator can transiently demand a term for YVoid during sequencing
+                // par: The evaluator can transiently demand a term for YVoid during sequencing
                 // or placeholder materialization under parallel retries. Coerce it to unit data (DB) instead of aborting.
                 // Any semantically invalid usage should reappear later as a type mismatch rather than a fatal abort.
                 DB
@@ -12287,6 +12306,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                 let closure_name = sprintf "closure<%d>" join_point_key.tag
                 if not (LoopSpecializationGuard.tryRecordSpecialization closure_name) then
                     DiagSidecar.emit (sprintf "EJP0012: closure specialization cap exceeded for '%s'" closure_name)
+                    SuspectCache.mark join_point_key (sprintf "%s jp_closure cap name=%s" EJPCodes.EJP0012 closure_name)
                     ()
 
                 // ALPHA48: Use IVar for coordination - create new IVar and TryAdd
@@ -12320,7 +12340,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                     | _ -> ty
                                 let ty_deref = jp_method_deref_rec_placeholder ty
                                 let ty =
-                                    // v20260115-alpha51: under parallel JP recursion, closure bodies can transiently infer a JP placeholder.
+                                    // par: under parallel JP recursion, closure bodies can transiently infer a JP placeholder.
                                     // If the function has an explicit unit return annotation, treat placeholder as unit to avoid spurious hard-fails.
                                     if range = YB && (ty_is_jp_method_rec_placeholder ty || ty_is_jp_type_rec_placeholder ty || ty_is_jp_method_rec_placeholder ty_deref || ty_is_jp_type_rec_placeholder ty_deref) then
                                         if jp_diag_verbose then
@@ -12583,11 +12603,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | YNominal a -> ty s a.node.body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
         and ty s x =
-            // v20260115-alpha51: Proactive BigStack pivot based on observed recursion depth.
+            // par: Proactive BigStack pivot based on observed recursion depth.
             // Type frames also carry large environments; pivot earlier to avoid hard StackOverflow.
             let d = RecursionTracker.currentDepth()
             let v =
-                if (not (BigStack.isActive())) && d > 64 then
+                if (not (BigStack.isActive())) && d > 32 then
                     match BigStack.tryRun "ty_depth" (fun () -> ty_core s x) with
                     | Some v -> v
                     | None -> ty_core s x
@@ -12769,10 +12789,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let owner0 = jp_cell.owner
                     
                     if owner0 = tid && owner0 <> 0 then
-                        // v20260115-alpha51: break same-thread recursion by returning a placeholder instead of failing.
+                        // par: break same-thread recursion by returning a placeholder instead of failing.
                         // This keeps the type JP cache acyclic during definition and pushes failures to a later, more informative point if needed.
                         record_jp_diag_type join_point_key (r :: s.trace)
-                        YSymbol (sprintf "JPTypeRecPlaceholder(v20260115-alpha51;%O)" join_point_key)
+                        YSymbol (sprintf "JPTypeRecPlaceholder(par;%O)" join_point_key)
                     elif owner0 <> 0 then
                         // Another thread owns this - wait on IVar cooperatively
                         let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O owner=%d" join_point_key owner0) jp_cell.ivar
@@ -12916,11 +12936,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
-            // v20260115-alpha51: Proactive BigStack pivot based on observed recursion depth.
+            // par: Proactive BigStack pivot based on observed recursion depth.
             // The main stack can overflow around ~100 nested term frames because these lambdas carry huge environments.
             // If we are already deep and not on BigStack, rerun the step on BigStack to avoid hard StackOverflow.
             let d = RecursionTracker.currentDepth()
-            if (not (BigStack.isActive())) && d > 64 then
+            if (not (BigStack.isActive())) && d > 32 then
                 match BigStack.tryRun "term_depth" (fun () -> term_core s x) with
                 | Some v -> v
                 | None -> term_core s x
@@ -13219,6 +13239,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
             and if_core_impl s cond on_succ on_fail =
                 let lit_tr = DLit(LitBool true)
                 let lit_fl = DLit(LitBool false)
+                let type_bool = YPrim BoolT
                 let cond =
                     let visiting = HashSet(HashIdentity.Reference)
                     let rec norm cond =
@@ -13229,6 +13250,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                 match cse_tryfind s (TyOp(EQ, [cond; lit_tr])) with
                                 | Some cond' when cond' <> cond -> norm cond'
                                 | Some _ | None -> cond
+                            | DV(L(v,ty)) as cond when ty_is_jp_method_rec_placeholder ty ->
+                                match jp_method_try_key_of_rec_placeholder ty with
+                                | Some k -> jp_method_resolve_rec_placeholder k type_bool
+                                | None -> ()
+                                DV(L(v, type_bool))
                             | _ -> cond
                     norm cond
                 match cond with
@@ -13332,6 +13358,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     | LitChar a, LitChar b -> op a b |> LitBool |> DLit
                     | LitBool a, LitBool b -> op a b |> LitBool |> DLit
                     | a, b -> raise_type_error s <| sprintf "The two literals must be equal in type.\nGot: %s and %s" (show_lit a) (show_lit b)
+                | DSymbol a, DLit (LitString b)
+                | DLit (LitString b), DSymbol a ->
+                    op a b |> LitBool |> DLit
                 | DV(L(a,a_ty)), DV(L(b,_)) when a = b && is_non_float_primitive a_ty -> LitBool true |> DLit
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
@@ -13369,8 +13398,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
 
             let lit_test s a bind on_succ on_fail =
                 let b = v s bind
-                if lit_to_ty a = data_to_ty s b then if_ s (eq s (DLit a) b) on_succ on_fail
-                else term s on_fail
+                match a, b with
+                | LitString a', DSymbol b' ->
+                    if a' = b' then term s on_succ else term s on_fail
+                | _ ->
+                    if lit_to_ty a = data_to_ty s b then if_ s (eq s (DLit a) b) on_succ on_fail
+                    else term s on_fail
 
             let inline nan_guardf32 x = if Single.IsNaN x then raise_type_error s "A 32-bit floating point operation resulting in a nan detected at compile time." else x
             let inline nan_guardf64 x = if Double.IsNaN x then raise_type_error s "A 64-bit floating point operation resulting in a nan detected at compile time." else x
@@ -13506,14 +13539,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                     let t = jp_method_deref_rec_placeholder t
                     match t with
                     | YVoid | YB | YLit _ | YPrim _ -> t
-                    | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> YSymbol "JPMethodUnknownRet(v20260115-alpha51)"
-                    | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> YSymbol "JPMethodUnknownRet(v20260115-alpha51)"
+                    | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> YSymbol "JPMethodUnknownRet(par)"
+                    | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> YSymbol "JPMethodUnknownRet(par)"
                     | _ -> t
 
                 let annot_ty_for_key_norm : Ty =
                     match annot_ty_for_key with
                     | Some t -> normalize_jp_key_ret t
-                    | None -> YSymbol "JPMethodUnknownRet(v20260115-alpha51)"
+                    | None -> YSymbol "JPMethodUnknownRet(par)"
 
                 let join_point_key =
                     lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, annot_ty_for_key_norm))
@@ -13571,12 +13604,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                         let jp_name_str = defaultArg jp_name "<anon>"
                         if not (LoopSpecializationGuard.tryRecordSpecialization jp_name_str) then
                             // Specialization cap exceeded - degrade instead of aborting the whole compilation.
-                            // Returning a placeholder Ty here prevents unbounded specialization from patterns like 루프 in listm'.spi.
+                            // Returning a placeholder Ty here prevents unbounded specialization from patterns like loop in listm'.spi.
                             // It is intentionally conservative: downstream equality treats JP placeholders as wildcards.
                             let snap = diag_snapshot (sprintf "EJP0012: loop specialization cap exceeded for '%s'" jp_name_str)
+                            SuspectCache.mark join_point_key (sprintf "%s jp_method cap name=%s" EJPCodes.EJP0012 jp_name_str)
                             match annot_val with
                             | Some t ->
-                                // v20260115-alpha51: never return a primitive/placeholder annotation for a capped JP.
+                                // par: never return a primitive/placeholder annotation for a capped JP.
                                 // Doing so can leak a hard primitive into callable positions and trigger spurious EJP0007.
                                 let inline is_primitive_like (t: Ty) =
                                     match t with
@@ -13600,6 +13634,53 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (v20
                                 DiagSidecar.emit (sprintf "EJP0012: degrading capped JP '%s' to placeholder=%s (count=%d tag=%d)\n%s"
                                     jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
                                 ph
+
+                        // If a JP key was marked suspect in a previous generation, avoid memoization for this key.
+                        // This is a stabilizer for EJP0003/EJP0007 style cache corruption: recompute deterministically instead of reusing a potentially poisoned cell.
+                        elif SuspectCache.isSuspect join_point_key then
+                            CacheGeneration.requestSequential ()
+                            record_jp_diag_method join_point_key jp_name (r :: s.trace)
+                            let jp_method_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_method_stack, HashIdentity.Reference)
+                            let jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(s.jp_closure_stack, HashIdentity.Reference)
+                            let jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(s.jp_type_stack, HashIdentity.Reference)
+                            jp_method_stack.Add join_point_key |> ignore
+                            let s : LangEnv = {
+                                trace = r :: s.trace
+                                seq = ResizeArray()
+                                cse = [Dictionary(HashIdentity.Structural)]
+                                unions = Map.empty
+                                i = ref 0
+                                env_global_type = env_global_type
+                                env_global_term = env_global_term
+                                env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                                env_stack_term = Array.zeroCreate<_> scope.term.stack_size
+                                backend = backend'
+                                globals = s.globals
+                                globals_lock = s.globals_lock
+                                globals_seen = s.globals_seen
+                                join_point_method_key_names = s.join_point_method_key_names
+                                join_point_closure_key_names = s.join_point_closure_key_names
+                                jp_method_stack = jp_method_stack
+                                jp_closure_stack = jp_closure_stack
+                                jp_type_stack = jp_type_stack
+                                }
+                            let s = rename_global_term s
+                            let recursion_site = sprintf "JPMethod.suspect_bypass@%s:%d" r.path (fst r.range).line
+                            let entry_depth = RecursionTracker.enter recursion_site
+                            try
+                                BitMamba.recordAccess join_point_key
+                                let compute_term () = term_scope'' s body annot_val
+                                let seq, ty =
+                                    if entry_depth > 64 then
+                                        match BigStack.tryRun (sprintf "jp_method_suspect_%d" join_point_key.tag) compute_term with
+                                        | Some v -> v
+                                        | None -> compute_term ()
+                                    else compute_term ()
+                                jp_method_resolve_rec_placeholder join_point_key ty
+                                ty
+                            finally
+                                RecursionTracker.exit ()
+
 
                         // ALPHA48: TryAdd IVar - if we win, we compute; if we lose, we wait on winner's IVar
                         elif dict.TryAdd(join_point_key, jp_ivar) then
@@ -13910,8 +13991,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260115-alpha51\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: v20260115-alpha51\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" (show_data (term s a))
+            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" (show_ty (ty s a))
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -14981,6 +15062,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | LitChar a, LitChar b -> op a b |> LitBool |> DLit
                     | LitBool a, LitBool b -> op a b |> LitBool |> DLit
                     | a, b -> raise_type_error s <| sprintf "The two literals must be equal in type.\nGot: %s and %s" (show_lit a) (show_lit b)
+                | DSymbol a, DLit (LitString b)
+                | DLit (LitString b), DSymbol a ->
+                    op a b |> LitBool |> DLit
                 | DV(L(a,a_ty)), DV(L(b,_)) when a = b && is_non_float_primitive a_ty -> LitBool false |> DLit
                 | a, b ->
                     let a_ty, b_ty = data_to_ty s a, data_to_ty s b
@@ -22579,11 +22663,17 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                         | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
 
                                     let rec attempt_build (attempt: int) (max_attempts: int) =
-                                        if attempt = 0 then CacheGeneration.resetSequentialRequest ()
+                                        if attempt = 0 then
+                                            CacheGeneration.resetSequentialRequest ()
+                                            // If we have active suspect keys from a previous invalidation, start this build deterministically.
+                                            if SuspectCache.currentCount () > 0 then CacheGeneration.requestSequential ()
                                         // ALPHA45: Reset loop specialization guard on retry to prevent cascading cap failures
                                         if attempt > 0 then LoopSpecializationGuard.reset ()
                                         try
-                                            do_build ()
+                                            let build_ok = do_build ()
+                                            // Successful build: clear active suspects so future builds can re-enable parallel JP work.
+                                            SuspectCache.clearForGeneration (CacheGeneration.current ())
+                                            build_ok
                                         with
                                             | :? PartEvalTypeError as e when attempt + 1 < max_attempts ->
                                                 let msg = e.Data1
@@ -22632,7 +22722,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                           sprintf "backend=%s" backend
                                                           sprintf "attempt=%d/%d" (attempt + 1) max_attempts
                                                           sprintf "gen=%d -> %d" gen_before gen_after
-                                                          sprintf "jp_parallel=%s" (if is_gen_wait then "kept" else "forced=1")
+                                                          sprintf "jp_parallel=%s sequential_requested=%b" (if is_gen_wait then "kept" else if CacheGeneration.isSequentialRequested() then "forced=0" else "forced=1") (CacheGeneration.isSequentialRequested())
                                                           "---- message ----"
                                                           msg
                                                           "---- trace ----" ] @ trace_lines @
