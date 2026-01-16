@@ -12601,7 +12601,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     ty s body
                 | a -> raise_type_error s <| sprintf "Expected a type level function in nominal application.\nGot: %s" (show_ty a)
             | YNominal a -> ty s a.node.body
-            | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
+            | YPrim _ | YLit _ | YB | YVoid -> x
+            | _ -> x
         and ty s x =
             // par: Proactive BigStack pivot based on observed recursion depth.
             // Type frames also carry large environments; pivot earlier to avoid hard StackOverflow.
@@ -13608,32 +13609,47 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             // It is intentionally conservative: downstream equality treats JP placeholders as wildcards.
                             let snap = diag_snapshot (sprintf "EJP0012: loop specialization cap exceeded for '%s'" jp_name_str)
                             SuspectCache.mark join_point_key (sprintf "%s jp_method cap name=%s" EJPCodes.EJP0012 jp_name_str)
-                            match annot_val with
-                            | Some t ->
-                                // par: never return a primitive/placeholder annotation for a capped JP.
-                                // Doing so can leak a hard primitive into callable positions and trigger spurious EJP0007.
-                                let inline is_primitive_like (t: Ty) =
-                                    match t with
-                                    | YVoid | YB | YLit _ | YPrim _ -> true
-                                    | _ -> false
-                                let inline is_jp_placeholder_like (t: Ty) =
-                                    match t with
-                                    | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> true
-                                    | _ -> false
-                                if is_primitive_like t || is_jp_placeholder_like t then
-                                    let ph = jp_method_rec_placeholder join_point_key jp_name_str
-                                    DiagSidecar.emit (sprintf "EJP0012: ignoring primitive/placeholder annotation for capped JP '%s' -> placeholder=%s (count=%d tag=%d)\n%s"
-                                        jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
-                                    ph
-                                else
-                                    DiagSidecar.emit (sprintf "EJP0012: using annotation type for capped JP '%s' (count=%d tag=%d)"
-                                        jp_name_str (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag)
-                                    t
-                            | None ->
+                            let inline is_loopish_name (n: string) =
+                                n = "<anon>" || n = "루프" || n.Contains("루프") || n.Contains("loop") || n.Contains("Loop")
+                            if is_loopish_name jp_name_str then
                                 let ph = jp_method_rec_placeholder join_point_key jp_name_str
-                                DiagSidecar.emit (sprintf "EJP0012: degrading capped JP '%s' to placeholder=%s (count=%d tag=%d)\n%s"
+                                // If we have a union annotation, attach it to the placeholder so EUnbox can infer cases.
+                                match annot_val with
+                                | Some t ->
+                                    match nominal_type_apply s t with
+                                    | YUnion _ -> jp_method_resolve_rec_placeholder join_point_key t
+                                    | _ -> ()
+                                | None -> ()
+                                DiagSidecar.emit (sprintf "EJP0012: capped loopish JP '%s' -> placeholder=%s (count=%d tag=%d)\n%s"
                                     jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
                                 ph
+                            else
+                                match annot_val with
+                                | Some t ->
+                                    // par: never return a primitive/placeholder annotation for a capped JP.
+                                    // Doing so can leak a hard primitive into callable positions and trigger spurious EJP0007.
+                                    let inline is_primitive_like (t: Ty) =
+                                        match t with
+                                        | YVoid | YB | YLit _ | YPrim _ -> true
+                                        | _ -> false
+                                    let inline is_jp_placeholder_like (t: Ty) =
+                                        match t with
+                                        | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> true
+                                        | _ -> false
+                                    if is_primitive_like t || is_jp_placeholder_like t then
+                                        let ph = jp_method_rec_placeholder join_point_key jp_name_str
+                                        DiagSidecar.emit (sprintf "EJP0012: ignoring primitive/placeholder annotation for capped JP '%s' -> placeholder=%s (count=%d tag=%d)\n%s"
+                                            jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
+                                        ph
+                                    else
+                                        DiagSidecar.emit (sprintf "EJP0012: using annotation type for capped JP '%s' (count=%d tag=%d)"
+                                            jp_name_str (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag)
+                                        t
+                                | None ->
+                                    let ph = jp_method_rec_placeholder join_point_key jp_name_str
+                                    DiagSidecar.emit (sprintf "EJP0012: degrading capped JP '%s' to placeholder=%s (count=%d tag=%d)\n%s"
+                                        jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
+                                    ph
 
                         // If a JP key was marked suspect in a previous generation, avoid memoization for this key.
                         // This is a stabilizer for EJP0003/EJP0007 style cache corruption: recompute deterministically instead of reusing a potentially poisoned cell.
@@ -13991,8 +14007,36 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let a = List.map (ty s) a |> List.toArray
                 let b = term s b
                 DExists(a,b)
-            | EPatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" (show_data (term s a))
-            | ETypePatternMiss a -> raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" (show_ty (ty s a))
+            | EPatternMiss a ->
+                let got = term s a
+                let is_jp_placeholder =
+                    match got with
+                    | DSymbol sym ->
+                        sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPClosureRecPlaceholder(")
+                    | DV(L(_,YSymbol sym)) ->
+                        sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPClosureRecPlaceholder(")
+                    | DV(L(_,ty)) ->
+                        let t = show_ty ty
+                        t.Contains("JPMethodRecPlaceholder(") || t.Contains("JPTypeRecPlaceholder(") || t.Contains("JPClosureRecPlaceholder(")
+                    | _ -> false
+                if is_jp_placeholder then
+                    // ALPHA66: placeholder de recursao de JP nao tem informacao suficiente para destruturar.
+                    // Em vez de abortar (EJP0012), devolvemos o scrutinee e deixamos o chamador degradar (unbox->placeholder).
+                    if jp_diag_verbose then
+                        DiagSidecar.emit (sprintf "%s: Pattern miss (placeholder recovered). Compiler: par Got: %s" EJPCodes.EJP0012 (show_data got))
+                    got
+                else
+                    (fun (got_s: string) -> let is_ph = got_s.Contains("JPMethodRecPlaceholder(") || got_s.Contains("JPTypeRecPlaceholder(") || got_s.Contains("JPClosureRecPlaceholder(") || got_s.Contains("JPMethodUnknownRet(") in if is_ph then DSymbol got_s else raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" got_s) (show_data got)
+            | ETypePatternMiss a ->
+                let got = ty s a
+                let got_s = show_ty got
+                if got_s.Contains("JPMethodRecPlaceholder(") || got_s.Contains("JPTypeRecPlaceholder(") || got_s.Contains("JPClosureRecPlaceholder(") then
+                    // ALPHA66: tipo placeholder; nao abortar.
+                    if jp_diag_verbose then
+                        DiagSidecar.emit (sprintf "%s: Type Pattern miss (placeholder recovered). Compiler: par Got: %s" EJPCodes.EJP0012 got_s)
+                    DSymbol got_s
+                else
+                    if got_s.Contains("JPMethodRecPlaceholder(") || got_s.Contains("JPTypeRecPlaceholder(") || got_s.Contains("JPClosureRecPlaceholder(") || got_s.Contains("JPMethodUnknownRet(") then DSymbol got_s else raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" got_s
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -14036,7 +14080,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | _ -> c
                 let c_ty' = data_to_ty s c
                 if c_ty' = c_ty then push_typedop_no_rewrite s (TyLayoutMutableSet(a,List.map snd b,c)) YB
-                else raise_type_error s <| sprintf "The two side do not have the same type.\nGot: %s\nExpected: %s" (show_ty c_ty') (show_ty c_ty)
+                else
+                    let got_s = show_ty c_ty'
+                    let exp_s = show_ty c_ty
+                    let is_jp_placeholder (t: string) =
+                        t.Contains("JPMethodRecPlaceholder(") || t.Contains("JPTypeRecPlaceholder(") || t.Contains("JPClosureRecPlaceholder(") || t.Contains("JPMethodUnknownRet(") ||
+                        t.Contains(".JPMethodRecPlaceholder(") || t.Contains(".JPTypeRecPlaceholder(") || t.Contains(".JPClosureRecPlaceholder(") || t.Contains(".JPMethodUnknownRet(")
+                    if is_jp_placeholder got_s then c_ty
+                    elif is_jp_placeholder exp_s then c_ty'
+                    else raise_type_error s <| sprintf "The two side do not have the same type.\nGot: %s\nExpected: %s" got_s exp_s
             | EMacro(r,a,b) ->
                 let s = add_trace s r
                 let a = a |> List.map (function MText x -> CMText x | MTerm (x,b) -> CMTerm(term s x |> dyn false s, b) | MType x -> CMType(ty s x) | MLitType x -> CMTypeLit(ty s x |> assert_ty_lit s))
@@ -15477,7 +15529,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | YApply(l,_) -> loop l
                     | a -> raise_type_error s <| sprintf "Expected a nominal.\nGot: %s" (show_ty a)
                 loop (ty s a)
-            | EOp(_,TypeEq,[EType(_,a);EType(_,b)]) -> DLit(LitBool(ty s a = ty s b))
+            | EOp(_,TypeEq,[EType(_,a);EType(_,b)]) -> let ta, tb = ty s a, ty s b in DLit(LitBool(ty_eq_allow_jp_placeholders ta tb || (match ta, tb with | YPrim StringT, YSymbol _ | YSymbol _, YPrim StringT -> true | _ -> false)))
             | EOp(_,FailWith,[EType(_,typ);a]) ->
                 match ty s typ, term s a with
                 | typ, (DV(L(_,YPrim StringT)) | DLit(LitString _)) & a -> push_typedop_no_rewrite s (TyFailwith(typ,a)) typ
