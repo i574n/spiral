@@ -95,64 +95,156 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     /// - Graceful degradation under contention
 
     /// ## spiral_compiler
+    module Progress88 =
+        open System
+        open System.Threading
+        open System.Diagnostics
+
+        let sw = Stopwatch.StartNew()
+        let mutable tag = "boot"
+        let mutable gen = 0L
+        let mutable stage_i = 0
+        let mutable stage_n = 4
+        let mutable sub_i = 0L
+        let mutable sub_n = 1L
+        let mutable last_touch_ms = 0L
+        let mutable ticks = 0L
+
+        type Providers =
+            { mutable genf: unit -> int64
+              mutable extraf: unit -> string }
+
+        let providers : Providers =
+            { genf = (fun () -> gen)
+              extraf = (fun () -> "") }
+        let set_gen_provider (f: unit -> int64) = providers.genf <- f
+        let set_extra_provider (f: unit -> string) = providers.extraf <- f
+
+        let inline touch (t: string) (g: int64) =
+            tag <- t
+            gen <- g
+            last_touch_ms <- sw.ElapsedMilliseconds
+
+        let stage (i: int) (n: int) =
+            stage_i <- i
+            stage_n <- (if n <= 0 then 1 else n)
+            if stage_i < 0 then stage_i <- 0
+            if stage_i > stage_n then stage_i <- stage_n
+            last_touch_ms <- sw.ElapsedMilliseconds
+            // Emit a deterministic one-liner for stage transitions so fast stages aren't missed between heartbeats.
+            Console.Error.WriteLine(sprintf "[spiral_compiler] stage_set gen=%d stage=%d/%d t=%ds" (providers.genf()) stage_i stage_n (sw.ElapsedMilliseconds / 1000L))
+
+        let sub (i: int64) (n: int64) =
+            sub_i <- i
+            sub_n <- (if n <= 0L then 1L else n)
+            if sub_i < 0L then sub_i <- 0L
+            if sub_i > sub_n then sub_i <- sub_n
+            last_touch_ms <- sw.ElapsedMilliseconds
+
+        let pulse (t: string) (g: int64) =
+            let tks = Interlocked.Increment(&ticks)
+            if (tks &&& 255L) = 0L then touch t g
+
+        let tick0 (t: string) : unit = pulse t (providers.genf())
+
+        let mutable started = 0
+        let private heartbeat () =
+            while true do
+                Thread.Sleep 2000
+                let now = sw.ElapsedMilliseconds
+                let g = providers.genf()
+                // Snapshot all mutable counters so each line is internally consistent.
+                let si = stage_i
+                let sn = stage_n
+                let subi = sub_i
+                let subn = sub_n
+                let tks = ticks
+                let ttag = tag
+                let silent = now - last_touch_ms
+                let p = Process.GetCurrentProcess()
+                let privateMb = float p.PrivateMemorySize64 / (1024.0 * 1024.0)
+                let gcMb = float (GC.GetTotalMemory(false)) / (1024.0 * 1024.0)
+                let pct = if sn > 0 then (float si / float sn) * 100.0 else Double.NaN
+                let subpct = if subn > 0L then (float subi / float subn) * 100.0 else Double.NaN
+                let extra = providers.extraf()
+                Console.Error.WriteLine(sprintf "[spiral_compiler] hb gen=%d stage=%d/%d (%.1f%%) sub=%d/%d (%.1f%%) tick=%d silent_ms=%d t=%ds private_mb=%.1f gc_mb=%.1f tag=%s %s"
+                    g si sn pct subi subn subpct tks silent (now/1000L) privateMb gcMb ttag extra)
+        let start () =
+            if Interlocked.Exchange(&started, 1) = 0 then
+                stage 0 4
+                sub 0L 1L
+                touch "start" (providers.genf())
+                let th = Thread(ThreadStart(heartbeat))
+                th.IsBackground <- true
+                th.Start()
+
+    do
+        System.Console.Error.WriteLine("[spiral_compiler] progress88 enabled (heartbeat thread ~2s)")
+        Progress88.start()
+        Progress88.stage 1 4
+
     open FSharp.Core
-
+    
+    let mutable jp_last_progress_ms : int64 = 0L
+    
+    
+    
     // #!import '../../../polyglot/deps/The-Spiral-Language/The Spiral Language 2/Supervisor.fs'
-
+    
     // #if !INTERACTIVE
     // open Polyglot
     open Common
     // open Lib
     // #endif
-
+    
     /// ## PersistentVectorExtensions
     // #!import '../../../polyglot/deps/The-Spiral-Language/The Spiral Language 2/PersistentVectorExtensions.fs'
-
+    
     // #if !INTERACTIVE
     //     open Polyglot
     //     open Common
     //     open Lib
     // #endif
-
+    
     open System
     open System.Threading
     open FSharpx.Collections
-
+    
     /// ### InterlockedEx
     /// Helpers to avoid inref/byref overload friction (especially with F# ref cells).
     module InterlockedEx =
         let inline readInt64Ref (x: int64 ref) = Interlocked.Read(&x.contents)
         let inline incrInt64Ref (x: int64 ref) = Interlocked.Increment(&x.contents)
         let inline addInt64Ref (x: int64 ref) (n: int64) = Interlocked.Add(&x.contents, n)
-
-
-
+    
+    
+    
     /// ### DiagSidecar
     /// Best-effort, non-blocking telemetry buffer for diagnostics.
     /// Always enabled in v43+ for better parallel debugging. Lightweight enough to leave on.
     module DiagSidecar =
         open System
         open System.Collections.Concurrent
-
+    
         let private maxItems = 512  // Increased buffer
         let private q = ConcurrentQueue<string>()
-
+    
         let inline enabled () = true  // v43: always on
-
+    
         let emit (msg: string) =
             q.Enqueue msg
             // best-effort trim: we prefer losing oldest telemetry to blocking the compiler.
             while q.Count > maxItems do
                 let mutable v = Unchecked.defaultof<string>
                 q.TryDequeue(&v) |> ignore
-
+    
         let snapshot (maxTake: int) : string list =
             let arr = q.ToArray()
             if arr.Length = 0 then []
             else
                 let n = if maxTake < 0 then 0 else min maxTake arr.Length
                 arr.[arr.Length - n ..] |> Array.toList
-
+    
         // v107-alpha18: moved inside DiagSidecar module for proper scoping
         let mutable private envDumped = 0
         
@@ -188,16 +280,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     emit "---- END ENV SNAPSHOT ----"
                 with ex ->
                     emit (sprintf "ENV SNAPSHOT FAILED: %s" ex.Message)
-
+    
     /// ### dump_spiral_env_once
     /// Back-compat alias used by newer error paths.
     let dump_spiral_env_once () = DiagSidecar.emitEnvSnapshotOnce ()
-
+    
     /// ### map_try_find_by_string
     /// Helper for maps keyed by (id, backend) pairs.
     let map_try_find_by_string (backend: string) (m: Map<(int * string), 'a>) : 'a option =
         m |> Map.tryPick (fun (_, b) v -> if b = backend then Some v else None)
-
+    
     /// ### range_checks
     let range_checks from near_to vec =
         if from <= near_to = false then
@@ -205,7 +297,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             // raise (ArgumentException("`from` must be less or equal to `near_to`."))
         if from < 0 then raise (ArgumentException("`from` must not be negative."))
         if PersistentVector.length vec < near_to then raise (ArgumentException("`near_to` must not be beyond the length of the vector."))
-
+    
     /// ### replace
     /// O(n+m). Replace the specified range in a vector with the sequence.
     let replace from near_to seq vec =
@@ -222,17 +314,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else
                 rest s
         init vec
-
+    
     /// ### mapi
     /// O(n). Returns a vector of the supplied length using the supplied function operating on the index.
     let mapi f vec = PersistentVector.init (PersistentVector.length vec) (fun i -> f i vec.[i])
-
+    
     /// ### iter
     /// O(n). Iterates over a vector using the supplied function operating on the index.
     let iter f vec =
         let rec loop i = if i < PersistentVector.length vec then f vec.[i]
         loop 0
-
+    
     /// ### unzip
     /// O(n). Unzips a vector of pairs into pairs of vectors.
     let unzip vec =
@@ -240,17 +332,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let mutable b = PersistentVector.empty
         iter (fun (a',b') -> a <- PersistentVector.conj a' a; b <- PersistentVector.conj b' b) vec
         a,b
-
+    
     /// ### concat
     /// O(n). Concatenates a vector of vectors.
     let concat vec = PersistentVector.fold (PersistentVector.append) PersistentVector.empty vec
-
+    
     /// ### rangePersistentVector
     /// O(near_to-from). Get the vector at a range.
     let persistentVectorRange from near_to vec =
         range_checks from near_to vec
         PersistentVector.init (near_to-from) (fun i -> vec.[i+from])
-
+    
     /// ### tryFindBack
     /// O(~n). Returns the last element for which a given function returns true. None if such an element does not exist.
     let tryFindBack f vec =
@@ -261,14 +353,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else
                 None
         loop (PersistentVector.length vec - 1)
-
+    
     /// ## HashConsing
     // Adapted from: https://github.com/backtracking/ocaml-hashcons
     // Type-Safe Modular Hash-Consing: https://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf
-
+    
     // open System
     open System.Runtime.InteropServices
-
+    
     /// ### ConsedNode<'a>
     [<CustomComparison;CustomEquality;StructuredFormatDisplay("{AsString}")>]
     type ConsedNode<'a> =
@@ -277,7 +369,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         tag: int
         hkey: int
         }
-
+    
         override x.ToString() = sprintf "<tag %i>" x.tag
         member x.AsString = x.ToString()
         override x.GetHashCode() = x.hkey
@@ -285,13 +377,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             match y with
             | :? ConsedNode<'a> as y -> x.tag = y.tag
             | _ -> false
-
+    
         interface IComparable with
             member x.CompareTo(y) =
                 match y with
                 | :? ConsedNode<'a> as y -> compare x.tag y.tag
                 | _ -> raise <| ArgumentException "Invalid comparison for HashConsed."
-
+    
     /// ### HashConsTable
     type HashConsTable() =
         let mutable table: ResizeArray<GCHandle> [] = Array.init 7 (fun _ -> ResizeArray(0))
@@ -300,10 +392,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let mutable is_finalized: bool = false
         let mutable counter: int = 0
         let sync_root = obj()
-
+    
         member private t.Resize() =
             let next_table_length x = x*3/2+3
-
+    
             let table_length' = next_table_length table.Length
             if table_length' <= table.Length then failwith "The hash consing table cannot be grown anymore."
             let table' = Array.init table_length' (fun i -> ResizeArray())
@@ -327,14 +419,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             table <- table'
             limit <- limit'
             total_size <- total_size'
-
+    
         member t.Add(x: 'a): ConsedNode<'a> =
             lock sync_root (fun () ->
                 let hkey = hash x
                 let table = table
                 let bucket = table.[(hkey &&& Int32.MaxValue) % Array.length table]
                 let sz = bucket.Count
-
+    
                 let rec loop empty_pos i =
                     if i < sz then
                         match bucket.[i].Target with
@@ -352,15 +444,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             total_size <- total_size+1
                             if total_size > limit * Array.length table then t.Resize()
                         node
-
+    
                 loop -1 0 // `-1` indicates the state of no empty bucket
             )
-
+    
         override __.Finalize() =
             if is_finalized = false then
                 table |> (Array.iter << Seq.iter) (fun x -> x.Free())
                 is_finalized <- true
-
+    
     /// ### StripedHashConsTable (v107-alpha11)
     /// Lock-free striped hash-consing with 32 shards using Fibonacci hashing.
     /// Eliminates the global sync_root bottleneck from HashConsTable.
@@ -374,33 +466,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let actualShardCount = 1 <<< shardBits
         let shardMask = actualShardCount - 1
         let shards = Array.init actualShardCount (fun _ -> HashConsTable())
-
+    
         [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
         member private _.GetShardIndex(hkey: int) =
             // Fibonacci hashing for better distribution
             let h = uint32 hkey
             let fib = 2654435769u  // 2^32 / phi
             int ((h * fib) >>> (32 - shardBits)) &&& shardMask
-
+    
         member this.Add(x: 'a): ConsedNode<'a> =
             let hkey = hash x
             let shardIdx = this.GetShardIndex(hkey)
             shards.[shardIdx].Add(x)
-
+    
     /// Default striped table with 32 shards (optimal for 8-16 core systems)
     let inline createStripedHashConsTable () = StripedHashConsTable(32)
-
-
+    
+    
     /// ## Startup
     open Argu
-
+    
     /// ### PrimitiveType
     type PrimitiveType =
         | UInt8T | UInt16T | UInt32T | UInt64T
         | Int8T | Int16T | Int32T | Int64T
         | Float32T | Float64T
         | BoolT | StringT | CharT
-
+    
     /// ### DefaultEnv
     type DefaultEnv = {
         port : int
@@ -408,20 +500,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         default_uint : PrimitiveType
         default_float : PrimitiveType
         }
-
+    
     /// ### CliArguments
     type CliArguments =
         | [<Mandatory;Unique>] Port of int
         | [<Unique>] Default_Int of string
         | [<Unique>] Default_Float of string
-
+    
         interface IArgParserTemplate with
             member s.Usage =
                 match s with
                 | Port _ -> "specify a primary port."
                 | Default_Int _ -> "specify the default int: i8, i16, i32, i64, u8, u16, u32, u64"
                 | Default_Float _ -> "specify the default float: f32, f64"
-
+    
     /// ### parseStartup
     let startupParse args =
         let parser = ArgumentParser.Create<CliArguments>(programName = "spiral.exe")
@@ -437,7 +529,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | "u32" -> UInt32T
             | "u64" -> UInt64T
             | x -> failwith $"Invalid default int.\nGot: %s{x}\nExpected one of: i8, i16, i32, i64, u8, u16, u32, u64"
-
+    
         let uint =
             match int with
             | Int8T -> UInt8T
@@ -455,31 +547,31 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | "f64" -> Float64T
             | x -> failwith $"Invalid default float.\nGot: %s{x}\nExpected one of: f32, f64"
         }
-
+    
     /// ## Utils
     open System.Collections.Generic
     open System.Runtime.CompilerServices
     // open Common
-#if !INTERACTIVE
+    #if !INTERACTIVE
     open Lib
-#endif
-
+    #endif
+    
     /// ### list_try_zip
     let list_try_zip a b = try Some (List.zip a b) with _ -> None
-
+    
     /// ### get_default
     let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
         let mutable v = Unchecked.defaultof<^V>
         if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
         else def()
-
-
+    
+    
     /// ### memoize'
     let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
         | false, _ -> let v = f k in memo_dict.Add(k,v); v
-
+    
     /// ### memoize
     let inline memoize (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) f k =
         match memo_dict.TryGetValue k with
@@ -488,45 +580,45 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let v = f k
             if memo_dict.TryAdd(k,v) then v
             else memo_dict.[k]
-
+    
     /// ### lines
     let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
-
+    
     /// ### remove
     let inline remove (dict : Dictionary<_,_>) x on_succ on_fail =
         let mutable q = Unchecked.defaultof<_>
         if dict.Remove(x, &q) then on_succ q else on_fail ()
-
+    
     /// ### file_uri
     let file_uri (x : string) =
         let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
         trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
         result
-
+    
     //open Hopac
     //open Hopac.Infixes
     //open Hopac.Extensions
     //open Hopac.Stream
-
+    
     //let print_ch = Ch<string>()
     //let pr x = Hopac.run (Ch.send print_ch (x.ToString()))
-
+    
     module Utils =
         open System
         open System.Collections.Generic
         open System.Collections.Concurrent
         open System.Runtime.CompilerServices
-
+    
         /// ### list_try_zip
         let list_try_zip a b =
             try Some (List.zip a b) with _ -> None
-
+    
         /// ### get_default
         let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
             let mutable v = Unchecked.defaultof<^V>
             if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
             else def()
-
+    
         /// ### memoize'
         let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
             match memo_dict.TryGetValue k with
@@ -535,7 +627,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let v = f k
                 memo_dict.Add(k,v)
                 v
-
+    
         /// ### memoize
         let inline memoize (memo_dict: ConcurrentDictionary<_,_>) f k =
             match memo_dict.TryGetValue k with
@@ -544,21 +636,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let v = f k
                 if memo_dict.TryAdd(k,v) then v
                 else memo_dict.[k]
-
+    
         /// ### file_uri
         let file_uri (x : string) =
             let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
             trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
             result
-
+    
     /// ## ParserCombinators
-
+    
     /// ### index
     let inline index d = (^a : (member Index: ^b) d)
-
+    
     /// ### index_set
     let inline index_set i d = (^a : (member set_Index: ^b -> unit) (d,i))
-
+    
     /// ### (.>>.)
     let inline (.>>.) a b d =
         match a d with
@@ -567,7 +659,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok b -> Ok (a,b)
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### tuple3
     let inline tuple3 a b c d =
         match a d with
@@ -579,7 +671,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### tuple4
     let inline tuple4 a b c d' d =
         match a d with
@@ -594,7 +686,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### tuple5
     let inline tuple5 a b c d' e d =
         match a d with
@@ -612,7 +704,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### tuple6
     let inline tuple6 a b c d' e f d =
         match a d with
@@ -633,7 +725,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### tuple7
     let inline tuple7 a b c d' e f g d =
         match a d with
@@ -657,7 +749,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### pipe2
     let inline pipe2 a b f d =
         match a d with
@@ -666,7 +758,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok b -> Ok (f a b)
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### pipe3
     let inline pipe3 a b c f d =
         match a d with
@@ -678,7 +770,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### pipe4
     let inline pipe4 a b c d' f d =
         match a d with
@@ -693,7 +785,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### pipe5
     let inline pipe5 a b c d' e f d =
         match a d with
@@ -711,7 +803,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error x -> Error x
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### (.>>)
     let inline (.>>) a b d =
         match a d with
@@ -720,7 +812,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok b -> Ok a
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### (>>.)
     let inline (>>.) a b d =
         match a d with
@@ -729,7 +821,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok b -> Ok b
             | Error x -> Error x
         | Error x -> Error x
-
+    
     /// ### opt
     let inline opt a d =
         let s = index d
@@ -738,7 +830,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | Error x ->
             if s = index d then Ok(None)
             else Error x
-
+    
     /// ### optional
     let inline optional a d =
         let s = index d
@@ -747,25 +839,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | Error x ->
             if s = index d then Ok()
             else Error x
-
+    
     /// ### (|>>)
     let inline (|>>) a b d =
         match a d with
         | Ok a -> Ok(b a)
         | Error x -> Error x
-
+    
     /// ### (>>%)
     let inline (>>%) a b d =
         match a d with
         | Ok a -> Ok(b)
         | Error x -> Error x
-
+    
     /// ### (>>=)
     let inline (>>=) a b d =
         match a d with
         | Ok a -> b a d
         | Error x -> Error x
-
+    
     /// ### (>>=?)
     let inline (>>=?) a b d =
         let i = index d
@@ -776,7 +868,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok _ as x -> x
             | Error _ as x -> (if i' = index d then index_set i d); x // Backtracks to the beginning if the parser state has not changed.
         | Error x -> Error x
-
+    
     /// ### many_iter
     let inline many_iter f a d =
         let rec loop () =
@@ -786,46 +878,46 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok x -> f x; loop()
             | Error er -> if s = index d then Ok() else Error er
         loop ()
-
+    
     /// ### many_resize_array
     let inline many_resize_array a d =
         let ar = ResizeArray()
         match many_iter ar.Add a d with
         | Ok() -> Ok(ar)
         | Error er -> Error er
-
+    
     /// ### many_array
     let inline many_array a d = many_resize_array a d |> Result.map (fun x -> x.ToArray())
-
+    
     /// ### many
     let inline many a d = many_resize_array a d |> Result.map Seq.toList
-
+    
     /// ### sepBy
     let inline sepBy a b d =
         let s = index d
         match a d with
         | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
         | Error x -> if s = index d then Ok [] else Error x
-
+    
     /// ### sepBy1
     let inline sepBy1 a b d =
         match a d with
         | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
         | Error x -> Error x
-
+    
     /// ### many1
     let inline many1 a d =
         match a d with
         | Ok a' -> (many a |>> fun b -> a' :: b) d
         | Error x -> Error x
-
+    
     /// ### attempt
     let inline attempt a d =
         let s = index d
         match a d with
         | Ok x -> Ok x
         | Error a as a' -> index_set s d; a'
-
+    
     /// ### restore
     /// Restores the index on an error if at least i tokens have been consumed.
     let inline restore i a d =
@@ -833,7 +925,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         match a d with
         | Ok x -> Ok x
         | Error _ as er -> (if index d <= s + i then index_set s d); er
-
+    
     /// ### alt
     let inline alt s a b d =
         match a d with
@@ -845,17 +937,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | Error b -> if s = index d then Error(List.append a b) else Error b
             else
                 a'
-
+    
     /// ### (<|>)
     let inline (<|>) a b d = let s = index d in alt s a b d
-
+    
     /// ### (<|>%)
     let inline (<|>%) a b d =
         let s = index d
         match a d with
         | Ok x -> Ok x
         | Error _ as a' -> if s = index d then Ok b else a'
-
+    
     /// ### choice
     let inline choice ar d =
         let s = index d
@@ -873,55 +965,55 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else
                 Error []
         loop 0
-
+    
     /// ### between
     let inline between a b c = a >>. c .>> b
-
+    
     /// ## LineParsers
     // open System
     open System.Text
-
+    
     open Microsoft.FSharp.Core
-
+    
     /// ### TokenizerRange
     type TokenizerRange = {from : int; nearTo : int}
-
+    
     /// ### TokenizerError
     type TokenizerError = string
-
+    
     /// ### Tokenizer
     type Tokenizer = {
         text : string // A single line.
         mutable from : int
         } with
-
+    
         member t.Index with get() = t.from and set i = t.from <- i
-
+    
     /// ### range_char
     let range_char i = {from=i; nearTo=i+1}
-
+    
     /// ### error_char
     let error_char i er = Error [range_char i, er]
-
+    
     /// ### inc'
     let inc' i (s : Tokenizer) = s.from <- s.from+i
-
+    
     /// ### inc
     let inc (s : Tokenizer) = inc' 1 s
-
+    
     /// ### lineParsersEol
     /// End Of Line character
     let lineParsersEol = Char.MaxValue
-
+    
     /// ### peek'
     let peek' (s : Tokenizer) i =
         let i = s.from + i
         if 0 <= i && i < s.text.Length then s.text.[i]
         else lineParsersEol
-
+    
     /// ### peek
     let peek (s : Tokenizer) = peek' s 0
-
+    
     /// ### many1Satisfy2L
     let inline many1Satisfy2L init body label (s : Tokenizer) =
         let x = peek s
@@ -935,33 +1027,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         else
             let i = s.from
             error_char i label
-
+    
     /// ### many1SatisfyL
     let inline many1SatisfyL body label (s : Tokenizer) = many1Satisfy2L body body label s
-
+    
     /// ### skip
     let inline skip c (s : Tokenizer) = let b = peek s = c in (if b then inc s); b
-
+    
     /// ### spaces'
     let rec spaces' (s : Tokenizer) = if peek s = ' ' then inc s; spaces' s
-
+    
     /// ### spaces
     let spaces s = spaces' s |> Ok
-
+    
     /// ### spaces1
     let spaces1 (s : Tokenizer) =
         if peek s = ' ' then inc s; spaces s else error_char s.from "space"
-
+    
     /// ### skip_char
     let skip_char c (s : Tokenizer) =
         let from = s.from
         if skip c s then Ok() else error_char from (sprintf "'%c'" c)
-
+    
     /// ### skip_string
     let skip_string x (s : Tokenizer) =
         if String.Compare(s.text,s.from,x,0,x.Length) = 0 then inc' x.Length s; Ok()
         else error_char s.from x
-
+    
     /// ### anyOf
     let anyOf (l : char list) (s : Tokenizer) =
         let c = peek s
@@ -970,7 +1062,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         else
             let i = s.from
             Error (List.map (fun c -> range_char i, string c) l)
-
+    
     /// ### chars_till_string
     let chars_till_string close (s : Tokenizer) =
         assert (close <> "")
@@ -981,7 +1073,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 if x <> lineParsersEol then inc s; b.Append(x) |> loop
                 else error_char s.from close
         loop(StringBuilder())
-
+    
     /// ### lineParsersNumber
     /// Parses a number as a sequence of digits and optionally underscores. Filters out the underscores from the result.
     let lineParsersNumber (s : Tokenizer) =
@@ -997,44 +1089,44 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         else
             let i = s.from
             error_char i "number"
-
+    
     /// ### number_fractional
     let number_fractional s = (lineParsersNumber .>>. (opt (skip_char '.' >>. lineParsersNumber))) s
-
+    
     /// ## VSCTypes
-
+    
     /// ### VSCPos
     type VSCPos = {|line : int; character : int|}
-
+    
     /// ### VSCRange
     type VSCRange = VSCPos * VSCPos
-
+    
     /// ### RString
     type RString = VSCRange * string
-
+    
     /// ### PackageId
     type PackageId = int
-
+    
     /// ### ModuleId
     type ModuleId = int
-
+    
     /// ### DirId
     type DirId = int
-
+    
     /// ### GlobalId
     type GlobalId = { package_id : PackageId; module_id : ModuleId; tag : int }
-
+    
     /// ### RGlobalId
     type RGlobalId = VSCRange * GlobalId
-
+    
     /// ### SpiEdit
     type SpiEdit = {|from: int; nearTo: int; lines: string []|}
-
+    
     /// ## Tokenize
     // open System
     // open System.Text
     // open FSharpx.Collections
-
+    
     /// ### TokenKeyword
     type TokenKeyword =
         | SpecIn
@@ -1068,16 +1160,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | SpecWildcard
         | SpecPrototype
         | SpecInstance
-
+    
     /// ### ParenthesisState
     type ParenthesisState = Open | Close
-
+    
     /// ### Parenthesis
     type Parenthesis = Round | Square | Curly
-
+    
     /// ### MacroEnum
     type MacroEnum = MTerm | MType | MTypeLit | MTermInline
-
+    
     /// ### Literal
     type Literal =
         | LitUInt8 of uint8
@@ -1093,7 +1185,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | LitBool of bool
         | LitString of string
         | LitChar of char
-
+    
         // Converts the literal back to their string representation. Doesn't override the default printer.
         member l.LitToString() =
             match l with
@@ -1110,7 +1202,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | LitBool x -> x.ToString()
             | LitString x -> x
             | LitChar x -> x.ToString()
-
+    
     /// ### SemanticTokenLegend
     type SemanticTokenLegend =
         | variable = 0
@@ -1127,7 +1219,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | unescaped_char = 11
         | number_suffix = 12
         | escaped_var = 13
-
+    
     /// ### SpiralToken
     type SpiralToken =
         | TokVar of string * SemanticTokenLegend
@@ -1150,7 +1242,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TokMacroTypeVar of string
         | TokMacroTypeLitVar of string
         | TokMacroExpression of MacroEnum * ParenthesisState
-
+    
     /// ### token_groups
     let token_groups = function
         | TokUnaryOperator(_,r) | TokOperator(_,r) | TokVar(_,r) | TokSymbol(_,r) -> r
@@ -1167,7 +1259,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TokUnescapedChar _ -> SemanticTokenLegend.unescaped_char
         | TokValue _ | TokDefaultValue _ -> SemanticTokenLegend.number
         | TokValueSuffix -> SemanticTokenLegend.number_suffix
-
+    
     /// ### show_lit
     let show_lit = function
         | LitUInt8 x -> sprintf "%iu8" x
@@ -1183,48 +1275,48 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | LitBool x -> sprintf "%b" x
         | LitString x -> sprintf "%s" x
         | LitChar x -> sprintf "%c" x
-
+    
     /// ### is_small_var_char_starting
     let is_small_var_char_starting c = Char.IsLower c || c = '_'
-
+    
     /// ### is_var_char
     let is_var_char c = Char.IsLetterOrDigit c || c = '_' || c = '''
-
+    
     /// ### is_big_var_char_starting
     let is_big_var_char_starting c = Char.IsUpper c
-
+    
     /// ### is_parenth_open
     let is_var_char_starting c = Char.IsLetter c || c = '_'
-
+    
     /// ### is_parenth_open
     let is_parenth_open c =
         let f x = c = x
         f '(' || f '[' || f '{'
-
+    
     /// ### is_parenth_close
     let is_parenth_close c =
         let f x = c = x
         f ')' || f ']' || f '}'
-
+    
     /// ### is_operator_char
     // http://www.asciitable.com/
     let is_operator_char c =
         let f x = c = x
         '!' <= c && c <= '~' && (is_var_char c || f '"' || is_parenth_open c || is_parenth_close c) = false
-
+    
     /// ### is_prefix_separator_char
     let is_prefix_separator_char c =
         let f x = c = x
         f ' ' || f lineParsersEol || is_parenth_open c
-
+    
     /// ### is_postfix_separator_char
     let is_postfix_separator_char c =
         let f x = c = x
         f ' ' || f lineParsersEol || is_parenth_close c
-
+    
     /// ### is_separator_char
     let is_separator_char c = is_prefix_separator_char c || is_parenth_close c
-
+    
     /// ### var
     let var (s: Tokenizer) =
         let from = s.from
@@ -1254,13 +1346,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | "exists" -> f SpecExists
                 | x -> TokVar(x,SemanticTokenLegend.variable)
                 |> ok
-
+    
         (many1Satisfy2L is_var_char_starting is_var_char "variable" >>= body .>> spaces) s
-
+    
     /// ### isHexDigit
     let isHexDigit c =
         ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')
-
+    
     /// ### hexNumberLineParser
     let hexNumberLineParser (s : Tokenizer) =
         let from = s.from
@@ -1272,7 +1364,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         else
             let i = s.from
             error_char i "0x prefix"
-
+    
     /// ### hexNumber
     let hexNumber (s: Tokenizer) : Result<_,_> =
         let from = s.from
@@ -1282,13 +1374,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let value = System.Convert.ToInt32(hexStr, 16)
                 Ok ([{from=from; nearTo=s.from}, TokValue(LitInt32 value)])
             | Error e -> Error e
-
+    
         (p .>> spaces) s
-
+    
     /// ### tokenizeNumber
     let tokenizeNumber (s: Tokenizer) =
         let from = s.from
-
+    
         let parser (s: Tokenizer) =
             if peek s = '-' && Char.IsDigit (peek' s 1) && is_prefix_separator_char (peek' s -1) then
                 inc s
@@ -1298,7 +1390,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else number_fractional s |> Result.map (function
                     | (a,Some b) -> sprintf "%s.%s" a b
                     | (a,None) -> a)
-
+    
         let followedBySuffix x (s: Tokenizer) =
             let from' = s.from
             let inline safe_parse string_to_val val_to_lit val_dsc =
@@ -1325,28 +1417,28 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 elif skip '6' && skip '4' then safe_parse Double.TryParse LitFloat64 "f64"
                 else error_char s.from "32 or 64"
             else Ok [{from=from; nearTo=s.from}, TokDefaultValue x]
-
+    
         (parser >>= followedBySuffix .>> spaces) s
-
+    
     /// ### symbol
     let symbol s =
         let from = s.from
         let f x = ({from=from; nearTo=s.from}, x)
-
+    
         let symbol x = TokSymbol(x,SemanticTokenLegend.symbol)
         let x = peek s
         let x' = peek' s 1
         if x = '.' && x' = '(' then inc' 2 s; ((many1SatisfyL is_operator_char "operator") .>> skip_char ')' |>> (symbol >> f) .>> spaces) s
         elif x = '.' && is_var_char_starting x' then inc s; ((many1SatisfyL is_var_char "variable") |>> (symbol >> f) .>> spaces) s
         else error_char from "symbol"
-
+    
     /// ### TripleString
     module TripleString =
         let mutable in_triple = false
         let inline is_open () = in_triple
         let inline open' () = in_triple <- true
         let inline close () = in_triple <- false
-
+    
     /// ### MultiComment
     module MultiComment =
         let mutable depth = 0
@@ -1354,15 +1446,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let inline open' () = depth <- depth + 1
         let inline close () = if depth > 0 then depth <- depth - 1
         let inline reset () = depth <- 0
-
+    
     /// ### reset_lexical_state
     let reset_lexical_state () =
         MultiComment.reset ()
         TripleString.close ()
-
+    
     /// ### multi_comment_marker
     let multi_comment_marker = '\u0001'
-
+    
     /// ### multiline_comment
     let multiline_comment (s : Tokenizer) =
         let from = s.from
@@ -1388,7 +1480,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             s.from <- i_end
             Ok ({from=from; nearTo=s.from},
                 TokComment (string multi_comment_marker + text))
-
+    
     /// ### comment
     let comment (s : Tokenizer) =
         if TripleString.is_open() then
@@ -1431,7 +1523,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 Ok ({from=from; nearTo=s.from}, TokComment content)
         else
             error_char s.from "comment"
-
+    
     /// ### operator
     let operator (s : Tokenizer) =
         let from = s.from
@@ -1441,13 +1533,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             if is_separator_prev && (is_postfix_separator_char (peek s) = false) then TokUnaryOperator(name,SemanticTokenLegend.unary_operator) |> ok
             else TokOperator(name,SemanticTokenLegend.operator) |> ok
         (many1SatisfyL is_operator_char "operator"  >>= f .>> spaces) s
-
+    
     /// ### string_raw
     let string_raw s =
         let from = s.from
         let f x = {from=from; nearTo=s.from}, TokValue(LitString x)
         (skip_string "@\"" >>. chars_till_string "\"" |>> f .>> spaces) s
-
+    
     /// ### char_quoted
     let char_quoted s =
         let char_quoted_body (s: Tokenizer) =
@@ -1466,7 +1558,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let from = s.from
         let f _ x _ = {from=from; nearTo=s.from}, TokValue(LitChar x)
         (pipe3 (skip_char '\'') char_quoted_body (skip_char '\'') f .>> spaces) s
-
+    
     /// ### special_char
     let inline special_char l text s =
         let inline f from x = {from=from; nearTo=s.from}, x
@@ -1478,7 +1570,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | x when x = lineParsersEol -> error_char s.from "character"
         | 'n' -> esc '\n' | 'r' -> esc '\r'  | 't' -> esc '\t'  | 'b' -> esc '\b'
         | x -> unesc x
-
+    
     /// ### string_triple_line
     let string_triple_line (s : Tokenizer) =
         let text = s.text
@@ -1539,7 +1631,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 Ok (open_tok :: body)
         else
             Error [{from=s.from; nearTo=s.from}, "triple-string: not a triple opener nor continuation"]
-
+    
     /// ### string_quoted'
     let string_quoted' s =
         let inline f from x = {from=from; nearTo=s.from}, x
@@ -1554,14 +1646,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | '"' -> close (l ())
                 | x -> inc s; loop (str.Append(x))
             loop (StringBuilder())
-
+    
         match peek s with
         | '"' -> let f = f s.from in inc s; text [f TokStringOpen]
         | _ -> error_char s.from "\""
-
+    
     /// ### string_quoted
     let string_quoted s = (string_quoted' .>> spaces) s
-
+    
     /// ### TokenizerMacro
     type TokenizerMacro =
         | TokenizerText of TokenizerRange * string
@@ -1570,14 +1662,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | UnescapedChar of TokenizerRange * char
         | Expression of TokenizerRange * string * MacroEnum
         | Var of TokenizerRange * string * MacroEnum
-
+    
     /// ### range
     let inline range p s =
         let from = s.from
         match p s with
         | Ok x -> Ok({from=from; nearTo=s.from}, x)
         | Error l -> Error l
-
+    
     /// ### brackets
     let brackets s =
         let from = s.from
@@ -1586,13 +1678,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | '(' -> f (Round,Open) | '[' -> f (Square,Open) | '{' -> f (Curly,Open)
         | ')' -> f (Round,Close) | ']' -> f (Square,Close) | '}' -> f (Curly,Close)
         | _ -> error_char s.from "`(`,`[`,`{`,`}`,`]` or `)`"
-
+    
     /// ### tab
     let tab s = if peek s = '\t' then Error [range_char (index s), "Tabs are not allowed."] else Error []
-
+    
     /// ### tokenizeEol
     let tokenizeEol s = if peek s = lineParsersEol then Ok [] else Error [range_char (index s), "end of line"]
-
+    
     let inline with_advance (p: Tokenizer -> Result<'a,(TokenizerRange * string) list>) : Tokenizer -> Result<'a,(TokenizerRange * string) list> =
         fun s ->
             let i0 = s.from
@@ -1601,7 +1693,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok _ ->
                 Error [{from=i0; nearTo=i0}, "tokenizer: zero-length token"]
             | Error e -> Error e
-
+    
     /// ### token
     let rec token s =
         let i = s.from
@@ -1621,7 +1713,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let mutable er = []
         if TripleString.is_open() && (text : string).Length = 0 then
             ar <- PersistentVector.conj ({from=0; nearTo=0}, TokText "\n") ar
-
+    
         let tokens =
             many_iter (fun (x : (TokenizerRange * SpiralToken) list,er' : (TokenizerRange * string) list) ->
                 List.iter (fun x -> ar <- PersistentVector.conj x ar) x
@@ -1642,7 +1734,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | '@' -> MTypeLit
             | '#' -> MTermInline
             | _ -> failwith "Compiler error: Unknown char in the tokenizer."
-
+    
         let p_special_char s =
             match peek' s 0, peek' s 1 with
             | '\\', ('n' | 'r' | 't' | 'b' as c) ->
@@ -1658,7 +1750,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 inc' 2 s
                 Ok(UnescapedChar(r, c))
             | _ -> error_char s.from "\\"
-
+    
         let p_var s = (many1Satisfy2L is_var_char_starting is_var_char "variable") s
         let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> TokenizerText) s
         let p_expr s =
@@ -1679,7 +1771,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let p_macro s =
             let body a b = range (between (skip_string a) (skip_char b) (p_macro_inner b))
             (body "$\"" '"' <|> body "$'" ''') s
-
+    
         match (p_macro .>> spaces) s with
         | Ok(r, x) ->
             let start =
@@ -1688,7 +1780,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let end_ =
                 let r = {from=r.nearTo-1; nearTo=r.nearTo}
                 r, TokMacroClose
-
+    
             let mutable er = []
             x |> List.collect (function
                 | TokenizerText(r,x) -> [r, TokText x]
@@ -1717,16 +1809,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 )
             |> fun l -> Ok(List.concat [[start]; l; [end_]], er)
         | Error er -> Error er
-
+    
     /// ### LineToken
     type LineToken = TokenizerRange * SpiralToken
-
+    
     /// ### LineComment
     type LineComment = TokenizerRange * string
-
+    
     /// ### LineTokenErrors
     type LineTokenErrors = (TokenizerRange * TokenizerError) list
-
+    
     /// ### vscode_tokens
     let vscode_tokens ((a,b) : VSCRange) (lines : LineToken PersistentVector PersistentVector) =
         let in_range x = min lines.Length x
@@ -1739,23 +1831,23 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     0, r.from
                     ) (line_delta, 0)
                 |> fst |> ((+) 1) |> loop (i+1)
-
+    
         loop from from
         toks.ToArray()
-
+    
     module Tokenize =
         let show_lit x =
             show_lit x
-
+    
     /// ## BlockSplitting
     // open FSharpx.Collections
-
+    
     /// ### LineTokens
     type LineTokens = LineToken PersistentVector PersistentVector
-
+    
     /// ### Block<'a>
     type Block<'a> = {block: 'a; offset: int}
-
+    
     /// ### block_at
     /// Reads the comments up to a statement, and then reads the statement body. Leaves any errors for the parsing stage.
     let block_at (lines : LineTokens) i =
@@ -1782,14 +1874,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 else add x; loop_body (i+1)
         loop_initial i
         {block = block; offset = i}
-
+    
     /// ### block_all
     // Parses all the blocks.
     let rec block_all lines i =
         if i < PersistentVector.length lines then
             let x = block_at lines i
             x :: block_all lines (i+x.block.Length) else []
-
+    
     /// ### wdiff_block_all
     // Parses all the blocks with diffing. Only parses those blocks which are dirty based of the edit range. Preserves ref equality and saves work.
     // Without considering ref preservation, it is functionally equivalent to just call `block_all` on just `lines`.
@@ -1819,40 +1911,40 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | [] -> block_all lines i
             else []
         loop blocks 0
-
+    
     /// ## BlockParsing
     // open System
     // open FParsec
     // open FSharp.Core
-
+    
     /// ### SymbolString
     type SymbolString = string
-
+    
     /// ### VarString
     type VarString = string
-
+    
     /// ### NominalString
     type NominalString = string
-
+    
     /// ### Layout
     type Layout = Heap | HeapMutable | StackMutable
-
+    
     /// ### FunType
     type FunType = FT_Vanilla | FT_Pointer | FT_Closure // The closure and the pointer are specific to the C++ backend.
-
+    
     /// ### Op
     type Op =
         // Converts the function to a specialized type specific to the C++ backend.
         | ToFunPtr
         | ToFunClosure
-
+    
         // Compile time hash set
         | HashSetCreate
         | HashSetAdd
         | HashSetContains
         | HashSetRemove
         | HashSetCount
-
+    
         // Compile time hash map
         | HashMapCreate
         | HashMapSetImmutable
@@ -1863,72 +1955,72 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | HashMapRemove
         | HashMapCount
         | HashMapTryGet
-
+    
         // Pragma
         | PragmaUnrollPush
         | PragmaUnrollPop
-
+    
         // Backend branching
         | UnsafeBackendSwitch
         | BackendSwitch
-
+    
         // Reordering check
         | UsesOriginalTermVars
         | UsesOriginalNominals
-
+    
         // Imports
         | Global
-
+    
         // Python
         | ToPythonRecord
         | ToPythonNamedTuple
-
+    
         // Branching
         | While
         | Do
         | Indent
-
+    
         // Layout
         | LayoutToHeap
         | LayoutToHeapMutable
         | LayoutToStackMutable
         | LayoutIndex
-
+    
         // Type
         | TypeToVar
         | TypeToSymbol
         | TypeLitToLit
         | LitToTypeLit
         | LitToSymbol
-
+    
         // Closure conversion
         | Dyn
-
+    
         // Nominal
         | NominalCreate // In addition to regular nominals, it can also creates unions
         | NominalStrip
         | NominalTypeApply
-
+    
         // Union
         | Unbox
         | Unbox2
         | UnionTag
         | UnionUntag
         | UnionToRecord
-
+    
         // String
         | StringLength
         | StringIndex
         | StringSlice
         | StaticStringConcat
         | Printf // Cuda specific
-
+    
         // Array
         | ArrayCreate
         | ArrayLength
         | ArrayIndex
         | ArrayIndexSet
-
+    
         // Record
         | RecordMap
         | RecordIter
@@ -1936,7 +2028,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | RecordFold
         | RecordFoldBack
         | RecordLength
-
+    
         // Record Type
         | RecordTypeMap
         | RecordTypeIter
@@ -1944,7 +2036,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | RecordTypeFoldBack
         | RecordTypeLength
         | RecordTypeTryFind
-
+    
         // BinOps
         | Add
         | Sub
@@ -1967,7 +2059,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | BitwiseComplement
         | ShiftLeft
         | ShiftRight
-
+    
         // Unary math ops
         | Neg
         | Tanh
@@ -1978,11 +2070,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | Sqrt
         | NanIs
         | Conv
-
+    
         // Infinity
         | Infinity
         | Pi
-
+    
         // Static Is
         | LitIs
         | PrimIs
@@ -1995,7 +2087,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | FunctionIs
         | ExistsIs
         | PrototypeHas
-
+    
         // Static Type Is
         | PrimTypeIs
         | SymbolTypeIs
@@ -2004,10 +2096,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | LayoutTypeIs
         | ExistsTypeIs
         | NominalTypeIs
-
+    
         // Panic
         | FailWith
-
+    
         // Static unary operations
         | PrintStatic
         | PrintRaw
@@ -2015,7 +2107,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | ExistsStrip
         | StringLitToSymbol
         | SymbolToString
-
+    
         // Serialization helpers
         | VarTag
         | TagToSymbol
@@ -2024,7 +2116,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | FreeVars
         | FreeVarsReplace
         | SizeOf
-
+    
     /// ### PatternCompilationErrors
     type PatternCompilationErrors =
         | DisjointOrPatternVar
@@ -2033,7 +2125,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | ShadowedVar
         | DuplicateRecordSymbol
         | DuplicateRecordInjection
-
+    
     /// ### ParserErrors
     type ParserErrors =
         | TypeVarsNeedToBeExplicitForExists
@@ -2092,22 +2184,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | ArrayLiteralsNotAllowedInBottomUp
         | ForallNotAllowedInTypecase
         | ExistsNotAllowedInTypecase
-
+    
     /// ### RawKindExpr
     type RawKindExpr =
         | RawKindWildcard
         | RawKindStar
         | RawKindFun of RawKindExpr * RawKindExpr
-
+    
     /// ### UnionLayout
     type UnionLayout = UStack | UHeap
-
+    
     /// ### HoVar
     type HoVar = VSCRange * (VarString * RawKindExpr)
-
+    
     /// ### TypeVar
     type TypeVar = HoVar * (VSCRange * VarString) list
-
+    
     /// ### RawMacro
     type RawMacro =
         | RawMacroText of VSCRange * string
@@ -2194,34 +2286,34 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | RawTLayout of VSCRange * RawTExpr * Layout
         | RawTTypecase of VSCRange * RawTExpr * (RawTExpr * RawTExpr) list
         | RawTFilledNominal of VSCRange * GlobalId // Filled in by the inferencer.
-
+    
     /// ### (+.)
     let (+.) (a,_) (_,b) = a,b
-
+    
     /// ### range_of_hovar
     let range_of_hovar ((r,_) : HoVar) = r
-
+    
     /// ### range_of_typevar
     let range_of_typevar ((x,_) : TypeVar) = range_of_hovar x
-
+    
     /// ### hovar_name
     let hovar_name ((_,(name,_)) : HoVar) = name
-
+    
     /// ### typevar_name
     let typevar_name ((h,_) : TypeVar) = hovar_name h
-
+    
     /// ### range_of_record_with
     let range_of_record_with = function
         | RawRecordWithSymbol((r,_),_)
         | RawRecordWithSymbolModify((r,_),_)
         | RawRecordWithInjectVar((r,_),_)
         | RawRecordWithInjectVarModify((r,_),_) -> r
-
+    
     /// ### range_of_record_without
     let range_of_record_without = function
         | RawRecordWithoutSymbol(r,_)
         | RawRecordWithoutInjectVar(r,_) -> r
-
+    
     /// ### range_of_pattern
     let range_of_pattern = function
         | PatB r
@@ -2242,12 +2334,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | PatWhen(r,_,_)
         | PatFilledDefaultValue(r,_,_)
         | PatNominal(r,_,_,_) -> r
-
+    
     /// ### range_of_pat_record_member
     let range_of_pat_record_member = function
         | PatRecordMembersSymbol((r,_),x)
         | PatRecordMembersInjectVar((r,_),x) -> r +. range_of_pattern x
-
+    
     /// ### range_of_expr
     let range_of_expr = function
         | RawB r
@@ -2278,10 +2370,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | RawRecordWith(r,_,_,_)
         | RawIfThenElse(r,_,_,_)
         | RawOpen(r,_,_,_) -> r
-
+    
     /// ### rawv
     let rawv (r,x) = RawV(r,x,true)
-
+    
     /// ### range_of_texpr
     let range_of_texpr = function
         | RawTWildcard r
@@ -2304,20 +2396,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | RawTExists(r,_,_)
         | RawTTypecase(r,_,_)
         | RawTForall(r,_,_) -> r
-
+    
     /// ### range_of_texpr_gadt_constructor
     let rec range_of_texpr_gadt_constructor = function
         | RawTForall(_,_,x) -> range_of_texpr_gadt_constructor x
         | RawTFun(_,_,x,_) | x -> range_of_texpr x
-
+    
     /// ### range_of_texpr_gadt_body
     let rec range_of_texpr_gadt_body = function
         | RawTForall(_,_,x) -> range_of_texpr_gadt_body x
         | RawTFun(_,x,_,_) | x -> range_of_texpr x
-
+    
     /// ### VectorCord
     type VectorCord = {|row : int; col : int|}
-
+    
     /// ### BlockParsingEnv
     type BlockParsingEnv = {
         semantic_updates : (VectorCord * SemanticTokenLegend) ResizeArray
@@ -2328,60 +2420,60 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         is_top_down : bool
         default_env : DefaultEnv
         } with
-
+    
         member d.Index with get() = d.i.contents and set(i) = d.i.Value <- i
-
+    
     /// ### try_current_template
     let inline try_current_template (d : BlockParsingEnv) on_succ on_fail =
         let i = d.Index
         if i < d.tokens.Length then on_succ d.tokens.[i]
         else on_fail()
-
+    
     /// ### try_current
     let inline try_current d f = try_current_template d (fun (p,t) -> f (p, t)) (fun () -> Error [])
-
+    
     /// ### print_current
     let print_current d = try_current d (fun x -> printfn "%A" x; Ok()) // For parser debugging purposes.
-
+    
     /// ### line_template
     let inline line_template d f = try_current_template d (fst >> f) (fun _ -> -1)
-
+    
     /// ### col
     let col d = line_template d (fun (r,_) -> r.character)
-
+    
     /// ### lineBlockParsing
     let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
-
+    
     /// ### skip'
     let skip' (d : BlockParsingEnv) i = d.i.Value <- d.i.contents+i
-
+    
     /// ### blockParsingSkip
     let blockParsingSkip d = skip' d 1
-
+    
     /// ### skip_string_open
     let skip_string_open d =
         try_current d <| function
             | p,TokStringOpen -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedStringOpen]
-
+    
     /// ### skip_string_close
     let skip_string_close d =
         try_current d <| function
             | p,TokStringClose -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedStringClose]
-
+    
     /// ### skip_macro_open
     let skip_macro_open d =
         try_current d <| function
             | p,TokMacroOpen -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedMacroOpen]
-
+    
     /// ### skip_macro_close
     let skip_macro_close d =
         try_current d <| function
             | p,TokMacroClose -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedMacroClose]
-
+    
     /// ### read_text
     let read_text is_term_macro d =
         let (+.) a b =
@@ -2397,7 +2489,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     if Option.isNone a then Error [b, ExpectedText; b, ExpectedEscapedChar is_term_macro; b, ExpectedUnescapedChar]
                     else Ok(Option.get a, str.ToString())
         loop None (Text.StringBuilder())
-
+    
     /// ### read_macro_var
     let read_macro_var d =
         try_current d <| function
@@ -2405,149 +2497,149 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | p, TokMacroTypeVar x -> blockParsingSkip d; Ok(RawMacroType(p,RawTVar(p,x)))
             | p, TokMacroTypeLitVar x -> blockParsingSkip d; Ok(RawMacroTypeLit(p,RawTVar(p,x)))
             | p,_ -> Error [p, ExpectedMacroVar]
-
+    
     /// ### read_macro_type_var
     let read_macro_type_var d =
         try_current d <| function
             | p, TokMacroTypeVar x -> blockParsingSkip d; Ok(RawMacroType(p,RawTVar(p,x)))
             | p, TokMacroTypeLitVar x -> blockParsingSkip d; Ok(RawMacroTypeLit(p,RawTVar(p,x)))
             | p,_ -> Error [p, ExpectedMacroTypeVar]
-
+    
     /// ### skip_keyword
     let skip_keyword t d =
         try_current d <| function
             | p,TokKeyword t' when t = t' -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedKeyword t]
-
+    
     /// ### skip_keyword'
     let skip_keyword' t d =
         try_current d <| function
             | p,TokKeyword t' when t = t' -> blockParsingSkip d; Ok p
             | p, _ -> Error [p, ExpectedKeyword t]
-
+    
     /// ### read_unary_op
     let read_unary_op d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedUnaryOperator']
-
+    
     /// ### read_unary_op'
     let read_unary_op' d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedUnaryOperator']
-
+    
     /// ### read_op
     let read_op d =
         try_current d <| function
             | p, TokOperator(t',_) -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedOperator']
-
+    
     /// ### read_op'
     let read_op' d =
         try_current d <| function
             | p, TokOperator(t',_) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedOperator']
-
+    
     /// ### update_semantic
     let update_semantic (d : BlockParsingEnv) = let i = d.Index in fun x -> d.semantic_updates.Add(d.tokens_cords.[i], x)
-
+    
     /// ### read_op_type
     let read_op_type d =
         try_current d <| function
             | p, TokOperator(t',r) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedOperator']
-
+    
     /// ### skip_op
     let skip_op t d =
         try_current d <| function
             | p, TokOperator(t',_) when t' = t -> blockParsingSkip d; Ok p
             | p, _ -> Error [p, ExpectedOperator t]
-
+    
     /// ### skip_unary_op
     let skip_unary_op t d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) when t' = t -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedUnaryOperator t]
-
+    
     /// ### read_var
     let read_var d =
         try_current d <| function
             | p, TokVar(t',_) -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedVar]
-
+    
     /// ### read_var'
     let read_var' d =
         try_current d <| function
             | p, TokVar(t',_) -> let r = update_semantic d in blockParsingSkip d; Ok(p,t',r)
             | p, _ -> Error [p, ExpectedVar]
-
+    
     /// ### read_var''
     let read_var'' d =
         try_current d <| function
             | p, TokVar(t',_) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedVar]
-
+    
     /// ### read_big_var
     let read_big_var d =
         try_current d <| function
             | p, TokVar(t',_) when Char.IsUpper(t',0) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedBigVar]
-
+    
     /// ### read_var_as_symbol
     let read_var_as_symbol d =
         try_current d <| function
             | p, TokVar(t',_) -> update_semantic d SemanticTokenLegend.symbol; blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedVar]
-
+    
     /// ### read_big_var_as_symbol
     let read_big_var_as_symbol d =
         try_current d <| function
             | p, TokVar(t',_) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.symbol; blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedBigVar]
-
+    
     /// ### read_big_var_as_keyword
     let read_big_var_as_keyword d =
         try_current d <| function
             | p, TokVar(t',_) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.keyword; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedBigVar]
-
+    
     /// ### read_small_var
     let read_small_var d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedSmallVar]
-
+    
     /// ### read_small_var'
     let read_small_var' d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
-
+    
     /// ### read_big_type_var
     let read_big_type_var d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(t')
             | p, _ -> Error [p, ExpectedSmallVar]
-
+    
     /// ### read_big_type_var'
     let read_big_type_var' d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
-
+    
     /// ### read_small_type_var
     let read_small_type_var d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(t')
             | p, _ -> Error [p, ExpectedSmallVar]
-
+    
     /// ### read_small_type_var'
     let read_small_type_var' d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
-
+    
     /// ### read_value
     let read_value d =
         try_current d <| function
@@ -2559,47 +2651,47 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | _ -> ()
                 Ok(p,t')
             | p, _ -> Error [p, ExpectedLit]
-
+    
     /// ### read_symbol
     let read_symbol d =
         try_current d <| function
             | p, TokSymbol(t',r) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSymbol]
-
+    
     /// ### skip_parenthesis
     let skip_parenthesis a b d =
         try_current d <| function
             | p, TokParenthesis(a',b') when a = a' && b = b' -> blockParsingSkip d; Ok()
             | p, _ -> Error [p, ExpectedParenthesis(a,b)]
-
+    
     /// ### skip_macro_expression
     let skip_macro_expression a b d =
         try_current d <| function
             | p, TokMacroExpression(a',b') when a = a' && b = b' -> blockParsingSkip d; Ok()
             | p, _ -> Error [p, ExpectedMacroExpression(a,b)]
-
+    
     /// ### on_succ
     let on_succ x _ = Ok x
-
+    
     /// ### macro_expression
     // open FParsec
     let macro_expression ty a d = (skip_macro_expression ty Open >>. a .>> skip_macro_expression ty Close) d
-
+    
     /// ### rounds
     let rounds a d = (skip_parenthesis Round Open >>. a .>> skip_parenthesis Round Close) d
-
+    
     /// ### curlies
     let curlies a d = (skip_parenthesis Curly Open >>. a .>> skip_parenthesis Curly Close) d
-
+    
     /// ### squares
     let squares a d = (skip_parenthesis Square Open >>. a .>> skip_parenthesis Square Close) d
-
+    
     /// ### blockParsingIndex
     let blockParsingIndex (t : BlockParsingEnv) = t.Index
-
+    
     /// ### blockParsingIndex_set
     let blockParsingIndex_set v (t : BlockParsingEnv) = t.Index <- v
-
+    
     /// ### blockParsingRange
     let inline blockParsingRange exp s =
         let i = blockParsingIndex s
@@ -2609,21 +2701,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else
                 failwith "Compiler error: The parser passed into `range` has to consume at least one token for it to work."
             )
-
+    
     /// ### kind
     let rec kind d = (sepBy1 ((skip_op "*" >>% RawKindStar) <|> rounds kind) (skip_op "->") |>> List.reduceBack (fun a b -> RawKindFun (a,b))) d
-
+    
     /// ### duplicates
     let duplicates er x =
         let h = Collections.Generic.HashSet()
         x |> List.choose (fun (r : VSCRange,n : string) -> if h.Add n = false then Some(r,er) else None)
-
+    
     /// ### blockParsingIndent
     let inline blockParsingIndent i op next d = if op i (col d) then next d else Error []
-
+    
     /// ### record_var
     let record_var d = (read_var_as_symbol <|> rounds read_op) d
-
+    
     /// ### patterns_validate
     let patterns_validate pats =
         let pos = Collections.Generic.Dictionary(HashIdentity.Reference)
@@ -2678,7 +2770,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let f = Set.iter (fun x -> errors.Add (pos.[x], InvalidPattern DisjointOrPatternVar))
                 f (a-b); f (b-a)
                 a
-
+    
         let validate is_type =
             List.fold (fun s x ->
                 let s' = loop is_type x
@@ -2687,19 +2779,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 ) Set.empty pats |> ignore
         validate true; validate false
         errors |> Seq.toList
-
+    
     /// ### join_point
     let join_point is_let name = function // Has the effect of removing nested join points due to not duplicating them.
         | RawJoinPoint(a,b,c,_) -> RawJoinPoint(a,b,c,name)
         | x -> if is_let then RawJoinPoint(range_of_expr x, None, x, name) else x
-
+    
     /// ### join_point_backend
     let join_point_backend (a,b) = RawJoinPoint(range_of_expr b, Some a, b, None)
-
+    
     /// ### unintern
     /// Some places need unique string refs, so this is to keep the compiler from interning static strings.
     let unintern (x : string) = Text.StringBuilder(x).ToString()
-
+    
     /// ### adjust_join_point
     let rec adjust_join_point is_let name x =
         let dyn_if_let a = if is_let then PatDyn(range_of_pattern a, a) else a
@@ -2713,12 +2805,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let b = RawMatch(empty,rawv(empty,n),l)
             RawFun(r,[a,join_point is_let name b])
         | x -> join_point is_let name x
-
+    
     /// ### adjust_join_point'
     let adjust_join_point' is_let name = function
         | RawForall _ | RawFun _ as x -> adjust_join_point is_let name x
         | x -> x
-
+    
     /// ### inl_or_let_process
     let inl_or_let_process (r, (is_let, is_rec, name, foralls, pats, body)) _ =
         match is_rec, name, foralls, pats with
@@ -2740,13 +2832,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | ers -> Error ers
         | true, _, _, _ -> Error [range_of_pattern name, ExpectedVarOrOpAsNameOfRecStatement]
         | false, _, _, _ -> Error [range_of_pattern name, ExpectedSinglePatternWhenStatementNameIsNorVarOrOp]
-
+    
     /// ### ho_var
     let ho_var d : Result<HoVar,_> = blockParsingRange ((read_small_type_var |>> fun x -> x, RawKindWildcard) <|> rounds ((read_small_type_var .>> skip_op ":") .>>. kind)) d
-
+    
     /// ### forall_var
     let forall_var d : Result<TypeVar,_> = (ho_var .>>. (curlies (sepBy (read_small_type_var' <|> rounds read_op_type) (skip_op ";")) <|>% [])) d
-
+    
     /// ### forall
     let forall d =
         (skip_keyword SpecForall >>. many1 forall_var .>> skip_op "."
@@ -2755,14 +2847,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let x = q |> List.map (fun ((r,(a,_)),_) -> r,a) |> duplicates DuplicateForallVar
             match List.append x x' with [] -> Ok q | er -> Error er
             ) d
-
+    
     /// ### pat_exists'
     let pat_exists' d =
         (skip_keyword SpecExists >>. many (blockParsingRange read_small_type_var) .>> skip_op "."
         >>= fun q _ ->
             match duplicates DuplicateExistsVar q with [] -> Ok q | er -> Error er
             ) d
-
+    
     /// ### exists
     let exists d =
         (skip_keyword SpecExists >>. many forall_var .>> skip_op "."
@@ -2771,7 +2863,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let x = q |> List.map (fun ((r,(a,_)),_) -> r,a) |> duplicates DuplicateExistsVar
             match List.append x x' with [] -> Ok q | er -> Error er
             ) d
-
+    
     /// ### annotated_body
     let inline annotated_body sep exp ty =
         pipe2 (opt (skip_op ":" >>. ty))
@@ -2781,24 +2873,24 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match a with
                 | Some a -> RawAnnot(range_of_expr b +. range_of_texpr a,b,a)
                 | None -> b)
-
+    
     /// ### inl_or_let
     let inline inl_or_let exp pattern ty =
         blockParsingRange (tuple6 ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true))
                 ((skip_keyword SpecRec >>% true) <|>% false) pattern
                 (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
         >>= inl_or_let_process
-
+    
     /// ### and_inl_or_let
     let inline and_inl_or_let exp pattern ty =
         blockParsingRange (tuple6 (skip_keyword SpecAnd >>. ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true)))
                 (fun _ -> Ok true) pattern
                 (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
         >>= inl_or_let_process
-
+    
     /// ### Associativity
     type Associativity = FParsec.Associativity
-
+    
     /// ### inbuilt_operators
     let inbuilt_operators x =
         match x with
@@ -2814,7 +2906,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | "|||>" -> ValueSome(41, Associativity.Left)
         | ">>" -> ValueSome(45, Associativity.Left)
         | "<-" -> ValueSome(4, Associativity.Left)
-
+    
         | "<=" -> ValueSome(40, Associativity.None)
         | "<" -> ValueSome(40, Associativity.None)
         | "=" -> ValueSome(40, Associativity.None)
@@ -2826,7 +2918,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | ">>>" -> ValueSome(40, Associativity.None)
         | "&&&" -> ValueSome(40, Associativity.None)
         | "|||" -> ValueSome(40, Associativity.None)
-
+    
         | "||" -> ValueSome(20, Associativity.Left)
         | "&&" -> ValueSome(30, Associativity.Left)
         | "::" -> ValueSome(50, Associativity.Right)
@@ -2839,7 +2931,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | ":?>" -> ValueSome(35, Associativity.Right)
         | "**" -> ValueSome(80, Associativity.Right)
         | _ -> ValueNone
-
+    
     /// ### precedence_associativity
     // The `.` operator has special behavior similar to F#.
     let rec precedence_associativity name =
@@ -2850,7 +2942,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | ValueNone -> precedence_associativity (name.[0..name.Length-2])
                 | v -> v
         else ValueNone
-
+    
     /// ### op
     let op (d : BlockParsingEnv) =
         blockParsingRange read_op d |> Result.bind (fun (o,x) ->
@@ -2879,47 +2971,46 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         )
                     | x -> f (fun (r,a,b) -> RawApply(r,RawApply(r +. o,rawv(o,x),a),b))
             )
-
+    
     /// ### string_to_op_dict
     let string_to_op_dict : Dictionary<string,Op> = Collections.Generic.Dictionary(HashIdentity.Structural)
-
-    Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>)
-    |> Array.iter (fun x -> string_to_op_dict.[x.Name] <- Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(x,[||]) :?> Op)
-
+    
+    do Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>) |> Array.iter (fun x -> string_to_op_dict.[x.Name] <- Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(x,[||]) :?> Op)
+    
     /// ### string_to_op
     let string_to_op x = string_to_op_dict.TryGetValue x
-
+    
     /// ### symbol_paired_concat
     let symbol_paired_concat k =
         let b = Text.StringBuilder()
         List.iter (fun (_, x : string) -> b.Append(x).Append('_') |> ignore) k
         b.ToString()
-
+    
     /// ### blockParsingModule_open
     let blockParsingModule_open = blockParsingRange ((skip_keyword SpecOpen >>. read_small_var') .>>. (many read_symbol))
-
+    
     /// ### bar
     let bar i d = blockParsingIndent i (<=) (skip_op "|") d
-
+    
     /// ### pat_pair
     let inline pat_pair next =
         sepBy1 next (skip_op ",")
         |>> List.reduceBack (fun a b -> PatPair(range_of_pattern a +. range_of_pattern b,a,b))
-
+    
     /// ### RootTypeFlags
     type RootTypeFlags = {
         allow_typecase_metavars : bool
         allow_term : bool
         allow_wildcard : bool
         }
-
+    
     /// ### root_type_defaults
     let root_type_defaults = {
         allow_typecase_metavars = false
         allow_term = false
         allow_wildcard = false
         }
-
+    
     /// ### bottom_up_number
     let bottom_up_number (default_env : DefaultEnv) (r : VSCRange,x : string) =
         let inline f string_to_val val_to_lit val_dsc =
@@ -2942,7 +3033,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | UInt32T -> f UInt32.TryParse LitUInt32 "u32"
             | UInt64T -> f UInt64.TryParse LitUInt64 "u64"
             | x -> failwithf "Compiler error: Invalid default int type. Got: %A" x
-
+    
     /// ### typecase_validate
     let typecase_validate x _ =
         let metavars = Collections.Generic.HashSet()
@@ -2962,7 +3053,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | RawTMacro(_,a) -> a |> List.iter (function RawMacroType(_,a) -> f a | _ -> ())
         f x
         if 0 < errors.Count then Error (Seq.toList errors) else Ok(x)
-
+    
     /// ### expr_tight
     // Parses an expression only if it is directly next to the previous one.
     let inline expr_tight next (d: BlockParsingEnv) =
@@ -2971,29 +3062,29 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let r,r' = snd (fst d.tokens.[i-1]), fst (fst d.tokens.[i])
             if r.line = r'.line && r.character = r'.character then next d else Error []
         else Error []
-
+    
     /// ### read_default_value'
     let inline read_default_value' f d =
         try_current d <| function
             | p, TokDefaultValue t' -> blockParsingSkip d; f (p,t')
             | p, _ -> Error [p, ExpectedLit]
-
+    
     /// ### read_default_value
     let inline read_default_value on_top on_bot d =
         read_default_value' (fun (p,t') ->
             if d.is_top_down then Ok(on_top (p,t'))
             else bottom_up_number d.default_env (p,t') |> Result.map on_bot
             ) d
-
+    
     /// ### read_string
     let read_string = tuple3 skip_string_open ((read_text false |>> snd) <|>% "") skip_string_close
-
+    
     /// ### pat_var
     let pat_var d = (read_small_var' |>> PatVar) d
-
+    
     /// ### pat_list_pair
     let pat_list_pair r a b = PatUnbox(r,"Cons",PatPair(r,a,b))
-
+    
     /// ### root_pattern_var_nominal_union
     let rec root_pattern_var_nominal_union s =
         (read_var' >>= fun (r,a,re) s ->
@@ -3085,7 +3176,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             skip_op "::"
             >>. pipe2 (opt forall) (root_type flags) (Option.foldBack (List.foldBack (fun a b -> RawTForall(range_of_typevar a +. range_of_texpr b,a,b))))
             |>> fun x -> Some (true, x)
-
+    
         let body = vanilla <|> gadt <|>% None
         (blockParsingRange (optional bar >>. sepBy1 (blockParsingRange read_big_var_as_symbol .>>. body) bar)
         >>= fun (r,x) _ ->
@@ -3121,16 +3212,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let foralls = blockParsingRange (forall .>>. root_type flags) |>> (fun (r,(l,b)) -> List.foldBack (fun a b -> RawTForall(range_of_typevar a +. range_of_texpr b,a,b)) l b)
             let (+) = alt (blockParsingIndex d)
             (rounds + lit + lit_default + wildcard + term + metavar + var + record + symbol + macro + exists + foralls) d
-
+    
         let fold_applies a b = List.fold (fun a b -> RawTApply(range_of_texpr a +. range_of_texpr b,a,b)) a b
         let apply_tight d = pipe2 cases (many (expr_tight cases)) fold_applies d
         let apply d = pipe2 apply_tight (many (blockParsingIndent (col d) (<) apply_tight)) fold_applies d
-
+    
         let pairs = sepBy1 apply (skip_op "*") |>> List.reduceBack (fun a b -> RawTPair(range_of_texpr a +. range_of_texpr b,a,b))
         let functions = sepBy1 pairs (skip_op "->") |>> List.reduceBack (fun a b -> RawTFun(range_of_texpr a +. range_of_texpr b,a,b,FT_Vanilla))
-
+    
         functions d
-
+    
     and root_term d =
         let rec expressions d =
             let next = root_term
@@ -3164,7 +3255,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     match patterns_validate pats with
                     | [] -> List.foldBack (fun pat body -> RawFun(range_of_pattern pat +. range_of_expr body,[pat,body])) pats body |> Ok
                     | ers -> Error ers
-
+    
             let case_forall d =
                 if d.is_top_down then Error [] else
                     (tuple3 forall (many root_pattern_pair) (annotated_body "=>" next root_type_annot)
@@ -3174,7 +3265,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             List.foldBack (fun pat body -> RawFun(range_of_pattern pat +. range_of_expr body,[pat,body])) pats body
                             |> List.foldBack (fun a body -> RawForall(range_of_typevar a +. range_of_expr body,a,body)) foralls |> Ok
                         | ers -> Error ers) d
-
+    
             let case_default_value = read_default_value RawDefaultLit RawLit
             let case_if_then_else d =
                 let i = col d
@@ -3187,7 +3278,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             | None -> fst tr, RawIfThen(fst cond +. fst tr,snd cond,snd tr)
                         let fl = List.foldBack (fun (cond,tr) fl -> f cond tr fl |> Some) elifs fl
                         f cond tr fl |> snd)) d
-
+    
             let case_match =
                 let clauses d =
                     let bar = bar (col d)
@@ -3197,20 +3288,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | [] -> Ok l
                         | e -> Error e
                         ) d
-
+    
                 (blockParsingRange (skip_keyword SpecFunction >>. clauses) |>> RawFun)
                 <|> (blockParsingRange ((skip_keyword SpecMatch >>. next .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c))
-
+    
             let case_typecase d =
                 let clauses d =
                     let bar = bar (col d)
                     let typecase = root_type {root_type_defaults with allow_typecase_metavars=true; allow_wildcard=true} >>= typecase_validate
                     (optional bar >>. sepBy1 (typecase .>>. (skip_op "=>" >>. next)) bar) d
-
+    
                 if d.is_top_down then Error [] else
                     (blockParsingRange ((skip_keyword SpecTypecase >>. root_type {root_type_defaults with allow_term=true} .>> skip_keyword SpecWith) .>>. clauses)
                     |>> fun (r, (a, b)) -> RawTypecase(r,a,b)) d
-
+    
             let case_record =
                 let create = skip_op "=" >>. next
                 let modify = skip_op "#=" >>. next
@@ -3236,7 +3327,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 ((skip_keyword SpecWith >>. sepBy record_with_bodies (optional (skip_op ";"))) <|>% [])
                                 ((skip_keyword SpecWithout >>. many record_without_bodies) <|>% [])))
                     |>> fun (r,(name, acs, withs, withouts)) -> (r,rawv name :: acs,withs,withouts)
-
+    
                 restore 2 record_create <|> record_with
                 >>= fun (_,_,withs,withouts as x) _ ->
                     [
@@ -3245,7 +3336,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     withouts |> List.choose (function RawRecordWithoutSymbol(a,b) -> Some(a,b) | _ -> None) |> duplicates DuplicateTermRecordSymbol
                     withouts |> List.choose (function RawRecordWithoutInjectVar(a,b) -> Some(a,b) | _ -> None) |> duplicates DuplicateTermRecordInjection
                     ] |> List.concat |> function [] -> Ok(RawRecordWith x) | er -> Error er
-
+    
             let case_join_point = skip_keyword SpecJoin >>. next |>> join_point true None
             let case_join_point_backend = skip_keyword SpecJoinBackend >>. (read_big_var_as_keyword .>>. next) |>> join_point_backend
             let case_real = skip_keyword SpecReal >>. (fun d -> next {d with is_top_down=false}) |>> fun x -> RawReal(range_of_expr x,x)
@@ -3258,9 +3349,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         ) l (rawv(r,unintern "Nil")) |> Ok
                 else
                     Error [r, ListLiteralsNotAllowedInBottomUp]
-
+    
             let case_string = read_string |>> fun (a, x, b) -> RawLit(a +. b,LitString x)
-
+    
             let case_macro =
                 let read_macro_expression s =
                     (macro_expression MTerm (root_term |>> fun x -> RawMacroTerm(range_of_expr x,x,false))
@@ -3269,17 +3360,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     <|> macro_expression MTypeLit (root_type root_type_defaults |>> fun x -> RawMacroTypeLit(range_of_texpr x,x))) s
                 let body = many ((read_text true |>> RawMacroText) <|> read_macro_var <|> read_macro_expression)
                 pipe3 skip_macro_open body skip_macro_close (fun a l b -> RawMacro(a +. b, l))
-
+    
             let (+) = alt (blockParsingIndex d)
-
+    
             (case_value + case_default_value + case_var + case_join_point + case_join_point_backend + case_real + case_symbol
             + case_typecase + case_match + case_typecase + case_rounds + case_list + case_record
             + case_if_then_else + case_fun + case_forall + case_string + case_macro + case_exists) d
-
+    
         and application_tight d =
             let next = expressions
             pipe2 next (many (expr_tight next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
-
+    
         and sequence_body d = (many (blockParsingIndent (col d) (=) (sepBy1 operators (skip_op ";"))) |>> List.concat) d
         and unary_op d =
             let next = application_tight
@@ -3321,34 +3412,34 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | "`$" -> (read_var'' |>> fun (r,x) -> RawV(r,x,false)) d
                     | _ -> (next |>> fun b -> RawApply(o +. range_of_expr b,rawv(o, "~" + a),b)) d
             (f <|> next) d
-
+    
         and application (d: BlockParsingEnv) =
             let next = unary_op
             pipe2 next (many (blockParsingIndent (col d) (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
-
+    
         and operators d =
             let term = application
             let i = col d
             let op = blockParsingIndent i (<=) op
-
+    
             /// Pratt parser
             let rec led left (prec,asoc,m) d =
                 match asoc with
                 | Associativity.Right -> (tdop (prec-1) |>> fun right -> m (left, right)) d
                 | _ -> (tdop prec |>> fun right -> m (left, right)) d
-
+    
             and tdop rbp d =
                 let rec loop left d =
                     ((op >>= fun (prec,_,_ as v) d ->
                         if rbp < prec then (led left v >>= loop) d
                         else skip' d -1; Error []) <|>% left) d
                 (term >>= loop) d
-
+    
             pipe2 (tdop Int32.MinValue)
                 (opt (blockParsingIndent i (<=) (skip_op ":" >>. root_type_annot)))
                 (fun a -> function Some b -> RawAnnot(range_of_expr a +. range_of_texpr b,a,b) | _ -> a)
                 d
-
+    
         let statements d =
             let next = operators
             let inl_or_let =
@@ -3370,7 +3461,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let statement_parsers d =
                 let (+) = alt (blockParsingIndex d)
                 (inl_or_let + module_open) d
-
+    
             let i = col d
             let inline if_ x = blockParsingIndent i x
             let stmts =
@@ -3392,9 +3483,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | ValueSome expr' -> ValueSome (process_statements (RawSeq(range_of_expr expr +. range_of_expr expr',expr,expr')))
                     ) x ValueNone |> ValueOption.get
                 ) d
-
+    
         statements d
-
+    
     /// ### comments
     let comments (s : BlockParsingEnv) =
         let line_near_to = lineBlockParsing s
@@ -3409,10 +3500,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         loop (line_near_to-1) []
         |> String.concat ""
         |> fun x -> Ok(x.TrimEnd())
-
+    
     /// ### Comments
     type Comments = string
-
+    
     /// ### TopStatement
     type [<ReferenceEquality>] TopStatement =
         | TopAnd of VSCRange * TopStatement
@@ -3424,7 +3515,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TopPrototype of Comments * VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawTExpr
         | TopInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
         | TopOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
-
+    
     /// ### top_inl_or_let_process
     let top_inl_or_let_process comments is_top_down = function
         | (r,PatVar(r',name),body),is_rec ->
@@ -3436,31 +3527,31 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | _ -> Error [r, ExpectedGlobalFunction]
             loop body
         | (_,x,_),_ -> Error [range_of_pattern x, ExpectedVarOrOpAsNameOfGlobalStatement]
-
+    
     /// ### top_inl_or_let
     let top_inl_or_let d = ((comments .>>. inl_or_let root_term root_pattern_pair root_type_annot) >>= fun (comments,x) d -> top_inl_or_let_process comments d.is_top_down x) d
-
+    
     /// ### process_union
     let process_union (r,(layout,n,a,(r',b))) _ =
         let this = (RawTVar n,a) ||> List.fold (fun s x -> RawTApply(r',s,RawTVar(r',hovar_name x)))
         match layout with
         | UHeap -> Ok(TopNominalRec(r,n,a,RawTUnion(r',b,layout,this)))
         | UStack -> Ok(TopNominal(r,n,a,RawTUnion(r',b,layout,this)))
-
+    
     /// ### union_clauses
     let union_clauses d = root_type_union root_type_defaults d
-
+    
     /// ### top_union
     let top_union d = ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>. ((skip_keyword SpecRec >>% UHeap) <|>% UStack)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
-
+    
     /// ### top_nominal
     let top_nominal d =
         (blockParsingRange (tuple3 (skip_keyword SpecNominal >>. read_small_type_var') (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
         |>> fun (r,(n,a,b)) -> TopNominal(r,n,a,b)) d
-
+    
     /// ### type_forall
     let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d
-
+    
     /// ### top_prototype
     let top_prototype d =
         (blockParsingRange
@@ -3468,7 +3559,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 (skip_keyword SpecPrototype >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var)
                 (skip_op ":" >>. type_forall (root_type root_type_defaults)))
         |>> fun (r,(com,a,b,c,d)) -> TopPrototype(com,r,a,b,c,d)) d
-
+    
     /// ### top_instance
     let top_instance d =
         (blockParsingRange
@@ -3476,35 +3567,35 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         >>= fun (r,(prototype_name, nominal_name, nominal_foralls, body)) _ ->
                 Ok(TopInstance(r,prototype_name,nominal_name,nominal_foralls,body))
                 ) d
-
+    
     /// ### top_type
     let top_type d = (blockParsingRange (tuple3 (skip_keyword SpecType >>. read_small_type_var') (many ho_var) (skip_op "=" >>. root_type root_type_defaults)) |>> fun (r,(a,b,c)) -> TopType(r,a,b,c)) d
-
+    
     /// ### top_and_inl_or_let
     let top_and_inl_or_let d =
         (comments .>>. restore 1 (blockParsingRange (and_inl_or_let root_term root_pattern_pair root_type_annot))
         >>= fun (comments,(r,x)) d -> top_inl_or_let_process comments d.is_top_down x |> Result.map (fun x -> TopAnd(r,x))) d
-
+    
     /// ### top_and
     let inline top_and f = restore 1 (blockParsingRange (skip_keyword SpecAnd >>. f)) |>> TopAnd
-
+    
     /// ### top_and_union
     let top_and_union d = top_and ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>% UHeap) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
-
+    
     /// ### top_open
     let top_open d = (blockParsingModule_open |>> fun (r,(name,acs)) -> TopOpen(r,name,acs)) d
-
+    
     /// ### top_statement
     let top_statement s =
         let (+) = alt (blockParsingIndex s)
         (top_inl_or_let + top_union + top_nominal + top_prototype + top_type + top_instance + top_and_inl_or_let + top_and_union + top_open) s
-
+    
     /// ### ParserErrorsList
     type ParserErrorsList = (VSCRange * ParserErrors) list
-
+    
     /// ### ParseResult
     type ParseResult = Result<TopStatement,ParserErrorsList>
-
+    
     /// ### blockParsingParse
     let blockParsingParse (s : BlockParsingEnv) : ParseResult =
         if 0 < s.tokens.Length then
@@ -3516,7 +3607,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Error _ as l -> l
         else
             Error []
-
+    
     /// ### show_parser_error
     let show_parser_error = function
         | TypeVarsNeedToBeExplicitForExists -> "The type vars for the exists body have to be specified up front in the bottom-up segment."
@@ -3626,33 +3717,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | DuplicateUnionKey -> "Duplicate union keys are not allowed."
         | ListLiteralsNotAllowedInBottomUp -> "List literals are not allowed in the bottom-up segment."
         | ArrayLiteralsNotAllowedInBottomUp -> "Array literals are not allowed in the bottom-up segment."
-
+    
     module HopacExtensions =
         /// ## HopacExtensions
         open Hopac
         open Hopac.Infixes
-
+    
         let (>>**) x f =
             if x |> Hopac.Promise.Now.isFulfilled
             then x |> Hopac.Promise.Now.get |> f
             else Hopac.Infixes.(>>=*) x f
         // Runtime Hopac re-export e utilitários base (definir antes de uso para evitar FS0039).
         open System.Threading.Tasks
-
+    
         let inline start (j: Job<unit>) = Hopac.start j
         let inline queue (j: Job<unit>) = Hopac.queue j
         let inline server x = Hopac.server x
         let inline run (j: Job<'a>) : 'a = Hopac.run j
         let inline startAsTask (j: Job<'a>) : Task<'a> = Hopac.startAsTask j
         let inline queueAsTask (j: Job<'a>) : Task<'a> = Hopac.queueAsTask j
-
+    
         let inline awaitUnitTask (t: Task) : Job<unit> = Hopac.Job.awaitUnitTask t
         let inline awaitTask (t: Task<'a>) : Job<'a> = Job.fromAsync (Async.AwaitTask t)
-
+    
         // Sleep/timeout como Job, para remover Async.Sleep e Alt ambiguo do resto do arquivo.
         let inline sleepMs (ms: int) : Job<unit> = awaitUnitTask (Task.Delay ms)
-
-
+    
+    
         /// ## BlockBundling
         open Hopac.Extensions
         open Hopac.Stream
@@ -3668,17 +3759,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else
                 return None
         }
-
-
+    
+    
         // --- PATCH: actor_system (priority 10) ---
-
+    
         // =========================================================================
         // ACTOR SYSTEM v4 - OTP-style Supervision (Rust tokio / Gleam OTP compatible)
         // =========================================================================
         // Maps to: Rust - tokio::spawn + mpsc channels
         //          Gleam - erlang process + Subject/reply patterns
         // Uses Hopac: Job<'a>, Ch<'a>, IVar<'a>, Promise<'a>
-
+    
         /// Actor message envelope with typed request/reply
         [<RequireQualifiedAccess>]
         type ActorMsg<'req, 'reply> =
@@ -3687,7 +3778,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Cast of 'req
             | Shutdown of IVar<unit>
             | Kill
-
+    
         /// Actor lifecycle state
         [<RequireQualifiedAccess>]
         type ActorLife =
@@ -3696,7 +3787,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Stopping
             | Stopped
             | Failed of exn
-
+    
         /// Actor statistics for monitoring
         type ActorStat = {
             name: string
@@ -3707,14 +3798,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             mutable avgProcessingTimeMs: float
             mutable lifecycle: ActorLife
         }
-
+    
         /// Actor handle for external communication
         type ActorRef<'req, 'reply> = {
             channel: Ch<ActorMsg<'req, 'reply>>
             stats: ActorStat
             shutdownComplete: IVar<unit>
         }
-
+    
         /// Create actor statistics
         let createActorStat name = {
             name = name
@@ -3725,7 +3816,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             avgProcessingTimeMs = 0.0
             lifecycle = ActorLife.Starting
         }
-
+    
         /// Spawn a new actor with supervision capabilities
         let spawnActor<'req, 'reply, 'state>
             (name: string)
@@ -3737,14 +3828,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let ch = Ch<ActorMsg<'req, 'reply>>()
                 let stats = createActorStat name
                 let shutdownComplete = IVar<unit>()
-
+    
                 let! initialState = init()
                 stats.lifecycle <- ActorLife.Running
-
+    
                 let rec loop (state: 'state) = job {
                     let! msg = Ch.take ch
                     let sw = System.Diagnostics.Stopwatch.StartNew()
-
+    
                     match msg with
                     | ActorMsg.Request(req, reply) ->
                         stats.messageCount <- stats.messageCount + 1L
@@ -3764,7 +3855,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             | None ->
                                 stats.lifecycle <- ActorLife.Failed ex
                                 do! IVar.fill shutdownComplete ()
-
+    
                     | ActorMsg.Fire req | ActorMsg.Cast req ->
                         stats.messageCount <- stats.messageCount + 1L
                         stats.lastMessageTime <- DateTime.UtcNow
@@ -3778,29 +3869,29 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             | None ->
                                 stats.lifecycle <- ActorLife.Failed ex
                                 do! IVar.fill shutdownComplete ()
-
+    
                     | ActorMsg.Shutdown reply ->
                         stats.lifecycle <- ActorLife.Stopping
                         do! IVar.fill reply ()
                         stats.lifecycle <- ActorLife.Stopped
                         do! IVar.fill shutdownComplete ()
-
+    
                     | ActorMsg.Kill ->
                         stats.lifecycle <- ActorLife.Stopped
                         do! IVar.fill shutdownComplete ()
                 }
-
+    
                 do! Job.start (loop initialState)
                 return { channel = ch; stats = stats; shutdownComplete = shutdownComplete }
             }
-
+    
         /// Send request and await reply (call pattern)
         let actorCall (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<'reply> = job {
             let reply = IVar<'reply>()
             do! Ch.send handle.channel (ActorMsg.Request(req, reply))
             return! IVar.read reply
         }
-
+    
         /// Send request with timeout
         let actorCallTimeout (timeoutMs: int) (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<'reply option> =
             job {
@@ -3808,54 +3899,54 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 do! Ch.send handle.channel (ActorMsg.Request(req, reply))
                 return! jobWithTimeoutMs timeoutMs (IVar.read reply)
             }
-
+    
         /// Fire and forget (cast pattern)
         let actorCast (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<unit> =
             Ch.send handle.channel (ActorMsg.Fire req)
-
+    
         /// Graceful shutdown with confirmation
         let actorShutdown (handle: ActorRef<_, _>) : Job<unit> = job {
             let reply = IVar<unit>()
             do! Ch.send handle.channel (ActorMsg.Shutdown reply)
             return! IVar.read reply
         }
-
+    
         /// Immediate termination
         let actorKill (handle: ActorRef<_, _>) : Job<unit> =
             Ch.send handle.channel ActorMsg.Kill
-
+    
         /// Wait for actor to complete
         let actorAwait (handle: ActorRef<_, _>) : Job<unit> =
             IVar.read handle.shutdownComplete
-
+    
         /// Check if actor is alive
         let actorIsAlive (handle: ActorRef<_, _>) : bool =
             match handle.stats.lifecycle with
             | ActorLife.Running -> true
             | _ -> false
-
-
-
+    
+    
+    
         // --- PATCH: supervision_tree (priority 11) ---
-
+    
         // =========================================================================
         // SUPERVISION TREE - OTP-style (Rust tower / Gleam OTP compatible)
         // =========================================================================
-
+    
         /// Supervision strategy (maps directly to Erlang/OTP)
         [<RequireQualifiedAccess>]
         type SuperStrategy =
             | OneForOne
             | OneForAll
             | RestForOne
-
+    
         /// Child restart policy
         [<RequireQualifiedAccess>]
         type RestartPol =
             | Permanent
             | Temporary
             | Transient
-
+    
         /// Child specification for supervisor
         type ChildSpec<'req, 'reply> = {
             id: string
@@ -3863,7 +3954,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             restart: RestartPol
             shutdownMs: int
         }
-
+    
         /// Supervisor state tracking children
         type SuperState<'req, 'reply> = {
             strategy: SuperStrategy
@@ -3872,7 +3963,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             children: Map<string, ActorRef<'req, 'reply> * ChildSpec<'req, 'reply>>
             restartLog: (DateTime * string) list
         }
-
+    
         /// Supervisor request messages
         [<RequireQualifiedAccess>]
         type SuperReq<'req, 'reply> =
@@ -3881,7 +3972,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | RestartChild of string
             | ListChildren
             | GetStats
-
+    
         /// Supervisor response messages
         [<RequireQualifiedAccess>]
         type SuperResp<'req, 'reply> =
@@ -3891,7 +3982,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | ChildList of string list
             | Stats of {| restarts: int; children: int |}
             | Error of string
-
+    
         /// Create a supervisor actor
         let createSupervisor
             (name: string)
@@ -3899,7 +3990,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             (maxRestarts: int)
             (windowSec: float)
             : Job<ActorRef<SuperReq<'req, 'reply>, SuperResp<'req, 'reply>>> =
-
+    
             let init () = job {
                 return {
                     strategy = strategy
@@ -3909,11 +4000,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     restartLog = []
                 }
             }
-
+    
             let pruneLog (now: DateTime) (log: (DateTime * string) list) =
                 log |> List.filter (fun (time, _) ->
                     (now - time).TotalSeconds < windowSec)
-
+    
             let handle (state: SuperState<'req, 'reply>) (req: SuperReq<'req, 'reply>) = job {
                 match req with
                 | SuperReq.StartChild spec ->
@@ -3921,7 +4012,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let newChildren = Map.add spec.id (child, spec) state.children
                     return { state with children = newChildren },
                            Some (SuperResp.Started child)
-
+    
                 | SuperReq.StopChild id ->
                     match Map.tryFind id state.children with
                     | Some (child, _) ->
@@ -3931,7 +4022,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                Some SuperResp.Stopped
                     | None ->
                         return state, Some (SuperResp.Error $"Child {id} not found")
-
+    
                 | SuperReq.RestartChild id ->
                     match Map.tryFind id state.children with
                     | Some (child, spec) ->
@@ -3944,11 +4035,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                Some (SuperResp.Restarted newChild)
                     | None ->
                         return state, Some (SuperResp.Error $"Child {id} not found")
-
+    
                 | SuperReq.ListChildren ->
                     let names = state.children |> Map.toList |> List.map fst
                     return state, Some (SuperResp.ChildList names)
-
+    
                 | SuperReq.GetStats ->
                     let stats = {|
                         restarts = state.restartLog.Length
@@ -3956,24 +4047,24 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     |}
                     return state, Some (SuperResp.Stats stats)
             }
-
+    
             let onError (ex: exn) state = job {
                 Common.trace Common.Critical
                     (fun () -> $"Supervisor {name} error: {ex.Message}")
                     Common._locals
                 return Some state
             }
-
+    
             spawnActor name init handle onError
-
-
-
+    
+    
+    
         // --- PATCH: error_handling (priority 15) ---
-
+    
         // =========================================================================
         // ENHANCED ERROR HANDLING & RECOVERY (Rust anyhow / Gleam result compatible)
         // =========================================================================
-
+    
         /// Retry configuration
         type RetryConf = {
             maxAttempts: int
@@ -3982,7 +4073,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             backoffMult: float
             shouldRetry: exn -> bool
         }
-
+    
         /// Default retry config
         let defaultRetry = {
             maxAttempts = 3
@@ -3991,7 +4082,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             backoffMult = 2.0
             shouldRetry = fun _ -> true
         }
-
+    
         /// Retry with exponential backoff using Hopac
         let retryBackoff (conf: RetryConf) (work: Job<'a>) : Job<Result<'a, exn list>> =
             let rec loop (attempt: int) (delay: TimeSpan) (errors: exn list) = job {
@@ -4012,7 +4103,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             return! loop (attempt + 1) nextDelay (ex :: errors)
             }
             loop 1 conf.initDelay []
-
+    
         /// Fallback on error
         let withFallback (fallback: exn -> Job<'a>) (work: Job<'a>) : Job<'a> = job {
             try
@@ -4020,7 +4111,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             with ex ->
                 return! fallback ex
         }
-
+    
         /// Recover with default value
         let recoverDefault (defaultValue: 'a) (work: Job<'a>) : Job<'a> = job {
             try
@@ -4028,7 +4119,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             with _ ->
                 return defaultValue
         }
-
+    
         /// Ensure cleanup runs even on error
         let ensureCleanup (cleanup: Job<unit>) (work: Job<'a>) : Job<'a> = job {
             try
@@ -4039,7 +4130,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 do! cleanup
                 return raise ex
         }
-
+    
         /// Bracket pattern (acquire/use/release)
         let bracket
             (acquire: Job<'resource>)
@@ -4055,15 +4146,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 do! release resource
                 return raise ex
         }
-
-
-
+    
+    
+    
         // --- PATCH: memory_opts (priority 16) ---
-
+    
         // =========================================================================
         // MEMORY OPTIMIZATIONS (Rust arena / Gleam bytes compatible)
         // =========================================================================
-
+    
         /// Object pool for reducing allocations
         type ObjPool<'a> = {
             pool: System.Collections.Concurrent.ConcurrentBag<'a>
@@ -4071,7 +4162,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             reset: 'a -> unit
             maxSize: int
         }
-
+    
         /// Create object pool
         let createObjPool (factory: unit -> 'a) (reset: 'a -> unit) (maxSize: int) : ObjPool<'a> = {
             pool = System.Collections.Concurrent.ConcurrentBag()
@@ -4079,19 +4170,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             reset = reset
             maxSize = maxSize
         }
-
+    
         /// Rent object from pool
         let poolRent (p: ObjPool<'a>) : 'a =
             match p.pool.TryTake() with
             | true, obj -> obj
             | _ -> p.factory()
-
+    
         /// Return object to pool
         let poolReturn (p: ObjPool<'a>) (obj: 'a) : unit =
             if p.pool.Count < p.maxSize then
                 p.reset obj
                 p.pool.Add(obj)
-
+    
         /// Use object from pool with automatic return
         let poolUse (p: ObjPool<'a>) (f: 'a -> Job<'b>) : Job<'b> = job {
             let obj = poolRent p
@@ -4100,14 +4191,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             finally
                 poolReturn p obj
         }
-
+    
         /// StringBuilder pool
         let sbPool =
             createObjPool
                 (fun () -> System.Text.StringBuilder(1024))
                 (fun sb -> sb.Clear() |> ignore)
                 Environment.ProcessorCount
-
+    
         /// Pooled string building
         let buildStr (f: System.Text.StringBuilder -> unit) : string =
             let sb = poolRent sbPool
@@ -4116,20 +4207,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 sb.ToString()
             finally
                 poolReturn sbPool sb
-
+    
         /// String intern table for deduplication
         type InternTable = {
             table: System.Collections.Concurrent.ConcurrentDictionary<string, string>
             mutable interned: int64
             mutable deduped: int64
         }
-
+    
         let createInternTable () : InternTable = {
             table = System.Collections.Concurrent.ConcurrentDictionary()
             interned = 0L
             deduped = 0L
         }
-
+    
         let internStr (t: InternTable) (s: string) : string =
             match t.table.TryGetValue(s) with
             | true, existing ->
@@ -4139,18 +4230,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 t.table.[s] <- s
                 System.Threading.Interlocked.Increment(&t.interned) |> ignore
                 s
-
+    
         /// Global string intern table
         let globalIntern = createInternTable()
-
-
-
+    
+    
+    
         // --- PATCH: parallel_primitives (priority 20) ---
-
+    
         // =========================================================================
         // PARALLEL EXECUTION PRIMITIVES (Rust rayon / Gleam gleam_otp compatible)
         // =========================================================================
-
+    
         /// Parallel map with bounded concurrency using Hopac
         let parMapBounded (concurrency: int) (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
             if items.Length = 0 then Job.result [||]
@@ -4162,7 +4253,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let workQueue = System.Collections.Concurrent.ConcurrentQueue(
                         items |> Array.mapi (fun i x -> i, x))
                     let sem = new System.Threading.SemaphoreSlim(concurrency)
-
+    
                     let processItem () = job {
                         let mutable cont = true
                         while cont do
@@ -4178,31 +4269,31 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 sem.Release() |> ignore
                                 cont <- false
                     }
-
+    
                     do! Seq.init (min concurrency items.Length) (fun _ -> processItem())
                         |> Job.conIgnore
                     return results
                 }
-
+    
         /// Parallel map with auto concurrency
         let parMap (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
             parMapBounded Environment.ProcessorCount f items
-
+    
         /// Parallel iter with bounded concurrency
         let parIterBounded (concurrency: int) (f: 'a -> Job<unit>) (items: 'a[]) : Job<unit> =
             parMapBounded concurrency f items >>- ignore
-
+    
         /// Parallel iter with auto concurrency
         let parIter (f: 'a -> Job<unit>) (items: 'a[]) : Job<unit> =
             parIterBounded Environment.ProcessorCount f items
-
+    
         /// Parallel fold with associative combiner (tree reduction)
         let parFold (combine: 'b -> 'b -> 'b) (zero: 'b) (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b> =
             if items.Length = 0 then Job.result zero
             else
                 let chunkSize = max 1 (items.Length / Environment.ProcessorCount)
                 let chunks = items |> Array.chunkBySize chunkSize
-
+    
                 job {
                     let! chunkResults =
                         chunks
@@ -4217,11 +4308,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         |> Job.conCollect >>- fun (ra: ResizeArray<'b>) -> ra.ToArray()
                     return Array.fold combine zero chunkResults
                 }
-
+    
         /// Scatter-gather pattern with workers
         let scatterGather (workers: int) (work: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
             parMapBounded workers work items
-
+    
         /// Parallel filter
         let parFilter (pred: 'a -> Job<bool>) (items: 'a[]) : Job<'a[]> = job {
             let! flags = parMap pred items
@@ -4229,13 +4320,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 Array.zip items flags
                 |> Array.choose (fun (item, keep) -> if keep then Some item else None)
         }
-
+    
         /// Parallel choose (filter + map)
         let parChoose (chooser: 'a -> Job<'b option>) (items: 'a[]) : Job<'b[]> = job {
             let! results = parMap chooser items
             return results |> Array.choose id
         }
-
+    
         /// Race - return first completed result
         /// Note: This is a simple sequential fallback since Hopac Alt patterns are complex
         let raceJobs (jobs: Job<'a>[]) : Job<'a> =
@@ -4246,13 +4337,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else
                 // For now, just run first job (proper Alt-based race would be more complex)
                 jobs.[0]
-
+    
         /// All settled - wait for all, collecting results
         [<RequireQualifiedAccess>]
         type Settled<'a> =
             | Ok of 'a
             | Err of exn
-
+    
         let allSettled (jobs: Job<'a>[]) : Job<Settled<'a>[]> =
             jobs
             |> Array.map (fun j ->
@@ -4264,15 +4355,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         return Settled.Err ex
                 })
             |> Job.conCollect >>- fun (ra: ResizeArray<Settled<'a>>) -> ra.ToArray()
-
-
-
+    
+    
+    
         // --- PATCH: incremental_cache (priority 21) ---
-
+    
         // =========================================================================
         // INCREMENTAL COMPUTATION CACHE (Rust salsa / Gleam memoization compatible)
         // =========================================================================
-
+    
         /// Cache entry with generation tracking
         type CacheEntry<'v> = {
             generation: int64
@@ -4280,7 +4371,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             deps: string Set
             computeMs: float
         }
-
+    
         /// Incremental cache with dependency tracking
         type IncrCache<'k, 'v when 'k : equality and 'k : comparison> = {
             mutable gen: int64
@@ -4289,7 +4380,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             mutable hits: int64
             mutable misses: int64
         }
-
+    
         /// Create a new incremental cache
         let createIncrCache<'k, 'v when 'k : equality and 'k : comparison>
             (compute: 'k -> Job<'v * string Set>)
@@ -4300,11 +4391,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             hits = 0L
             misses = 0L
         }
-
+    
         /// Get or compute value from cache
         let cacheGet (c: IncrCache<'k, 'v>) (key: 'k) : Job<'v> = job {
             let currentGen = c.gen
-
+    
             match c.cache.TryGetValue(key) with
             | true, entry when entry.generation = currentGen ->
                 System.Threading.Interlocked.Increment(&c.hits) |> ignore
@@ -4314,7 +4405,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let sw = System.Diagnostics.Stopwatch.StartNew()
                 let! value, deps = c.compute key
                 sw.Stop()
-
+    
                 let entry = {
                     generation = currentGen
                     value = value
@@ -4324,15 +4415,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 c.cache.[key] <- entry
                 return value
         }
-
+    
         /// Invalidate specific key
         let cacheInvalidateKey (c: IncrCache<'k, 'v>) (key: 'k) : unit =
             c.cache.TryRemove(key) |> ignore
-
+    
         /// Invalidate all entries (bump generation)
         let cacheInvalidateAll (c: IncrCache<_, _>) : unit =
             System.Threading.Interlocked.Increment(&c.gen) |> ignore
-
+    
         /// Get cache statistics
         let cacheStats (c: IncrCache<_, _>) =
             let h = c.hits
@@ -4343,15 +4434,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 hitRate = if h + m > 0L then float h / float (h + m) else 0.0
                 entries = c.cache.Count
             |}
-
-
-
+    
+    
+    
         // --- PATCH: stream_ops (priority 22) ---
-
+    
         // =========================================================================
         // ENHANCED STREAM OPERATORS (using Hopac.Stream)
         // =========================================================================
-
+    
         /// Parallel stream map with bounded concurrency
         let streamMapParBounded (conc: int) (f: 'a -> Job<'b>) (s: Stream<'a>) : Stream<'b> =
             let sem = new System.Threading.SemaphoreSlim(conc)
@@ -4362,7 +4453,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 finally
                     sem.Release() |> ignore
             })
-
+    
         /// Buffer and process in batches
         let streamBatch (batchSize: int) (s: Stream<'a>) : Stream<'a[]> =
             let rec loop buffer s =
@@ -4379,7 +4470,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     else
                         Job.result (Cons(List.rev buffer |> Array.ofList, Job.result Nil |> memo))
             loop [] s |> memo
-
+    
         /// Take first n items from stream
         let streamTake (n: int) (s: Stream<'a>) : Job<'a[]> =
             let results = ResizeArray()
@@ -4394,22 +4485,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | Nil -> return ()
             }
             loop 0 s >>- fun () -> results.ToArray()
-
+    
         /// Merge multiple streams
         let streamMergeAll (streams: Stream<'a>[]) : Stream<'a> =
             if streams.Length = 0 then Stream.nil
             elif streams.Length = 1 then streams.[0]
             else
                 streams |> Array.reduce Stream.merge
-
-
-
+    
+    
+    
         // --- PATCH: backpressure (priority 23) ---
-
+    
         // =========================================================================
         // BACKPRESSURE & RATE LIMITING (Rust tower / Gleam rate_limiter compatible)
         // =========================================================================
-
+    
         /// Token bucket rate limiter
         type TokenBucket = {
             mutable tokens: float
@@ -4418,7 +4509,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             mutable lastRefill: DateTime
             lockObj: obj
         }
-
+    
         /// Create a token bucket rate limiter
         let createTokenBucket (maxTokens: float) (refillRate: float) : TokenBucket = {
             tokens = maxTokens
@@ -4427,7 +4518,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             lastRefill = DateTime.UtcNow
             lockObj = obj()
         }
-
+    
         /// Try to acquire tokens from bucket
         let tryAcquire (bucket: TokenBucket) (count: float) : bool =
             lock bucket.lockObj (fun () ->
@@ -4435,14 +4526,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let elapsed = (now - bucket.lastRefill).TotalSeconds
                 bucket.tokens <- min bucket.maxTokens (bucket.tokens + elapsed * bucket.refillRate)
                 bucket.lastRefill <- now
-
+    
                 if bucket.tokens >= count then
                     bucket.tokens <- bucket.tokens - count
                     true
                 else
                     false
             )
-
+    
         /// Acquire tokens, waiting if necessary
         let acquireTokens (bucket: TokenBucket) (count: float) : Job<unit> =
             let rec loop () = job {
@@ -4455,14 +4546,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     return! loop ()
             }
             loop ()
-
+    
         /// Circuit breaker states
         [<RequireQualifiedAccess>]
         type CircuitSt =
             | Closed
             | Open
             | HalfOpen
-
+    
         /// Circuit breaker for fault tolerance
         type CircuitBreaker = {
             mutable state: CircuitSt
@@ -4474,7 +4565,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             resetTimeout: TimeSpan
             lockObj: obj
         }
-
+    
         /// Create a circuit breaker
         let createCircuitBreaker (failThreshold: int) (successThreshold: int) (resetTimeout: TimeSpan) : CircuitBreaker = {
             state = CircuitSt.Closed
@@ -4486,7 +4577,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             resetTimeout = resetTimeout
             lockObj = obj()
         }
-
+    
         /// Execute with circuit breaker protection
         let withCircuit (cb: CircuitBreaker) (work: Job<'a>) : Job<Result<'a, string>> =
             let checkState () =
@@ -4501,7 +4592,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             false
                     | _ -> true
                 )
-
+    
             let recordSuccess () =
                 lock cb.lockObj (fun () ->
                     cb.failures <- 0
@@ -4512,7 +4603,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             cb.state <- CircuitSt.Closed
                     | _ -> ()
                 )
-
+    
             let recordFail () =
                 lock cb.lockObj (fun () ->
                     cb.failures <- cb.failures + 1
@@ -4520,7 +4611,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     if cb.failures >= cb.failThreshold then
                         cb.state <- CircuitSt.Open
                 )
-
+    
             job {
                 if checkState () then
                     try
@@ -4533,38 +4624,38 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 else
                     return Error "Circuit breaker is open"
             }
-
-
-
+    
+    
+    
         // --- PATCH: profiling (priority 24) ---
-
+    
         // =========================================================================
         // PROFILING & METRICS (Rust metrics / Gleam telemetry compatible)
         // =========================================================================
-
+    
         /// Simple counter
         type MetricCounter = {
             name: string
             mutable value: int64
         }
-
+    
         let createCounter name : MetricCounter = { name = name; value = 0L }
         let counterInc (c: MetricCounter) : unit =
             System.Threading.Interlocked.Increment(&c.value) |> ignore
         let counterAdd (c: MetricCounter) (n: int64) : unit =
             System.Threading.Interlocked.Add(&c.value, n) |> ignore
-
+    
         /// Simple gauge
         type MetricGauge = {
             name: string
             mutable value: float
         }
-
+    
         let createGauge name : MetricGauge = { name = name; value = 0.0 }
         let gaugeSet (g: MetricGauge) (v: float) : unit = g.value <- v
         let gaugeInc (g: MetricGauge) : unit = g.value <- g.value + 1.0
         let gaugeDec (g: MetricGauge) : unit = g.value <- g.value - 1.0
-
+    
         /// Histogram for timing distributions
         type MetricHistogram = {
             name: string
@@ -4575,7 +4666,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             mutable minVal: float
             mutable maxVal: float
         }
-
+    
         /// Create histogram with exponential buckets
         let createHistogram (name: string) (minV: float) (maxV: float) (bucketCount: int) : MetricHistogram =
             let ratio = Math.Pow(maxV / minV, 1.0 / float bucketCount)
@@ -4588,7 +4679,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 minVal = Double.MaxValue
                 maxVal = Double.MinValue
             }
-
+    
         /// Record a value in histogram
         let histRecord (h: MetricHistogram) (value: float) : unit =
             System.Threading.Interlocked.Increment(&h.count) |> ignore
@@ -4600,7 +4691,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 |> Array.tryFindIndex (fun b -> value < b)
                 |> Option.defaultValue (h.buckets.Length - 1)
             System.Threading.Interlocked.Increment(&h.buckets.[idx]) |> ignore
-
+    
         /// Timed execution with histogram recording
         let timedJob (histogram: MetricHistogram) (work: Job<'a>) : Job<'a> = job {
             let sw = System.Diagnostics.Stopwatch.StartNew()
@@ -4609,7 +4700,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             histRecord histogram sw.Elapsed.TotalMilliseconds
             return result
         }
-
+    
         /// Timed execution returning duration
         let timedWithDur (work: Job<'a>) : Job<'a * TimeSpan> = job {
             let sw = System.Diagnostics.Stopwatch.StartNew()
@@ -4617,21 +4708,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             sw.Stop()
             return result, sw.Elapsed
         }
-
+    
         /// Global compiler metrics
         let mutable metricsTokenize = createHistogram "tokenize" 0.1 10000.0 20
         let mutable metricsParse = createHistogram "parse" 0.1 10000.0 20
         let mutable metricsTypecheck = createHistogram "typecheck" 0.1 10000.0 20
         let mutable metricsCodegen = createHistogram "codegen" 0.1 10000.0 20
-
-
-
+    
+    
+    
         // --- PATCH: parallel_dep_graph (priority 25) ---
-
+    
         // =========================================================================
         // PARALLEL DEPENDENCY GRAPH EXECUTION (using Hopac)
         // =========================================================================
-
+    
         /// Node execution state
         [<RequireQualifiedAccess>]
         type NodeSt =
@@ -4640,7 +4731,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Running
             | Done
             | Failed of exn
-
+    
         /// Dependency graph node
         type DepNode<'id, 'r when 'id : comparison> = {
             id: 'id
@@ -4651,7 +4742,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             ready: IVar<unit>
             completed: IVar<Result<'r, exn>>
         }
-
+    
         /// Parallel dependency graph
         type ParDepGraph<'id, 'r when 'id : equality and 'id : comparison> = {
             nodes: System.Collections.Concurrent.ConcurrentDictionary<'id, DepNode<'id, 'r>>
@@ -4660,7 +4751,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             mutable completed: int
             allDone: IVar<unit>
         }
-
+    
         /// Create parallel dependency graph
         let createParDepGraph<'id, 'r when 'id : equality and 'id : comparison>()
             : ParDepGraph<'id, 'r> = {
@@ -4670,7 +4761,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             completed = 0
             allDone = IVar<unit>()
         }
-
+    
         /// Add node to graph
         let depGraphAdd (g: ParDepGraph<'id, 'r>) (id: 'id) (deps: 'id Set) : Job<unit> = job {
             let node = {
@@ -4682,23 +4773,23 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 ready = IVar()
                 completed = IVar()
             }
-
+    
             g.nodes.[id] <- node
             g.pending <- g.pending + 1
-
+    
             // Register as dependent
             for depId in deps do
                 match g.nodes.TryGetValue(depId) with
                 | true, depNode ->
                     depNode.dependents <- Set.add id depNode.dependents
                 | _ -> ()
-
+    
             // If no deps, mark ready
             if Set.isEmpty deps then
                 node.state <- NodeSt.Ready
                 do! Mailbox.send g.readyQueue id
         }
-
+    
         /// Check if node is ready
         let private checkReady (g: ParDepGraph<'id, 'r>) (nodeId: 'id) : Job<unit> = job {
             match g.nodes.TryGetValue(nodeId) with
@@ -4711,22 +4802,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             | NodeSt.Done -> true
                             | _ -> false
                         | _ -> true)
-
+    
                 if allDone && node.state = NodeSt.Pending then
                     node.state <- NodeSt.Ready
                     do! Mailbox.send g.readyQueue nodeId
             | _ -> ()
         }
-
+    
         /// Execute dependency graph with workers
         let depGraphExec
             (g: ParDepGraph<'id, 'r>)
             (exec: 'id -> Job<'r>)
             (workers: int)
             : Job<Map<'id, Result<'r, exn>>> = job {
-
+    
             let results = System.Collections.Concurrent.ConcurrentDictionary<'id, Result<'r, exn>>()
-
+    
             let worker = job {
                 let mutable cont = true
                 while cont do
@@ -4734,7 +4825,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         (Mailbox.take g.readyQueue |> Alt.afterFun Some)
                         <|>
                         (IVar.read g.allDone |> Alt.afterFun (fun _ -> None))
-
+    
                     match nodeIdOpt with
                     | Some id ->
                         match g.nodes.TryGetValue(id) with
@@ -4746,7 +4837,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 node.result <- Some result
                                 results.[id] <- Ok result
                                 do! IVar.fill node.completed (Ok result)
-
+    
                                 // Notify dependents
                                 for depId in node.dependents do
                                     do! checkReady g depId
@@ -4754,7 +4845,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 node.state <- NodeSt.Failed ex
                                 results.[id] <- Error ex
                                 do! IVar.fill node.completed (Error ex)
-
+    
                             g.completed <- g.completed + 1
                             if g.completed = g.pending then
                                 do! IVar.tryFill g.allDone ()
@@ -4763,31 +4854,31 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | None ->
                         cont <- false
             }
-
+    
             // Start workers
             do! Seq.init workers (fun _ -> Job.start worker) |> Job.conIgnore
-
+    
             // Wait for completion
             do! IVar.read g.allDone
-
+    
             return results |> Seq.map (fun kv -> kv.Key, kv.Value) |> Map.ofSeq
         }
-
-
-
+    
+    
+    
         // --- PATCH: watchdog (priority 28) ---
-
+    
         // =========================================================================
         // WATCHDOG & HEALTH MONITORING (using Hopac)
         // =========================================================================
-
+    
         /// Health check result
         [<RequireQualifiedAccess>]
         type HealthSt =
             | Healthy
             | Degraded of string
             | Unhealthy of string
-
+    
         /// Component health
         type CompHealth = {
             name: string
@@ -4795,7 +4886,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             lastCheck: DateTime
             responseMs: float option
         }
-
+    
         /// System health
         type SysHealth = {
             overall: HealthSt
@@ -4803,17 +4894,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             uptime: TimeSpan
             startTime: DateTime
         }
-
+    
         /// Health check function
         type HealthCheck = string -> Job<CompHealth>
-
+    
         /// Watchdog config
         type WatchdogConf = {
             checkIntervalMs: int
             unhealthyThreshold: int
             timeout: TimeSpan
         }
-
+    
         /// Watchdog state
         type WatchdogSt = {
             conf: WatchdogConf
@@ -4821,7 +4912,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             mutable lastCheck: DateTime
             startTime: DateTime
         }
-
+    
         /// Create watchdog
         let createWatchdog (conf: WatchdogConf) : WatchdogSt = {
             conf = conf
@@ -4829,15 +4920,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             lastCheck = DateTime.UtcNow
             startTime = DateTime.UtcNow
         }
-
+    
         /// Register health check
         let watchdogRegister (name: string) (check: HealthCheck) (w: WatchdogSt) : WatchdogSt =
             { w with checks = Map.add name check w.checks }
-
+    
         /// Run health checks
         let watchdogRun (w: WatchdogSt) : Job<SysHealth> = job {
             w.lastCheck <- DateTime.UtcNow
-
+    
             let! results =
                 w.checks
                 |> Map.toArray
@@ -4862,7 +4953,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         }
                 })
                 |> Job.conCollect
-
+    
             let overall =
                 if results |> Seq.forall (fun r -> r.status = HealthSt.Healthy) then
                     HealthSt.Healthy
@@ -4870,7 +4961,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     HealthSt.Unhealthy "Component unhealthy"
                 else
                     HealthSt.Degraded "Component degraded"
-
+    
             return {
                 overall = overall
                 components = results |> Seq.toList
@@ -4878,7 +4969,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 startTime = w.startTime
             }
         }
-
+    
         /// Memory health check
         let memoryHealthCheck (maxMb: int64) : HealthCheck =
             fun name -> job {
@@ -4894,15 +4985,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     responseMs = None
                 }
             }
-
-
-
+    
+    
+    
         // --- PATCH: compile_pipeline (priority 29) ---
-
+    
         // =========================================================================
         // PARALLEL COMPILE PIPELINE ENHANCEMENTS (using Hopac)
         // =========================================================================
-
+    
         /// Compilation stage result
         type StageRes<'a> = {
             result: 'a
@@ -4910,7 +5001,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             errors: (int * int * string) list
             warnings: (int * int * string) list
         }
-
+    
         /// Module compile context
         type ModuleCtx = {
             path: string
@@ -4922,7 +5013,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             typechecked: Job<StageRes<obj>>
             codegen: System.Collections.Concurrent.ConcurrentDictionary<string, Job<StageRes<string>>>
         }
-
+    
         /// Package compile context
         type PackageCtx = {
             id: int
@@ -4931,7 +5022,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             depOrder: string[]
             pkgEnv: Job<obj>
         }
-
+    
         /// Compile coordinator
         type CompileCoord = {
             packages: System.Collections.Concurrent.ConcurrentDictionary<string, PackageCtx>
@@ -4941,7 +5032,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             mutable packagesCompiled: int64
             mutable cacheHits: int64
         }
-
+    
         /// Create compile coordinator
         let createCompileCoord (workers: int) : CompileCoord = {
             packages = System.Collections.Concurrent.ConcurrentDictionary()
@@ -4953,13 +5044,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             packagesCompiled = 0L
             cacheHits = 0L
         }
-
+    
         /// Compile module with pipeline
         let compileModulePipeline (coord: CompileCoord) (path: string) (source: string) : Job<ModuleCtx> = job {
             let hash = source.GetHashCode().ToString()
-
+    
             System.Threading.Interlocked.Increment(&coord.modulesCompiled) |> ignore
-
+    
             // Create promises for each stage using Hopac.memo
             let tokenized =
                 job {
@@ -4968,7 +5059,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     sw.Stop()
                     return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
                 } |> Hopac.memo
-
+    
             let parsed =
                 job {
                     let! _ = tokenized
@@ -4977,7 +5068,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     sw.Stop()
                     return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
                 } |> Hopac.memo
-
+    
             let typechecked =
                 job {
                     let! _ = parsed
@@ -4986,7 +5077,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     sw.Stop()
                     return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
                 } |> Hopac.memo
-
+    
             return {
                 path = path
                 source = source
@@ -4998,7 +5089,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 codegen = System.Collections.Concurrent.ConcurrentDictionary()
             }
         }
-
+    
         /// Compile package with parallel modules
         let compilePackagePipeline
             (coord: CompileCoord)
@@ -5006,19 +5097,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             (modulePaths: string[])
             (readSource: string -> Job<string>)
             : Job<PackageCtx> = job {
-
+    
             let pkgId = pkgPath.GetHashCode()
             System.Threading.Interlocked.Increment(&coord.packagesCompiled) |> ignore
-
+    
             let moduleCtxs = System.Collections.Concurrent.ConcurrentDictionary<string, ModuleCtx>()
-
+    
             // Compile all modules in parallel
             do! parIterBounded coord.workers (fun path -> job {
                     let! source = readSource path
                     let! ctx = compileModulePipeline coord path source
                     moduleCtxs.[path] <- ctx
                 }) modulePaths
-
+    
             // Compute package env
             let pkgEnv =
                 job {
@@ -5029,7 +5120,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         |> Job.conCollect
                     return obj()
                 } |> Hopac.memo
-
+    
             let ctx = {
                 id = pkgId
                 path = pkgPath
@@ -5037,19 +5128,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 depOrder = modulePaths
                 pkgEnv = pkgEnv
             }
-
+    
             coord.packages.[pkgPath] <- ctx
             return ctx
         }
-
-
-
+    
+    
+    
         // --- PATCH: hot_reload (priority 30) ---
-
+    
         // =========================================================================
         // HOT RELOAD SUPPORT (using Hopac)
         // =========================================================================
-
+    
         /// File change event
         [<RequireQualifiedAccess>]
         type FileEvt =
@@ -5057,7 +5148,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Modified of string
             | Deleted of string
             | Renamed of string * string
-
+    
         /// File watcher state
         type FileWatcherSt = {
             watcher: System.IO.FileSystemWatcher
@@ -5065,12 +5156,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             debounceMs: int
             pending: System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>
         }
-
+    
         /// Create file watcher with debouncing
         let createFileWatcher (dir: string) (pattern: string) (debounceMs: int) : Job<FileWatcherSt> = job {
             let events = Mailbox<FileEvt>()
             let pending = System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>()
-
+    
             let watcher = new System.IO.FileSystemWatcher(dir)
             watcher.NotifyFilter <-
                 System.IO.NotifyFilters.LastWrite |||
@@ -5078,7 +5169,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 System.IO.NotifyFilters.Size
             watcher.Filter <- pattern
             watcher.IncludeSubdirectories <- true
-
+    
             let sendDebounced path evt =
                 pending.[path] <- DateTime.UtcNow
                 start (job {
@@ -5089,7 +5180,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         start (Mailbox.send events evt)
                     | _ -> ()
                 })
-
+    
             watcher.Changed.Add(fun e ->
                 sendDebounced e.FullPath (FileEvt.Modified e.FullPath))
             watcher.Created.Add(fun e ->
@@ -5098,9 +5189,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 start (Mailbox.send events (FileEvt.Deleted e.FullPath)))
             watcher.Renamed.Add(fun e ->
                 start (Mailbox.send events (FileEvt.Renamed(e.OldFullPath, e.FullPath))))
-
+    
             watcher.EnableRaisingEvents <- true
-
+    
             return {
                 watcher = watcher
                 events = events
@@ -5108,14 +5199,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 pending = pending
             }
         }
-
+    
         /// Process file changes in batches
         let processChanges
             (fw: FileWatcherSt)
             (handler: FileEvt[] -> Job<unit>)
             (batchTimeoutMs: int)
             : Job<unit> =
-
+    
             let rec loop (batch: FileEvt list) (deadline: DateTime option) = job {
                 let! evtOpt =
                     match deadline with
@@ -5130,7 +5221,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             let! evt = Mailbox.take fw.events
                             return Some evt
                         }
-
+    
                 match evtOpt with
                 | Some evt ->
                     let newBatch = evt :: batch
@@ -5139,22 +5230,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         |> Option.defaultValue (DateTime.UtcNow.AddMilliseconds(float batchTimeoutMs))
                         |> Some
                     return! loop newBatch newDeadline
-
+    
                 | None when not (List.isEmpty batch) ->
                     do! handler (List.rev batch |> Array.ofList)
                     return! loop [] None
-
+    
                 | None ->
                     return! loop [] None
             }
-
+    
             loop [] None
-
+    
         /// Stop file watcher
         let stopFileWatcher (fw: FileWatcherSt) : unit =
             fw.watcher.EnableRaisingEvents <- false
             fw.watcher.Dispose()
-
+    
         /// Parallel map for pure functions (sync), bounded via ParallelOptions.
         /// This is intentionally *not* Hopac-based to avoid deadlocks if called inside running Hopac Jobs.
         let parMapBoundedSync (concurrency: int) (f: 'a -> 'b) (items: 'a[]) : 'b[] =
@@ -5168,31 +5259,31 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     results.[i] <- f items.[i]
                 ) |> ignore
                 results
-
+    
         // Parallel execution layer - uses all CPU cores by default
         let mutable private forcedConcurrency = 0
-
+    
         /// Override concurrency for diagnostics/debugging
         let forceConcurrency (n: int) =
             let n = max 1 n
             System.Threading.Volatile.Write(&forcedConcurrency, n)
             DiagSidecar.emit (sprintf "HopacExtensions.forceConcurrency: %d" n)
-
+    
         let clearForcedConcurrency () =
             System.Threading.Volatile.Write(&forcedConcurrency, 0)
             DiagSidecar.emit "HopacExtensions.clearForcedConcurrency"
-
+    
         /// Get effective concurrency: forced value or ProcessorCount
         let defaultConcurrency () : int =
             let forced = System.Threading.Volatile.Read(&forcedConcurrency)
             if forced > 0 then forced
             else max 1 System.Environment.ProcessorCount
-
+    
         // Parallel array ops with bounded concurrency (preserves index order)
         module A =
             let inline map (f: 'a -> 'b) (xs: 'a[]) : 'b[] =
                 parMapBoundedSync (defaultConcurrency()) f xs
-
+    
             let inline mapi (f: int -> 'a -> 'b) (xs: 'a[]) : 'b[] =
                 if xs.Length = 0 then [||]
                 elif xs.Length = 1 then [| f 0 xs.[0] |]
@@ -5203,8 +5294,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         results.[i] <- f i xs.[i]
                     ) |> ignore
                     results
-
-
+    
+    
             let inline map2 (f: 'a -> 'b -> 'c) (xs: 'a[]) (ys: 'b[]) : 'c[] =
                 if xs.Length <> ys.Length then invalidArg "ys" "Array lengths do not match in map2."
                 if xs.Length = 0 then [||]
@@ -5216,7 +5307,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         results.[i] <- f xs.[i] ys.[i]
                     ) |> ignore
                     results
-
+    
             let inline iter (f: 'a -> unit) (xs: 'a[]) : unit =
                 if xs.Length = 0 then ()
                 elif xs.Length = 1 then f xs.[0]
@@ -5225,7 +5316,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
                         f xs.[i]
                     ) |> ignore
-
+    
             let inline iteri (f: int -> 'a -> unit) (xs: 'a[]) : unit =
                 if xs.Length = 0 then ()
                 elif xs.Length = 1 then f 0 xs.[0]
@@ -5234,18 +5325,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     System.Threading.Tasks.Parallel.For(0, xs.Length, opts, fun i ->
                         f i xs.[i]
                     ) |> ignore
-
+    
             let inline choose (f: 'a -> 'b option) (xs: 'a[]) : 'b[] =
                 // Primeiro mapeia em paralelo, depois filtra em ordem (estável) num passo sequencial.
                 let tmp = map f xs
                 Microsoft.FSharp.Collections.Array.choose id tmp
-
+    
             let inline collect (f: 'a -> 'b[]) (xs: 'a[]) : 'b[] =
                 // Primeiro gera chunks em paralelo, depois achata em ordem.
                 let chunks = map f xs
                 Microsoft.FSharp.Collections.Array.collect id chunks
-
-
+    
+    
         // Array ops sequenciais (para trechos com estado mutável não-thread-safe).
         module S =
             let inline map (f: 'a -> 'b) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.map f xs
@@ -5254,19 +5345,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let inline iteri (f: int -> 'a -> unit) (xs: 'a[]) : unit = Microsoft.FSharp.Collections.Array.iteri f xs
             let inline choose (f: 'a -> 'b option) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.choose f xs
             let inline collect (f: 'a -> 'b[]) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.collect f xs
-
+    
     open HopacExtensions
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
-
-
-
-
-
+    
+    
+    
+    
+    
     // open FSharpx.Collections
-
+    
     /// ### Bundle
     // These bundles are top statements that have their range offsets distributed into them.
     type [<ReferenceEquality>] Bundle =
@@ -5278,32 +5369,32 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | BundlePrototype of Comments * VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawTExpr
         | BundleInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
         | BundleOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
-
+    
     /// ### bundle_range
     let bundle_range = function
         | BundleType(r,_,_,_) | BundleNominal(r,_,_,_) | BundleInl(_,r,_,_,_)
         | BundlePrototype(_,r,_,_,_,_) | BundleInstance(r,_,_,_,_) | BundleOpen(r,_,_) -> r
         | BundleNominalRec l -> List.head l |> fun (r,_,_,_) -> r
         | BundleRecInl(l,_) -> List.head l |> fun (_,r,_,_) -> r
-
+    
     /// ### add_offset
     let add_offset offset (range : VSCRange) : VSCRange =
         let f (a : VSCPos) = {|a with line=offset + a.line|}
         let a,b = range
         f a, f b
-
+    
     /// ### add_offset_hovar
     let add_offset_hovar offset (a,b) = add_offset offset a, b
-
+    
     /// ### add_offset_hovar_list
     let add_offset_hovar_list offset x = List.map (add_offset_hovar offset) x
-
+    
     /// ### add_offset_typevar
     let add_offset_typevar offset ((a,b),c) = (add_offset offset a, b), add_offset_hovar_list offset c
-
+    
     /// ### add_offset_typevar_list
     let add_offset_typevar_list offset x = List.map (add_offset_typevar offset) x
-
+    
     /// ### fold_offset_ty
     let rec fold_offset_ty offset x =
         let f = fold_offset_ty offset
@@ -5413,7 +5504,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | PatNominal(r,a,b,c) -> PatNominal(g r,g' a,List.map g' b,f c)
         | PatExists(r,a,b) -> PatExists(g r,List.map g' a,f b)
         | PatArray(r,a) -> PatArray(g r,List.map f a)
-
+    
     /// ### bundle_blocks
     let bundle_blocks (blocks : TopStatement Block list) =
         match blocks with
@@ -5438,10 +5529,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | [{offset=i; block=TopInstance(r,a,b,c,d)}] -> BundleInstance(add_offset i r, add_offset_hovar i a, add_offset_hovar i b, add_offset_typevar_list i c, fold_offset_term i d) |> Some
         | [{offset=i; block=TopOpen(r,a,b)}] -> BundleOpen(add_offset i r, add_offset_hovar i a, add_offset_hovar_list i b) |> Some
         | {block=TopInl _ | TopPrototype _ | TopNominal _ | TopType _ | TopInstance _ | TopOpen _} :: _ -> failwith "Compiler error: Regular top level statements should be singleton bundles."
-
+    
     /// ### add_line_to_range
     let add_line_to_range line ((a,b) : VSCRange) = {|a with line=line+a.line|}, {|b with line=line+b.line|}
-
+    
     /// ### process_error
     let process_error v =
         let messages, expecteds = v |> List.distinct |> List.partition (fun x -> System.Char.IsUpper(x,0))
@@ -5450,7 +5541,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         if List.isEmpty expecteds then f messages
         elif List.isEmpty messages then ex ()
         else f (ex () :: "" :: "Other error messages:" :: messages)
-
+    
     /// ### show_block_parsing_error
     let show_block_parsing_error line (l : ParserErrorsList) : RString list =
         l |> List.groupBy fst
@@ -5459,34 +5550,34 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let v = List.map (snd >> show_parser_error) v
             k, process_error v
             )
-
+    
     /// ### ParsedBlock
     type ParsedBlock = {result : ParseResult; semantic_tokens : LineTokens}
-
+    
     /// ### ParserState
     type ParserState = {
         is_top_down : bool
         blocks : (LineTokens * ParsedBlock Promise Block) list
         }
-
+    
     /// ### BlockBundleValue
     type BlockBundleValue = {bundle : Bundle option; errors : RString list}
-
+    
     /// ### BlockBundleState
     type BlockBundleState = (TopStatement Block list * BlockBundleValue) Stream
-
+    
     /// ### BlockBundleStateInner
     type BlockBundleStateInner = {errors : RString list; tmp : TopStatement Block list; state : BlockBundleState}
-
+    
     /// ### wdiff_block_bundle_init
     let wdiff_block_bundle_init : BlockBundleState = Promise.Now.never()
-
+    
     /// ### wdiff_block_bundle
     /// Bundles the blocks with the `and` statements. Also collects the parser errors.
     /// Does diffing to ref preserve the bundles.
     let wdiff_block_bundle (state : BlockBundleState) (l : ParserState) : BlockBundleState =
         let (+.) a b = add_line_to_range a b
-
+    
         let empty = {state=wdiff_block_bundle_init; tmp=[]; errors=[]}
         let move_temp (s : BlockBundleStateInner) next =
             let o' = List.rev s.tmp
@@ -5497,7 +5588,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | _ -> fl ()
             else fl ()
             |> Cons |> Promise.Now.withValue
-
+    
         let inline iter (s : BlockBundleStateInner) l f =
             match l with
             | (_,x) :: x' -> let offset = x.offset in x.block >>** fun {result=a} -> f (offset,a,x')
@@ -5521,27 +5612,27 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Ok (TopAnd(r, _)) -> rectype {s with errors = (offset +. r, "`union rec` can only be followed by `and union`.") :: s.errors} x'
             | Ok _ -> move_temp s (fun s -> init s l)
             | Error er -> rectype {s with errors = List.append (show_block_parsing_error offset er) s.errors} x'
-
+    
         init {empty with state=state} l.blocks
-
+    
     /// ### semantic_tokens
     let semantic_tokens (l : ParserState) =
         let rec loop s = function
             | (_,x) :: xs -> x.block >>= fun x -> loop (PersistentVector.append s x.semantic_tokens) xs
             | [] -> Job.result s
         loop PersistentVector.empty l.blocks
-
+    
     /// ## Infer
-
+    
     /// ### 'a ref'
     type [<ReferenceEquality>] 'a ref' = {mutable contents' : 'a}
-
+    
     /// ### TT
     type TT =
         | KindType
         | KindFun of TT * TT
         | KindMetavar of TT option ref'
-
+    
     /// ### Constraint
     type Constraint =
         | CUInt
@@ -5553,10 +5644,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | CSymbol
         | CRecord
         | CPrototype of GlobalId
-
+    
     /// ### ConstraintOrModule
     type ConstraintOrModule = C of Constraint | M of Map<string,ConstraintOrModule>
-
+    
     /// ### Var
     type [<ReferenceEquality>] Var = {
         scope : int
@@ -5564,14 +5655,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         kind : TT // Is not supposed to have metavars.
         name : string // Is what gets printed.
         }
-
+    
     /// ### MVar
     type [<ReferenceEquality>] MVar = {
         mutable scope : int
         mutable constraints : Constraint Set // Must be stated up front and needs to be static in forall vars
         kind : TT // Has metavars, and so is mutable.
         }
-
+    
     /// ### TM
     type TM =
         | TMText of string
@@ -5598,10 +5689,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TyVar of Var * T option ref
         | TyMacro of TM list
         | TyLayout of T * Layout
-
+    
     /// ### tyvar
     let tyvar x = TyVar(x, ref None)
-
+    
     /// ### TypeError
     type TypeError =
         | KindError of TT * TT
@@ -5677,39 +5768,39 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | CompilerError of string
         | IncorrectGADTConstructorType
         | IncorrectRecursiveNominal
-
+    
     /// ### shorten'<'a>
     let inline shorten'<'a> (x : 'a) link next =
         let x' : 'a = next x
         if System.Object.ReferenceEquals(x,x') = false then link.contents' <- Some x'
         x'
-
+    
     /// ### visit_tt
     let rec visit_tt = function
         | KindMetavar({contents'=Some x} & link) -> shorten' x link visit_tt
         | a -> a
-
+    
     /// ### shorten<'a>
     let inline shorten<'a> (x : 'a) (link : ref<option<'a>>) next =
         let x' : 'a = next x
         if System.Object.ReferenceEquals(x,x') = false then link.Value <- Some x'
         x'
-
+    
     /// ### visit_t_mvar
     let rec visit_t_mvar = function
         | TyComment(_,a) -> visit_t_mvar a
         | TyMetavar(_,{contents=Some x} & link) -> shorten x link visit_t_mvar
         | a -> a
-
+    
     /// ### visit_t
     let rec visit_t x =
         match visit_t_mvar x with
         | TyVar(_,{contents=Some x}) -> visit_t x
         | x -> x
-
+    
     /// ### InferTypeErrorException
     exception InferTypeErrorException of (VSCRange * TypeError) list
-
+    
     /// ### metavars
     let rec metavars = function
         | RawTTypecase _ | RawTExists _ | RawTFilledNominal _ | RawTMacro _ | RawTVar _ | RawTTerm _
@@ -5719,7 +5810,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | RawTPair(_,a,b) | RawTApply(_,a,b) | RawTFun(_,a,b,_) -> metavars a + metavars b
         | RawTUnion(_,l,_,this) -> Map.fold (fun s _ (_,v) -> s + metavars v) (metavars this) l
         | RawTRecord(_,l) -> Map.fold (fun s _ v -> s + metavars v) Set.empty l
-
+    
     /// ### TopEnv
     type TopEnv = {
         nominals_next_tag : int
@@ -5732,7 +5823,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         term : Map<string,T>
         constraints : Map<string,ConstraintOrModule>
         }
-
+    
     /// ### inferTop_env_empty
     let inferTop_env_empty = {
         nominals_next_tag = 0
@@ -5745,7 +5836,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         term = Map.empty
         constraints = Map.empty
         }
-
+    
     /// ### inferUnion
     let inferUnion small big = {
         nominals_next_tag = max small.nominals_next_tag big.nominals_next_tag
@@ -5779,7 +5870,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 s |> Map.add k v
             ) small.constraints big.constraints
         }
-
+    
     /// ### inferIn_module
     let inferIn_module m a : TopEnv =
         {a with
@@ -5787,12 +5878,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             term = Map.add m (TyModule a.term) Map.empty
             constraints = Map.add m (M a.constraints) Map.empty
             }
-
+    
     /// ### InferEnv
     type InferEnv = { ty : Map<string,T>; term : Map<string,T>; constraints : Map<string,ConstraintOrModule> }
     /// ### loc_env
     let loc_env (x: TopEnv) : InferEnv = { term = x.term; ty = x.ty; constraints = x.constraints }
-
+    
     /// ### lit
     let lit = function
         | LitUInt8 _ -> TyPrim UInt8T
@@ -5808,8 +5899,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | LitBool _ -> TyPrim BoolT
         | LitString _ -> TyPrim StringT
         | LitChar _ -> TyPrim CharT
-
-
+    
+    
     /// ### kind_get
     let kind_get x =
         let rec loop = function
@@ -5817,12 +5908,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | a -> [a]
         let l = loop x
         {|arity=List.length l; args=l|}
-
+    
     /// ### prototype_init_forall_kind
     let prototype_init_forall_kind = function
         | TyForall(a,_) -> a.kind
         | _ -> failwith "Compiler error: The prototype should have at least one forall."
-
+    
     /// ### show_primt
     let show_primt = function
         | UInt8T -> "u8"
@@ -5838,19 +5929,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | BoolT -> "bool"
         | StringT -> "string"
         | CharT -> "char"
-
+    
     /// ### constraint_name
     let rec constraint_name (env : TopEnv) = function
         | CSInt -> "sint" | CUInt -> "uint" | CInt -> "int"
         | CFloat -> "float" | CNumber -> "number" | CPrim -> "prim"
         | CSymbol -> "symbol" | CRecord -> "record"
         | CPrototype i -> env.prototypes.[i].name
-
+    
     /// ### constraint_kind
     let constraint_kind (env : TopEnv) = function
         | CSInt | CUInt | CInt | CFloat | CNumber | CPrim | CSymbol | CRecord -> KindType
         | CPrototype i -> env.prototypes.[i].kind
-
+    
     /// ### tt
     let rec tt (env : TopEnv) = function
         | TyComment(_,x) | TyMetavar(_,{contents=Some x}) -> tt env x
@@ -5858,7 +5949,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TyApply(_,_,x) | TyMetavar({kind=x},_) | TyVar({kind=x},_) -> x
         | TyExists _ | TyLit _ | TyUnion _ | TyLayout _ | TyMacro _ | TyB | TyPrim _ | TyForall _ | TyFun _ | TyRecord _ | TyModule _ | TyPair _ | TySymbol _ | TyArray _ -> KindType
         | TyInl(v,a) -> KindFun(v.kind,tt env a)
-
+    
     /// ### has_metavars
     let rec has_metavars x =
         let f = has_metavars
@@ -5870,7 +5961,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TyUnion(l,_) -> Map.exists (fun _ -> snd >> f) l
         | TyRecord l -> Map.exists (fun _ -> f) l
         | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
-
+    
     /// ### term_subst
     // Eliminates the metavars in the type if possible.
     let term_subst a =
@@ -5905,7 +5996,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | TyMacro a -> TyMacro(List.map (function TMVar x -> TMVar(f x) | x -> x) a)
             | TyLayout(a,b) -> TyLayout(f a,b)
         f a
-
+    
     /// ### HoverTypes
     type HoverTypes() =
         // This is to allocate less trash for code that doesn't use GADTs.
@@ -5924,7 +6015,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let hover_types = ResizeArray()
         member _.AddHover((r : VSCRange),(x,(com : string))) = hover_types.Add(r,((if has_substituted_tvars x then term_subst x else x), com))
         member _.ToArray() = hover_types.ToArray()
-
+    
     /// ### inferModule_open
     let inferModule_open (hover_types : HoverTypes option) (top_env : InferEnv) (local_env_ty : Map<string,T>) (r : VSCRange) b l =
         let tryFind env x =
@@ -5949,7 +6040,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 if h.Count > 0 then Error(r, ModuleIndexWouldShadowLocalVars(h.ToArray()))
                 else Ok env
                 )
-
+    
     /// ### validate_bound_vars
     let validate_bound_vars (top_env : InferEnv) constraints term ty x =
         let errors = ResizeArray()
@@ -6059,17 +6150,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | PatNominal(_,(r,a),_,b) -> check_ty ty (r,a); f b
                 | PatArray(_,a) -> List.fold loop (term, ty) a
             loop (term, ty) x
-
+    
         match x with
         | Choice1Of2 x -> cterm constraints (term, ty) x
         | Choice2Of2 x -> ctype constraints term ty x
         errors
-
+    
     /// ### assert_bound_vars
     let assert_bound_vars (top_env : InferEnv) constraints term ty x =
         let errors = validate_bound_vars top_env constraints term ty x
         if 0 < errors.Count then raise (InferTypeErrorException (Seq.toList errors))
-
+    
     /// ### subst
     let rec subst (m : (Var * T) list) x =
         let f = subst m
@@ -6093,7 +6184,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | TyInl(a,b) -> TyInl(a, f b)
             | TyMacro a -> TyMacro(List.map (function TMVar x -> TMVar(f x) | x -> x) a)
             | TyLayout(a,b) -> TyLayout(f a,b)
-
+    
     /// ### type_apply_split
     let type_apply_split x =
         let rec loop s x =
@@ -6101,33 +6192,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | TyApply(a,b,_) -> loop (b :: s) a
             | x -> x, s
         loop [] x
-
+    
     /// ### kind_subst
     let rec kind_subst = function
         | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_subst
         | KindMetavar _ | KindType as x -> x
         | KindFun(a,b) -> KindFun(kind_subst a,kind_subst b)
-
+    
     /// ### foralls_get
     let rec foralls_get = function
         | RawForall(_,a,b) -> let a', b = foralls_get b in a :: a', b
         | b -> [], b
-
+    
     /// ### foralls_ty_get
     let rec foralls_ty_get = function
         | TyForall(a,b) -> let a', b = foralls_ty_get b in a :: a', b
         | b -> [], b
-
+    
     /// ### kind_force
     let rec kind_force = function
         | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_force
         | KindMetavar link -> let x = KindType in link.contents' <- Some x; x
         | KindType as x -> x
         | KindFun(a,b) -> KindFun(kind_force a,kind_force b)
-
+    
     /// ### p
     let p prec prec' x = if prec < prec' then x else sprintf "(%s)" x
-
+    
     /// ### show_kind
     let show_kind x =
         let rec f prec x =
@@ -6138,16 +6229,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | KindType -> "*"
             | KindFun(a,b) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
         f -1 x
-
+    
     /// ### show_constraints
     let show_constraints env x = Set.toList x |> List.map (constraint_name env) |> String.concat "; " |> sprintf "{%s}"
-
+    
     /// ### show_nominal
     let show_nominal (env : TopEnv) i = match Map.tryFind i env.nominals_aux with Some x -> x.name | None -> "?"
-
+    
     /// ### show_layout_type
     let show_layout_type = function Heap -> "heap" | HeapMutable -> "mut" | StackMutable -> "stack_mut"
-
+    
     /// ### show_t
     let show_t (env : TopEnv) x =
         let show_var (a : Var) =
@@ -6208,9 +6299,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | TyUnion(l,_) -> sprintf "{%s}" (l |> Map.toList |> List.map (fun ((_,k),(_,v)) -> sprintf "%s : %s" k (f -1 v)) |> String.concat "| ")
             | TyMacro a -> p 30 (List.map (function TMLitVar a | TMVar a -> f -1 a | TMText a -> a) a |> String.concat "")
             | TyLayout(a,b) -> p 30 (sprintf "%s %s" (show_layout_type b) (f 30 a))
-
+    
         f -2 x
-
+    
     /// ### show_type_error
     let show_type_error (env : TopEnv) x =
         let f = show_t env
@@ -6290,16 +6381,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | UnusedTypeVariable [x] -> sprintf "The type variable %s is unused in the function's type signature." x
         | UnusedTypeVariable vars -> sprintf "The type variables %s are unused in the function's type signature." (vars |> String.concat ", ")
         | CompilerError x -> x
-
+    
     /// ### autogen_name_in_fun
     let autogen_name_in_fun (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'%i" i else sprintf "'%c" x
-
+    
     /// ### autogen_name_in_typecase
     let autogen_name_in_typecase (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'t%i" i else sprintf "'t%c" x
-
+    
     /// ### trim_kind
     let trim_kind = function KindFun(_,k) -> k | _ -> failwith "impossible"
-
+    
     /// ### FilledTop
     // Similar to BundleTop except with type annotations and type application filled in.
     type FilledTop =
@@ -6312,15 +6403,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | FInstance of VSCRange * RGlobalId * RGlobalId * RawExpr
         | FOpen of VSCRange * RString * RString list
         | FError of VSCRange
-
+    
     /// ### 'a AdditionType
     type 'a AdditionType =
         | AOpen of 'a
         | AInclude of 'a
-
+    
     /// ### InferScope
     type InferScope = int
-
+    
     /// ### InferResult
     type [<ReferenceEquality>] InferResult = {
         filled_top : FilledTop Hopac.Promise
@@ -6329,10 +6420,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         hovers : RString []
         errors : RString list
         }
-
+    
     /// ### dispose_gadt_links
     let dispose_gadt_links gadt_links = Seq.iter (fun (x : ref<option<'a>>) -> x.Value <- None) gadt_links
-
+    
     /// ### assert_foralls_used'
     let assert_foralls_used' (errors : (VSCRange * TypeError) ResizeArray) outside_foralls r x =
         let h = HashSet()
@@ -6365,7 +6456,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             errors.Add(r, UnusedTypeVariable vars)
     /// ### assert_foralls_used
     let assert_foralls_used errors r x = assert_foralls_used' errors Set.empty r x
-
+    
     /// ### validate_nominal
     let validate_nominal (errors : _ ResizeArray) global_id body v =
         // Stack union types and regular nominals must not be recursive.
@@ -6388,7 +6479,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | RawTUnion(_,a,_,_) -> Map.find name a |> snd
                     | _ -> failwith "Compiler error: Expected an union."
                 let is_stack = b = UStack
-
+    
                 // Makes sure that the GADT constructor is resulting in its own type.
                 // Also make sure that it's not using an instance of itself in its constructor other than in first position.
                 let rec assert_gadt_has_proper_specialized_constructor = function
@@ -6397,7 +6488,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         assert_gadt_has_proper_specialized_constructor a
                         if is_stack then assert_nominal_non_recursive b
                     | _ -> errors.Add(range_of_texpr_gadt_constructor body, IncorrectGADTConstructorType)
-
+    
                 let assert_gadt_is_valid v =
                     let rec find_gadt_constructor outside_foralls = function
                         | TyForall(n,t) -> find_gadt_constructor (Set.add n.name outside_foralls) t
@@ -6409,9 +6500,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | b ->
                             assert_gadt_has_proper_specialized_constructor b
                             assert_foralls_used' errors outside_foralls (range_of_texpr_gadt_constructor body) b
-
+    
                     find_gadt_constructor Set.empty v
-
+    
                 if is_gadt then assert_gadt_is_valid v
                 else
                     if is_stack then assert_nominal_non_recursive v
@@ -6419,19 +6510,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 )
         | _ ->
             assert_nominal_non_recursive v
-
+    
     /// ### kind_to_rawkind
     let rec kind_to_rawkind (x : TT) : RawKindExpr =
         match visit_tt x with
         | KindMetavar _ | KindType -> RawKindStar
         | KindFun(a,b) -> RawKindFun(kind_to_rawkind a, kind_to_rawkind b)
-
+    
     /// ### var_to_hovar
     let var_to_hovar r (x : Var) : HoVar = r,(x.name,kind_to_rawkind x.kind)
-
+    
     /// ### var_to_typevar
     let var_to_typevar r (x : Var) : TypeVar = var_to_hovar r x, [] // In the bottom up segment the constrains aren't checked anywhere so we'll put an empty list here.
-
+    
     /// ### infer
     let infer package_id module_id (top_env' : TopEnv) expr =
         let at_tag i = {package_id=package_id; module_id=module_id; tag=i}
@@ -6446,7 +6537,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let mutable autogened_forallvar_count_in_typecase = 0
         let mutable autogened_forallvar_count_in_funs = 0
         let hover_types = HoverTypes()
-
+    
         /// Fills in the type applies and annotations, and generalizes statements. Also strips annotations from terms and patterns.
         /// Dealing with recursive statement type applies requires some special consideration.
         let fill r rec_term expr =
@@ -6577,11 +6668,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | PatNominal(r,a,b,c) -> PatNominal(r,a,b,f c)
                     | PatArray(r,a) -> PatArray(r,List.map f a)
                 rec_term, f x'
-
+    
             let x = fill_foralls r rec_term expr
             assert (0 = errors.Count)
             x
-
+    
         let fresh_kind () = KindMetavar {contents'=None}
         let fresh_var'' x = TyMetavar (x, ref None)
         let fresh_var' scope kind = fresh_var'' {scope=scope; constraints=Set.empty; kind=kind}
@@ -6595,14 +6686,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     v :: type_apply_args, b
                 | x -> [], subst m x
             loop [] x
-
+    
         let exists_subst_term scope (l : Var list, body) =
             let vars = l |> List.map (fun a -> fresh_subst_var scope a.constraints a.kind)
             vars, subst (List.zip l vars) body
-
+    
         let assert_exists_hasnt_metavars r vars =
             if List.exists has_metavars vars then errors.Add(r, ExistsShouldntHaveMetavars vars)
-
+    
         let generalize r scope (forall_vars : Var list) (body : T) =
             let h = HashSet(HashIdentity.Reference)
             List.iter (h.Add >> ignore) forall_vars
@@ -6628,13 +6719,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | TyComment(_,a) | TyLayout(a,_) | TyArray a -> f a
                 | TyMacro a -> List.iter (function TMLitVar a | TMVar a -> f a | TMText _ -> ()) a
                 | TyModule _ | TyInl _ -> ()
-
+    
             let f x s = TyForall(x,s)
             replace_metavars body
             let x = Seq.foldBack f generalized_metavars body |> List.foldBack f forall_vars |> term_subst
             if List.isEmpty forall_vars = false then assert_foralls_used errors r x
             x
-
+    
         let gadt_extract scope (v : T) =
             let forall_subst_all_gadt x =
                 let rec loop m x =
@@ -6650,7 +6741,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             match v with
             | TyFun(a,b,_) -> forall_vars,a,b
             | b -> forall_vars,TyB,b
-
+    
         let inline unify_kind' er r got expected =
             let rec loop (a'',b'') =
                 match visit_tt a'', visit_tt b'' with
@@ -6664,7 +6755,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let unify_gadt (gadt_links : T option ref ResizeArray option) (r : VSCRange) (got : T) (expected : T) : unit =
             let unify_kind got expected = unify_kind' KindError r got expected
             let er () = raise (InferTypeErrorException [r, TermError(got, expected)])
-
+    
             let rec constraint_process (con : Constraint Set) b =
                 let unify_kind got expected = unify_kind' KindErrorInConstraint r got expected
                 let body = function
@@ -6689,7 +6780,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | TyVar _ & x, _ -> [PrototypeConstraintCannotPropagateToVar(prot,x)]
                         | _ -> [ConstraintError(con,x)]
                     | con, x -> [ConstraintError(con,x)]
-
+    
                 match b with
                 | TyVar (_,{contents=Some x}) -> constraint_process con x
                 | TyVar (b,_) -> if con.IsSubsetOf b.constraints = false then [ForallVarConstraintError(b.name,con,b.constraints)] else []
@@ -6699,7 +6790,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         unify_kind b_kind (constraint_kind top_env con)
                         List.append (body (con,b)) ers
                         ) [] con
-
+    
             // Does occurs checking for recursive metavariables.
             // Does scope checking in forall vars.
             let validate_mvar_unification i x =
@@ -6725,7 +6816,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | TyMetavar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveMetavarsNotAllowed(got,expected)]) elif i.scope < x.scope then x.scope <- i.scope
                     | TyLayout(a,_) -> f a
                 f x
-
+    
             // Does occurs checking for recursive type variables.
             let rec validate_tvar_unification i x =
                 let f = validate_tvar_unification i
@@ -6738,7 +6829,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | TyRecord l -> Map.iter (fun _ -> f) l
                 | TyVar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveTypevarsNotAllowed(got,expected)])
                 | TyLayout(a,_) -> f a
-
+    
             let rec loop (a'',b'') =
                 match visit_t a'', visit_t b'' with
                 | TyComment(_,a), b | a, TyComment(_,b) -> loop (a,b)
@@ -6803,12 +6894,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         ) a b
                 | TyLayout(a,a'), TyLayout(b,b') when a' = b' -> loop (a,b)
                 | _ -> er ()
-
+    
             try loop (got, expected)
             with :? InferTypeErrorException as e -> errors.AddRange e.Data0
-
+    
         let unify range got expected = unify_gadt None range got expected
-
+    
         let apply_record r s l x =
             match visit_t x with
             | TySymbol x ->
@@ -6819,18 +6910,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     hover_types.AddHover (r,(x,com))
                 | None -> errors.Add(r,RecordIndexFailed x)
             | x -> errors.Add(r,ExpectedSymbolAsRecordKey x)
-
+    
         let assert_bound_vars env a =
             let keys_of m = Map.fold (fun s k _ -> Set.add k s) Set.empty m
             validate_bound_vars (loc_env top_env) env.constraints (keys_of env.term) (keys_of env.ty) (Choice1Of2 a) |> errors.AddRange
-
+    
         let fresh_var scope = fresh_var' scope KindType
-
+    
         let v_cons env a = Map.tryFind a env |> Option.orElseWith (fun () -> Map.tryFind a top_env.constraints)
         let v env top_env a = Map.tryFind a env |> Option.orElseWith (fun () -> Map.tryFind a top_env)
         let v_term env a = v env.term top_env.term a |> Option.map (function TyComment(com,x) -> com, visit_t x | x -> "", visit_t x)
         let v_ty env a = v env.ty top_env.ty a
-
+    
         let typevar_to_var scope cons (((_,(name,kind)),constraints) : TypeVar) : Var =
             let rec typevar = function
                 | RawKindWildcard -> fresh_kind()
@@ -6844,15 +6935,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | Some (C x) -> unify_kind r kind (constraint_kind top_env x); Some x
                     | None -> errors.Add(r,UnboundVariable x); None
                     ) |> Set.ofList
-
+    
             {scope=scope; constraints=cons; kind=kind_force kind; name=name}
-
+    
         let typevars scope env (l : TypeVar list) =
             List.mapFold (fun s x ->
                 let v = typevar_to_var scope env.constraints x
                 v, Map.add v.name (tyvar v) s
                 ) env.ty l
-
+    
         let rec term scope env s x = term' scope false env s x
         and term' scope is_in_left_apply (env : InferEnv) s x =
             let f = term scope env
@@ -6978,7 +7069,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | RawRecordWithInjectVar(a,b) -> with_inject with_symbol (a,b)
                         | RawRecordWithInjectVarModify(a,b) -> with_inject with_symbol_modify (a,b)
                         ) withs ([],fields)
-
+    
                 let eval m =
                     let m = (m,withs) ||> List.fold (fun m x ->
                         if x.is_modify then
@@ -6999,7 +7090,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             Map.add (i, x.symbol) x.var m
                         )
                     withouts |> List.fold (fun m x -> m |> Map.filter (fun (_, k) _ -> k <> x.symbol)) m
-
+    
                 let bind s = withs |> List.iter (fun x ->
                     if x.is_blocked = false then
                         if x.is_modify then
@@ -7011,7 +7102,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             |> Map.tryPick (fun (i, k') v -> if k' = x.symbol then Some (i, v) else None)
                             |> Option.iter (fun (_, k) -> k |> unify x.range x.var)
                     )
-
+    
                 let rec tail' m = function
                     | x :: xs ->
                         match f' x with
@@ -7030,7 +7121,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | TyMetavar _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
                         | a -> errors.Add(range_of_expr x, ExpectedSymbolInRecordWith a); eval Map.empty
                     | [] -> eval m
-
+    
                 let rec tail (m,s) = function
                     | x :: xs ->
                         match f' x with
@@ -7053,7 +7144,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | TyMetavar _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
                         | a -> errors.Add(range_of_expr x, ExpectedSymbolInRecordWith a); eval Map.empty
                     | [] -> bind s; eval m
-
+    
                 match l with
                 | [] ->
                     match visit_t s with TyRecord s -> bind s | _ -> ()
@@ -7432,7 +7523,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     List.iter (fun x -> loop v x) a
             loop s a
             gadt_links, gadt_typecases, update_env()
-
+    
         let nominal_term global_id tt name vars v =
             let constructor body =
                 let t,_ = List.fold (fun (a,k) b -> let k = trim_kind k in TyApply(a,tyvar b,k),k) (TyNominal global_id,tt) vars
@@ -7441,10 +7532,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             match v with
             | TyUnion(l,_) -> Map.fold (fun s (_,name) (is_gadt,v) -> Map.add name (if is_gadt then v else constructor v) s) Map.empty l
             | _ -> Map.add name (constructor v) Map.empty
-
+    
         let psucc = Hopac.Job.thunk >> Hopac.Hopac.memo
         let pfail = psucc (fun () -> FError(Unchecked.defaultof<_>))
-
+    
         let top_env_nominal top_env (global_id : GlobalId) tt name vars v : TopEnv =
             { top_env with
                 nominals_next_tag = max top_env.nominals_next_tag global_id.tag + 1
@@ -7453,7 +7544,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 term = Map.foldBack Map.add (nominal_term global_id tt name vars v) top_env.term
                 ty = Map.add name (TyNominal global_id) top_env.ty
                 }
-
+    
         let rec typevar = function
             | RawKindWildcard | RawKindStar -> KindType
             | RawKindFun(a,b) -> KindFun(typevar a, typevar b)
@@ -7462,7 +7553,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let v = {scope=0; kind=typevar t; name=n; constraints=Set.empty}
                 v, Map.add n (tyvar v) s
                 ) Map.empty x
-
+    
         let scope = 0
         let bundle_nominal_rec l' =
             let l,_ =
@@ -7471,13 +7562,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let tt = List.foldBack (fun (x : Var) s -> KindFun(x.kind,s)) l KindType
                     (at_tag i,name,l,env,tt,body), i+1
                     ) top_env.nominals_next_tag l'
-
+    
             top_env <-
                 {top_env with
                     nominals_aux = (top_env.nominals_aux, l) ||> List.fold (fun s (i,(_,name),_,_,tt,_) -> Map.add i {|name=name; kind=tt|} s)
                     ty = (top_env.ty, l) ||> List.fold (fun s (i,(_,name),_,_,_,_) -> Map.add name (TyNominal i) s)
                     }
-
+    
             List.fold (fun top_env (global_id,(r,name),vars,env_ty,tt,body) ->
                 let v = fresh_var scope
                 ty_init scope {term=Map.empty; ty=env_ty; constraints=Map.empty} v body
@@ -7485,7 +7576,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 validate_nominal errors global_id body v
                 top_env_nominal top_env global_id tt name vars v
                 ) inferTop_env_empty l
-
+    
         match expr with
         | BundleType(q,(r,name),vars',expr) ->
             let vars,env_ty = hovars vars'
@@ -7627,7 +7718,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 term scope {term=Map.empty; ty=env_ty; constraints=Map.empty} prot_body body
                 (if 0 = errors.Count then psucc (fun () -> FInstance(r,(fst prot, prot_id),(fst ins, ins_id),fill r Map.empty body)) else pfail),
                 AInclude {inferTop_env_empty with prototypes_instances = Map.add (prot_id,ins_id) ins_constraints Map.empty}
-
+    
             let fake _ = fail
             let check_ins on_succ =
                 match Map.tryFind (snd ins) top_env.ty with
@@ -7653,7 +7744,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             hovers = hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
             errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, show_type_error top_env b)
             }
-
+    
     /// ### base_types
     let base_types (default_env : DefaultEnv) =
         let var name = {scope=0; kind=KindType; constraints=Set.empty; name=name}
@@ -7683,7 +7774,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         "uint", TyPrim default_env.default_uint
         "float", TyPrim default_env.default_float
         ]
-
+    
     /// ### inferTop_env_default
     let inferTop_env_default default_env : TopEnv =
         // Note: `top_env_default` should have no nominals, prototypes or terms.
@@ -7701,25 +7792,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 "symbol", CSymbol
                 ] |> Map.ofList |> Map.map (fun _ -> C)
             }
-
+    
     module Infer =
         let base_types x =
             base_types x
-
+    
     /// ## Prepass
-
+    
     /// ### Id
     type Id = int32
-
+    
     /// ### ScopeEnv
     type ScopeEnv = {|free_vars : int []; stack_size : int|}
-
+    
     /// ### Scope
     type Scope = {term : ScopeEnv; ty : ScopeEnv}
-
+    
     /// ### Range
     type Range = {path : string; range : VSCRange}
-
+    
     /// ### Macro
     type Macro =
         | MText of string
@@ -7819,7 +7910,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TLayout of TPrepass * Layout
         | TMetaV of Id
         | TTypecase of Range * TPrepass * (TPrepass * TPrepass) list
-
+    
     /// ### Printable
     module Printable =
         type PMacro =
@@ -7920,7 +8011,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | TNominal of GlobalId
             | TArray of PT
             | TLayout of PT * Layout
-
+    
         let eval x =
             let recs = System.Collections.Generic.HashSet(HashIdentity.Reference)
             let pat_ref_term = Dictionary(HashIdentity.Reference)
@@ -8060,11 +8151,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | TPrepass.TNominal a -> TNominal a
                 | TPrepass.TArray a -> TArray(ty a)
                 | TPrepass.TLayout(a,b) -> TLayout(ty a,b)
-
+    
             match x with
             | Choice1Of2(x,ret) -> ret (term x)
             | Choice2Of2(x,ret) -> ret (ty x)
-
+    
     /// ### PrepassTopEnv
     type PrepassTopEnv = {
         prototypes_next_tag : int
@@ -8074,7 +8165,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         term : Map<string,E>
         ty : Map<string,TPrepass>
         }
-
+    
     /// ### prepassTop_env_empty
     let prepassTop_env_empty = {
         prototypes_next_tag = 0
@@ -8084,7 +8175,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         term = Map.empty
         ty = Map.empty
         }
-
+    
     /// ### prepassUnion
     let prepassUnion small big = {
         prototypes_next_tag = max small.prototypes_next_tag big.prototypes_next_tag
@@ -8108,20 +8199,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 s |> Map.add k v
             ) small.ty big.ty
         }
-
+    
     /// ### in_modulePrepass
     let in_modulePrepass m (a : PrepassTopEnv) =
         {a with
             ty = Map.add m (TModule a.ty) Map.empty
             term = Map.add m (EModule a.term) Map.empty
             }
-
+    
     /// ### PropagatedVarsEnv
     type PropagatedVarsEnv = {|vars : Set<int>; range : (int * int) option|}
-
+    
     /// ### PropagatedVars
     type PropagatedVars = {term : PropagatedVarsEnv; ty : PropagatedVarsEnv}
-
+    
     /// ### propagate
     // Attaches scopes to all the nodes.
     let propagate x =
@@ -8148,7 +8239,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let empty = empty' Set.empty Set.empty
         let singleton_term i = empty' (Set.singleton i) Set.empty
         let singleton_ty i = empty' Set.empty (Set.singleton i)
-
+    
         let scope_dict = Dictionary<obj,_>(HashIdentity.Reference)
         let scope x (v : PropagatedVars) = scope_dict.Add(x,v); empty' v.term.vars v.ty.vars
         let rec term x =
@@ -8239,16 +8330,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | TForall(_,i,a) | TArrow(i,a) as x -> scope x (ty a -. i)
             | TJoinPoint(_,a) as x -> scope x (ty a)
             | TArray(a) | TLayout(a,_) -> ty a
-
+    
         let _ = match x with Choice1Of2 x -> term x | Choice2Of2 x -> ty x
         scope_dict
-
+    
     /// ### ResolveEnvValue
     type ResolveEnvValue = {|term : Set<Id>; ty : Set<Id> |}
-
+    
     /// ### ResolveEnv
     type ResolveEnv = Map<int, ResolveEnvValue>
-
+    
     /// ### resolve_recursive_free_vars
     let resolve_recursive_free_vars env =
         Map.fold (fun (env : ResolveEnv) k v ->
@@ -8260,7 +8351,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 else s
             Map.add k (f {|term=Set.empty; ty=Set.empty|} k v) env
             ) env env
-
+    
     /// ### resolve
     let resolve (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -8330,7 +8421,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 f a; f b
             | EDefaultLitTest(_,_,t,_,a,b) | ENominalTest(_,t,_,_,a,b) | EAnnotTest(_,t,_,a,b) -> ty env t; f a; f b
             | ETypecase(_,a,b) -> ty env a; b |> List.iter (fun (a,b) -> ty env a; term env b)
-
+    
         and ty (env : ResolveEnv) x =
             let f = ty env
             match x with
@@ -8346,20 +8437,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | TTerm(_,a) -> term env a
             | TMacro(_,a) -> a |> List.iter (function TMText _ -> () | TMLitType a | TMType a -> f a)
             | TJoinPoint(_,a) | TLayout(a,_) | TArray(a) -> f a
-
+    
         match x with
         | Choice1Of2 x -> term Map.empty x
         | Choice2Of2 x -> ty Map.empty x
-
+    
     /// ### LowerSubEnv
     type LowerSubEnv = {|var : Map<int,int>; adj : int|}
-
+    
     /// ### LowerEnv
     type LowerEnv = {term : LowerSubEnv; ty : LowerSubEnv }
-
+    
     /// ### LowerEnvRec
     type LowerEnvRec = Map<int,LowerEnv -> E>
-
+    
     /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -8373,23 +8464,23 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 term = {|free_vars = fv v.term.vars env.term.var; stack_size = sz v.term.range|}
                 ty = {|free_vars = fv v.ty.vars env.ty.var; stack_size = sz v.ty.range|}
                 }
-
+    
             let vars v = Set.fold (fun (s,i) x -> Map.add x i s,i+1) (Map.empty, 0) v |> fst
             let adj len = function Some(min',_) -> len - min' | None -> 0
             let env : LowerEnv = {
                 term = {|var = vars v.term.vars; adj = adj scope.term.free_vars.Length v.term.range|}
                 ty = {|var = vars v.ty.vars; adj = adj scope.ty.free_vars.Length v.ty.range|}
                 }
-
+    
             scope, env
-
+    
         let adj_term (env : LowerEnv) i =
             let i' = i + env.term.adj
             i', {env with term = {|env.term with var = Map.add i i' env.term.var|}}
         let adj_ty (env : LowerEnv) i =
             let i' = i + env.ty.adj
             i', {env with ty = {|env.ty with var = Map.add i i' env.ty.var|}}
-
+    
         let rec term (env_rec : LowerEnvRec) (env : LowerEnv) x =
             let f = term env_rec env
             let g = ty env_rec
@@ -8613,55 +8704,55 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         match x with
         | Choice1Of2(x,ret) -> ret (term Map.empty env x)
         | Choice2Of2(x,ret) -> ret (ty Map.empty env x)
-
+    
     /// ### PartEvalPrepassEnv
     type PartEvalPrepassEnv = {
         term : {| env : Map<string,E>; i : Id; i_rec : Id |}
         ty : {| env : Map<string,TPrepass>; i : Id |}
         }
-
+    
     /// ### add_term
     let add_term (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i = term.i+1; env = Map.add k v term.env|} }
-
+    
     /// ### add_term_rec
     let add_term_rec (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i_rec = term.i_rec-1; env = Map.add k v term.env|} }
-
+    
     /// ### add_ty
     let add_ty (e : PartEvalPrepassEnv) k v = let ty = e.ty in {e with ty = {|ty with i = ty.i+1; env = Map.add k v ty.env|} }
-
+    
     /// ### add_wildcard
     let add_wildcard (e : PartEvalPrepassEnv) = let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} }
-
+    
     /// ### add_term_var
     let add_term_var (e : PartEvalPrepassEnv) k = e.term.i, add_term e k (EV e.term.i)
-
+    
     /// ### fresh_term_var
     let fresh_term_var (e : PartEvalPrepassEnv) = e.term.i, (let term = e.term in {e with term = {|term with i = term.i+1|} })
-
+    
     /// ### fresh_ty_var
     let fresh_ty_var (e : PartEvalPrepassEnv) = e.ty.i, (let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} })
-
+    
     /// ### add_term_rec_var
     let add_term_rec_var (e : PartEvalPrepassEnv) k = e.term.i_rec, add_term_rec e k (EV e.term.i_rec)
-
+    
     /// ### add_ty_var
     let add_ty_var (e : PartEvalPrepassEnv) k = e.ty.i, add_ty e k (TV e.ty.i)
-
+    
     /// ### add_ty_wildcard
     let add_ty_wildcard (e : PartEvalPrepassEnv) = e.ty.i, add_wildcard e
-
+    
     /// ### process_term
     let process_term (x : E) =
         let scope = propagate (Choice1Of2 x)
         resolve scope (Choice1Of2 x)
         lower scope (Choice1Of2(x,id))
-
+    
     /// ### process_ty
     let process_ty (x : TPrepass) =
         let scope = propagate (Choice2Of2 x)
         resolve scope (Choice2Of2 x)
         lower scope (Choice2Of2(x,id))
-
+    
     /// ### prepassModule_open
     let prepassModule_open (top_env : PrepassTopEnv) env a l =
         let a,b =
@@ -8677,14 +8768,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         term = {|env.term with env = Map.foldBack Map.add a env.term.env|}
         ty = {|env.ty with env = Map.foldBack Map.add b env.ty.env|}
         }
-
+    
     /// ### prepassPrepass
     let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
         let p r = {path=path; range=r}
         let at_tag i = { package_id = package_id; module_id = module_id; tag = i }
         let v_term (env : PartEvalPrepassEnv) x = Map.tryFind x env.term.env |> Option.defaultWith (fun () -> top_env.term.[x])
         let v_ty (env : PartEvalPrepassEnv) x = Map.tryFind x env.ty.env |> Option.defaultWith (fun () -> top_env.ty.[x])
-
+    
         // The functions in this block are basically renaming string id to int ids, in addition to pattern compilation.
         let rec compile_pattern (id : Id) (env : PartEvalPrepassEnv) (clauses : (Pattern * RawExpr) list) =
             let mutable term_var_count = env.term.i
@@ -8773,7 +8864,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | PatDyn(r,a) -> let id' = patvar() in ELet(p r,id',EOp(p r,Dyn,[EV id]),cp id' a on_succ on_fail)
                     | PatUnbox(r,q,a) -> let id' = patvar() in EUnbox(p r,q,id',EV id,cp id' a on_succ on_fail,on_fail)
                 (pat_refs_term, pat_refs_ty), pat_ref_term' on_succ (fun on_succ -> cp id pat on_succ (EPatternMemo on_fail))
-
+    
             let l, e = List.mapFoldBack loop clauses (EPatternMiss(EV id))
             l |> List.iter (fun (terms,tys) -> // The reason I am not evaling it in place is because of the var count which is mutable. I need to deal with the patterns first before replacing the strings in the body.
                 let env (dict,dict_type) =
@@ -8837,7 +8928,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         let f = function (RawMacroText _ | RawMacroTerm _ | RawMacroTypeLit _) as a -> a | RawMacroType(r,a) -> RawMacroType(r,f a)
                         RawTMacro(r, List.map f a)
                     | RawTLayout(r,a,b) -> RawTLayout(r,f a,b)
-
+    
                 let make_typecase x =
                     let rec loop vars x =
                         match x with
@@ -8863,7 +8954,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | RawTApply(r,a,b) ->
                 match f a, f b with
                 | TRecord(_,a') & a, TSymbol(_,b') & b ->
-
+    
                     match a' |> Map.tryPick (fun (_, k) v -> if k = b' then Some v else None) with
                     | Some x -> x
                     | None -> TApply(p r,a,b) // TODO: Will be an error during partial evaluation time. Could be substituted for an exception here, but I do not want to have errors during the prepass.
@@ -8963,18 +9054,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 EMacro(p r,a,ty env b)
             | RawMissingBody _ -> failwith "Compiler error: The missing body cases should have been validated."
             | RawAnnot(r,a,b) -> EAnnot(p r,f a,ty env b)
-
+    
         let env : PartEvalPrepassEnv =
             {
             term = {|env=Map.empty; i=0; i_rec= -1|}
             ty = {|env=Map.empty; i=0|}
             }
-
+    
         let eval_type ((r,(name,kind)) : HoVar) on_succ env =
             let id, env = add_ty_var env name
             TArrow(id,on_succ env)
         let eval_type' env l body = List.foldBack eval_type l body env |> process_ty
-
+    
         {|
         base_type = process_ty
         filled_top = fun x ->
@@ -9061,7 +9152,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 AOpen {prepassTop_env_empty with term=x.term.env; ty=x.ty.env}
             | FError _ -> AInclude prepassTop_env_empty
         |}
-
+    
     /// ### prepassTop_env_default
     let prepassTop_env_default default_env =
         let convert_infer_to_prepass x =
@@ -9076,26 +9167,26 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | TyFun(a,b,t) -> TFun(f a, f b, t)
                 | _ -> failwith "Compiler error: The base type in Infer is not supported in the prepass yet."
             f x
-
+    
         List.fold (fun (top_env : PrepassTopEnv) (k, x) ->
             {top_env with ty = Map.add k ((prepassPrepass -1 0 "<base_types>" top_env).base_type (convert_infer_to_prepass x)) top_env.ty}
             ) prepassTop_env_empty (Infer.base_types default_env)
-
+    
     /// ## PartEval
     // #r @"../../../../../../../.nuget/packages/softcircuits.ordereddictionary/3.2.0/lib/net8.0/SoftCircuits.OrderedDictionary.dll"
-
+    
     // open System
     open System.Collections.Generic
     // open SoftCircuits.Collections
     // open Common
-
+    
     /// ### Tag
     type Tag = int
-
+    
     /// ### L<'a,'b when 'a: equality and 'a: comparison>
     type [<CustomComparison;CustomEquality>] L<'a,'b when 'a: equality and 'a: comparison> =
         | L of 'a * 'b
-
+    
         override a.Equals(b) =
             match b with
             | :? L<'a,'b> as b -> match a,b with L(a,_), L(b,_) -> a = b
@@ -9106,24 +9197,24 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match b with
                 | :? L<'a,'b> as b -> match a,b with L(a,_), L(b,_) -> compare a b
                 | _ -> raise <| ArgumentException "Invalid comparison for T."
-
+    
     /// ### H<'a when 'a : equality>
     type H<'a when 'a : equality>(x : 'a) =
         let h = hash x
-
+    
         member _.Item = x
         override _.Equals(b) =
             match b with
             | :? H<'a> as b -> Object.ReferenceEquals(x,b.Item)
             | _ -> false
         override _.GetHashCode() = h
-
+    
     /// ### StackSize
     type StackSize = int
-
+    
     /// ### Nominal
     type Nominal = {|body : TPrepass; id : GlobalId; name : string|} ConsedNode // TODO: When the time comes to implement incremental compilation, make the `body` field a weak reference.
-
+    
     /// ### PartEvalMacro
     type PartEvalMacro = Text of string | Type of Ty | TypeLit of Ty
     and Ty =
@@ -9164,19 +9255,19 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     // Unions always go through a join point which enables them to be compared via ref eqaulity.
     // tags and tag_cases are straightforward mapping from cases for the sake of efficiency.
     and Union = {|cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool|} H
-
+    
     /// ### UnionView
     type UnionView = {| cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool |}
-
+    
     let inline union_view (h: Union) : UnionView = h.Item
     let inline union_cases (h: Union) : Map<int * string, Ty> = (union_view h).cases
-
-
+    
+    
     /// ### TermVar
     type TermVar =
         | WV of TyV
         | WLit of Literal
-
+    
     /// ### RData
     type RData =
         | ReB
@@ -9192,31 +9283,31 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | ReNominal of ConsedNode<RData * Ty>
         | ReV of ConsedNode<Tag * Ty>
         | ReHashMap of ConsedNode<(RData * RData)[]>
-
+    
     /// ### Trace
     type Trace = Range list
-
+    
     /// ### JoinPointKey
     type JoinPointKey =
         | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
         | JPClosure of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
-
+    
     /// ### JoinPointCall
     type JoinPointCall = JoinPointKey * TyV []
-
+    
     /// ### CodeMacro
     type CodeMacro =
         | CMText of string
         | CMTerm of Data * is_inline : bool
         | CMType of Ty
         | CMTypeLit of Ty
-
+    
     /// ### TypedBind
     type TypedBind =
         | TyLet of Data * Trace * TypedOp
         | TyLocalReturnOp of Trace * TypedOp * Data
         | TyLocalReturnData of Data * Trace
-
+    
     and TypedOp =
         | TyMacro of CodeMacro list
         | TyOp of Op * Data list
@@ -9241,10 +9332,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TyIndent of TypedBind []
         | TyJoinPoint of JoinPointCall
         | TyBackend of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty> * Range
-
+    
     /// ### UnionRewrite
     type UnionRewrite = UnionData of string * Data | UnionBlockers of string Set
-
+    
     /// ### LangEnv
     type LangEnv = {
         trace : Trace
@@ -9266,7 +9357,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         jp_closure_stack : System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>
         jp_type_stack : System.Collections.Generic.HashSet<ConsedNode<Ty []>>
         }
-
+    
     /// ### show_ty
     let show_ty x =
         let rec f prec x =
@@ -9293,7 +9384,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | YNominal x -> x.node.name
             | YMetavar _ -> "?"
         f -1 x
-
+    
     /// ### Type-class helpers for diagnostic validation
     /// Used to detect obvious cache collisions (e.g., returning i32 when function expected).
     let is_ty_callable ty =
@@ -9309,12 +9400,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | s when s.Contains("fun") || s.Contains("closure") || s.Contains("Func") -> true
             | _ -> false
         | _ -> false
-
+    
     let is_ty_primitive ty =
         match ty with
         | YPrim _ | YLit _ -> true
         | _ -> false
-
+    
     /// ### RetryTracker
     /// Thread-safe tracking of retry attempts for EJP0003 type errors.
     /// Helps detect when retries are resolving issues vs when they're failing consistently.
@@ -9322,54 +9413,54 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         open System
         open System.Collections.Concurrent
         open System.Threading
-
+    
         let mutable private attemptCount = 0
         let mutable private successCount = 0
         let mutable private failCount = 0
         let private inRetry = new ThreadLocal<int>(fun () -> 0)
-
+    
         let isInRetry () = inRetry.Value > 0
-
+    
         let enterRetry () =
             inRetry.Value <- inRetry.Value + 1
             Interlocked.Increment(&attemptCount) |> ignore
-
+    
         let exitRetrySuccess () =
             inRetry.Value <- max 0 (inRetry.Value - 1)
             Interlocked.Increment(&successCount) |> ignore
-
+    
         let exitRetryFail () =
             inRetry.Value <- max 0 (inRetry.Value - 1)
             Interlocked.Increment(&failCount) |> ignore
-
+    
         let getStats () =
             sprintf "attempts=%d success=%d fail=%d" attemptCount successCount failCount
-
+    
         let logIfActive () =
             let a, s, f = attemptCount, successCount, failCount
             if a > 0 then
                 DiagSidecar.emit (sprintf "RetryTracker: %s" (getStats ()))
-
+    
     /// ### DiagNN
     /// Small, online "neural-ish" helper for diagnostics: hashed embeddings + cosine similarity.
     /// Always enabled in v43+ for error pattern clustering. Lightweight and thread-safe.
     module DiagNN =
         open System
         open System.Collections.Concurrent
-
+    
         let private dims = 64
-
+    
         let inline enabled () = true  // v43: always on
-
+    
         let private centroids = ConcurrentDictionary<string, float []>()
         let private counts = ConcurrentDictionary<string, int>()
-
+    
         let private fnv1a32 (s: string) : uint32 =
             let mutable h = 2166136261u
             for i = 0 to s.Length - 1 do
                 h <- (h ^^^ uint32 (int s.[i])) * 16777619u
             h
-
+    
         let private embed (s: string) : float [] =
             let v = Array.zeroCreate<float> dims
             if String.IsNullOrEmpty s then v
@@ -9392,7 +9483,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let inv = 1.0 / sqrt norm
                     for i = 0 to dims - 1 do v.[i] <- v.[i] * inv
                 v
-
+    
         let private cosine (a: float []) (b: float []) : float =
             let mutable dot = 0.0
             let mutable i = 0
@@ -9400,7 +9491,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 dot <- dot + a.[i] * b.[i]
                 i <- i + 1
             dot
-
+    
         let record (clusterKey: string) (payload: string) : string option =
             if not (enabled ()) then None
             else
@@ -9441,7 +9532,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     Some (sprintf "cluster=%s count=%d near=[%s]" clusterKey c near)
                 with _ ->
                     None
-
+    
     /// ### CacheGeneration
     /// Global generation counter for cache invalidation in deep recursion scenarios.
     /// When cache corruption is detected (EJP0007/EJP0008), incrementing the generation
@@ -9449,11 +9540,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     module CacheGeneration =
         open System
         open System.Threading
-
+    
         let mutable private generation = 0L
         let private lastInvalidationTime = ref DateTime.MinValue
         let private invalidationReasons = System.Collections.Concurrent.ConcurrentQueue<string>()
-
+    
         // If cache invalidation is triggered due to suspected cache corruption (eg. apply mismatch),
         // we want the next build attempt to run JP work sequentially to avoid repeating the same race.
         // This latch is process-wide; it is reset at the start of each file build attempt loop.
@@ -9462,20 +9553,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let private onInvalidate = System.Collections.Concurrent.ConcurrentBag<string -> unit>()
         let registerOnInvalidate (f: string -> unit) =
             onInvalidate.Add f
-
-
+    
+    
         let requestSequential () =
             Interlocked.Exchange(&jp_force_sequential, 1) |> ignore
-
+    
         let resetSequentialRequest () =
             Interlocked.Exchange(&jp_force_sequential, 0) |> ignore
-
+    
         let isSequentialRequested () =
             Volatile.Read(&jp_force_sequential) = 1
-
+    
         /// Get current generation number
         let current () = Interlocked.Read(&generation)
-
+        do Progress88.set_gen_provider current
+    
         /// Invalidate cache generation with a reason string for diagnostics
         let invalidate (reason: string) =
             let newGen = Interlocked.Increment(&generation)
@@ -9492,7 +9584,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     try cb reason with _ -> ()
             with _ -> ()
             newGen
-
+    
         /// Snapshot recent invalidation reasons (most recent first), for diagnostics
         let reasonsSnapshot (n: int) : string list =
             try
@@ -9501,13 +9593,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 |> (fun a -> if n <= 0 then [||] else a |> Array.truncate (min n a.Length))
                 |> Array.toList
             with _ -> []
-
+    
         /// Check if a generation is stale (older than current)
         let isStale (g: int64) = g < Interlocked.Read(&generation)
-
+    
         /// Get recent invalidation reasons for diagnostics
         let getRecentReasons () = invalidationReasons.ToArray() |> Array.toList
-
+    
     /// ### RecursionTracker
     /// Thread-local recursion depth tracking for detecting deep nesting scenarios
     /// like sm'.replicate → join_body_unit loops that trigger cache corruption.
@@ -9515,11 +9607,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         open System
         open System.Threading
         open System.Collections.Concurrent
-
+    
         let private threadDepth = new ThreadLocal<int>(fun () -> 0)
         let mutable private maxObserved = 0
         let private deepCallSites = ConcurrentDictionary<string, int>()
-
+    
         /// Enter a recursive context, returns current depth
         let enter (site: string) : int =
             let d = threadDepth.Value + 1
@@ -9532,33 +9624,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             if d > 50 then
                 deepCallSites.AddOrUpdate(site, 1, (fun _ n -> n + 1)) |> ignore
             d
-
+    
         /// Exit a recursive context
         let exit () =
             threadDepth.Value <- max 0 (threadDepth.Value - 1)
-
+    
         /// Get current recursion depth for this thread
         let currentDepth () = threadDepth.Value
-
+    
         /// Set recursion depth directly (for BigStack thread inheritance)
         let setDepth (d: int) = threadDepth.Value <- d
-
+    
         /// Check if currently in deep recursion (> 100)
         let isDeep () = threadDepth.Value > 100
-
+    
         /// Check if moderately deep (> 50)
         let isModeratelyDeep () = threadDepth.Value > 50
-
+    
         /// Get max observed depth across all threads
         let getMaxObserved () = maxObserved
-
+    
         /// Get deep call site statistics
         let getDeepSites () = deepCallSites.ToArray() |> Array.toList
-
-
-
-
-
+    
+    
+    
+    
+    
     /// BigStack: Executes thunks on dedicated threads with large stacks.
     /// Used for deep recursion when EnsureSufficientExecutionStack triggers.
     /// 
@@ -9569,33 +9661,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     module BigStack =
         open System
         open System.Threading
-
+    
         /// Thread-local nesting counter (0 = main stack, >0 = inside BigStack)
         let private active : ThreadLocal<int> = new ThreadLocal<int>(fun () -> 0)
-
+    
         /// True if currently executing on a BigStack thread
         let isActive () = active.Value > 0
-
+    
         // SOTA defaults - no environment variable overrides
         let private stackMb = 256         // 256MB per stack level
         let private maxNestingLevels = 32 // 32 levels max (8GB total)
-
+    
         let private stackBytesFor (_tag: string) (_nestLevel: int) : int * int =
             // Fixed 256MB stack - proven sufficient for deep partial evaluation
             stackMb, (stackMb * 1024 * 1024)
-
+    
         /// Get effective MB for the given tag (always 256MB)
         let getMb (_tag: string) = stackMb
-
+    
         /// Current nesting level (0 = main, 1+ = BigStack depth)
         let getNest () = active.Value
-
+    
         /// Maximum allowed nesting (32 levels)
         let getMaxNest () = maxNestingLevels
-
+    
         /// Stack size in MB (256MB)
         let getGlobalMb () = stackMb
-
+    
         /// Execute f on a BigStack thread if nesting limit not exceeded.
         /// Returns None if max nesting reached (caller should handle gracefully).
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
@@ -9629,15 +9721,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     DiagSidecar.emit (sprintf "BIGSTACK spawn tag=%s nest=%d/%d mb=%d bytes=%d parent_tid=%d" tag nestLevel maxNestingLevels mb stackBytes Thread.CurrentThread.ManagedThreadId)
                 with _ -> ()
                 // v107-alpha14: avoid flowing ExecutionContext/AsyncLocal into BigStack threads
-
+    
                 let flow = System.Threading.ExecutionContext.SuppressFlow()
-
+    
                 try
-
+    
                     th.Start()
-
+    
                 finally
-
+    
                     flow.Undo()
                 th.Join()
                 try
@@ -9665,7 +9757,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match err with
                 | Some e -> raise e
                 | None -> Some res
-
+    
     /// ### EvalCycleGuard
     /// Tracks active evaluation nodes (by object identity hash) per thread.
     /// If we re-enter `term` on the same node before completing, we likely hit a
@@ -9680,15 +9772,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         open System.Threading
         open System.Collections.Generic
         open System.Runtime.CompilerServices
-
+    
         type private RefEqComparer() =
             interface IEqualityComparer<obj> with
                 member _.Equals(a,b) = obj.ReferenceEquals(a,b)
                 member _.GetHashCode(a) = RuntimeHelpers.GetHashCode(a)
-
+    
         // node -> reentry count
         let private active = new ThreadLocal<Dictionary<obj,int>>(fun () -> Dictionary<obj,int>(RefEqComparer()))
-
+    
         /// Returns the current re-entry count after entering (1 means first entry).
         let enter (node: obj) : int =
             let d = active.Value
@@ -9700,7 +9792,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | false, _ ->
                 d.[node] <- 1
                 1
-
+    
         /// Decrements the re-entry count; removes node when it reaches 0.
         let exit (node: obj) : unit =
             let d = active.Value
@@ -9710,10 +9802,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | true, n ->
                 d.[node] <- n - 1
             | _ -> ()
-
+    
         let snapshotHashes (n: int) : int[] =
             active.Value.Keys |> Seq.truncate n |> Seq.map RuntimeHelpers.GetHashCode |> Seq.toArray
-
+    
     /// ### EvalCycleGuardKey
     /// Versão "por chave" (string) do guard de ciclo, para quando o nó sendo avaliado é struct/value-type
     /// e o boxing quebra a identidade por referência. A chave padrão é o range (path:linha:col-inicio/fim).
@@ -9721,10 +9813,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         open System
         open System.Threading
         open System.Collections.Generic
-
+    
         // key -> reentry count
         let private active = new ThreadLocal<Dictionary<string,int>>(fun () -> Dictionary<string,int>(StringComparer.Ordinal))
-
+    
         /// Returns the current re-entry count after entering (1 means first entry).
         let enter (key: string) : int =
             let d = active.Value
@@ -9736,7 +9828,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | _ ->
                 d.[key] <- 1
                 1
-
+    
         let exit (key: string) =
             let d = active.Value
             match d.TryGetValue key with
@@ -9745,10 +9837,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | true, n ->
                 d.[key] <- n - 1
             | _ -> ()
-
+    
         let snapshotKeys (n: int) : string[] =
             active.Value.Keys |> Seq.truncate n |> Seq.toArray
-
+    
     /// ### Range helpers (prepass / evaluation)
     /// These helpers are used by diagnostics and recursion guards. They intentionally prefer
     /// whatever range is available in the node itself, and fall back to the current trace (if any)
@@ -9756,7 +9848,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     let private vscpos0 : VSCPos = {| line = 0; character = 0 |}
     let private vscrange0 : VSCRange = (vscpos0, vscpos0)
     let private range0 : Range = { path = "<unknown>"; range = vscrange0 }
-
+    
     let rec range_of_tprepass_or (fallback: Range) (x: TPrepass) : Range =
         match x with
         | TForall'(r,_,_,_) -> r
@@ -9783,7 +9875,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | TArray a -> range_of_tprepass_or fallback a
         | TPatternRef a -> range_of_tprepass_or fallback !a
         | TV _ | TPrim _ | TNominal _ | TExists | TModule _ | TMetaV _ -> fallback
-
+    
     let rec range_of_e_or (fallback: Range) (x: E) : Range =
         match x with
         | EFun(r,_,_,_) -> r
@@ -9841,7 +9933,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     module SuspectCache =
         open System
         open System.Collections.Concurrent
-
+    
         type SuspectEntry = {
             generation: int64
             timestamp: DateTime
@@ -9849,14 +9941,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             errorType: string
             hitCount: int
         }
-
+    
         let private suspects = ConcurrentDictionary<int, SuspectEntry>()  // key hash -> entry
         let private maxEntries = 1000
-
+    
         /// Hash a cache key for tracking
         let private hashKey (key: obj) : int =
             try key.GetHashCode() with _ -> 0
-
+    
         /// Mark a key as suspect
         let mark (key: obj) (errorType: string) =
             let h = hashKey key
@@ -9885,23 +9977,23 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let cur = CacheGeneration.current ()
             // Keep suspects alive across a small retry window (current + next 2 generations).
             entry.generation + 2L >= cur
-
-
-
+    
+    
+    
         /// Check if a key is suspect in current generation
         let isSuspect (key: obj) : bool =
             let h = hashKey key
             match suspects.TryGetValue(h) with
             | true, entry -> isActive entry
             | _ -> false
-
+    
         /// Check if a key is suspect and return entry
         let tryGetSuspect (key: obj) : SuspectEntry option =
             let h = hashKey key
             match suspects.TryGetValue(h) with
             | true, entry when isActive entry -> Some entry
             | _ -> None
-
+    
         /// Clear suspects for a generation (after successful retry)
         let clearForGeneration (gen: int64) =
             let toRemove =
@@ -9910,7 +10002,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             for kv in toRemove do
                 suspects.TryRemove(kv.Key) |> ignore
             DiagSidecar.emit (sprintf "SuspectCache.clearForGeneration: gen=%d removed=%d" gen toRemove.Length)
-
+    
         /// Get recent suspects for diagnostics
         let getRecent (n: int) : (int * SuspectEntry) list =
             suspects.ToArray()
@@ -9918,13 +10010,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             |> Array.truncate n
             |> Array.map (fun kv -> kv.Key, kv.Value)
             |> Array.toList
-
+    
         /// Get count of suspects in current generation
         let currentCount () =
             suspects.ToArray()
             |> Array.filter (fun kv -> isActive kv.Value)
             |> Array.length
-
+    
     /// ### BitMamba (BitNet B1.58)
     /// True ternary neural network for predictive cache management.
     /// Uses BitNet B1.58 architecture: weights quantized to {-1, 0, +1}.
@@ -9938,7 +10030,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     module BitMamba =
         open System
         open System.Collections.Concurrent
-
+    
         type AccessPattern = {
             keyHash: int
             depth: int
@@ -9947,12 +10039,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             timestamp: DateTime
             wasSuspect: bool
         }
-
+    
         type Prediction =
             | LikelyValid
             | LikelySuspect
             | Unknown
-
+    
         type KeyStat = {
             accesses: int
             failures: int
@@ -9960,20 +10052,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             lastTs: DateTime
             lastFailTs: DateTime option
         }
-
+    
         /// B1.58 ternary weight: -1, 0, or +1
         type TernaryWeight = int8
-
+    
         /// BitNet B1.58 layer with ternary weights
         type BitNetLayer = {
             weights: TernaryWeight[,]  // [input_dim, output_dim]
             biases: int[]              // Integer biases for efficiency
         }
-
+    
         let private inputDim = 5      // depth, failRate, accessCount, timeSinceLastFail, isSuspect
         let private hiddenDim = 16
         let private outputDim = 3     // Valid, Suspect, Unknown
-
+    
         // Online-learned weights (initialized with heuristic priors)
         let private layer1Weights = Array2D.init inputDim hiddenDim (fun i j ->
             // Prior: depth and failRate strongly predict suspicion
@@ -9988,7 +10080,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | 2, 3 -> -1y
             | _ -> 0y      // Pruned connections
         )
-
+    
         let private layer2Weights = Array2D.init hiddenDim outputDim (fun i j ->
             // Map hidden activations to predictions
             match j with
@@ -9997,28 +10089,28 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | 2 -> 0y  // Unknown is default
             | _ -> 0y
         )
-
+    
         let private layer1Biases = Array.init hiddenDim (fun _ -> 0)
         let private layer2Biases = [| 0; -2; 1 |]  // Bias toward Unknown, against Suspect
-
+    
         // Statistics tracking
         let private recentAccesses = ConcurrentQueue<AccessPattern>()
         let private maxHistory = 256
         let private keyStats = ConcurrentDictionary<int, KeyStat>()
-
+    
         // Online learning: track prediction accuracy (mutable for Interlocked)
         let mutable private predictionCount = 0L
         let mutable private correctPredictions = 0L
-
+    
         /// Quantize float feature to int8 range [-127, 127]
         let inline private quantize (x: float) : int =
             int (Math.Clamp(x * 127.0, -127.0, 127.0))
-
+    
         /// B1.58 forward pass: compute activations using ternary weights
         let private forward (features: float[]) : int[] =
             // Quantize inputs
             let qInput = features |> Array.map quantize
-
+    
             // Hidden layer: sum of ternary-weighted inputs
             let hidden = Array.init hiddenDim (fun j ->
                 let mutable sum = layer1Biases.[j]
@@ -10028,7 +10120,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 // ReLU activation (implemented as max 0)
                 max 0 sum
             )
-
+    
             // Output layer
             let output = Array.init outputDim (fun j ->
                 let mutable sum = layer2Biases.[j]
@@ -10038,7 +10130,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 sum
             )
             output
-
+    
         let private updateStat (h: int) (f: KeyStat -> KeyStat) =
             let gen = CacheGeneration.current ()
             let now = DateTime.UtcNow
@@ -10052,13 +10144,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     f { baseStat with lastTs = now }
                 )
             ) |> ignore
-
+    
         /// Extract features from key statistics
         let private extractFeatures (h: int) : float[] =
             let depth = float (RecursionTracker.currentDepth ())
             let gen = CacheGeneration.current ()
             let now = DateTime.UtcNow
-
+    
             match keyStats.TryGetValue(h) with
             | true, st when st.generation = gen ->
                 let failRate = if st.accesses > 0 then float st.failures / float st.accesses else 0.0
@@ -10072,7 +10164,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | _ ->
                 let isSuspect = if SuspectCache.currentCount () > 0 then 1.0 else 0.0
                 [| depth / 1000.0; 0.0; 0.0; 1.0; isSuspect |]
-
+    
         /// Record a cache access for pattern learning
         let recordAccess (key: obj) =
             let h = try key.GetHashCode() with _ -> 0
@@ -10089,7 +10181,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let mutable v = Unchecked.defaultof<AccessPattern>
                 recentAccesses.TryDequeue(&v) |> ignore
             updateStat h (fun st -> { st with accesses = st.accesses + 1 })
-
+    
         /// Record a failure for a key (updates weights via online learning)
         let recordFailure (key: obj) =
             let h = try key.GetHashCode() with _ -> 0
@@ -10097,7 +10189,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             updateStat h (fun st -> { st with accesses = st.accesses + 1; failures = st.failures + 1; lastFailTs = Some now })
             // Online learning: this was a miss, should have predicted Suspect
             // (Full weight update would go here in a real implementation)
-
+    
         /// Verify prediction outcome (for online learning accuracy tracking)
         let verifyPrediction (key: obj) (actuallyFailed: bool) =
             let h = try key.GetHashCode() with _ -> 0
@@ -10108,26 +10200,26 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             // Track if prediction was correct
             if (predictedSuspect && actuallyFailed) || (not predictedSuspect && not actuallyFailed) then
                 System.Threading.Interlocked.Increment(&correctPredictions) |> ignore
-
+    
         /// Predict if a key access is likely to succeed or fail using B1.58 network
         let predict (key: obj) : Prediction =
             let h = try key.GetHashCode() with _ -> 0
             let features = extractFeatures h
             let output = forward features
-
+    
             // Argmax to get prediction
             let maxIdx = 
                 if output.[0] > output.[1] && output.[0] > output.[2] then 0
                 elif output.[1] > output.[0] && output.[1] > output.[2] then 1
                 else 2
-
+    
             System.Threading.Interlocked.Increment(&predictionCount) |> ignore
-
+    
             match maxIdx with
             | 0 -> LikelyValid
             | 1 -> LikelySuspect
             | _ -> Unknown
-
+    
         /// Should we preemptively retry before waiting for cache?
         let shouldPreemptiveRetry () : bool =
             match predict (box 0) with  // Use dummy key for global check
@@ -10137,7 +10229,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let depth = RecursionTracker.currentDepth ()
                 let suspectCount = SuspectCache.currentCount ()
                 depth > 75 && suspectCount > 0
-
+    
         /// Get pattern summary for diagnostics (includes B1.58 accuracy)
         let getSummary () : string =
             let patterns = recentAccesses.ToArray()
@@ -10147,7 +10239,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 if patterns.Length > 0 then
                     float (patterns |> Array.filter (fun p -> p.wasSuspect) |> Array.length) / float patterns.Length
                 else 0.0
-
+    
             let gen = CacheGeneration.current ()
             let stats = keyStats.ToArray()
             let keys = stats.Length
@@ -10155,45 +10247,45 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 stats
                 |> Array.filter (fun kv -> kv.Value.generation = gen && kv.Value.failures > 0)
                 |> Array.length
-
+    
             let preds = System.Threading.Interlocked.Read(&predictionCount)
             let correct = System.Threading.Interlocked.Read(&correctPredictions)
             let accuracy = if preds > 0L then float correct / float preds else 0.0
-
+    
             sprintf "b158=patterns=%d avgDepth=%.1f suspectRate=%.2f keys=%d genFailKeys=%d preds=%d acc=%.2f" 
                 patterns.Length avgDepth suspectRate keys genFailKeys preds accuracy
-
+    
     /// ### EJPCodes
     /// Centralized error code definitions and classification.
     /// EJP = Error in Join Point processing
     module EJPCodes =
         /// EJP0002: Join point annotation type mismatch
         let [<Literal>] EJP0002 = "EJP0002"
-
+    
         /// EJP0003: Type error during parallel evaluation (race condition)
         let [<Literal>] EJP0003 = "EJP0003"
-
+    
         /// EJP0007: Apply type mismatch - primitive where callable expected
         let [<Literal>] EJP0007 = "EJP0007"
-
+    
         /// EJP0008: Deep recursion cache corruption
         let [<Literal>] EJP0008 = "EJP0008"
-
-
+    
+    
         /// EJP0009: Term/type recursion depth exceeded (stack overflow preemption)
         let [<Literal>] EJP0009 = "EJP0009"
-
-
+    
+    
         /// EJP0010: Insufficient execution stack (preempted stack overflow)
         let [<Literal>] EJP0010 = "EJP0010"
-
+    
         /// EJP0011: Re-entrant term evaluation cycle detected
         let [<Literal>] EJP0011 = "EJP0011"
-
+    
         /// EJP0012: Loop specialization cap exceeded
         let [<Literal>] EJP0012 = "EJP0012"
-
-
+    
+    
         /// EJP0013: Void instance construction (likely cache corruption)
         let [<Literal>] EJP0013 = "EJP0013"
         /// Classify an error message to an EJP code
@@ -10237,7 +10329,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 Some EJP0003
             else
                 None
-
+    
         /// Get error description
         let describe (code: string) : string =
             match code with
@@ -10251,40 +10343,40 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | "EJP0012" -> "Loop specialization cap exceeded"
             | "EJP0013" -> "Void instance construction (likely cache corruption)"
             | _ -> "Unknown error"
-
+    
     /// ### LoopSpecializationGuard
     /// Prevents unbounded specialization from loop patterns like loop in listm'.spi.
     /// These patterns create unique JP keys per iteration, causing exponential growth.
     /// The guard caps specializations per JP name and emits EJP0012 when exceeded.
     module LoopSpecializationGuard =
         open System.Collections.Concurrent
-
+    
         /// Maximum specializations per JP name (default: 5000)
         /// Alpha43: make the cap *name-sensitive* to stop pathological patterns early (<anon>/루프).
         let private maxSpecsPerName_default = 1000
-
+    
         let inline capForName (jpName: string) =
             if jpName = "<anon>" || jpName = "루프" then 512
             elif jpName.Contains("루프") then 512
             else maxSpecsPerName_default
-
+    
         /// Maximum unique JP names to track (prevent unbounded memory)
         let private maxTrackedNames = 10000
-
+    
         /// Count of specializations per JP name
         let private specCounts = ConcurrentDictionary<string, int64>()
-
+    
         /// Names that have exceeded their cap (for fast rejection)
         let private cappedNames = ConcurrentDictionary<string, bool>()
-
+    
         /// Total rejections (mutable for Interlocked)
         let mutable private rejections = 0L
-
+    
         /// Check if a JP name has exceeded its specialization cap
         let isExceeded (jpName: string) : bool =
             if System.String.IsNullOrEmpty(jpName) then false
             else cappedNames.ContainsKey(jpName)
-
+    
         /// Record a specialization attempt. Returns true if allowed, false if capped.
         let tryRecordSpecialization (jpName: string) : bool =
             if System.String.IsNullOrEmpty(jpName) then true
@@ -10306,13 +10398,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         false
                     else
                         true
-
+    
         /// Get current count for a JP name
         let getCount (jpName: string) : int64 =
             match specCounts.TryGetValue(jpName) with
             | true, c -> c
             | _ -> 0L
-
+    
         /// Get summary for diagnostics
         let getSummary () : string =
             let topNames = 
@@ -10325,13 +10417,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let cappedCount = cappedNames.Count
             sprintf "loopGuard: tracked=%d capped=%d rejections=%d top=[%s]" 
                 specCounts.Count cappedCount totalRej topNames
-
+    
         /// Reset (for testing)
         let reset () =
             specCounts.Clear()
             cappedNames.Clear()
             rejections <- 0L
-
+    
     /// ### format_jp_annot_mismatch
     /// Rust-ish, multi-line diagnostic for join-point annotation mismatches.
     /// Keep this definition after Ty + show_ty (no forward references).
@@ -10361,29 +10453,29 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | _ -> None
                     | _ -> None
                 | _ -> None
-
+    
             let name =
                 match jp_name, name_from_tables with
                 | Some n, _ when n <> "" -> n
                 | _, Some n when n <> "" -> n
                 | _ -> "<anonymous>"
-
+    
             let backend = d.backend.node
-
+    
             let show_pos (p: VSCPos) = sprintf "%d:%d" (p.line + 1) (p.character + 1)
-
+    
             let show_site (r: Range) =
                 let (p0, p1) = r.range
                 sprintf "%s:({ line = %d; character = %d }, { line = %d; character = %d })"
                     r.path (p0.line + 1) (p0.character + 1) (p1.line + 1) (p1.character + 1)
-
+    
             let primary_site =
                 match d.trace with
                 | r :: _ ->
                     let (p0, _) = r.range
                     sprintf "%s:%s" r.path (show_pos p0)
                 | [] -> "<unknown>"
-
+    
             let sha1_12 (s: string) : string =
                 try
                     let bytes = System.Text.Encoding.UTF8.GetBytes s
@@ -10393,8 +10485,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     |> Seq.map (fun b -> b.ToString("x2"))
                     |> String.concat ""
                 with _ -> "000000000000"
-
-
+    
+    
             let trace_pretty =
                 match d.trace with
                 | [] -> "<empty trace>"
@@ -10403,27 +10495,27 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | a :: b :: rest when a = b -> dedup acc (b :: rest)
                         | a :: rest -> dedup (a :: acc) rest
                         | [] -> List.rev acc
-
+    
                     let frames =
                         d.trace
                         |> List.map show_site
                         |> dedup []
-
+    
                     // Always include full trace for better diagnostics
                     let shown = frames |> List.truncate 80
-
+    
                     let body =
                         shown
                         |> List.mapi (fun i s -> sprintf "  %2d: %s" (i + 1) s)
                         |> String.concat "\n"
-
+    
                     let frames_len = List.length frames
                     let shown_len = List.length shown
-
+    
                     if frames_len > shown_len then
                         body + sprintf "\n  ... (%d more)" (frames_len - shown_len)
                     else body
-
+    
             let fun_diff =
                 match expected, got with
                 | YFun (arg_expected, ret_expected, _), YFun (arg_got, ret_got, _) ->
@@ -10443,25 +10535,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         sprintf "  = hint: expected param matches found return (%s). This can look like a swapped arrow direction or capture confusion.\n" (show_ty arg_expected)
                     else ""
                 | _ -> ""
-
+    
             let fun_diff = fun_diff + fun_hint
-
-
+    
+    
             let inflight_method_tags_sample =
                 d.jp_method_stack |> Seq.truncate 12 |> Seq.map (fun x -> x.tag) |> Seq.toArray
             let inflight_type_tags_sample =
                 d.jp_type_stack |> Seq.truncate 12 |> Seq.map (fun x -> x.tag) |> Seq.toArray
-
+    
             let inflight_method =
                 if d.jp_method_stack.Count > 0 then
                     sprintf "  = note: inflight(method) count=%d sample_tags=%A\n" d.jp_method_stack.Count inflight_method_tags_sample
                 else ""
-
+    
             let inflight_type =
                 if d.jp_type_stack.Count > 0 then
                     sprintf "  = note: inflight(type) count=%d sample_tags=%A\n" d.jp_type_stack.Count inflight_type_tags_sample
                 else ""
-
+    
             let sidecar_pretty =
                 match DiagSidecar.snapshot 12 with
                 | [] -> ""
@@ -10471,9 +10563,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         |> List.mapi (fun i s -> sprintf "  %2d: %s" (i + 1) s)
                         |> String.concat "\n"
                     sprintf "  |\n  = sidecar (SPIRAL_DIAG_SIDECAR=1):\n%s\n" body
-
+    
             let fingerprint = sha1_12 (sprintf "%s|%s|%d|%s|%s|%s" kind name tag (show_ty expected) (show_ty got) primary_site)
-
+    
             let key_repr_pretty =
                 match key with
                 | :? ConsedNode<RData [] * Ty [] * Ty> as k ->
@@ -10491,7 +10583,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     sprintf "<tag %d>%s env_term.len=%d env_type.len=%d annot=%s fingerprint=%s"
                         k.tag salt_line env_term.Length env_type.Length (show_ty annot) fingerprint
                 | _ -> sprintf "%O" key
-
+    
             // Always include source snippet for better error messages
             let source_snip =
                 match d.trace with
@@ -10508,8 +10600,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         else ""
                     with _ -> ""
                 | _ -> ""
-
-
+    
+    
             let nn_pretty =
                 match DiagNN.record ("EJP0002|" + sha1_12 (sprintf "%s->%s" (show_ty expected) (show_ty got)))
                         (sprintf "%s|%s|%s|%d|%s|%s" kind name primary_site tag (show_ty expected) (show_ty got)) with
@@ -10517,41 +10609,41 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | None -> ""
             sprintf
                 """error[EJP0002]: join point annotation mismatch
-  --> %s
-%s  |
-  = join-point: %s (kind=%s, tag=%d)
-  = backend: %s
-  = key: <tag %d>
-  = key_repr: %s
-  |
-  = declared (annotation): %s
-  = found (body): %s
-%s%s%s%s%s  |
-  = trace:
-%s
-  |
-  help: make the annotation match the body. If this appears only under parallel builds, try SPIRAL_HOPAC_PAR=1 to confirm an interleaving/cache race (and optionally SPIRAL_DIAG_SIDECAR=1 for extra telemetry, and SPIRAL_DIAG_TRACE_FULL=1 for a full trace).
-"""
+      --> %s
+    %s  |
+      = join-point: %s (kind=%s, tag=%d)
+      = backend: %s
+      = key: <tag %d>
+      = key_repr: %s
+      |
+      = declared (annotation): %s
+      = found (body): %s
+    %s%s%s%s%s  |
+      = trace:
+    %s
+      |
+      help: make the annotation match the body. If this appears only under parallel builds, try SPIRAL_HOPAC_PAR=1 to confirm an interleaving/cache race (and optionally SPIRAL_DIAG_SIDECAR=1 for extra telemetry, and SPIRAL_DIAG_TRACE_FULL=1 for a full trace).
+    """
                 primary_site source_snip name kind tag backend tag key_repr_pretty (show_ty expected) (show_ty got)
                 fun_diff inflight_method inflight_type nn_pretty sidecar_pretty trace_pretty
-
+    
     /// ### PartEvalTopEnv
     type PartEvalTopEnv = {
         prototypes_instances : Dictionary<GlobalId * GlobalId, E>
         nominals : Dictionary<GlobalId, Nominal>
         backend : string
         }
-
+    
     /// ### PartEvalTypeError
     exception PartEvalTypeError of Trace * string
-
+    
     /// ### raise_type_error
-    let raise_type_error (d: LangEnv) (x: string) =
+    let raise_type_error (d: LangEnv) (x: string) : 'a =
         let x =
             if x.Contains("Compiler: par") then x
             else x + sprintf "\nCompiler: par\nTraceDepth: %d" d.trace.Length
         raise (PartEvalTypeError(d.trace,x))
-
+    
     /// ### data_to_rdata
     let data_to_rdata (d: LangEnv) (hc_table : HashConsTable) call_data =
         let hc x = lock hc_table (fun () -> hc_table.Add x)
@@ -10600,7 +10692,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 v
         let x = HopacExtensions.S.map f call_data
         call_args.ToArray(),x
-
+    
     /// ### rename_global_term
     // This rename is a consideration for when I do incremental compilation.
     // In order to allow them to be cleaned by the garbage collection, I do not want the
@@ -10653,7 +10745,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let visiting = HashSet(HashIdentity.Reference)
             f visiting x
         {s with env_global_term = HopacExtensions.A.map f0 s.env_global_term}
-
+    
     /// ### data_free_vars
     let data_free_vars call_data =
         let m = HashSet(HashIdentity.Reference)
@@ -10671,7 +10763,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
         f call_data
         free_vars.ToArray()
-
+    
     /// ### data_free_vars_replace
     let data_free_vars_replace s (d : Dictionary<TyV,TyV>) (x : Data) =
         let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -10708,13 +10800,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     raise_type_error s "The mutable compile-time HashSets cannot have their free vars replaced."
                 ) x
         f x
-
+    
     /// ### (|C|)
     let inline (|C|) (x : _ ConsedNode) = x.node
-
+    
     /// ### (|C'|)
     let inline (|C'|) (x : _ ConsedNode) = x.node, x.tag
-
+    
     /// ### rdata_free_vars
     let rdata_free_vars call_data =
         let m = HashSet<int>()
@@ -10729,7 +10821,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | ReSymbol _ | ReLit _ | ReTLit _ | ReB -> ()
         HopacExtensions.A.iter g call_data
         free_vars.ToArray()
-
+    
     /// ### data_term_vars'
     let data_term_vars' call_data =
         let term_vars = ResizeArray(64)
@@ -10744,7 +10836,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
         f call_data
         term_vars.ToArray()
-
+    
     /// ### data_nominals
     let data_nominals call_data =
         let term_vars = ResizeArray(64)
@@ -10759,7 +10851,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
         f call_data
         term_vars.ToArray()
-
+    
     /// ### data_term_vars
     let data_term_vars call_data =
         let term_vars = ResizeArray(64)
@@ -10775,7 +10867,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
         f call_data
         term_vars.ToArray()
-
+    
     /// ### lit_to_primitive_type
     let lit_to_primitive_type = function
         | LitUInt8 _ -> UInt8T
@@ -10791,16 +10883,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | LitBool _ -> BoolT
         | LitString _ -> StringT
         | LitChar _ -> CharT
-
+    
     /// ### lit_to_ty
     let lit_to_ty x = lit_to_primitive_type x |> YPrim
-
+    
     /// ### is_tco_compatible
     let is_tco_compatible = function
         | TyApply _ | TyJoinPoint _ | TyArrayLiteral _ | TyUnionBox _ | TyToLayout _
         | TyIf _ | TyIntSwitch _ | TyUnionUnbox _ | TyArrayCreate _ | TyFailwith _ -> true
         | _ -> false
-
+    
     /// ### seq_apply
     let seq_apply (d: LangEnv) end_dat =
         let inline end_ () = d.seq.Add(TyLocalReturnData(end_dat,d.trace))
@@ -10810,7 +10902,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | _ -> end_()
         else end_()
         d.seq.ToArray()
-
+    
     /// ### cse_tryfind
     let cse_tryfind (d: LangEnv) key =
         d.cse |> List.tryPick (fun x ->
@@ -10818,10 +10910,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | true, v -> Some v
             | _ -> None
             )
-
+    
     /// ### cse_add
     let cse_add (d: LangEnv) k v = (List.head d.cse).Add(k,v)
-
+    
     /// ### show_data
     let show_data x =
         let rec f prec x =
@@ -10843,68 +10935,68 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | DNominal(a,b) -> p 0 (sprintf "%s : %s" (f 0 a) (show_ty b))
             | DHashSet _ -> p 0 "<HashSet>"
             | DHashMap _ -> p 0 "<HashMap>"
-
+    
         f -1 x
-
+    
     /// ### is_lit
     let is_lit = function
         | DLit _ -> true
         | _ -> false
-
+    
     /// ### is_numeric
     let is_numeric = function
         | YPrim (UInt8T | UInt16T | UInt32T | UInt64T
             | Int8T | Int16T | Int32T | Int64T
             | Float32T | Float64T) -> true
         | _ -> false
-
+    
     /// ### is_signed_numeric
     let is_signed_numeric = function
         | YPrim (Int8T | Int16T | Int32T | Int64T | Float32T | Float64T) -> true
         | _ -> false
-
+    
     /// ### is_non_float_primitive
     let is_non_float_primitive = function
         | YPrim (Float32T | Float64T) -> false
         | YPrim _ -> true
         | _ -> false
-
+    
     /// ### is_primitive
     let is_primitive = function
         | YPrim _ -> true
         | _ -> false
-
+    
     /// ### is_string
     let is_string = function
         | YPrim StringT -> true
         | _ -> false
-
+    
     /// ### is_char
     let is_char = function
         | YPrim CharT -> true
         | _ -> false
-
+    
     /// ### is_float
     let is_float = function
         | YPrim (Float32T | Float64T) -> true
         | _ -> false
-
+    
     /// ### is_bool
     let is_bool = function
         | YPrim BoolT -> true
         | _ -> false
-
+    
     /// ### is_int
     let is_int = function
         | YPrim (UInt32T | UInt64T | Int32T | Int64T) -> true
         | _ -> false
-
+    
     /// ### is_int
     let is_any_int = function
         | YPrim (UInt8T | UInt16T | UInt32T | UInt64T
             | Int8T | Int16T | Int32T | Int64T) -> true
         | _ -> false
-
+    
     /// ### is_any_int_allow_jp_placeholders
     /// Pragmatic: allow join-point recursion placeholders to pass where an int is expected in core string/array ops.
     /// Rationale: core/sm.spi uses forall t{int} indices and can leak JPMethodRecPlaceholder during JP waiting; treating it as int
@@ -10912,18 +11004,27 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     let is_any_int_allow_jp_placeholders = function
         | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> true
         | t -> is_any_int t
-
-
+    
+    
+    /// ### is_string_allow_jp_placeholders
+    /// Pragmatic: allow join-point recursion placeholders to pass where a string is expected in core string ops.
+    /// Rationale: runtime.spi string helpers can leak JP placeholders during JP waiting; treating it as string
+    /// unblocks codegen without global coercions.
+    let is_string_allow_jp_placeholders = function
+        | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") || s.Contains("JPClosureRecPlaceholder(") || s.Contains("JPMethodUnknownRet") -> true
+        | t -> is_string t
+    
+    
     /// ### is_int64
     let is_int64 = function
         | YPrim Int64T -> true
         | _ -> false
-
+    
     /// ### is_int32
     let is_int32 = function
         | YPrim Int32T -> true
         | _ -> false
-
+    
     /// ### is_lit_zero
     let is_lit_zero = function
         | DLit a ->
@@ -10933,7 +11034,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | LitFloat32 0.0f | LitFloat64 0.0 -> true
             | _ -> false
         | _ -> false
-
+    
     /// ### is_lit_one
     let is_lit_one = function
         | DLit a ->
@@ -10943,7 +11044,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | LitFloat32 1.0f | LitFloat64 1.0 -> true
             | _ -> false
         | _ -> false
-
+    
     /// ### is_int_lit_zero
     let is_int_lit_zero = function
         | DLit a ->
@@ -10952,7 +11053,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | LitUInt8 0uy | LitUInt16 0us | LitUInt32 0u | LitUInt64 0UL -> true
             | _ -> false
         | _ -> false
-
+    
     /// ### is_int_lit_one
     let is_int_lit_one = function
         | DLit a ->
@@ -10961,7 +11062,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | LitUInt8 1uy | LitUInt16 1us | LitUInt32 1u | LitUInt64 1UL -> true
             | _ -> false
         | _ -> false
-
+    
     /// ### lit_zero
     let lit_zero = function
         | YPrim Int8T -> LitInt8 0y
@@ -10975,31 +11076,31 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         | YPrim Float32T -> LitFloat32 0.0f
         | YPrim Float64T -> LitFloat64 0.0
         | _ -> failwith "Compiler error: Expected a numeric value."
-
+    
     /// ### vt
     let vt s i = if i < s.env_global_type.Length then s.env_global_type.[i] else s.env_stack_type.[i-s.env_global_type.Length]
-
+    
     /// ### v
     let v s i = if i < s.env_global_term.Length then s.env_global_term.[i] else s.env_stack_term.[i-s.env_global_term.Length]
-
+    
     /// ### add_trace
     let add_trace (s : LangEnv) r = {s with trace = r :: s.trace}
-
+    
     let inline globals_add (s : LangEnv) (x : string) =
         // Thread-safe global snippet accumulation (used during codegen).
         // Avoids global locks in the hot path by using a concurrent membership set; only new inserts take the lock.
         if s.globals_seen.TryAdd(x, 0uy) then
             lock s.globals_lock (fun () -> s.globals.Add x)
         x
-
+    
     let inline globals_flush (_s : LangEnv) = ()
-
+    
     /// ### store_term
     let store_term (s : LangEnv) i v = s.env_stack_term.[i-s.env_global_term.Length] <- v
-
+    
     /// ### store_ty
     let store_ty (s : LangEnv) i v = s.env_stack_type.[i-s.env_global_type.Length] <- v
-
+    
     /// ### is_unify
     let is_unify s x =
         let is_metavar = HashSet()
@@ -11027,8 +11128,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | a, YMetavar i -> (is_metavar.Add i && (store_ty s i a; true)) || a = vt s i
             | _ -> false
         f x
-
-
+    
+    
     /// ### PartEvalResult
     /// ALPHA48: Simplified type using Hopac IVar for coordination
     type PartEvalResult = {
@@ -11048,8 +11149,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         val v: Ty
         new(gen, ph, v) = { gen = gen; ph = ph; v = v }
     
-
-
+    
+    
     /// ### peval
     let peval (env : PartEvalTopEnv) (x : E) =
         // v107-alpha14: always log effective runtime knobs once per process
@@ -11075,7 +11176,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 member _.Equals((b1,e1),(b2,e2)) = b1 = b2 && LanguagePrimitives.PhysicalEquality e1 e2
                 member _.GetHashCode((b,e)) = (hash b) ^^^ (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode e)
             }
-
+    
         let join_point_method = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -11096,28 +11197,28 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             for f in cbs do
                 try f () with _ -> ()
             try DiagSidecar.emit (sprintf "JP: cache invalidation reason=%A jp_clear_callbacks=%d" reason cbs.Length) with _ -> ()
-
+    
         // Hopac: parallel join point workers (peval)
-
+    
         let inline capture_edi (e: exn) =
             System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture e
-
+    
         // Global join-point exception queue (fast path) + per-join-point exception cache (deterministic rethrow)
         let jp_exns : System.Collections.Concurrent.ConcurrentQueue<System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentQueue()
-
+    
         // Per-join-point exception cache: avoids losing the root cause when one waiter dequeues jp_exns first.
         let jp_method_exns : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
-
-        let inline jp_throw_keyed (k: ConsedNode<RData [] * Ty [] * Ty>) =
+    
+        let jp_throw_keyed (k: ConsedNode<RData [] * Ty [] * Ty>) =
             let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
             if jp_method_exns.TryGetValue(k, &edi) then edi.Throw()
-
+    
         do CacheGeneration.registerOnInvalidate (fun reason ->
             try run_jp_dict_clear_callbacks reason with _ -> ()
         )
-
+    
         // ALPHA45: Register JP dict clearing on cache invalidation
         // This prevents stale IVars/exceptions from leaking across retry attempts.
         do register_jp_dict_clear_callback (fun () ->
@@ -11134,48 +11235,48 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 DiagSidecar.emit (sprintf "JP: jp_clear before(method=%d closure=%d type=%d exn_cache=%d) drained_exn_q=%d" m0 c0 t0 ex0 drained)
             with _ -> ()
         )
-
-
-
-        let jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
-
+    
+    
+    
+        let mutable jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
+    
         let jp_barrier_lock = obj()
         let mutable jp_wait_closed = false
-        let inline jp_pending_jobs () =
+        let jp_pending_jobs () =
             let c = jp_cd.CurrentCount
             if jp_wait_closed then c else max 0 (c - 1)
-
+    
         // Work queue for parallel JP evaluation
         // Waiting threads "help" by executing queued work (work-distributing pattern)
         let jp_work_q : System.Collections.Concurrent.ConcurrentQueue<unit -> unit> = System.Collections.Concurrent.ConcurrentQueue()
         let jp_work_sem = new System.Threading.SemaphoreSlim(0, System.Int32.MaxValue)
         let mutable jp_worker_active = 0L  // ALPHA45: Track how many workers are actively executing (not waiting)
-
-
-        let inline jp_throw_if_any () =
+    
+    
+        let jp_throw_if_any () =
             let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
             if jp_exns.TryDequeue(&edi) then edi.Throw()
-
-
-
-        let inline jp_is_worker_thread () =
+    
+    
+    
+        let jp_is_worker_thread () =
             let t = System.Threading.Thread.CurrentThread
             not (isNull t.Name) && t.Name.StartsWith("jp-worker-")
-
-        let inline jp_fill_ivar (ivar: Hopac.IVar<'a>) (value: 'a) : unit =
+    
+        let jp_fill_ivar (ivar: Hopac.IVar<'a>) (value: 'a) : unit =
             if jp_is_worker_thread () then
                 // Dedicated OS threads may drive Hopac jobs to completion without starving the scheduler.
                 Hopac.run (Hopac.IVar.fill ivar value)
             else
                 // Hopac fibers must never block; schedule cooperatively.
                 Hopac.start (Hopac.IVar.fill ivar value)
-
+    
         // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
         // PARALLELISM CONFIGURATION (env override + aggressive defaults)
         // ════════════════════════════════════════════════════════════════════════
-
+    
         let inline env_i64 (name: string) (fallback: int64) : int64 =
             match Environment.GetEnvironmentVariable(name) with
             | null | "" -> fallback
@@ -11183,7 +11284,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match System.Int64.TryParse(s.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture) with
                 | true, v -> v
                 | _ -> fallback
-
+    
         let inline env_i32 (name: string) (fallback: int) : int =
             match Environment.GetEnvironmentVariable(name) with
             | null | "" -> fallback
@@ -11191,12 +11292,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match System.Int32.TryParse(s.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture) with
                 | true, v -> v
                 | _ -> fallback
-
+    
         // Degree of parallelism: use all available CPU cores unless overridden
         let jp_dop =
             let v = env_i32 "SPIRAL_JP_DOP" (max 1 Environment.ProcessorCount)
             max 1 v
-
+    
         let jp_is_parallel_enabled =
             match Environment.GetEnvironmentVariable("SPIRAL_JP_PARALLEL") with
             | null | "" -> true
@@ -11204,10 +11305,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match s.Trim().ToLowerInvariant() with
                 | "0" | "false" | "no" | "n" -> false
                 | _ -> true
-
+    
         // Stack size per worker thread (MB)
         let jp_stack_mb = max 8 (env_i32 "SPIRAL_JP_STACK_MB" 64)
-
+    
         // Pending job cap (prevents runaway queue + memory blowups)
         let jp_max_pending =
             let defaultMax =
@@ -11215,67 +11316,67 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 if v < 16384 then 16384 else v
             let v = env_i32 "SPIRAL_JP_MAX_PENDING" defaultMax
             max 1024 (min System.Int32.MaxValue v)
-
+    
         // How many queued thunks a helper drains per iteration while waiting
         let jp_help_batch_n =
             let v = env_i32 "SPIRAL_JP_HELP_BATCH_N" 256
             max 1 v
-
+    
         let mutable jp_total_started = 0L
-
+    
         let peval_sw = System.Diagnostics.Stopwatch.StartNew()
-
+    
         // ════════════════════════════════════════════════════════════════════════
         // DIAGNOSTIC CONFIGURATION
         // ════════════════════════════════════════════════════════════════════════
-
+    
         let diag_period_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_PERIOD_MS" 30000L)
         let diag_abort_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_ABORT_MS" 600000L)
         let diag_wait_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_WAIT_MS" 1000L)
         let diag_jp_spec_cap = max 0L (env_i64 "SPIRAL_JP_SPEC_CAP" 0L)
         let diag_jp_name_spec_cap = max 0L (env_i64 "SPIRAL_JP_NAME_SPEC_CAP" 0L)
-
+    
         // Hard abort controls (defaults intentionally *on*)
         let peval_abort_ms = max 0L (env_i64 "SPIRAL_PEVAL_ABORT_MS" 600000L)
         let peval_mem_limit_mb = max 0L (env_i64 "SPIRAL_PEVAL_MEM_LIMIT_MB" 4096L)
-        let jp_stall_abort_ms = max 0L (env_i64 "SPIRAL_JP_STALL_ABORT_MS" 120000L)
-
+        let jp_stall_abort_ms = max 0L (env_i64 "SPIRAL_JP_STALL_ABORT_MS" 60000L)
+    
         // Always force async dispatch for JPs (maximizes parallelism)
         let jp_force_async_unannot = true
         let jp_force_async_types = true
-
+    
         // Use custom thread pool, not Hopac's scheduler (avoids deadlocks)
         let jp_use_threadpool = false
-
+    
         // Hard abort on diagnostic cap hit (don't try to continue)
         let jp_diag_hard_abort = false
-
+    
         // Enable verbose diagnostics and traces for debugging
         let jp_diag_verbose = true
         let jp_diag_include_top_traces = true
-
+    
         let diag_console_lock = obj()
-
+    
         // Short diagnostic snapshot helper: keeps logs compact and deterministic in verbose JP diagnostics.
         let jp_diag_snapshot_short (tag: string) =
             let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
             let ts = System.DateTime.UtcNow.ToString("o")
             sprintf "[%s] tid=%d %s" ts tid tag
-
+    
         // Backwards-compatible alias: older call sites expect diag_snapshot_short.
         let diag_snapshot_short = jp_diag_snapshot_short
-
-
-
+    
+    
+    
         // ALPHA35: Parallelism is enabled by default, but the retry loop can request fully sequential
         // JP execution when cache corruption is detected (EJP0003/EJP0007/EJP0008).
         // This is driven by CacheGeneration.requestSequential and reset at attempt=0.
         let mutable jp_parallel_enabled = true  // kept for diagnostic compatibility
-
-        let inline jp_parallel_effective () =
+    
+        let jp_parallel_effective () =
             jp_is_parallel_enabled && jp_parallel_enabled && not (CacheGeneration.isSequentialRequested())
         let mutable diag_abort_armed = true
-
+    
         // Per-JP-name statistics for detecting loop specialization patterns
         let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
         let jp_mismatch_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
@@ -11283,10 +11384,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let jp_method_key_names = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, string>(HashIdentity.Reference)
         let jp_method_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Trace>(HashIdentity.Reference)
         let jp_type_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Trace>(HashIdentity.Reference)
-
+    
         // Monotonic placeholder ids: eliminate collisions from hash-based ids under parallel builds.
         let mutable jp_method_rec_placeholder_next_id = 0
-
+    
         // JPMethod recursion placeholders: enable recursive functions without forcing explicit return annotations.
         // Generation-aware: placeholder resolutions must not persist across cache invalidations.
         // This is a minimal 'promise-like' cell inspired by the old Hopac approach: once a build attempt is invalidated,
@@ -11296,12 +11397,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // Map placeholder Ty -> JP key so we can resolve/deref deterministically (no O(n) scan, no structural collisions).
         let jp_method_rec_placeholder_keys : System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>> =
             System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
-
-
+    
+    
         // Placeholder id -> JP key mapping for round-tripped placeholders (when the Ty is reconstructed from printed form).
         let jp_method_rec_placeholder_ids : System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>> =
             System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
-
+    
         // Alpha36: when generation invalidates, clear JP recursion placeholder cells and their reverse maps.
         do CacheGeneration.registerOnInvalidate (fun _reason ->
             try
@@ -11310,10 +11411,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 jp_method_rec_placeholder_ids.Clear()
             with _ -> ()
         )
-
-
-
-        let inline jp_method_try_key_of_rec_placeholder (ty: Ty) : ConsedNode<RData [] * Ty [] * Ty> option =
+    
+    
+    
+        let jp_method_try_key_of_rec_placeholder (ty: Ty) : ConsedNode<RData [] * Ty [] * Ty> option =
             // Fast-path: exact placeholder Ty -> key mapping.
             match jp_method_rec_placeholder_keys.TryGetValue ty with
             | true, k -> Some k
@@ -11341,13 +11442,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | false, _ -> None
                     | None -> None
                 | _ -> None
-
-        let inline jp_method_deref_rec_placeholder (ty: Ty) : Ty =
+    
+        let jp_method_deref_rec_placeholder (ty: Ty) : Ty =
             match jp_method_try_key_of_rec_placeholder ty with
             | Some k ->
                 let curGen = CacheGeneration.current()
                 let cell = jp_method_rec_placeholders.[k]
-
+    
                 // Always compute the safe-annotation fallback once; we also apply it when the placeholder is stale.
                 // Without this, a placeholder from a previous cache generation can leak as a term-level DV and explode later
                 // as an apply-mismatch (the .JPMethodRecPlaceholder(...) crash seen in alpha25 logs).
@@ -11363,7 +11464,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let inline fallback () =
                     // allow non-primitive annotated return types to break recursion, but never substitute primitives.
                     if is_jp_placeholder_like ret_ty || is_hard_primitive_like ret_ty then ty else ret_ty
-
+    
                 if cell.gen <> curGen then
                     // Stale generation: treat as unresolved placeholder for this retry attempt.
                     // Critical: still apply fallback so the stale placeholder cannot leak into term evaluation.
@@ -11376,7 +11477,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         fallback ()
                     else v
             | None -> ty
-
+    
         let inline ty_is_jp_method_rec_placeholder (ty: Ty) : bool =
             match jp_method_try_key_of_rec_placeholder ty with
             | Some _ -> true
@@ -11384,18 +11485,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match ty with
                 | YSymbol s when s.Contains("JPMethodRecPlaceholder(") -> true
                 | _ -> false
-
+    
         let inline ty_is_jp_type_rec_placeholder (ty: Ty) : bool =
             match ty with
             | YSymbol s when s.Contains("JPTypeRecPlaceholder(") -> true
             | _ -> false
-
+    
         let inline ty_is_jp_method_unknown_ret_placeholder (ty: Ty) : bool =
             match ty with
             | YSymbol s when s.Contains("JPMethodUnknownRet(") -> true
             | _ -> false
-
-
+    
+    
         let rec ty_eq_allow_jp_placeholders (a: Ty) (b: Ty) : bool =
             // Treat JP method recursion placeholders as wildcards to break cyclic type validation (Hopac join points).
             if ty_is_jp_method_rec_placeholder a || ty_is_jp_method_rec_placeholder b || ty_is_jp_type_rec_placeholder a || ty_is_jp_type_rec_placeholder b || ty_is_jp_method_unknown_ret_placeholder a || ty_is_jp_method_unknown_ret_placeholder b then true
@@ -11419,12 +11520,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let a' = jp_method_deref_rec_placeholder a
                     let b' = jp_method_deref_rec_placeholder b
                     (show_ty a') = (show_ty b')
-
-
-
-
-
-        let inline jp_method_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (jp: string) : Ty =
+    
+    
+    
+    
+    
+        let jp_method_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (jp: string) : Ty =
             let curGen = CacheGeneration.current()
             let cell =
                 jp_method_rec_placeholders.GetOrAdd(
@@ -11444,8 +11545,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let resetCell = JpMethodRecPlaceholderCell(curGen, cell.ph, cell.ph)
                 jp_method_rec_placeholders.AddOrUpdate(key, resetCell, (fun _ old -> if old.gen = curGen then old else resetCell)) |> ignore
                 resetCell.v
-
-        let inline jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
+    
+        let jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
             // par: generation-aware placeholder resolution + anti-clobber.
             // We still keep the 'hard primitive vs expected non-primitive' guard, but we also prevent a hard primitive (ex: i32)
             // from overwriting a richer resolved type within the same generation (a common source of spurious EJP0007 apply-mismatch).
@@ -11461,15 +11562,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 match t with
                 | YSymbol s when s.StartsWith("JPMethodRecPlaceholder(") -> true
                 | _ -> false
-
+    
             let inline is_unknown_ret (t: Ty) =
                 match t with
                 | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> true
                 | _ -> false
-
+    
             let (_, _, expected_ret_ty) = key.node
             let curGen = CacheGeneration.current()
-
+    
             if is_hard_primitive_like ty && not (is_primitive_like expected_ret_ty) && not (is_jp_method_placeholder expected_ret_ty) && not (is_unknown_ret expected_ret_ty) then
                 if jp_diag_verbose then
                     let jp_name =
@@ -11478,11 +11579,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | _ -> "<unknown>"
                     let snap = jp_diag_snapshot_short (sprintf "EJP0007 guard (jp_resolve_hard_primitive) jp=%s" jp_name)
                     DiagSidecar.emit (sprintf "EJP0007 guard: refused cementing hard primitive
-  jp=%s
-  expected_ret=%s
-  got=%s
-  key=%O
-%s"
+      jp=%s
+      expected_ret=%s
+      got=%s
+      key=%O
+    %s"
                         jp_name (show_ty expected_ret_ty) (show_ty ty) key snap)
                 ()
             else
@@ -11503,16 +11604,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             JpMethodRecPlaceholderCell(curGen, ph, ty)
                     )
                 ) |> ignore
-
-        let inline jp_invalidate_bounded (key: string) (maxAttempts: int) (reason: string) =
+    
+        let jp_invalidate_bounded (key: string) (maxAttempts: int) (reason: string) =
             let n = jp_mismatch_counts.AddOrUpdate(key, 1, (fun _ v -> v + 1))
             let gen =
                 if n <= maxAttempts then CacheGeneration.invalidate reason
                 else CacheGeneration.current()
             gen, n
-
-
-        let inline jp_method_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>) =
+    
+    
+        let jp_method_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>) =
             try
                 stack
                 |> Seq.truncate 16
@@ -11523,8 +11624,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 |> Seq.toArray
                 |> fun a -> System.String.Join(" ; ", a)
             with _ -> "<unavailable>"
-
-        let inline jp_type_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<Ty []>>) =
+    
+        let jp_type_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<Ty []>>) =
             try
                 stack
                 |> Seq.truncate 16
@@ -11532,24 +11633,24 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 |> Seq.toArray
                 |> fun a -> System.String.Join(" ; ", a)
             with _ -> "<unavailable>"
-
+    
         let inline trace_frame_short (x: Range) =
             let line = (fst x.range).line + 1
             let col = (fst x.range).character + 1
             sprintf "%s:%d:%d" x.path line col
-
+    
         /// ALPHA15: Concise trace frame: filename only (no directory), line:col
         let inline trace_frame_concise (x: Range) =
             let filename = System.IO.Path.GetFileName(x.path)
             let line = (fst x.range).line + 1
             let col = (fst x.range).character + 1
             sprintf "%s:%d:%d" filename line col
-
+    
         let inline trace_frame_rust (x: Range) =
             let (p0, p1) = x.range
             sprintf "%s:({ line = %d; character = %d }, { line = %d; character = %d })"
                 x.path (p0.line + 1) (p0.character + 1) (p1.line + 1) (p1.character + 1)
-
+    
         let trace_dedup (xs: Trace) =
             let rec loop (last: Range option) (acc: Range list) (xs: Trace) =
                 match xs with
@@ -11559,14 +11660,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | Some y when x.path = y.path && fst x.range = fst y.range -> loop last acc rest
                     | _ -> loop (Some x) (x :: acc) rest
             loop None [] xs
-
+    
         let trace_to_string_short (xs: Trace) =
             let frames = trace_dedup xs |> List.map trace_frame_short
             if frames.IsEmpty then "<no-trace>"
             else
                 let top = if frames.Length > 8 then frames |> List.take 8 else frames
                 System.String.Join(" <- ", top)
-
+    
         /// ALPHA15: Concise trace string: filename only (no full paths), line:col, max 20 frames
         let trace_to_string_concise (xs: Trace) =
             let frames = trace_dedup xs |> List.map trace_frame_concise
@@ -11580,7 +11681,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     |> String.concat "\n"
                 if frames.Length > shown.Length then body + sprintf "\n   ... (+%d)" (frames.Length - shown.Length)
                 else body
-
+    
         let trace_to_string_full (xs: Trace) =
             let frames = trace_dedup xs |> List.map trace_frame_rust
             if frames.IsEmpty then "<no-trace>"
@@ -11599,7 +11700,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     |> String.concat "\n"
                 if frames.Length > shown.Length then body + sprintf "\n  ... (%d more)" (frames.Length - shown.Length)
                 else body
-
+    
         let inline record_jp_diag (jp_name: string option) (trace: Trace) =
             let name = defaultArg jp_name "<anon>"
             jp_name_counts.AddOrUpdate(name, 1, (fun _ v -> v + 1)) |> ignore
@@ -11610,20 +11711,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let name = defaultArg jp_name "<anon>"
             jp_method_key_names.AddOrUpdate(key, name, (fun _ _ -> name)) |> ignore
             jp_method_key_traces.AddOrUpdate(key, trace, (fun _ _ -> trace)) |> ignore
-
+    
         let inline record_jp_diag_type (key: ConsedNode<Ty []>) (trace: Trace) =
             DiagSidecar.emit (sprintf "jp.type tag=%d" key.tag)
             record_jp_diag (Some "<type>") trace
             jp_type_key_traces.AddOrUpdate(key, trace, (fun _ _ -> trace)) |> ignore
-
+    
         let mutable diag_last_ms = 0L
         let mutable diag_last_wait = ""
-
+    
         let inline get_private_bytes () =
             try
                 System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64
             with _ -> 0L
-
+    
         let inline diag_specs_total () =
             let mutable total = 0
             for KeyValue(_, (dict, _, _)) in join_point_method do
@@ -11636,16 +11737,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 total <- total + dict.Count
             total
-
+    
         let diag_snapshot (reason: string) =
-
+    
             let elapsed_ms = peval_sw.ElapsedMilliseconds
             let pb = get_private_bytes ()
             let gc_total = System.GC.GetTotalMemory(false)
             let server_gc =
                 try System.Runtime.GCSettings.IsServerGC
                 with _ -> false
-
+    
             let mutable method_groups = 0
             let mutable method_specs = 0
             let mutable closure_groups = 0
@@ -11662,7 +11763,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 for KeyValue(_, ivar) in dict do
                     events_total <- events_total + 1
                     if not (Hopac.IVar.Now.isFull ivar) then events_not_set <- events_not_set + 1
-
+    
             for KeyValue(_, (dict, _, _)) in join_point_closure do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_, Hopac.IVar<_>>)
                 closure_groups <- closure_groups + 1
@@ -11670,7 +11771,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 for KeyValue(_, ivar) in dict do
                     events_total <- events_total + 1
                     if not (Hopac.IVar.Now.isFull ivar) then events_not_set <- events_not_set + 1
-
+    
             for KeyValue(_, (dict, _, _)) in join_point_type do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 type_groups <- type_groups + 1
@@ -11679,12 +11780,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     events_total <- events_total + 1
                     let cell = (cell : JPTypeCell<_>)
                     if not (Hopac.IVar.Now.isFull cell.ivar) then events_not_set <- events_not_set + 1
-
-
-
+    
+    
+    
             let entries0 : System.Collections.Generic.KeyValuePair<string,int>[] = jp_name_counts.ToArray()
             let entries = entries0 |> Array.sortByDescending (fun kv -> kv.Value)
-
+    
             let top_names =
                 let sbn = System.Text.StringBuilder()
                 let n = min 20 entries.Length
@@ -11700,7 +11801,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     if tr <> "" then sbn.AppendFormat("{0}={1} @ {2}", name, count, tr) |> ignore
                     else sbn.AppendFormat("{0}={1}", name, count) |> ignore
                 sbn.ToString()
-
+    
             let top_traces =
                 if jp_diag_include_top_traces then
                     let sbt = System.Text.StringBuilder()
@@ -11748,13 +11849,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 sb.AppendLine("  top_jp_traces=") |> ignore
                 if top_traces <> "" then sb.AppendLine(top_traces) |> ignore
             sb.ToString()
-
-
+    
+    
         let diag_snapshot_short (reason: string) =
             let elapsed_ms = peval_sw.ElapsedMilliseconds
             let pb = try System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 with _ -> 0L
             let gc_total = try GC.GetTotalMemory(false) with _ -> 0L
-
+    
             let top_names =
                 try
                     let entries0 : System.Collections.Generic.KeyValuePair<string,int>[] = jp_name_counts.ToArray()
@@ -11767,7 +11868,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         sbn.AppendFormat("{0}={1}", kv.Key, kv.Value) |> ignore
                     sbn.ToString()
                 with _ -> "<unavailable>"
-
+    
             let sb = System.Text.StringBuilder()
             sb.Append("SPIRAL PEVAL DIAG") |> ignore
             sb.AppendFormat(" reason={0}", reason) |> ignore
@@ -11786,10 +11887,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             sb.AppendFormat(" last_wait={0}", diag_last_wait) |> ignore
             sb.AppendFormat(" top_jp_names={0}", top_names) |> ignore
             sb.ToString()
-
+    
         let diag_write_err (s: string) =
             lock diag_console_lock (fun () -> System.Console.Error.WriteLine(s))
-
+    
         let diag_print (force: bool) =
             let now = peval_sw.ElapsedMilliseconds
             if force || (diag_period_ms > 0L && now - diag_last_ms >= diag_period_ms) then
@@ -11804,16 +11905,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     diag_write_err snap
         let inline get_private_mb () =
             int64 (System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024L / 1024L)
-
+    
         let inline peval_abort (reason: string) =
             diag_print true
             raise (System.Exception(diag_snapshot reason))
-
+    
         let diag_soft_abort (where: string) (reason: string) =
             // v101: do not disable parallelism on soft diagnostic triggers; keep full concurrency and just emit snapshots.
             DiagSidecar.emit (sprintf "SPIRAL PEVAL DIAG soft_abort where=%s reason=%s" where reason)
             diag_print true
-
+    
         let diag_abort_if_needed (where: string) =
             let now = peval_sw.ElapsedMilliseconds
             // Legacy watchdog variables (optional). These remain hard aborts.
@@ -11825,7 +11926,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 if mb >= peval_mem_limit_mb then
                     diag_last_wait <- where
                     peval_abort (sprintf "Memory limit reached. (SPIRAL_PEVAL_MEM_LIMIT_MB=%d, private_mb=%d)" peval_mem_limit_mb mb)
-
+    
             // Diagnostic aborts. Soft by default: disable parallel join-points and keep going.
             if diag_abort_armed then
                 if diag_abort_ms > 0L && now >= diag_abort_ms then
@@ -11835,7 +11936,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     else
                         diag_abort_armed <- false
                         diag_soft_abort where (sprintf "Timed out. (SPIRAL_PEVAL_DIAG_ABORT_MS=%d)" diag_abort_ms)
-
+    
                 if diag_jp_spec_cap > 0L then
                     let total = diag_specs_total () |> int64
                     if total >= diag_jp_spec_cap then
@@ -11845,7 +11946,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         else
                             diag_abort_armed <- false
                             diag_soft_abort where (sprintf "Join-point spec cap exceeded. cap=%d total=%d" diag_jp_spec_cap total)
-
+    
                 if diag_jp_name_spec_cap > 0L then
                     for KeyValue(name, count) in jp_name_counts do
                         if int64 count >= diag_jp_name_spec_cap then
@@ -11855,25 +11956,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             else
                                 diag_abort_armed <- false
                                 diag_soft_abort where (sprintf "Join-point name cap exceeded. cap=%d name=%s count=%d" diag_jp_name_spec_cap name count)
-
+    
         // ════════════════════════════════════════════════════════════════════════
         // ALPHA48: HOPAC IVAR-BASED WAITING
         // ════════════════════════════════════════════════════════════════════════
         // This replaces ManualResetEventSlim blocking with cooperative Hopac waiting.
         // The key insight: we run IVar.read synchronously on the calling thread but
         // with periodic yields to allow Hopac scheduler to make progress.
-
+    
         let inline hopac_tick () =
             // Hopac's API differs across versions; if there is no explicit 'tick',
             // do a very light yield to avoid starvation while we're spinning.
             System.Threading.Thread.Yield() |> ignore
-
+    
         /// Wait for an IVar to be filled, with cooperative yielding and diagnostics.
         /// This is the Hopac equivalent of the old jp_ev_wait.
-        let inline jp_ivar_wait (w: string) (details: string) (ivar: Hopac.IVar<'a>) : 'a =
+        let jp_ivar_wait (w: string) (details: string) (ivar: Hopac.IVar<'a>) : 'a =
             diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
             let gen0 = CacheGeneration.current()
-
+    
             // Fast path: IVar already filled
             if Hopac.IVar.Now.isFull ivar then
                 jp_throw_if_any ()
@@ -11881,45 +11982,47 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             else
                 let mutable spin = System.Threading.SpinWait()
                 let mutable last_diag = peval_sw.ElapsedMilliseconds
-                let mutable last_progress_ms = peval_sw.ElapsedMilliseconds
-
+                let mutable last_progress_ms = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                if last_progress_ms = 0L then last_progress_ms <- peval_sw.ElapsedMilliseconds
+    
                 // Alpha43: in forced sequential mode, do not wait indefinitely; treat long waits as stall.
                 let stall_abort_ms =
                     if CacheGeneration.isSequentialRequested() then min jp_stall_abort_ms 15000L else jp_stall_abort_ms
-
-
+    
+    
                 // Spin-wait with periodic Hopac scheduler yielding
                 while not (Hopac.IVar.Now.isFull ivar) do
                     let curGen = CacheGeneration.current()
                     if curGen <> gen0 then
                         let snap = diag_snapshot (sprintf "gen_change jp_ivar_wait from=%d to=%d :: %s (%s)" gen0 curGen w details)
                         raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ivar_wait (from %d to %d) :: %s (%s)\n%s" gen0 curGen w details snap))
-
+    
                     // ALPHA9: No work-stealing from Hopac fibers; JP workers are dedicated OS threads.
                     ()
-
+    
                     // Yield to Hopac scheduler periodically to allow other fibers to run
                     if (spin.Count &&& 255) = 0 then
                         // Run a micro-batch of Hopac work
                         hopac_tick ()
-
+    
                     // Periodic diagnostic tick
                     let now = peval_sw.ElapsedMilliseconds
+                    let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                    if lp > 0L && lp > last_progress_ms then last_progress_ms <- lp
                     if diag_period_ms > 0L && now - last_diag >= diag_period_ms then
                         last_diag <- now
                         diag_print false
                     diag_abort_if_needed "jp_ivar_wait"
-
+    
                     // Stall detection
                     if stall_abort_ms > 0L && now - last_progress_ms >= stall_abort_ms then
                         let snap = diag_snapshot (sprintf "stall jp_ivar_wait :: %s (%s)" w details)
                         raise (PartEvalTypeError([], sprintf "EJP0014: join-point scheduler stalled while waiting for jp_ivar_wait for %dms :: %s (%s)\n%s" (now - last_progress_ms) w details snap))
-
+    
                     spin.SpinOnce()
                     if (spin.Count &&& 4095) = 0 then
                         System.Threading.Thread.Yield() |> ignore
-                        last_progress_ms <- peval_sw.ElapsedMilliseconds  // Reset stall timer on yield
-
+    
                 jp_throw_if_any ()
                 // ALPHA45: Final generation check - ensure result wasn't filled by stale computation
                 let finalGen = CacheGeneration.current()
@@ -11927,9 +12030,35 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let snap = diag_snapshot (sprintf "gen_change_after_fill jp_ivar_wait from=%d to=%d :: %s (%s)" gen0 finalGen w details)
                     raise (PartEvalTypeError([], sprintf "EJP0008: generation changed after jp_ivar_wait fill (from %d to %d) :: %s (%s)\n%s" gen0 finalGen w details snap))
                 Hopac.IVar.Now.get ivar
-
+    
         let mutable jp_pending_count = 0L  // Atomic counter of pending jobs
+        let mutable jp_total_enqueued = 0L  // Atomic counter of scheduled jobs
+        let mutable jp_last_enq_ms = 0L     // Atomic: last time jp_total_enqueued changed (ms since peval_sw start)
+        let mutable jp_sub_total_frozen = 0L // Atomic: 0 => dynamic denom, >0 => frozen denom for progress
+        let mutable jp_total_done = 0L      // Atomic counter of completed jobs
+        let mutable jp_progress_started = 0
 
+    
+        // Alpha88: surface JP scheduler counters in heartbeat without touching hot paths.
+        do
+            Progress88.set_extra_provider (fun () ->
+                try
+                    let q = jp_work_q.Count
+                    let pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                    let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
+                    let now = peval_sw.ElapsedMilliseconds
+                    let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                    let age = if lp = 0L then -1L else now - lp
+                    let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                    let den =
+                        let f = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
+                        if f > 0L then f else enq
+                    let last_enq = System.Threading.Interlocked.Read(&jp_last_enq_ms)
+                    let enq_age = if last_enq = 0L then -1L else now - last_enq
+                    sprintf "jp[q=%d pend=%A cd=%d lastp_ms=%A enq=%A den=%A enq_age_ms=%A]" q pend cd age enq den enq_age
+                with _ -> ""
+            )
+    
         // Alpha43: cache invalidation should also shed stale queued JP work, otherwise
         // we can accumulate thousands of specs and then hit EJP0008 while waiting.
         do CacheGeneration.registerOnInvalidate (fun reason ->
@@ -11944,23 +12073,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 try jp_name_counts.Clear() with _ -> ()
                 try jp_mismatch_counts.Clear() with _ -> ()
                 try jp_name_traces.Clear() with _ -> ()
-                // ALPHA45: Reset CountdownEvent for clean retry
-                // This prevents stale countdown state from causing deadlocks
+                // ALPHA45: Swap CountdownEvent for clean retry.
+                // Important: do NOT mutate the current instance counts while in-flight work may still Signal().
+                // Instead, replace the instance; jp_start/jp_wait capture the instance they increment/wait on.
                 lock jp_barrier_lock (fun () ->
                     try
                         jp_wait_closed <- false
-                        // Reset to initial count of 1
-                        while jp_cd.CurrentCount > 1 do
-                            try ignore (jp_cd.Signal()) with _ -> ()
-                        while jp_cd.CurrentCount < 1 do
-                            try ignore (jp_cd.AddCount()) with _ -> ()
+                        jp_cd <- new System.Threading.CountdownEvent(1)
                     with _ -> ()
                 )
             with _ -> ()
         )
-
-
-
+    
+    
+    
         // ════════════════════════════════════════════════════════════════════════
         // ALPHA12 SOTA: HOPAC WORK QUEUE WITH WORK-STEALING
         // ════════════════════════════════════════════════════════════════════════
@@ -11971,9 +12097,25 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let jp_cancel = new System.Threading.CancellationTokenSource()
         
         // Progress tracking for stall detection
-        let mutable last_progress_ms = 0L
-        let inline jp_note_progress () =
-            last_progress_ms <- peval_sw.ElapsedMilliseconds
+        let mutable jp_last_progress_ms_local = 0L
+        let jp_note_progress () =
+            System.Threading.Interlocked.Exchange(&jp_last_progress_ms, peval_sw.ElapsedMilliseconds) |> ignore
+            if System.Threading.Interlocked.Exchange(&jp_progress_started, 1) = 0 then
+                Progress88.stage 2 4
+            let now = peval_sw.ElapsedMilliseconds
+            let enq_now = System.Threading.Interlocked.Read(&jp_total_enqueued)
+            let enq_last = System.Threading.Interlocked.Read(&jp_last_enq_ms)
+            let enq_age = if enq_last = 0L then -1L else now - enq_last
+            let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
+            let enq_for_pct =
+                if frozen > 0L then frozen
+                elif enq_now > 0L && enq_age >= 2000L then
+                    System.Threading.Interlocked.CompareExchange(&jp_sub_total_frozen, enq_now, 0L) |> ignore
+                    enq_now
+                else enq_now
+            let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
+            Progress88.sub doneCount (max 1L enq_for_pct)
+            Progress88.pulse "jp_note_progress" (CacheGeneration.current())
         
         // Work-stealing helper: drains queue in batches
         let jp_help_batch (max_n: int) : int =
@@ -12001,7 +12143,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 lock jp_workers_started_sync (fun () ->
                     if not jp_workers_started then
                         jp_workers_started <- true
-
+    
                         // ALPHA9: Dedicated OS threads (not Hopac fibers) so blocking waits do not starve the Hopac scheduler.
                         let worker (i: int) =
                             let th =
@@ -12021,6 +12163,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                                             ignore (System.Threading.Interlocked.Increment(&jp_worker_active))
                                                             try work() with e -> jp_exns.Enqueue(capture_edi e)
                                                         finally
+                                                            jp_note_progress ()
                                                             ignore (System.Threading.Interlocked.Decrement(&jp_worker_active))
                                     with e ->
                                         // Never let worker exceptions cascade; capture and keep going.
@@ -12028,13 +12171,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 ))
                             th.IsBackground <- true
                             th.Start()
-
+    
                         // ALPHA15 legacy: keep count high because some work items can block on external IO.
                         let worker_count = max 8 (jp_dop * 8)
                         for i = 1 to worker_count do
                             worker i
                 )
-
+    
         // ALPHA12: jp_start - NEVER checks jp_wait_closed for scheduling decisions!
         // Parallelism is throttled ONLY by backpressure (jp_max_pending).
         let jp_start (run: unit -> unit) =
@@ -12047,7 +12190,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     match BigStack.tryRun tag2 run with
                     | Some _ -> true
                     | None -> false
-
+    
                 if d > 64 && (d &&& 7) = 0 && nest < BigStack.getMaxNest() then
                     if not (try_big tag) then run ()
                 else
@@ -12064,23 +12207,30 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             run ()
                     else
                         run ()
-
-
+    
+    
             if jp_parallel_effective () && jp_dop > 0 then
                 start_jp_workers ()
                 
                 // Try to add to countdown event for completion tracking
                 let mutable cd_added = false
+                let mutable cd0 = Unchecked.defaultof<System.Threading.CountdownEvent>
                 lock jp_barrier_lock (fun () ->
-                    // Note: We check jp_cd.IsSet but NOT jp_wait_closed here!
+                    // Capture the current instance so we Signal() the same one we TryAddCount() on.
+                    cd0 <- jp_cd
+                    // Note: We check cd0.IsSet but NOT jp_wait_closed here!
                     // This allows new work to be scheduled even after jp_wait was called.
-                    if not jp_cd.IsSet then
-                        cd_added <- jp_cd.TryAddCount()
+                    if not cd0.IsSet then
+                        cd_added <- cd0.TryAddCount()
                 )
                 
                 if cd_added then
                     let gen0 = CacheGeneration.current ()
                     let pending = System.Threading.Interlocked.Increment(&jp_pending_count)
+                    ignore (System.Threading.Interlocked.Increment(&jp_total_enqueued))
+                    System.Threading.Interlocked.Exchange(&jp_last_enq_ms, peval_sw.ElapsedMilliseconds) |> ignore
+                    if System.Threading.Interlocked.Read(&jp_sub_total_frozen) <> 0L then
+                        System.Threading.Interlocked.Exchange(&jp_sub_total_frozen, 0L) |> ignore
                     
                     // Backpressure: beyond cap, execute inline
                     if pending > int64 jp_max_pending then
@@ -12094,7 +12244,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 ()
                         finally
                             ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
-                            ignore (jp_cd.Signal())
+                            ignore (System.Threading.Interlocked.Increment(&jp_total_done))
+                            try ignore (cd0.Signal()) with _ -> ()
                             jp_note_progress ()
                     else
                         ignore (System.Threading.Interlocked.Increment(&jp_total_started))
@@ -12106,7 +12257,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                     ()
                             finally
                                 ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
-                                ignore (jp_cd.Signal())
+                                ignore (System.Threading.Interlocked.Increment(&jp_total_done))
+                                try ignore (cd0.Signal()) with _ -> ()
                                 jp_note_progress ()
                         
                         jp_work_q.Enqueue(work_item)
@@ -12117,14 +12269,22 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     jp_run_inline "jp.inline.cd_signaled" run
             else
                 jp_run_inline "jp.inline.no_parallel" run
-
+    
         // ALPHA12: jp_wait - uses work-stealing while waiting
         let jp_wait () =
+            let gen0 = CacheGeneration.current()
+            let cd0 = lock jp_barrier_lock (fun () -> jp_cd)
             try
+                Progress88.stage 3 4
                 let mutable iterations = 0L
-                while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (jp_cd.Wait(0)) do
+                while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (cd0.Wait(0)) do
                     iterations <- iterations + 1L
                     jp_throw_if_any ()
+
+                    // Abort on cache generation change (deterministic, avoids waiting on replaced CountdownEvent)
+                    if CacheGeneration.current() <> gen0 then
+                        let snap = diag_snapshot (sprintf "gen_change jp_wait from=%d to=%d" gen0 (CacheGeneration.current()))
+                        raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting (jp_wait)\n%s" snap))
                     
                     // Work-stealing: help drain queue while waiting
                     if jp_parallel_effective () then
@@ -12136,9 +12296,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     
                     // Stall detection
                     let now_ms = peval_sw.ElapsedMilliseconds
-                    if jp_stall_abort_ms > 0L && last_progress_ms > 0L && now_ms - last_progress_ms > jp_stall_abort_ms then
+                    let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                    if jp_stall_abort_ms > 0L && lp > 0L && now_ms - lp > jp_stall_abort_ms then
                         let snap = diag_snapshot (sprintf "jp_wait stall iter=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
-                        raise (PartEvalTypeError([], sprintf "EJP0014: jp_wait stalled for %dms\n%s" (now_ms - last_progress_ms) snap))
+                        raise (PartEvalTypeError([], sprintf "EJP0014: jp_wait stalled for %dms\n%s" (now_ms - lp) snap))
                 
                 // Log excessive iterations
                 if iterations > 10000L then
@@ -12150,13 +12311,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 jp_shutdown_workers ()  // ALPHA16: Signal workers to shut down gracefully
                 jp_cancel.Cancel()
                 // Release base barrier count
-                try ignore (jp_cd.Signal()) with _ -> ()
+                try ignore (cd0.Signal()) with _ -> ()
                 // Wake sleeping workers
                 try ignore (jp_work_sem.Release(max 1 jp_dop)) with _ -> ()
-
+    
         // Legacy compatibility wrapper for old ManualResetEventSlim-based code
         // ALPHA15: More aggressive work-stealing + ThreadPool spawning for blocked workers
-        let inline jp_ev_wait (w: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
+        let jp_ev_wait (w: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
             diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
             let gen0 = CacheGeneration.current()
             if ev.IsSet then jp_throw_if_any ()
@@ -12194,9 +12355,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     spin.SpinOnce()
                     if (spin.Count &&& 511) = 0 then System.Threading.Thread.Yield() |> ignore
                 jp_throw_if_any ()
-
+    
         let jp_stack_bytes = 8 * 1024 * 1024  // For BigStack compatibility
-
+    
         let rec ty_to_data s x =
             let f = ty_to_data s
             match x with
@@ -12241,7 +12402,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         and push_op_no_rewrite d op a ret_ty = push_op_no_rewrite' d op [a] ret_ty
         and push_binop_no_rewrite d op (a,b) ret_ty = push_op_no_rewrite' d op [a;b] ret_ty
         and push_triop_no_rewrite d op (a,b,c) ret_ty = push_op_no_rewrite' d op [a;b;c] ret_ty
-
+    
         and push_op' d op a ret_ty = push_typedop d (TyOp(op, a)) ret_ty
         and push_op d op a ret_ty = push_op' d op [a] ret_ty
         and push_binop d op (a,b) ret_ty = push_op' d op [a;b] ret_ty
@@ -12278,7 +12439,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     Utils.memoize join_point_closure (fun _ ->
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<(Data * TypedBind []) option>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
                     ) (s.backend, body)
-
+    
                 let dict, hc_table =
                     if CacheGeneration.isStale cache_gen then
                         let fresh =
@@ -12297,18 +12458,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     // best-effort, stable-ish label to improve join-point diagnostics
                     let name = sprintf "closure<%d>" join_point_key.tag
                     s.join_point_closure_key_names.TryAdd(join_point_key, name) |> ignore
-
+    
                 match fun_ty with
                 | YFun(_,_,FT_Pointer) when call_args.Length <> 0 -> raise_type_error s "Function pointers shouldn't have any runtime free variables in their environment."
                 | _ -> ()
-
+    
                 // v107-alpha43: Check loop specialization guard for closures
                 let closure_name = sprintf "closure<%d>" join_point_key.tag
                 if not (LoopSpecializationGuard.tryRecordSpecialization closure_name) then
                     DiagSidecar.emit (sprintf "EJP0012: closure specialization cap exceeded for '%s'" closure_name)
                     SuspectCache.mark join_point_key (sprintf "%s jp_closure cap name=%s" EJPCodes.EJP0012 closure_name)
                     ()
-
+    
                 // ALPHA48: Use IVar for coordination - create new IVar and TryAdd
                 let jp_ivar = Hopac.IVar<(Data * TypedBind []) option>()
                 if dict.TryAdd(join_point_key, jp_ivar) then
@@ -12347,7 +12508,23 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                             DiagSidecar.emit (sprintf "EJP0002W: coerced closure return placeholder to unit\n  got=%s\n  got(deref)=%s\n  expected=%s\n  key=%O"
                                                 (show_ty ty) (show_ty ty_deref) (show_ty range) join_point_key)
                                         range
-                                    else ty
+                                    else
+                                        if range <> ty then
+                                            let got_s = show_ty ty
+                                            let gotd_s = show_ty ty_deref
+                                            let exp_s = show_ty range
+                                            let has_jp (x:string) =
+                                                x.Contains("JPMethodRecPlaceholder")
+                                                || x.Contains("JPTypeRecPlaceholder")
+                                                || x.Contains("JPClosureRecPlaceholder")
+                                                || x.Contains("JPMethodUnknownRet")
+                                            if has_jp got_s || has_jp gotd_s || has_jp exp_s then
+                                                if jp_diag_verbose then
+                                                    DiagSidecar.emit (sprintf "EJP0002W: coerced closure return type to annotation due to JP placeholder\n  got=%s\n  got(deref)=%s\n  expected=%s\n  key=%O"
+                                                        got_s gotd_s exp_s join_point_key)
+                                                range
+                                            else ty
+                                        else ty
                                 if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
                                 // ALPHA48: Fill IVar to signal completion
                                 jp_fill_ivar jp_ivar result
@@ -12562,10 +12739,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             v
                         finally
                             visiting.Remove x |> ignore
-
+    
                 let v = f x
                 if dirty then v else x
-
+    
         and term_real_nominal s x =
             let s = {s with seq=ResizeArray(); cse=Dictionary(HashIdentity.Structural) :: s.cse}
             term s x |> data_to_ty s
@@ -12615,7 +12792,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 else
                     ty_core s x
             v |> jp_method_deref_rec_placeholder
-
+    
         and ty_core s x =
             // v107-alpha13: emergency stack pivot must return the same type as the normal path
             // (the old version returned 'unit' in the try-branch, causing cascading 'unit' vs 'Ty' errors)
@@ -12629,14 +12806,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let fallback = match s.trace with | r :: _ -> r | [] -> range0
                     let r0 = range_of_tprepass_or fallback x
                     raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in ty (BigStack exhausted)" EJPCodes.EJP0010)
-
+    
         and ty_core_impl s x =
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_tprepass_or fallback x
             let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
-
+    
             // Cycle guards: detect infinite re-entrancy into the same expression
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
@@ -12644,13 +12821,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
-
+    
             // Re-entrancy limits: 4096 base, 16384 on BigStack
             // These handle legitimate re-entrancy from staging loops (e.g., listm'.spi)
             let max_reentry_base = 4096
             let max_reentry = if BigStack.isActive() then 16384 else max_reentry_base
             let max_reentry_key = max_reentry
-
+    
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -12677,20 +12854,20 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
-
+    
             // Maximum recursion depth before triggering BigStack pivot
             // - Base: 2048 (conservative for main stack)
             // - BigStack: 65536 (allows deep recursive staging in listm'.spi)
             let max_depth_base = 2048
             let max_depth = if BigStack.isActive() then 65536 else max_depth_base
-
+    
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
                 |> List.sortByDescending (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> kv.Value)
                 |> List.truncate 8
                 |> List.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
                 |> String.concat ";"
-
+    
             let inline stack_check (tag: string) =
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
@@ -12709,7 +12886,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                             EJPCodes.EJP0010 depth site newGen tag tid bigActive nest mbTy mem deepSites reasons)
                     // Always use non-fatal mode: reraise to allow BigStack pivot
                     reraise()
-
+    
             // Stack guard mais agressivo para evitar StackOverflow (especialmente com lambdas locais grandes).
             // A cadência aumenta com a profundidade: checamos pouco no início e muito quando está ficando perigoso.
             if depth <= 16 then
@@ -12718,7 +12895,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 if (depth &&& 1) = 0 then stack_check "d<=64"
             else
                 stack_check "d>64" 
-
+    
             if depth > max_depth then
                 let newGen = CacheGeneration.current() // alpha27: do not invalidate on ty depth exceeded; make it a terminal error
                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
@@ -12728,7 +12905,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let mbTy = BigStack.getMb "ty"
                 DiagSidecar.emit (sprintf "%s ty recursion depth exceeded depth=%d max=%d base=%d bigActive=%b mb=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth max_depth_base bigActive mbTy site newGen deepSites reasons)
                 raise_type_error (add_trace s r0) (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
-
+    
             match x with
             | TPatternRef _ -> failwith "Compiler error: TPatternRef should have been eliminated during the prepass."
             | TForall _ | TArrow _ | TJoinPoint _ -> failwith "Compiler error: Should have been transformed during the prepass."
@@ -12745,7 +12922,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     Utils.memoize join_point_type (fun _ ->
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
                     ) body
-
+    
                 let dict, hc_table =
                     if CacheGeneration.isStale cache_gen then
                         let fresh =
@@ -12756,13 +12933,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         let (d,h,_) = fresh
                         d,h
                     else dict, hc_table
-
+    
                 // Include source range in JP key for better cache uniqueness
                 let env_global_type_key =
                     let (sp, ep) = r.range
                     let rk = sprintf "jp_type@%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character
                     Array.append env_global_type [| YLit (LitString rk) |]
-
+    
                 let join_point_key = lock hc_table (fun () -> hc_table.Add(env_global_type_key))
                 
                 // ALPHA48: Use IVar-based cell for coordination
@@ -12872,7 +13049,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             match result with
                             | Some ret_ty -> ret_ty
                             | None -> raise_type_error (add_trace s r) "error[EJP0004]: type join point completed with no value"
-
+    
             | TB _ -> YB
             | TLit(_,x) -> YLit x
             | TV i -> vt s i
@@ -12947,7 +13124,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | None -> term_core s x
             else
                 term_core s x
-
+    
         and term_core (s : LangEnv) x =
             // v107-alpha13: emergency stack pivot must return the same type as the normal path
             // (the old version returned 'unit' in the try-branch, causing cascading 'unit' vs 'Data' errors)
@@ -12962,16 +13139,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let r0 = range_of_e_or fallback x
                     let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
                     raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in term at %s (BigStack exhausted)" EJPCodes.EJP0010 site)
-
+    
         and term_core_impl (s : LangEnv) x =
-
+    
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_e_or fallback x
             let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
-
+    
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
-
+    
             // Cycle guards: detect infinite re-entrancy into the same expression
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
@@ -12979,12 +13156,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
-
+    
             // Re-entrancy limits: 4096 base, 16384 on BigStack
             let max_reentry_base = 4096
             let max_reentry = if BigStack.isActive() then 16384 else max_reentry_base
             let max_reentry_key = max_reentry
-
+    
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -13015,18 +13192,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
-
+    
             // Maximum term recursion depth: 2048 base, 65536 on BigStack
             let max_depth_base = 2048
             let max_depth = if BigStack.isActive() then 65536 else max_depth_base
-
+    
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
                 |> List.sortByDescending (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> kv.Value)
                 |> List.truncate 8
                 |> List.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
                 |> String.concat ";"
-
+    
             let inline stack_check (tag: string) =
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
@@ -13045,14 +13222,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                             EJPCodes.EJP0010 depth site newGen tag tid bigActive nest mbTerm mem deepSites reasons)
                     // Always use non-fatal mode: reraise to allow BigStack pivot
                     reraise()
-
+    
             if depth <= 32 then
                 if (depth &&& 7) = 0 then stack_check "d<=32"
             elif depth <= 128 then
                 if (depth &&& 1) = 0 then stack_check "d<=128"
             else
                 stack_check "d>128" 
-
+    
             if depth > max_depth then
                 let newGen = CacheGeneration.current() // alpha27: do not invalidate on term depth guard (avoids JP gen-change loops)
                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
@@ -13069,11 +13246,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     |> String.concat " <- "
                 DiagSidecar.emit (sprintf "%s term recursion depth exceeded depth=%d max=%d maxObs=%d site=%s gen=%d tid=%d bigActive=%b mb=%d trace=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth maxObs site newGen tid bigActive mbTerm traceShort deepSites reasons)
                 raise_type_error (add_trace s r0) (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
-
-
+    
+    
             let global' (x: string) = globals_add s x
-
-
+    
+    
             let term2 s a b = term s a, term s b
             let term3 s a b c = term s a, term s b, term s c
             let type_apply s a b =
@@ -13088,7 +13265,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 // v107-alpha24: Removed proactive depth-based BigStack spawning
                 // Rely only on EnsureSufficientExecutionStack in apply_core for reactive spawning
                 apply_core s (a0, b0)
-
+    
             and apply_core s (a0, b0) =
                 // v107-alpha11: define site/r0 locally for error messages
                 let r0 = match s.trace with | r :: _ -> r | [] -> range0
@@ -13128,7 +13305,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             EJPCodes.EJP0010, newGen, site, depthA, maxObs, tid, bigActive, mbApply, traceShort, deepSites, reasons))
                         raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in apply at {1} (gen={2} depth={3} maxObs={4} tid={5} bigActive={6} mb={7})",
                             EJPCodes.EJP0010, site, newGen, depthA, maxObs, tid, bigActive, mbApply))
-
+    
                 match stack_fallback with
                 | Some v ->
                     jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|apply_bigstack_ok", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
@@ -13143,7 +13320,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | DNominal(DUnion _, _) -> raise_type_error s "Unions cannot be applied."
                         | DNominal(a', _) -> a <- a'
                         | _ -> unwrapping <- false
-
+    
                     match a, b with
                     | DRecord a, DSymbol b ->
                         match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
@@ -13183,7 +13360,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             match a with
                             | DV(L(_, YPrim _)) | DLit _ -> true
                             | _ -> false
-
+    
                         let depth = RecursionTracker.currentDepth ()
                         let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
                         let gen0 = CacheGeneration.current ()
@@ -13193,17 +13370,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 let (a,_) = r.range
                                 sprintf "%s:%d:%d" r.path a.line a.character
                             | _ -> "unknown"
-
+    
                         let got_ty = data_to_ty s a
                         let got_ty_deref = jp_method_deref_rec_placeholder got_ty
-
+    
                         if is_primitive_mismatch then
                             // Record for pattern learning
                             BitMamba.recordFailure a
-
+    
                             // Mark as suspect in cache
                             SuspectCache.mark a EJPCodes.EJP0007
-
+    
                             jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_primitive" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
                             let snap = if jp_diag_verbose then diag_snapshot_short (sprintf "%s apply_mismatch site=%s" EJPCodes.EJP0007 site) else ""
                             DiagSidecar.emit (sprintf "%s apply mismatch: expected callable, got %s Got(ty=%s deref=%s) depth=%d site=%s\n%s" EJPCodes.EJP0007 (show_data a) (show_ty got_ty) (show_ty got_ty_deref) depth site snap)
@@ -13216,15 +13393,33 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d site=%s" depth site)
                                 DiagSidecar.emit (sprintf "%s apply mismatch suspected cache corruption (depth=%d) -> invalidated to gen=%d"
                                     EJPCodes.EJP0008 depth newGen)
-
-                        raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s\nGot(ty): %s\nGot(ty_deref): %s" (show_data a) (show_ty got_ty) (show_ty got_ty_deref)
-
-
+    
+                        let is_jp_placeholder_apply =
+                            match got_ty_deref with
+                            | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") || s.Contains("JPClosureRecPlaceholder(") || s.Contains("JPMethodUnknownRet") -> true
+                            | _ -> false
+    
+                        if is_jp_placeholder_apply then
+                            SuspectCache.mark a (sprintf "%s apply_jp_placeholder" EJPCodes.EJP0007)
+                            jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_jp_placeholder" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
+                            let snap = if jp_diag_verbose then diag_snapshot_short (sprintf "%s apply_jp_placeholder site=%s" EJPCodes.EJP0007 site) else ""
+                            DiagSidecar.emit (sprintf "%s apply mismatch: JP placeholder callable leaked, returning arg. got=%s ty=%s deref=%s depth=%d site=%s\n%s" EJPCodes.EJP0007 (show_data a) (show_ty got_ty) (show_ty got_ty_deref) depth site snap)
+                            let invKey = sprintf "%s|apply_jp_placeholder|%s" EJPCodes.EJP0008 site
+                            let invN = jp_mismatch_counts.AddOrUpdate(invKey, 1, (fun _ n -> n + 1))
+                            if invN <= 1 && depth <= 256 then
+                                CacheGeneration.requestSequential ()
+                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply JP placeholder mismatch depth=%d site=%s" depth site)
+                                DiagSidecar.emit (sprintf "%s apply JP placeholder suspected cache corruption (depth=%d) -> invalidated to gen=%d" EJPCodes.EJP0008 depth newGen)
+                            b
+                        else
+                            raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s\nGot(ty): %s\nGot(ty_deref): %s" (show_data a) (show_ty got_ty) (show_ty got_ty_deref)
+    
+    
             let rec if_ s cond on_succ on_fail =
                 // v107-alpha24: Removed proactive depth-based BigStack spawning
                 // Rely only on EnsureSufficientExecutionStack in if_core for reactive spawning
                 if_core s cond on_succ on_fail
-
+    
             and if_core s cond on_succ on_fail =
                 // v107-alpha13: emergency stack pivot must return the same type as the normal path
                 try
@@ -13236,7 +13431,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | None ->
                         let r0 = match s.trace with | r :: _ -> r | [] -> range0
                         raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in if_ (BigStack exhausted)" EJPCodes.EJP0010)
-
+    
             and if_core_impl s cond on_succ on_fail =
                 let lit_tr = DLit(LitBool true)
                 let lit_fl = DLit(LitBool false)
@@ -13283,7 +13478,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 )
                                 |> Map.ofSeq
                                 |> YRecord
-
+    
                             let fl =
                                 fl
                                 |> Seq.map (fun (KeyValue ((i, k), v)) ->
@@ -13293,12 +13488,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 |> Seq.map snd
                                 |> Map.ofSeq
                                 |> YRecord
-
+    
                             tr, fl
-
+    
                         | _ ->
                             type_tr, type_fl
-
+    
                     if type_tr = type_fl then
                         if tr.Length = 1 && fl.Length = 1 then
                             match tr.[0], fl.[0] with
@@ -13320,8 +13515,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             | _ -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
                         else push_typedop_no_rewrite s (TyIf(cond,tr,fl)) type_tr
                     else
-                        // ALPHA48: JPMethod recursion placeholders can leak into branch types during parallel JP evaluation.
-                        // If one side is a JPMethodRecPlaceholder, treat it as a unification hole and resolve it to the other side.
+                        // ALPHA100: JPMethod recursion placeholders can leak into composite branch types during parallel JP evaluation.
+                        // Treat placeholders as unification holes recursively (pairs/arrays/apply/layout/fun/records).
                         let inline try_resolve_jp_placeholder (a: Ty) (b: Ty) : Ty option =
                             try
                                 let k_opt =
@@ -13331,15 +13526,49 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                         jp_method_rec_placeholders |> Seq.tryPick (fun (KeyValue(k,c)) -> if c.ph = a || c.v = a then Some k else None)
                                 k_opt |> Option.map (fun k -> jp_method_resolve_rec_placeholder k b; b)
                             with _ -> None
-                        match try_resolve_jp_placeholder type_tr type_fl with
+
+                        let rec try_resolve_jp_placeholder_deep (a: Ty) (b: Ty) : Ty option =
+                            match try_resolve_jp_placeholder a b with
+                            | Some _ -> Some b
+                            | None ->
+                                match a, b with
+                                | YPair(a1,a2), YPair(b1,b2) ->
+                                    let r1 = try_resolve_jp_placeholder_deep a1 b1
+                                    let r2 = try_resolve_jp_placeholder_deep a2 b2
+                                    if r1.IsSome || r2.IsSome then Some b else None
+                                | YArray a1, YArray b1 ->
+                                    try_resolve_jp_placeholder_deep a1 b1 |> Option.map (fun _ -> b)
+                                | YApply(a1,a2), YApply(b1,b2) ->
+                                    let r1 = try_resolve_jp_placeholder_deep a1 b1
+                                    let r2 = try_resolve_jp_placeholder_deep a2 b2
+                                    if r1.IsSome || r2.IsSome then Some b else None
+                                | YLayout(a1,l1), YLayout(b1,l2) when l1 = l2 ->
+                                    try_resolve_jp_placeholder_deep a1 b1 |> Option.map (fun _ -> b)
+                                | YFun(a1,r1,ft1), YFun(a2,r2,ft2) when ft1 = ft2 ->
+                                    let rA = try_resolve_jp_placeholder_deep a1 a2
+                                    let rR = try_resolve_jp_placeholder_deep r1 r2
+                                    if rA.IsSome || rR.IsSome then Some b else None
+                                | YRecord ra, YRecord rb ->
+                                    let mutable changed = false
+                                    for KeyValue((_, k), va) in ra do
+                                        let vb_opt =
+                                            rb |> Map.tryPick (fun (_, k') vb -> if k = k' then Some vb else None)
+                                        match vb_opt with
+                                        | Some vb ->
+                                            if try_resolve_jp_placeholder_deep va vb |> Option.isSome then changed <- true
+                                        | None -> ()
+                                    if changed then Some b else None
+                                | _ -> None
+
+                        match try_resolve_jp_placeholder_deep type_tr type_fl with
                         | Some ty -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) ty
                         | None ->
-                            match try_resolve_jp_placeholder type_fl type_tr with
+                            match try_resolve_jp_placeholder_deep type_fl type_tr with
                             | Some ty -> push_typedop_no_rewrite s (TyIf(cond,tr,fl)) ty
                             | None ->
                                 raise_type_error s <| sprintf "Types in branches of If do not match.\nGot: %s and %s" (show_ty type_tr) (show_ty type_fl)
                 | cond -> raise_type_error s <| sprintf "Expected a bool in conditional.\nGot: %s" (show_data cond)
-
+    
             let eq s a b =
                 let inline op a b = a = b
                 match a,b with
@@ -13396,7 +13625,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | YPrim UInt32T -> f UInt32.TryParse LitUInt32 "u32"
                 | YPrim UInt64T -> f UInt64.TryParse LitUInt64 "u64"
                 | b -> raise_type_error s <| sprintf "Expected a numberic type (f32,f64,i8,i16,i32,i64,u8,u16,u32,u64) as the type of literal.\nGot: %s" (show_ty b)
-
+    
             let lit_test s a bind on_succ on_fail =
                 let b = v s bind
                 match a, b with
@@ -13405,18 +13634,18 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | _ ->
                     if lit_to_ty a = data_to_ty s b then if_ s (eq s (DLit a) b) on_succ on_fail
                     else term s on_fail
-
+    
             let inline nan_guardf32 x = if Single.IsNaN x then raise_type_error s "A 32-bit floating point operation resulting in a nan detected at compile time." else x
             let inline nan_guardf64 x = if Double.IsNaN x then raise_type_error s "A 64-bit floating point operation resulting in a nan detected at compile time." else x
-
+    
             let eforall (free_vars : Scope,i,body) =
                 assert (free_vars.ty.free_vars.Length = i)
                 DForall(body,HopacExtensions.A.map (v s) free_vars.term.free_vars,HopacExtensions.A.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
-
+    
             let efun (free_vars : Scope,i,body,annot) =
                 assert (free_vars.term.free_vars.Length = i)
                 DFunction(body,annot,HopacExtensions.A.map (v s) free_vars.term.free_vars,HopacExtensions.A.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
-
+    
             let enominal (r,a,b) =
                 let a = term s a
                 let b = ty s b
@@ -13443,23 +13672,23 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             |> Map.ofSeq
                             |> DRecord
                         | _ -> a
-
+    
                     let a_ty = data_to_ty s a
-
+    
                     if ty_eq_allow_jp_placeholders a_ty b' then DNominal(a,b)
                     else raise_type_error s <| sprintf "Type error in nominal constructor.\nGot: %s\nExpected: %s" (show_ty a_ty) (show_ty b')
-
+    
             let ty_union s x =
                 let x = ty s x
                 match nominal_type_apply s x with
                 | YUnion x -> x
                 | _ -> raise_type_error s <| sprintf "Expected an union.\nGot: %s" (show_ty x)
-
+    
             let ty_record s x =
                 match ty s x with
                 | YRecord l -> l
                 | x -> raise_type_error s <| sprintf "Expected a type record.\nGot: %s" (show_ty x)
-
+    
             let to_i32 x =
                 try
                     match x with
@@ -13473,10 +13702,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | LitInt64 x -> Convert.ToInt32(x)
                     | x -> raise_type_error s <| sprintf "Expected an int convertible to an i32.\nGot: %s" (show_lit x)
                 with :? System.OverflowException -> raise_type_error s <| sprintf "The literal cannot be converted to an i32 as it is either too small or to big.\nGot: %s" (show_lit x)
-
+    
             let record2 (a,b) (a',b') = DRecord(Map.empty |> Map.add a b |> Map.add a' b')
             let record3 (a,b) (a',b') (a'',b'') = DRecord(Map.empty |> Map.add a b |> Map.add a' b' |> Map.add a'' b'')
-
+    
             match x with
             | EPatternRef _ -> failwith "Compiler error: EPatternRef should have been eliminated during the prepass."
             | EB _ -> DB
@@ -13495,14 +13724,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | EJoinPoint'(r,scope,body,annot,backend,jp_name) ->
                 let env_global_type = HopacExtensions.A.map (vt s) scope.ty.free_vars
                 let env_global_term = HopacExtensions.A.map (v s) scope.term.free_vars
-
+    
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
                 // ALPHA48: IVar-based dict - no separate dict_ev needed
                 let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>>), hc_table, cache_gen =
                     Utils.memoize join_point_method (fun _ ->
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
                     ) (backend', body)
-
+    
                 let dict, hc_table =
                     if CacheGeneration.isStale cache_gen then
                         let fresh =
@@ -13513,7 +13742,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         let (d,h,_) = fresh
                         d,h
                     else dict, hc_table
-
+    
                 // NOTE: join-point bodies can be polymorphic; when the same body is reached through different
                 // instantiations, caching solely by the free-variable environment can accidentally reuse the wrong
                 // specialization (especially under parallel builds). We therefore salt the key with the local
@@ -13525,17 +13754,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     match annot_ty_for_key with
                     | Some t -> Array.append env_global_type [| t |]
                     | None -> env_global_type
-
+    
                 let call_args, env_global_value =
                     data_to_rdata s hc_table env_global_term
-
+    
                 // Include source range in JP key for cache uniqueness
                 let (sp, ep) = r.range
                 let rk = sprintf "jp@%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character
-
+    
                 let env_global_value_key =
                     Array.append env_global_value [| ReSymbol rk |]
-
+    
                 let inline normalize_jp_key_ret (t: Ty) : Ty =
                     let t = jp_method_deref_rec_placeholder t
                     match t with
@@ -13543,12 +13772,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") -> YSymbol "JPMethodUnknownRet(par)"
                     | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> YSymbol "JPMethodUnknownRet(par)"
                     | _ -> t
-
+    
                 let annot_ty_for_key_norm : Ty =
                     match annot_ty_for_key with
                     | Some t -> normalize_jp_key_ret t
                     | None -> YSymbol "JPMethodUnknownRet(par)"
-
+    
                 let join_point_key =
                     lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, annot_ty_for_key_norm))
                 let _ =
@@ -13559,10 +13788,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | _ -> sprintf "<anonymous:%d>" join_point_key.tag
                     let name = base_name + " @" + rk
                     s.join_point_method_key_names.TryAdd(join_point_key, name) |> ignore
-
+    
                 // ALPHA48: Create IVar for this JP specialization
                 let jp_ivar = Hopac.IVar<TypedBind [] option * Ty option * string option>()
-
+    
                 let ret_ty =
                     // ALPHA48: Check if IVar already exists (another thread is computing)
                     match dict.TryGetValue(join_point_key) with
@@ -13650,7 +13879,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                     DiagSidecar.emit (sprintf "EJP0012: degrading capped JP '%s' to placeholder=%s (count=%d tag=%d)\n%s"
                                         jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
                                     ph
-
+    
                         // If a JP key was marked suspect in a previous generation, avoid memoization for this key.
                         // This is a stabilizer for EJP0003/EJP0007 style cache corruption: recompute deterministically instead of reusing a potentially poisoned cell.
                         elif SuspectCache.isSuspect join_point_key then
@@ -13696,8 +13925,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 ty
                             finally
                                 RecursionTracker.exit ()
-
-
+    
+    
                         // ALPHA48: TryAdd IVar - if we win, we compute; if we lose, we wait on winner's IVar
                         elif dict.TryAdd(join_point_key, jp_ivar) then
                             record_jp_diag_method join_point_key jp_name (r :: s.trace)
@@ -13729,12 +13958,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                             jp_type_stack = jp_type_stack
                                             }
                                         let s = rename_global_term s
-
+    
                                         // Track recursion depth for adaptive retry strategies
                                         let recursion_site = sprintf "JPMethod@%s:%d" r.path (fst r.range).line
                                         let entry_depth = RecursionTracker.enter recursion_site
                                         BitMamba.recordAccess join_point_key
-
+    
                                         // ALPHA48: Simplified evaluation - no complex retry loop
                                         // Just evaluate and fill the IVar
                                         let compute_term () = term_scope'' s body annot_val
@@ -13756,7 +13985,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                             let snap = if jp_diag_verbose then diag_snapshot_short (sprintf "EJP0002 mismatch jp=%s" jp_name_str) else ""
                                             DiagSidecar.emit (sprintf "EJP0002: type mismatch expected=%s got=%s expected_deref=%s got_deref=%s\n%s" (show_ty annot) (show_ty ty) (show_ty annot_deref) (show_ty ty_deref) snap)
                                         | _ -> ()
-
+    
                                         // ALPHA48: Fill IVar to signal completion and unblock all waiters
                                         jp_fill_ivar jp_ivar result
                                         ty
@@ -13796,7 +14025,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                     jp_throw_keyed join_point_key
                                     raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP completed without return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
                             | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP dict inconsistency\n  = key: %O\n" join_point_key)
-
+    
                 match backend with
                 | None -> push_typedop_no_rewrite s (TyJoinPoint(JPMethod((backend',body),join_point_key),call_args)) ret_ty
                 | Some (range,_) ->
@@ -13829,7 +14058,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | ERecordWith(r,vars,withs,withouts) ->
                 let s = add_trace s r
                 let base_s = s
-
+    
                 // ### ALPHA17: Early stack check BEFORE any processing
                 // Nested backend_switch can exhaust stack before we even start iterating.
                 // Check immediately and attempt BigStack pivot if needed.
@@ -13857,7 +14086,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         DiagSidecar.emit (sprintf "%s RecordWith early_stack_exhausted gen=%d depth=%d deep=[%s] reasons=[%s]" EJPCodes.EJP0010 newGen (RecursionTracker.currentDepth()) deepSites reasons)
                         raise_type_error base_s (sprintf "%s Stack exhausted before record-with processing (BigStack unavailable)." EJPCodes.EJP0010)
                 else
-
+    
                 // ### v69: stack-safe RecordWith
                 // List.fold on very long lists can StackOverflow before term's own stack guards trigger.
                 // We therefore use explicit while loops and occasional EnsureSufficientExecutionStack checks.
@@ -13872,15 +14101,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             let deepSites = deepSitesShort ()
                             DiagSidecar.emit (sprintf "%s RecordWith insufficient_stack tag=%s i=%d gen=%d depth=%d deep=[%s] reasons=[%s]" EJPCodes.EJP0010 tag i newGen (RecursionTracker.currentDepth()) deepSites reasons)
                             raise_type_error (add_trace base_s r) (sprintf "%s Stack too deep while evaluating record-with (%s, i=%d, gen=%d)." EJPCodes.EJP0010 tag i newGen)
-
+    
                 let inline try_pick_key (key: string) (m: Map<int * string, Data>) =
                     m |> Map.tryPick (fun (i, k) v -> if k = key then Some (i, v) else None)
-
+    
                 let var r a =
                     match term base_s a with
                     | DSymbol a -> a
                     | a -> raise_type_error (add_trace base_s r) <| sprintf "Expected a symbol.\nGot: %s" (show_data a)
-
+    
                 let apply_map (m0: Map<int * string, Data>) =
                     let mutable m = m0
                     let mutable wi = 0
@@ -13925,7 +14154,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     if wi > 8192 || wo > 8192 then
                         DiagSidecar.emit (sprintf "RecordWith large lists: withs=%d withouts=%d depth=%d" wi wo (RecursionTracker.currentDepth()))
                     m
-
+    
                 let update_nested (root: Map<int * string, Data>) (xs: (Range * E) list) =
                     let path = ResizeArray<struct(Range * string)>()
                     let mutable cur = xs
@@ -13956,7 +14185,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         let struct(idx, k, parent) = parents.[i]
                         updated <- Map.add (idx, k) (DRecord updated) parent
                     updated
-
+    
                 match vars with
                 | (r, x) :: xs ->
                     match term base_s x with
@@ -13997,10 +14226,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let b_d = jp_method_deref_rec_placeholder b
                 if (ty_eq_allow_jp_placeholders a_ty_d b_d |> not) then
                     raise_type_error s <| sprintf "The body does not match the annotation.
-Got: %s
-Expected: %s
-Got(deref): %s
-Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
+    Got: %s
+    Expected: %s
+    Got(deref): %s
+    Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 a
             | EExists(r,a,b) ->
                 let s = add_trace s r
@@ -14008,35 +14237,33 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let b = term s b
                 DExists(a,b)
             | EPatternMiss a ->
-                let got = term s a
-                let is_jp_placeholder =
-                    match got with
-                    | DSymbol sym ->
-                        sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPClosureRecPlaceholder(")
-                    | DV(L(_,YSymbol sym)) ->
-                        sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPClosureRecPlaceholder(")
-                    | DV(L(_,ty)) ->
-                        let t = show_ty ty
-                        t.Contains("JPMethodRecPlaceholder(") || t.Contains("JPTypeRecPlaceholder(") || t.Contains("JPClosureRecPlaceholder(")
-                    | _ -> false
-                if is_jp_placeholder then
-                    // ALPHA66: placeholder de recursao de JP nao tem informacao suficiente para destruturar.
-                    // Em vez de abortar (EJP0012), devolvemos o scrutinee e deixamos o chamador degradar (unbox->placeholder).
+                let got : Data = term s a
+                let got_s : string = show_data got
+                let is_ph : bool =
+                    got_s.Contains("JPMethodRecPlaceholder(") ||
+                    got_s.Contains("JPTypeRecPlaceholder(") ||
+                    got_s.Contains("JPClosureRecPlaceholder(") ||
+                    got_s.Contains("JPMethodUnknownRet(")
+                if is_ph then
                     if jp_diag_verbose then
-                        DiagSidecar.emit (sprintf "%s: Pattern miss (placeholder recovered). Compiler: par Got: %s" EJPCodes.EJP0012 (show_data got))
-                    got
+                        DiagSidecar.emit (sprintf "%s: Pattern miss (placeholder recovered). Compiler: par Got: %s" EJPCodes.EJP0012 got_s)
+                    DSymbol got_s
                 else
-                    (fun (got_s: string) -> let is_ph = got_s.Contains("JPMethodRecPlaceholder(") || got_s.Contains("JPTypeRecPlaceholder(") || got_s.Contains("JPClosureRecPlaceholder(") || got_s.Contains("JPMethodUnknownRet(") in if is_ph then DSymbol got_s else raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" got_s) (show_data got)
+                    ((raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" got_s) : Data)
             | ETypePatternMiss a ->
-                let got = ty s a
-                let got_s = show_ty got
-                if got_s.Contains("JPMethodRecPlaceholder(") || got_s.Contains("JPTypeRecPlaceholder(") || got_s.Contains("JPClosureRecPlaceholder(") then
-                    // ALPHA66: tipo placeholder; nao abortar.
+                let got_ty : Ty = ty s a
+                let got_s : string = show_ty got_ty
+                let is_ph : bool =
+                    got_s.Contains("JPMethodRecPlaceholder(") ||
+                    got_s.Contains("JPTypeRecPlaceholder(") ||
+                    got_s.Contains("JPClosureRecPlaceholder(") ||
+                    got_s.Contains("JPMethodUnknownRet(")
+                if is_ph then
                     if jp_diag_verbose then
                         DiagSidecar.emit (sprintf "%s: Type Pattern miss (placeholder recovered). Compiler: par Got: %s" EJPCodes.EJP0012 got_s)
                     DSymbol got_s
                 else
-                    if got_s.Contains("JPMethodRecPlaceholder(") || got_s.Contains("JPTypeRecPlaceholder(") || got_s.Contains("JPClosureRecPlaceholder(") || got_s.Contains("JPMethodUnknownRet(") then DSymbol got_s else raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" got_s
+                    ((raise_type_error s <| sprintf "Pattern miss.\nCompiler: par\nGot: %s" got_s) : Data)
             | EIfThenElse(r,cond,tr,fl) -> let s = add_trace s r in if_ s (term s cond) tr fl
             | EIfThen(r,cond,tr) -> let s = add_trace s r in if_ s (term s cond) tr (EB r)
             | EMutableSet(r,a,b,c) ->
@@ -14080,15 +14307,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | _ -> c
                 let c_ty' = data_to_ty s c
                 if c_ty' = c_ty then push_typedop_no_rewrite s (TyLayoutMutableSet(a,List.map snd b,c)) YB
-                else
-                    let got_s = show_ty c_ty'
-                    let exp_s = show_ty c_ty
-                    let is_jp_placeholder (t: string) =
-                        t.Contains("JPMethodRecPlaceholder(") || t.Contains("JPTypeRecPlaceholder(") || t.Contains("JPClosureRecPlaceholder(") || t.Contains("JPMethodUnknownRet(") ||
-                        t.Contains(".JPMethodRecPlaceholder(") || t.Contains(".JPTypeRecPlaceholder(") || t.Contains(".JPClosureRecPlaceholder(") || t.Contains(".JPMethodUnknownRet(")
-                    if is_jp_placeholder got_s then c_ty
-                    elif is_jp_placeholder exp_s then c_ty'
-                    else raise_type_error s <| sprintf "The two side do not have the same type.\nGot: %s\nExpected: %s" got_s exp_s
+                else let got_s = show_ty c_ty' in let exp_s = show_ty c_ty in let is_ph (t: string) = t.Contains("JPMethodRecPlaceholder(") || t.Contains("JPTypeRecPlaceholder(") || t.Contains("JPClosureRecPlaceholder(") || t.Contains("JPMethodUnknownRet(") in if is_ph got_s || is_ph exp_s then push_typedop_no_rewrite s (TyLayoutMutableSet(a,List.map snd b,c)) YB else raise_type_error s <| sprintf "The two side do not have the same type.\nGot: %s\nExpected: %s" got_s exp_s
             | EMacro(r,a,b) ->
                 let s = add_trace s r
                 let a = a |> List.map (function MText x -> CMText x | MTerm (x,b) -> CMTerm(term s x |> dyn false s, b) | MType x -> CMType(ty s x) | MLitType x -> CMTypeLit(ty s x |> assert_ty_lit s))
@@ -14147,7 +14366,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | Some (UnionData (k',a)) -> if k = k' then run s a else term s on_fail
                     | Some (UnionBlockers blk) -> body blk
                     | None -> body Set.empty
-
+    
                 match term s a with
                 | DNominal(DUnion(DPair(DSymbol k',a),_),_) -> if k = k' then run s a else term s on_fail
                 | DNominal(DV(L(i0,YSymbol sym)),nom_ty) when sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(") ->
@@ -14235,13 +14454,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let s' () = {s with cse = Dictionary(HashIdentity.Structural) :: s.cse; seq = ResizeArray()}
                 let assert_case_ty s x = let x_ty' = data_to_ty s x in match case_ty with | Some x_ty when x_ty' <> x_ty -> raise_type_error s <| sprintf "One union case has a different return than the previous one.\nGot: %s\nExpected: %s" (show_ty x_ty') (show_ty x_ty) | Some _ -> () | None -> case_ty <- Some x_ty'
                 let run s x = let x = apply s x |> dyn false s in (assert_case_ty s x; seq_apply s x)
-
-
-
-
-
-
-
+    
+    
+    
+    
+    
+    
+    
                 let case_on_fail () = run (s'()) (on_fail, DB)
                 let key_value = function
                     | DPair(DSymbol k, a) -> k, a
@@ -14456,7 +14675,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     // SOTA: join-point placeholders can transiently leak under parallel JP retries/generation churn.
                     // BackendSwitch needs a stable shape check without cementing placeholders as concrete types.
                     jp_method_deref_rec_placeholder x
-
+    
                 let validate_type t' =
                     let t' = normalize_backend_switch_ty t'
                     match t with
@@ -14577,12 +14796,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                     else dict
                                 match dict.TryGetValue(join_point_key) with
                                 | true, ivar ->
-                                    let (_, ret_ty_opt, _) =
-                                        jp_ivar_wait "While.cond.force" (sprintf "key=%O backend=%O" join_point_key backend') ivar
-                                    jp_throw_if_any ()
-                                    match ret_ty_opt with
-                                    | Some ret_ty -> ret_ty
-                                    | None -> cond_ty
+                                    DiagSidecar.emit (sprintf "while-cond: skip_force key=%O backend=%O" join_point_key backend')
+                                    cond_ty
                                 | _ -> cond_ty
                             | _ -> cond_ty
                     let cond_ty_deref = jp_method_deref_rec_placeholder cond_ty_forced
@@ -14688,7 +14903,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | YPrim UInt64T -> try DLit (LitUInt64 (Convert.ToUInt64 str.Length)) with :? OverflowException -> raise_type_error s <| sprintf "Literal conversion to u64 failed as the string length is either too large.\nGot: %i" str.Length
                     | _ -> failwith "impossible"
                 | DV(L(_,YPrim StringT)) & str -> push_typedop s (TyStringLength(t,str)) t
-                | x -> raise_type_error s <| sprintf "Expected a string.\nGot: %s" (show_data x)
+                | x ->
+                    let xs = show_data x
+                    if xs.Contains("JPMethodRecPlaceholder") || xs.Contains("JPTypeRecPlaceholder") || xs.Contains("JPClosureRecPlaceholder") || xs.Contains("JPMethodUnknownRet") then
+                        push_typedop s (TyStringLength(t,x)) t
+                    else
+                        raise_type_error s <| sprintf "Expected a string.\nGot: %s" xs
             | EOp(_,StringIndex,[a;b]) ->
                 match term2 s a b with
                 | DLit(LitString a), DLit b ->
@@ -14697,7 +14917,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     else raise_type_error s <| sprintf "Cannot index into a string of length %i at index %i." a.Length b
                 | a,b ->
                     match data_to_ty s a, data_to_ty s b with
-                    | YPrim StringT,bt when is_any_int_allow_jp_placeholders bt -> push_binop s StringIndex (a,b) (YPrim CharT)
+                    | at, bt when is_string_allow_jp_placeholders at && is_any_int_allow_jp_placeholders bt -> push_binop s StringIndex (a,b) (YPrim CharT)
                     | a,b -> raise_type_error s <| sprintf "Expected a string and an int as arguments.\nGot: %s\nAnd: %s" (show_ty a) (show_ty b)
             | EOp(_,StringSlice,[a;b;c]) ->
                 match term3 s a b c with
@@ -14707,7 +14927,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     else raise_type_error s <| sprintf "String of length %i's slice from %i to %i is invalid." a.Length b c
                 | a,b,c ->
                     match data_to_ty s a, data_to_ty s b, data_to_ty s c with
-                    | YPrim StringT, bt, ct when is_any_int_allow_jp_placeholders bt && is_any_int_allow_jp_placeholders ct -> push_triop s StringSlice (a,b,c) (YPrim StringT)
+                    | at, bt, ct when is_string_allow_jp_placeholders at && is_any_int_allow_jp_placeholders bt && is_any_int_allow_jp_placeholders ct -> push_triop s StringSlice (a,b,c) (YPrim StringT)
                     | a,b,c -> raise_type_error s <| sprintf "Expected a string and two ints as arguments.\nGot: %s\nAnd: %s\nAnd: %s" (show_ty a) (show_ty b) (show_ty c)
             | EArray(_,a,b) ->
                 match ty s b with
@@ -15426,7 +15646,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         s.Contains("JPMethodRecPlaceholder(")
                 let a = term s a
                 DLit (LitBool (is_var a))
-
+    
             | EOp(_,UnionIs,[a]) ->
                 let inline is_jp_placeholder (sym: string) =
                     sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(")
@@ -15703,7 +15923,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | DLit(LitString _) -> push_binop_no_rewrite s Printf (fmt, str) YB
                 | _ -> raise_type_error s $"Expected a compile time string as the format.\nGot: {show_data fmt}"
             | EOp(_,op,a) -> raise_type_error s <| sprintf "Compiler error: %A with %i args not implemented" op (List.length a)
-
+    
         let s : LangEnv = {
             trace = []
             seq = null
@@ -15726,7 +15946,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             }
         let ty_to_data x = ty_to_data {s with i = ref 0} x
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
-
+    
         match x with
         | EFun'(r,_,_,_,_) ->
             // v107-alpha11: Always run the main evaluation on BigStack to prevent stack overflow
@@ -15743,46 +15963,46 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 raise_type_error s (sprintf "%s: stack overflow at peval_main entry (BigStack exhausted - check SPIRAL_BIGSTACK_MAX_NEST)" EJPCodes.EJP0010)
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
-
+    
     /// ## CodegenUtils
     // open System.Text
-
+    
     /// ### CodegenEnv
     type CodegenEnv =
         {
         text : StringBuilder
         indent : int
         }
-
+    
     /// ### line
     let line x (s : string) = x.text.Append(' ', x.indent).AppendLine s |> ignore
-
+    
     /// ### indent
     let indent x : CodegenEnv = {x with indent=x.indent+4}
-
+    
     /// ### add_dec_point
     let add_dec_point (x : string) = if x.IndexOf('.') = -1 && x.Contains "E" |> not then x + ".0" else x
-
+    
     /// ### CodegenError
     exception CodegenError of Range option * string
-
+    
     /// ### CodegenErrorWithPos
     exception CodegenErrorWithPos of Trace * string
-
+    
     /// ### raise_codegen_error
     let raise_codegen_error x = raise (CodegenError (None,x))
-
+    
     /// ### raise_codegen_error_backend
     let raise_codegen_error_backend r x = raise (CodegenError (Some r,x))
-
+    
     /// ### raise_codegen_error'
     let raise_codegen_error' trace (r,x) = raise (CodegenErrorWithPos(Option.fold (fun s x -> x :: s) trace r,x))
-
+    
     /// ## CodegenFsharp
-
+    
     /// ### backend_nameFsharp
     let backend_nameFsharp = "Fsharp"
-
+    
     /// ### litFsharp
     let litFsharp = function
         | LitInt8 x -> sprintf "%iy" x
@@ -15828,7 +16048,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | x -> string x
             |> sprintf "'%s'"
         | LitBool x -> if x then "true" else "false"
-
+    
     /// ### primFsharp
     let primFsharp = function
         | Int8T -> "int8"
@@ -15844,36 +16064,36 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         | BoolT -> "bool"
         | StringT -> "string"
         | CharT -> "char"
-
+    
     /// ### type_litFsharp
     let type_litFsharp = function
         | YLit x -> litFsharp x
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
-
+    
     /// ### UnionRecFsharp
     type UnionRecFsharp = {tag : int; free_vars : Map<int * string, TyV[]>}
-
+    
     /// ### LayoutRecFsharp
     type LayoutRecFsharp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
-
+    
     /// ### MethodRecFsharp
     type MethodRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
-
+    
     /// ### ClosureRecFsharp
     type ClosureRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
-
+    
     /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
-
+    
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
             if is_type then types.Enqueue(text) else functions.Enqueue(text)
-
+    
         let layout show =
             let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -15893,7 +16113,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
                 if dirty then print true show r
                 r
-
+    
         let union show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
             let mutable next_tag = -1
@@ -15907,7 +16127,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         print true show r
                         r
                     else dict.[x]
-
+    
         let jp f show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let mutable next_tag = -1
@@ -15920,15 +16140,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         print false show r
                         r
                     else dict.[x]
-
+    
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litFsharp a
         let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
-
+    
         let global' =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then env.globals.Add x
-
+    
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -16168,7 +16388,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | StringSlice, [a;b;c] -> sprintf "%s.[int %s..int %s]" (tup a) (tup b) (tup c)
                 | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] -> sprintf "%s.[int %s] <- %s" (tup a) (tup b) (tup c)
-
+    
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
                 | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
@@ -16188,10 +16408,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | BitwiseOr, [a;b] -> sprintf "%s ||| %s" (tup a) (tup b)
                 | BitwiseXor, [a;b] -> sprintf "%s ^^^ %s" (tup a) (tup b)
                 | BitwiseComplement, [a] -> sprintf "~~~%s" (tup a)
-
+    
                 | ShiftLeft, [a;b] -> sprintf "%s <<< %s" (tup a) (tup b)
                 | ShiftRight, [a;b] -> sprintf "%s >>> %s" (tup a) (tup b)
-
+    
                 | Neg, [x] -> sprintf " -%s" (tup x)
                 | Log, [x] -> sprintf "log %s" (tup x)
                 | Exp, [x] -> sprintf "exp %s" (tup x)
@@ -16255,7 +16475,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 match v.Trim().ToLowerInvariant() with
                 | "1" | "true" | "yes" | "y" | "on" -> true
                 | _ -> false
-
+    
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                 // ALPHA48: Updated tuple structure (dict, hc_table, gen) - no dict_ev
@@ -16266,21 +16486,21 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let ret_ty =
                     match key with
                     | C(_,_,t) -> t
-
+    
                 // Codegen JP wait configuration (SOTA defaults)
                 let wait_timeout_ms = 60000   // 60 second timeout
                 let wait_log_ms = 5000        // Log every 5 seconds while waiting
                 let wait_slice_ms = 50        // 50ms wait slices
                 let wait_fatal = false        // Don't abort on timeout, use placeholder
                 let wait_placeholder = true   // Generate placeholder on timeout
-
+    
                 let placeholder () =
                     let msg =
                         sprintf "CODEGEN JP PLACEHOLDER method%i body=%s key=%A dict=%d"
                             i jp_body_name key jp_dict.Count
                     DiagSidecar.emit msg
                     [| TyLocalReturnOp([], TyFailwith(ret_ty, DLit(LitString msg)), DB) |], ret_ty
-#if false
+    #if false
                 let get () =
                     let sw = System.Diagnostics.Stopwatch.StartNew()
                     let mutable next_log = int64 wait_log_ms
@@ -16366,8 +16586,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                 elif wait_placeholder then placeholder()
                                 else raise_codegen_error' [] (None, msg)
                     loop ()
-#endif
-
+    #endif
+    
                 let get_v2 () =
                     let sw = System.Diagnostics.Stopwatch.StartNew()
                     let rec loop2 () =
@@ -16406,7 +16626,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                 System.Threading.Thread.Sleep(wait_slice_ms)
                                 loop2 ()
                     loop2 ()
-
+    
                 let a, range = get_v2 ()
                 {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
@@ -16425,21 +16645,21 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         match fun_ty with
                         | YFun(_, r, FT_Vanilla) -> r
                         | _ -> YB
-
+    
                     // Codegen closure JP wait configuration (SOTA defaults)
                     let wait_timeout_ms = 60000
                     let wait_log_ms = 5000
                     let wait_slice_ms = 50
                     let wait_fatal = false
                     let wait_placeholder = true
-
+    
                     let placeholder () =
                         let msg =
                             sprintf "CODEGEN JP PLACEHOLDER closure%i body=%s dict=%d"
                                 i jp_body_name jp_dict.Count
                         DiagSidecar.emit msg
                         DB, [| TyLocalReturnOp([], TyFailwith(range_ty, DLit(LitString msg)), DB) |]
-#if false
+    #if false
                     let get () =
                         let sw = System.Diagnostics.Stopwatch.StartNew()
                         let mutable next_log = int64 wait_log_ms
@@ -16525,8 +16745,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                     elif wait_placeholder then placeholder()
                                     else raise_codegen_error' [] (None, msg)
                         loop ()
-#endif
-
+    #endif
+    
                     let get_v2 () =
                         let sw = System.Diagnostics.Stopwatch.StartNew()
                         let rec loop2 () =
@@ -16564,15 +16784,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                     System.Threading.Thread.Sleep(wait_slice_ms)
                                     loop2 ()
                         loop2 ()
-
+    
                     let domain_args, body = get_v2 ()
                     {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
                 | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
-  |
-  = unexpected type in closure join point
-  help: capture the stack trace and the inferred/expected types for the closure join point.
-"""
+      |
+      = unexpected type in closure join point
+      help: capture the stack trace and the inferred/expected types for the closure join point.
+    """
                 ) (fun s x ->
                 let domain =
                     match x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tyv t)) with
@@ -16582,21 +16802,21 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 line s (sprintf "closure%i (%s) %s : %s =" x.tag (args_tys x.free_vars) domain (tup_ty x.range))
                 binds (indent s) x.body
                 )
-
+    
         let main = StringBuilder()
         binds {text=main; indent=0} x
-
+    
         let program = StringBuilder()
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iteri (fun i x -> program.Append(if i = 0 then "type " else "and ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
         program.Append(main).ToString()
-
+    
     /// ## CodegenGleam
-
+    
     /// ### backend_nameGleam
     let backend_nameGleam = "Gleam"
-
+    
     /// ### litGleam
     let litGleam = function
         | LitInt8 x -> sprintf "%i" x
@@ -16643,7 +16863,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | x -> string x
             |> sprintf "\"%s\""
         | LitBool x -> if x then "True" else "False"
-
+    
     /// ### primGleam
     let primGleam = function
         | Int8T -> "Int"
@@ -16659,36 +16879,36 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         | BoolT -> "Bool"
         | StringT -> "String"
         | CharT -> "String"
-
+    
     /// ### type_litGleam
     let type_litGleam = function
         | YLit x -> litGleam x
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
-
+    
     /// ### UnionRecGleam
     type UnionRecGleam = {tag : int; free_vars : Map<int * string, TyV[]>}
-
+    
     /// ### LayoutRecGleam
     type LayoutRecGleam = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
-
+    
     /// ### MethodRecGleam
     type MethodRecGleam = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
-
+    
     /// ### ClosureRecGleam
     type ClosureRecGleam = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
-
+    
     /// ### codegenGleam
     let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
-
+    
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
             if is_type then types.Enqueue(text) else functions.Enqueue(text)
-
+    
         let layout show =
             let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -16708,7 +16928,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
                 if dirty then print true show r
                 r
-
+    
         let union show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
             let mutable next_tag = -1
@@ -16722,7 +16942,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         print true show r
                         r
                     else dict.[x]
-
+    
         let jp f show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let mutable next_tag = -1
@@ -16735,17 +16955,17 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         print false show r
                         r
                     else dict.[x]
-
+    
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litGleam a
         let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
-
+    
         let global' =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then env.globals.Add x
-
+    
         let mutable while_id = 0
-
+    
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -16900,7 +17120,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 while_id <- while_id + 1
                 let loopVars = snd a |> HopacExtensions.A.map (fun (L(i,_)) -> i)
                 let loopVarSet = Set.ofArray loopVars
-
+    
                 let fvData d = data_free_vars d |> HopacExtensions.A.map (fun (L(i,_)) -> i) |> Set.ofArray
                 let rec fvOp a =
                     let fromData l = l |> List.fold (fun acc d -> Set.union acc (fvData d)) Set.empty
@@ -16933,7 +17153,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         let succVars = on_succs |> HopacExtensions.A.map fvBinds |> Array.fold Set.union Set.empty
                         Set.unionMany [Set.singleton i; succVars; fvBinds on_fail]
                     | TySizeOf _ | TyBackend _ -> Set.empty
-
+    
                 and fvBinds (x : TypedBind []) =
                     let defined, used =
                         x |> Array.fold (fun (defined, used) bind ->
@@ -16950,10 +17170,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                 (defined, Set.union used usedInData)
                         ) (Set.empty, Set.empty)
                     used
-
+    
                 let freeInBody = Set.difference (fvBinds b) loopVarSet
                 let capturedVars = Set.difference freeInBody loopVarSet |> Set.toArray |> Array.sort
-
+    
                 let loopParams = Array.append (HopacExtensions.A.map (sprintf "v%i") loopVars) (HopacExtensions.A.map (sprintf "v%i") capturedVars)
                 let paramList = loopParams |> String.concat ", "
                 let retVars = Array.append loopVars capturedVars
@@ -16962,7 +17182,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | [||] -> "Nil"
                     | [|x|] -> sprintf "v%i" x
                     | xs -> sprintf "#(%s)" (xs |> HopacExtensions.A.map (sprintf "v%i") |> String.concat ", ")
-
+    
                 print
                     false
                     (fun s id' ->
@@ -16979,7 +17199,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         line s "}"
                     )
                     id
-
+    
                 simple (sprintf "let %s = loop%i(%s)" retPat id paramList)
             | TyDo a ->
                 complex <| fun s ->
@@ -17218,7 +17438,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     global' "import gary/array"
                     global' "import gleam/result"
                     $"let {tup a} = {tup a} |> array.set({tup b}, {tup c}) |> result.unwrap({tup a})"
-
+    
                 // Math
                 | Add, [a;b] -> $"{a |> tup} +{a |> dot} {b |> tup}"
                 | Sub, [a;b] -> $"{a |> tup} -{a |> dot} {b |> tup}"
@@ -17238,10 +17458,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | BitwiseOr, [a;b] -> sprintf "%s ||| %s" (tup a) (tup b)
                 | BitwiseXor, [a;b] -> sprintf "%s ^^^ %s" (tup a) (tup b)
                 | BitwiseComplement, [a] -> sprintf "~~~%s" (tup a)
-
+    
                 | ShiftLeft, [a;b] -> sprintf "%s <<< %s" (tup a) (tup b)
                 | ShiftRight, [a;b] -> sprintf "%s >>> %s" (tup a) (tup b)
-
+    
                 | Neg, [x] -> sprintf " -%s" (tup x)
                 | Log, [x] -> sprintf "log %s" (tup x)
                 | Exp, [x] -> sprintf "exp %s" (tup x)
@@ -17348,7 +17568,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let fv_tys =
                     x.free_vars
                     |> HopacExtensions.A.map (fun (L(_, t)) -> tyv t)
-
+    
                 let dom_ty =
                     match x.domain_args with
                     | [||] -> "Nil"
@@ -17358,14 +17578,14 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         |> HopacExtensions.A.map (fun (L(_, t)) -> tyv t)
                         |> String.concat ", "
                         |> sprintf "#(%s)"
-
+    
                 let capt_ty =
                     fv_tys
                     |> function
                         | [||] -> "Nil"
                         | [| one |] -> sprintf "#(%s)" one
                         | many -> many |> String.concat ", " |> sprintf "#(%s)"
-
+    
                 let fv_bind =
                     match x.free_vars with
                     | [||] -> None
@@ -17375,15 +17595,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                             |> HopacExtensions.A.mapi (fun idx (L(i,_)) -> sprintf "v%i" i)
                             |> String.concat ", "
                         Some (sprintf "let #(%s) = capt" names)
-
+    
                 let dom_name =
                     match x.domain_args with
                     | [| L(i, _) |] -> sprintf "v%i" i
                     | _ -> "dom"
-
+    
                 line s (sprintf "closure%i (capt : %s) -> fn(%s) -> %s {" x.tag capt_ty dom_ty (tup_ty x.range))
                 line (indent s) (sprintf "fn (%s) {" dom_name)
-
+    
                 match x.domain_args with
                 | [||] -> ()
                 | [| L(_, _) |] -> ()
@@ -17393,29 +17613,29 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         |> HopacExtensions.A.mapi (fun idx (L(i, _)) -> sprintf "v%i" i)
                         |> String.concat ", "
                     line (indent (indent s)) (sprintf "let #(%s) = dom" names)
-
+    
                 fv_bind |> Option.iter (line (indent (indent s)))
-
+    
                 binds (indent (indent s)) x.body
-
+    
                 line (indent s) "}"
                 line s "}"
             )
-
+    
         let main = StringBuilder()
         binds {text=main; indent=0} x
-
+    
         let program = StringBuilder()
         env.globals |> Seq.distinct |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iteri (fun i x -> program.Append("pub type ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append("pub fn ").Append(x) |> ignore)
         program.Append($"pub fn main () {{ {main} }}").ToString()
-
+    
     /// ## CodegenLua
-
+    
     /// ### backend_nameLua
     let backend_nameLua = "Lua"
-
+    
     /// ### litLua
     let litLua = function
         | LitInt8 x -> sprintf "%i" x
@@ -17462,7 +17682,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | x -> string x
             |> sprintf "\"%s\""
         | LitBool x -> if x then "true" else "false"
-
+    
     /// ### primLua
     let primLua = function
         | Int8T -> "Int"
@@ -17478,38 +17698,38 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         | BoolT -> "Bool"
         | StringT -> "String"
         | CharT -> "String"
-
+    
     /// ### type_litLua
     let type_litLua = function
         | YLit x -> litLua x
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
-
+    
     /// ### UnionRecLua
     type UnionRecLua = {tag : int; free_vars : Map<int * string, TyV[]>}
-
+    
     /// ### LayoutRecLua
     type LayoutRecLua = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
-
+    
     /// ### MethodRecLua
     type MethodRecLua = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
-
+    
     /// ### ClosureRecLua
     type ClosureRecLua = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
-
+    
     /// ### codegenLua
     let codegenLua (env : PartEvalResult) (x : TypedBind []) =
         let targetLua54 = false
-
+    
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
-
+    
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
             if is_type then types.Enqueue(text) else functions.Enqueue(text)
-
+    
         let layout show =
             let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -17529,7 +17749,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
                 if dirty then print true show r
                 r
-
+    
         let union show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
             let mutable next_tag = -1
@@ -17543,7 +17763,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         print true show r
                         r
                     else dict.[x]
-
+    
         let jp f show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let mutable next_tag = -1
@@ -17556,17 +17776,17 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         print false show r
                         r
                     else dict.[x]
-
+    
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litLua a
         let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
-
+    
         let global' =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then env.globals.Add x
-
+    
         let mutable while_id = 0
-
+    
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -17740,7 +17960,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     |> List.map (fun (L(i,_)) -> sprintf "v%i" i)
                     |> String.concat ", "
                 line s (sprintf "local __v = { %s }" vs)
-
+    
                 let xUnion = x.Item
                 let unionRec, prefix =
                     match xUnion.layout with
@@ -17750,7 +17970,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | UStack ->
                         let u = ustack xUnion.cases
                         u, sprintf "Us%i" u.tag
-
+    
                 let mutable first = true
                 Map.iter (fun k (a,bnds) ->
                     let i = case_tags.[k]
@@ -17760,15 +17980,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                             sprintf "__v[%i] ~= nil and __v[%i].tag == \"%si%i\"" (idx + 1) (idx + 1) prefix i
                         )
                         |> String.concat " and "
-
+    
                     if first then
                         line s (sprintf "if %s then" guard)
                         first <- false
                     else
                         line s (sprintf "elseif %s then" guard)
-
+    
                     let body = indent s
-
+    
                     let rec extractVars = function
                         | DV (L(j,_)) -> [j]
                         | DPair(a,b) -> extractVars a @ extractVars b
@@ -17776,19 +17996,19 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         | DUnion(d,_) -> extractVars d
                         | DNominal(d,_) -> extractVars d
                         | _ -> []
-
+    
                     let binderIds = a |> List.collect extractVars
-
+    
                     match is with
                     | [_] when binderIds <> [] ->
                         binderIds
                         |> List.iteri (fun idx j ->
                             line body (sprintf "local v%i = __v[1]._%i" j (idx + 1)))
                     | _ -> ()
-
+    
                     binds body bnds
                 ) on_succs
-
+    
                 match on_fail with
                 | Some b ->
                     line s "else"
@@ -17888,7 +18108,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | ArrayIndexSet, [a;b;c] ->
                     let arr, idx, val' = tup a, tup b, tup c
                     $"local __arr = {arr}; __arr[({idx})+1] = {val'}"
-
+    
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
                 | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
@@ -17916,7 +18136,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     if targetLua54 then sprintf "(%s) << (%s)" (tup a) (tup b) else "bit.lshift(" + (tup a) + ", " + (tup b) + ")"
                 | ShiftRight, [a;b] ->
                     if targetLua54 then sprintf "(%s) >> (%s)" (tup a) (tup b) else "bit.rshift(" + (tup a) + ", " + (tup b) + ")"
-
+    
                 | Neg, [x] -> sprintf "-(%s)" (tup x)
                 | Log, [x] -> sprintf "math.log(%s)" (tup x)
                 | Exp, [x] -> sprintf "math.exp(%s)" (tup x)
@@ -18032,12 +18252,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 line (indent s) "end"
                 line s "end"
             )
-
+    
         let main = StringBuilder()
         binds {text=main; indent=0} x
-
+    
         let program = StringBuilder()
-
+    
         if not targetLua54 then
             program.Append("local bit = bit32 or bit\n") |> ignore
         else
@@ -18048,19 +18268,19 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         types |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         program.Append(main.ToString()).ToString()
-
+    
     /// ## RefCounting
     // Here are the reference counting analysis passes.
     open System.Collections.Generic
-
+    
     /// ### varc_add
     let varc_add x i v =
         let c = Option.defaultValue 0 (Map.tryFind x v) + i
         if c = 0 then Map.remove x v else Map.add x c v
-
+    
     /// ### varc_union
     let varc_union a b = Map.foldBack varc_add a b
-
+    
     /// ### varc_data
     let varc_data call_data =
         let mutable v = Map.empty
@@ -18075,10 +18295,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | DHashMap(x,_) -> x |> Seq.iter (fun kv -> f kv.Value)
         f call_data
         v
-
+    
     /// ### varc_set
     let varc_set x i = Set.fold (fun s v -> Map.add v i s) Map.empty x
-
+    
     /// ### refc_used_vars
     let refc_used_vars (x : TypedBind []) =
         let g_bind : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
@@ -18121,10 +18341,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 Array.fold (fun s body -> s + binds body) (vs + on_fail) on_succs'
         binds x |> ignore
         g_bind
-
+    
     /// ### RefcVars
     type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : Collections.Concurrent.ConcurrentDictionary<TypedBind,TyV Set>; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
-
+    
     /// ### refc_prepass
     let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
         let used_vars = refc_used_vars x
@@ -18132,7 +18352,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         let g_decr : Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set> = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
         let g_op : Dictionary<TypedBind, _> = Dictionary(HashIdentity.Reference)
         let g_op_decr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
-
+    
         let add (d : Dictionary<TypedBind, TyV Set>) k x = if Set.isEmpty x then () else d.Add(k,x)
         let add_cd (d : Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set>) k x = if Set.isEmpty x then () else d.TryAdd(k,x) |> ignore
         let add' (d : Dictionary<TypedBind, Map<TyV,int>>) k x = if Map.isEmpty x then () else d.Add(k,x)
@@ -18141,7 +18361,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             Array.fold (fun (new_vars, increfed_vars) k ->
                 add g_incr k new_vars
                 let increfed_vars = new_vars + increfed_vars
-
+    
                 let used_vars = used_vars.[k]
                 let decref_vars = increfed_vars - used_vars
                 add_cd g_decr k decref_vars
@@ -18183,15 +18403,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 HopacExtensions.A.iter (binds Set.empty increfed_vars) on_succs'
                 binds Set.empty increfed_vars on_fail'
         binds new_vars increfed_vars x
-
+    
         {g_incr=g_incr; g_op=g_op; g_decr=g_decr; g_op_decr=g_op_decr}
-
+    
     /// ## CodegenC
     module CodegenC =
         // open System
         // open System.Text
         open System.Collections.Generic
-
+    
         let sizeof_tyvC = function
             | YPrim (Int64T | UInt64T | Float64T) -> 8
             | YPrim (Int32T | UInt32T | Float32T) -> 4
@@ -18201,7 +18421,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         let order_argsC v = v |> Array.sortWith (fun (L(_,t)) (L(_,t')) -> compare (sizeof_tyvC t') (sizeof_tyvC t))
         let lineC x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
         let line' x s = line x (String.concat " " s)
-
+    
         let rec is_heap f x =
             Array.exists (fun (L(i,t)) ->
                 match t with
@@ -18211,14 +18431,14 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | _ -> true
                 ) x
         let is_stringC = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
-
+    
         type BindsReturnC =
             | BindsTailEnd
             | BindsLocal of TyV []
-
+    
         let term_vars_to_tysC x = x |> HopacExtensions.A.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
         let binds_last_dataC x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
-
+    
         type UnionRecC = {tag : int; free_vars : Map<int * string, TyV[]>}
         type LayoutRecC = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type MethodRecC = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]; name : string option}
@@ -18226,9 +18446,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         type TupleRecC = {tag : int; tys : Ty []}
         type ArrayRecC = {tag : int; ty : Ty; tyvs : TyV[]}
         type CFunRecC = {tag : int; domain_args_ty : Ty[]; range : Ty}
-
+    
         let size_t = UInt32T
-
+    
         let lit_stringC x =
             let strb = StringBuilder(String.length x + 2)
             strb.Append '"' |> ignore
@@ -18244,22 +18464,22 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 ) x
             strb.Append '"' |> ignore
             strb.ToString()
-
+    
         let codegenC (env : PartEvalResult) (x : TypedBind []) =
             let globals = ResizeArray()
             let fwd_dcls = System.Collections.Concurrent.ConcurrentQueue()
             let types = System.Collections.Concurrent.ConcurrentQueue<string>()
             let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
-
+    
             let malloc, free = "malloc", "free"
-
+    
             let print_decref s_fun name_fun type_arg name_decref =
                 line s_fun (sprintf "void %s(%s * x){" name_fun type_arg)
                 let _ =
                     let s_fun = indent s_fun
                     line s_fun (sprintf "if (x != NULL && --(x->refc) == 0) { %s(x); %s(x); }" name_decref free)
                 line s_fun "}"
-
+    
             let print show r =
                 let s_typ_fwd = {text=StringBuilder(); indent=0}
                 let s_typ = {text=StringBuilder(); indent=0}
@@ -18271,7 +18491,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 f fwd_dcls s_typ_fwd
                 f types s_typ
                 f functions s_fun
-
+    
             let layout show =
                 let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -18291,7 +18511,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
                     if dirty then print show r
                     r
-
+    
             let union show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
                 let f (a : Union) : UnionRecC =
@@ -18302,7 +18522,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let jp f show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
@@ -18311,7 +18531,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let tuple show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; tys=x}
@@ -18320,7 +18540,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let carray' show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; ty=x; tyvs = env.ty_to_data x |> data_free_vars}
@@ -18329,13 +18549,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let cstring' show =
                 let mutable dirty = true
                 fun () ->
                     if dirty then print show ()
                     dirty <- false
-
+    
             let cfun' show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f (a : Ty, b : Ty) = {tag=dict.Count; domain_args_ty=a |> env.ty_to_data |> data_free_vars |> HopacExtensions.A.map (fun (L(_,t)) -> t); range=b}
@@ -18344,22 +18564,22 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-
+    
             let tmp =
                 let mutable i = 0u
                 fun () -> let x = i in i <- i + 1u; x
-
+    
             let global' =
                 let has_added = HashSet env.globals
                 fun x -> if has_added.Add(x) then globals.Add x
-
+    
             let import x = global' $"#include <{x}>"
             let import' x = global' $"#include \"{x}\""
-
+    
             let tyvs_to_tys (x : TyV []) = HopacExtensions.A.map (fun (L(i,t)) -> t) x
-
+    
             let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x) s BindsTailEnd x
             and return_local s ret (x : string) =
                 match ret with
@@ -18717,10 +18937,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | BitwiseOr, [a;b] -> sprintf "%s | %s" (tup_data a) (tup_data b)
                     | BitwiseXor, [a;b] -> sprintf "%s ^ %s" (tup_data a) (tup_data b)
                     | BitwiseComplement, [a] -> sprintf "~%s" (tup_data a)
-
+    
                     | ShiftLeft, [a;b] -> sprintf "%s << %s" (tup_data a) (tup_data b)
                     | ShiftRight, [a;b] -> sprintf "%s >> %s" (tup_data a) (tup_data b)
-
+    
                     | Neg, [x] -> sprintf "-%s" (tup_data x)
                     | Log, [x] -> import "math.h"; sprintf "log%s(%s)" (float_suffix x) (tup_data x)
                     | Exp, [x] -> import "math.h"; sprintf "exp%s(%s)" (float_suffix x) (tup_data x)
@@ -18770,10 +18990,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
                     | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
-  |
-  = unexpected type in closure join point
-  help: capture the stack trace and the inferred/expected types for the closure join point.
-"""
+      |
+      = unexpected type in closure join point
+      help: capture the stack trace and the inferred/expected types for the closure join point.
+    """
                     ) (fun _ s_typ s_fun x ->
                     let i, range = x.tag, tup_ty x.range
                     line s_typ (sprintf "typedef struct Closure%i Closure%i;" i i)
@@ -18788,15 +19008,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         |> line s_typ
                         print_ordered_args s_typ x.free_vars
                     line s_typ "};"
-
+    
                     line s_fun (sprintf "static inline void ClosureDecrefBody%i(Closure%i * x){" i i)
                     let _ =
                         let s_fun = indent s_fun
                         x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 |> line' s_fun
                     line s_fun "}"
-
+    
                     print_decref s_fun $"ClosureDecref{i}" $"Closure{i}" $"ClosureDecrefBody{i}"
-
+    
                     match x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
                     | "" -> sprintf "%s ClosureMethod%i(Closure%i * x){" range i i
                     | domain_args -> sprintf "%s ClosureMethod%i(Closure%i * x, %s){" range i i domain_args
@@ -18807,7 +19027,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         line s_fun $"ClosureDecref{i}(x);"
                         binds_start x.domain_args s_fun x.body
                     line s_fun "}"
-
+    
                     let fun_tag = (cfun (x.domain,x.range)).tag
                     let free_vars = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}")
                     line s_fun (sprintf "Fun%i * ClosureCreate%i(%s){" fun_tag i (String.concat ", " free_vars))
@@ -18842,7 +19062,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     line s_typ "typedef struct {"
                     x.tys |> HopacExtensions.A.mapi (fun i x -> L(i,x)) |> print_ordered_args (indent s_typ)
                     line s_typ (sprintf "} %s;" name)
-
+    
                     let args = x.tys |> HopacExtensions.A.mapi (fun i x -> $"{tyv x} v{i}")
                     line s_fun (sprintf "static inline %s TupleCreate%i(%s){" name x.tag (String.concat ", " args))
                     let _ =
@@ -18886,22 +19106,22 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 layout (fun _ s_typ s_fun (x : LayoutRecC) ->
                     let i = x.tag
                     let name' = sprintf "%s%i" name i
-
+    
                     line s_typ "typedef struct {"
                     let _ =
                         let s_typ = indent s_typ
                         line s_typ "int refc;"
                         print_ordered_args s_typ x.free_vars
                     line s_typ (sprintf "} %s;" name')
-
+    
                     line s_fun (sprintf "static inline void %sDecrefBody%i(%s * x){" name i name')
                     let _ =
                         let s_fun = indent s_fun
                         x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 |> line' s_fun
                     line s_fun "}"
-
+    
                     print_decref s_fun $"{name}Decref{i}" name' $"{name}DecrefBody{i}"
-
+    
                     let args = x.free_vars |> HopacExtensions.A.map (fun (L(i,x)) -> $"{tyv x} v{i}")
                     line s_fun (sprintf "%s * %sCreate%i(%s){" name' name i (String.concat ", " args))
                     let _ =
@@ -18942,7 +19162,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     match is_stack with
                     | true  -> line s_typ (sprintf "} US%i;" i)
                     | false -> line s_typ "};"
-
+    
                     let print_refc name typ q =
                         line s_fun (sprintf "static inline void %s(%s * x){" name typ)
                         let _ =
@@ -18961,13 +19181,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                 ) x.free_vars
                             line s_fun "}"
                         line s_fun "}"
-
+    
                     match is_stack with
                     | true  ->
                         print_refc $"USIncrefBody{i}" $"US{i}" 1
                         print_refc $"USDecrefBody{i}" $"US{i}" -1
                     | false -> print_refc $"UHDecrefBody{i}" $"UH{i}" -1
-
+    
                     match is_stack with
                     | true  ->
                         line s_fun (sprintf "void USIncref%i(US%i * x){ USIncrefBody%i(x); }" i i i)
@@ -18975,7 +19195,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | false ->
                         line s_fwd (sprintf "void UHDecref%i(UH%i * x);" i i)
                         print_decref s_fun $"UHDecref{i}" $"UH{i}" $"UHDecrefBody{i}"
-
+    
                     map_iteri (fun tag (_, k) v ->
                         let args = v |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", "
                         if is_stack then
@@ -19013,8 +19233,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         line s_typ $"{len_t} len;"
                         if ptr_t <> "void" then line s_typ $"{ptr_t} ptr[];" // flexible array member
                     line s_typ (sprintf "} Array%i;" i)
-
-
+    
+    
                     let print_body p s_fun q =
                         let refcs = x.tyvs |> refc_change (fun i -> if 1 < x.tyvs.Length then $"v.v{i}" else "v") q
                         if refcs.Length <> 0 then
@@ -19025,7 +19245,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                 line s_fun $"{ptr_t} v = ptr[i];"
                                 refcs |> line' s_fun
                             line s_fun "}"
-
+    
                     line s_fun (sprintf "static inline void ArrayDecrefBody%i(Array%i * x){" i i)
                     let _ =
                         let s_fun = indent s_fun
@@ -19034,9 +19254,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                             line s_fun $"{ptr_t} * ptr = x->ptr;"
                             ) s_fun -1
                     line s_fun "}"
-
+    
                     print_decref s_fun $"ArrayDecref{i}" $"Array{i}" $"ArrayDecrefBody{i}"
-
+    
                     line s_fun (sprintf "Array%i * ArrayCreate%i(%s len, bool init_at_zero){" i i len_t)
                     let _ =
                         let s_fun = indent s_fun
@@ -19049,7 +19269,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         line s_fun "x->len = len;"
                         line s_fun "return x;"
                     line s_fun "}"
-
+    
                     line s_fun (sprintf "Array%i * ArrayLit%i(%s len, %s * ptr){" i i len_t ptr_t)
                     let _ =
                         let s_fun = indent s_fun
@@ -19065,32 +19285,32 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let char = YPrim CharT
                     let size_t, ptr_t, tag = prim size_t, tyv char, (carray char).tag
                     line s_typ $"typedef Array{tag} String;"
-
+    
                     line s_fun "static inline void StringDecref(String * x){"
                     line (indent s_fun) $"return ArrayDecref{tag}(x);"
                     line s_fun "}"
-
+    
                     line s_fun (sprintf "static inline String * StringLit(%s len, %s * ptr){" size_t ptr_t)
                     line (indent s_fun) $"return ArrayLit{tag}(len, ptr);"
                     line s_fun "}"
                     )
-
+    
             match binds_last_dataC x |> data_term_vars |> term_vars_to_tysC with
             | [|YPrim Int32T|] ->
                 import "stdbool.h"
                 import "stdint.h"
                 import "stdio.h"
                 import "stdlib.h"
-
+    
                 let main_defs = {text=StringBuilder(); indent=0}
                 import "string.h" // for memcpy
-
+    
                 line main_defs (sprintf "%s main(){" (prim Int32T))
                 binds_start [||] (indent main_defs) x
                 line main_defs "}"
-
+    
                 let program = StringBuilder()
-
+    
                 globals |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
                 fwd_dcls |> Seq.iter (fun x -> program.Append(x) |> ignore)
                 types |> Seq.iter (fun x -> program.Append(x) |> ignore)
@@ -19098,17 +19318,17 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 program.Append(main_defs.text).ToString()
             | _ ->
                 raise_codegen_error "The return type of main in the C backend should be a 32-bit int."
-
+    
     /// ## CodegenCpp
     module CodegenCpp =
         // open System
         // open System.Text
         open System.Collections.Generic
-
+    
         type backend_type =
             | Cuda of args : L<int,Ty>[] * binds : TypedBind[]
             | Cpp of binds : TypedBind[]
-
+    
         type codegen_env =
             {
                 globals : string ResizeArray
@@ -19119,7 +19339,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 backend_name : string
                 __device__ : string
             }
-
+    
             static member Create(backend_name,__device__) =
                 {
                     globals = ResizeArray()
@@ -19130,10 +19350,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     backend_name = backend_name
                     __device__ = __device__
                 }
-
+    
         let backend_nameCpp = "Cpp"
         let private max_tag = 255uy
-
+    
         let prim = function
             | Int8T -> "char"
             | Int16T -> "short"
@@ -19148,13 +19368,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | BoolT -> "bool" // part of c++ standard
             | CharT -> "char"
             | StringT -> "const char *"
-
+    
         /// Replaces the default types in the corelib.cuh library.
         let replace_default_types (default_env : DefaultEnv) (x : string) =
             let opts = System.Text.RegularExpressions.RegexOptions.Multiline
             System.Text.RegularExpressions.Regex.Replace(x, @"(^using default_int = )(.*?)(;)", $"$1{prim default_env.default_int}$3", opts)
             |> fun x -> System.Text.RegularExpressions.Regex.Replace(x, @"(^using default_uint = )(.*?)(;)", $"$1{prim default_env.default_uint}$3", opts)
-
+    
         let is_stringCpp = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
         let sizeof_tyvCpp = function
             | YPrim (Int64T | UInt64T | Float64T) -> 8
@@ -19165,27 +19385,27 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         let order_args v = v |> Array.sortWith (fun (L(_,t)) (L(_,t')) -> compare (sizeof_tyvCpp t') (sizeof_tyvCpp t))
         let lineCpp x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
         let lineCpp' x s = line x (String.concat " " s)
-
+    
         type BindsReturnCpp =
             | BindsTailEnd
             | BindsLocal of TyV []
-
+    
         let term_vars_to_tysCpp x = x |> HopacExtensions.A.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
         let binds_last_dataCpp x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
-
+    
         type LayoutRecCpp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type UnionRecCpp = {tag : int; free_vars : Map<int * string, TyV[]>; is_heap : bool}
         type MethodRecCpp = {tag : int; free_vars : TyV[]; range : Ty; body : TypedBind[]; name : string option}
         type ClosureRecCpp = {tag : int; free_vars : TyV[]; domain : Ty; range : Ty; funtype : FunType; body : TypedBind[]}
         type TupleRecCpp = {tag : int; tys : Ty []}
         type CFunRecCpp = {tag : int; domain : Ty; range : Ty; funtype : FunType}
-
+    
         // Replaces the invalid symbols in Spiral method names for the C backend.
         let fix_method_name (x : string) = x.Replace(''','_') + "_"
-
+    
         let unroll_pop (s : Stack<int>) = if s.Count > 0 then s.Pop() else -1
         let unroll_peek (s : Stack<int>) = if s.Count > 0 then s.Peek() else -1
-
+    
         let lit_stringCpp x =
             let strb = StringBuilder(String.length x + 2)
             strb.Append '"' |> ignore
@@ -19201,7 +19421,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 ) x
             strb.Append '"' |> ignore
             strb.ToString()
-
+    
         let codegen' backend_handler (part_eval_env : PartEvalResult) (code_env : codegen_env) =
             let print show r =
                 let s_typ_fwd = {text=StringBuilder(); indent=0}
@@ -19214,7 +19434,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 f code_env.fwd_dcls s_typ_fwd
                 f code_env.types s_typ
                 f code_env.functions s_fun
-
+    
             let layout show =
                 let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -19243,7 +19463,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         dict.TryAdd(x, r) |> ignore
                         if added then print show r
                         r
-
+    
             let union show =
                 let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
                 let f (a : Union) : UnionRecCpp =
@@ -19254,7 +19474,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let jp f show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
@@ -19263,7 +19483,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let tuple show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; tys=x}
@@ -19272,7 +19492,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let cfun' show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f (a : Ty, b : Ty, t : FunType) = {tag=dict.Count; domain=a; range=b; funtype=t}
@@ -19281,22 +19501,22 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
-
+    
             let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-
+    
             let tmp =
                 let mutable i = 0u
                 fun () -> let x = i in i <- i + 1u; x
-
+    
             let global' =
                 let has_added = HashSet code_env.globals
                 fun x -> if has_added.Add(x) then code_env.globals.Add x
-
+    
             let import x = global' $"#include <{x}>"
             let import' x = global' $"#include \"{x}\""
-
+    
             let tyvs_to_tys (x : TyV []) = HopacExtensions.A.map (fun (L(i,t)) -> t) x
-
+    
             let rec binds_start (s : CodegenEnv) (x : TypedBind []) = binds (Stack()) s BindsTailEnd x
             and return_local s ret (x : string) =
                 match ret with
@@ -19681,10 +19901,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | BitwiseOr, [a;b] -> sprintf "%s | %s" (tup_data a) (tup_data b)
                     | BitwiseXor, [a;b] -> sprintf "%s ^ %s" (tup_data a) (tup_data b)
                     | BitwiseComplement, [a] -> sprintf "~%s" (tup_data a)
-
+    
                     | ShiftLeft, [a;b] -> sprintf "%s << %s" (tup_data a) (tup_data b)
                     | ShiftRight, [a;b] -> sprintf "%s >> %s" (tup_data a) (tup_data b)
-
+    
                     | Neg, [x] -> sprintf "-%s" (tup_data x)
                     | Log, [x] -> sprintf "log(%s)" (tup_data x)
                     | Exp, [x] -> sprintf "exp(%s)" (tup_data x)
@@ -19749,10 +19969,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         | Some(domain_args, body) -> {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t}
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
-  |
-  = unexpected type in closure join point
-  help: capture the stack trace and the inferred/expected types for the closure join point.
-"""
+      |
+      = unexpected type in closure join point
+      help: capture the stack trace and the inferred/expected types for the closure join point.
+    """
                     ) (fun _ s_typ s_fun x ->
                     let i, range = x.tag, tup_ty x.range
                     let closure_args = closure_args x.domain x.free_vars.Length
@@ -19866,7 +20086,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                 line s_typ $"{code_env.__device__}Union{i}_{tag}() = delete;"
                         line s_typ "};"
                         ) x.free_vars
-
+    
                     line s_typ $"struct Union{i} {{" // The union definition.
                     let _ = // Union cases inside the union.
                         let s_typ = indent s_typ
@@ -19875,16 +20095,16 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                             let s_typ = indent s_typ
                             map_iteri (fun tag k v -> line s_typ $"Union{i}_{tag} case{tag}; // {k}") x.free_vars
                         line s_typ "};"
-
+    
                         if x.is_heap then line s_typ "int refc{0};"
                         if x.free_vars.Count > int max_tag then raise_codegen_error $"Too many union cases. They should not be more than {max_tag}."
                         line s_typ $"unsigned char tag{{{max_tag}}};"
                         line s_typ $"{code_env.__device__}Union{i}() {{}}" // default constructor, the refc and tag have def value so we don't have to do anything here.
-
+    
                         map_iteri (fun tag k v -> // The constructors for all the union cases.
                             line s_typ $"{code_env.__device__}Union{i}(Union{i}_{tag} t) : tag({tag}), case{tag}(t) {{}} // {k}"
                             ) x.free_vars
-
+    
                         line s_typ $"{code_env.__device__}Union{i}(Union{i} & x) : tag(x.tag) {{" // copy constructor
                         let () =
                             let s_typ = indent s_typ
@@ -19983,7 +20203,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             and heap : _ -> LayoutRecCpp = layout_tmpl true "Heap"
             and mut : _ -> LayoutRecCpp = layout_tmpl true "Mut"
             and stack_mut : _ -> LayoutRecCpp = layout_tmpl false "StackMut"
-
+    
             function
             | Cpp x ->
                 let ret_ty =
@@ -19991,7 +20211,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     match binds_last_dataCpp x with
                     | DLit(LitInt32 _) | DV(L(_, YPrim Int32T)) -> "int"
                     | _ -> er()
-
+    
                 let s = {text=StringBuilder(); indent=0}
                 line s $"{ret_ty} main_body() {{"
                 binds_start (indent s) x
@@ -20027,12 +20247,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 binds_start (indent s) x
                 line s "}"
                 code_env.main_defs.Add(s.text.ToString())
-
+    
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env x =
             let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let host_code_env = codegen_env.Create("Cpp", "")
             let device_code_env = codegen_env.Create("Cuda", "__device__ ")
-
+    
             let cuda_codegen =
                 codegen' (fun (jp_body,key,r') ->
                     raise_codegen_error_backend r' $"The Cuda backend does not support nesting of backends."
@@ -20051,13 +20271,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         ) (jp_body,key)
                 | x -> raise_codegen_error_backend r' $"The Python + Cuda backend does not support the {x} backend."
                 ) part_eval_env host_code_env (Cpp x)
-
+    
             let append_lines (l : string seq) = (StringBuilder(), l) ||> Seq.fold (fun s -> s.AppendLine)
             let indent_lines (x : string) =
                 x.Split('\n')
                 |> HopacExtensions.A.map (fun x -> if x <> "" then $"    {x}" else x)
                 |> fun x -> StringBuilder().AppendJoin("", x)
-
+    
             let aux_library_code =
                 let dir f =
                     SpiralFileSystem.get_workspace_root ()
@@ -20066,7 +20286,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     |> System.IO.File.ReadAllText
                 (dir "corelib.cuh").Replace("__host__", "__host__ __device__")
                 |> replace_default_types default_env
-
+    
             let code =
                 let file_name = System.IO.Path.GetFileNameWithoutExtension file_path
                 StringBuilder()
@@ -20092,20 +20312,20 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     .AppendJoin("", host_code_env.functions)
                     .AppendJoin("", host_code_env.main_defs)
                     .ToString()
-
+    
             [
                 {|code = aux_library_code; file_extension = ".auto.cu"|}
                 {|code = code.ToString(); file_extension = ".cu"|}
             ]
-
+    
     /// ## CodegenPython
     module CodegenPython =
         // open System
         // open System.Text
         open System.Collections.Generic
-
+    
         let backend_namePython = "Python"
-
+    
         let litPython = function
             | LitInt8 x -> sprintf "%i" x
             | LitInt16 x -> sprintf "%i" x
@@ -20151,12 +20371,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | x -> string x
                 |> sprintf "'%s'"
             | LitBool x -> if x then "True" else "False"
-
+    
         let type_litPython = function
             | YLit x -> litPython x
             | YSymbol x -> x
             | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
-
+    
         let show_w = function WV(L(i,_)) -> sprintf "v%i" i | WLit a -> litPython a
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let args' b = data_term_vars b |> HopacExtensions.A.map show_w |> String.concat ", "
@@ -20181,32 +20401,32 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | _ -> "object"
                 | _ -> "object"
             | _ -> "object"
-
+    
         type UnionRecPython = {tag : int; tags : Dictionary<string, int>; free_vars : Map<int * string, TyV[]>}
         type LayoutRecPython = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type MethodRecPython = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
         type ClosureRecPython = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]}
-
+    
         type BindsReturnPython =
             | BindsTailEnd
             | BindsLocal of TyV []
-
+    
         let linePython x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
-
+    
         let codegen' backend_handler (part_eval_env : PartEvalResult) (code_env : CodegenCpp.codegen_env) =
             let global' =
                 let has_added = HashSet code_env.globals
                 fun x -> if has_added.Add(x) then code_env.globals.Add x
-
+    
             let import x = global' $"import {x}"
             let from x = global' $"from {x}"
-
+    
             let print is_type show r =
                 let s = {text=StringBuilder(); indent=0}
                 show s r
                 let text = s.text.ToString()
                 if is_type then code_env.types.Enqueue(text) else code_env.functions.Enqueue(text)
-
+    
             let union show =
                 let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
                 let f (a : Union) : UnionRecPython =
@@ -20218,7 +20438,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print true show r
                     r
-
+    
             let layout show =
                 let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -20247,7 +20467,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         dict.TryAdd(x, r) |> ignore
                         if added then print true show r
                         r
-
+    
             let jp is_type f show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
@@ -20256,7 +20476,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let r = Utils.memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print is_type show r
                     r
-
+    
             let cupy_ty x = part_eval_env.ty_to_data x |> data_free_vars |> cupy_ty
             let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x).g_decr s BindsTailEnd x
             and binds g_decr (s : CodegenEnv) (ret : BindsReturnPython) (stmts : TypedBind []) =
@@ -20336,7 +20556,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     x' |> HopacExtensions.A.map (fun (L(i',_)) -> $"v{i}.v{i'}")
                     |> String.concat ", "
                     |> return'
-
+    
                 match a with
                 | TySizeOf t -> raise_codegen_error $"The following type in `sizeof` is not supported in the Python back end.\nGot: {show_ty t}"
                 | TyMacro a ->
@@ -20500,10 +20720,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     | BitwiseOr, [a;b] -> sprintf "%s | %s" (tup_data a) (tup_data b)
                     | BitwiseXor, [a;b] -> sprintf "%s ^ %s" (tup_data a) (tup_data b)
                     | BitwiseComplement, [a] -> sprintf "~%s" (tup_data a)
-
+    
                     | ShiftLeft, [a;b] -> sprintf "%s << %s" (tup_data a) (tup_data b)
                     | ShiftRight, [a;b] -> sprintf "%s >> %s" (tup_data a) (tup_data b)
-
+    
                     | Neg, [x] -> sprintf "-%s" (tup_data x)
                     | Log, [x] -> import "math"; sprintf "math.log(%s)" (tup_data x)
                     | Exp, [x] -> import "math"; sprintf "math.exp(%s)" (tup_data x)
@@ -20603,10 +20823,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
                     | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
-  |
-  = unexpected type in closure join point
-  help: capture the stack trace and the inferred/expected types for the closure join point.
-"""
+      |
+      = unexpected type in closure join point
+      help: capture the stack trace and the inferred/expected types for the closure join point.
+    """
                     ) (fun s x ->
                     let env_args = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"env_v{i} : {tyv t}") |> String.concat ", "
                     line s $"def Closure{x.tag}({env_args}):"
@@ -20622,7 +20842,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         binds_start x.free_vars s x.body
                     line s "return inner"
                     )
-
+    
             fun (x : TypedBind []) ->
             import "cupy as cp"
             import "numpy as np"
@@ -20631,29 +20851,29 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             code_env.globals.Add "i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str"
             code_env.globals.Add "cuda = False"
             code_env.globals.Add ""
-
+    
             let s = {text=StringBuilder(); indent=0}
-
+    
             line s "def main_body():"
             binds_start [||] (indent s) x
             s.text.AppendLine() |> ignore
-
+    
             line s "def main():"
             line (indent s) "r = main_body()"
             line (indent s) "if cuda: cp.cuda.get_current_stream().synchronize() # This line is here so the `__trap()` calls on the kernel aren't missed."
             line (indent s) "return r"
             s.text.AppendLine() |> ignore
-
+    
             line s "if __name__ == '__main__': result = main(); None if result is None else print(result)"
             code_env.main_defs.Add(s.text.ToString())
-
+    
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env (x : TypedBind[]) =
             let cuda_kernels = StringBuilder().AppendLine("kernel = r\"\"\"")
             let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
-
+    
             let host_code_env = CodegenCpp.codegen_env.Create("Python", "")
             let device_code_env = CodegenCpp.codegen_env.Create("Cuda", "__device__ ")
-
+    
             let cuda_codegen =
                 CodegenCpp.codegen' (fun (jp_body,key,r') ->
                     raise_codegen_error_backend r' $"The Cuda backend does not support nesting of backends."
@@ -20673,11 +20893,11 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                             ) (jp_body,key)
                     | x -> raise_codegen_error_backend r' $"The Python + Cuda backend does not support the {x} backend."
                     ) part_eval_env host_code_env x
-
+    
             let append_lines (l : string seq) = (StringBuilder(), l) ||> Seq.fold (fun s -> s.AppendLine)
-
+    
             let file_name = System.IO.Path.GetFileNameWithoutExtension file_path
-
+    
             let aux_library_code =
                 let dir f =
                     SpiralFileSystem.get_workspace_root ()
@@ -20688,7 +20908,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let aux_library_code_cuda =
                     (dir "corelib.cuh").Replace("__host__", "__device__")
                     |> CodegenCpp.replace_default_types default_env
-
+    
                 StringBuilder()
                     .AppendLine("kernels_aux = r\"\"\"")
                     .AppendLine(aux_library_code_cuda)
@@ -20722,26 +20942,26 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     .AppendLine("# main_defs")
                     .AppendJoin("", host_code_env.main_defs)
                     .ToString()
-
+    
             [
                 {|code = aux_library_code; file_extension = "_auto.py"|}
                 {|code = code_main; file_extension = ".py"|}
             ]
-
+    
     /// ## WDiff
     // open System
     open System.IO
     open System.Collections.Generic
-
+    
     // Full name: Microsoft.FSharp.Core.Result<_,_>.Ok
-
+    
     open FSharp.Core
-
+    
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
-
+    
     /// ### process_errors
     let process_errors line (ers : LineTokenErrors list) : RString list =
         ers |> List.mapi (fun i l ->
@@ -20751,7 +20971,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         |> List.concat
         |> List.groupBy snd
         |> List.map (fun (k,v) -> k, process_error (List.map fst v))
-
+    
     /// ### tokenize_replace
     /// Replaces the token lines and updates the errors given the edit.
     let tokenize_replace (lines : _ PersistentVector PersistentVector, errors : _ list) (edit : SpiEdit) =
@@ -20766,17 +20986,17 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 )
         let errors = List.append errors (process_errors edit.from (Array.toList ers))
         lines, errors
-
+    
     type [<ReferenceEquality>] TokenizerState = {
         lines_text : string PersistentVector
         lines_token : LineTokens
         blocks : LineTokens Block list
         errors : RString list
         }
-
+    
     /// ### wdiff_tokenizer_init
     let wdiff_tokenizer_init = { lines_text = PersistentVector.empty; lines_token = PersistentVector.empty; blocks = []; errors = [] }
-
+    
     /// ### triple_balance
     let triple_balance (blk : LineTokens) =
         let count_in_line acc (line : LineToken PersistentVector) =
@@ -20786,11 +21006,11 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | TokStringClose -> acc - 1
                 | _ -> acc) acc line
         PersistentVector.fold count_in_line 0 blk
-
+    
     /// ### append_lines
     let append_lines (a : LineTokens) (b : LineTokens) : LineTokens =
         PersistentVector.fold (fun acc line -> PersistentVector.conj line acc) a b
-
+    
     /// ### merge_triple_blocks
     let merge_triple_blocks (blocks : LineTokens Block list) : LineTokens Block list =
         let rec loop acc pending pendingBal rest =
@@ -20809,7 +21029,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 if bal = 0 then loop (merged :: acc) None 0 xs
                 else loop acc (Some merged) bal xs
         loop [] None 0 blocks
-
+    
     /// ### replace'
     /// Immutably updates the state based on the request. Does diffing to make the operation efficient.
     /// It is possible for the server to go out of sync, in which case an error is returned.
@@ -20823,7 +21043,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             wdiff_block_all state.blocks (lines_token, edit.lines.Length, edit.from, edit.nearTo)
             |> merge_triple_blocks
         {lines_text=lines_text; lines_token=lines_token; errors=errors; blocks=blocks}
-
+    
     /// ### wdiff_tokenizer_all
     let wdiff_tokenizer_all (state : TokenizerState) text =
         reset_lexical_state ()
@@ -20840,14 +21060,14 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             let mid_len = text.Length - fromRev
             let mid = if mid_len <= 0 then [||] else text.[..mid_len-1]
             replace' state {|from=from; nearTo=text'.Length-fromRev; lines=mid|}
-
+    
     /// ### wdiff_tokenizer_edit
     let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) =
         if edit.nearTo <= state.lines_text.Length then
             Ok (replace' state edit)
         else
             Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
-
+    
     /// ### semantic_updates_apply
     let semantic_updates_apply (block : LineTokens) updates =
         Seq.fold (fun (block : LineTokens) (c : VectorCord, l) ->
@@ -20865,7 +21085,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     PersistentVector.updateNth c.row c.col (r, tok') block
                 else block
             else block) block updates
-
+    
     /// ### parse_block
     let parse_block default_env is_top_down (block : LineTokens) =
         let comments, cords_tokens =
@@ -20883,7 +21103,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 )
             |> Array.unzip
         let cords, tokens = Array.unzip (Array.concat cords_tokens)
-
+    
         let semantic_updates = ResizeArray()
         let env = {
             tokens_cords = cords; semantic_updates = semantic_updates
@@ -20892,10 +21112,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             }
         assert (env.tokens_cords.Length = env.tokens.Length)
         {result=blockParsingParse env; semantic_tokens=semantic_updates_apply block semantic_updates}
-
+    
     /// ### wdiff_parse_init
     let wdiff_parse_init is_top_down : ParserState = {is_top_down=is_top_down; blocks=[]}
-
+    
     /// ### wdiff_parse
     let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens Block list) =
         let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
@@ -20905,47 +21125,47 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             x.block, {block=memoize dict (fun a -> Promise.Now.withValue ((parse_block default_env state.is_top_down) a)) x.block; offset=x.offset}
             )
         {state with blocks = blocks }
-
+    
     /// ### ModuleState
     type ModuleState = { tokenizer : TokenizerState; bundler : BlockBundleState; parser : ParserState }
-
+    
     /// ### wdiff_module_init
     let wdiff_module_init is_top_down = {tokenizer = wdiff_tokenizer_init; bundler = wdiff_block_bundle_init; parser = wdiff_parse_init is_top_down}
-
+    
     /// ### wdiff_module_body
     let wdiff_module_body default_env state tokenizer =
         if state.tokenizer = tokenizer then state else
         let parser = wdiff_parse default_env state.parser tokenizer.blocks
         let bundler = wdiff_block_bundle state.bundler parser
         {tokenizer=tokenizer; parser=parser; bundler=bundler}
-
+    
     /// ### wdiff_module_edit
     let wdiff_module_edit default_env (state : ModuleState) x = wdiff_tokenizer_edit state.tokenizer x |> Result.map (wdiff_module_body default_env state)
-
+    
     /// ### wdiff_module_all
     let wdiff_module_all default_env state x = wdiff_tokenizer_all state.tokenizer x |> wdiff_module_body default_env state
-
+    
     /// ### wdiff_module_init_all
     let wdiff_module_init_all default_env is_top_down x = wdiff_module_all default_env (wdiff_module_init is_top_down) x
-
+    
     /// ### FileState<'input,'result,'state>
     type [<ReferenceEquality>] FileState<'input,'result,'state> = { input : 'input; result : 'result; state : 'state }
-
+    
     /// ### FileFuns<'a,'b,'state>
     type FileFuns<'a,'b,'state> =
         abstract member eval : 'state * 'a -> 'b
         abstract member diff : 'state * 'b * 'a -> 'b
         abstract member init : 'a -> FileState<'a,'b,'state>
-
+    
     /// ### TypecheckerStateValue
     type TypecheckerStateValue = Bundle option * InferResult * TopEnv
-
+    
     /// ### TypecheckerStatePropagated
     type TypecheckerStatePropagated = (bool * TopEnv) Promise
-
+    
     /// ### TypecheckerState
     type TypecheckerState = FileState<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated>
-
+    
     /// ### typecheck
     let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
         | Cons((_,b : BlockBundleValue), ls) ->
@@ -20959,7 +21179,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 typecheck (package_id,module_id,env) ls :> _ Job
         | Nil ->
             Job.result Nil
-
+    
     /// ### diff
     let rec diff (package_id,module_id,env) (result,input : BlockBundleState) =
         let tc () = typecheck (package_id,module_id,env) input
@@ -20969,7 +21189,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | Cons((b',_,env as x),next), Cons((_,b),bs) when b' = b.bundle -> Promise.Now.withValue (Cons(x,diff (package_id,module_id,env) (next,bs)))
             | _ -> tc()
         else tc()
-
+    
     /// ### funs_file_tc
     let funs_file_tc = {new FileFuns<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated> with
         member _.eval(state,(pid,mid,x)) =
@@ -20983,27 +21203,27 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             state = Promise.Now.never()
             }
         }
-
+    
     /// ### wdiff_file_update_state
     let wdiff_file_update_state (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'state) =
         if state.state = x then state else {state with state=x; result=funs.eval(x,state.input)}
-
+    
     /// ### wdiff_file_update_input
     let wdiff_file_update_input (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'a) =
         if state.input = x then state else {state with input=x; result=funs.diff(state.state,state.result,x)}
-
+    
     /// ### wdiff_file
     let wdiff_file (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (a,b) =
         if state.state = a then wdiff_file_update_input funs state b else {state=a; input=b; result=funs.eval(a,b)}
-
+    
     /// ### ProjFilesTree
     type ProjFilesTree =
         | File of module_id: ModuleId * path: string * name: string option
         | Directory of dir_id: DirId * name: string * ProjFilesTree list
-
+    
     /// ### ProjFiles
     type ProjFiles = { tree : ProjFilesTree list; num_dirs : int; num_files : int }
-
+    
     /// ### ProjFileFuns<'a,'state>
     type ProjFileFuns<'a,'state> =
         abstract member file : string option * 'state * 'a -> 'a * 'state
@@ -21011,7 +21231,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         abstract member in_module : string * 'state -> 'state
         abstract member default' : DefaultEnv -> 'state
         abstract member empty : 'state
-
+    
     /// ### ProjFilesState<'a,'state>
     type [<ReferenceEquality>] ProjFilesState<'a,'state> = {
         init : 'state
@@ -21020,7 +21240,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         files : ProjFiles
         result : 'state
         }
-
+    
     /// ### proj_files_diff
     let proj_files_diff (uids_file : ('a * 'b) [], uids_directory : 'b [], files) (uids, files') =
         let uids_file' = Array.zeroCreate (Array.length uids)
@@ -21038,7 +21258,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | x :: xs, y :: ys -> loop (x,y) && list (xs,ys)
             | _ -> false
         if list (files.tree, files'.tree) then None else Some (uids_file',uids_directory')
-
+    
     /// ### proj_files
     let proj_files (funs : ProjFileFuns<'a,'state>) uids_file uids_directory uids s l =
         let inline memo (uids : _ []) uid f =
@@ -21054,27 +21274,27 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 funs.union(small,empty), funs.union(small,big)
                 ) (funs.empty, s) l |> fst
         list s l.tree
-
+    
     /// ### wdiff_proj_files_update_files
     let wdiff_proj_files_update_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (uids,files : ProjFiles) =
         match proj_files_diff (state.uids_file,state.uids_directory,state.files) (uids,files) with
         | Some (uids_file, uids_directory) -> {state with files=files; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids state.init files}
         | None -> state
-
+    
     /// ### wdiff_proj_files_update_packages
     let wdiff_proj_files_update_packages (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init : 'state) =
         if state.init = init then state else
         let uids_file, uids_directory = Array.zeroCreate state.uids_file.Length, Array.zeroCreate state.uids_directory.Length
         let uids = HopacExtensions.A.map fst state.uids_file
         {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init state.files}
-
+    
     /// ### wdiff_proj_files
     let wdiff_proj_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init,(uids,files)) =
         if state.init = init then wdiff_proj_files_update_files funs state (uids,files)
         else
             let uids_file, uids_directory = Array.zeroCreate files.num_files, Array.zeroCreate files.num_dirs
             {files=files; init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init files}
-
+    
     /// ### typechecker_results_summary
     let typechecker_results_summary l =
         Stream.foldFun (fun (has_error,big) (_,x : InferResult,_) ->
@@ -21083,7 +21303,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | AOpen _ -> big
             | AInclude small -> inferUnion small big
             ) (false,inferTop_env_empty) l
-
+    
     /// ### funs_proj_file_tc
     let funs_proj_file_tc = {new ProjFileFuns<TypecheckerState,TypecheckerStatePropagated> with
         member _.file(name,state,x) =
@@ -21097,7 +21317,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         member _.default' default_env = Promise.Now.withValue (false,inferTop_env_default default_env)
         member _.empty = Promise.Now.withValue (false,inferTop_env_empty)
         }
-
+    
     /// ### PackageEnv
     type PackageEnv = {
         nominals_aux : Map<PackageId,Map<GlobalId, {|name : string; kind : TT|}>>
@@ -21108,7 +21328,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term : Map<string,T>
         constraints : Map<string,ConstraintOrModule>
         }
-
+    
     /// ### union
     let union small big = {
         nominals_aux = Map.foldBack Map.add small.nominals_aux big.nominals_aux
@@ -21119,7 +21339,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term = Map.foldBack Map.add small.term big.term
         constraints = Map.foldBack Map.add small.constraints big.constraints
         }
-
+    
     /// ### in_moduleWDiff
     let in_moduleWDiff m (a : PackageEnv) =
         {a with
@@ -21127,7 +21347,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             term = Map.add m (TyModule a.term) Map.empty
             constraints = Map.add m (M a.constraints) Map.empty
             }
-
+    
     /// ### package_to_file
     let package_to_file (x : PackageEnv) = {
         nominals_next_tag = 0
@@ -21140,7 +21360,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term = x.term
         constraints = x.constraints
         }
-
+    
     /// ### add_file_to_package
     let add_file_to_package package_id (small : TopEnv) (big : PackageEnv): PackageEnv = {
         nominals_aux = Map.add package_id small.nominals_aux big.nominals_aux
@@ -21151,7 +21371,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term = small.term
         constraints = small.constraints
         }
-
+    
     /// ### package_env_empty
     let package_env_empty = {
         nominals_aux = Map.empty
@@ -21162,18 +21382,18 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term = Map.empty
         constraints = Map.empty
         }
-
+    
     /// ### package_env_default
     let package_env_default default_env =
         let x = inferTop_env_default default_env
         {package_env_empty with ty = x.ty; term = x.term; constraints = x.constraints}
-
+    
     /// ### ProjPackagesState<'a>
     type ProjPackagesState<'a> = {
         packages : (string option * 'a) list
         result : 'a
         }
-
+    
     /// ### ProjState<'file_inputs,'files,'packages>
     type ProjState<'file_inputs,'files,'packages> = {
         package_id : PackageId
@@ -21181,16 +21401,16 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         files : ProjFilesState<'file_inputs,'files>
         result : 'packages
         }
-
+    
     /// ### TypecheckerStateTop
     type TypecheckerStateTop = (bool * PackageEnv) Promise
-
+    
     /// ### ProjStateTC
     type ProjStateTC = ProjState<TypecheckerState,TypecheckerStatePropagated,TypecheckerStateTop>
-
+    
     /// ### ProjEnvTC
     type ProjEnvTC = Map<PackageId,ProjStateTC>
-
+    
     /// ### ProjPackageFuns<'file,'package>
     type ProjPackageFuns<'file,'package> =
         abstract member unions : DefaultEnv -> (string option * 'package) list -> 'package
@@ -21200,7 +21420,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         abstract member add_file_to_package : PackageId * 'file * 'package -> 'package
         abstract member default' : DefaultEnv -> 'package
         abstract member empty : 'package
-
+    
     /// ### funs_proj_package_tc
     let funs_proj_package_tc = {new ProjPackageFuns<TypecheckerStatePropagated,TypecheckerStateTop> with
         member funs.unions default_env l =
@@ -21222,7 +21442,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         member _.default' default_env = Promise.Now.withValue (false, package_env_default default_env)
         member _.empty = Promise.Now.withValue (false, package_env_empty)
         }
-
+    
     /// ### wdiff_proj_init
     let wdiff_proj_init default_env (funs_packages : ProjPackageFuns<'file,'package>) (funs_files : ProjFileFuns<'file_input,'file>) package_id : ProjState<'file_input,'file,'package> =
         let packages = { packages = []; result = funs_packages.default' default_env}
@@ -21233,11 +21453,11 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             }
         let result = funs_packages.empty
         { package_id = package_id; packages = packages; files = files; result = result}
-
+    
     /// ### wdiff_proj_packages
     let wdiff_proj_packages default_env (funs : ProjPackageFuns<_,'a>) (state : 'a ProjPackagesState) x =
         if state.packages = x then state else {packages = x; result = funs.unions default_env x }
-
+    
     /// ### wdiff_proj_update_packages
     let wdiff_proj_update_packages default_env funs_packages funs_files (state : ProjState<'a,'b,'state>) x =
         let packages = wdiff_proj_packages default_env funs_packages state.packages x
@@ -21245,14 +21465,14 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         let files = wdiff_proj_files_update_packages funs_files state.files (funs_packages.package_to_file(packages.result))
         let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
         {state with packages=packages; files=files; result=result}
-
+    
     /// ### wdiff_proj_update_files
     let wdiff_proj_update_files (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'a,'b,'state>) x =
         let files = wdiff_proj_files_update_files funs_files state.files x
         if state.files = files then state else
         let result = funs_packages.add_file_to_package(state.package_id,files.result,state.packages.result)
         {state with files=files; result=result}
-
+    
     /// ### wdiff_proj
     let wdiff_proj default_env (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'file_input,'file,'state>) (packages,files) =
         let packages = wdiff_proj_packages default_env funs_packages state.packages packages
@@ -21261,37 +21481,37 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             let files = wdiff_proj_files funs_files state.files (funs_packages.package_to_file(packages.result),files)
             let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
             {state with packages=packages; files=files; result=result}
-
+    
     /// ### ProjEnvUpdate<'a>
     type ProjEnvUpdate<'a> =
         | UpdatePackageModule of PackageId * (string option * PackageId) list * ('a [] * ProjFiles)
         | UpdatePackage of PackageId * (string option * PackageId) list
-
+    
     /// ### map_packages
     let map_packages s packages = packages |> List.map (fun (a,b) -> a, (Map.find b s).result)
-
+    
     /// ### wdiff_projenv
     let wdiff_projenv default_env funs_packages funs_files (s : Map<PackageId,ProjState<'a,'b,'state>>) l =
         List.fold (fun s -> function
             | UpdatePackageModule(uid,packages,files) -> Map.add uid (wdiff_proj default_env funs_packages funs_files s.[uid] (map_packages s packages,files)) s
             | UpdatePackage(uid,packages) -> Map.add uid (wdiff_proj_update_packages default_env funs_packages funs_files s.[uid] (map_packages s packages)) s
             ) s l
-
+    
     /// ## WDiffPrepass
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
-
+    
     /// ### PrepassStateValue
     type PrepassStateValue = InferResult * PrepassTopEnv AdditionType * PrepassTopEnv
-
+    
     /// ### PrepassStatePropagated
     type PrepassStatePropagated = PrepassTopEnv Promise
-
+    
     /// ### PrepassState
     type PrepassState = FileState<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated>
-
+    
     /// ### prepass
     let rec prepass (package_id,module_id,path,env) = function
         | Cons((_,r,_) : TypecheckerStateValue, ls) ->
@@ -21302,7 +21522,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             Cons((r,x,env),ls >>=* prepass (package_id,module_id,path,env))
         | Nil ->
             Job.result Nil
-
+    
     /// ### diffWDiffPrepass
     let rec diffWDiffPrepass (package_id,module_id,path,env) (result,input : TypecheckerStateValue Stream) =
         input >>** fun input ->
@@ -21312,7 +21532,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | Cons((b',_,env as x),next), Cons((_,b,_),bs) when b' = b -> Cons(x,diffWDiffPrepass (package_id,module_id,path,env) (next,bs)) |> Promise.Now.withValue
             | _ -> tc()
         else tc()
-
+    
     /// ### funs_file_prepass
     let funs_file_prepass = {new FileFuns<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated> with
         member _.eval(state,(pid,mid,path,x)) =
@@ -21326,7 +21546,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             state = Promise.Now.never()
             }
         }
-
+    
     /// ### prepass_results_summary
     let prepass_results_summary l =
         Stream.foldFun (fun big (_,x,_) ->
@@ -21334,7 +21554,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | AOpen _ -> big
             | AInclude small -> prepassUnion small big
             ) (prepassTop_env_empty) l
-
+    
     /// ### funs_proj_file_prepass
     let funs_proj_file_prepass = {new ProjFileFuns<PrepassState,PrepassStatePropagated> with
         member _.file(name,state,x) =
@@ -21348,7 +21568,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         member _.default' default_env = Promise.Now.withValue (prepassTop_env_default default_env)
         member _.empty = Promise.Now.withValue prepassTop_env_empty
         }
-
+    
     /// ### PrepassPackageEnv
     type PrepassPackageEnv = {
         prototypes_instances : Map<int, Map<GlobalId * GlobalId,E>>
@@ -21356,7 +21576,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term : Map<string,E>
         ty : Map<string,TPrepass>
         }
-
+    
     /// ### unionWDiffPrepass
     let unionWDiffPrepass small big = {
         prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
@@ -21364,14 +21584,14 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term = Map.foldBack Map.add small.term big.term
         ty = Map.foldBack Map.add small.ty big.ty
         }
-
+    
     /// ### in_module
     let in_module m (a : PrepassPackageEnv) =
         {a with
             ty = Map.add m (TModule a.ty) Map.empty
             term = Map.add m (EModule a.term) Map.empty
             }
-
+    
     /// ### package_env_emptyWDiffPrepass
     let package_env_emptyWDiffPrepass = {
         prototypes_instances = Map.empty
@@ -21379,7 +21599,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         term = Map.empty
         ty = Map.empty
         }
-
+    
     /// ### package_to_fileWDiffPrepass
     let package_to_fileWDiffPrepass (x : PrepassPackageEnv) = {
         nominals_next_tag = 0
@@ -21389,7 +21609,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         ty = x.ty
         term = x.term
         }
-
+    
     /// ### add_file_to_packageWDiffPrepass
     let add_file_to_packageWDiffPrepass package_id (small : PrepassTopEnv) (big : PrepassPackageEnv): PrepassPackageEnv = {
         nominals = Map.add package_id small.nominals big.nominals
@@ -21397,13 +21617,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         ty = small.ty
         term = small.term
         }
-
+    
     /// ### package_env_defaultWDiffPrepass
     let package_env_defaultWDiffPrepass default_env = { package_env_emptyWDiffPrepass with ty = (prepassTop_env_default default_env).ty }
-
+    
     /// ### ProjStatePrepass
     type ProjStatePrepass = ProjState<PrepassState,PrepassStatePropagated,PrepassPackageEnv Promise>
-
+    
     /// ### funs_proj_package_prepass
     let funs_proj_package_prepass = {new ProjPackageFuns<PrepassStatePropagated,PrepassPackageEnv Promise> with
         member funs.unions default_env l =
@@ -21422,76 +21642,76 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         member _.default' default_env = Promise.Now.withValue (package_env_defaultWDiffPrepass default_env)
         member _.empty = Promise.Now.withValue package_env_emptyWDiffPrepass
         }
-
+    
     /// ## SpiProj
     // Everything that deals with Spiral project files themselves goes here
     open FParsec
     // open Common
-
+    
     /// ### RawFileHierarchy
     type RawFileHierarchy =
         | Directory of VSCRange * RString * RawFileHierarchy list
         | File of VSCRange * RString * is_top_down : bool * is_include : bool
-
+    
     /// ### ConfigResumableError
     type ConfigResumableError =
         | DuplicateFiles of VSCRange [] []
         | DuplicateRecordFields of VSCRange [] []
         | MissingNecessaryRecordFields of string [] * VSCRange
-
+    
     /// ### ConfigFatalError
     type ConfigFatalError =
         | Tabs of VSCRange []
         | ParserError of string * VSCRange
-
+    
     /// ### ConfigException
     exception ConfigException of ConfigFatalError
-
+    
     /// ### spaces_template
     let rec spaces_template s = (spaces >>. optional (followedByString "//" >>. skipRestOfLine true >>. spaces_template)) s
-
+    
     /// ### spacesSpiProj
     let spacesSpiProj s = spaces_template s
-
+    
     /// ### raise'
     let raise' x = raise (ConfigException x)
-
+    
     /// ### raise_if_not_empty
     let raise_if_not_empty exn l = if Array.isEmpty l = false then raise' (exn l)
-
+    
     /// ### add_to_exception_list'
     let add_to_exception_list' (p: CharStream<ResizeArray<ConfigResumableError>>) = p.State.UserState.Add
-
+    
     /// ### add_to_exception_list
     let add_to_exception_list (p: CharStream<ResizeArray<ConfigResumableError>>) exn l = if Array.isEmpty l = false then p.State.UserState.Add (exn l)
-
+    
     /// ### column
     let column (p : CharStream<_>) = p.Column
-
+    
     /// ### pos
     let pos (p : CharStream<_>) : VSCPos = {|line=int p.Line - 1; character=int p.Column - 1|}
-
+    
     /// ### pos'
     let pos' p = Reply(pos p)
-
+    
     /// ### rangeSpiProj
     let rangeSpiProj f p = pipe3 pos' f pos' (fun a b c -> ((a, c) : VSCRange), b) p
-
+    
     /// ### is_small_var_char_startingSpiProj
     let is_small_var_char_startingSpiProj c = isAsciiLower c
-
+    
     /// ### is_var_charSpiProj
     let is_var_charSpiProj c = isAsciiLetter c || c = '_' || c = ''' || isDigit c
-
+    
     /// ### file'
     let file' p = many1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" p
-
+    
     /// ### fileSpiProj
     let fileSpiProj p = (rangeSpiProj file' .>> spacesSpiProj) p
-
+    
     /// ### file_verify
     let file_verify p = (skipMany1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" .>> spacesSpiProj .>> eof) p
-
+    
     /// ### file_hierarchy
     let rec file_hierarchy p =
         let i = column p
@@ -21505,7 +21725,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 |> add_to_exception_list p DuplicateFiles
             l
             ) p
-
+    
     and file_or_directory p =
         let i = column p
         let file_hierarchy p = if i < column p then file_hierarchy p else Reply([])
@@ -21520,10 +21740,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | _ -> (spacesSpiProj >>% fun r' -> File(adjust_range r',(r,name),true,false)) p
             )
         |>> fun (r',f) -> f r') p
-
+    
     /// ### RawSchemaPackages
     type RawSchemaPackages = {range : VSCRange; name : string; is_in_compiler_dir : bool; is_include : bool}
-
+    
     /// ### packages
     let packages p =
         let i = column p
@@ -21533,7 +21753,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | _ -> (spacesSpiProj >>% {range=r; name=name; is_in_compiler_dir=is_in_compiler_dir; is_include=false}) p
         let file p = if i <= column p then file p else Reply(ReplyStatus.Error,expected "directory on the same or greater indentation as the first one")
         many file p
-
+    
     /// ### tab_positions
     let tab_positions (str : string): VSCRange [] =
         let mutable line = -1
@@ -21542,7 +21762,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             let x = {|line=line; character=x.IndexOf("\t")|}
             if x.character <> -1 then Some(x,{|x with character=x.character+1|}) else None
             )
-
+    
     /// ### record_reduce
     let record_reduce (field: Parser<'schema -> 'schema, _>) s p =
         let record_body p =
@@ -21550,12 +21770,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             let indent expr p = if i = column p then expr p else Reply(ReplyStatus.Error,expected "record field on the same indentation as the first one")
             many (indent field) p
         (rangeSpiProj record_body |>> fun (r,l) -> r, List.fold (|>) s l) p
-
+    
     /// ### record_field
     let record_field (name, p) =
         (skipString name >>. skipChar ':' >>. spacesSpiProj >>. rangeSpiProj p)
         |>> (fun (r,f) (s,l) -> f s, (r, name) :: l)
-
+    
     /// ### record
     let record fields fields_necessary schema =
         let fields = choice (List.map record_field fields)
@@ -21570,9 +21790,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 Array.groupBy snd l
                 |> HopacExtensions.A.choose (fun (k, v) -> if v.Length > 1 then Some (HopacExtensions.A.map fst v) else None)
                 |> add_to_exception_list p DuplicateRecordFields
-
+    
             Reply(schema)
-
+    
     /// ### RawSchema
     type RawSchema = {
         name : RString option
@@ -21582,7 +21802,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         packageDir : RString option
         packages : RawSchemaPackages list
         }
-
+    
     /// ### schema_def
     let schema_def: RawSchema = {
         name=None
@@ -21592,17 +21812,17 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         packageDir=None
         packages=[]
         }
-
+    
     /// ### ConfigError
     type ConfigError = ResumableError of ConfigResumableError [] | ConfigFatalError of ConfigFatalError
-
+    
     /// ### config
     let config text =
         try
             let _ = tab_positions text |> raise_if_not_empty Tabs
-
+    
             let directory p = (rangeSpiProj (restOfLine false) .>> spacesSpiProj |>> fun (r,x) -> Some(r,x.Trim())) p
-
+    
             let fields = [
                 "version", rangeSpiProj (restOfLine true .>> spacesSpiProj) |>> fun (r,x) s -> ({s with version=Some (r,x.TrimEnd())} : RawSchema)
                 "name", fileSpiProj |>> fun x s -> {s with name=Some x}
@@ -21612,7 +21832,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 "packages", packages |>> fun x s -> {s with packages=x}
                 ]
             let necessary = []
-
+    
             match runParserOnString (spacesSpiProj >>. record fields necessary schema_def .>> eof) (ResizeArray()) "spiral.config" text with
             | Success(a,userstate,_) ->
                 if userstate.Count > 0 then userstate.ToArray() |> ResumableError |> Result.Error else Result.Ok a
@@ -21621,7 +21841,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 ParserError(messages, (x,{|x with character=x.character+1|})) |> ConfigFatalError |> Result.Error
         with
             | :? ConfigException as e -> e.Data0 |> ConfigFatalError |> Result.Error
-
+    
         |> Result.mapError (fun x ->
             let fatal_error = function
                 | Tabs l -> l |> HopacExtensions.A.map (fun r -> r, "Tab not allowed.")
@@ -21636,15 +21856,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | ConfigFatalError x -> fatal_error x
             |> Array.toList
             )
-
+    
     /// ### FileHierarchy
     type FileHierarchy =
         | Directory of VSCRange * path: RString * name : string * FileHierarchy list
         | File of VSCRange * path: RString * string option
-
+    
     /// ### SchemaPackages
     type SchemaPackages = {dir : RString; name : string option}
-
+    
     /// ### Schema
     type Schema = {
         moduleDir : VSCRange option * string
@@ -21652,15 +21872,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         packageDir : VSCRange option * string
         packages : SchemaPackages list
         }
-
+    
     /// ### SchemaException
     exception SchemaException of RString
-
+    
     /// ### SchemaResult
     type SchemaResult = Result<Schema,RString list>
-
+    
     open Microsoft.FSharp.Core
-
+    
     /// ### schema
     let schema (pdir,text) : SchemaResult = config text |> Result.bind (fun x ->
         try
@@ -21700,12 +21920,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 List.map (loop (snd module_dir)) x.modules
             let packages =
                 let cdir =
-#if !INTERACTIVE
+    #if !INTERACTIVE
                     // Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory,"..")
                     Path.Combine (SpiralFileSystem.get_workspace_root (), "deps/The-Spiral-Language/VS Code Plugin")
-#else
+    #else
                     Path.Combine (SpiralFileSystem.get_workspace_root (), "deps/The-Spiral-Language/VS Code Plugin")
-#endif
+    #endif
                     |> Path.GetFullPath
                 x.packages |> List.map (fun x ->
                     let name = if x.is_include then None else Some x.name
@@ -21719,28 +21939,28 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages}
         with :? SchemaException as e -> Error [e.Data0]
         )
-
+    
     /// ## Graph
     open System.Collections.Generic
-
+    
     /// ### Graph
     type Graph = Map<string,string Set>
-
+    
     /// ### MirroredGraph
     type MirroredGraph = Graph * Graph
-
+    
     /// ### mirrored_graph_empty
     let mirrored_graph_empty : MirroredGraph = Map.empty, Map.empty
-
+    
     /// ### link_add'
     let link_add' (abs : Graph) a b: Graph =
         match Map.tryFind a abs with
         | Some bs -> Map.add a (Set.add b bs) abs
         | None -> Map.add a (Set.singleton b) abs
-
+    
     /// ### link_add
     let link_add (s : MirroredGraph) a b: MirroredGraph = link_add' (fst s) a b, link_add' (snd s) b a
-
+    
     /// ### link_remove'
     let link_remove' (abs : Graph) a b =
         match Map.tryFind a abs with
@@ -21748,43 +21968,43 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             let bs = Set.remove b bs
             if Set.isEmpty bs then Map.remove a abs else Map.add a bs abs
         | None -> abs
-
+    
     /// ### link_remove
     let link_remove (s : MirroredGraph) a b: MirroredGraph = link_remove' (fst s) a b, link_remove' (snd s) b a
-
+    
     /// ### links_remove
     let links_remove ((abs,bas as s) : MirroredGraph) a: MirroredGraph =
         match Map.tryFind a abs with
         | Some bs -> Map.remove a abs, Set.fold (fun bas b -> link_remove' bas b a) bas bs
         | None -> s
-
+    
     /// ### links_add
     let links_add s a bs = List.fold (fun s b -> link_add s a b) s bs
-
+    
     /// ### links_replace
     let links_replace (s : MirroredGraph) a bs = links_add (links_remove s a) a bs
-
+    
     /// ### links_get
     let links_get (abs : Graph) a = Map.tryFind a abs |> Option.defaultValue Set.empty
-
+    
     /// ### link_exists
     let link_exists ((abs,bas) : MirroredGraph) x = Map.containsKey x abs || Map.containsKey x bas
-
+    
     /// ### topological_sort_template
     let inline topological_sort_template add bas dirty_nodes =
         let sort_visited = HashSet()
         let rec dfs_rev a = if sort_visited.Add(a) then Seq.iter dfs_rev (links_get bas a); add a
         Seq.iter dfs_rev dirty_nodes
         sort_visited
-
+    
     /// ### topological_sort'
     // Returns the order end -> mid -> start.
     let topological_sort' bas start_nodes = let sort_order = Queue() in sort_order, topological_sort_template sort_order.Enqueue bas start_nodes
-
+    
     /// ### topological_sort
     // Returns the order start -> mid -> end.
     let topological_sort bas start_nodes = let sort_order = Stack() in sort_order, topological_sort_template sort_order.Push bas start_nodes
-
+    
     /// ### circular_nodes
     let circular_nodes ((abs,bas) : MirroredGraph) dirty_nodes =
         let sort_order, sort_visited = topological_sort bas dirty_nodes
@@ -21802,16 +22022,16 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 i
             ) 0 order |> ignore
         order, circular_nodes
-
+    
     /// ## ServerUtils
     // open System
     open System.IO
     open System.Collections.Generic
-
+    
     open Microsoft.FSharp.Core
-
+    
     // open Common
-
+    
     /// ### ProjectCodeAction
     type ProjectCodeAction =
         | CreateFile of {|filePath : string|}
@@ -21820,7 +22040,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         | CreateDirectory of {|dirPath : string|}
         | DeleteDirectory of {|range: VSCRange; dirPath : string|} // The range here is for the whole tree, not just the code action activation.
         | RenameDirectory of {|dirPath : string; target : string; validate_as_file : bool|}
-
+    
     /// ### code_action_execute
     let code_action_execute a =
         try match a with
@@ -21845,30 +22065,30 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | FParsec.CharParsers.ParserResult.Success _ -> File.Move(a.filePath,Path.Combine(a.filePath,"..",a.target+Path.GetExtension(a.filePath)),false); Ok a.filePath
                 | FParsec.CharParsers.ParserResult.Failure(er,_,_) -> Error er
         with e -> Error e.Message
-
+    
     /// ### RAction
     type RAction = VSCRange * ProjectCodeAction
-
+    
     /// ### SchemaState
     type SchemaState = { schema : Schema; errors_parse : RString list; errors_modules : RString list; errors_packages : RString list}
-
+    
     /// ### SchemaEnv
     type SchemaEnv = Map<string,SchemaState>
-
+    
     /// ### ModuleEnv
     type ModuleEnv = Map<string,ModuleState>
-
+    
     /// ### ss_empty
     let ss_empty = {
         schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
-
+    
     /// ### ss_from_result
     let ss_from_result = function
         | Ok schema -> {ss_empty with schema = schema}
         | Error ers -> {ss_empty with errors_parse = ers}
-
+    
     /// ### ss_validate_module
     let ss_validate_module (packages : SchemaEnv) (modules : ModuleEnv) (x : SchemaState) =
         let errors = ResizeArray()
@@ -21884,7 +22104,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         and list l = List.iter loop l
         list x.schema.modules
         Seq.toList errors
-
+    
     /// ### ss_validate_modules
     let ss_validate_modules (packages : SchemaEnv) modules order =
         Array.fold (fun s x ->
@@ -21892,11 +22112,11 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | Some v -> Map.add x ({v with errors_modules = ss_validate_module packages modules v} : SchemaState) s
             | None -> s
             ) packages order
-
+    
     /// ### ss_has_error
     let ss_has_error x =
         (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
-
+    
     /// ### ss_validate_packages
     let ss_validate_packages (packages : SchemaEnv) (order : string [], socs : Dictionary<string,int>) : SchemaEnv =
         Array.fold (fun s path ->
@@ -21920,18 +22140,18 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 Map.add path {x with errors_packages=ers} s
             | _ -> s
             ) packages order
-
+    
     /// ### ss_validate
     let ss_validate packages modules (order,socs) =
         let packages = ss_validate_modules packages modules order
         ss_validate_packages packages (order,socs)
-
+    
     /// ### ResultMap<'a,'b>
     type ResultMap<'a,'b> when 'a : comparison = {ok : Map<'a,'b>; error: Map<'a,'b>}
-
+    
     /// ### ProjEnvTCResult
     type ProjEnvTCResult = ResultMap<PackageId,ProjStateTC>
-
+    
     /// ### wdiff_projenvr_sync_schema
     let wdiff_projenvr_sync_schema default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
             (state : ResultMap<PackageId,ProjState<'file_input,'file,'package>>) order =
@@ -21953,7 +22173,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | None -> {ok=Map.remove pid s.ok; error=Map.remove pid s.error}
             | None -> s
             ) state order
-
+    
     /// ### projenv_update_packages
     let projenv_update_packages default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
             (state : Map<PackageId,ProjState<'a,'b,'state>>)  (dirty_packages : Dictionary<_,_>, order : string []) =
@@ -21971,7 +22191,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | false, _ -> UpdatePackage(pid,packages) :: l
             ) order []
         |> wdiff_projenv default_env funs_packages funs_files state
-
+    
     /// ### proj_file_iter_file
     let inline proj_file_iter_file f (files : ProjFiles) =
         let rec loop = function
@@ -21979,13 +22199,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | ProjFilesTree.Directory(_,_,l) -> list l
         and list l = List.iter loop l
         list files.tree
-
+    
     /// ### proj_file_get_input
     let proj_file_get_input uids_file (x : ProjFiles) =
         let d = Dictionary(Array.length uids_file)
         proj_file_iter_file (fun mid path -> d.Add(path, Array.get uids_file mid |> fst)) x
         d
-
+    
     /// ### proj_file_from_schema
     let proj_file_from_schema (x : Schema) : ProjFiles =
         let mutable num_files = 0
@@ -22004,13 +22224,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         and list l = List.map loop l
         let tree = list x.modules
         { tree = tree; num_files = num_files; num_dirs = num_dirs }
-
+    
     /// ### proj_file_make_input
     let inline proj_file_make_input f (files : ProjFiles) =
         let ar = Array.zeroCreate files.num_files
         proj_file_iter_file (fun mid path -> ar.[mid] <- f mid path) files
         ar
-
+    
     /// ### dirty_nodes_template
     let inline dirty_nodes_template funs (ids : Map<string, PackageId>) (packages : SchemaEnv) modules
             (state : Map<PackageId,_>) (dirty_packages : string HashSet) =
@@ -22037,12 +22257,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | None -> ()
             )
         d
-
+    
     /// ### dirty_nodes_tc
     let dirty_nodes_tc (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : ModuleEnv)
             (state : Map<PackageId,ProjStateTC>) (dirty_packages : string HashSet) =
         dirty_nodes_template funs_file_tc ids packages (fun pid mid path -> pid, mid, modules.[path].bundler) state dirty_packages
-
+    
     /// ### dirty_nodes_prepass
     let dirty_nodes_prepass (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : Map<PackageId,ProjStateTC>)
             (state : Map<PackageId,ProjStatePrepass>) (dirty_packages : string HashSet) =
@@ -22051,37 +22271,37 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             let state = proj_file_get_input x.files.uids_file x.files.files
             fun (mid : ModuleId) path -> pid, mid, path, state.[path].result
         dirty_nodes_template funs_file_prepass ids packages modules state dirty_packages
-
+    
     /// ### wdiff_projenvr
     let wdiff_projenvr default_env dirty_nodes funs_proj_package funs_proj_file
             ids packages modules (state : ResultMap<PackageId,_>) (dirty_packages, order) =
         let state = wdiff_projenvr_sync_schema default_env funs_proj_package funs_proj_file ids packages state order
         let dirty_packages = dirty_nodes ids packages modules state.ok dirty_packages
         {state with ok=projenv_update_packages default_env funs_proj_package funs_proj_file ids packages state.ok (dirty_packages, order)}
-
+    
     /// ### wdiff_projenvr_tc
     let wdiff_projenvr_tc default_env ids packages modules state (dirty_packages, order) =
         wdiff_projenvr default_env dirty_nodes_tc funs_proj_package_tc funs_proj_file_tc
             ids packages modules state (dirty_packages, order)
-
+    
     /// ### wdiff_projenvr_prepass
     let wdiff_projenvr_prepass default_env ids packages modules state (dirty_packages, order) =
         wdiff_projenvr default_env dirty_nodes_prepass funs_proj_package_prepass funs_proj_file_prepass
             ids packages modules state (dirty_packages, order)
-
+    
     /// ### LoadResult
     type LoadResult =
         | LoadModule of path: string * ModuleState option
         | LoadPackage of package_dir: string * SchemaState option
-
+    
     /// ### is_top_down
     open System.Threading.Tasks
-
+    
     let is_top_down (x : string) = Path.GetExtension x = ".spi"
-
+    
     /// ### spiproj_suffix
     let spiproj_suffix x = Path.Combine(x,"package.spiproj")
-
+    
     /// ### loader_package
     let loader_package default_env (packages : SchemaEnv) (modules : ModuleEnv) (pdir, text) =
         let pdir' = pdir |> SpiralFileSystem.standardize_path
@@ -22099,7 +22319,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         with _ -> return LoadModule(path,None)
                     else return LoadModule(path,None) // Note: We need this case otherwise 'con' might cause the file read to deadlock. https://superuser.com/questions/86999/why-cant-i-name-a-folder-or-file-con-in-windows
                 } |> queue.Enqueue
-
+    
         let schema (pdir,text) = schema (pdir,text) |> fun x -> LoadPackage(pdir,Some (ss_from_result x))
         let load_package_from_disk packages pdir =
             trace Verbose (fun () -> $"ServerUtils.loader_package.load_package_from_disk / pdir: {pdir}") _locals
@@ -22122,7 +22342,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             match Map.tryFind pdir packages with
             | Some _ -> ()
             | None -> load_package_from_disk packages pdir
-
+    
         let dirty_packages = HashSet()
         let rec invalidate_parent packages (x : DirectoryInfo) =
             if x <> null then
@@ -22132,10 +22352,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 let x = {| FullName = x' |}
                 if Map.containsKey x.FullName packages then dirty_packages.Add(x.FullName) |> ignore
                 else invalidate_parent packages x_.Parent
-
+    
         let mutable packages = packages
         let mutable modules = modules
-
+    
         match text with
         | Some text -> load_package_some (pdir,text)
         | None ->
@@ -22143,7 +22363,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             match Map.tryFind pdir packages with
             | Some x -> LoadPackage(pdir,Some x) |> Task.FromResult |> queue.Enqueue
             | None -> load_package_from_disk packages pdir
-
+    
         while 0 < queue.Count do
             match queue.Dequeue().Result with
             | LoadPackage(pdir,Some x) ->
@@ -22166,7 +22386,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 modules <- Map.add mdir' x modules
             | LoadModule(mdir,None) -> modules <- Map.remove mdir modules
         packages, dirty_packages, modules
-
+    
     /// ### graph_update
     let graph_update (packages : SchemaEnv) (g : MirroredGraph) (dirty_packages : string HashSet) =
         Seq.fold (fun g x ->
@@ -22174,7 +22394,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             | Some v -> links_replace g x (v.schema.packages |> List.map (fun x -> snd x.dir))
             | None -> links_remove g x
             ) g dirty_packages
-
+    
     /// ### package_ids_update
     let package_ids_update (packages : SchemaEnv) package_ids (dirty_packages : string HashSet) =
         let adds,removals = dirty_packages |> Seq.toArray |> Array.partition (fun x -> Map.containsKey x packages)
@@ -22186,30 +22406,30 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             Array.mapFold (fun s x -> if s = fst x then (s+1, snd x),s+1 else x,s) x s |> fst
             ) adds (snd package_ids)
         |> Array.fold (fun (a,b) (k,v) -> Map.add v k a, Map.add k v b) package_ids
-
+    
     /// ### package_ids_remove
     let package_ids_remove (s : ResultMap<PackageId,_>) l =
         List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
-
+    
     /// ## SignalRSupervisor
     // open System
     open System.IO
     open System.Collections.Generic
-
+    
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
-
+    
     // open Common
     open SpiralFileSystem.Operators
-
+    
     /// ### LocalizedErrors
     type LocalizedErrors = {|uri : string; errors : RString list|}
-
+    
     /// ### TracedError
     type TracedError = {|trace : string list; message : string|}
-
+    
     /// ### SupervisorErrorSources
     type SupervisorErrorSources = {
         fatal : string Ch
@@ -22219,7 +22439,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         package : LocalizedErrors Ch
         traced : TracedError Ch
         }
-
+    
     /// ### SupervisorReq
     type SupervisorReq =
         | ProjectFileOpen of {|uri : string; spiprojText : string|}
@@ -22233,7 +22453,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         | FileTokenRange of {|uri : string; range : VSCRange|} * int [] IVar
         | HoverAt of {|uri : string; pos : VSCPos|} * string option IVar
         | BuildFile of {|uri : string; backend : string|} * string option IVar
-
+    
     /// ### SupervisorState
     type SupervisorState = {
         packages : SchemaEnv
@@ -22243,26 +22463,26 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         graph : MirroredGraph
         package_ids : Map<string,int> * Map<int,string>
         }
-
+    
     /// ### proj_validate
     let proj_validate default_env s dirty_packages =
         let order,socs = circular_nodes s.graph dirty_packages
         let packages = ss_validate s.packages s.modules (order,socs)
         let packages_infer = wdiff_projenvr_tc default_env (fst s.package_ids) packages s.modules s.packages_infer (dirty_packages, order)
         order, {s with packages_infer = packages_infer; packages=packages}
-
+    
     /// ### proj_graph_update
     let proj_graph_update default_env s dirty_packages =
         let removed_pids,package_ids = package_ids_update s.packages s.package_ids dirty_packages
         let packages_infer, packages_prepass = package_ids_remove s.packages_infer removed_pids, package_ids_remove s.packages_prepass removed_pids
         let graph = graph_update s.packages s.graph dirty_packages
         proj_validate default_env {s with graph = graph; package_ids = package_ids; packages_infer = packages_infer; packages_prepass = packages_prepass} dirty_packages
-
+    
     /// ### proj_open
     let proj_open default_env s (dir, text) =
         let packages,dirty_packages,modules = loader_package default_env s.packages s.modules (dir,text)
         proj_graph_update default_env {s with packages = packages; modules = modules} dirty_packages
-
+    
     /// ### proj_revalidate_owner
     let proj_revalidate_owner default_env s file =
         let rec loop (x : DirectoryInfo) =
@@ -22276,7 +22496,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 elif File.Exists(spiproj_suffix x.FullName) then proj_open default_env s (x.FullName,None)
                 else loop x_.Parent
         loop (Directory.GetParent(file))
-
+    
     /// ### file_delete
     let file_delete default_env s (files : string []) =
         let deleted_modules = HashSet()
@@ -22299,7 +22519,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             loop(Directory.GetParent x)
         Seq.iter revalidate_parent deleted_modules; Seq.iter revalidate_parent deleted_packages
         Seq.toArray deleted_modules, proj_graph_update default_env {s with modules = modules; packages = packages} dirty_packages
-
+    
     /// ### AttentionState
     type AttentionState = {
         modules : string Set * string list
@@ -22307,7 +22527,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         old_packages : SchemaEnv
         supervisor : SupervisorState
         }
-
+    
     /// ### attention_server
     let attention_server (errors : SupervisorErrorSources) (req : _ Ch) =
         let push path (s,o) = Set.add path s, path :: o
@@ -22328,7 +22548,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 and list l = List.iter loop l
                 list x.schema.modules
                 )
-
+    
             let inline body uri interrupt ers ers' src next =
                 Ch.Try.take req >>= function
                 | Some x -> interrupt x
@@ -22338,7 +22558,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         let ers = List.append ers ers'
                         HopacExtensions.start (Ch.send src {|uri=uri; errors=ers|})
                         next ers
-
+    
             let loop_module (s : AttentionState) mpath (m : ModuleState) =
                 let uri = file_uri mpath
                 let interrupt x = loop (update {s with modules=push mpath s.modules} x)
@@ -22349,7 +22569,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 clear_parse uri
                 clear_typer uri
                 bundler m.bundler []
-
+    
             let rec loop_package (s : AttentionState) pdir = function
                 | (mpath,l) :: ls ->
                     let mpath' = mpath |> SpiralFileSystem.standardize_path
@@ -22368,7 +22588,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     clear_parse uri
                     bundler m.bundler []
                 | [] -> loop s
-
+    
             let package s =
                 match s.packages with
                 | se,x :: xs ->
@@ -22401,7 +22621,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         | None -> loop s
                     | None -> loop s
                 | _, [] -> req >>= (update s >> loop)
-
+    
             match s.modules with
             | se,x :: xs ->
                 let s = {s with modules=Set.remove x se,xs}
@@ -22418,11 +22638,11 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         package s
                 | None -> clear (file_uri x); package s
             | _,[] -> package s
-
+    
         (req >>= fun (modules,packages,supervisor) ->
             loop {modules = Set.ofArray modules, Array.toList modules; packages = Set.ofArray packages, Array.toList packages; supervisor = supervisor; old_packages = Map.empty}
             )
-
+    
     /// ### show_position
     let show_position (s : SupervisorState) (x : Range) =
         let line = (fst x.range).line
@@ -22434,7 +22654,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             .Append(' ',col)
             .AppendLine("^")
             .ToString()
-
+    
     /// ### show_trace
     let show_trace s (x : Trace) (msg : string) =
         let rec loop (l : Trace) = function
@@ -22444,30 +22664,30 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 | _ -> loop (x :: l) xs
             | _ -> l
         List.map (show_position s) (loop [] x), msg
-
+    
     /// ### BuildResult
     type BuildResult =
         | BuildOk of {|code: string; file_extension : string|} list
         | BuildErrorTrace of string list * string
         | BuildFatalError of string
         | BuildSkip
-
+    
     /// ### workspaceRoot
     let workspaceRoot = SpiralFileSystem.get_workspace_root ()
-
+    
     /// ### targetDir
     let targetDir = workspaceRoot </> "target/spiral_Eval"
-
+    
     /// ### traceDir
     let traceDir = targetDir </> "supervisor_trace"
-
+    
     /// ### dir
     let dir uri =
         let result = System.IO.FileInfo(System.Uri(uri).LocalPath).Directory.FullName
         let result' = result |> SpiralFileSystem.standardize_path
         trace Verbose (fun () -> $"Supervisor.dir / uri: {uri} / result: {result} / result': {result'}") _locals
         result'
-
+    
     /// ### file
     let file uri =
         let result =
@@ -22480,7 +22700,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         // let result = result |> SpiralSm.replace "\\" "|"
         // trace Verbose (fun () -> $"Supervisor.file / uri: {uri} / result: {result} / result': {result'}") _locals
         result'
-
+    
     /// ### supervisor_server
     let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorErrorSources) req =
         let fatal x = HopacExtensions.start (Ch.send errors.fatal x)
@@ -22546,7 +22766,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                     z <- (r,CreateDirectory {|dirPath=path|}) :: z
                         actions_dir x.schema.moduleDir
                         actions_dir x.schema.packageDir
-
+    
                         let rec actions_module = function
                             | FileHierarchy.Directory(r',(r,path),_,l) ->
                                 trace Verbose (fun () -> $"Supervisor.supervisor_server.ProjectCodeActions.actions_module | SpiProj.FileHierarchy.Directory(r',(r,path),_,l) / path: {path}") _locals
@@ -22585,7 +22805,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         |> wdiff_module_init_all default_env (is_top_down x.uri)
                         |> Some
                     | None -> None
-
+    
                 match v with
                 | Some v ->
                     HopacExtensions.start (semantic_tokens v.parser >>= (vscode_tokens x.range >> IVar.fill res))
@@ -22594,7 +22814,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         trace Debug
                             (fun () -> $"Supervisor.supervisor_server.FileTokenRange")
                             (fun () -> $"module=None / x.uri: {x.uri} / {_locals ()}")
-
+    
                     HopacExtensions.start (IVar.fill res [||])
                 s
             | SupervisorReq.HoverAt(x,res) ->
@@ -22698,7 +22918,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                         BuildOk (codegen file b a)
                                     let build codegen backend file_extension =
                                         build_many (fun file b a -> [{|code = codegen b a; file_extension = file_extension|}]) backend
-
+    
                                     let do_build () =
                                         match backend with
                                         | "Gleam" -> build codegenGleam "Gleam" ".gleam"
@@ -22713,7 +22933,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                         | "HLS C++" -> BuildFatalError "HLS C++ backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 10/17/2023
                                         | "Cython*" | "Cython" -> BuildFatalError "Cython backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 12/27/2022
                                         | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
-
+    
                                     let rec attempt_build (attempt: int) (max_attempts: int) =
                                         if attempt = 0 then
                                             CacheGeneration.resetSequentialRequest ()
@@ -22735,23 +22955,23 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                     let gen_before = CacheGeneration.current ()
                                                     let is_gen_wait =
                                                         code = EJPCodes.EJP0008 && msg.Contains("generation changed while waiting")
-
+    
                                                     // For non-generation-change errors, force sequential execution for determinism
                                                     if not is_gen_wait then
                                                         HopacExtensions.forceConcurrency 1
-
-
+    
+    
                                                         CacheGeneration.requestSequential ()
                                                     let gen_after =
                                                         if is_gen_wait then CacheGeneration.current ()
                                                         else CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
-
+    
                                                     // ALPHA49: SupervisorState doesn't own JP per-env caches (they live in LangEnv); rely on invalidate callbacks.
                                                     if not is_gen_wait then
                                                         ()
-
+    
                                                     if is_gen_wait then System.Threading.Thread.Yield() |> ignore
-
+    
                                                     let trace_lines, _ = show_trace s e.Data0 e.Data1
                                                     let sidecar = DiagSidecar.snapshot 128
                                                     let reasons = CacheGeneration.reasonsSnapshot 64
@@ -22760,10 +22980,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                         CacheGeneration.invalidate (sprintf "EJP0008.apply_mismatch file=%s backend=%s attempt=%d" file backend attempt) |> ignore
                                                         CacheGeneration.requestSequential ()
                                                         HopacExtensions.forceConcurrency 1
-
+    
                                                         // ALPHA49: no per-env JP caches in SupervisorState; rely on invalidate callbacks.
                                                         ()
-
+    
                                                     let suspects =
                                                         SuspectCache.getRecent 32
                                                         |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h se.generation se.depth se.hitCount se.errorType se.timestamp)
@@ -22783,8 +23003,8 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                         [ "---- suspects ----" ] @ suspects
                                                         |> String.concat "\n"
                                                     let diag_block = $"=== {code} RETRY DIAG BEGIN ===
-{diag}
-=== {code} RETRY DIAG END ==="
+    {diag}
+    === {code} RETRY DIAG END ==="
                                                     trace Warning (fun () -> diag_block) _locals
                                                     try
                                                         attempt_build (attempt + 1) max_attempts
@@ -22798,7 +23018,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                                 reraise ()
                                             | :? CodegenErrorWithPos as _ ->
                                                 reraise ()
-
+    
                                     // Max retry attempts: 3 (hardcoded SOTA default)
                                     let max_attempts = 4
                                     let build_result =
@@ -22807,7 +23027,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                         finally
                                             HopacExtensions.clearForcedConcurrency ()
                                     build_result
-
+    
                                 with
                                     | :? PartEvalTypeError as e -> BuildErrorTrace(show_trace s e.Data0 e.Data1)
                                     | :? CodegenError as e -> BuildFatalError(e.Data1)
@@ -22825,7 +23045,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                         trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: %A{ex}") _locals
                                         BuildFatalError(ex.Message)
                             | None -> BuildFatalError $"Cannot find `main` in file {Path.GetFileNameWithoutExtension file}."
-
+    
                         // The partial evaluator is using too much stack space, so as a temporary fix, I am running it on a separate thread with much more of it.
                         let result = IVar()
                         let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> HopacExtensions.start), 1 <<< 30) // Stack space = 2 ** 30 = 1GB
@@ -22844,7 +23064,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                                 if file = path then file_build s mid (a, b); true else false
                         and list l = List.exists loop l
                         if list b.files.files.tree = false then fatal $"File {Path.GetFileNameWithoutExtension file} cannot be found in the project {spiproj_suffix pdir}"
-
+    
                         s
                     | None, None -> fatal $"Owner of file {Path.GetFileNameWithoutExtension file} has an error. Location: {spiproj_suffix pdir}"; s
                     | _ -> failwith "Compiler error: The project status should be the same in both infer and prepass."
@@ -22864,7 +23084,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         if Map.containsKey x.FullName s.packages then update_owner x.FullName
                         else find_owner x_.Parent
                 find_owner (Directory.GetParent(file))
-
+    
         Job.iterateServer {
             packages = Map.empty
             modules = Map.empty
@@ -22873,7 +23093,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             graph = mirrored_graph_empty
             package_ids = Map.empty, Map.empty
             } loop
-
+    
     /// ### ClientReq
     type ClientReq =
         | ProjectFileOpen of {|uri : string; spiprojText : string|}
@@ -22889,7 +23109,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         | BuildFile of {|uri : string; backend : string|}
         | Ping of bool
         | Exit of bool
-
+    
     /// ### ClientErrorsRes
     type ClientErrorsRes =
         | FatalError of string
@@ -22898,56 +23118,56 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
         | TokenizerErrors of {|uri : string; errors : RString list|}
         | ParserErrors of {|uri : string; errors : RString list|}
         | TypeErrors of {|uri : string; errors : RString list|}
-
+    
     /// ### Supervisor
     type Supervisor = {
         supervisor_ch : SupervisorReq Ch
         }
-
+    
     /// ## new_server
     // #!import ../../../polyglot/apps/builder/Builder.fs
     // #!import ../../../polyglot/apps/spiral/Supervisor.fs
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
+    #if _LINUX
+    #else
+    #endif
+    
     open Hopac
     open Hopac.Infixes
     // open Common
-
+    
     let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> and 'b : null> ()
         :
         {|
@@ -22965,7 +23185,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     return Some (msg, ())
                 })
                 ()
-
+    
         let error_ch_create msg =
             let x = Ch()
             HopacExtensions.server (Job.forever (Ch.take x >>= (
@@ -22980,7 +23200,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     )
             )))
             x
-
+    
         let errors : SupervisorErrorSources = {
             fatal = error_ch_create FatalError
             package = error_ch_create PackageErrors
@@ -22991,13 +23211,13 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             }
         let supervisor = Ch()
         let atten = Ch()
-
+    
         do HopacExtensions.server (attention_server errors atten)
-
+    
         let args = [| "--port"; "0" |]
         let env = startupParse args
         do HopacExtensions.start (supervisor_server env atten errors supervisor)
-
+    
         let job_null job =
             job
             |> HopacExtensions.start
@@ -23018,9 +23238,9 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             errors = stream
             supervisor = supervisor
         |}
-
+    
     /// ### tests
-
+    
     /// ## getParentProcessId
     let getParentProcessId () =
         if SpiralPlatform.is_windows () |> not
@@ -23034,10 +23254,10 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
             if data |> Seq.isEmpty
             then 0u
             else data |> Seq.head |> (fun mo -> mo.["ParentProcessId"] :?> uint32)
-
+    
     /// ## assemblyName
     let assemblyName = System.Reflection.Assembly.GetEntryAssembly().GetName().Name
-
+    
     /// ## startParentWatcher
     let inline startParentWatcher () =
         if [ "dotnet-repl" ] |> List.contains assemblyName |> not then
@@ -23046,7 +23266,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 trace Verbose
                     (fun () -> "spiral_compiler.startParentWatcher")
                     (fun () -> $"parentProcessId: {parentProcessId} / {_locals ()}")
-
+    
                 if parentProcessId > 0u then
                     let parentProcess = parentProcessId |> int |> System.Diagnostics.Process.GetProcessById
                     do! parentProcess.WaitForExitAsync () |> Async.AwaitTask
@@ -23056,42 +23276,42 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     System.Threading.Thread.Sleep 1000
                     System.Environment.Exit 1
             }
-
+    
             HopacExtensions.start (Job.fromAsync parentAsyncChild)
-
+    
     /// ## SpiralHub
     // open System
     open System.IO
     open System.Collections.Generic
-
+    
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
-
+    
     // open Common
     open SpiralFileSystem.Operators
-
+    
     open Microsoft.AspNetCore.SignalR
     open Microsoft.AspNetCore.SignalR.Client
-
+    
     type SpiralHub(supervisor : Supervisor) =
         inherit Hub()
-
+    
         member _.ClientToServerMsg (x : string) =
             let job_null job = HopacExtensions.start job; task { return null }
-
+    
             let serialize (x : obj) =
                 match x with
                 | null -> null
                 | :? Option<string> as x -> x.Value
                 | _ -> FSharp.Json.Json.serialize x
-
+    
             let job_val job = let res = IVar() in HopacExtensions.queueAsTask (job res >>=. IVar.read res >>- serialize)
             let supervisor = supervisor.supervisor_ch
-
+    
             let client_req = FSharp.Json.Json.deserialize x
-
+    
             if Directory.Exists traceDir then
                 match client_req with
                 | Ping _ -> ()
@@ -23099,7 +23319,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     let req_name = client_req.GetType().Name
                     let guid = System.DateTime.Now |> SpiralDateTime.new_guid_from_date_time
                     let trace_file = traceDir </> $"{guid}_{req_name}.json"
-
+    
                     HopacExtensions.start (job {
                         do! HopacExtensions.sleepMs 500
                         try
@@ -23107,7 +23327,7 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                         with ex ->
                             trace Critical (fun () -> $"SpiralHub.ClientToServerMsg / ex: {ex |> SpiralSm.format_exception}") _locals
                     })
-
+    
             match client_req with
             | ProjectFileOpen x -> job_null (supervisor *<+ SupervisorReq.ProjectFileOpen x)
             | ProjectFileChange x -> job_null (supervisor *<+ SupervisorReq.ProjectFileChange x)
@@ -23130,21 +23350,21 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                     })
                     return null
                 }
-
+    
     /// ## main
     open Microsoft.AspNetCore.Builder
     open Microsoft.AspNetCore.Hosting
     open Microsoft.Extensions.DependencyInjection
     open Microsoft.Extensions.Logging
-
+    
     let main args =
         SpiralTrace.TraceLevel.US0_1 |> set_trace_level
         // Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = 1024 * 8192 |> Some }
-
+    
         let env = startupParse args
-
+    
         let uri_server = $"http://localhost:{env.port}"
-
+    
         printfn "Server bound to: %s" uri_server
         trace Debug (fun () -> $"pwd: {System.Environment.CurrentDirectory}") _locals
         let dllPath = System.Reflection.Assembly.GetExecutingAssembly().Location |> System.IO.Path.GetDirectoryName
@@ -23158,15 +23378,15 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 x.MaximumReceiveMessageSize <- 1 <<< 20 // 1mb
                 x.EnableDetailedErrors <- true
                 ) |> ignore
-
+    
         builder.Services
             .AddSingleton<Supervisor>(fun s ->
                 let hub = s.GetService<IHubContext<SpiralHub>>()
                 let broadcast x =
                     hub.Clients.All.SendCoreAsync("ServerToClientMsg",[|FSharp.Json.Json.serialize x|])
-
+    
                 let server = new_server ()
-
+    
                 server.errors
                 |> FSharp.Control.AsyncSeq.mapAsync (fun x ->
                     broadcast x |> Async.AwaitTask
@@ -23175,12 +23395,12 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 |> Async.StartChild
                 |> Async.RunSynchronously
                 |> ignore
-
+    
                 {supervisor_ch=server.supervisor}
                 ) |> ignore
         builder.WebHost.UseUrls [|uri_server|] |> ignore
         builder.Logging.SetMinimumLevel(LogLevel.Warning) |> ignore
-
+    
         let app = builder.Build()
         app.UseCors(fun x ->
             x.SetIsOriginAllowed(fun _ -> true)
@@ -23189,11 +23409,11 @@ Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
                 .AllowCredentials() |> ignore
             ) |> ignore
         app.MapHub<SpiralHub> "" |> ignore
-
+    
         // use _ = Eval.startTokenRangeWatcher ()
         startParentWatcher ()
         // use _ = Eval.startCommandsWatcher uri_server
-
+    
         printfn $"Starting the Spiral Server. It is bound to: {uri_server}"
         app.Run()
         0
