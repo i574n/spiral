@@ -112,13 +112,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 
         type Providers =
             { mutable genf: unit -> int64
-              mutable extraf: unit -> string }
+              mutable extraf: unit -> string
+              mutable panelf: unit -> string }
 
         let providers : Providers =
             { genf = (fun () -> gen)
-              extraf = (fun () -> "") }
+              extraf = (fun () -> "")
+              panelf = (fun () -> "") }
         let set_gen_provider (f: unit -> int64) = providers.genf <- f
         let set_extra_provider (f: unit -> string) = providers.extraf <- f
+        let set_panel_provider (f: unit -> string) = providers.panelf <- f
 
         let inline touch (t: string) (g: int64) =
             tag <- t
@@ -146,6 +149,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             if (tks &&& 255L) = 0L then touch t g
 
         let tick0 (t: string) : unit = pulse t (providers.genf())
+        // UI is always enabled in Hopac/SOTA builds; mode auto-adapts when stderr is redirected.
+        let ui_mode =
+            let env = Environment.GetEnvironmentVariable("SPIRAL_UI_MODE")
+            if not (String.IsNullOrEmpty env) then env
+            elif Console.IsErrorRedirected then "log"
+            else "ansi_panel"
+        let ui_keep_log = true
 
         let mutable started = 0
         let private heartbeat () =
@@ -167,8 +177,26 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let pct = if sn > 0 then (float si / float sn) * 100.0 else Double.NaN
                 let subpct = if subn > 0L then (float subi / float subn) * 100.0 else Double.NaN
                 let extra = providers.extraf()
-                Console.Error.WriteLine(sprintf "[spiral_compiler] hb gen=%d stage=%d/%d (%.1f%%) sub=%d/%d (%.1f%%) tick=%d silent_ms=%d t=%ds private_mb=%.1f gc_mb=%.1f tag=%s %s"
-                    g si sn pct subi subn subpct tks silent (now/1000L) privateMb gcMb ttag extra)
+                let line =
+                    sprintf "[spiral_compiler] hb gen=%d stage=%d/%d (%.1f%%) sub=%d/%d (%.1f%%) tick=%d silent_ms=%d t=%ds private_mb=%.1f gc_mb=%.1f tag=%s %s"
+                        g si sn pct subi subn subpct tks silent (now/1000L) privateMb gcMb ttag extra
+                match ui_mode with
+                | "ansi_panel" | "panel" ->
+                    if ui_keep_log then Console.Error.WriteLine(line)
+                    let panel = providers.panelf()
+                    if not (String.IsNullOrEmpty panel) then
+                        Console.Error.Write("\u001b[2J\u001b[H")
+                        Console.Error.Write(panel)
+                        Console.Error.WriteLine()
+                        Console.Error.Flush()
+                | "ansi_line" | "line" ->
+                    let width = 220
+                    let msg = "\r" + line
+                    let padded = if msg.Length < width then msg.PadRight(width) else msg
+                    Console.Error.Write(padded)
+                    Console.Error.Flush()
+                | _ ->
+                    Console.Error.WriteLine(line)
         let start () =
             if Interlocked.Exchange(&started, 1) = 0 then
                 stage 0 4
@@ -247,39 +275,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     
         // v107-alpha18: moved inside DiagSidecar module for proper scoping
         let mutable private envDumped = 0
-        
-        let private shouldDumpEnvKey (k: string) =
-            if obj.ReferenceEquals(k, null) then false
-            else
-                k.StartsWith("SPIRAL_", StringComparison.OrdinalIgnoreCase)
-                || k.StartsWith("DOTNET_", StringComparison.OrdinalIgnoreCase)
-                || k.StartsWith("COMPLUS_", StringComparison.OrdinalIgnoreCase)
-                || k.StartsWith("COMPlus_", StringComparison.OrdinalIgnoreCase)
-                || k.StartsWith("FSHARP_", StringComparison.OrdinalIgnoreCase)
-                || k.StartsWith("FSharp_", StringComparison.OrdinalIgnoreCase)
-        
         let emitEnvSnapshotOnce () =
             if System.Threading.Interlocked.CompareExchange(&envDumped, 1, 0) = 0 then
-                try
-                    emit "---- ENV SNAPSHOT (all) ----"
-                    let vars = Environment.GetEnvironmentVariables()
-                    let keys =
-                        vars.Keys
-                        |> Seq.cast<obj>
-                        |> Seq.choose (fun o -> match o with :? string as s -> Some s | _ -> None)
-                        |> Seq.sort
-                        |> Seq.toArray
-                    for k in keys do
-                        let v =
-                            try
-                                match vars.[k] with
-                                | null -> "<null>"
-                                | x -> x.ToString()
-                            with _ -> "<e>"
-                        emit (sprintf "ENV %s=%s" k v)
-                    emit "---- END ENV SNAPSHOT ----"
-                with ex ->
-                    emit (sprintf "ENV SNAPSHOT FAILED: %s" ex.Message)
+                emit "---- ENV SNAPSHOT DISABLED (alpha122: no env var reads) ----"
     
     /// ### dump_spiral_env_once
     /// Back-compat alias used by newer error paths.
@@ -9545,9 +9543,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let private lastInvalidationTime = ref DateTime.MinValue
         let private invalidationReasons = System.Collections.Concurrent.ConcurrentQueue<string>()
     
-        // If cache invalidation is triggered due to suspected cache corruption (eg. apply mismatch),
-        // we want the next build attempt to run JP work sequentially to avoid repeating the same race.
-        // This latch is process-wide; it is reset at the start of each file build attempt loop.
+        // (alpha98) Antigo latch de fallback sequencial foi desativado: mantemos Hopac/SOTA sempre-on.
         let mutable private jp_force_sequential = 0
         // Alpha36: allow subsystems to register cache-clear callbacks that run on invalidation.
         let private onInvalidate = System.Collections.Concurrent.ConcurrentBag<string -> unit>()
@@ -9555,14 +9551,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             onInvalidate.Add f
     
     
-        let requestSequential () =
-            Interlocked.Exchange(&jp_force_sequential, 1) |> ignore
+        let requestSequential () = ()
     
-        let resetSequentialRequest () =
-            Interlocked.Exchange(&jp_force_sequential, 0) |> ignore
+        let resetSequentialRequest () = ()
     
-        let isSequentialRequested () =
-            Volatile.Read(&jp_force_sequential) = 1
+        let isSequentialRequested () = false
     
         /// Get current generation number
         let current () = Interlocked.Read(&generation)
@@ -11242,6 +11235,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     
         let jp_barrier_lock = obj()
         let mutable jp_wait_closed = false
+        let mutable jp_wait_closed_cd : System.Threading.CountdownEvent = null
         let jp_pending_jobs () =
             let c = jp_cd.CurrentCount
             if jp_wait_closed then c else max 0 (c - 1)
@@ -11250,6 +11244,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // Waiting threads "help" by executing queued work (work-distributing pattern)
         let jp_work_q : System.Collections.Concurrent.ConcurrentQueue<unit -> unit> = System.Collections.Concurrent.ConcurrentQueue()
         let jp_work_sem = new System.Threading.SemaphoreSlim(0, System.Int32.MaxValue)
+        // Alpha114: JP counters must be defined before first use (no forward refs in F#).
+        let mutable jp_pending_count : int64 = 0L  // Atomic counter of pending jobs
+        let mutable jp_total_enqueued : int64 = 0L  // Atomic counter of scheduled jobs
+        let mutable jp_last_enq_ms : int64 = 0L     // Atomic: last time jp_total_enqueued changed (ms since peval_sw start)
+        let mutable jp_sub_total_frozen : int64 = 0L // Atomic: 0 => dynamic denom, >0 => frozen denom for progress
+        let mutable jp_total_done : int64 = 0L      // Atomic counter of completed jobs
+        let mutable jp_progress_started = 0
+
         let mutable jp_worker_active = 0L  // ALPHA45: Track how many workers are actively executing (not waiting)
     
     
@@ -11274,72 +11276,43 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
-        // PARALLELISM CONFIGURATION (env override + aggressive defaults)
-        // ════════════════════════════════════════════════════════════════════════
-    
-        let inline env_i64 (name: string) (fallback: int64) : int64 =
-            match Environment.GetEnvironmentVariable(name) with
-            | null | "" -> fallback
-            | s ->
-                match System.Int64.TryParse(s.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture) with
-                | true, v -> v
-                | _ -> fallback
-    
-        let inline env_i32 (name: string) (fallback: int) : int =
-            match Environment.GetEnvironmentVariable(name) with
-            | null | "" -> fallback
-            | s ->
-                match System.Int32.TryParse(s.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture) with
-                | true, v -> v
-                | _ -> fallback
-    
-        // Degree of parallelism: use all available CPU cores unless overridden
-        let jp_dop =
-            let v = env_i32 "SPIRAL_JP_DOP" (max 1 Environment.ProcessorCount)
-            max 1 v
-    
-        let jp_is_parallel_enabled =
-            match Environment.GetEnvironmentVariable("SPIRAL_JP_PARALLEL") with
-            | null | "" -> true
-            | s ->
-                match s.Trim().ToLowerInvariant() with
-                | "0" | "false" | "no" | "n" -> false
-                | _ -> true
-    
+        // PARALLELISM CONFIGURATION (no env override; Hopac/SOTA always-on defaults)
+
+        // Degree of parallelism: use all available CPU cores
+        let jp_dop = max 1 Environment.ProcessorCount
+
+        // Hopac/SOTA: always parallel enabled
+        let jp_is_parallel_enabled = true
+
         // Stack size per worker thread (MB)
-        let jp_stack_mb = max 8 (env_i32 "SPIRAL_JP_STACK_MB" 64)
-    
+        let jp_stack_mb = 64
+
         // Pending job cap (prevents runaway queue + memory blowups)
         let jp_max_pending =
-            let defaultMax =
-                let v = jp_dop * 4096
-                if v < 16384 then 16384 else v
-            let v = env_i32 "SPIRAL_JP_MAX_PENDING" defaultMax
-            max 1024 (min System.Int32.MaxValue v)
-    
+            let v = jp_dop * 4096
+            if v < 16384 then 16384 else v
+
         // How many queued thunks a helper drains per iteration while waiting
-        let jp_help_batch_n =
-            let v = env_i32 "SPIRAL_JP_HELP_BATCH_N" 256
-            max 1 v
-    
+        let jp_help_batch_n = 256
+
         let mutable jp_total_started = 0L
-    
+
         let peval_sw = System.Diagnostics.Stopwatch.StartNew()
-    
+
         // ════════════════════════════════════════════════════════════════════════
-        // DIAGNOSTIC CONFIGURATION
+        // DIAGNOSTIC CONFIGURATION (no env override)
         // ════════════════════════════════════════════════════════════════════════
-    
-        let diag_period_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_PERIOD_MS" 30000L)
-        let diag_abort_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_ABORT_MS" 600000L)
-        let diag_wait_ms = max 0L (env_i64 "SPIRAL_JP_DIAG_WAIT_MS" 1000L)
-        let diag_jp_spec_cap = max 0L (env_i64 "SPIRAL_JP_SPEC_CAP" 0L)
-        let diag_jp_name_spec_cap = max 0L (env_i64 "SPIRAL_JP_NAME_SPEC_CAP" 0L)
-    
+
+        let diag_period_ms = 30000L
+        let diag_abort_ms = 600000L
+        let diag_wait_ms = 1000L
+        let diag_jp_spec_cap = 0L
+        let diag_jp_name_spec_cap = 0L
+
         // Hard abort controls (defaults intentionally *on*)
-        let peval_abort_ms = max 0L (env_i64 "SPIRAL_PEVAL_ABORT_MS" 600000L)
-        let peval_mem_limit_mb = max 0L (env_i64 "SPIRAL_PEVAL_MEM_LIMIT_MB" 4096L)
-        let jp_stall_abort_ms = max 0L (env_i64 "SPIRAL_JP_STALL_ABORT_MS" 60000L)
+        let peval_abort_ms = 600000L
+        let peval_mem_limit_mb = 4096L
+        let jp_stall_abort_ms = 60000L
     
         // Always force async dispatch for JPs (maximizes parallelism)
         let jp_force_async_unannot = true
@@ -11686,13 +11659,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let frames = trace_dedup xs |> List.map trace_frame_rust
             if frames.IsEmpty then "<no-trace>"
             else
-                let maxFrames =
-                    match System.Environment.GetEnvironmentVariable("SPIRAL_DIAG_TRACE_MAX") with
-                    | null | "" -> 80
-                    | s ->
-                        match System.Int32.TryParse s with
-                        | true, v when v > 0 -> v
-                        | _ -> 80
+                let maxFrames = 200
                 let shown = if frames.Length > maxFrames then frames |> List.take maxFrames else frames
                 let body =
                     shown
@@ -11974,6 +11941,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let jp_ivar_wait (w: string) (details: string) (ivar: Hopac.IVar<'a>) : 'a =
             diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
             let gen0 = CacheGeneration.current()
+            let wait_start_ms = peval_sw.ElapsedMilliseconds
     
             // Fast path: IVar already filled
             if Hopac.IVar.Now.isFull ivar then
@@ -11997,6 +11965,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         let snap = diag_snapshot (sprintf "gen_change jp_ivar_wait from=%d to=%d :: %s (%s)" gen0 curGen w details)
                         raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting for jp_ivar_wait (from %d to %d) :: %s (%s)\n%s" gen0 curGen w details snap))
     
+
+                    // ALPHA111: Detect \"dead\" IVars (no pending JP work can ever fill this IVar).
+                    // This typically happens when a stale/aborted JP work item decremented counters but never filled its IVar.
+                    // Instead of hanging, force a deterministic retry (and request sequential as a safety net).
+                    let now_dead = peval_sw.ElapsedMilliseconds
+                    if now_dead - wait_start_ms > 200L then
+                        let pend0 = System.Threading.Interlocked.Read(&jp_pending_count)
+                        if pend0 = 0L then
+                            let q0 = jp_work_q.Count
+                            let cd0 = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
+                            if q0 = 0 && cd0 <= 1 && not (Hopac.IVar.Now.isFull ivar) then
+                                let snap = diag_snapshot (sprintf "dead_ivar jp_ivar_wait :: %s (%s)" w details)
+                                CacheGeneration.requestSequential()
+                                CacheGeneration.invalidate(sprintf "dead ivar jp_ivar_wait :: %s (%s)" w details) |> ignore
+                                raise (PartEvalTypeError([], sprintf "EJP0016: dead ivar while waiting for jp_ivar_wait (pend=0 q=0 cd=%d) :: %s (%s)\n%s" cd0 w details snap))
                     // ALPHA9: No work-stealing from Hopac fibers; JP workers are dedicated OS threads.
                     ()
     
@@ -12014,10 +11997,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         diag_print false
                     diag_abort_if_needed "jp_ivar_wait"
     
-                    // Stall detection
-                    if stall_abort_ms > 0L && now - last_progress_ms >= stall_abort_ms then
-                        let snap = diag_snapshot (sprintf "stall jp_ivar_wait :: %s (%s)" w details)
-                        raise (PartEvalTypeError([], sprintf "EJP0014: join-point scheduler stalled while waiting for jp_ivar_wait for %dms :: %s (%s)\n%s" (now - last_progress_ms) w details snap))
+                    // Stall detection (Alpha98): base timer prevents "progress tick" spoofing
+                    let base_wait_ms = now - wait_start_ms
+                    let idle_ms = now - last_progress_ms
+                    if stall_abort_ms > 0L && (idle_ms >= stall_abort_ms || base_wait_ms >= stall_abort_ms) then
+                        let snap = diag_snapshot (sprintf "stall jp_ivar_wait idle_ms=%d base_wait_ms=%d :: %s (%s)" idle_ms base_wait_ms w details)
+                        raise (PartEvalTypeError([], sprintf "EJP0014: join-point scheduler stalled while waiting for jp_ivar_wait (idle_ms=%d base_wait_ms=%d abort_ms=%d) :: %s (%s)\n%s" idle_ms base_wait_ms stall_abort_ms w details snap))
     
                     spin.SpinOnce()
                     if (spin.Count &&& 4095) = 0 then
@@ -12031,12 +12016,6 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     raise (PartEvalTypeError([], sprintf "EJP0008: generation changed after jp_ivar_wait fill (from %d to %d) :: %s (%s)\n%s" gen0 finalGen w details snap))
                 Hopac.IVar.Now.get ivar
     
-        let mutable jp_pending_count = 0L  // Atomic counter of pending jobs
-        let mutable jp_total_enqueued = 0L  // Atomic counter of scheduled jobs
-        let mutable jp_last_enq_ms = 0L     // Atomic: last time jp_total_enqueued changed (ms since peval_sw start)
-        let mutable jp_sub_total_frozen = 0L // Atomic: 0 => dynamic denom, >0 => frozen denom for progress
-        let mutable jp_total_done = 0L      // Atomic counter of completed jobs
-        let mutable jp_progress_started = 0
 
     
         // Alpha88: surface JP scheduler counters in heartbeat without touching hot paths.
@@ -12044,7 +12023,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             Progress88.set_extra_provider (fun () ->
                 try
                     let q = jp_work_q.Count
-                    let pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                    let mutable pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                    if q = 0 && pend > 0L then
+                        let enq_total = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                        let done_total = System.Threading.Interlocked.Read(&jp_total_done)
+                        if enq_total > 0L && done_total >= enq_total then
+                            System.Threading.Interlocked.Exchange(&jp_total_done, enq_total) |> ignore
+                            System.Threading.Interlocked.Exchange(&jp_pending_count, 0L) |> ignore
+                            pend <- 0L
+                            lock jp_barrier_lock (fun () ->
+                                try if jp_cd.CurrentCount > 0 then ignore (jp_cd.Signal()) with _ -> ()
+                            )
                     let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
                     let now = peval_sw.ElapsedMilliseconds
                     let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
@@ -12058,7 +12047,43 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     sprintf "jp[q=%d pend=%A cd=%d lastp_ms=%A enq=%A den=%A enq_age_ms=%A]" q pend cd age enq den enq_age
                 with _ -> ""
             )
-    
+
+        // Alpha121: optional ANSI panel UI for debugging JP stalls/races.
+        do
+            Progress88.set_panel_provider (fun () ->
+                try
+                    let now = peval_sw.ElapsedMilliseconds
+                    let q = jp_work_q.Count
+                    let mutable pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                    if q = 0 && pend > 0L then
+                        let enq_total = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                        let done_total = System.Threading.Interlocked.Read(&jp_total_done)
+                        if enq_total > 0L && done_total >= enq_total then
+                            System.Threading.Interlocked.Exchange(&jp_total_done, enq_total) |> ignore
+                            System.Threading.Interlocked.Exchange(&jp_pending_count, 0L) |> ignore
+                            pend <- 0L
+                            lock jp_barrier_lock (fun () ->
+                                try if jp_cd.CurrentCount > 0 then ignore (jp_cd.Signal()) with _ -> ()
+                            )
+                    let cd, isSet, waitClosed =
+                        lock jp_barrier_lock (fun () -> jp_cd.CurrentCount, jp_cd.IsSet, jp_wait_closed)
+                    let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                    let age = if lp = 0L then -1L else (if now >= lp then now - lp else 0L)
+                    let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                    let den =
+                        let f = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
+                        if f > 0L then f else enq
+                    let last_enq = System.Threading.Interlocked.Read(&jp_last_enq_ms)
+                    let enq_age = if last_enq = 0L then -1L else now - last_enq
+                    let seq = CacheGeneration.isSequentialRequested()
+                    let side = DiagSidecar.snapshot 10
+                    let sideTxt = if List.isEmpty side then "" else "\n" + String.Join("\n", side)
+                    sprintf "[spiral_compiler] ui t=%ds gen=%d stage=%d/%d sub=%d/%d tag=%s\njp[q=%d pend=%A cd=%d is_set=%b wait_closed=%b seq=%b lastp_age_ms=%A enq=%A den=%A enq_age_ms=%A]\nlast_wait=%s%s"
+                        (now/1000L) (CacheGeneration.current()) Progress88.stage_i Progress88.stage_n Progress88.sub_i Progress88.sub_n Progress88.tag
+                        q pend cd isSet waitClosed seq age enq den enq_age diag_last_wait sideTxt
+                with _ -> ""
+            )
+
         // Alpha43: cache invalidation should also shed stale queued JP work, otherwise
         // we can accumulate thousands of specs and then hit EJP0008 while waiting.
         do CacheGeneration.registerOnInvalidate (fun reason ->
@@ -12090,6 +12115,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 lock jp_barrier_lock (fun () ->
                     try
                         jp_wait_closed <- false
+                        jp_wait_closed_cd <- null
                         jp_cd <- new System.Threading.CountdownEvent(1)
                     with _ -> ()
                 )
@@ -12256,7 +12282,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         finally
                             ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
                             ignore (System.Threading.Interlocked.Increment(&jp_total_done))
-                            try ignore (cd0.Signal()) with _ -> ()
+                            try if cd0.CurrentCount > 0 then ignore (cd0.Signal()) with _ -> ()
                             jp_note_progress ()
                     else
                         ignore (System.Threading.Interlocked.Increment(&jp_total_started))
@@ -12269,7 +12295,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             finally
                                 ignore (System.Threading.Interlocked.Decrement(&jp_pending_count))
                                 ignore (System.Threading.Interlocked.Increment(&jp_total_done))
-                                try ignore (cd0.Signal()) with _ -> ()
+                                try if cd0.CurrentCount > 0 then ignore (cd0.Signal()) with _ -> ()
                                 jp_note_progress ()
                         
                         jp_work_q.Enqueue(work_item)
@@ -12284,12 +12310,36 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // ALPHA12: jp_wait - uses work-stealing while waiting
         let jp_wait () =
             let gen0 = CacheGeneration.current()
-            let cd0 = lock jp_barrier_lock (fun () -> jp_cd)
+            let mutable cd = lock jp_barrier_lock (fun () -> jp_cd)
             try
                 Progress88.stage 3 4
+                // Fast close: in sequential fallback, CountdownEvent can stay above base forever (leaked counts) and jp_wait will spin.
+                // If there is no pending work, close the barrier now (signal all remaining counts).
+                if (not (jp_parallel_effective())) && System.Threading.Interlocked.Read(&jp_pending_count) = 0L && cd.CurrentCount > 0 then
+                    let mutable logIt = false
+                    lock jp_barrier_lock (fun () ->
+                        if not (obj.ReferenceEquals(jp_wait_closed_cd, cd)) then
+                            jp_wait_closed_cd <- cd
+                            jp_wait_closed <- true
+                            logIt <- true
+                    )
+                    let cc0 = cd.CurrentCount
+                    if cc0 > 0 then
+                        try if cd.CurrentCount > 0 then try if cd.CurrentCount > 0 then ignore (cd.Signal(cc0)) with _ -> () with _ -> ()
+                    if logIt then
+                        DiagSidecar.emit (sprintf "EJP0015: jp_wait fast-close (sequential) gen=%d cc=%d" gen0 cc0)
+                
                 let mutable iterations = 0L
-                while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (cd0.Wait(0)) do
+                let wait_start_ms = peval_sw.ElapsedMilliseconds
+                let mutable pending_fixup_done = false
+                while System.Threading.Interlocked.Read(&jp_pending_count) > 0L || not (cd.Wait(0)) do
                     iterations <- iterations + 1L
+                    // ALPHA127: adopt latest jp_cd to avoid stale CountdownEvent deadlock.
+                    let cd_now = lock jp_barrier_lock (fun () -> jp_cd)
+                    if not (obj.ReferenceEquals(cd, cd_now)) then
+                        cd <- cd_now
+                        pending_fixup_done <- false
+
                     jp_throw_if_any ()
 
                     // Abort on cache generation change (deterministic, avoids waiting on replaced CountdownEvent)
@@ -12297,20 +12347,65 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         let snap = diag_snapshot (sprintf "gen_change jp_wait from=%d to=%d" gen0 (CacheGeneration.current()))
                         raise (PartEvalTypeError([], sprintf "EJP0008: generation changed while waiting (jp_wait)\n%s" snap))
                     
-                    // Work-stealing: help drain queue while waiting
-                    if jp_parallel_effective () then
-                        ignore (jp_help_batch jp_help_batch_n)
+                    // ALPHA119: base-count close + pending leak reconciliation
+                    // CountdownEvent starts at 1. When the queue is empty and CurrentCount=1, no JP job can still complete.
+                    // If pending_count > 0 in this situation, treat it as a leaked counter from a cancelled/stale job.
+                    if jp_work_q.IsEmpty then
+                        let cc = cd.CurrentCount
+                        if cc = 1 then
+                            let pend_now = System.Threading.Interlocked.Read(&jp_pending_count)
+                            if pend_now > 0L && not pending_fixup_done then
+                                pending_fixup_done <- true
+                                let old_pend = System.Threading.Interlocked.Exchange(&jp_pending_count, 0L)
+                                // Cancelled jobs must not keep progress stuck at 99.9%.
+                                let enq_total = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                                ignore (System.Threading.Interlocked.Exchange(&jp_total_done, enq_total))
+                                DiagSidecar.emit (sprintf "EJP0020: reconciled pending leak old=%d enq=%d gen=%d" old_pend enq_total gen0)
+                            // Mark as closed for diagnostics, but always attempt to signal.
+                            lock jp_barrier_lock (fun () ->
+                                if not (obj.ReferenceEquals(jp_wait_closed_cd, cd)) then
+                                    jp_wait_closed_cd <- cd
+                                    jp_wait_closed <- true
+                            )
+                            try if cd.CurrentCount > 0 then ignore (cd.Signal()) with _ -> ()
+                            DiagSidecar.emit (sprintf "EJP0019: jp_wait base-signal gen=%d cc=%d" gen0 cc)
+
+                    // Work-stealing: always drain a small batch while waiting (even under sequential fallback)
+                    ignore (jp_help_batch jp_help_batch_n)
                     
                     // Yield to OS scheduler periodically
                     if (iterations &&& 63L) = 0L then
                         System.Threading.Thread.Yield() |> ignore
                     
-                    // Stall detection
+                    // Stall detection (ALPHA112): se lp=0, ancora no wait_start_ms (senão pode nunca abortar)
                     let now_ms = peval_sw.ElapsedMilliseconds
                     let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
-                    if jp_stall_abort_ms > 0L && lp > 0L && now_ms - lp > jp_stall_abort_ms then
-                        let snap = diag_snapshot (sprintf "jp_wait stall iter=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
-                        raise (PartEvalTypeError([], sprintf "EJP0014: jp_wait stalled for %dms\n%s" (now_ms - lp) snap))
+                    let base_ms = if lp > 0L then lp else wait_start_ms
+                    if jp_stall_abort_ms > 0L && now_ms - base_ms > jp_stall_abort_ms then
+                        // Se não há trabalho pendente nem fila, isso é leak de barreira -> force-close antes de abortar.
+                        if System.Threading.Interlocked.Read(&jp_pending_count) = 0L && jp_work_q.IsEmpty then
+                            try
+                                // Mark this CountdownEvent as closed to avoid double-Signal base (multiple jp_wait callers).
+                                lock jp_barrier_lock (fun () ->
+                                    if not (obj.ReferenceEquals(jp_wait_closed_cd, cd)) then
+                                        jp_wait_closed_cd <- cd
+                                        jp_wait_closed <- true
+                                )
+                                let cc0 = cd.CurrentCount
+                                if cc0 > 0 then
+                                    try
+                                        ignore (cd.Signal(cc0))
+                                    with _ ->
+                                        // Best-effort stepwise close (handles races with in-flight Signal()).
+                                        let mutable spins = 0
+                                        while cd.CurrentCount > 0 && spins < 1024 do
+                                            spins <- spins + 1
+                                            try ignore (cd.Signal()) with _ -> spins <- 1024
+                                DiagSidecar.emit (sprintf "EJP0017: jp_wait force-closed after stall cc=%d gen=%d" cc0 gen0)
+                            with _ -> ()
+                        else
+                            let snap = diag_snapshot (sprintf "jp_wait stall iter=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
+                            raise (PartEvalTypeError([], sprintf "EJP0014: jp_wait stalled for %dms\n%s" (now_ms - base_ms) snap))
                 
                 // Log excessive iterations
                 if iterations > 10000L then
@@ -12321,19 +12416,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 // Multiple concurrent jp_wait callers can otherwise over-Signal and crash.
                 let mutable doSignalBase = false
                 lock jp_barrier_lock (fun () ->
-                    if not jp_wait_closed then
+                    if not (obj.ReferenceEquals(jp_wait_closed_cd, cd)) then
+                        jp_wait_closed_cd <- cd
                         jp_wait_closed <- true
                         doSignalBase <- true
                 )
 
-                jp_shutdown_workers ()  // ALPHA16: Signal workers to shut down gracefully
-                jp_cancel.Cancel()
-
                 if doSignalBase then
-                    try ignore (cd0.Signal()) with _ -> ()
-
-                // Wake sleeping workers
-                try ignore (jp_work_sem.Release(max 1 jp_dop)) with _ -> ()
+                    try if cd.CurrentCount > 0 then ignore (cd.Signal()) with _ -> ()
     
         // Legacy compatibility wrapper for old ManualResetEventSlim-based code
         // ALPHA15: More aggressive work-stealing + ThreadPool spawning for blocked workers
@@ -13409,10 +13499,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             let invKey = sprintf "%s|apply_deep_recursion|%s" EJPCodes.EJP0008 site
                             let invN = jp_mismatch_counts.AddOrUpdate(invKey, 1, (fun _ n -> n + 1))
                             if invN <= 1 && depth <= 256 then
+                                let wasSeq = CacheGeneration.isSequentialRequested ()
                                 CacheGeneration.requestSequential ()
-                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d site=%s" depth site)
-                                DiagSidecar.emit (sprintf "%s apply mismatch suspected cache corruption (depth=%d) -> invalidated to gen=%d"
-                                    EJPCodes.EJP0008 depth newGen)
+                                if not wasSeq then
+                                    let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply mismatch at depth %d site=%s" depth site)
+                                    DiagSidecar.emit (sprintf "%s apply mismatch suspected cache corruption (depth=%d) -> invalidated to gen=%d"
+                                        EJPCodes.EJP0008 depth newGen)
+                                else
+                                    DiagSidecar.emit (sprintf "%s apply mismatch suspected cache corruption (depth=%d) -> sequential_soft (no invalidate, gen=%d)" EJPCodes.EJP0008 depth (CacheGeneration.current()))
     
                         let is_jp_placeholder_apply =
                             match got_ty_deref with
@@ -13427,9 +13521,13 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             let invKey = sprintf "%s|apply_jp_placeholder|%s" EJPCodes.EJP0008 site
                             let invN = jp_mismatch_counts.AddOrUpdate(invKey, 1, (fun _ n -> n + 1))
                             if invN <= 1 && depth <= 256 then
+                                let wasSeq = CacheGeneration.isSequentialRequested ()
                                 CacheGeneration.requestSequential ()
-                                let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply JP placeholder mismatch depth=%d site=%s" depth site)
-                                DiagSidecar.emit (sprintf "%s apply JP placeholder suspected cache corruption (depth=%d) -> invalidated to gen=%d" EJPCodes.EJP0008 depth newGen)
+                                if not wasSeq then
+                                    let newGen = CacheGeneration.invalidate (sprintf "EJP0008: apply JP placeholder mismatch depth=%d site=%s" depth site)
+                                    DiagSidecar.emit (sprintf "%s apply JP placeholder suspected cache corruption (depth=%d) -> invalidated to gen=%d" EJPCodes.EJP0008 depth newGen)
+                                else
+                                    DiagSidecar.emit (sprintf "%s apply JP placeholder suspected cache corruption (depth=%d) -> sequential_soft (no invalidate, gen=%d)" EJPCodes.EJP0008 depth (CacheGeneration.current()))
                             b
                         else
                             raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s\nGot(ty): %s\nGot(ty_deref): %s" (show_data a) (show_ty got_ty) (show_ty got_ty_deref)
@@ -22982,7 +23080,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     
     
                                                         CacheGeneration.requestSequential ()
-                                                    let gen_after =
+                                                    let mutable gen_after =
                                                         if is_gen_wait then CacheGeneration.current ()
                                                         else CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
     
@@ -22997,7 +23095,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                                     let reasons = CacheGeneration.reasonsSnapshot 64
                                                     let had_apply_mismatch = reasons |> List.exists (fun x -> x.Contains("apply mismatch"))
                                                     if is_gen_wait && (had_apply_mismatch || code = "EJP0007" || code = "EJP0008") then
-                                                        CacheGeneration.invalidate (sprintf "EJP0008.apply_mismatch file=%s backend=%s attempt=%d" file backend attempt) |> ignore
+                                                        gen_after <- CacheGeneration.invalidate (sprintf "EJP0008.apply_mismatch file=%s backend=%s attempt=%d" file backend attempt)
                                                         CacheGeneration.requestSequential ()
                                                         HopacExtensions.forceConcurrency 1
     
