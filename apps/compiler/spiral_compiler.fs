@@ -12048,7 +12048,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
                     let now = peval_sw.ElapsedMilliseconds
                     let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
-                    let age = if lp = 0L then -1L else now - lp
+                    let age = if lp = 0L then -1L else (if now >= lp then now - lp else 0L)
                     let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
                     let den =
                         let f = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
@@ -12063,17 +12063,28 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // we can accumulate thousands of specs and then hit EJP0008 while waiting.
         do CacheGeneration.registerOnInvalidate (fun reason ->
             try
-                let mutable n = 0
+                // Drain *and execute* stale queued JP work so their finally blocks run
+                // (decrement pending_count + Signal the captured CountdownEvent).
+                // Dropping work without executing leads to mismatched counters and hangs.
+                let mutable drained = 0
                 let mutable work = Unchecked.defaultof<unit -> unit>
                 while jp_work_q.TryDequeue(&work) do
-                    n <- n + 1
-                if n > 0 then DiagSidecar.emit (sprintf "JPWorkQ.invalidate: drained=%d reason=%s" n reason)
-                System.Threading.Interlocked.Exchange(&jp_pending_count, 0L) |> ignore
+                    drained <- drained + 1
+                    try work() with e -> jp_exns.Enqueue(capture_edi e)
+                if drained > 0 then DiagSidecar.emit (sprintf "JPWorkQ.invalidate: drained_and_canceled=%d reason=%s" drained reason)
+
                 // Best-effort: clear per-name traces so next generation does not inherit loop hot-spots.
                 try jp_name_counts.Clear() with _ -> ()
                 try jp_mismatch_counts.Clear() with _ -> ()
                 try jp_name_traces.Clear() with _ -> ()
-                // ALPHA45: Swap CountdownEvent for clean retry.
+
+                // Reset progress timestamps to avoid negative ages after fast retries.
+                let now = peval_sw.ElapsedMilliseconds
+                System.Threading.Interlocked.Exchange(&jp_last_progress_ms, now) |> ignore
+                System.Threading.Interlocked.Exchange(&jp_last_enq_ms, now) |> ignore
+                System.Threading.Interlocked.Exchange(&jp_sub_total_frozen, 0L) |> ignore
+
+                // ALPHA45+: Swap CountdownEvent for clean retry.
                 // Important: do NOT mutate the current instance counts while in-flight work may still Signal().
                 // Instead, replace the instance; jp_start/jp_wait capture the instance they increment/wait on.
                 lock jp_barrier_lock (fun () ->
@@ -12306,12 +12317,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     DiagSidecar.emit (sprintf "jp_wait: iterations=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
                     
             finally
-                // Mark as closed for diagnostics ONLY - does not affect jp_start
-                jp_wait_closed <- true
+                // Mark as closed (and release the base barrier) exactly once per CountdownEvent instance.
+                // Multiple concurrent jp_wait callers can otherwise over-Signal and crash.
+                let mutable doSignalBase = false
+                lock jp_barrier_lock (fun () ->
+                    if not jp_wait_closed then
+                        jp_wait_closed <- true
+                        doSignalBase <- true
+                )
+
                 jp_shutdown_workers ()  // ALPHA16: Signal workers to shut down gracefully
                 jp_cancel.Cancel()
-                // Release base barrier count
-                try ignore (cd0.Signal()) with _ -> ()
+
+                if doSignalBase then
+                    try ignore (cd0.Signal()) with _ -> ()
+
                 // Wake sleeping workers
                 try ignore (jp_work_sem.Release(max 1 jp_dop)) with _ -> ()
     
