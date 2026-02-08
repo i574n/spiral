@@ -133,44 +133,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 
         /// [CONSOLE-VT-245-001] Try enabling ANSI/VT processing on Windows consoles.
         module ConsoleVT88 =
-            open System.Runtime.InteropServices
-            let private isWindows =
-                try RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                with _ -> false
-
-            [<Literal>]
-            let private STD_ERROR_HANDLE = -12
-            [<Literal>]
-            let private ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004u
-            [<Literal>]
-            let private DISABLE_NEWLINE_AUTO_RETURN = 0x0008u
-
-            [<DllImport("kernel32.dll", SetLastError=true)>]
-            extern nativeint GetStdHandle(int nStdHandle)
-
-            [<DllImport("kernel32.dll", SetLastError=true)>]
-            extern bool GetConsoleMode(nativeint hConsoleHandle, uint32& lpMode)
-
-            [<DllImport("kernel32.dll", SetLastError=true)>]
-            extern bool SetConsoleMode(nativeint hConsoleHandle, uint32 dwMode)
-            let tryEnableVTOnStderr () =
-                try
-                    if not isWindows then false
-                    elif Console.IsErrorRedirected then false
-                    else
-                        let h = GetStdHandle(STD_ERROR_HANDLE)
-                        if h = nativeint 0 || h = nativeint -1 then false
-                        else
-                            let mutable mode = 0u
-                            if not (GetConsoleMode(h, &mode)) then false
-                            else
-                                let mode' = mode ||| ENABLE_VIRTUAL_TERMINAL_PROCESSING ||| DISABLE_NEWLINE_AUTO_RETURN
-                                SetConsoleMode(h, mode') |> ignore
-                                true
-                with _ -> false
-
-        do
-            ConsoleVT88.tryEnableVTOnStderr() |> ignore
+            // Alpha265: stop using Win32 console APIs. Keep logs append-only and let the host decide VT.
+            // We still keep ANSI escapes as plain text when present; this function is a no-op.
+            let tryEnableVTOnStderr () = false
 
         let sw = Stopwatch.StartNew()
         let mutable tag = "boot"
@@ -249,7 +214,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // [CONSOLE-202-002] Re-enable ANSI modes (still append-only; no cursor moves).
         let ui_mode =
             if Console.IsErrorRedirected then "off"
-            elif ui_supports_unicode && ui_supports_ansi then "ansi_tui"
+            elif ui_supports_unicode && ui_supports_ansi then "ansi_line"
             elif ui_supports_unicode then "ansi_line"
             else "line"
 
@@ -358,9 +323,17 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         fill + empty
                 let barS = mkBar overallPct
                 let barSub = mkBar subpct
+                let phase =
+                    (match si with
+                     | 0 -> "boot"
+                     | 1 -> "setup"
+                     | 2 -> "front"
+                     | 3 -> "peval"
+                     | 4 -> "emit"
+                     | _ -> sprintf "stage%d" si)
                 let line =
-                    sprintf "[spiral] gen=%d%s overall[%s](%.2f%% cap=%.2f%% rem=%.2f%%) stage=%d/%d sub=%d/%d[%s](%.2f%% rem=%d) t=%ds mem=%.0f/%.0fMB tick=%d silent=%dms rate=%.2f/s eta=%s%s tag=%s %s"
-                        g epStr barS overallPct overallCapPct capRemPct si sn subi subn barSub subpct subRem (now/1000L) privateMb gcMb tks silent last_rate_per_s etaStr resetStr ttag extra
+                    sprintf "[spiral] phase=%s ui=%s gen=%d%s overall[%s](%.2f%% cap=%.2f%% rem=%.2f%%) stage=%d/%d sub=%d/%d[%s](%.2f%% rem=%d) t=%ds mem=%.0f/%.0fMB tick=%d silent=%dms rate=%.2f/s eta=%s%s tag=%s %s"
+                        phase ui_mode g epStr barS overallPct overallCapPct capRemPct si sn subi subn barSub subpct subRem (now/1000L) privateMb gcMb tks silent last_rate_per_s etaStr resetStr ttag extra
                 // [CONSOLE-208-001] TUI/in-place refresh disabled (paste-friendly, append-only logs).
                 // Restore the commented block when we reach 100% SOTA interactive console.
                 (*
@@ -415,7 +388,6 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | _ -> ()
         let start () =
             if Interlocked.Exchange(&started, 1) = 0 then
-                if ui_mode.StartsWith("ansi") then ignore (ConsoleVT88.tryEnableVTOnStderr())
                 stage 0 4
                 sub 0L 1L
                 touch "start" (providers.genf())
@@ -10986,7 +10958,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         xs
                         |> List.mapi (fun i s -> sprintf "  %2d: %s" (i + 1) s)
                         |> String.concat "\n"
-                    sprintf "  |\n  = sidecar (SPIRAL_DIAG_SIDECAR=1):\n%s\n" body
+                    sprintf "  |\n  = sidecar:\n%s\n" body
     
             let fingerprint = sha1_12 (sprintf "%s|%s|%d|%s|%s|%s" kind name tag (show_ty expected) (show_ty got) primary_site)
     
@@ -11046,7 +11018,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
       = trace:
     %s
       |
-      help: make the annotation match the body. If this appears only under parallel builds, try SPIRAL_HOPAC_PAR=1 to confirm an interleaving/cache race (and optionally SPIRAL_DIAG_SIDECAR=1 for extra telemetry, and SPIRAL_DIAG_TRACE_FULL=1 for a full trace).
+      help: make the annotation match the body. If this appears only under parallel builds, try a sequential run to confirm an interleaving/cache race.
     """
                 primary_site source_snip name kind tag backend tag key_repr_pretty (show_ty expected) (show_ty got)
                 fun_diff inflight_method inflight_type nn_pretty sidecar_pretty trace_pretty
@@ -11800,13 +11772,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // Hard abort controls (defaults intentionally *on*)
         let peval_abort_ms = 600000L
         let peval_mem_limit_mb = 4096L
-        let jp_stall_abort_ms =
-            match System.Environment.GetEnvironmentVariable("SPIRAL_JP_STALL_ABORT_MS") with
-            | null | "" -> 180000L
-            | s ->
-                match System.Int64.TryParse s with
-                | true, v when v > 0L -> v
-                | _ -> 180000L
+        let jp_stall_abort_ms = 180000L  // fixed default; no env var override
     
         // Always force async dispatch for JPs (maximizes parallelism)
         let jp_force_async_unannot = true
@@ -11826,34 +11792,24 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 
         // alpha151: bring back *useful* detailed diagnostics without console spam.
         // Default stays quiet; full multi-line diagnostic goes to file, and stderr full-dump is opt-in.
-        let jp_diag_stderr_full =
-            match System.Environment.GetEnvironmentVariable("SPIRAL_DIAG_STDERR_FULL") with
-            | null | "" -> true
-            | "1" | "true" | "TRUE" | "True" -> true
-            | _ -> false
+        let jp_diag_stderr_full = false  // fixed default; no env var override
 
         // alpha160: enquanto o compilador estiver instável, NÃO gravar diagnósticos em arquivos.
         // Isso melhora a captura em CI/TTY e reduz ruído de IO.
         // (Reabilitar mais tarde via env var, quando a pipeline estiver estável.)
         let diag_save_enabled = false
         // let diag_save_enabled =
-        //     match System.Environment.GetEnvironmentVariable("SPIRAL_DIAG_SAVE") with
         //     | null | "" -> true
         //     | "1" | "true" | "TRUE" | "True" -> true
         //     | _ -> false
 
         let diag_trace_dir =
-            // alpha169: keep all diagnostics console-only unless explicitly re-enabled.
-            // Avoid even computing/creating supervisor_trace paths when saving is off.
             if diag_save_enabled then
-                let env = System.Environment.GetEnvironmentVariable("SPIRAL_DIAG_DIR")
-                if not (System.String.IsNullOrEmpty env) then env
-                else
-                    try
-                        let root = SpiralFileSystem.get_workspace_root ()
-                        System.IO.Path.Combine(root, "target", "spiral_Eval", "supervisor_trace")
-                    with _ ->
-                        System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "target", "spiral_Eval", "supervisor_trace")
+                try
+                    let root = SpiralFileSystem.get_workspace_root ()
+                    System.IO.Path.Combine(root, "target", "spiral_Eval", "supervisor_trace")
+                with _ ->
+                    System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "target", "spiral_Eval", "supervisor_trace")
             else
                 // diagnostics disabled: sentinel path; never created when diag_save_enabled=false
                 System.IO.Path.Combine(System.IO.Path.GetTempPath(), "spiral_supervisor_trace_DISABLED")
@@ -11866,7 +11822,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         let diag_write_file (tag: string) (text: string) : string option =
             // alpha161: console-only diagnostics while the compiler stabilizes.
             // Avoids trace infrastructure (which can write supervisor_trace files).
-            // Environment: SPIRAL_DIAG_STDERR_FULL=1 prints full multi-line blocks; otherwise prints a compact header.
+            // jp_diag_stderr_full controls full multi-line blocks; otherwise prints a compact header.
             if jp_diag_stderr_full then
                 try
                     System.Console.Error.WriteLine(text)
@@ -12407,6 +12363,79 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 
     
     
+        // Alpha88: surface JP scheduler counters in heartbeat without touching hot paths.
+        let jp_extra_provider () : string =
+            try
+                let now = peval_sw.ElapsedMilliseconds
+                let q = jp_work_q.Count
+                let pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
+                let cdRem = max 0L (int64 cd - 1L)
+                let active = System.Threading.Interlocked.Read(&jp_worker_active)
+                let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
+                let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
+                let lastProg = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                let progAge = if lastProg = 0L then -1L else let d = now - lastProg in if d < 0L then 0L else d
+                let rem = max 0L (max active (max pend cdRem))
+                let denom = max (if frozen > 0L then frozen else enq) (doneCount + rem)
+                let pct = if denom > 0L then (100.0 * float doneCount / float denom) else 0.0
+                let jobs = jp_active_jobs.Count
+                let activeAge =
+                    if jobs = 0 then -1L else
+                        let mutable minStart = System.Int64.MaxValue
+                        for KeyValue(_, start) in jp_active_jobs do
+                            if start < minStart then minStart <- start
+                        if minStart = System.Int64.MaxValue then -1L else
+                            let d = now - minStart
+                            if d < 0L then 0L else d
+                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
+                let inv = CacheGeneration.invalidationCount()
+                let stallWarn = 30000L
+                let stalled =
+                    rem > 0L
+                    && progAge >= stallWarn
+                    && ((active = 0L) || (activeAge >= stallWarn && jobs > 0))
+                sprintf "jp[q=%d rem=%A act=%A done=%A/%A (%.2f%%) age=%dms run=%dms jobs=%d stall=%d seq=%d inv=%d]" q rem active doneCount denom pct progAge activeAge jobs (if stalled then 1 else 0) seq inv
+            with _ -> ""
+        do Progress88.set_extra_provider (fun () ->
+            try
+                let now = peval_sw.ElapsedMilliseconds
+                let q = jp_work_q.Count
+                let pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
+                let cdRem = max 0L (int64 cd - 1L)
+                let active = System.Threading.Interlocked.Read(&jp_worker_active)
+                let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
+                let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
+                let lastProg = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                let progAge = if lastProg = 0L then -1L else let d = now - lastProg in if d < 0L then 0L else d
+                let rem = max 0L (max active (max pend cdRem))
+                let denom = max (if frozen > 0L then frozen else enq) (doneCount + rem)
+                let pct = if denom > 0L then (100.0 * float doneCount / float denom) else 0.0
+                let jobs = jp_active_jobs.Count
+                let activeAge =
+                    if jobs = 0 then -1L else
+                        let mutable minStart = System.Int64.MaxValue
+                        for KeyValue(_, start) in jp_active_jobs do
+                            if start < minStart then minStart <- start
+                        if minStart = System.Int64.MaxValue then -1L else
+                            let d = now - minStart
+                            if d < 0L then 0L else d
+                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
+                let inv = CacheGeneration.invalidationCount()
+                let stallWarn = 30000L
+                let stalled =
+                    rem > 0L
+                    && progAge >= stallWarn
+                    && ((active = 0L) || (activeAge >= stallWarn && jobs > 0))
+                sprintf "jp[q=%d rem=%A act=%A done=%A/%A (%.2f%%) age=%dms run=%dms jobs=%d stall=%d seq=%d inv=%d]" q rem active doneCount denom pct progAge activeAge jobs (if stalled then 1 else 0) seq inv
+            with _ -> ""
+        )
+
+        
+        // Alpha121/197: optional ANSI panel UI for debugging JP stalls/races.
         let diag_snapshot_short (reason: string) =
             // alpha146: single-line, bounded diagnostic string for stderr / exceptions.
             // Full snapshot is captured via DiagSidecar when force/verbose triggers.
@@ -12416,8 +12445,12 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let gen = CacheGeneration.current()
             let pend = jp_pending_jobs ()
             let seq = CacheGeneration.isSequentialRequested ()
-            sprintf "SPIRAL_DIAG reason=%s elapsed_ms=%d gen=%d pending=%d seq=%b private_bytes=%d gc_total_bytes=%d last_wait=%s"
-                reason elapsed_ms gen pend seq pb gc_total diag_last_wait
+            let jpExtra0 = try jp_extra_provider () with _ -> ""
+            let jpExtra =
+                if System.String.IsNullOrEmpty jpExtra0 then ""
+                else " " + (jpExtra0.Replace("\r", " ").Replace("\n", " "))
+            sprintf "DIAG reason=%s elapsed_ms=%d gen=%d pending=%d seq=%b private_bytes=%d gc_total_bytes=%d last_wait=%s%s"
+                reason elapsed_ms gen pend seq pb gc_total diag_last_wait jpExtra
         let diag_write_err (s: string) =
             // alpha149: helper used by diag_print; keep it single-line and resilient.
             if not (System.String.IsNullOrEmpty s) then
@@ -12469,29 +12502,29 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             // Legacy watchdog variables (optional). These remain hard aborts.
             if peval_abort_ms > 0L && now >= peval_abort_ms then
                 diag_last_wait <- where
-                peval_abort (sprintf "Timed out. (SPIRAL_PEVAL_ABORT_MS=%d)" peval_abort_ms)
+                peval_abort (sprintf "Timed out (ms=%d)" peval_abort_ms)
             if peval_mem_limit_mb > 0L then
                 let mb = get_private_mb ()
                 if mb >= peval_mem_limit_mb then
                     diag_last_wait <- where
-                    peval_abort (sprintf "Memory limit reached. (SPIRAL_PEVAL_MEM_LIMIT_MB=%d, private_mb=%d)" peval_mem_limit_mb mb)
+                    peval_abort (sprintf "Memory limit reached (limit_mb=%d, private_mb=%d)" peval_mem_limit_mb mb)
     
             // Diagnostic aborts. Soft by default: disable parallel join-points and keep going.
             if diag_abort_armed then
                 if diag_abort_ms > 0L && now >= diag_abort_ms then
                     diag_last_wait <- where
                     if jp_diag_hard_abort then
-                        peval_abort (sprintf "Timed out. (SPIRAL_PEVAL_DIAG_ABORT_MS=%d)" diag_abort_ms)
+                        peval_abort (sprintf "Timed out (ms=%d)" diag_abort_ms)
                     else
                         diag_abort_armed <- false
-                        diag_soft_abort where (sprintf "Timed out. (SPIRAL_PEVAL_DIAG_ABORT_MS=%d)" diag_abort_ms)
+                        diag_soft_abort where (sprintf "Timed out (ms=%d)" diag_abort_ms)
     
                 if diag_jp_spec_cap > 0L then
                     let total = diag_specs_total () |> int64
                     if total >= diag_jp_spec_cap then
                         diag_last_wait <- where
                         if jp_diag_hard_abort then
-                            peval_abort (sprintf "Join-point spec cap exceeded. (SPIRAL_PEVAL_DIAG_JP_SPEC_CAP=%d, total=%d)" diag_jp_spec_cap total)
+                            peval_abort (sprintf "Join-point spec cap exceeded (cap=%d, total=%d)" diag_jp_spec_cap total)
                         else
                             diag_abort_armed <- false
                             diag_soft_abort where (sprintf "Join-point spec cap exceeded. cap=%d total=%d" diag_jp_spec_cap total)
@@ -12501,7 +12534,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         if int64 count >= diag_jp_name_spec_cap then
                             diag_last_wait <- where
                             if jp_diag_hard_abort then
-                                peval_abort (sprintf "Join-point name cap exceeded. (SPIRAL_PEVAL_DIAG_JP_NAME_SPEC_CAP=%d, name=%s, count=%d)" diag_jp_name_spec_cap name count)
+                                peval_abort (sprintf "Join-point name cap exceeded (cap=%d, name=%s, count=%d)" diag_jp_name_spec_cap name count)
                             else
                                 diag_abort_armed <- false
                                 diag_soft_abort where (sprintf "Join-point name cap exceeded. cap=%d name=%s count=%d" diag_jp_name_spec_cap name count)
@@ -12630,6 +12663,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                     if stall_abort_ms > 0L && base_wait_ms >= stall_abort_ms && idle_ms >= jp_stall_idle_abort_ms then
                         let snap = diag_snapshot (sprintf "stall jp_ivar_wait idle_ms=%d base_wait_ms=%d :: %s (%s)" idle_ms base_wait_ms w details)
                         DiagSidecar.emit snap
+                        try
+                            CacheGeneration.requestSequential ()
+                            ignore (CacheGeneration.invalidate ("jp_ivar_wait stall " + w + " :: " + details))
+                        with _ -> ()
                         let short = diag_snapshot_short (sprintf "EJP0014 stall jp_ivar_wait idle_ms=%d base_wait_ms=%d" idle_ms base_wait_ms)
                         raise (PartEvalTypeError([], sprintf "[spiral_compiler] EJP0014: join-point scheduler stalled while waiting for jp_ivar_wait (idle_ms=%d base_wait_ms=%d abort_ms=%d) :: %s (%s) ⏎ %s" idle_ms base_wait_ms stall_abort_ms w details short))
     
@@ -12654,45 +12691,6 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     
 
     
-        // Alpha88: surface JP scheduler counters in heartbeat without touching hot paths.
-        let jp_extra_provider () : string =
-            try
-                let now = peval_sw.ElapsedMilliseconds
-                let q = jp_work_q.Count
-                let pend = System.Threading.Interlocked.Read(&jp_pending_count)
-                let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
-                let cdRem = max 0L (int64 cd - 1L)
-                let active = System.Threading.Interlocked.Read(&jp_worker_active)
-                let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
-                let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
-                let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
-                let lastProg = System.Threading.Interlocked.Read(&jp_last_progress_ms)
-                let progAge = if lastProg = 0L then -1L else let d = now - lastProg in if d < 0L then 0L else d
-                let rem = max 0L (max active (max pend cdRem))
-                let denom = max (if frozen > 0L then frozen else enq) (doneCount + rem)
-                let pct = if denom > 0L then (100.0 * float doneCount / float denom) else 0.0
-                let jobs = jp_active_jobs.Count
-                let activeAge =
-                    if jobs = 0 then -1L else
-                        let mutable minStart = System.Int64.MaxValue
-                        for KeyValue(_, start) in jp_active_jobs do
-                            if start < minStart then minStart <- start
-                        if minStart = System.Int64.MaxValue then -1L else
-                            let d = now - minStart
-                            if d < 0L then 0L else d
-                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
-                let inv = CacheGeneration.invalidationCount()
-                let stallWarn = 30000L
-                let stalled =
-                    rem > 0L
-                    && progAge >= stallWarn
-                    && ((active = 0L) || (activeAge >= stallWarn && jobs > 0))
-                sprintf "jp[q=%d rem=%A act=%A done=%A/%A (%.2f%%) age=%dms run=%dms jobs=%d stall=%d seq=%d inv=%d]" q rem active doneCount denom pct progAge activeAge jobs (if stalled then 1 else 0) seq inv
-            with _ -> ""
-        do Progress88.set_extra_provider jp_extra_provider
-
-        
-        // Alpha121/197: optional ANSI panel UI for debugging JP stalls/races.
         // Keep it cheap: this runs only on the 4s heartbeat thread.
         let jp_panel_provider () : string =
             try
@@ -12900,29 +12898,16 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         
         // Alpha201: watchdog for "hung" JP jobs. If there is no scheduler progress for jp_stall_abort_ms
         // and the work queue is empty while active jobs keep aging, abort fast with diagnostics.
-        let jp_watchdog_enabled =
-            match System.Environment.GetEnvironmentVariable("SPIRAL_JP_WATCHDOG") with
-            | null | "" -> true
-            | "0" -> false
-            | "false" -> false
-            | _ -> true
+        let jp_watchdog_enabled = true  // fixed default; no env var override
 
         let mutable jp_watchdog_started = false
         let jp_watchdog_started_sync = obj()
         let mutable jp_watchdog_last_trip_gen = -1L
         // [JP-WD-233-001] Slow-job watchdog: abort earlier if a *specific* job exceeds a smaller per-op timeout.
         // This catches the "stuck near 99.xx%" case where progress still ticks occasionally, so progAge never reaches jp_stall_abort_ms.
-        let env_ms (name: string) (defv: int64) =
-            match System.Environment.GetEnvironmentVariable(name) with
-            | null | "" -> defv
-            | s ->
-                match System.Int64.TryParse(s) with
-                | true, v -> v
-                | _ -> defv
-        
-        let jp_slow_sensitive_ms = env_ms "SPIRAL_JP_SLOW_SENSITIVE_MS" 60000L   // 60s
-        let jp_slow_default_ms   = env_ms "SPIRAL_JP_SLOW_DEFAULT_MS"   0L       // 0=disabled by default
-        let jp_slow_anon_ms      = env_ms "SPIRAL_JP_SLOW_ANON_MS"      0L       // 0=disabled by default
+        let jp_slow_sensitive_ms = 60000L   // 60s (fixed default)
+        let jp_slow_default_ms   = 0L       // 0=disabled by default (fixed)
+        let jp_slow_anon_ms      = 0L       // 0=disabled by default (fixed)
         
         let jp_slow_sensitive_needles : string[] = [| "execute_with_options"; "split_command"; "split_args" |]
         
@@ -12979,7 +12964,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                                     let prev = System.Threading.Interlocked.Exchange(&jp_watchdog_last_slow_trip_gen, gen0)
                                                     if prev <> gen0 then
                                                         let inv = CacheGeneration.invalidationCount()
-                                                        let msg = sprintf "%s: jp_slow_job abort id=%d name=%s age=%dms thr=%dms jobs=%d progAge=%dms gen=%d inv=%d" EJPCodes.EJP0031 slowId slowName slowAge slowThr jobs.Length progAge gen0 inv
+                                                        let msg = sprintf "%s: jp_slow_job abort id=%d name=%s age=%dms thr=%dms jobs=%d progAge=%dms gen=%d inv=%d last_wait=%s" EJPCodes.EJP0031 slowId slowName slowAge slowThr jobs.Length progAge gen0 inv diag_last_wait
                                                         let snap = diag_snapshot "jp_watchdog slow_job"
                                                         let panel0 = try jp_panel_provider () with _ -> ""
                                                         let panel = if System.String.IsNullOrEmpty panel0 then "" else "---- jp.panel ----\n" + panel0
@@ -13011,7 +12996,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                                             let prev = System.Threading.Interlocked.Exchange(&jp_watchdog_last_trip_gen, gen0)
                                                             if prev <> gen0 then
                                                                 let inv = CacheGeneration.invalidationCount()
-                                                                let msg = sprintf "[spiral_compiler] EJP0030: jp_watchdog abort progAge=%dms oldestAge=%dms jobs=%d gen=%d inv=%d" progAge oldestAge jobs.Length gen0 inv
+                                                                let msg = sprintf "[spiral_compiler] EJP0030: jp_watchdog abort progAge=%dms oldestAge=%dms jobs=%d gen=%d inv=%d last_wait=%s" progAge oldestAge jobs.Length gen0 inv diag_last_wait
                                                                 let snap = diag_snapshot "jp_watchdog stall"
                                                                 let panel0 = try jp_panel_provider () with _ -> ""
                                                                 let panel =
@@ -13353,7 +13338,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             with _ -> ()
                         else
                             let snap = diag_snapshot (sprintf "jp_wait stall iter=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
-                            let msg = sprintf "[spiral_compiler] EJP0014: jp_wait stalled for %dms" (now_ms - base_ms)
+                            let msg = sprintf "[spiral_compiler] EJP0014: jp_wait stalled for %dms iter=%d pending=%d q=%d cc=%d gen=%d" (now_ms - base_ms) iterations (System.Threading.Interlocked.Read(&jp_pending_count)) jp_work_q.Count cc gen0
 
                             // Alpha217: include current JP panel + top slow jobs so we can pinpoint the stuck spec/key.
                             let panel0 = try jp_panel_provider () with _ -> ""
@@ -13906,11 +13891,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
     
-            // Re-entrancy limits: 4096 base, 16384 on BigStack
+            // Re-entrancy limits: keep them bounded so real cycles fail fast (and avoid multi-minute JP stalls).
             // These handle legitimate re-entrancy from staging loops (e.g., listm'.spi)
-            let max_reentry_base = if CacheGeneration.isSequentialRequested() || CacheGeneration.invalidationCount() > 0 then 1024 else 4096
-            let max_reentry = if BigStack.isActive() then min 16384 (max_reentry_base * 4) else max_reentry_base
+            let invNow = CacheGeneration.invalidationCount()
+            let seqNow = CacheGeneration.isSequentialRequested()
+            let max_reentry_base =
+                if seqNow || invNow > 0 then 256 else 1024
+            let max_reentry = if BigStack.isActive() then min 4096 (max_reentry_base * 4) else max_reentry_base
             let max_reentry_key = max_reentry
+            let warn_reentry = max 32 (max_reentry_base / 4)
     
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
@@ -14331,10 +14320,14 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
     
-            // Re-entrancy limits: 4096 base, 16384 on BigStack
-            let max_reentry_base = if CacheGeneration.isSequentialRequested() || CacheGeneration.invalidationCount() > 0 then 1024 else 4096
-            let max_reentry = if BigStack.isActive() then min 16384 (max_reentry_base * 4) else max_reentry_base
+            // Re-entrancy limits: keep them bounded so real cycles fail fast (and avoid multi-minute JP stalls).
+            let invNow = CacheGeneration.invalidationCount()
+            let seqNow = CacheGeneration.isSequentialRequested()
+            let max_reentry_base =
+                if seqNow || invNow > 0 then 256 else 1024
+            let max_reentry = if BigStack.isActive() then min 4096 (max_reentry_base * 4) else max_reentry_base
             let max_reentry_key = max_reentry
+            let warn_reentry = max 32 (max_reentry_base / 4)
     
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
@@ -14343,6 +14336,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             if reCount > 1 then
                 if reCount = 2 then
                     DiagSidecar.emit (sprintf "[spiral_compiler] EJP0011W term re-entry (non-fatal): nodeId=%d depth=%d site=%s" nodeId depth site)
+                if reCount = warn_reentry then
+                    let hs = hashSnapShort ()
+                    let ks = keySnapShort ()
+                    DiagSidecar.emit (sprintf "[spiral_compiler] EJP0011W term re-entry hot: re=%d/%d nodeId=%d depth=%d site=%s hs=[%s] ks=[%s]" reCount max_reentry nodeId depth site hs ks)
+                    CacheGeneration.requestSequential ()
                 if reCount > max_reentry then
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
@@ -14355,6 +14353,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             if reKey > 1 then
                 if reKey = 2 then
                     DiagSidecar.emitKeyedSample (sprintf "[spiral_compiler] EJP0011W|term|%s" nodeKey) (sprintf "[spiral_compiler] EJP0011W term re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
+                if reKey = warn_reentry then
+                    let hs = hashSnapShort ()
+                    let ks = keySnapShort ()
+                    DiagSidecar.emitKeyedSample (sprintf "[spiral_compiler] EJP0011W|term_hot|%s" nodeKey) (sprintf "[spiral_compiler] EJP0011W term re-entry hot(key): re=%d/%d key=%s depth=%d site=%s hs=[%s] ks=[%s]" reKey max_reentry_key nodeKey depth site hs ks)
+                    CacheGeneration.requestSequential ()
                 if reKey > max_reentry_key then
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
@@ -17193,7 +17196,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             | Some result -> result
             | None ->
                 // v107-alpha19: raise error - shouldn't happen at entry unless max_nest is misconfigured
-                raise_type_error s (sprintf "%s: stack overflow at peval_main entry (BigStack exhausted - check SPIRAL_BIGSTACK_MAX_NEST)" EJPCodes.EJP0010)
+                raise_type_error s (sprintf "%s: stack overflow at peval_main entry (BigStack exhausted - check BigStack max nest setting)" EJPCodes.EJP0010)
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
     
@@ -23927,7 +23930,6 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     // Keep everything in console; re-enable later behind a single switch when stable.
     let diag_save_enabled = false
     // let diag_save_enabled =
-    //     match System.Environment.GetEnvironmentVariable("SPIRAL_DIAG_SAVE") with
     //     | null | "" | "0" | "false" | "False" -> false
     //     | _ -> true
 
@@ -24142,17 +24144,37 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile") _locals
                 let handle_build_result = function
                     | BuildOk l ->
-                        Job.fromAsync (async {
-                            for x in l do
-                                let file = Path.ChangeExtension(file,null) // null removes the extension from path.
-                                do! System.IO.File.WriteAllTextAsync(file + x.file_extension, x.code) |> Async.AwaitTask
-                        })
-                        |> HopacExtensions.start
-                        l
-                        |> List.map (fun x -> x.code)
-                        |> String.concat "\n"
-                        |> Some
-                        |> IVar.fill res
+                        let file0 = Path.ChangeExtension(file,null) // null removes the extension from path.
+                        let mutable bad : string option = None
+                        for x in l do
+                            match bad with
+                            | Some _ -> ()
+                            | None ->
+                                let outPath = file0 + x.file_extension
+                                // Alpha265: refuse to write obviously-truncated outputs (prevents "compiled" but broken artifacts).
+                                if outPath.EndsWith("Supervisor.fs") then
+                                    let lineCount =
+                                        try x.code.Split([|'\n'|]).Length with _ -> 0
+                                    let byteCount = x.code.Length
+                                    let hasCore = x.code.Contains("type ClientErrorsRes") && x.code.Contains("let new_server")
+                                    if (lineCount < 5000) || (byteCount < 200000) || (not hasCore) then
+                                        bad <- Some (sprintf "%s: suspiciously small or incomplete output (lines=%d bytes=%d hasCore=%b)" outPath lineCount byteCount hasCore)
+                        match bad with
+                        | Some msg ->
+                            trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / rejected BuildOk: {msg}") _locals
+                            HopacExtensions.start (Ch.send errors.fatal msg)
+                            IVar.fill res None
+                        | None ->
+                            Job.fromAsync (async {
+                                for x in l do
+                                    do! System.IO.File.WriteAllTextAsync(file0 + x.file_extension, x.code) |> Async.AwaitTask
+                            })
+                            |> HopacExtensions.start
+                            l
+                            |> List.map (fun x -> x.code)
+                            |> String.concat "\n"
+                            |> Some
+                            |> IVar.fill res
                     | BuildFatalError x as x' ->
                         trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildFatalError x: %A{x}") _locals
                         HopacExtensions.start (Ch.send errors.fatal x)
@@ -24861,3 +24883,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 // v130 (2026-01-21): Fix progress88 hb format string (remove accidental '...' ellipsis inside literal; restore stage/sub/tick fields).
 
 // v131 (2026-01-21): Prefix BigStack/jp.*/EJP lines with [spiral_compiler] for consistent console attribution.
+
+// ------------------------------------------------------------------------------
+// [ALPHA269] Integrity footer (append-only)
+// bytes_utf8=1340986
+// lines_nl=24885
+// [ALPHA269] EOF sentinel: if you don't see this line, the file was truncated.
+
+// ------------------------------------------------------------------------------
+// [ALPHA270] Integrity footer (append-only)
+// bytes_utf8=1341482
+// lines_nl=24897
+// [ALPHA270] EOF sentinel: if you don't see this line, the file was truncated.
