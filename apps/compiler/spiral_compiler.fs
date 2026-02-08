@@ -5573,6 +5573,34 @@ module spiral_compiler =
             System.Threading.Volatile.Write(&forcedConcurrency, 0)
             DiagSidecar.emit "HopacExtensions.clearForcedConcurrency"
     
+        // alpha284: env-driven forced concurrency (stable across retries)
+        let private tryGetEnvDop () : int =
+            try
+                let v = System.Environment.GetEnvironmentVariable("SPIRAL_DOP")
+                if System.String.IsNullOrWhiteSpace v then 0
+                else
+                    let ok, n = System.Int32.TryParse(v.Trim())
+                    if ok then max 1 (min 512 n) else 0
+            with _ -> 0
+
+        let envForcedConcurrency () : int = tryGetEnvDop ()
+
+        let peekForcedConcurrency () : int = System.Threading.Volatile.Read(&forcedConcurrency)
+
+        let applyEnvForcedConcurrency () =
+            let n = tryGetEnvDop ()
+            if n > 0 then forceConcurrency n
+
+        let forceConcurrencyForRetry (n: int) =
+            if tryGetEnvDop () > 0 then
+                DiagSidecar.emit "HopacExtensions.forceConcurrencyForRetry: skipped due to SPIRAL_DOP"
+            else forceConcurrency n
+
+        let clearForcedConcurrencyForRetry () =
+            if tryGetEnvDop () > 0 then
+                () // keep env forced across retries
+            else clearForcedConcurrency ()
+
         /// Get effective concurrency: forced value or ProcessorCount
         let defaultConcurrency () : int =
             let forced = System.Threading.Volatile.Read(&forcedConcurrency)
@@ -12652,7 +12680,7 @@ module spiral_compiler =
                         DiagSidecar.emit snap
                         try
                             CacheGeneration.requestSequential ()
-                            ignore (CacheGeneration.invalidate ("jp_ivar_wait stall " + w + " :: " + details))
+                            () // alpha284: stall is a scheduling failure; do not invalidate generation here (prevents WRITE_ABORT storms).
                         with _ -> ()
                         let short = diag_snapshot_short (sprintf "EJP0014 stall jp_ivar_wait idle_ms=%d base_wait_ms=%d" idle_ms base_wait_ms)
                         raise (PartEvalTypeError([], sprintf "[spiral_compiler] EJP0014: join-point scheduler stalled while waiting for jp_ivar_wait (idle_ms=%d base_wait_ms=%d abort_ms=%d) :: %s (%s) ⏎ %s" idle_ms base_wait_ms stall_abort_ms w details short))
@@ -24522,6 +24550,7 @@ module spiral_compiler =
                                     let rec attempt_build (attempt: int) (max_attempts: int) =
                                         if attempt = 0 then
                                             CacheGeneration.resetSequentialRequest ()
+                                            HopacExtensions.applyEnvForcedConcurrency ()
                                             // If we have active suspect keys from a previous invalidation, start this build deterministically.
                                             if SuspectCache.currentCount () > 0 then CacheGeneration.requestSequential ()
                                         // ALPHA45: Reset loop specialization guard on retry to prevent cascading cap failures
@@ -24543,21 +24572,25 @@ module spiral_compiler =
                                                         || (code = EJPCodes.EJP0016 && msg.Contains("dead ivar while waiting"))
                                                         || (code = EJPCodes.EJP0018 && (msg.Contains("generation change") || msg.Contains("generation changed")))
 
-    
+
 
                                                     let is_soft_abort =
                                                         is_gen_wait
+                                                        || code = EJPCodes.EJP0014
                                                         || code = EJPCodes.EJP0018
                                                         || code = EJPCodes.EJP0020
                                                         || code = EJPCodes.EJP0030
+
+                                                    let is_no_invalidate =
+                                                        is_gen_wait
+                                                        || code = EJPCodes.EJP0014
                                                     // For non-generation-change errors, force sequential execution for determinism
                                                     if not is_gen_wait then
-                                                        HopacExtensions.forceConcurrency 1
-    
-    
+                                                        HopacExtensions.forceConcurrencyForRetry 1
+
                                                         CacheGeneration.requestSequential ()
                                                     let mutable gen_after =
-                                                        if is_gen_wait then CacheGeneration.current ()
+                                                        if is_no_invalidate then CacheGeneration.current ()
                                                         else CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
     
                                                     // ALPHA49: SupervisorState doesn't own JP per-env caches (they live in LangEnv); rely on invalidate callbacks.
@@ -24619,6 +24652,8 @@ module spiral_compiler =
                                                           sprintf "backend=%s" backend
                                                           sprintf "attempt=%d/%d" (attempt + 1) max_attempts
                                                           sprintf "gen=%d -> %d" gen_before gen_after
+                                                          sprintf "dop_env=%d dop_forced=%d" (HopacExtensions.envForcedConcurrency()) (HopacExtensions.peekForcedConcurrency())
+                                                          sprintf "last_wait=%s" LoopSpecializationGuard.diag_last_wait
                                                           sprintf "jp_parallel=%s sequential_requested=%b"
                                                               (if is_gen_wait then "kept"
                                                                else if CacheGeneration.isSequentialRequested() then "forced=0" else "forced=1")
@@ -24672,12 +24707,12 @@ module spiral_compiler =
                                                         try
                                                             attempt_build attempt max_attempts
                                                         finally
-                                                            HopacExtensions.clearForcedConcurrency ()
+                                                            HopacExtensions.clearForcedConcurrencyForRetry ()
                                                     elif attempt + 1 < max_attempts then
                                                         try
                                                             attempt_build (attempt + 1) max_attempts
                                                         finally
-                                                            HopacExtensions.clearForcedConcurrency ()
+                                                            HopacExtensions.clearForcedConcurrencyForRetry ()
                                                     else
                                                         // Out of attempts: bubble as fatal.
                                                         raise (PartEvalTypeError(e.Data0, e.Data1))
@@ -24690,7 +24725,7 @@ module spiral_compiler =
                                         try
                                             attempt_build 0 max_attempts
                                         finally
-                                            HopacExtensions.clearForcedConcurrency ()
+                                            HopacExtensions.clearForcedConcurrencyForRetry ()
                                     build_result
     
                                 with
