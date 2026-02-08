@@ -4,7 +4,8 @@
 namespace Polyglot
 #endif
 
-module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par)
+module spiral_compiler =
+    /// Spiral Compiler - Partial Evaluation Engine (par)
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
@@ -217,11 +218,30 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
         // - "ansi_line" when we can color but not safely reposition
         // - "line" fallback
         // [CONSOLE-202-002] Re-enable ANSI modes (still append-only; no cursor moves).
-        let ui_mode =
-            if Console.IsErrorRedirected then "off"
-            elif ui_supports_unicode && ui_supports_ansi then "ansi_line"
-            elif ui_supports_unicode then "ansi_line"
-            else "line"
+        let get_ui_mode () =
+            // [CONSOLE-209-001] Allow overriding UI mode via env var `SPIRAL_UI`.
+            // Supported values: off | line | ansi_line | ansi_multi | json
+            let ui_env =
+                try System.Environment.GetEnvironmentVariable("SPIRAL_UI")
+                with _ -> null
+            let ui_env =
+                if obj.ReferenceEquals(ui_env,null) then None
+                else
+                    let s = ui_env.Trim().ToLowerInvariant()
+                    if s = "" then None else Some s
+            match ui_env with
+            | Some ("off" | "none") -> "off"
+            | Some ("plain" | "line") -> "line"
+            | Some ("ansi" | "ansi_line") -> "ansi_line"
+            | Some ("ansi_multi" | "ansi_multiline") -> "ansi_multi"
+            | Some "json" -> "json"
+            | Some other -> other
+            | None ->
+                if Console.IsErrorRedirected then "off"
+                elif ui_supports_unicode && ui_supports_ansi then "ansi_line"
+                elif ui_supports_unicode then "ansi_line"
+                else "line"
+
 
         // TUI keeps a fixed height to avoid scroll spam.
         let tui_height = 1 + 6
@@ -235,6 +255,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 Thread.Sleep 4000
                 let now = sw.ElapsedMilliseconds
                 let g = providers.genf()
+                let ui_mode = get_ui_mode ()
                 // Snapshot all mutable counters so each line is internally consistent.
                 let si = stage_i
                 let sn = stage_n
@@ -337,8 +358,15 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                      | 4 -> "emit"
                      | _ -> sprintf "stage%d" si)
                 let line =
-                    sprintf "[spiral] phase=%s ui=%s gen=%d%s overall[%s](%.2f%% cap=%.2f%% rem=%.2f%%) stage=%d/%d sub=%d/%d[%s](%.2f%% rem=%d) t=%ds mem=%.0f/%.0fMB tick=%d silent=%dms rate=%.2f/s eta=%s%s tag=%s %s"
-                        phase ui_mode g epStr barS overallPct overallCapPct capRemPct si sn subi subn barSub subpct subRem (now/1000L) privateMb gcMb tks silent last_rate_per_s etaStr resetStr ttag extra
+                    match ui_mode with
+                    | "json" ->
+                        // JSONL (one object per refresh) for machine-readable profiling.
+                        sprintf "{\"app\":\"spiral\",\"phase\":\"%s\",\"ui\":\"%s\",\"gen\":%d,\"overall_pct\":%.4f,\"overall_cap_pct\":%.4f,\"overall_rem_pct\":%.4f,\"stage_i\":%d,\"stage_n\":%d,\"sub_i\":%d,\"sub_n\":%d,\"sub_pct\":%.4f,\"sub_rem\":%d,\"t_s\":%d,\"mem_private_mb\":%.0f,\"mem_gc_mb\":%.0f,\"tick\":%d,\"silent_ms\":%d,\"rate_per_s\":%.4f,\"eta\":\"%s\",\"tag\":\"%s\"}"
+                            phase ui_mode g overallPct overallCapPct capRemPct si sn subi subn subpct subRem (now/1000L) privateMb gcMb tks silent last_rate_per_s etaStr ttag
+                    | _ ->
+                        sprintf "[spiral] phase=%s ui=%s gen=%d%s overall[%s](%.2f%% cap=%.2f%% rem=%.2f%%) stage=%d/%d sub=%d/%d[%s](%.2f%% rem=%d) t=%ds mem=%.0f/%.0fMB tick=%d silent=%dms rate=%.2f/s eta=%s%s tag=%s %s"
+                            phase ui_mode g epStr barS overallPct overallCapPct capRemPct si sn subi subn barSub subpct subRem (now/1000L) privateMb gcMb tks silent last_rate_per_s etaStr resetStr ttag extra
+
                 // [CONSOLE-208-001] TUI/in-place refresh disabled (paste-friendly, append-only logs).
                 // Restore the commented block when we reach 100% SOTA interactive console.
                 (*
@@ -378,7 +406,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 | _ -> ()
                 *)
                 match ui_mode with
-                | "ansi_tui" | "ansi_line" ->
+                | "ansi_tui" | "ansi_line" | "ansi_multi" ->
                     ConsoleMux88.writeLineAnsi line
                     if not (System.String.IsNullOrEmpty panel) then
                         for pl in panel.Replace("\r","").Split('\n') do
@@ -390,20 +418,23 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         for pl in panel.Replace("\r","").Split('\n') do
                             if not (System.String.IsNullOrEmpty pl) then
                                 ConsoleMux88.writeLine ($"[spiral] | {pl}")
+                | "json" ->
+                    // In JSON mode we only emit the primary line (one JSON object per tick).
+                    ConsoleMux88.writeLine line
                 | _ -> ()
+
         let start () =
             if Interlocked.Exchange(&started, 1) = 0 then
                 stage 0 4
                 sub 0L 1L
                 touch "start" (providers.genf())
+                // [CONSOLE-283-002] Emit console capability snapshot once (append-only).
+                let ui = get_ui_mode ()
+                if ui <> "off" then
+                    ConsoleMux88.writeLine (sprintf "[spiral_compiler] console ui=%s unicode=%b ansi=%b err_redirected=%b" ui ui_supports_unicode ui_supports_ansi Console.IsErrorRedirected)
                 let th = Thread(ThreadStart(heartbeat))
                 th.IsBackground <- true
                 th.Start()
-
-    do
-        // SOTA: progress UI is enabled but must not spam new lines.
-        Progress88.start()
-        Progress88.stage 1 4
 
     open FSharp.Core
 
@@ -509,6 +540,27 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 let n = if maxTake < 0 then 0 else min maxTake arr.Length
                 arr.[arr.Length - n ..] |> Array.toList
     
+        /// Snapshot of top-k keyed counters matching a prefix (descending by count).
+        let snapshotTopKeyed (prefix: string) (k: int) : (string * int) list =
+            try
+                keyedCounts.ToArray()
+                |> Array.filter (fun kv -> kv.Key.StartsWith(prefix, StringComparison.Ordinal))
+                |> Array.sortByDescending (fun kv -> kv.Value)
+                |> Array.truncate (max 0 k)
+                |> Array.map (fun kv -> kv.Key, kv.Value)
+                |> Array.toList
+            with _ -> []
+
+        let private shortKey (k: string) =
+            let i = k.LastIndexOf('|')
+            if i >= 0 && i + 1 < k.Length then k.Substring(i + 1) else k
+
+        /// Human-friendly compact hotkeys string (k items). Each item is "<shortKey>:<count>".
+        let snapshotTopKeyedShort (prefix: string) (k: int) : string =
+            snapshotTopKeyed prefix k
+            |> List.map (fun (key,c) -> sprintf "%s:%d" (shortKey key) c)
+            |> String.concat " "
+
         // v107-alpha18: moved inside DiagSidecar module for proper scoping
         let mutable private envDumped = 0
         let emitEnvSnapshotOnce () =
@@ -24203,20 +24255,66 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | Some msg ->
                             // alpha277: WRITE_ABORT must leave enough telemetry in console to finish SOTA.
                             try
-                                let reasons = CacheGeneration.reasonsSnapshot 8
-                                let sidecar = DiagSidecar.snapshot 24
-                                System.Console.Error.WriteLine("[spiral_compiler] WRITE_ABORT DIAG BEGIN")
-                                System.Console.Error.WriteLine("[spiral_compiler] " + msg)
+                                let reasons = CacheGeneration.reasonsSnapshot 16
+                                let sidecar = DiagSidecar.snapshot 48
+
+                                // Alpha278: structured + multiplexed diagnostics (safe under Hopac interleaving).
+                                let panel = try Progress88.providers.panelf() with _ -> ""
+                                let extra = try Progress88.providers.extraf() with _ -> ""
+
+                                let json_escape (s: string) =
+                                    if isNull s then ""
+                                    else
+                                        s.Replace("\\", "\\\\")
+                                         .Replace("\"", "\\\"")
+                                         .Replace("\n", "\\n")
+                                         .Replace("\r", "\\r")
+
+                                let reasons_join =
+                                    if List.isEmpty reasons then ""
+                                    else reasons |> List.map json_escape |> String.concat " | "
+
+                                let json =
+                                    "{" +
+                                    "\"kind\":\"write_abort\"," +
+                                    "\"msg\":\"" + json_escape msg + "\"," +
+                                    "\"reasons\":\"" + reasons_join + "\"," +
+                                    "\"panel\":\"" + json_escape panel + "\"," +
+                                    "\"extra\":\"" + json_escape extra + "\"" +
+                                    "}"
+
+                                Progress88.ConsoleMux88.writeLine("[spiral_compiler] " + json)
+                                Progress88.ConsoleMux88.writeLine("[spiral_compiler] WRITE_ABORT DIAG BEGIN")
+                                Progress88.ConsoleMux88.writeLine("[spiral_compiler] " + msg)
+                                let term_hot = DiagSidecar.snapshotTopKeyedShort "[spiral_compiler] EJP0011W|term_hot|" 8
+                                let ty_hot = DiagSidecar.snapshotTopKeyedShort "[spiral_compiler] EJP0011W|ty_hot|" 8
+                                if (not (System.String.IsNullOrWhiteSpace term_hot)) || (not (System.String.IsNullOrWhiteSpace ty_hot)) then
+                                    Progress88.ConsoleMux88.writeLine("[spiral_compiler] ---- hotkeys ----")
+                                    Progress88.ConsoleMux88.writeLine(sprintf "[spiral_compiler] term_hot %s" (if System.String.IsNullOrWhiteSpace term_hot then "(none)" else term_hot))
+                                    Progress88.ConsoleMux88.writeLine(sprintf "[spiral_compiler] ty_hot %s" (if System.String.IsNullOrWhiteSpace ty_hot then "(none)" else ty_hot))
+
+
+                                if not (System.String.IsNullOrWhiteSpace panel) then
+                                    Progress88.ConsoleMux88.writeLine("[spiral_compiler] ---- progress panel ----")
+                                    Progress88.ConsoleMux88.writeLine("[spiral_compiler] " + panel)
+
+                                if not (System.String.IsNullOrWhiteSpace extra) then
+                                    Progress88.ConsoleMux88.writeLine("[spiral_compiler] ---- progress extra ----")
+                                    Progress88.ConsoleMux88.writeLine("[spiral_compiler] " + extra)
+
                                 if not (List.isEmpty reasons) then
-                                    System.Console.Error.WriteLine("[spiral_compiler] ---- recent invalidations ----")
-                                    for r in reasons do
-                                        System.Console.Error.WriteLine("[spiral_compiler] inv: " + r)
+                                    Progress88.ConsoleMux88.writeLine("[spiral_compiler] ---- recent invalidations ----")
+                                    reasons |> List.iteri (fun i r ->
+                                        Progress88.ConsoleMux88.writeLine(sprintf "[spiral_compiler] inv[%d]: %s" i r)
+                                    )
+
                                 if not (List.isEmpty sidecar) then
-                                    System.Console.Error.WriteLine("[spiral_compiler] ---- sidecar tail ----")
-                                    for s in sidecar do
-                                        System.Console.Error.WriteLine("[spiral_compiler] " + s)
-                                System.Console.Error.WriteLine("[spiral_compiler] WRITE_ABORT DIAG END")
-                                System.Console.Error.Flush()
+                                    Progress88.ConsoleMux88.writeLine("[spiral_compiler] ---- sidecar tail ----")
+                                    sidecar |> List.iteri (fun i s ->
+                                        Progress88.ConsoleMux88.writeLine(sprintf "[spiral_compiler] side[%d]: %s" i s)
+                                    )
+
+                                Progress88.ConsoleMux88.writeLine("[spiral_compiler] WRITE_ABORT DIAG END")
                             with _ -> ()
 
                             trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / rejected BuildOk: {msg}") _locals
@@ -24275,7 +24373,8 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                     let blocked = (not persist) || shrinkBig
                                     if blocked then
                                         trace Warning (fun () -> $"WRITE_ABORT: {outPath} (new_bytes={newBytes} old_bytes={oldBytes} seq={seq} inv={inv} unstable={unstable} isNew={isNew} persist={persist} growthBig={growthBig} shrinkBig={shrinkBig})") _locals
-                                        skipped <- skipped + 1                                    else
+                                        skipped <- skipped + 1
+                                    else
                                         wrote <- wrote + 1
                                         let tmpPath = outPath + ".tmp"
                                         do! System.IO.File.WriteAllTextAsync(tmpPath, codeSafe) |> Async.AwaitTask
@@ -24527,6 +24626,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                                           "---- message ----" ] @ msg_lines @
                                                         [ "---- trace ----" ] @ trace_lines @
                                                         [ "---- sidecar ----" ] @ sidecar @
+                                                        [ "---- hotkeys ----"
+                                                          sprintf "term_hot %s" (let s = DiagSidecar.snapshotTopKeyedShort "[spiral_compiler] EJP0011W|term_hot|" 8 in if System.String.IsNullOrWhiteSpace s then "(none)" else s)
+                                                          sprintf "ty_hot %s" (let s = DiagSidecar.snapshotTopKeyedShort "[spiral_compiler] EJP0011W|ty_hot|" 8 in if System.String.IsNullOrWhiteSpace s then "(none)" else s) ] @
                                                         [ "---- cache invalidations ----" ] @ reasons @
                                                         [ "---- suspects ----" ] @ suspects
 
@@ -24922,6 +25024,10 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     
     let main args =
         SpiralTrace.TraceLevel.US0_0 |> set_trace_level
+        // [CONSOLE-283-001] Start Progress88 from main (avoid module-level do/offside pitfalls).
+        Progress88.start()
+        Progress88.stage 1 4
+        Progress88.tick0 "boot"
         // Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = 1024 * 8192 |> Some }
     
         let env = startupParse args
@@ -25021,4 +25127,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 // [ALPHA269] EOF sentinel: if you don't see this line, the file was truncated.
 
 // === ALPHA276 FOOTER ===
+// if you cannot see this line, the file was truncated.
+
+// === ALPHA278 FOOTER ===
+// - WRITE_ABORT: ConsoleMux + structured json line + panel/extra snapshots.
+// - Fix WriteGuard write-path indentation (skipped/else).
 // if you cannot see this line, the file was truncated.
