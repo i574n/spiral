@@ -8,6 +8,11 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
+    /// ALPHA277 WRITE_ABORT CONSOLE DIAG:
+    /// When WriteGuard blocks output (unstable generation, large shrink, or truncation suspects),
+    /// the compiler now prints a compact diag block to stderr (recent invalidations + sidecar tail)
+    /// so console logs alone are sufficient to drive the remaining SOTA debugging.
+    ///
     /// ALPHA45 COMPREHENSIVE SOTA HOPAC FINALIZATION:
     /// This release addresses the type mismatch errors ("The variables compared for equality 
     /// have to have the same type") occurring during retry by implementing:
@@ -24183,9 +24188,37 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                                 let tiny = oldBytes > 2000L && newBytes < 2000L
                                 let reject = tiny || shrinkHard || (unstable && shrinkRel) || blocked
                                 if reject then
-                                    bad <- Some (sprintf "WRITE_ABORT: %s (lines=%d bytes=%d old_bytes=%d seq=%d inv=%d unstable=%b isNew=%b persist=%b growthBig=%b shrinkBig=%b shrinkHard=%b shrinkRel=%b tiny=%b)" outPath lineCount byteCount (int oldBytes) seq (int inv) unstable isNew persist growthBig shrinkBig shrinkHard shrinkRel tiny)
+                                    let reasons = CacheGeneration.reasonsSnapshot 3
+                                    let reasonsShort =
+                                        if List.isEmpty reasons then ""
+                                        else
+                                            let trim (s: string) =
+                                                if isNull s then ""
+                                                elif s.Length > 180 then s.Substring(0, 177) + "..."
+                                                else s
+                                            " reasons=[" + (reasons |> List.map trim |> String.concat " | ") + "]"
+
+                                    bad <- Some (sprintf "WRITE_ABORT: %s (lines=%d bytes=%d old_bytes=%d seq=%d inv=%d unstable=%b isNew=%b persist=%b growthBig=%b shrinkBig=%b shrinkHard=%b shrinkRel=%b tiny=%b)%s" outPath lineCount byteCount (int oldBytes) seq (int inv) unstable isNew persist growthBig shrinkBig shrinkHard shrinkRel tiny reasonsShort)
                         match bad with
                         | Some msg ->
+                            // alpha277: WRITE_ABORT must leave enough telemetry in console to finish SOTA.
+                            try
+                                let reasons = CacheGeneration.reasonsSnapshot 8
+                                let sidecar = DiagSidecar.snapshot 24
+                                System.Console.Error.WriteLine("[spiral_compiler] WRITE_ABORT DIAG BEGIN")
+                                System.Console.Error.WriteLine("[spiral_compiler] " + msg)
+                                if not (List.isEmpty reasons) then
+                                    System.Console.Error.WriteLine("[spiral_compiler] ---- recent invalidations ----")
+                                    for r in reasons do
+                                        System.Console.Error.WriteLine("[spiral_compiler] inv: " + r)
+                                if not (List.isEmpty sidecar) then
+                                    System.Console.Error.WriteLine("[spiral_compiler] ---- sidecar tail ----")
+                                    for s in sidecar do
+                                        System.Console.Error.WriteLine("[spiral_compiler] " + s)
+                                System.Console.Error.WriteLine("[spiral_compiler] WRITE_ABORT DIAG END")
+                                System.Console.Error.Flush()
+                            with _ -> ()
+
                             trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / rejected BuildOk: {msg}") _locals
                             HopacExtensions.start (Ch.send errors.fatal msg)
                             IVar.fill res None
