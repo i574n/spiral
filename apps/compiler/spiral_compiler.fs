@@ -11850,6 +11850,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
             sprintf "[%s] tid=%d %s" ts tid tag
     
         // Backwards-compatible alias: older call sites expect diag_snapshot_short.
+        // alpha271: forward-declared mutable provider to avoid value-before-definition.
+        let mutable jp_extra_provider : (unit -> string) = (fun () -> "")
+
         let diag_snapshot_short = jp_diag_snapshot_short
     
     
@@ -12363,79 +12366,6 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 
     
     
-        // Alpha88: surface JP scheduler counters in heartbeat without touching hot paths.
-        let jp_extra_provider () : string =
-            try
-                let now = peval_sw.ElapsedMilliseconds
-                let q = jp_work_q.Count
-                let pend = System.Threading.Interlocked.Read(&jp_pending_count)
-                let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
-                let cdRem = max 0L (int64 cd - 1L)
-                let active = System.Threading.Interlocked.Read(&jp_worker_active)
-                let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
-                let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
-                let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
-                let lastProg = System.Threading.Interlocked.Read(&jp_last_progress_ms)
-                let progAge = if lastProg = 0L then -1L else let d = now - lastProg in if d < 0L then 0L else d
-                let rem = max 0L (max active (max pend cdRem))
-                let denom = max (if frozen > 0L then frozen else enq) (doneCount + rem)
-                let pct = if denom > 0L then (100.0 * float doneCount / float denom) else 0.0
-                let jobs = jp_active_jobs.Count
-                let activeAge =
-                    if jobs = 0 then -1L else
-                        let mutable minStart = System.Int64.MaxValue
-                        for KeyValue(_, start) in jp_active_jobs do
-                            if start < minStart then minStart <- start
-                        if minStart = System.Int64.MaxValue then -1L else
-                            let d = now - minStart
-                            if d < 0L then 0L else d
-                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
-                let inv = CacheGeneration.invalidationCount()
-                let stallWarn = 30000L
-                let stalled =
-                    rem > 0L
-                    && progAge >= stallWarn
-                    && ((active = 0L) || (activeAge >= stallWarn && jobs > 0))
-                sprintf "jp[q=%d rem=%A act=%A done=%A/%A (%.2f%%) age=%dms run=%dms jobs=%d stall=%d seq=%d inv=%d]" q rem active doneCount denom pct progAge activeAge jobs (if stalled then 1 else 0) seq inv
-            with _ -> ""
-        do Progress88.set_extra_provider (fun () ->
-            try
-                let now = peval_sw.ElapsedMilliseconds
-                let q = jp_work_q.Count
-                let pend = System.Threading.Interlocked.Read(&jp_pending_count)
-                let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
-                let cdRem = max 0L (int64 cd - 1L)
-                let active = System.Threading.Interlocked.Read(&jp_worker_active)
-                let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
-                let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
-                let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
-                let lastProg = System.Threading.Interlocked.Read(&jp_last_progress_ms)
-                let progAge = if lastProg = 0L then -1L else let d = now - lastProg in if d < 0L then 0L else d
-                let rem = max 0L (max active (max pend cdRem))
-                let denom = max (if frozen > 0L then frozen else enq) (doneCount + rem)
-                let pct = if denom > 0L then (100.0 * float doneCount / float denom) else 0.0
-                let jobs = jp_active_jobs.Count
-                let activeAge =
-                    if jobs = 0 then -1L else
-                        let mutable minStart = System.Int64.MaxValue
-                        for KeyValue(_, start) in jp_active_jobs do
-                            if start < minStart then minStart <- start
-                        if minStart = System.Int64.MaxValue then -1L else
-                            let d = now - minStart
-                            if d < 0L then 0L else d
-                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
-                let inv = CacheGeneration.invalidationCount()
-                let stallWarn = 30000L
-                let stalled =
-                    rem > 0L
-                    && progAge >= stallWarn
-                    && ((active = 0L) || (activeAge >= stallWarn && jobs > 0))
-                sprintf "jp[q=%d rem=%A act=%A done=%A/%A (%.2f%%) age=%dms run=%dms jobs=%d stall=%d seq=%d inv=%d]" q rem active doneCount denom pct progAge activeAge jobs (if stalled then 1 else 0) seq inv
-            with _ -> ""
-        )
-
-        
-        // Alpha121/197: optional ANSI panel UI for debugging JP stalls/races.
         let diag_snapshot_short (reason: string) =
             // alpha146: single-line, bounded diagnostic string for stderr / exceptions.
             // Full snapshot is captured via DiagSidecar when force/verbose triggers.
@@ -12691,6 +12621,80 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
     
 
     
+        // Alpha88: surface JP scheduler counters in heartbeat without touching hot paths.
+        let jp_extra_provider_impl () : string =
+            try
+                let now = peval_sw.ElapsedMilliseconds
+                let q = jp_work_q.Count
+                let pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
+                let cdRem = max 0L (int64 cd - 1L)
+                let active = System.Threading.Interlocked.Read(&jp_worker_active)
+                let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
+                let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
+                let lastProg = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                let progAge = if lastProg = 0L then -1L else let d = now - lastProg in if d < 0L then 0L else d
+                let rem = max 0L (max active (max pend cdRem))
+                let denom = max (if frozen > 0L then frozen else enq) (doneCount + rem)
+                let pct = if denom > 0L then (100.0 * float doneCount / float denom) else 0.0
+                let jobs = jp_active_jobs.Count
+                let activeAge =
+                    if jobs = 0 then -1L else
+                        let mutable minStart = System.Int64.MaxValue
+                        for KeyValue(_, start) in jp_active_jobs do
+                            if start < minStart then minStart <- start
+                        if minStart = System.Int64.MaxValue then -1L else
+                            let d = now - minStart
+                            if d < 0L then 0L else d
+                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
+                let inv = CacheGeneration.invalidationCount()
+                let stallWarn = 30000L
+                let stalled =
+                    rem > 0L
+                    && progAge >= stallWarn
+                    && ((active = 0L) || (activeAge >= stallWarn && jobs > 0))
+                sprintf "jp[q=%d rem=%A act=%A done=%A/%A (%.2f%%) age=%dms run=%dms jobs=%d stall=%d seq=%d inv=%d]" q rem active doneCount denom pct progAge activeAge jobs (if stalled then 1 else 0) seq inv
+            with _ -> ""
+        do jp_extra_provider <- jp_extra_provider_impl
+        do Progress88.set_extra_provider (fun () ->
+            try
+                let now = peval_sw.ElapsedMilliseconds
+                let q = jp_work_q.Count
+                let pend = System.Threading.Interlocked.Read(&jp_pending_count)
+                let cd = lock jp_barrier_lock (fun () -> jp_cd.CurrentCount)
+                let cdRem = max 0L (int64 cd - 1L)
+                let active = System.Threading.Interlocked.Read(&jp_worker_active)
+                let doneCount = System.Threading.Interlocked.Read(&jp_total_done)
+                let enq = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                let frozen = System.Threading.Interlocked.Read(&jp_sub_total_frozen)
+                let lastProg = System.Threading.Interlocked.Read(&jp_last_progress_ms)
+                let progAge = if lastProg = 0L then -1L else let d = now - lastProg in if d < 0L then 0L else d
+                let rem = max 0L (max active (max pend cdRem))
+                let denom = max (if frozen > 0L then frozen else enq) (doneCount + rem)
+                let pct = if denom > 0L then (100.0 * float doneCount / float denom) else 0.0
+                let jobs = jp_active_jobs.Count
+                let activeAge =
+                    if jobs = 0 then -1L else
+                        let mutable minStart = System.Int64.MaxValue
+                        for KeyValue(_, start) in jp_active_jobs do
+                            if start < minStart then minStart <- start
+                        if minStart = System.Int64.MaxValue then -1L else
+                            let d = now - minStart
+                            if d < 0L then 0L else d
+                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
+                let inv = CacheGeneration.invalidationCount()
+                let stallWarn = 30000L
+                let stalled =
+                    rem > 0L
+                    && progAge >= stallWarn
+                    && ((active = 0L) || (activeAge >= stallWarn && jobs > 0))
+                sprintf "jp[q=%d rem=%A act=%A done=%A/%A (%.2f%%) age=%dms run=%dms jobs=%d stall=%d seq=%d inv=%d]" q rem active doneCount denom pct progAge activeAge jobs (if stalled then 1 else 0) seq inv
+            with _ -> ""
+        )
+
+        
+        // Alpha121/197: optional ANSI panel UI for debugging JP stalls/races.
         // Keep it cheap: this runs only on the 4s heartbeat thread.
         let jp_panel_provider () : string =
             try
@@ -24152,7 +24156,7 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             | None ->
                                 let outPath = file0 + x.file_extension
                                 // Alpha265: refuse to write obviously-truncated outputs (prevents "compiled" but broken artifacts).
-                                if outPath.EndsWith("Supervisor.fs") then
+                                if outPath.EndsWith("Supervisor.fs") || outPath.EndsWith("spiral_compiler.fs") then
                                     let lineCount =
                                         try x.code.Split([|'\n'|]).Length with _ -> 0
                                     let byteCount = x.code.Length
@@ -24167,7 +24171,21 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                         | None ->
                             Job.fromAsync (async {
                                 for x in l do
-                                    do! System.IO.File.WriteAllTextAsync(file0 + x.file_extension, x.code) |> Async.AwaitTask
+                                    let outPath = file0 + x.file_extension
+                                    let tmpPath = outPath + ".tmp"
+                                    do! System.IO.File.WriteAllTextAsync(tmpPath, x.code) |> Async.AwaitTask
+                                    try
+                                        if System.IO.File.Exists(outPath) then
+                                            let bakPath = outPath + ".bak"
+                                            System.IO.File.Replace(tmpPath, outPath, bakPath, true)
+                                        else
+                                            System.IO.File.Move(tmpPath, outPath)
+                                    with _ ->
+                                        // fallback: best-effort copy + delete temp
+                                        try
+                                            System.IO.File.Copy(tmpPath, outPath, true)
+                                            System.IO.File.Delete(tmpPath)
+                                        with _ -> ()
                             })
                             |> HopacExtensions.start
                             l
@@ -24889,9 +24907,3 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 // bytes_utf8=1340986
 // lines_nl=24885
 // [ALPHA269] EOF sentinel: if you don't see this line, the file was truncated.
-
-// ------------------------------------------------------------------------------
-// [ALPHA270] Integrity footer (append-only)
-// bytes_utf8=1341482
-// lines_nl=24897
-// [ALPHA270] EOF sentinel: if you don't see this line, the file was truncated.
