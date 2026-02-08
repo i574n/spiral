@@ -24148,6 +24148,9 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                 trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile") _locals
                 let handle_build_result = function
                     | BuildOk l ->
+                        // Alpha273: defensive output writer (generic; avoids clobbering good generated files on unstable runs).
+                        let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
+                        let inv = CacheGeneration.invalidationCount()
                         let file0 = Path.ChangeExtension(file,null) // null removes the extension from path.
                         let mutable bad : string option = None
                         for x in l do
@@ -24155,14 +24158,32 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             | Some _ -> ()
                             | None ->
                                 let outPath = file0 + x.file_extension
-                                // Alpha265: refuse to write obviously-truncated outputs (prevents "compiled" but broken artifacts).
-                                if outPath.EndsWith("Supervisor.fs") || outPath.EndsWith("spiral_compiler.fs") then
-                                    let lineCount =
-                                        try x.code.Split([|'\n'|]).Length with _ -> 0
-                                    let byteCount = x.code.Length
-                                    let hasCore = x.code.Contains("type ClientErrorsRes") && x.code.Contains("let new_server")
-                                    if (lineCount < 5000) || (byteCount < 200000) || (not hasCore) then
-                                        bad <- Some (sprintf "%s: suspiciously small or incomplete output (lines=%d bytes=%d hasCore=%b)" outPath lineCount byteCount hasCore)
+                                let nl = char 10
+                                let lineCount = try x.code.Split([| nl |]).Length with _ -> 0
+                                let byteCount = try System.Text.Encoding.UTF8.GetByteCount(x.code) with _ -> x.code.Length
+                                let oldBytes = try if System.IO.File.Exists(outPath) then int64 (System.IO.FileInfo(outPath).Length) else 0L with _ -> 0L
+                                // Alpha276: WriteGuard + generic output validation (no hardcoded file names).
+                                let newBytes = int64 byteCount
+                                let unstable = (seq <> 0) || (inv <> 0L)
+
+                                // WriteGuard:
+                                //  - block new outputs on unstable runs (prevents "success" without writing)
+                                //  - block large shrink (>= 50KB) even on stable runs (common truncation symptom)
+                                let isNew = oldBytes = 0L
+                                let growthBig = oldBytes > 0L && newBytes > oldBytes + 50000L && newBytes > 50000L
+                                let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= 50000L
+                                let persist =
+                                    if isNew then (not unstable) && newBytes > 8000L
+                                    else (not unstable) || growthBig
+                                let blocked = (not persist) || shrinkBig
+
+                                // Reject obvious truncation/clobber: large previous output replaced by tiny or much smaller output.
+                                let shrinkRel = oldBytes > 50000L && newBytes < (oldBytes * 7L) / 10L
+                                let shrinkHard = oldBytes > 50000L && newBytes < 20000L
+                                let tiny = oldBytes > 2000L && newBytes < 2000L
+                                let reject = tiny || shrinkHard || (unstable && shrinkRel) || blocked
+                                if reject then
+                                    bad <- Some (sprintf "WRITE_ABORT: %s (lines=%d bytes=%d old_bytes=%d seq=%d inv=%d unstable=%b isNew=%b persist=%b growthBig=%b shrinkBig=%b shrinkHard=%b shrinkRel=%b tiny=%b)" outPath lineCount byteCount (int oldBytes) seq (int inv) unstable isNew persist growthBig shrinkBig shrinkHard shrinkRel tiny)
                         match bad with
                         | Some msg ->
                             trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / rejected BuildOk: {msg}") _locals
@@ -24170,22 +24191,80 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
                             IVar.fill res None
                         | None ->
                             Job.fromAsync (async {
+                                let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
+                                let inv = CacheGeneration.invalidationCount()
+                                let unstable = (seq <> 0) || (inv <> 0L)
+                                let mutable wrote = 0
+                                let mutable skipped = 0
+
+                                let sanitize_utf16_for_utf8 (s: string) : struct(string * int) =
+                                    if isNull s then struct("", 0)
+                                    else
+                                        let sb = System.Text.StringBuilder(s.Length)
+                                        let mutable i = 0
+                                        let mutable replaced = 0
+                                        while i < s.Length do
+                                            let c = s.[i]
+                                            if System.Char.IsHighSurrogate c then
+                                                if i + 1 < s.Length && System.Char.IsLowSurrogate s.[i+1] then
+                                                    sb.Append(c) |> ignore
+                                                    sb.Append(s.[i+1]) |> ignore
+                                                    i <- i + 2
+                                                else
+                                                    sb.Append('\uFFFD') |> ignore
+                                                    replaced <- replaced + 1
+                                                    i <- i + 1
+                                            elif System.Char.IsLowSurrogate c then
+                                                sb.Append('\uFFFD') |> ignore
+                                                replaced <- replaced + 1
+                                                i <- i + 1
+                                            else
+                                                sb.Append(c) |> ignore
+                                                i <- i + 1
+                                        struct(sb.ToString(), replaced)
+
                                 for x in l do
                                     let outPath = file0 + x.file_extension
-                                    let tmpPath = outPath + ".tmp"
-                                    do! System.IO.File.WriteAllTextAsync(tmpPath, x.code) |> Async.AwaitTask
-                                    try
-                                        if System.IO.File.Exists(outPath) then
-                                            let bakPath = outPath + ".bak"
-                                            System.IO.File.Replace(tmpPath, outPath, bakPath, true)
-                                        else
-                                            System.IO.File.Move(tmpPath, outPath)
-                                    with _ ->
-                                        // fallback: best-effort copy + delete temp
+                                    let struct(codeSafe, repl) = sanitize_utf16_for_utf8 x.code
+                                    if repl <> 0 then
+                                        trace Warning (fun () -> $"WRITE_SANITIZE: {outPath} (replaced_invalid_surrogates={repl})") _locals
+                                    let byteCount = try System.Text.Encoding.UTF8.GetByteCount(codeSafe) with _ -> codeSafe.Length
+                                    let oldBytes = try if System.IO.File.Exists(outPath) then int64 (System.IO.FileInfo(outPath).Length) else 0L with _ -> 0L
+                                    let newBytes = int64 byteCount
+                                    // Alpha276 WriteGuard (write phase):
+                                    // Mirror the pre-check rules; any block here indicates a race or instability.
+                                    let growthBig = oldBytes > 0L && newBytes > oldBytes + 50000L && newBytes > 50000L
+                                    let isNew = oldBytes = 0L
+                                    let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= 50000L
+                                    let persist =
+                                        if isNew then (not unstable) && newBytes > 8000L
+                                        else (not unstable) || growthBig
+                                    let blocked = (not persist) || shrinkBig
+                                    if blocked then
+                                        trace Warning (fun () -> $"WRITE_ABORT: {outPath} (new_bytes={newBytes} old_bytes={oldBytes} seq={seq} inv={inv} unstable={unstable} isNew={isNew} persist={persist} growthBig={growthBig} shrinkBig={shrinkBig})") _locals
+                                        skipped <- skipped + 1                                    else
+                                        wrote <- wrote + 1
+                                        let tmpPath = outPath + ".tmp"
+                                        do! System.IO.File.WriteAllTextAsync(tmpPath, codeSafe) |> Async.AwaitTask
                                         try
-                                            System.IO.File.Copy(tmpPath, outPath, true)
-                                            System.IO.File.Delete(tmpPath)
-                                        with _ -> ()
+                                            if System.IO.File.Exists(outPath) then
+                                                // Alpha275: no persistent backups. Atomic replace with ephemeral temp-old file.
+                                                let oldTmp = outPath + ".replace_old.tmp"
+                                                try
+                                                    System.IO.File.Replace(tmpPath, outPath, oldTmp, true)
+                                                finally
+                                                    try System.IO.File.Delete(oldTmp) with _ -> ()
+                                            else
+                                                System.IO.File.Move(tmpPath, outPath)
+                                        with _ ->
+                                            // fallback: best-effort copy + delete temp
+                                            try
+                                                System.IO.File.Copy(tmpPath, outPath, true)
+                                                System.IO.File.Delete(tmpPath)
+                                            with _ -> ()
+
+                                trace Info (fun () -> $"WRITE_SUMMARY: wrote={wrote} skipped={skipped} seq={seq} inv={inv} unstable={unstable}") _locals
+
                             })
                             |> HopacExtensions.start
                             l
@@ -24907,3 +24986,6 @@ module spiral_compiler =    /// Spiral Compiler - Partial Evaluation Engine (par
 // bytes_utf8=1340986
 // lines_nl=24885
 // [ALPHA269] EOF sentinel: if you don't see this line, the file was truncated.
+
+// === ALPHA276 FOOTER ===
+// if you cannot see this line, the file was truncated.
