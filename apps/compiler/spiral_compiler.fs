@@ -13,7 +13,12 @@ module spiral_compiler =
     /// When WriteGuard blocks output (unstable generation, large shrink, or truncation suspects),
     /// the compiler now prints a compact diag block to stderr (recent invalidations + sidecar tail)
     /// so console logs alone are sufficient to drive the remaining SOTA debugging.
+        /// ALPHA292: TERM-CYCLE SOTA DIAG + NO-RETRY POLICY
+    /// - Treat EJP0011 (type/term cycle) as NON-RETRYABLE inside BuildFile (no invalidation storm).
+    /// - Emit machine-parseable JSON lines for term_cycle + retry events to make console logs sufficient.
+    /// - Add a small per-key watchdog so repeated term cycles in the same generation are surfaced as PANIC.
     ///
+///
     /// ALPHA45 COMPREHENSIVE SOTA HOPAC FINALIZATION:
     /// This release addresses the type mismatch errors ("The variables compared for equality 
     /// have to have the same type") occurring during retry by implementing:
@@ -364,8 +369,9 @@ module spiral_compiler =
                         sprintf "{\"app\":\"spiral\",\"phase\":\"%s\",\"ui\":\"%s\",\"gen\":%d,\"overall_pct\":%.4f,\"overall_cap_pct\":%.4f,\"overall_rem_pct\":%.4f,\"stage_i\":%d,\"stage_n\":%d,\"sub_i\":%d,\"sub_n\":%d,\"sub_pct\":%.4f,\"sub_rem\":%d,\"t_s\":%d,\"mem_private_mb\":%.0f,\"mem_gc_mb\":%.0f,\"tick\":%d,\"silent_ms\":%d,\"rate_per_s\":%.4f,\"eta\":\"%s\",\"tag\":\"%s\"}"
                             phase ui_mode g overallPct overallCapPct capRemPct si sn subi subn subpct subRem (now/1000L) privateMb gcMb tks silent last_rate_per_s etaStr ttag
                     | _ ->
-                        sprintf "[spiral] phase=%s ui=%s gen=%d%s overall[%s](%.2f%% cap=%.2f%% rem=%.2f%%) stage=%d/%d sub=%d/%d[%s](%.2f%% rem=%d) t=%ds mem=%.0f/%.0fMB tick=%d silent=%dms rate=%.2f/s eta=%s%s tag=%s %s"
-                            phase ui_mode g epStr barS overallPct overallCapPct capRemPct si sn subi subn barSub subpct subRem (now/1000L) privateMb gcMb tks silent last_rate_per_s etaStr resetStr ttag extra
+                        // Append-only compact bars (default).
+                        sprintf "[spiral] %s %.1f%% phase=%s sub=%.1f%% eta=%s gen=%d%s tag=%s %s"
+                            barS overallPct phase subpct etaStr g epStr ttag extra
 
                 // [CONSOLE-208-001] TUI/in-place refresh disabled (paste-friendly, append-only logs).
                 // Restore the commented block when we reach 100% SOTA interactive console.
@@ -406,18 +412,16 @@ module spiral_compiler =
                 | _ -> ()
                 *)
                 match ui_mode with
-                | "ansi_tui" | "ansi_line" | "ansi_multi" ->
+                | "ansi_multi" | "ansi_tui" ->
                     ConsoleMux88.writeLineAnsi line
                     if not (System.String.IsNullOrEmpty panel) then
                         for pl in panel.Replace("\r","").Split('\n') do
                             if not (System.String.IsNullOrEmpty pl) then
                                 ConsoleMux88.writeLineAnsi ($"\u001b[2m[spiral] | {pl}\u001b[0m")
+                | "ansi_line" ->
+                    ConsoleMux88.writeLineAnsi line
                 | "line" ->
                     ConsoleMux88.writeLine line
-                    if not (System.String.IsNullOrEmpty panel) then
-                        for pl in panel.Replace("\r","").Split('\n') do
-                            if not (System.String.IsNullOrEmpty pl) then
-                                ConsoleMux88.writeLine ($"[spiral] | {pl}")
                 | "json" ->
                     // In JSON mode we only emit the primary line (one JSON object per tick).
                     ConsoleMux88.writeLine line
@@ -889,6 +893,188 @@ module spiral_compiler =
     //let print_ch = Ch<string>()
     //let pr x = Hopac.run (Ch.send print_ch (x.ToString()))
     
+    module DiagLastWait =
+        let mutable private last_wait = ""
+        let set (w: string) = last_wait <- w
+        let get () = last_wait
+
+    module ConsoleX =
+        let private lock_obj = obj()
+        let errLine (s: string) =
+            lock lock_obj (fun () ->
+                try
+                    System.Console.Error.WriteLine(s)
+                    System.Console.Error.Flush()
+                with _ -> ())
+
+    /// ### EJPCodes
+    /// Centralized error code definitions and classification.
+    /// EJP = Error in Join Point processing
+    module EJPCodes =
+        /// EJP0002: Join point annotation type mismatch
+        let [<Literal>] EJP0002 = "[spiral_compiler] EJP0002"
+    
+        /// EJP0003: Type error during parallel evaluation (race condition)
+        let [<Literal>] EJP0003 = "[spiral_compiler] EJP0003"
+    
+        /// EJP0007: Apply type mismatch - primitive where callable expected
+        let [<Literal>] EJP0007 = "[spiral_compiler] EJP0007"
+    
+        /// EJP0008: Deep recursion cache corruption
+        let [<Literal>] EJP0008 = "[spiral_compiler] EJP0008"
+    
+    
+        /// EJP0009: Term/type recursion depth exceeded (stack overflow preemption)
+        let [<Literal>] EJP0009 = "[spiral_compiler] EJP0009"
+    
+    
+        /// EJP0010: Insufficient execution stack (preempted stack overflow)
+        let [<Literal>] EJP0010 = "[spiral_compiler] EJP0010"
+    
+        /// EJP0011: Re-entrant term evaluation cycle detected
+        let [<Literal>] EJP0011 = "[spiral_compiler] EJP0011"
+    
+        /// EJP0012: Loop specialization cap exceeded
+        let [<Literal>] EJP0012 = "[spiral_compiler] EJP0012"
+    
+    
+        /// EJP0013: Void instance construction (likely cache corruption)
+        let [<Literal>] EJP0013 = "[spiral_compiler] EJP0013"
+
+        /// EJP0014: Join-point scheduler stall detected while waiting (should trigger retry)
+        let [<Literal>] EJP0014 = "[spiral_compiler] EJP0014"
+
+        /// EJP0016: Dead IVar detected while waiting (likely stale JP state after invalidation)
+        let [<Literal>] EJP0016 = "[spiral_compiler] EJP0016"
+        let [<Literal>] EJP0018 = "[spiral_compiler] EJP0018"
+        let [<Literal>] EJP0019 = "[spiral_compiler] EJP0019"
+        let [<Literal>] EJP0020 = "[spiral_compiler] EJP0020"
+        let [<Literal>] EJP0030 = "[spiral_compiler] EJP0030"
+        let [<Literal>] EJP0031 = "[spiral_compiler] EJP0031"
+
+        /// Classify an error message to an EJP code
+        let classifyError (msg: string) : string option =
+            // NOTE: Keep these checks cheap and order them from most specific to most general.
+            if msg.Contains("Cannot construct an instance of a void type") || msg.Contains("void type") && msg.Contains("Cannot construct") then
+                Some EJP0013
+            elif msg.Contains("apply mismatch") then
+                // The "apply mismatch" marker is emitted by cache invalidation heuristics; treat it as apply-type mismatch.
+                Some EJP0007
+            elif msg.Contains(EJP0011) || (msg.Contains("Re-entrant") && msg.Contains("cycle")) then
+                Some EJP0011
+            elif msg.Contains(EJP0010) || msg.Contains("Insufficient execution stack") || msg.Contains("stack overflow") && msg.Contains("preempt") then
+                Some EJP0010
+            elif msg.Contains(EJP0009) || msg.Contains("recursion depth") && (msg.Contains("exceeded") || msg.Contains("overflow")) then
+                Some EJP0009
+            elif msg.Contains("Expected a function") &&
+                 (msg.Contains("Got: i32") || msg.Contains("Got: i64") ||
+                  msg.Contains("Got: f32") || msg.Contains("Got: f64") ||
+                  msg.Contains("Got: bool")) then
+                Some EJP0007
+            elif (msg.Contains("annotation of the function does not match its body's type") ||
+                      (msg.Contains("annotation of the function") && msg.Contains("does not match its body's type"))) &&
+                     (msg.Contains("JPMethodRecPlaceholder") || msg.Contains("JPTypeRecPlaceholder")) then
+                // Annotation mismatch where the body is still a JP placeholder: treat as join-point annotation mismatch to allow retry.
+                Some EJP0002
+            elif msg.Contains("annotation") && msg.Contains("mismatch") then
+                Some EJP0002
+            elif msg.Contains("specialization cap") || msg.Contains(EJP0012) then
+                Some EJP0012
+            elif msg.Contains(EJP0008) || msg.Contains("generation changed while waiting") then
+                Some EJP0008
+            elif msg.Contains(EJP0014) || msg.Contains("scheduler stalled while waiting") || msg.Contains("jp_wait stalled") then
+                Some EJP0014
+            elif msg.Contains(EJP0016) || msg.Contains("dead ivar while waiting") then
+                Some EJP0016
+            elif msg.Contains(EJP0018) || msg.Contains("BigStack join aborted") || (msg.Contains("BigStack") && msg.Contains("join") && msg.Contains("aborted")) then
+                Some EJP0018
+            elif msg.Contains(EJP0019) || msg.Contains("BigStack join stalled") || (msg.Contains("BigStack") && msg.Contains("join") && msg.Contains("stalled")) then
+                Some EJP0019
+            elif msg.Contains(EJP0020) || msg.Contains("BigStack join interrupted") || (msg.Contains("BigStack") && msg.Contains("join") && msg.Contains("interrupted")) then
+                Some EJP0020
+            elif msg.Contains("variables compared for equality") && msg.Contains("same type") then
+                // Equality arg type mismatch: usually stale cached term/type pairs; retry with invalidation.
+                Some EJP0003
+            elif msg.Contains("Cannot apply") &&
+                     (msg.Contains("JPMethodRecPlaceholder") || msg.Contains("JPTypeRecPlaceholder") || msg.Contains("JPMethodUnknownRet")) then
+                // Cannot-apply involving JP placeholders is almost always a stale join-point artifact; retry with invalidation.
+                Some EJP0008
+            elif msg.Contains("type mismatch") || msg.Contains("Cannot apply") then
+                Some EJP0003
+            else
+                None
+    
+        /// Get error description
+        let describe (code: string) : string =
+            match code with
+            | "[spiral_compiler] EJP0002" -> "Join point annotation type mismatch"
+            | "[spiral_compiler] EJP0003" -> "Type error during parallel evaluation"
+            | "[spiral_compiler] EJP0007" -> "Apply type mismatch: primitive where callable expected"
+            | "[spiral_compiler] EJP0008" -> "Deep recursion cache corruption"
+            | "[spiral_compiler] EJP0014" -> "Join-point scheduler stall detected while waiting"
+            | "[spiral_compiler] EJP0016" -> "Dead IVar detected while waiting (stale JP state)"
+            | "[spiral_compiler] EJP0009" -> "Term/type recursion depth exceeded"
+            | "[spiral_compiler] EJP0010" -> "Insufficient execution stack (stack overflow preempted)"
+            | "[spiral_compiler] EJP0011" -> "Re-entrant term evaluation cycle detected"
+            | "[spiral_compiler] EJP0012" -> "Loop specialization cap exceeded"
+            | "[spiral_compiler] EJP0013" -> "Void instance construction (likely cache corruption)"
+            | "[spiral_compiler] EJP0018" -> "BigStack join aborted due to cache generation change"
+            | "[spiral_compiler] EJP0019" -> "BigStack join stalled (possible deadlock / runaway job)"
+            | "[spiral_compiler] EJP0020" -> "BigStack join interrupted (treated as retryable abort)"
+            | "[spiral_compiler] EJP0030" -> "JP watchdog abort (progress stalled / oldest job too old)"
+            | "[spiral_compiler] EJP0031" -> "JP watchdog abort (a specific job exceeded its per-op timeout)"
+            | _ -> "Unknown error"
+    
+    module DiagJson =
+
+        let private esc (s: string) =
+            if System.Object.ReferenceEquals(s,null) then "null" else
+                let s =
+                    s.Replace("\\","\\\\")
+                     .Replace("\"","\\\"")
+                     .Replace("\r","\\r")
+                     .Replace("\n","\\n")
+                     .Replace("\t","\\t")
+                "\"" + s + "\""
+        let emit (json: string) =
+            try
+                System.Console.Error.WriteLine(json)
+                System.Console.Error.Flush()
+            with _ -> ()
+        let retry (code: string) (gen_before: int) (gen_after: int) (attempt: int) (max_attempts: int) (file: string) (backend: string) (is_gen_wait: bool) (seq: bool) (dop_env: int) (dop_forced: int) =
+            emit (sprintf "{\"kind\":\"retry\",\"code\":%s,\"gen_before\":%d,\"gen_after\":%d,\"attempt\":%d,\"max_attempts\":%d,\"file\":%s,\"backend\":%s,\"gen_wait\":%b,\"seq\":%b,\"dop_env\":%d,\"dop_forced\":%d}" (esc code) gen_before gen_after attempt max_attempts (esc file) (esc backend) is_gen_wait seq dop_env dop_forced)
+        let termCycle (key: string) (depth: int) (site: string) (gen: int) (re: int) (max_re: int) (big: bool) (hs: string) (ks: string) (count: int) (panic: bool) =
+            // Defensive truncation: term-cycle payloads can become huge and contribute to stack/alloc pressure
+            let hs =
+                if System.Object.ReferenceEquals(hs,null) then "" 
+                elif hs.Length > 512 then hs.Substring(0,512) + "…" 
+                else hs
+            let ks =
+                if System.Object.ReferenceEquals(ks,null) then "" 
+                elif ks.Length > 2048 then ks.Substring(0,2048) + "…" 
+                else ks
+            emit (sprintf "{\"kind\":\"term_cycle\",\"code\":%s,\"key\":%s,\"depth\":%d,\"site\":%s,\"gen\":%d,\"re\":%d,\"max_re\":%d,\"big\":%b,\"count\":%d,\"panic\":%b,\"hs\":%s,\"ks\":%s}" (esc EJPCodes.EJP0011) (esc key) depth (esc site) gen re max_re big count panic (esc hs) (esc ks))
+
+
+    module TermCycleWatchdog =
+        open System.Collections.Generic
+        let private lock_obj = obj()
+        // key -> struct(lastGen,totalCount,genCount)
+        let private seen = Dictionary<string, struct(int*int*int)>()
+        /// Returns total count for this key across the whole compilation session.
+        let note (key: string) (gen: int) =
+            lock lock_obj (fun () ->
+                match seen.TryGetValue key with
+                | true, struct(g,tot,genC) ->
+                    let tot' = tot + 1
+                    let genC' = if g = gen then genC + 1 else 1
+                    seen.[key] <- struct(gen, tot', genC')
+                    tot'
+                | _ ->
+                    seen.[key] <- struct(gen,1,1)
+                    1)
+
+
     module Utils =
         open System
         open System.Collections.Generic
@@ -10672,124 +10858,6 @@ module spiral_compiler =
             sprintf "b158=patterns=%d avgDepth=%.1f suspectRate=%.2f keys=%d genFailKeys=%d preds=%d acc=%.2f" 
                 patterns.Length avgDepth suspectRate keys genFailKeys preds accuracy
     
-    /// ### EJPCodes
-    /// Centralized error code definitions and classification.
-    /// EJP = Error in Join Point processing
-    module EJPCodes =
-        /// EJP0002: Join point annotation type mismatch
-        let [<Literal>] EJP0002 = "[spiral_compiler] EJP0002"
-    
-        /// EJP0003: Type error during parallel evaluation (race condition)
-        let [<Literal>] EJP0003 = "[spiral_compiler] EJP0003"
-    
-        /// EJP0007: Apply type mismatch - primitive where callable expected
-        let [<Literal>] EJP0007 = "[spiral_compiler] EJP0007"
-    
-        /// EJP0008: Deep recursion cache corruption
-        let [<Literal>] EJP0008 = "[spiral_compiler] EJP0008"
-    
-    
-        /// EJP0009: Term/type recursion depth exceeded (stack overflow preemption)
-        let [<Literal>] EJP0009 = "[spiral_compiler] EJP0009"
-    
-    
-        /// EJP0010: Insufficient execution stack (preempted stack overflow)
-        let [<Literal>] EJP0010 = "[spiral_compiler] EJP0010"
-    
-        /// EJP0011: Re-entrant term evaluation cycle detected
-        let [<Literal>] EJP0011 = "[spiral_compiler] EJP0011"
-    
-        /// EJP0012: Loop specialization cap exceeded
-        let [<Literal>] EJP0012 = "[spiral_compiler] EJP0012"
-    
-    
-        /// EJP0013: Void instance construction (likely cache corruption)
-        let [<Literal>] EJP0013 = "[spiral_compiler] EJP0013"
-
-        /// EJP0014: Join-point scheduler stall detected while waiting (should trigger retry)
-        let [<Literal>] EJP0014 = "[spiral_compiler] EJP0014"
-
-        /// EJP0016: Dead IVar detected while waiting (likely stale JP state after invalidation)
-        let [<Literal>] EJP0016 = "[spiral_compiler] EJP0016"
-        let [<Literal>] EJP0018 = "[spiral_compiler] EJP0018"
-        let [<Literal>] EJP0019 = "[spiral_compiler] EJP0019"
-        let [<Literal>] EJP0020 = "[spiral_compiler] EJP0020"
-        let [<Literal>] EJP0030 = "[spiral_compiler] EJP0030"
-        let [<Literal>] EJP0031 = "[spiral_compiler] EJP0031"
-
-        /// Classify an error message to an EJP code
-        let classifyError (msg: string) : string option =
-            // NOTE: Keep these checks cheap and order them from most specific to most general.
-            if msg.Contains("Cannot construct an instance of a void type") || msg.Contains("void type") && msg.Contains("Cannot construct") then
-                Some EJP0013
-            elif msg.Contains("apply mismatch") then
-                // The "apply mismatch" marker is emitted by cache invalidation heuristics; treat it as apply-type mismatch.
-                Some EJP0007
-            elif msg.Contains(EJP0011) || (msg.Contains("Re-entrant") && msg.Contains("cycle")) then
-                Some EJP0011
-            elif msg.Contains(EJP0010) || msg.Contains("Insufficient execution stack") || msg.Contains("stack overflow") && msg.Contains("preempt") then
-                Some EJP0010
-            elif msg.Contains(EJP0009) || msg.Contains("recursion depth") && (msg.Contains("exceeded") || msg.Contains("overflow")) then
-                Some EJP0009
-            elif msg.Contains("Expected a function") &&
-                 (msg.Contains("Got: i32") || msg.Contains("Got: i64") ||
-                  msg.Contains("Got: f32") || msg.Contains("Got: f64") ||
-                  msg.Contains("Got: bool")) then
-                Some EJP0007
-            elif (msg.Contains("annotation of the function does not match its body's type") ||
-                      (msg.Contains("annotation of the function") && msg.Contains("does not match its body's type"))) &&
-                     (msg.Contains("JPMethodRecPlaceholder") || msg.Contains("JPTypeRecPlaceholder")) then
-                // Annotation mismatch where the body is still a JP placeholder: treat as join-point annotation mismatch to allow retry.
-                Some EJP0002
-            elif msg.Contains("annotation") && msg.Contains("mismatch") then
-                Some EJP0002
-            elif msg.Contains("specialization cap") || msg.Contains(EJP0012) then
-                Some EJP0012
-            elif msg.Contains(EJP0008) || msg.Contains("generation changed while waiting") then
-                Some EJP0008
-            elif msg.Contains(EJP0014) || msg.Contains("scheduler stalled while waiting") || msg.Contains("jp_wait stalled") then
-                Some EJP0014
-            elif msg.Contains(EJP0016) || msg.Contains("dead ivar while waiting") then
-                Some EJP0016
-            elif msg.Contains(EJP0018) || msg.Contains("BigStack join aborted") || (msg.Contains("BigStack") && msg.Contains("join") && msg.Contains("aborted")) then
-                Some EJP0018
-            elif msg.Contains(EJP0019) || msg.Contains("BigStack join stalled") || (msg.Contains("BigStack") && msg.Contains("join") && msg.Contains("stalled")) then
-                Some EJP0019
-            elif msg.Contains(EJP0020) || msg.Contains("BigStack join interrupted") || (msg.Contains("BigStack") && msg.Contains("join") && msg.Contains("interrupted")) then
-                Some EJP0020
-            elif msg.Contains("variables compared for equality") && msg.Contains("same type") then
-                // Equality arg type mismatch: usually stale cached term/type pairs; retry with invalidation.
-                Some EJP0003
-            elif msg.Contains("Cannot apply") &&
-                     (msg.Contains("JPMethodRecPlaceholder") || msg.Contains("JPTypeRecPlaceholder") || msg.Contains("JPMethodUnknownRet")) then
-                // Cannot-apply involving JP placeholders is almost always a stale join-point artifact; retry with invalidation.
-                Some EJP0008
-            elif msg.Contains("type mismatch") || msg.Contains("Cannot apply") then
-                Some EJP0003
-            else
-                None
-    
-        /// Get error description
-        let describe (code: string) : string =
-            match code with
-            | "[spiral_compiler] EJP0002" -> "Join point annotation type mismatch"
-            | "[spiral_compiler] EJP0003" -> "Type error during parallel evaluation"
-            | "[spiral_compiler] EJP0007" -> "Apply type mismatch: primitive where callable expected"
-            | "[spiral_compiler] EJP0008" -> "Deep recursion cache corruption"
-            | "[spiral_compiler] EJP0014" -> "Join-point scheduler stall detected while waiting"
-            | "[spiral_compiler] EJP0016" -> "Dead IVar detected while waiting (stale JP state)"
-            | "[spiral_compiler] EJP0009" -> "Term/type recursion depth exceeded"
-            | "[spiral_compiler] EJP0010" -> "Insufficient execution stack (stack overflow preempted)"
-            | "[spiral_compiler] EJP0011" -> "Re-entrant term evaluation cycle detected"
-            | "[spiral_compiler] EJP0012" -> "Loop specialization cap exceeded"
-            | "[spiral_compiler] EJP0013" -> "Void instance construction (likely cache corruption)"
-            | "[spiral_compiler] EJP0018" -> "BigStack join aborted due to cache generation change"
-            | "[spiral_compiler] EJP0019" -> "BigStack join stalled (possible deadlock / runaway job)"
-            | "[spiral_compiler] EJP0020" -> "BigStack join interrupted (treated as retryable abort)"
-            | "[spiral_compiler] EJP0030" -> "JP watchdog abort (progress stalled / oldest job too old)"
-            | "[spiral_compiler] EJP0031" -> "JP watchdog abort (a specific job exceeded its per-op timeout)"
-            | _ -> "Unknown error"
-    
     /// ### LoopSpecializationGuard
     /// Prevents unbounded specialization from loop patterns like loop in listm'.spi.
     /// These patterns create unique JP keys per iteration, causing exponential growth.
@@ -12314,7 +12382,8 @@ module spiral_compiler =
             jp_type_key_traces.AddOrUpdate(key, trace, (fun _ _ -> trace)) |> ignore
     
         let mutable diag_last_ms = 0L
-        let mutable diag_last_wait = ""
+        let mutable diag_last_wait : string = ""
+        do DiagLastWait.set ""
     
         let inline get_private_bytes () =
             try
@@ -12517,17 +12586,20 @@ module spiral_compiler =
             // Legacy watchdog variables (optional). These remain hard aborts.
             if peval_abort_ms > 0L && now >= peval_abort_ms then
                 diag_last_wait <- where
+                DiagLastWait.set diag_last_wait
                 peval_abort (sprintf "Timed out (ms=%d)" peval_abort_ms)
             if peval_mem_limit_mb > 0L then
                 let mb = get_private_mb ()
                 if mb >= peval_mem_limit_mb then
                     diag_last_wait <- where
+                    DiagLastWait.set diag_last_wait
                     peval_abort (sprintf "Memory limit reached (limit_mb=%d, private_mb=%d)" peval_mem_limit_mb mb)
     
             // Diagnostic aborts. Soft by default: disable parallel join-points and keep going.
             if diag_abort_armed then
                 if diag_abort_ms > 0L && now >= diag_abort_ms then
                     diag_last_wait <- where
+                    DiagLastWait.set diag_last_wait
                     if jp_diag_hard_abort then
                         peval_abort (sprintf "Timed out (ms=%d)" diag_abort_ms)
                     else
@@ -12538,6 +12610,7 @@ module spiral_compiler =
                     let total = diag_specs_total () |> int64
                     if total >= diag_jp_spec_cap then
                         diag_last_wait <- where
+                        DiagLastWait.set diag_last_wait
                         if jp_diag_hard_abort then
                             peval_abort (sprintf "Join-point spec cap exceeded (cap=%d, total=%d)" diag_jp_spec_cap total)
                         else
@@ -12548,6 +12621,7 @@ module spiral_compiler =
                     for KeyValue(name, count) in jp_name_counts do
                         if int64 count >= diag_jp_name_spec_cap then
                             diag_last_wait <- where
+                            DiagLastWait.set diag_last_wait
                             if jp_diag_hard_abort then
                                 peval_abort (sprintf "Join-point name cap exceeded (cap=%d, name=%s, count=%d)" diag_jp_name_spec_cap name count)
                             else
@@ -12570,6 +12644,7 @@ module spiral_compiler =
         /// This is the Hopac equivalent of the old jp_ev_wait.
         let jp_ivar_wait (w: string) (details: string) (ivar: Hopac.IVar<'a>) : 'a =
             diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
+            DiagLastWait.set diag_last_wait
             let mutable gen0 = CacheGeneration.current()
             let wait_start_ms = peval_sw.ElapsedMilliseconds
     
@@ -13473,6 +13548,7 @@ module spiral_compiler =
         // ALPHA15: More aggressive work-stealing + ThreadPool spawning for blocked workers
         let jp_ev_wait (w: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
             diag_last_wait <- if System.String.IsNullOrEmpty details then w else w + " :: " + details
+            DiagLastWait.set diag_last_wait
             let mutable gen0 = CacheGeneration.current()
             if ev.IsSet then jp_throw_if_any ()
             else
@@ -13985,7 +14061,11 @@ module spiral_compiler =
             let invNow = CacheGeneration.invalidationCount()
             let seqNow = CacheGeneration.isSequentialRequested()
             let max_reentry_base =
-                if seqNow || invNow > 0 then 256 else 1024
+                // Tighten re-entrancy caps when recursion is already deep: prevents hard StackOverflow
+                // in long cycles (EJP0011) before we can unwind safely.
+                if depth > 512 then 64
+                elif seqNow || invNow > 0 then 128
+                else 256
             let max_reentry = if BigStack.isActive() then min 4096 (max_reentry_base * 4) else max_reentry_base
             let max_reentry_key = max_reentry
             let warn_reentry = max 32 (max_reentry_base / 4)
@@ -14002,7 +14082,7 @@ module spiral_compiler =
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
                     CacheGeneration.requestSequential ()
-                    let genNow = CacheGeneration.current()
+                    let genNow = int (CacheGeneration.current())
                     DiagSidecar.emit (sprintf "%s ty cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site genNow reCount max_reentry big hs ks)
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth genNow reCount max_reentry big)
             if reKey > 1 then
@@ -14013,18 +14093,23 @@ module spiral_compiler =
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
                     CacheGeneration.requestSequential ()
-                    let genNow = CacheGeneration.current()
+                    let genNow = int (CacheGeneration.current())
                     DiagSidecar.emit (sprintf "%s ty cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site genNow reKey max_reentry_key big hs ks)
+                    let tc_count = TermCycleWatchdog.note ("ty:" + nodeKey) genNow
+                    let tc_panic = big || tc_count >= 2
+                    if tc_panic then DiagSidecar.emit (sprintf "%s ty cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey genNow tc_count)
+                    DiagJson.termCycle ("ty:" + nodeKey) depth site genNow reKey max_reentry_key big hs ks tc_count tc_panic
                     raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth genNow reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
     
             // Maximum recursion depth before triggering BigStack pivot
             // - Base: 2048 (conservative for main stack)
-            // - BigStack: 262144 (allows very deep recursive staging; still bounded)
+            // - BigStack: 4096 (prevents hard StackOverflow in long re-entrant cycles; real scalability comes from iterative traversals)
             let max_depth_base = 2048
-            let max_depth = if BigStack.isActive() then 262144 else max_depth_base
-    
+            let max_depth_big = 4096
+            let max_depth = if BigStack.isActive() then max_depth_big else max_depth_base
+
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
                 |> List.sortByDescending (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> kv.Value)
@@ -14454,14 +14539,21 @@ module spiral_compiler =
                     let newGen, _invN =
                         jp_invalidate_bounded (sprintf "%s|term_cycle_key|%s" EJPCodes.EJP0011 site) 1
                             (sprintf "%s term cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
-                    DiagSidecar.emit (sprintf "%s term cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key big hs ks)
-                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth newGen reKey max_reentry_key big)
+                    DiagSidecar.emit (sprintf "%s term cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site (int newGen) reKey max_reentry_key big hs ks)
+                    let tc_count = TermCycleWatchdog.note nodeKey (int newGen)
+                    let tc_panic = big || tc_count >= 2
+                    if tc_panic then DiagSidecar.emit (sprintf "%s term cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey (int newGen) tc_count)
+                    DiagJson.termCycle nodeKey depth site (int newGen) reKey max_reentry_key big hs ks tc_count tc_panic
+                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth (int newGen) reKey max_reentry_key big)
             use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
     
-            // Maximum term recursion depth: 2048 base, 262144 on BigStack
+            // Maximum term recursion depth: keep bounded even on BigStack.
+            // BigStack increases stack size, but term frames are large; real scalability should come from iterative traversals.
+            // Empirically, letting this climb too high leads to hard StackOverflow before the guard can fire.
             let max_depth_base = 2048
-            let max_depth = if BigStack.isActive() then 262144 else max_depth_base
+            let max_depth_big = 4096
+            let max_depth = if BigStack.isActive() then max_depth_big else max_depth_base
     
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
@@ -17232,13 +17324,16 @@ module spiral_compiler =
                 | h, _ -> raise_type_error s $"Expected a compile time HashMap.\nGot: {show_data h}"
             | EOp(_,StaticStringConcat,[l]) ->
                 let strb = System.Text.StringBuilder()
-                let rec loop = function
-                    | DPair(a,b) -> loop a; loop b
+                let st = System.Collections.Generic.Stack<_>()
+                st.Push(term s l)
+                while st.Count > 0 do
+                    match st.Pop() with
+                    | DPair(a,b) -> st.Push(b); st.Push(a)
                     | DLit(LitString x) -> strb.Append(x) |> ignore
                     | DB -> ()
                     | x -> raise_type_error s $"Expected a compile time string or a pair of them.\nGot: {show_data x}"
-                loop (term s l)
                 DLit(LitString(strb.ToString()))
+
             | EOp(_,Printf,[fmt;str]) ->
                 let fmt,str = term2 s fmt str
                 match fmt with
@@ -24564,7 +24659,7 @@ module spiral_compiler =
                                             | :? PartEvalTypeError as e ->
                                                 let msg = e.Data1
                                                 match EJPCodes.classifyError msg with
-                                                | Some code when code = EJPCodes.EJP0002 || code = EJPCodes.EJP0003 || code = EJPCodes.EJP0007 || code = EJPCodes.EJP0008 || code = EJPCodes.EJP0009 || code = EJPCodes.EJP0010 || code = EJPCodes.EJP0011 || code = EJPCodes.EJP0012 || code = EJPCodes.EJP0013 || code = EJPCodes.EJP0014 || code = EJPCodes.EJP0016 || code = EJPCodes.EJP0018 || code = EJPCodes.EJP0019 || code = EJPCodes.EJP0020 || code = EJPCodes.EJP0030 ->
+                                                | Some code when code = EJPCodes.EJP0002 || code = EJPCodes.EJP0003 || code = EJPCodes.EJP0007 || code = EJPCodes.EJP0008 || code = EJPCodes.EJP0009 || code = EJPCodes.EJP0010 ||  code = EJPCodes.EJP0012 || code = EJPCodes.EJP0013 || code = EJPCodes.EJP0014 || code = EJPCodes.EJP0016 || code = EJPCodes.EJP0018 || code = EJPCodes.EJP0019 || code = EJPCodes.EJP0020 || code = EJPCodes.EJP0030 ->
                                                     // Retry logic: invalidate cache and optionally reduce parallelism
                                                     let gen_before = CacheGeneration.current ()
                                                     let is_gen_wait =
@@ -24634,8 +24729,9 @@ module spiral_compiler =
     
                                                     let suspects =
                                                         SuspectCache.getRecent 32
-                                                        |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h se.generation se.depth se.hitCount se.errorType se.timestamp)
-                                                    DiagSidecar.emit (sprintf "BuildFile.retry: %s gen=%d->%d attempt=%d file=%s backend=%s gen_wait=%b" code gen_before gen_after attempt file backend is_gen_wait)
+                                                        |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h (int se.generation) se.depth se.hitCount se.errorType se.timestamp)
+                                                    DiagSidecar.emit (sprintf "BuildFile.retry: %s gen=%d->%d attempt=%d file=%s backend=%s gen_wait=%b" code (int gen_before) (int gen_after) attempt file backend is_gen_wait)
+                                                    DiagJson.retry code (int gen_before) (int gen_after) attempt max_attempts file backend is_gen_wait (CacheGeneration.isSequentialRequested()) (HopacExtensions.envForcedConcurrency()) (HopacExtensions.peekForcedConcurrency())
                                                     let prefix = "[spiral_compiler] "
                                                     let prefixLine (s: string) =
                                                         if System.String.IsNullOrEmpty s then prefix.TrimEnd()
@@ -24653,7 +24749,7 @@ module spiral_compiler =
                                                           sprintf "attempt=%d/%d" (attempt + 1) max_attempts
                                                           sprintf "gen=%d -> %d" gen_before gen_after
                                                           sprintf "dop_env=%d dop_forced=%d" (HopacExtensions.envForcedConcurrency()) (HopacExtensions.peekForcedConcurrency())
-                                                          sprintf "last_wait=%s" LoopSpecializationGuard.diag_last_wait
+                                                          sprintf "last_wait=%s" (DiagLastWait.get())
                                                           sprintf "jp_parallel=%s sequential_requested=%b"
                                                               (if is_gen_wait then "kept"
                                                                else if CacheGeneration.isSequentialRequested() then "forced=0" else "forced=1")
@@ -24688,10 +24784,10 @@ module spiral_compiler =
                                                             elif code.StartsWith("[spiral_compiler]") then code.Substring(16).TrimStart()
                                                             else code
                                                         let emit_retry_diag (s: string) =
-                                                            try
-                                                                System.Console.Error.WriteLine(s)
-                                                                System.Console.Error.Flush()
-                                                            with _ -> ()
+                                                            ConsoleX.errLine s
+
+
+
 
                                                         // Trim extremely large diags to keep consoles usable.
                                                         let diag_block' =
