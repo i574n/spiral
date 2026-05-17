@@ -9,6 +9,82 @@ module spiral_compiler =
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
+    /// ALPHA340 BOUNDED EVAL-WORKLIST TRAMPOLINE:
+    /// - Consume the alpha339 ready_explicit_loop frame with a bounded non-recursive trampoline,
+    ///   emitting eval_worklist_step/eval_worklist_run JSONL instead of stopping at a marker event.
+    /// - The trampoline intentionally runs on frame metadata first: it advances the captured trace cursor
+    ///   and stops with adapter_required until term/ty continuations are wired into the frame payload.
+    /// - Direct term/ty cycle sites now seed the worklist immediately after tripping the fuse, so retry_stop
+    ///   is no longer the first place that can observe the evaluator frontier.
+    /// - Still generic: no listm/runtime hardcode, no budget/env knob, no new DU cases in the compiler AST.
+    ///
+    /// ALPHA339 RETRY-STOP WORKLIST MATERIALIZATION:
+    /// - Fix the alpha338 hole where direct sequential evaluator EJP0011 reached retry_stop with
+    ///   eval_worklist_panel pending=0 because only jp_wait-observed fuses called EvalWorklist.capture.
+    /// - Add a small worklist lifecycle: reset per attempt, ensure-capture from TermCycleFuse, and
+    ///   promote one frame to ready_explicit_loop so console/JSONL prove the frontier survived.
+    /// - Keep this source-generic and policy-stable: no listm/runtime hardcodes, no budget tuning, no env var.
+    ///
+    /// ALPHA338 WORKLIST VISIBILITY + CONSOLE FRONTIER:
+    /// - Promote the alpha337 EvalWorklist seed into an inspectable pending frontier with snapshot/panel helpers.
+    /// - Thread the captured frame into JP console diagnostics so stalled Hopac runs show both scheduler state
+    ///   and evaluator-frontier state in the same pasteable panel.
+    /// - Emit a machine-readable eval_worklist_panel event at capture/retry-stop boundaries; still no source-specific
+    ///   stdlib hacks and no new env-var fallback policy.
+    /// - This is the last scaffold before replacing recursive term/ty descent with a real explicit EvalWorklist loop.
+    ///
+    /// ALPHA337 GENERIC WORKLIST FRAME SEED:
+    /// - This is the first actual explicit worklist data structure, not another guard-budget tweak.
+    /// - Adds EvalWorklist.Frame plus a bounded pending queue that captures kind/key/site/depth/re/trace
+    ///   from the current term-cycle fuse.
+    /// - jp_wait now records an eval_worklist_frame before raising the explicit-worklist frontier,
+    ///   preserving a resumable evaluator frame shape for the upcoming loop implementation.
+    /// - Still generic: no source-specific isKnownX checks and no fallback env vars.
+    ///
+    /// ALPHA336 FRONTIER TRACE TYPE-ORDER FIX:
+    /// - Fix FS0039 by removing premature Trace annotations from TermCycleFuse.
+    /// - Let F# infer the trace element type from later s.trace/PartEvalTypeError usage, after Trace is declared.
+    /// - Preserve alpha335 semantics: source-generic frontier trace carry, no env vars, no guard-budget tuning.
+    ///
+    /// ALPHA335 HONEST FRONTIER TRACE CARRY:
+    /// - Acknowledge the last ~20 alphas as mostly containment/diagnostic work: useful, but not a
+    ///   semantic fix for the recursive evaluator frontier.
+    /// - Start the actual worklist boundary by carrying a compact trace inside TermCycleFuse itself.
+    ///   jp_wait no longer has to raise an empty-trace frontier when it observes a worker fuse.
+    /// - Keep the policy generic: no source-specific branches, no isKnownX checks, no fallback env vars.
+    /// - The next alpha must use this captured frontier trace to replace the recursive term/ty descent
+    ///   with an explicit evaluator worklist at the repeated deep-cycle shape.
+
+    /// ALPHA334 EXPLICIT EVAL-WORKLIST FRONTIER SCAFFOLD:
+    /// - No source-specific policy branches and no environment variables.
+    /// - Convert the repeated deep sequential EJP0011 cycle into a generic worklist frontier,
+    ///   avoiding a pointless parallel->sequential replay when jp_wait already observed the fuse.
+    /// - Centralize frontier JSON emission in EvalWorklistFrontier so the next alpha can replace
+    ///   recursive evaluator descent with an explicit stack/worklist at one integration point.
+    /// - Keep trace compact and useful; the policy lives on evaluator shape, not source filenames.
+
+    /// ALPHA333 GENERIC STACK-SAFE FRONTIER ESCALATION:
+    /// - No source-specific policy branches and no environment variables.
+    /// - Stop letting the same forced-sequential evaluator cycle climb to ~10k frames.
+    ///   The generic stack-safe frontier now trips at 4096 depth with a 1024 re-entry cap.
+    /// - Forced-sequential jp_wait no longer steals evaluator work; it only watches liveness,
+    ///   so a single huge stolen job cannot hide the elapsed stall cap.
+    /// - Retry JSON carries a policy_next marker pointing at the stack-safe worklist refactor.
+
+    /// ALPHA332 WAITER-FIRST FRONTIER HARDENING:
+    /// - No source-specific policy branches and no environment variables.
+    /// - Forced-sequential jp_wait now checks its elapsed stall fuse before stealing work,
+    ///   so the waiter cannot spend tens of seconds executing one more saturated evaluator job.
+    /// - Forced-sequential waiters only help during a tiny warmup window; after that workers run
+    ///   jobs while the waiter remains responsive enough to report the real frontier.
+    /// - EJP0014 under forced sequential emits a generic eval_frontier JSON event.
+    ///
+    /// ALPHA331 GENERIC FORCED-SEQUENTIAL STALL HARDENING:
+    /// - No source-specific policy branches. Forced-seq waits now use a hard elapsed cap,
+    ///   so incidental progress cannot postpone EJP0014 forever.
+    /// - Retry diagnostics for scheduler stalls are compacted around policy + hotkeys,
+    ///   keeping trace useful while avoiding sidecar walls.
+    ///
     /// ALPHA277 WRITE_ABORT CONSOLE DIAG:
     /// When WriteGuard blocks output (unstable generation, large shrink, or truncation suspects),
     /// the compiler now prints a compact diag block to stderr (recent invalidations + sidecar tail)
@@ -1036,13 +1112,31 @@ module spiral_compiler =
                      .Replace("\n","\\n")
                      .Replace("\t","\\t")
                 "\"" + s + "\""
+        let private run_id = System.Guid.NewGuid().ToString("N")
         let emit (json: string) =
             try
-                System.Console.Error.WriteLine(json)
+                let trimmed = if System.Object.ReferenceEquals(json,null) then "" else json.Trim()
+                let already_v1 = trimmed.StartsWith("{\"v\":1,")
+                let line =
+                    if already_v1 then trimmed
+                    elif trimmed.StartsWith("{") && trimmed.EndsWith("}") then
+                        let body = trimmed.Substring(1, trimmed.Length - 2)
+                        let ts = string (System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
+                        sprintf "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,\"run_id\":%s,%s}" ts pid tid (esc run_id) body
+                    else
+                        let ts = string (System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
+                        sprintf "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"diag\",\"msg\":%s}" ts pid tid (esc run_id) (esc trimmed)
+                System.Console.Error.WriteLine(line)
                 System.Console.Error.Flush()
             with _ -> ()
         let retry (code: string) (gen_before: int) (gen_after: int) (attempt: int) (max_attempts: int) (file: string) (backend: string) (is_gen_wait: bool) (seq: bool) (dop_env: int) (dop_forced: int) =
             emit (sprintf "{\"kind\":\"retry\",\"code\":%s,\"gen_before\":%d,\"gen_after\":%d,\"attempt\":%d,\"max_attempts\":%d,\"file\":%s,\"backend\":%s,\"gen_wait\":%b,\"seq\":%b,\"dop_env\":%d,\"dop_forced\":%d}" (esc code) gen_before gen_after attempt max_attempts (esc file) (esc backend) is_gen_wait seq dop_env dop_forced)
+        let retryStop (code: string) (reason: string) (attempt: int) (max_attempts: int) (file: string) (backend: string) (key: string) (site: string) (depth: int) (re: int) (max_re: int) =
+            emit (sprintf "{\"kind\":\"retry_stop\",\"code\":%s,\"reason\":%s,\"attempt\":%d,\"max_attempts\":%d,\"file\":%s,\"backend\":%s,\"key\":%s,\"site\":%s,\"depth\":%d,\"re\":%d,\"max_re\":%d}" (esc code) (esc reason) attempt max_attempts (esc file) (esc backend) (esc key) (esc site) depth re max_re)
         let termCycle (key: string) (depth: int) (site: string) (gen: int) (re: int) (max_re: int) (big: bool) (hs: string) (ks: string) (count: int) (panic: bool) =
             // Defensive truncation: term-cycle payloads can become huge and contribute to stack/alloc pressure
             let hs =
@@ -1053,7 +1147,10 @@ module spiral_compiler =
                 if System.Object.ReferenceEquals(ks,null) then "" 
                 elif ks.Length > 2048 then ks.Substring(0,2048) + "…" 
                 else ks
-            emit (sprintf "{\"kind\":\"term_cycle\",\"code\":%s,\"key\":%s,\"depth\":%d,\"site\":%s,\"gen\":%d,\"re\":%d,\"max_re\":%d,\"big\":%b,\"count\":%d,\"panic\":%b,\"hs\":%s,\"ks\":%s}" (esc EJPCodes.EJP0011) (esc key) depth (esc site) gen re max_re big count panic (esc hs) (esc ks))
+            let compact = count > 1 || (panic && depth > 768)
+            let hs_out = if compact then "" else hs
+            let ks_out = if compact then "" else ks
+            emit (sprintf "{\"kind\":\"term_cycle\",\"code\":%s,\"key\":%s,\"depth\":%d,\"site\":%s,\"gen\":%d,\"re\":%d,\"max_re\":%d,\"big\":%b,\"count\":%d,\"panic\":%b,\"compact\":%b,\"hs\":%s,\"ks\":%s}" (esc EJPCodes.EJP0011) (esc key) depth (esc site) gen re max_re big count panic compact (esc hs_out) (esc ks_out))
 
 
     module TermCycleWatchdog =
@@ -1073,6 +1170,170 @@ module spiral_compiler =
                 | _ ->
                     seen.[key] <- struct(gen,1,1)
                     1)
+
+
+    /// Global one-way fuse for EJP0011 panic.
+    ///
+    /// Why alpha316 needs this: under parallel evaluation, one worker can detect a real
+    /// re-entrant term/type cycle and raise EJP0011, while sibling workers keep descending
+    /// through the same poisoned graph. That produced useful compact JSONL in alpha315, but
+    /// still ended in a process-level StackOverflow. This fuse turns the first panic cycle
+    /// into an immediate minimal abort for every later evaluator entry, avoiding diagnostic
+    /// recursion and preventing sibling workers from amplifying the cycle.
+    module TermCycleFuse =
+        let private lock_obj = obj()
+        let mutable private tripped = false
+        let mutable private firstKey = ""
+        let mutable private firstSite = ""
+        let mutable private firstDepth = 0
+        let mutable private firstGen = 0
+        let mutable private firstRe = 0
+        let mutable private firstMaxRe = 0
+        let mutable private firstTrace = []
+
+        let private esc (s: string) =
+            if System.Object.ReferenceEquals(s,null) then "null" else
+                let s =
+                    s.Replace("\\","\\\\")
+                     .Replace("\"","\\\"")
+                     .Replace("\r","\\r")
+                     .Replace("\n","\\n")
+                     .Replace("\t","\\t")
+                "\"" + s + "\""
+
+        let private compactTrace tr =
+            let maxFrontierTrace = 48
+            match tr with
+            | [] -> []
+            | _ ->
+                let head = tr |> List.truncate (maxFrontierTrace / 2)
+                let tail =
+                    tr
+                    |> List.rev
+                    |> List.truncate (maxFrontierTrace - head.Length)
+                    |> List.rev
+                // Preserve order while avoiding duplicate overlap when the trace is already short.
+                if head.Length + tail.Length >= tr.Length then tr
+                else head @ tail
+
+        let tripWithTrace (key: string) (site: string) (depth: int) (gen: int) (re: int) (maxRe: int) trace : unit =
+            let shouldEmit =
+                lock lock_obj (fun () ->
+                    if tripped then false
+                    else
+                        tripped <- true
+                        firstKey <- if System.Object.ReferenceEquals(key,null) then "" else key
+                        firstSite <- if System.Object.ReferenceEquals(site,null) then "" else site
+                        firstDepth <- depth
+                        firstGen <- gen
+                        firstRe <- re
+                        firstMaxRe <- maxRe
+                        firstTrace <- compactTrace trace
+                        true)
+            if shouldEmit then
+                try
+                    let traceLen = lock lock_obj (fun () -> firstTrace.Length)
+                    DiagJson.emit (sprintf "{\"kind\":\"term_cycle_fuse\",\"code\":%s,\"key\":%s,\"site\":%s,\"depth\":%d,\"gen\":%d,\"re\":%d,\"max_re\":%d,\"trace_lines\":%d}" (esc EJPCodes.EJP0011) (esc key) (esc site) depth gen re maxRe traceLen)
+                with _ -> ()
+
+        let trip (key: string) (site: string) (depth: int) (gen: int) (re: int) (maxRe: int) : unit =
+            tripWithTrace key site depth gen re maxRe []
+
+        let isTripped () : bool = lock lock_obj (fun () -> tripped)
+
+        let describe () : string * string * int * int * int * int =
+            lock lock_obj (fun () -> firstKey, firstSite, firstDepth, firstGen, firstRe, firstMaxRe)
+
+        let traceSnapshot () =
+            lock lock_obj (fun () -> firstTrace)
+
+        /// Clear the one-way fuse before a whole-build retry.
+        ///
+        /// The fuse stays one-way inside one parallel attempt, but alpha318 can use the
+        /// tripped fuse as a signal to retry the whole build in sequential mode.
+        let reset () : unit =
+            lock lock_obj (fun () ->
+                tripped <- false
+                firstKey <- ""
+                firstSite <- ""
+                firstDepth <- 0
+                firstGen <- 0
+                firstRe <- 0
+                firstMaxRe <- 0
+                firstTrace <- [])
+
+
+    /// Centralized evaluator fallback budgets.
+    ///
+    /// alpha326: hardcoded only. Keep the parallel attempt strict, but give forced
+    /// sequential mode a single legacy-style budget so future changes are policy edits,
+    /// not scattered magic numbers. This module intentionally does not reference
+    /// BigStack because it is declared later in the compiler file.
+    module EvalFallbackPolicy =
+        let depthBase : int = 2048
+        let parallelBigDepth : int = 4096
+        let sequentialBigDepth : int = 32768
+        let sequentialReentryMax : int = 4096
+        let sequentialJpWaitStallMs : int64 = 5000L
+        let sequentialJpWaitHelpWindowMs : int64 = 0L
+        let sequentialJpWaitSlowJobs : int = 4
+        let sequentialDeepCycleDepth : int = 4096
+        let sequentialDeepCycleReentryMax : int = 1024
+
+        let maxDepthBig (seqNow: bool) : int =
+            if seqNow then sequentialBigDepth else parallelBigDepth
+
+        let maxReentry (seqNow: bool) (invNow: int64) (depth: int) : int =
+            if seqNow && depth >= sequentialDeepCycleDepth then sequentialDeepCycleReentryMax
+            elif seqNow then sequentialReentryMax
+            elif depth > 512 then 64
+            elif invNow > 0L then 128
+            else 256
+
+        let warnReentry (maxReentryBase: int) : int = max 32 (maxReentryBase / 4)
+
+        let retryStopReasonForCycle (_key: string) (_site: string) (depth: int) (re: int) (maxRe: int) =
+            if depth >= sequentialDeepCycleDepth && maxRe > 0 && re > maxRe then
+                "deep_reentry_saturation_after_sequential_retry"
+            elif depth >= sequentialBigDepth / 2 then
+                "deep_reentrant_cycle_after_sequential_retry"
+            elif maxRe > 0 && re > maxRe then
+                "reentry_budget_exhausted_after_sequential_retry"
+            else
+                "semantic_cycle_after_sequential_retry"
+
+        let describe (seqNow: bool) (invNow: int64) (depth: int) =
+            sprintf "seq=%b inv=%d depth=%d max_re=%d max_depth_big=%d seq_wait_stall_ms=%d seq_wait_help_window_ms=%d deep_cycle_depth=%d deep_cycle_max_re=%d stall_clock=%s policy_next=explicit_eval_worklist" seqNow invNow depth (maxReentry seqNow invNow depth) (maxDepthBig seqNow) sequentialJpWaitStallMs sequentialJpWaitHelpWindowMs sequentialDeepCycleDepth sequentialDeepCycleReentryMax (if seqNow then "elapsed" else "idle")
+
+
+    /// Generic boundary marker for the next stack-safe evaluator step.
+    ///
+    /// This deliberately does not know about source files such as listm/core/runtime.
+    /// It only records evaluator shape: sequential fallback, depth, re-entry, and fuse state.
+    module EvalWorklistFrontier =
+        let private esc (s: string) =
+            if System.Object.ReferenceEquals(s,null) then "null" else
+                let s =
+                    s.Replace("\\","\\\\")
+                     .Replace("\"","\\\"")
+                     .Replace("\r","\\r")
+                     .Replace("\n","\\n")
+                     .Replace("\t","\\t")
+                "\"" + s + "\""
+
+        let isDeepSequentialCycle (depth: int) (re: int) (maxRe: int) =
+            depth >= EvalFallbackPolicy.sequentialDeepCycleDepth
+            && maxRe > 0
+            && re > maxRe
+
+        let emit (code: string) (reason: string) (key: string) (site: string) (depth: int) (re: int) (maxRe: int) =
+            DiagJson.emit (
+                sprintf "{\"kind\":\"eval_frontier\",\"code\":%s,\"reason\":%s,\"key\":%s,\"site\":%s,\"depth\":%d,\"re\":%d,\"max_re\":%d,\"policy\":\"stack_safe_worklist_required\",\"policy_next\":\"explicit_eval_worklist\"}"
+                    (esc code) (esc reason) (esc key) (esc site) depth re maxRe)
+
+        let reasonForCycle (fallbackReason: string) (depth: int) (re: int) (maxRe: int) =
+            if isDeepSequentialCycle depth re maxRe then "explicit_worklist_required_after_sequential_cycle"
+            else fallbackReason
 
 
     module Utils =
@@ -5740,10 +6001,24 @@ module spiral_compiler =
                 let results = Array.zeroCreate<'b> items.Length
                 let opts = System.Threading.Tasks.ParallelOptions()
                 opts.MaxDegreeOfParallelism <- max 1 concurrency
-                System.Threading.Tasks.Parallel.For(0, items.Length, opts, fun i ->
-                    results.[i] <- f items.[i]
-                ) |> ignore
-                results
+                let first_exn_lock = obj()
+                let mutable first_exn : exn option = None
+                System.Threading.Tasks.Parallel.For(
+                    0, items.Length, opts,
+                    System.Action<int,System.Threading.Tasks.ParallelLoopState>(fun i loop_state ->
+                        if not loop_state.ShouldExitCurrentIteration then
+                            try
+                                results.[i] <- f items.[i]
+                            with ex ->
+                                lock first_exn_lock (fun () ->
+                                    match first_exn with
+                                    | None -> first_exn <- Some ex
+                                    | Some _ -> ())
+                                loop_state.Stop())
+                    ) |> ignore
+                match first_exn with
+                | Some ex -> raise ex
+                | None -> results
     
         // Parallel execution layer - uses all CPU cores by default
         let mutable private forcedConcurrency = 0
@@ -9809,7 +10084,215 @@ module spiral_compiler =
     /// ### PartEvalTypeError
     /// Raised to abort partial-eval when we detect irrecoverable type mismatch / cache corruption signals.
     exception PartEvalTypeError of Trace * string
-    
+    /// ### EvalWorklist
+    /// Generic explicit evaluator-worklist seed.
+    ///
+    /// This is intentionally shape-based, not source-based: it records a blocked evaluator frame
+    /// (term/ty/unknown, key, site, depth, re-entry budget, compact trace) so future alphas can
+    /// move recursive descent into a resumable loop without hardcoding stdlib/module names.
+    module EvalWorklist =
+        open System
+        open System.Collections.Concurrent
+
+        type Frame = {
+            kind: string
+            key: string
+            site: string
+            depth: int
+            re: int
+            maxRe: int
+            trace: Trace
+            reason: string
+            status: string
+            cursor: int
+        }
+
+        let private pending = ConcurrentQueue<Frame>()
+
+        let private esc (s: string) =
+            if Object.ReferenceEquals(s,null) then "null" else
+                let s =
+                    s.Replace("\\","\\\\")
+                     .Replace("\"","\\\"")
+                     .Replace("\r","\\r")
+                     .Replace("\n","\\n")
+                     .Replace("\t","\\t")
+                "\"" + s + "\""
+
+        let private compactTrace (tr: Trace) : Trace =
+            let head = 16
+            let tail = 16
+            let n = tr.Length
+            if n <= head + tail + 1 then tr
+            else (tr |> List.truncate head) @ (tr |> List.rev |> List.truncate tail |> List.rev)
+
+        let private kindFromSite (site: string) =
+            if String.IsNullOrWhiteSpace site then "unknown"
+            elif site.StartsWith("term@", StringComparison.Ordinal) then "term"
+            elif site.StartsWith("ty@", StringComparison.Ordinal) then "ty"
+            else "unknown"
+
+        let pendingCount () = pending.Count
+
+        let private short (maxLen: int) (s: string) =
+            if Object.ReferenceEquals(s,null) then ""
+            elif maxLen <= 3 then s
+            elif s.Length > maxLen then s.Substring(0, maxLen - 3) + "..."
+            else s
+
+        let snapshot (maxn: int) : Frame list =
+            if maxn <= 0 then []
+            else pending.ToArray() |> Array.truncate maxn |> Array.toList
+
+        let frontierSummary () =
+            match snapshot 1 with
+            | frame :: _ ->
+                sprintf "frontier kind=%s status=%s depth=%d re=%d/%d trace=%d cursor=%d site=%s key=%s"
+                    frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length frame.cursor
+                    (short 96 frame.site) (short 120 frame.key)
+            | [] -> "frontier empty"
+
+        let panel () =
+            try
+                let n = pendingCount()
+                if n <= 0 then "" else
+                    let sb = System.Text.StringBuilder()
+                    sb.AppendFormat("eval.worklist pending={0}", n) |> ignore
+                    let frames = snapshot 3
+                    frames
+                    |> List.iteri (fun i frame ->
+                        sb.AppendLine() |> ignore
+                        let line =
+                            sprintf "  #%d kind=%s status=%s depth=%d re=%d/%d trace=%d site=%s"
+                                i frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (short 92 frame.site)
+                        sb.Append(line) |> ignore)
+                    sb.ToString().TrimEnd()
+            with _ -> ""
+
+        let emitPanel (event: string) =
+            try
+                let n = pendingCount()
+                let summary = frontierSummary()
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_panel\",\"event\":%s,\"pending\":%d,\"summary\":%s}"
+                        (esc event) n (esc summary))
+            with _ -> ()
+
+        let fromCycleFuse (reason: string) : Frame =
+            let key, site, depth, _gen, re, maxRe = TermCycleFuse.describe()
+            { kind = kindFromSite site
+              key = key
+              site = site
+              depth = depth
+              re = re
+              maxRe = maxRe
+              trace = TermCycleFuse.traceSnapshot() |> compactTrace
+              reason = reason
+              status = "blocked_by_reentry"
+              cursor = 0 }
+
+        let emit (event: string) (frame: Frame) : unit =
+            try
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_frame\",\"event\":%s,\"reason\":%s,\"frame_kind\":%s,\"key\":%s,\"site\":%s,\"depth\":%d,\"re\":%d,\"max_re\":%d,\"trace_lines\":%d,\"status\":%s,\"cursor\":%d}"
+                        (esc event) (esc frame.reason) (esc frame.kind) (esc frame.key) (esc frame.site) frame.depth frame.re frame.maxRe frame.trace.Length (esc frame.status) frame.cursor)
+            with _ -> ()
+
+        let reset () =
+            try
+                let mutable frame = Unchecked.defaultof<Frame>
+                while pending.TryDequeue(&frame) do ()
+            with _ -> ()
+
+        let tryPeek () : Frame option =
+            try
+                let mutable frame = Unchecked.defaultof<Frame>
+                if pending.TryPeek(&frame) then Some frame else None
+            with _ -> None
+
+        let capture (reason: string) : Frame =
+            let frame = fromCycleFuse reason
+            pending.Enqueue frame
+            emit "captured" frame
+            emitPanel "capture"
+            frame
+
+        let ensureCaptured (reason: string) : Frame option =
+            match tryPeek() with
+            | Some frame -> Some frame
+            | None ->
+                if TermCycleFuse.isTripped() then Some (capture reason)
+                else None
+
+        let private replaceHead (frame': Frame) : Frame =
+            let mutable old = Unchecked.defaultof<Frame>
+            if pending.TryDequeue(&old) then () else ()
+            pending.Enqueue frame'
+            frame'
+
+        let promoteHead (event: string) : Frame option =
+            try
+                let mutable frame = Unchecked.defaultof<Frame>
+                if pending.TryPeek(&frame) then
+                    let frame' = replaceHead { frame with status = "ready_explicit_loop"; cursor = frame.cursor + 1 }
+                    emit (event + ":promoted") frame'
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_consume\",\"event\":%s,\"pending\":%d,\"status\":%s,\"cursor\":%d,\"next\":\"bounded_trampoline\"}"
+                            (esc event) (pendingCount()) (esc frame'.status) frame'.cursor)
+                    Some frame'
+                else None
+            with _ -> None
+
+        let private traceAt (frame: Frame) (i: int) =
+            try
+                if i < 0 || i >= frame.trace.Length then ""
+                else
+                    let r = frame.trace.[i]
+                    let a, b = r.range
+                    sprintf "%s:%d:%d-%d:%d" r.path a.line a.character b.line b.character
+            with _ -> ""
+
+        let runBounded (event: string) (budget: int) : Frame option =
+            try
+                let limit = if budget <= 0 then 1 else min budget 64
+                let mutable frame = Unchecked.defaultof<Frame>
+                if pending.TryPeek(&frame) then
+                    let mutable f = frame
+                    let mutable steps = 0
+                    let mutable blocked = false
+                    while steps < limit && not blocked do
+                        let loc = traceAt f f.cursor
+                        let status' =
+                            if f.cursor < f.trace.Length then "tracing_explicit_loop"
+                            else "adapter_required"
+                        let f' = replaceHead { f with status = status'; cursor = f.cursor + 1 }
+                        emit (event + ":step") f'
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_step\",\"event\":%s,\"step\":%d,\"budget\":%d,\"frame_kind\":%s,\"status\":%s,\"cursor\":%d,\"trace_loc\":%s,\"next\":%s}"
+                                (esc event) steps limit (esc f'.kind) (esc f'.status) f'.cursor (esc loc)
+                                (esc (if f'.status = "adapter_required" then "wire_term_ty_continuation" else "advance_trace_cursor")))
+                        f <- f'
+                        steps <- steps + 1
+                        blocked <- f'.status = "adapter_required"
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_run\",\"event\":%s,\"steps\":%d,\"budget\":%d,\"pending\":%d,\"final_status\":%s,\"cursor\":%d}"
+                            (esc event) steps limit (pendingCount()) (esc f.status) f.cursor)
+                    Some f
+                else None
+            with _ -> None
+
+        let ensureCapturedAndRun (reason: string) (event: string) (budget: int) : Frame option =
+            match ensureCaptured reason with
+            | Some _ ->
+                promoteHead event |> ignore
+                runBounded event budget
+            | None -> None
+
+        let requiredMessage (msg: string) (frame: Frame) =
+            sprintf "%s\nEvalWorklistFrame: kind=%s status=%s depth=%d re=%d/%d trace_lines=%d pending=%d cursor=%d next=wire_term_ty_continuation"
+                msg frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (pendingCount()) frame.cursor
+
+
     /// ### JoinPointKey
     type JoinPointKey =
         | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
@@ -10297,6 +10780,7 @@ module spiral_compiler =
                     let gen0 = CacheGeneration.current()
                     let join_slice_ms = 250
                     let join_abort_ms = 240000
+                    let join_gen_change_abort_ms = 2000
                     let mutable waited = 0
                     let mutable gen_changed : (int64 * int64 * int) option = None
                     try
@@ -10305,9 +10789,20 @@ module spiral_compiler =
                             let gen1 = CacheGeneration.current()
                             if gen1 <> gen0 && Option.isNone gen_changed then
                                 gen_changed <- Some (gen0, gen1, waited)
-                                let note = sprintf "[spiral_compiler] EJP0018: BigStack join saw generation change (from %d to %d) tag=%s waited=%dms (will abort after join completes)" gen0 gen1 tag waited
+                                let note = sprintf "[spiral_compiler] EJP0018: BigStack join saw generation change (from %d to %d) tag=%s waited=%dms (short grace before abort)" gen0 gen1 tag waited
                                 try DiagSidecar.emit note with _ -> ()
                                 CacheGeneration.requestSequential ()
+                            match gen_changed with
+                            | Some (g0, g1, w1) when TermCycleFuse.isTripped() || waited - w1 >= join_gen_change_abort_ms ->
+                                let gEnd = CacheGeneration.current()
+                                let cycle_key, cycle_site, cycle_depth, _cycle_gen, cycle_re, cycle_max_re = TermCycleFuse.describe()
+                                let cycle =
+                                    if System.String.IsNullOrEmpty(cycle_key) then ""
+                                    else sprintf " cycle_key=%s cycle_site=%s cycle_depth=%d re=%d/%d" cycle_key cycle_site cycle_depth cycle_re cycle_max_re
+                                let msg = sprintf "[spiral_compiler] EJP0018: BigStack join aborted after generation change (from %d to %d; end=%d) tag=%s waited=%dms grace=%dms%s" g0 g1 gEnd tag waited join_gen_change_abort_ms cycle
+                                try DiagSidecar.emit msg with _ -> ()
+                                raise (PartEvalTypeError([], msg))
+                            | _ -> ()
                             if waited >= join_abort_ms then
                                 let msg = sprintf "[spiral_compiler] EJP0019: BigStack join stalled tag=%s waited=%dms" tag waited
                                 try DiagSidecar.emit msg with _ -> ()
@@ -10319,7 +10814,7 @@ module spiral_compiler =
                         raise (PartEvalTypeError([], msg))
 
                     match gen_changed with
-                    | Some (g0, g1, w1) ->
+                    | Some (g0, g1, _w1) ->
                         let gEnd = CacheGeneration.current()
                         let msg = sprintf "[spiral_compiler] EJP0018: BigStack join aborted due to generation change (from %d to %d; end=%d) tag=%s waited=%dms" g0 g1 gEnd tag waited
                         try DiagSidecar.emit msg with _ -> ()
@@ -11192,6 +11687,23 @@ module spiral_compiler =
             if x.Contains("Compiler: par") then x
             else x + sprintf "\nCompiler: par\nTraceDepth: %d" d.trace.Length
         raise (PartEvalTypeError(d.trace,x))
+
+    let raise_type_error_no_trace (d: LangEnv) (x: string) : 'a =
+        // alpha324: the trace was useful for finding listm/rust/testing/runtime, but the full
+        // thousands-frame payload is too noisy and can amplify stack/alloc pressure. Keep a
+        // compact head+tail trace so the supervisor still shows the causal path while bounded.
+        let compactTrace (tr: Trace) =
+            let head = 32
+            let tail = 16
+            let n = tr.Length
+            if n <= head + tail + 1 then tr
+            else
+                (tr |> List.truncate head)
+                @ (tr |> List.rev |> List.truncate tail |> List.rev)
+        let x =
+            if x.Contains("Compiler: par") then x
+            else x + sprintf "\nCompiler: par\nTraceDepth: %d\nTraceCompact: true" d.trace.Length
+        raise (PartEvalTypeError(compactTrace d.trace,x))
     
     /// ### data_to_rdata
     let data_to_rdata (d: LangEnv) (hc_table : HashConsTable) call_data =
@@ -12892,6 +13404,10 @@ module spiral_compiler =
                             elif nm.Length > 60 then nm.Substring(0,57) + "..."
                             else nm
                         sb.AppendFormat("  #{0} age={1} {2}", id, age, nm) |> ignore
+                let worklistPanel = EvalWorklist.panel()
+                if not (System.String.IsNullOrWhiteSpace worklistPanel) then
+                    sb.AppendLine() |> ignore
+                    sb.Append(worklistPanel) |> ignore
                 sb.ToString().TrimEnd()
             with _ -> ""
 
@@ -13434,6 +13950,22 @@ module spiral_compiler =
                         pending_fixup_done <- false
 
                     jp_throw_if_any ()
+                    // alpha330: under forced sequential fallback, a tripped evaluator fuse in a worker
+                    // must wake jp_wait immediately. Otherwise the main waiter can sit until the global
+                    // peval timeout and hide the original cycle behind EJP0018/EJP0014 noise.
+                    if CacheGeneration.isSequentialRequested() && TermCycleFuse.isTripped() then
+                        let cycle_key, cycle_site, cycle_depth, _cycle_gen, cycle_re, cycle_max_re = TermCycleFuse.describe()
+                        let frame0 = EvalWorklist.capture "jp_wait_observed_sequential_cycle_fuse"
+                        EvalWorklist.promoteHead "jp_wait" |> ignore
+                        let frame =
+                            match EvalWorklist.runBounded "jp_wait" 16 with
+                            | Some f -> f
+                            | None -> frame0
+                        let msg = sprintf "[spiral_compiler] EJP0011: jp_wait observed sequential term-cycle fuse key=%s site=%s depth=%d re=%d/%d" cycle_key cycle_site cycle_depth cycle_re cycle_max_re
+                        DiagSidecar.emit (EvalWorklist.requiredMessage msg frame)
+                        DiagSidecar.emit (EvalWorklist.panel())
+                        EvalWorklistFrontier.emit EJPCodes.EJP0011 "jp_wait_observed_sequential_cycle_fuse" cycle_key cycle_site cycle_depth cycle_re cycle_max_re
+                        raise (PartEvalTypeError(frame.trace, EvalWorklist.requiredMessage msg frame))
                     // ALPHA102: generation change while waiting is not benign here; abort and let the outer retry rebuild.
                     let curGen = CacheGeneration.current()
                     if curGen <> gen0 then
@@ -13467,20 +13999,22 @@ module spiral_compiler =
                             try if cd.CurrentCount > 0 then ignore (cd.Signal()) with _ -> ()
                             DiagSidecar.emit (sprintf "[spiral_compiler] EJP0019: jp_wait base-signal gen=%d cc=%d" gen0 cc)
 
-                    // Work-stealing: always drain a small batch while waiting (even under sequential fallback)
-                    ignore (jp_help_batch jp_help_batch_n)
-                    
-                    // Yield to OS scheduler periodically
-                    if (iterations &&& 63L) = 0L then
-                        System.Threading.Thread.Yield() |> ignore
-                    
-                    // Stall detection (ALPHA112): se lp=0, ancora no wait_start_ms (senão pode nunca abortar)
+                    // alpha332: stall detection now runs before work-stealing. In forced sequential
+                    // fallback, the waiter must stay responsive; otherwise it can spend tens of seconds
+                    // executing one more saturated evaluator job before it notices the elapsed fuse.
                     let now_ms = peval_sw.ElapsedMilliseconds
                     let lp = System.Threading.Interlocked.Read(&jp_last_progress_ms)
                     let base_ms = if lp > 0L then lp else wait_start_ms
-                    if jp_stall_abort_ms > 0L && now_ms - base_ms > jp_stall_abort_ms then
+                    let seq_wait_now = CacheGeneration.isSequentialRequested()
+                    let jp_wait_stall_abort_ms =
+                        if seq_wait_now then min jp_stall_abort_ms EvalFallbackPolicy.sequentialJpWaitStallMs
+                        else jp_stall_abort_ms
+                    let waited_ms = now_ms - wait_start_ms
+                    let idle_or_elapsed_ms = if seq_wait_now then waited_ms else now_ms - base_ms
+                    if jp_wait_stall_abort_ms > 0L && idle_or_elapsed_ms > jp_wait_stall_abort_ms then
+                        let pending_now = System.Threading.Interlocked.Read(&jp_pending_count)
                         // Se não há trabalho pendente nem fila, isso é leak de barreira -> force-close antes de abortar.
-                        if System.Threading.Interlocked.Read(&jp_pending_count) = 0L && jp_work_q.Count = 0 then
+                        if pending_now = 0L && jp_work_q.Count = 0 then
                             try
                                 // Mark this CountdownEvent as closed to avoid double-Signal base (multiple jp_wait callers).
                                 lock jp_barrier_lock (fun () ->
@@ -13501,16 +14035,21 @@ module spiral_compiler =
                                 DiagSidecar.emit (sprintf "[spiral_compiler] EJP0017: jp_wait force-closed after stall cc=%d gen=%d" cc0 gen0)
                             with _ -> ()
                         else
-                            let snap = diag_snapshot (sprintf "jp_wait stall iter=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
-                            let msg = sprintf "[spiral_compiler] EJP0014: jp_wait stalled for %dms iter=%d pending=%d q=%d cc=%d gen=%d" (now_ms - base_ms) iterations (System.Threading.Interlocked.Read(&jp_pending_count)) jp_work_q.Count cc gen0
+                            let snap = diag_snapshot (sprintf "jp_wait stall iter=%d pending=%d" iterations pending_now)
+                            let msg = sprintf "[spiral_compiler] EJP0014: jp_wait stalled for %dms iter=%d pending=%d q=%d cc=%d gen=%d abort_ms=%d clock=%s" idle_or_elapsed_ms iterations pending_now jp_work_q.Count cc gen0 jp_wait_stall_abort_ms (if seq_wait_now then "elapsed" else "idle")
+                            if seq_wait_now then
+                                try
+                                    DiagJson.emit (sprintf "{\"kind\":\"eval_frontier\",\"code\":\"%s\",\"reason\":\"forced_seq_jp_wait_stall\",\"wait_ms\":%d,\"pending\":%d,\"q\":%d,\"cc\":%d,\"policy\":\"jp_liveness_or_stack_safe_worklist_required\",\"policy_next\":\"explicit_eval_worklist\"}" EJPCodes.EJP0014 idle_or_elapsed_ms pending_now jp_work_q.Count cc)
+                                with _ -> ()
 
-                            // Alpha217: include current JP panel + top slow jobs so we can pinpoint the stuck spec/key.
+                            // Alpha217/332: include current JP panel + top slow jobs. Under forced sequential
+                            // keep this tiny; hotkey summaries in retry diagnostics carry the aggregate signal.
                             let panel0 = try jp_panel_provider () with _ -> ""
                             let panel =
                                 if System.String.IsNullOrEmpty panel0 then ""
                                 else "---- jp.panel ----\n" + panel0
 
-                            let slow0 = jp_slow_jobs_snapshot 12
+                            let slow0 = jp_slow_jobs_snapshot (if seq_wait_now then EvalFallbackPolicy.sequentialJpWaitSlowJobs else 12)
                             let slow =
                                 if slow0.IsEmpty then ""
                                 else "---- jp slow jobs ----\n" + (slow0 |> String.concat "\n")
@@ -13525,7 +14064,21 @@ module spiral_compiler =
 
                             DiagSidecar.emit diag
                             raise (PartEvalTypeError([], msg))
-                
+
+                    // Work-stealing: in forced-sequential fallback the waiter must not run evaluator jobs.
+                    // A single stolen deep job was enough to push an 8s cap into ~13s. Keep the
+                    // main waiter as a liveness observer; worker execution owns the actual job body.
+                    let should_help_waiter =
+                        (not seq_wait_now) || (EvalFallbackPolicy.sequentialJpWaitHelpWindowMs > 0L && waited_ms <= EvalFallbackPolicy.sequentialJpWaitHelpWindowMs)
+                    if should_help_waiter then
+                        let help_n = if seq_wait_now then 1 else jp_help_batch_n
+                        ignore (jp_help_batch help_n)
+                    elif (iterations &&& 255L) = 0L then
+                        System.Threading.Thread.Yield() |> ignore
+
+                    // Yield to OS scheduler periodically
+                    if (iterations &&& 63L) = 0L then
+                        System.Threading.Thread.Yield() |> ignore
                 // Log excessive iterations
                 if iterations > 10000L then
                     DiagSidecar.emit (sprintf "jp_wait: iterations=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
@@ -14045,6 +14598,10 @@ module spiral_compiler =
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_tprepass_or fallback x
             let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
+            if TermCycleFuse.isTripped() then
+                EvalWorklist.ensureCapturedAndRun "ty_entry_global_fuse" "ty_entry" 8 |> ignore
+                let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
+                raise_type_error s (sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting ty worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
     
@@ -14055,20 +14612,19 @@ module spiral_compiler =
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
+
+            use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
+            use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
+
     
             // Re-entrancy limits: keep them bounded so real cycles fail fast (and avoid multi-minute JP stalls).
             // These handle legitimate re-entrancy from staging loops (e.g., listm'.spi)
             let invNow = CacheGeneration.invalidationCount()
             let seqNow = CacheGeneration.isSequentialRequested()
-            let max_reentry_base =
-                // Tighten re-entrancy caps when recursion is already deep: prevents hard StackOverflow
-                // in long cycles (EJP0011) before we can unwind safely.
-                if depth > 512 then 64
-                elif seqNow || invNow > 0 then 128
-                else 256
-            let max_reentry = if BigStack.isActive() then min 4096 (max_reentry_base * 4) else max_reentry_base
+            let max_reentry_base = EvalFallbackPolicy.maxReentry seqNow invNow depth
+            let max_reentry = max_reentry_base // alpha316/326: no BigStack multiplier; forced sequential gets a centralized legacy budget
             let max_reentry_key = max_reentry
-            let warn_reentry = max 32 (max_reentry_base / 4)
+            let warn_reentry = EvalFallbackPolicy.warnReentry max_reentry_base
     
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
@@ -14084,7 +14640,14 @@ module spiral_compiler =
                     CacheGeneration.requestSequential ()
                     let genNow = int (CacheGeneration.current())
                     DiagSidecar.emit (sprintf "%s ty cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site genNow reCount max_reentry big hs ks)
-                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth genNow reCount max_reentry big)
+                    if big || depth > 512 then
+                        TermCycleFuse.tripWithTrace (sprintf "ty#%d" nodeId) site depth genNow reCount max_reentry s.trace
+                        EvalWorklist.ensureCapturedAndRun "direct_ty_cycle_node" "ty_cycle" 16 |> ignore
+                    let errEnv = if depth > 256 then s else (add_trace s r0)
+                    if depth > 256 then
+                        raise_type_error_no_trace errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth genNow reCount max_reentry big)
+                    else
+                        raise_type_error errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth genNow reCount max_reentry big)
             if reKey > 1 then
                 if reKey = 2 then
                     DiagSidecar.emitKeyedSample (sprintf "[spiral_compiler] EJP0011W|ty|%s" nodeKey) (sprintf "[spiral_compiler] EJP0011W ty re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
@@ -14097,17 +14660,24 @@ module spiral_compiler =
                     DiagSidecar.emit (sprintf "%s ty cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site genNow reKey max_reentry_key big hs ks)
                     let tc_count = TermCycleWatchdog.note ("ty:" + nodeKey) genNow
                     let tc_panic = big || tc_count >= 2
-                    if tc_panic then DiagSidecar.emit (sprintf "%s ty cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey genNow tc_count)
+                    if tc_panic then
+                        DiagSidecar.emit (sprintf "%s ty cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey genNow tc_count)
+                        TermCycleFuse.tripWithTrace ("ty:" + nodeKey) site depth genNow reKey max_reentry_key s.trace
+                        EvalWorklist.ensureCapturedAndRun "direct_ty_cycle_key" "ty_cycle" 16 |> ignore
                     DiagJson.termCycle ("ty:" + nodeKey) depth site genNow reKey max_reentry_key big hs ks tc_count tc_panic
-                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth genNow reKey max_reentry_key big)
-            use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
-            use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
-    
-            // Maximum recursion depth before triggering BigStack pivot
-            // - Base: 2048 (conservative for main stack)
-            // - BigStack: 4096 (prevents hard StackOverflow in long re-entrant cycles; real scalability comes from iterative traversals)
-            let max_depth_base = 2048
-            let max_depth_big = 4096
+                    let errEnv = if depth > 256 then s else (add_trace s r0)
+                    if depth > 256 then
+                        raise_type_error_no_trace errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth genNow reKey max_reentry_key big)
+                    else
+                        raise_type_error errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth genNow reKey max_reentry_key big)
+                
+            // Maximum recursion depth before triggering BigStack pivot.
+            // Parallel/degraded attempts stay conservative, but once alpha318+ has forced a
+            // sequential fallback we give the old non-parallel path more room. The runtime
+            // stack check remains active, so this is bounded legacy compatibility rather than
+            // returning to unguarded recursion.
+            let max_depth_base = EvalFallbackPolicy.depthBase
+            let max_depth_big = EvalFallbackPolicy.maxDepthBig seqNow
             let max_depth = if BigStack.isActive() then max_depth_big else max_depth_base
 
             let deepSitesShort () =
@@ -14153,7 +14723,11 @@ module spiral_compiler =
                 let bigActive = BigStack.isActive()
                 let mbTy = BigStack.getMb "ty"
                 DiagSidecar.emit (sprintf "%s ty recursion depth exceeded depth=%d max=%d base=%d bigActive=%b mb=%d site=%s gen=%d deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth max_depth_base bigActive mbTy site newGen deepSites reasons)
-                raise_type_error (add_trace s r0) (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+                let errEnv = if depth > 256 then s else (add_trace s r0)
+                if depth > 256 then
+                    raise_type_error_no_trace errEnv (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+                else
+                    raise_type_error errEnv (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
     
             match x with
             | TPatternRef _ -> failwith "Compiler error: TPatternRef should have been eliminated during the prepass."
@@ -14482,6 +15056,10 @@ module spiral_compiler =
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_e_or fallback x
             let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
+            if TermCycleFuse.isTripped() then
+                EvalWorklist.ensureCapturedAndRun "term_entry_global_fuse" "term_entry" 8 |> ignore
+                let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
+                raise_type_error s (sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting term worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
     
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
@@ -14493,15 +15071,18 @@ module spiral_compiler =
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
             let reKey = EvalCycleGuardKey.enter nodeKey
+
+            use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
+            use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
+
     
             // Re-entrancy limits: keep them bounded so real cycles fail fast (and avoid multi-minute JP stalls).
             let invNow = CacheGeneration.invalidationCount()
             let seqNow = CacheGeneration.isSequentialRequested()
-            let max_reentry_base =
-                if seqNow || invNow > 0 then 256 else 1024
-            let max_reentry = if BigStack.isActive() then min 4096 (max_reentry_base * 4) else max_reentry_base
+            let max_reentry_base = EvalFallbackPolicy.maxReentry seqNow invNow depth
+            let max_reentry = max_reentry_base // alpha316/326: no BigStack multiplier; forced sequential gets a centralized legacy budget
             let max_reentry_key = max_reentry
-            let warn_reentry = max 32 (max_reentry_base / 4)
+            let warn_reentry = EvalFallbackPolicy.warnReentry max_reentry_base
     
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
@@ -14519,11 +15100,19 @@ module spiral_compiler =
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
-                    let newGen, _invN =
-                        jp_invalidate_bounded (sprintf "%s|term_cycle|%s" EJPCodes.EJP0011 site) 1
-                            (sprintf "%s term cycle: re=%d/%d nodeId=%d depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reCount max_reentry nodeId depth site big hs ks)
-                    DiagSidecar.emit (sprintf "%s term cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry big hs ks)
-                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
+                    CacheGeneration.requestSequential ()
+                    let newGen = int (CacheGeneration.current())
+                    // ALPHA313: EJP0011 is non-retryable. Do not invalidate generation on term cycles;
+                    // invalidation turns a local recursion bug into a global retry storm.
+                    DiagSidecar.emit (sprintf "%s term cycle(no_invalidate): nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry big hs ks)
+                    if big || depth > 512 then
+                        TermCycleFuse.tripWithTrace (sprintf "term#%d" nodeId) site depth newGen reCount max_reentry s.trace
+                        EvalWorklist.ensureCapturedAndRun "direct_term_cycle_node" "term_cycle" 16 |> ignore
+                    let errEnv = if depth > 256 then s else (add_trace s r0)
+                    if depth > 256 then
+                        raise_type_error_no_trace errEnv (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
+                    else
+                        raise_type_error errEnv (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
             if reKey > 1 then
                 if reKey = 2 then
                     DiagSidecar.emitKeyedSample (sprintf "[spiral_compiler] EJP0011W|term|%s" nodeKey) (sprintf "[spiral_compiler] EJP0011W term re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
@@ -14536,23 +15125,26 @@ module spiral_compiler =
                     let hs = hashSnapShort ()
                     let ks = keySnapShort ()
                     let big = BigStack.isActive()
-                    let newGen, _invN =
-                        jp_invalidate_bounded (sprintf "%s|term_cycle_key|%s" EJPCodes.EJP0011 site) 1
-                            (sprintf "%s term cycle(key): re=%d/%d key=%s depth=%d site=%s big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 reKey max_reentry_key nodeKey depth site big hs ks)
-                    DiagSidecar.emit (sprintf "%s term cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site (int newGen) reKey max_reentry_key big hs ks)
+                    CacheGeneration.requestSequential ()
+                    let newGen = int (CacheGeneration.current())
+                    // ALPHA313: keyed EJP0011 is also non-retryable. Keep the current generation
+                    // so the caller gets one deterministic typed failure instead of retry churn.
+                    DiagSidecar.emit (sprintf "%s term cycle(key,no_invalidate): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key big hs ks)
                     let tc_count = TermCycleWatchdog.note nodeKey (int newGen)
                     let tc_panic = big || tc_count >= 2
-                    if tc_panic then DiagSidecar.emit (sprintf "%s term cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey (int newGen) tc_count)
+                    if tc_panic then
+                        DiagSidecar.emit (sprintf "%s term cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey (int newGen) tc_count)
+                        TermCycleFuse.tripWithTrace nodeKey site depth (int newGen) reKey max_reentry_key s.trace
+                        EvalWorklist.ensureCapturedAndRun "direct_term_cycle_key" "term_cycle" 16 |> ignore
                     DiagJson.termCycle nodeKey depth site (int newGen) reKey max_reentry_key big hs ks tc_count tc_panic
-                    raise_type_error (add_trace s r0) (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth (int newGen) reKey max_reentry_key big)
-            use _cycle_guard = { new System.IDisposable with member _.Dispose() = EvalCycleGuard.exit nodeObj }
-            use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
-    
-            // Maximum term recursion depth: keep bounded even on BigStack.
-            // BigStack increases stack size, but term frames are large; real scalability should come from iterative traversals.
-            // Empirically, letting this climb too high leads to hard StackOverflow before the guard can fire.
-            let max_depth_base = 2048
-            let max_depth_big = 4096
+                    let errEnv = if depth > 256 then s else (add_trace s r0)
+                    raise_type_error errEnv (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth (int newGen) reKey max_reentry_key big)
+                
+            // Maximum term recursion depth. Keep parallel attempts conservative, but give
+            // forced-sequential fallback a larger legacy-style budget. This is the bridge toward
+            // stack-safe evaluators: enough room for old list folds, still bounded by stack_check.
+            let max_depth_base = EvalFallbackPolicy.depthBase
+            let max_depth_big = EvalFallbackPolicy.maxDepthBig seqNow
             let max_depth = if BigStack.isActive() then max_depth_big else max_depth_base
     
             let deepSitesShort () =
@@ -14603,7 +15195,11 @@ module spiral_compiler =
                     |> List.map (fun r -> let (a,_) = r.range in sprintf "%s:%d:%d" r.path a.line a.character)
                     |> String.concat " <- "
                 DiagSidecar.emit (sprintf "%s term recursion depth exceeded depth=%d max=%d maxObs=%d site=%s gen=%d tid=%d bigActive=%b mb=%d trace=%s deepSites=[%s] reasons=[%s]" EJPCodes.EJP0009 depth max_depth maxObs site newGen tid bigActive mbTerm traceShort deepSites reasons)
-                raise_type_error (add_trace s r0) (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+                let errEnv = if depth > 256 then s else (add_trace s r0)
+                if depth > 256 then
+                    raise_type_error_no_trace errEnv (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
+                else
+                    raise_type_error errEnv (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
     
     
             let global' (x: string) = globals_add s x
@@ -17610,7 +18206,10 @@ module spiral_compiler =
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                 text.ToString()
             )
-            |> HopacExtensions.A.iter (fun t -> s.text.Append t |> ignore)
+            |> (fun ts ->
+                for i = 0 to ts.Length - 1 do
+                    s.text.Append(ts.[i]) |> ignore
+            )
         and tup x =
             match data_term_vars x with
             | [||] -> "()"
@@ -18430,7 +19029,10 @@ module spiral_compiler =
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                 text.ToString()
             )
-            |> HopacExtensions.A.iter (fun t -> s.text.Append t |> ignore)
+            |> (fun ts ->
+                for i = 0 to ts.Length - 1 do
+                    s.text.Append(ts.[i]) |> ignore
+            )
         and tup x =
             match data_term_vars x with
             | [||] -> "Nil      "
@@ -19248,7 +19850,10 @@ module spiral_compiler =
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                 text.ToString()
             )
-            |> HopacExtensions.A.iter (fun t -> s.text.Append t |> ignore)
+            |> (fun ts ->
+                for i = 0 to ts.Length - 1 do
+                    s.text.Append(ts.[i]) |> ignore
+            )
         and tup x =
             match data_term_vars x with
             | [||] -> "nil      "
@@ -24089,16 +24694,21 @@ module spiral_compiler =
         // Deduplicate globally by (path, line, col) and cap the number of frames shown.
         let cap = 48
         let seen = System.Collections.Generic.HashSet<struct (string * int * int)>()
-        let rec loop (acc : Trace) (acc_len : int) = function
-            | (r : Range) :: xs ->
+        let mutable acc : Trace = []
+        let mutable acc_len = 0
+        let mutable xs = x
+        // IMPORTANT: iterative (no recursion) to avoid stack overflows when the trace itself is huge.
+        while acc_len < cap && not xs.IsEmpty do
+            match xs with
+            | (r : Range) :: rest ->
                 let p = fst r.range
                 let key = struct (r.path, p.line, p.character)
                 if seen.Add key then
-                    if acc_len >= cap then loop acc acc_len xs
-                    else loop (r :: acc) (acc_len + 1) xs
-                else loop acc acc_len xs
-            | [] -> acc
-        List.map (show_position s) (loop [] 0 x), msg
+                    acc <- r :: acc
+                    acc_len <- acc_len + 1
+                xs <- rest
+            | [] -> xs <- []
+        List.map (show_position s) acc, msg
     
     /// ### BuildResult
     type BuildResult =
@@ -24406,6 +25016,8 @@ module spiral_compiler =
                                     "\"extra\":\"" + json_escape extra + "\"" +
                                     "}"
 
+                                // alpha315: mirror WRITE_ABORT to the machine JSONL channel as well as the human console.
+                                DiagJson.emit json
                                 Progress88.ConsoleMux88.writeLine("[spiral_compiler] " + json)
                                 Progress88.ConsoleMux88.writeLine("[spiral_compiler] WRITE_ABORT DIAG BEGIN")
                                 Progress88.ConsoleMux88.writeLine("[spiral_compiler] " + msg)
@@ -24582,14 +25194,11 @@ module spiral_compiler =
                                 emit "[spiral_compiler] BuildErrorTrace tail:"
                                 for t in tail do emit (sprintf "  %s" t)
                         
-                                // alpha169: quick hints based on hotspots
-                                let has (needle: string) =
-                                    top |> List.exists (fun (k,_) -> k.Contains needle)
+                                // alpha329: quick hints based on generic hotspot shape, not source-path names.
                                 if b.Contains("BigStack exhausted") || b.Contains("stack overflow") then
-                                    if has "listm.spi" then
-                                        emit "[spiral_compiler] Hint: hotspots include listm.spi (map/foldBack). This often indicates non-tail recursion over a large list under parallel invalidation. Consider rewriting listm.map/foldBack to be iterative/tail-recursive, or add a builtin fast-path for listm.map in the compiler."
-                                    if has "backend.spi" then
-                                        emit "[spiral_compiler] Hint: backend.spi hotspots under stack overflow often correlate with repeated backend_switch validation + cache thrash. Try forcing sequential for this file/build or tightening cache key reuse."
+                                    let repeated_hotspots = top |> List.filter (fun (_,c) -> c >= 5) |> List.length
+                                    if repeated_hotspots > 0 then
+                                        emit "[spiral_compiler] Hint: stack/deep-recursion failure has repeated hotspots. Prefer a stack-safe evaluator/worklist or memoized fixpoint path over raising recursion budgets."
                         with _ -> ()
                         trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / BuildErrorTrace code={code} trace_lines={a.Length} msg={msg_short}") _locals
                         HopacExtensions.start (Ch.send errors.traced {|trace=a; message=b|})
@@ -24641,8 +25250,18 @@ module spiral_compiler =
                                     let mutable soft_abort_count = 0
                                     let soft_abort_cap = 12
 
+                                    // alpha319: EJP0011 gets exactly one parallel->sequential recovery.
+                                    // If the clean sequential attempt still trips the fuse, the cycle is now
+                                    // considered semantic/reproducible and should fail immediately instead of
+                                    // burning identical attempts and emitting walls of retry diagnostics.
+                                    let mutable term_cycle_seq_stop_count = 0
+
 
                                     let rec attempt_build (attempt: int) (max_attempts: int) =
+                                        // alpha318: a tripped EJP0011 fuse is per-attempt, not per server lifetime.
+                                        // It suppresses sibling workers in the current attempt; a sequential retry must start clean.
+                                        TermCycleFuse.reset ()
+                                        EvalWorklist.reset ()
                                         if attempt = 0 then
                                             CacheGeneration.resetSequentialRequest ()
                                             HopacExtensions.applyEnvForcedConcurrency ()
@@ -24659,7 +25278,7 @@ module spiral_compiler =
                                             | :? PartEvalTypeError as e ->
                                                 let msg = e.Data1
                                                 match EJPCodes.classifyError msg with
-                                                | Some code when code = EJPCodes.EJP0002 || code = EJPCodes.EJP0003 || code = EJPCodes.EJP0007 || code = EJPCodes.EJP0008 || code = EJPCodes.EJP0009 || code = EJPCodes.EJP0010 ||  code = EJPCodes.EJP0012 || code = EJPCodes.EJP0013 || code = EJPCodes.EJP0014 || code = EJPCodes.EJP0016 || code = EJPCodes.EJP0018 || code = EJPCodes.EJP0019 || code = EJPCodes.EJP0020 || code = EJPCodes.EJP0030 ->
+                                                | Some code when code = EJPCodes.EJP0002 || code = EJPCodes.EJP0003 || code = EJPCodes.EJP0007 || code = EJPCodes.EJP0008 || code = EJPCodes.EJP0009 || code = EJPCodes.EJP0010 || code = EJPCodes.EJP0011 || code = EJPCodes.EJP0012 || code = EJPCodes.EJP0013 || code = EJPCodes.EJP0014 || code = EJPCodes.EJP0016 || code = EJPCodes.EJP0018 || code = EJPCodes.EJP0019 || code = EJPCodes.EJP0020 || code = EJPCodes.EJP0030 ->
                                                     // Retry logic: invalidate cache and optionally reduce parallelism
                                                     let gen_before = CacheGeneration.current ()
                                                     let is_gen_wait =
@@ -24667,22 +25286,104 @@ module spiral_compiler =
                                                         || (code = EJPCodes.EJP0016 && msg.Contains("dead ivar while waiting"))
                                                         || (code = EJPCodes.EJP0018 && (msg.Contains("generation change") || msg.Contains("generation changed")))
 
+                                                    let is_term_cycle_fuse =
+                                                        code = EJPCodes.EJP0011
+                                                        && (msg.Contains("global term-cycle fuse already tripped")
+                                                            || msg.Contains("jp_wait observed sequential term-cycle fuse")
+                                                            || msg.Contains("re-entrant term evaluation cycle detected")
+                                                            || msg.Contains("re-entrant type evaluation cycle detected"))
 
+                                                    let term_cycle_key, term_cycle_site, term_cycle_depth, term_cycle_gen, term_cycle_re, term_cycle_max_re =
+                                                        if is_term_cycle_fuse then TermCycleFuse.describe ()
+                                                        else "", "", 0, 0, 0, 0
+
+                                                    let is_term_cycle_after_seq =
+                                                        is_term_cycle_fuse
+                                                        && attempt > 0
+                                                        && CacheGeneration.isSequentialRequested()
+
+                                                    let is_jp_wait_observed_seq_cycle =
+                                                        code = EJPCodes.EJP0011
+                                                        && msg.Contains("jp_wait observed sequential term-cycle fuse")
+                                                        && CacheGeneration.isSequentialRequested()
+                                                        && EvalWorklistFrontier.isDeepSequentialCycle term_cycle_depth term_cycle_re term_cycle_max_re
+
+                                                    if is_term_cycle_after_seq || is_jp_wait_observed_seq_cycle then
+                                                        term_cycle_seq_stop_count <- term_cycle_seq_stop_count + 1
+                                                        let fallback_reason = EvalFallbackPolicy.retryStopReasonForCycle term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
+                                                        let cycle_stop_reason = EvalWorklistFrontier.reasonForCycle fallback_reason term_cycle_depth term_cycle_re term_cycle_max_re
+                                                        EvalWorklist.ensureCapturedAndRun cycle_stop_reason "retry_stop" 64 |> ignore
+                                                        DiagJson.retryStop code cycle_stop_reason attempt max_attempts file backend term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
+                                                        EvalWorklist.emitPanel "retry_stop"
+                                                        EvalWorklistFrontier.emit code cycle_stop_reason term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
+                                                        // alpha334: if jp_wait already saw the sequential fuse at a deep re-entry frontier,
+                                                        // do not replay the same evaluator graph just to rediscover it one module later.
+                                                        // The next implementation step is a real explicit worklist, not another retry.
+                                                        raise (PartEvalTypeError(e.Data0, e.Data1))
+
+                                                    let is_gen_wait_after_seq_cycle =
+                                                        is_gen_wait
+                                                        && attempt > 0
+                                                        && CacheGeneration.isSequentialRequested()
+                                                        && TermCycleFuse.isTripped()
+
+                                                    if is_gen_wait_after_seq_cycle then
+                                                        let cycle_key, cycle_site, cycle_depth, _cycle_gen, cycle_re, cycle_max_re = TermCycleFuse.describe()
+                                                        DiagJson.retryStop code "generation_wait_after_sequential_cycle" attempt max_attempts file backend cycle_key cycle_site cycle_depth cycle_re cycle_max_re
+                                                        // alpha329: after forced-sequential fallback has already tripped the cycle fuse,
+                                                        // a generation-wait retry only replays the same poisoned evaluator graph.
+                                                        raise (PartEvalTypeError(e.Data0, e.Data1))
+
+                                                    let is_depth_after_seq =
+                                                        code = EJPCodes.EJP0009
+                                                        && attempt > 0
+                                                        && CacheGeneration.isSequentialRequested()
+
+                                                    if is_depth_after_seq then
+                                                        let depth_site, depth_value, depth_max =
+                                                            let m = System.Text.RegularExpressions.Regex.Match(msg, @"depth=(\d+) max=(\d+)\) at ([^\r\n]+)")
+                                                            if m.Success then
+                                                                m.Groups.[3].Value, int m.Groups.[1].Value, int m.Groups.[2].Value
+                                                            else "", 0, 0
+                                                        DiagJson.retryStop code "stack_depth_after_sequential_retry" attempt max_attempts file backend "" depth_site depth_value 0 depth_max
+                                                        // alpha322/323: once forced-sequential fallback reaches the recursion-depth fuse,
+                                                        // further retries only replay the same stack-safe failure and hide the real work.
+                                                        // alpha323 also exports the depth/site/max fields so the next move is clear.
+                                                        raise (PartEvalTypeError(e.Data0, e.Data1))
+
+                                                    let is_jp_stall =
+                                                        code = EJPCodes.EJP0014
+
+                                                    let is_jp_stall_after_seq =
+                                                        is_jp_stall
+                                                        && attempt > 0
+                                                        && CacheGeneration.isSequentialRequested()
+
+                                                    if is_jp_stall_after_seq then
+                                                        // alpha327: EJP0014 under forced sequential is not a harmless soft abort anymore.
+                                                        // It means the legacy fallback is waiting on a poisoned/stalled JP graph.
+                                                        // Stop after one generation-clearing retry instead of burning minutes in a retry storm.
+                                                        DiagJson.retryStop code "jp_wait_stall_after_sequential_retry" attempt max_attempts file backend "" (DiagLastWait.get()) 0 0 0
+                                                        raise (PartEvalTypeError(e.Data0, e.Data1))
 
                                                     let is_soft_abort =
                                                         is_gen_wait
-                                                        || code = EJPCodes.EJP0014
+                                                        || (is_jp_stall && not (CacheGeneration.isSequentialRequested()))
                                                         || code = EJPCodes.EJP0018
                                                         || code = EJPCodes.EJP0020
                                                         || code = EJPCodes.EJP0030
 
                                                     let is_no_invalidate =
                                                         is_gen_wait
-                                                        || code = EJPCodes.EJP0014
-                                                    // For non-generation-change errors, force sequential execution for determinism
+                                                        || is_term_cycle_fuse
+                                                    // alpha327: EJP0014 is intentionally excluded from no-invalidate.
+                                                    // A JP wait stall should clear the generation once, otherwise the retry resumes the same stale wait graph.
+                                                    // For non-generation-change errors, force sequential execution for determinism.
+                                                    // alpha318: EJP0011 is treated as a parallel-poison/fallback signal first;
+                                                    // retry sequentially, consuming attempt budget but without invalidating the whole generation. If it is a real
+                                                    // semantic cycle, the sequential retry will reproduce it and bubble cleanly.
                                                     if not is_gen_wait then
                                                         HopacExtensions.forceConcurrencyForRetry 1
-
                                                         CacheGeneration.requestSequential ()
                                                     let mutable gen_after =
                                                         if is_no_invalidate then CacheGeneration.current ()
@@ -24694,9 +25395,16 @@ module spiral_compiler =
     
                                                     if is_gen_wait then System.Threading.Thread.Yield() |> ignore
     
-                                                    let trace_lines0, _ = show_trace s e.Data0 e.Data1
+                                                    let will_retry_ejp0011 =
+                                                        is_term_cycle_fuse
+                                                        && not is_term_cycle_after_seq
+                                                        && attempt + 1 < max_attempts
+
+                                                    let trace_lines0, _ =
+                                                        if will_retry_ejp0011 then [], ""
+                                                        else show_trace s e.Data0 e.Data1
                                                     let trace_lines =
-                                                        let max_trace = 320
+                                                        let max_trace = if is_term_cycle_fuse then 96 else 320
                                                         let is_big_stack =
                                                             code = EJPCodes.EJP0010
                                                             || msg.Contains("stack overflow")
@@ -24716,8 +25424,16 @@ module spiral_compiler =
                                                             else
                                                                 (trace_lines0 |> List.truncate max_trace)
                                                                 @ [ $"[spiral_compiler] ... ({n - max_trace} frames omitted) ..." ]
-                                                    let sidecar = DiagSidecar.snapshot 128
-                                                    let reasons = CacheGeneration.reasonsSnapshot 64
+                                                    let sidecar =
+                                                        // alpha331: retry diagnostics should preserve causal breadcrumbs without
+                                                        // flooding the console. EJP0014 sidecars are especially noisy because
+                                                        // they often contain hundreds of sampled EJP0011W re-entry warnings;
+                                                        // hotkey summaries below carry the aggregate signal.
+                                                        if will_retry_ejp0011 then []
+                                                        elif code = EJPCodes.EJP0014 then DiagSidecar.snapshot 16
+                                                        elif is_term_cycle_fuse then DiagSidecar.snapshot 32
+                                                        else DiagSidecar.snapshot 96
+                                                    let reasons = CacheGeneration.reasonsSnapshot (if is_term_cycle_fuse then 24 else 64)
                                                     let had_apply_mismatch = reasons |> List.exists (fun x -> x.Contains("apply mismatch"))
                                                     if is_gen_wait && had_apply_mismatch then
                                                         // alpha220: avoid invalidation storms; keep this as pure sequential-soft.
@@ -24750,10 +25466,14 @@ module spiral_compiler =
                                                           sprintf "gen=%d -> %d" gen_before gen_after
                                                           sprintf "dop_env=%d dop_forced=%d" (HopacExtensions.envForcedConcurrency()) (HopacExtensions.peekForcedConcurrency())
                                                           sprintf "last_wait=%s" (DiagLastWait.get())
-                                                          sprintf "jp_parallel=%s sequential_requested=%b"
+                                                          sprintf "jp_parallel=%s sequential_requested=%b term_cycle_fuse=%b"
                                                               (if is_gen_wait then "kept"
                                                                else if CacheGeneration.isSequentialRequested() then "forced=0" else "forced=1")
                                                               (CacheGeneration.isSequentialRequested())
+                                                              is_term_cycle_fuse
+                                                          sprintf "term_cycle_after_seq=%b seq_stop_count=%d fuse_key=%s fuse_site=%s"
+                                                              is_term_cycle_after_seq term_cycle_seq_stop_count term_cycle_key term_cycle_site
+                                                          sprintf "fallback_policy=%s" (EvalFallbackPolicy.describe (CacheGeneration.isSequentialRequested()) (CacheGeneration.invalidationCount()) term_cycle_depth)
                                                           "---- message ----" ] @ msg_lines @
                                                         [ "---- trace ----" ] @ trace_lines @
                                                         [ "---- sidecar ----" ] @ sidecar @
@@ -25263,4 +25983,15 @@ module spiral_compiler =
 // === ALPHA278 FOOTER ===
 // - WRITE_ABORT: ConsoleMux + structured json line + panel/extra snapshots.
 // - Fix WriteGuard write-path indentation (skipped/else).
+// if you cannot see this line, the file was truncated.
+
+// === ALPHA313 FOOTER ===
+// - EJP0011 term cycles are now non-invalidation failures: request sequential, keep generation, abort deterministically.
+// - Intended to stop panic loops from turning a local recursive key into global JP retry churn.
+// if you cannot see this line, the file was truncated.
+
+
+// === ALPHA336 FOOTER ===
+// - Fix FS0039 compile regression from alpha335 by removing premature Trace annotations in TermCycleFuse.
+// - Preserve trace-carrying frontier semantics; no source-specific policy and no fallback env vars.
 // if you cannot see this line, the file was truncated.
