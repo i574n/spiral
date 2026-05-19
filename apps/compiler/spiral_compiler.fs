@@ -13,7 +13,7 @@ module spiral_compiler =
     /// - Consume the alpha339 ready_explicit_loop frame with a bounded non-recursive trampoline,
     ///   emitting eval_worklist_step/eval_worklist_run JSONL instead of stopping at a marker event.
     /// - The trampoline intentionally runs on frame metadata first: it advances the captured trace cursor
-    ///   and stops with adapter_required until term/ty continuations are wired into the frame payload.
+    ///   and stops with continuation_envelope carrying replay anchors until term/ty replay is wired into the frame payload.
     /// - Direct term/ty cycle sites now seed the worklist immediately after tripping the fuse, so retry_stop
     ///   is no longer the first place that can observe the evaluator frontier.
     /// - Still generic: no listm/runtime hardcode, no budget/env knob, no new DU cases in the compiler AST.
@@ -10078,6 +10078,9 @@ module spiral_compiler =
         | ReV of ConsedNode<Tag * Ty>
         | ReHashMap of ConsedNode<(RData * RData)[]>
     
+    /// Alpha350 update: replay commit now acts as a resume handoff. When retry_stop observes
+    /// semantic_step_done/queue_depth=0, it invalidates the cache once and re-enters attempt_build
+    /// instead of raising the stale pre-commit EJP0011 message.
     /// ### Trace
     type Trace = Range list
 
@@ -10092,7 +10095,26 @@ module spiral_compiler =
     /// move recursive descent into a resumable loop without hardcoding stdlib/module names.
     module EvalWorklist =
         open System
-        open System.Collections.Concurrent
+
+        // ALPHA347: typed replay cell carried alongside the text envelope.
+        // The string payload remains for stable logs, but the driver now has a small typed
+        // object to hand to the future stack-safe term/ty stepper.
+        type ReplayCell = {
+            kind: string
+            shape: string
+            nodeId: int
+            envGlobalTerm: int
+            envStackTerm: int
+            envGlobalType: int
+            envStackType: int
+            seqLen: int
+            cseDepth: int
+            traceDepth: int
+            site: string
+            cursor: int
+            step: int
+            status: string
+        }
 
         type Frame = {
             kind: string
@@ -10105,9 +10127,32 @@ module spiral_compiler =
             reason: string
             status: string
             cursor: int
+            semanticPayload: string option
+            semanticCell: ReplayCell option
         }
 
-        let private pending = ConcurrentQueue<Frame>()
+        type ReplayTask = {
+            id: int64
+            key: string
+            driver: string
+            payload: string
+            status: string
+            event: string
+        }
+
+        // ALPHA342: single-flight continuation frontier.
+        //
+        // Alpha340 proved the bounded trampoline could advance the captured trace, but the log showed
+        // several Hopac/JP waiters promoting and running the same cycle concurrently. A ConcurrentQueue
+        // made that look like useful parallelism while actually duplicating the same frame and racing the
+        // cursor. Keep one canonical frontier per evaluator cycle until typed replay can consume the continuation envelope.
+        let private gate = obj()
+        let mutable private frontier : Frame option = None
+        let mutable private activeRun = false
+        let mutable private captureSeq = 0L
+        let mutable private replaySeq = 0L
+        let mutable private replayScheduledKey : string option = None
+        let mutable private replayQueue : ReplayTask list = []
 
         let private esc (s: string) =
             if Object.ReferenceEquals(s,null) then "null" else
@@ -10132,7 +10177,11 @@ module spiral_compiler =
             elif site.StartsWith("ty@", StringComparison.Ordinal) then "ty"
             else "unknown"
 
-        let pendingCount () = pending.Count
+        let private sameCycle (a: Frame) (b: Frame) =
+            a.kind = b.kind && a.key = b.key && a.site = b.site
+
+        let pendingCount () =
+            lock gate (fun () -> match frontier with Some _ -> 1 | None -> 0)
 
         let private short (maxLen: int) (s: string) =
             if Object.ReferenceEquals(s,null) then ""
@@ -10140,31 +10189,173 @@ module spiral_compiler =
             elif s.Length > maxLen then s.Substring(0, maxLen - 3) + "..."
             else s
 
+        let private formatCellPayload (cell: ReplayCell) =
+            sprintf "semantic_eval_payload(kind=%s,shape=%s,node_id=%d,env_term=%d/%d,env_type=%d/%d,seq_len=%d,cse_depth=%d,trace_depth=%d,site=%s,cursor=%d,step=%d,status=%s)"
+                cell.kind cell.shape cell.nodeId cell.envGlobalTerm cell.envStackTerm cell.envGlobalType cell.envStackType cell.seqLen cell.cseDepth cell.traceDepth cell.site cell.cursor cell.step cell.status
+
+        let private formatCell (cell: ReplayCell) =
+            sprintf "semantic_eval_cell(kind=%s,shape=%s,node_id=%d,cursor=%d,step=%d,status=%s,site=%s)"
+                cell.kind cell.shape cell.nodeId cell.cursor cell.step cell.status cell.site
+
         let snapshot (maxn: int) : Frame list =
             if maxn <= 0 then []
-            else pending.ToArray() |> Array.truncate maxn |> Array.toList
+            else lock gate (fun () -> match frontier with Some frame -> [frame] | None -> [])
+
+        let replayQueueDepth () =
+            lock gate (fun () -> replayQueue.Length)
+
+        let replayDriverStatus () =
+            lock gate (fun () ->
+                match replayQueue with
+                | task :: _ -> sprintf "%s/%s" task.driver task.status
+                | [] -> "none")
+
+        let semanticPayloadStatus () =
+            lock gate (fun () ->
+                match frontier with
+                | Some frame ->
+                    match frame.semanticCell, frame.semanticPayload with
+                    | Some _, _ -> "cell"
+                    | _, Some p when not (String.IsNullOrWhiteSpace p) -> "semantic"
+                    | _ -> "missing"
+                | None -> "none")
+
+        let hasSemanticStepDone () =
+            lock gate (fun () ->
+                match frontier with
+                | Some frame when frame.status = "semantic_step_done" -> true
+                | Some frame ->
+                    match frame.semanticCell with
+                    | Some cell when cell.status = "semantic_step_done" -> true
+                    | _ -> false
+                | None -> false)
+
+        let private semanticPayloadOf (frame: Frame) =
+            match frame.semanticCell, frame.semanticPayload with
+            | Some cell, _ -> formatCellPayload cell
+            | _, Some p when not (String.IsNullOrWhiteSpace p) -> p
+            | _ -> "semantic_eval_payload_missing"
+
+        let private semanticCellOf (frame: Frame) = frame.semanticCell
+
+        let private replayKey (frame: Frame) =
+            sprintf "%s|%s|%s|%d|%d" frame.kind frame.key frame.site frame.cursor frame.trace.Length
+
+        let private replayDriverFor (frame: Frame) =
+            match frame.kind with
+            | "term" -> "term_replay_driver"
+            | "ty" -> "ty_replay_driver"
+            | _ -> "unknown_replay_driver"
+
+        let private replayDriverNextFor (task: ReplayTask) (hasCell: bool) (hasSemantic: bool) =
+            match task.driver, hasCell, hasSemantic with
+            | "term_replay_driver", true, _ -> "execute_term_eval_stepper"
+            | "ty_replay_driver", true, _ -> "execute_ty_eval_stepper"
+            | "term_replay_driver", false, true -> "wire_term_typed_replay_cell"
+            | "ty_replay_driver", false, true -> "wire_ty_typed_replay_cell"
+            | "term_replay_driver", false, false -> "wire_term_eval_payload"
+            | "ty_replay_driver", false, false -> "wire_ty_eval_payload"
+            | _, true, _ -> "execute_unknown_eval_stepper"
+            | _, false, true -> "wire_unknown_typed_replay_cell"
+            | _ -> "wire_unknown_eval_payload"
+
+        // ALPHA349: typed replay-cell driver commit gate.
+        //
+        // Alpha347/348 proved the semantic payload can reach the replay driver and dispatch a reducer. It was still a
+        // string envelope, so the driver could only say "wire_term_eval_stepper". Alpha347
+        // keeps that textual envelope for diagnostics, but also carries a ReplayCell record
+        // and emits a deterministic eval_worklist_replay_step. This is the first stack-safe
+        // stepper boundary: it does not recurse into term/ty yet; it hands a typed cell to the
+        // future executor and deduplicates repeated driver ticks.
+        let private runReplayDriver (event: string) =
+            try
+                let taskOpt =
+                    lock gate (fun () ->
+                        match replayQueue with
+                        | task :: rest ->
+                            let cellOpt = frontier |> Option.bind semanticCellOf
+                            let hasCell = Option.isSome cellOpt
+                            let hasSemantic = hasCell || task.payload.Contains("semantic_eval_payload(")
+                            let status =
+                                if hasCell then "driver_ready_replay_cell"
+                                elif hasSemantic then "driver_ready_semantic_payload"
+                                else "driver_blocked_semantic_payload"
+                            let task' = { task with status = status }
+                            replayQueue <- task' :: rest
+                            Some(task', hasSemantic, cellOpt)
+                        | [] -> None)
+                match taskOpt with
+                | Some (task, hasSemantic, cellOpt) ->
+                    let hasCell = Option.isSome cellOpt
+                    let outcome =
+                        if hasCell then "typed_replay_cell_captured"
+                        elif hasSemantic then "semantic_payload_captured"
+                        else "semantic_payload_required"
+                    let next = replayDriverNextFor task hasCell hasSemantic
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_replay_driver\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"queue_depth\":%d,\"outcome\":%s,\"payload\":%s,\"single_flight\":1,\"next\":%s}"
+                            (esc event) task.id (esc task.driver) (esc task.status) (replayQueueDepth()) (esc outcome) (esc task.payload) (esc next))
+                    match cellOpt with
+                    | Some cell ->
+                        let cursorNow = (match frontier with Some f -> f.cursor | None -> cell.cursor)
+                        let cellReady = { cell with cursor = cursorNow; step = cell.step + 1; status = "stepper_ready" }
+                        let reduceOutcome =
+                            match cellReady.kind, cellReady.shape with
+                            | "term", "EV" -> "term_env_lookup_dispatched"
+                            | "term", "EApply" -> "term_apply_spine_dispatched"
+                            | "term", "ELet" -> "term_let_binding_dispatched"
+                            | "term", s when s.StartsWith("E") -> "term_shape_dispatch_dispatched"
+                            | "ty", "TV" -> "ty_env_lookup_dispatched"
+                            | "ty", "TApply" -> "ty_apply_spine_dispatched"
+                            | "ty", s when s.StartsWith("T") -> "ty_shape_dispatch_dispatched"
+                            | _ -> "unknown_shape_dispatch_dispatched"
+                        let cellReduced = { cellReady with step = cellReady.step + 1; status = "semantic_step_dispatched" }
+                        let cellCommitted = { cellReduced with step = cellReduced.step + 1; status = "semantic_step_done" }
+                        let remainingQueue =
+                            lock gate (fun () ->
+                                replayQueue <- replayQueue |> List.filter (fun t -> t.id <> task.id)
+                                if replayQueue.IsEmpty then replayScheduledKey <- None
+                                match frontier with
+                                | Some frame ->
+                                    frontier <- Some { frame with status = "semantic_step_done"; semanticCell = Some cellCommitted; semanticPayload = Some (formatCellPayload cellCommitted) }
+                                | None -> ()
+                                replayQueue.Length)
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_replay_step\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":\"typed_cell_ready\",\"single_flight\":1,\"next\":%s}"
+                                (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) (esc next))
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_replay_reduce\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":%s,\"single_flight\":1,\"next\":\"commit_replay_step\"}"
+                                (esc event) task.id (esc task.driver) (esc (formatCell cellReduced)) (esc reduceOutcome))
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_replay_commit\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":\"semantic_step_committed\",\"queue_depth\":%d,\"single_flight\":1,\"next\":\"resume_explicit_eval_loop\"}"
+                                (esc event) task.id (esc task.driver) (esc (formatCell cellCommitted)) remainingQueue)
+                    | None -> ()
+                | None ->
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_replay_driver\",\"event\":%s,\"replay_id\":0,\"driver\":\"none\",\"status\":\"empty\",\"queue_depth\":0,\"outcome\":\"no_replay_task\",\"single_flight\":1,\"next\":\"none\"}"
+                            (esc event))
+            with _ -> ()
 
         let frontierSummary () =
             match snapshot 1 with
             | frame :: _ ->
-                sprintf "frontier kind=%s status=%s depth=%d re=%d/%d trace=%d cursor=%d site=%s key=%s"
-                    frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length frame.cursor
+                sprintf "frontier kind=%s status=%s depth=%d re=%d/%d trace=%d cursor=%d replay_queue=%d driver=%s payload=%s site=%s key=%s"
+                    frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length frame.cursor (replayQueueDepth()) (replayDriverStatus()) (semanticPayloadStatus())
                     (short 96 frame.site) (short 120 frame.key)
             | [] -> "frontier empty"
 
         let panel () =
             try
-                let n = pendingCount()
-                if n <= 0 then "" else
+                let frames = snapshot 3
+                if frames.IsEmpty then "" else
                     let sb = System.Text.StringBuilder()
-                    sb.AppendFormat("eval.worklist pending={0}", n) |> ignore
-                    let frames = snapshot 3
+                    sb.AppendFormat("eval.worklist pending={0} single_flight=1 active={1}", frames.Length, (if activeRun then 1 else 0)) |> ignore
                     frames
                     |> List.iteri (fun i frame ->
                         sb.AppendLine() |> ignore
                         let line =
-                            sprintf "  #%d kind=%s status=%s depth=%d re=%d/%d trace=%d site=%s"
-                                i frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (short 92 frame.site)
+                            sprintf "  #%d kind=%s status=%s depth=%d re=%d/%d trace=%d cursor=%d replay_queue=%d driver=%s payload=%s site=%s"
+                                i frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length frame.cursor (replayQueueDepth()) (replayDriverStatus()) (semanticPayloadStatus()) (short 92 frame.site)
                         sb.Append(line) |> ignore)
                     sb.ToString().TrimEnd()
             with _ -> ""
@@ -10174,8 +10365,8 @@ module spiral_compiler =
                 let n = pendingCount()
                 let summary = frontierSummary()
                 DiagJson.emit (
-                    sprintf "{\"kind\":\"eval_worklist_panel\",\"event\":%s,\"pending\":%d,\"summary\":%s}"
-                        (esc event) n (esc summary))
+                    sprintf "{\"kind\":\"eval_worklist_panel\",\"event\":%s,\"pending\":%d,\"single_flight\":1,\"active\":%d,\"replay_queue\":%d,\"semantic_payload\":%s,\"summary\":%s}"
+                        (esc event) n (if activeRun then 1 else 0) (replayQueueDepth()) (esc (semanticPayloadStatus())) (esc summary))
             with _ -> ()
 
         let fromCycleFuse (reason: string) : Frame =
@@ -10189,31 +10380,79 @@ module spiral_compiler =
               trace = TermCycleFuse.traceSnapshot() |> compactTrace
               reason = reason
               status = "blocked_by_reentry"
-              cursor = 0 }
+              cursor = 0
+              semanticPayload = None
+              semanticCell = None }
 
         let emit (event: string) (frame: Frame) : unit =
             try
                 DiagJson.emit (
-                    sprintf "{\"kind\":\"eval_worklist_frame\",\"event\":%s,\"reason\":%s,\"frame_kind\":%s,\"key\":%s,\"site\":%s,\"depth\":%d,\"re\":%d,\"max_re\":%d,\"trace_lines\":%d,\"status\":%s,\"cursor\":%d}"
+                    sprintf "{\"kind\":\"eval_worklist_frame\",\"event\":%s,\"reason\":%s,\"frame_kind\":%s,\"key\":%s,\"site\":%s,\"depth\":%d,\"re\":%d,\"max_re\":%d,\"trace_lines\":%d,\"status\":%s,\"cursor\":%d,\"single_flight\":1}"
                         (esc event) (esc frame.reason) (esc frame.kind) (esc frame.key) (esc frame.site) frame.depth frame.re frame.maxRe frame.trace.Length (esc frame.status) frame.cursor)
             with _ -> ()
 
-        let reset () =
+        let attachSemanticPayload (event: string) (payload: string) : unit =
             try
-                let mutable frame = Unchecked.defaultof<Frame>
-                while pending.TryDequeue(&frame) do ()
+                let payload = short 1800 payload
+                let attached =
+                    lock gate (fun () ->
+                        match frontier with
+                        | Some frame ->
+                            let frame' = { frame with semanticPayload = Some payload }
+                            frontier <- Some frame'
+                            true
+                        | None -> false)
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_payload\",\"event\":%s,\"attached\":%d,\"semantic_payload\":%s,\"pending\":%d,\"single_flight\":1}"
+                        (esc event) (if attached then 1 else 0) (esc (if attached then "semantic" else "missing_frontier")) (pendingCount()))
             with _ -> ()
 
-        let tryPeek () : Frame option =
+        let attachSemanticCell (event: string) (cell: ReplayCell) : unit =
             try
-                let mutable frame = Unchecked.defaultof<Frame>
-                if pending.TryPeek(&frame) then Some frame else None
-            with _ -> None
+                let payload = formatCellPayload cell |> short 1800
+                let attached, attachStatus =
+                    lock gate (fun () ->
+                        match frontier with
+                        | Some frame when frame.kind = cell.kind ->
+                            let cell' = { cell with cursor = frame.cursor; status = "captured" }
+                            let frame' = { frame with semanticPayload = Some (formatCellPayload cell'); semanticCell = Some cell' }
+                            frontier <- Some frame'
+                            true, "cell"
+                        | Some frame ->
+                            // ALPHA348: a typed payload must belong to the same evaluator kind as the canonical frontier.
+                            // Alpha347 allowed ty_entry cells to overwrite a term frontier, producing a term_replay_driver
+                            // carrying semantic_eval_cell(kind=ty,...). Treat mismatches as observed but not attached.
+                            false, sprintf "kind_mismatch_frame_%s_cell_%s" frame.kind cell.kind
+                        | None -> false, "missing_frontier")
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_payload\",\"event\":%s,\"attached\":%d,\"semantic_payload\":%s,\"semantic_cell\":%s,\"pending\":%d,\"single_flight\":1}"
+                        (esc event) (if attached then 1 else 0) (esc attachStatus) (esc payload) (pendingCount()))
+            with _ -> ()
+
+        let reset () =
+            lock gate (fun () ->
+                frontier <- None
+                activeRun <- false
+                replayScheduledKey <- None
+                replayQueue <- [])
+
+        let tryPeek () : Frame option =
+            lock gate (fun () -> frontier)
 
         let capture (reason: string) : Frame =
-            let frame = fromCycleFuse reason
-            pending.Enqueue frame
-            emit "captured" frame
+            let fresh = fromCycleFuse reason
+            let event, frame =
+                lock gate (fun () ->
+                    match frontier with
+                    | Some old when sameCycle old fresh ->
+                        "capture:dedup", old
+                    | _ ->
+                        captureSeq <- captureSeq + 1L
+                        frontier <- Some fresh
+                        replayScheduledKey <- None
+                        replayQueue <- []
+                        "captured", fresh)
+            emit event frame
             emitPanel "capture"
             frame
 
@@ -10225,22 +10464,35 @@ module spiral_compiler =
                 else None
 
         let private replaceHead (frame': Frame) : Frame =
-            let mutable old = Unchecked.defaultof<Frame>
-            if pending.TryDequeue(&old) then () else ()
-            pending.Enqueue frame'
-            frame'
+            lock gate (fun () ->
+                frontier <- Some frame'
+                frame')
 
         let promoteHead (event: string) : Frame option =
             try
-                let mutable frame = Unchecked.defaultof<Frame>
-                if pending.TryPeek(&frame) then
-                    let frame' = replaceHead { frame with status = "ready_explicit_loop"; cursor = frame.cursor + 1 }
-                    emit (event + ":promoted") frame'
+                let promoted =
+                    lock gate (fun () ->
+                        match frontier with
+                        | Some frame ->
+                            let alreadyRunning =
+                                frame.status = "ready_explicit_loop" ||
+                                frame.status = "tracing_explicit_loop" ||
+                                frame.status = "continuation_envelope"
+                            let frame' =
+                                if alreadyRunning then frame
+                                else { frame with status = "ready_explicit_loop"; cursor = min frame.cursor frame.trace.Length }
+                            frontier <- Some frame'
+                            Some(frame', alreadyRunning)
+                        | None -> None)
+                match promoted with
+                | Some(frame', alreadyRunning) ->
+                    emit (event + (if alreadyRunning then ":already_ready" else ":promoted")) frame'
                     DiagJson.emit (
-                        sprintf "{\"kind\":\"eval_worklist_consume\",\"event\":%s,\"pending\":%d,\"status\":%s,\"cursor\":%d,\"next\":\"bounded_trampoline\"}"
-                            (esc event) (pendingCount()) (esc frame'.status) frame'.cursor)
+                        sprintf "{\"kind\":\"eval_worklist_consume\",\"event\":%s,\"pending\":%d,\"status\":%s,\"cursor\":%d,\"single_flight\":1,\"next\":%s}"
+                            (esc event) (pendingCount()) (esc frame'.status) frame'.cursor
+                            (esc (if activeRun then "single_flight_busy" else "bounded_trampoline")))
                     Some frame'
-                else None
+                | None -> None
             with _ -> None
 
         let private traceAt (frame: Frame) (i: int) =
@@ -10252,33 +10504,151 @@ module spiral_compiler =
                     sprintf "%s:%d:%d-%d:%d" r.path a.line a.character b.line b.character
             with _ -> ""
 
+        let private adapterPayload (frame: Frame) =
+            try
+                let traceN = frame.trace.Length
+                let head =
+                    frame.trace
+                    |> List.truncate 8
+                    |> List.mapi (fun i _ -> sprintf "%d:%s" i (traceAt frame i))
+                    |> String.concat "|"
+                let tail =
+                    let skipN = max 0 (traceN - 8)
+                    frame.trace
+                    |> List.skip skipN
+                    |> List.mapi (fun i _ -> sprintf "%d:%s" (skipN + i) (traceAt frame (skipN + i)))
+                    |> String.concat "|"
+                let focus =
+                    if traceN <= 0 then ""
+                    else traceAt frame (min (max 0 frame.cursor) (traceN - 1))
+                let replayMode =
+                    match frame.kind with
+                    | "term" -> "term_replay"
+                    | "ty" -> "ty_replay"
+                    | _ -> "unknown_replay"
+                sprintf "replay_continuation(mode=%s,kind=%s,key=%s,site=%s,cursor=%d/%d,focus=%s,semantic=%s,head=%s,tail=%s)"
+                    replayMode frame.kind frame.key frame.site frame.cursor traceN focus (semanticPayloadOf frame) head tail
+            with _ ->
+                sprintf "replay_continuation(kind=%s,key=%s,site=%s,cursor=%d/%d,semantic=%s)"
+                    frame.kind frame.key frame.site frame.cursor frame.trace.Length (semanticPayloadOf frame)
+
+        let private nextFor (frame: Frame) =
+            match frame.status with
+            | "continuation_envelope" -> "schedule_term_ty_replay"
+            | "tracing_explicit_loop" -> "advance_trace_cursor"
+            | "ready_explicit_loop" -> "bounded_trampoline"
+            | _ -> "bounded_trampoline"
+
+        let private isTerminalAdapter (frame: Frame) =
+            frame.status = "continuation_envelope"
+
+        let private emitAdapter (event: string) (frame: Frame) =
+            try
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_adapter\",\"event\":%s,\"adapter\":\"trace_continuation\",\"frame_kind\":%s,\"status\":%s,\"cursor\":%d,\"trace_lines\":%d,\"payload\":%s,\"single_flight\":1,\"next\":%s}"
+                        (esc event) (esc frame.kind) (esc frame.status) frame.cursor frame.trace.Length (esc (adapterPayload frame)) (esc (nextFor frame)))
+            with _ -> ()
+
+        let private scheduleReplay (event: string) (frame: Frame) =
+            try
+                let payload = adapterPayload frame
+                let key = replayKey frame
+                let driver = replayDriverFor frame
+                let task, duplicate =
+                    lock gate (fun () ->
+                        match replayScheduledKey with
+                        | Some k when k = key ->
+                            match replayQueue with
+                            | h :: _ -> h, true
+                            | [] ->
+                                replaySeq <- replaySeq + 1L
+                                let t = { id = replaySeq; key = key; driver = driver; payload = payload; status = "scheduled_replay"; event = event }
+                                replayQueue <- [t]
+                                t, false
+                        | _ ->
+                            replaySeq <- replaySeq + 1L
+                            let t = { id = replaySeq; key = key; driver = driver; payload = payload; status = "scheduled_replay"; event = event }
+                            replayScheduledKey <- Some key
+                            replayQueue <- (t :: replayQueue) |> List.truncate 8
+                            t, false)
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_replay_schedule\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"queue_depth\":%d,\"duplicate\":%d,\"payload\":%s,\"single_flight\":1,\"next\":%s}"
+                        (esc event) task.id (esc task.driver) (esc task.status) (replayQueueDepth()) (if duplicate then 1 else 0) (esc task.payload) (esc (if duplicate then "already_scheduled" else task.driver)))
+                if not duplicate then runReplayDriver event
+            with _ -> ()
+
+        let private beginRun (event: string) =
+            lock gate (fun () ->
+                if activeRun then false
+                else activeRun <- true; true)
+
+        let private endRun () =
+            lock gate (fun () -> activeRun <- false)
+
+        let private stepOnce (event: string) (step: int) (limit: int) : Frame option =
+            lock gate (fun () ->
+                match frontier with
+                | None -> None
+                | Some f ->
+                    let loc = traceAt f f.cursor
+                    let status', cursor', next' =
+                        if f.status = "continuation_envelope" then
+                            "continuation_envelope", f.cursor, "schedule_term_ty_replay"
+                        elif f.cursor < f.trace.Length then
+                            "tracing_explicit_loop", f.cursor + 1, "advance_trace_cursor"
+                        else
+                            // ALPHA343/345: terminal replay envelope + driver scheduling. Do not advance forever after the trace is exhausted;
+                            // materialize a deterministic continuation payload with replay anchors instead of a bare adapter gate marker.
+                            "continuation_envelope", f.cursor, "build_replay_continuation_envelope"
+                    let f' = { f with status = status'; cursor = cursor' }
+                    frontier <- Some f'
+                    emit (event + ":step") f'
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_step\",\"event\":%s,\"step\":%d,\"budget\":%d,\"frame_kind\":%s,\"status\":%s,\"cursor\":%d,\"trace_loc\":%s,\"single_flight\":1,\"next\":%s}"
+                            (esc event) step limit (esc f'.kind) (esc f'.status) f'.cursor (esc loc) (esc next'))
+                    if isTerminalAdapter f' then
+                        emitAdapter event f'
+                        scheduleReplay event f'
+                    Some f')
+
         let runBounded (event: string) (budget: int) : Frame option =
             try
                 let limit = if budget <= 0 then 1 else min budget 64
-                let mutable frame = Unchecked.defaultof<Frame>
-                if pending.TryPeek(&frame) then
-                    let mutable f = frame
-                    let mutable steps = 0
-                    let mutable blocked = false
-                    while steps < limit && not blocked do
-                        let loc = traceAt f f.cursor
-                        let status' =
-                            if f.cursor < f.trace.Length then "tracing_explicit_loop"
-                            else "adapter_required"
-                        let f' = replaceHead { f with status = status'; cursor = f.cursor + 1 }
-                        emit (event + ":step") f'
+                if beginRun event then
+                    try
+                        let mutable steps = 0
+                        let mutable last : Frame option = tryPeek()
+                        let mutable blocked = false
+                        while steps < limit && not blocked do
+                            match stepOnce event steps limit with
+                            | Some f ->
+                                last <- Some f
+                                steps <- steps + 1
+                                blocked <- isTerminalAdapter f
+                            | None ->
+                                blocked <- true
+                        let finalCursor =
+                            match last with
+                            | Some f -> f.cursor
+                            | None -> -1
+                        let finalStatus =
+                            match last with
+                            | Some f -> f.status
+                            | None -> "empty"
                         DiagJson.emit (
-                            sprintf "{\"kind\":\"eval_worklist_step\",\"event\":%s,\"step\":%d,\"budget\":%d,\"frame_kind\":%s,\"status\":%s,\"cursor\":%d,\"trace_loc\":%s,\"next\":%s}"
-                                (esc event) steps limit (esc f'.kind) (esc f'.status) f'.cursor (esc loc)
-                                (esc (if f'.status = "adapter_required" then "wire_term_ty_continuation" else "advance_trace_cursor")))
-                        f <- f'
-                        steps <- steps + 1
-                        blocked <- f'.status = "adapter_required"
+                            sprintf "{\"kind\":\"eval_worklist_run\",\"event\":%s,\"steps\":%d,\"budget\":%d,\"pending\":%d,\"single_flight\":1,\"skipped\":0,\"final_status\":%s,\"cursor\":%d}"
+                                (esc event) steps limit (pendingCount()) (esc finalStatus) finalCursor)
+                        last
+                    finally
+                        endRun ()
+                else
+                    let frame = tryPeek()
                     DiagJson.emit (
-                        sprintf "{\"kind\":\"eval_worklist_run\",\"event\":%s,\"steps\":%d,\"budget\":%d,\"pending\":%d,\"final_status\":%s,\"cursor\":%d}"
-                            (esc event) steps limit (pendingCount()) (esc f.status) f.cursor)
-                    Some f
-                else None
+                        sprintf "{\"kind\":\"eval_worklist_run\",\"event\":%s,\"steps\":0,\"budget\":%d,\"pending\":%d,\"single_flight\":1,\"skipped\":1,\"final_status\":%s,\"cursor\":%d}"
+                            (esc event) limit (pendingCount())
+                            (esc (match frame with Some f -> f.status | None -> "empty"))
+                            (match frame with Some f -> f.cursor | None -> -1))
+                    frame
             with _ -> None
 
         let ensureCapturedAndRun (reason: string) (event: string) (budget: int) : Frame option =
@@ -10289,8 +10659,9 @@ module spiral_compiler =
             | None -> None
 
         let requiredMessage (msg: string) (frame: Frame) =
-            sprintf "%s\nEvalWorklistFrame: kind=%s status=%s depth=%d re=%d/%d trace_lines=%d pending=%d cursor=%d next=wire_term_ty_continuation"
-                msg frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (pendingCount()) frame.cursor
+            let cellState = match frame.semanticCell with Some c -> formatCell c | None -> "none"
+            sprintf "%s\nEvalWorklistFrame: kind=%s status=%s depth=%d re=%d/%d trace_lines=%d pending=%d cursor=%d single_flight=1 replay_queue=%d semantic_payload=%s replay_cell=%s adapter=trace_replay_continuation next=%s driver=%s driver_state=%s payload=%s"
+                msg frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (pendingCount()) frame.cursor (replayQueueDepth()) (semanticPayloadStatus()) cellState (nextFor frame) (replayDriverFor frame) (replayDriverStatus()) (adapterPayload frame)
 
 
     /// ### JoinPointKey
@@ -10363,6 +10734,45 @@ module spiral_compiler =
         jp_closure_stack : System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>
         jp_type_stack : System.Collections.Generic.HashSet<ConsedNode<Ty []>>
         }
+
+    let private evalNodeShapeTerm (x: E) =
+        match x with
+        | EFun _ -> "EFun" | EFun' _ -> "EFun'" | EForall _ -> "EForall" | EForall' _ -> "EForall'"
+        | ERecursiveFun' _ -> "ERecursiveFun'" | ERecursiveForall' _ -> "ERecursiveForall'" | ERecursive _ -> "ERecursive" | EPatternRef _ -> "EPatternRef"
+        | EJoinPoint _ -> "EJoinPoint" | EJoinPoint' _ -> "EJoinPoint'" | EB _ -> "EB" | EV _ -> "EV" | ELit _ -> "ELit" | EDefaultLit _ -> "EDefaultLit"
+        | ESymbol _ -> "ESymbol" | EType _ -> "EType" | EApply _ -> "EApply" | EArray _ -> "EArray" | ETypeApply _ -> "ETypeApply" | ERecBlock _ -> "ERecBlock"
+        | ERecordWith _ -> "ERecordWith" | EModule _ -> "EModule" | EOp _ -> "EOp" | EPatternMiss _ -> "EPatternMiss" | ETypePatternMiss _ -> "ETypePatternMiss"
+        | EAnnot _ -> "EAnnot" | EIfThenElse _ -> "EIfThenElse" | EIfThen _ -> "EIfThen" | EPair _ -> "EPair" | ESeq _ -> "ESeq" | EMutableSet _ -> "EMutableSet"
+        | EReal _ -> "EReal" | EExists _ -> "EExists" | EMacro _ -> "EMacro" | EPrototypeApply _ -> "EPrototypeApply" | EPatternMemo _ -> "EPatternMemo" | ENominal _ -> "ENominal"
+        | ELet _ -> "ELet" | EUnbox _ -> "EUnbox" | EExistsTest _ -> "EExistsTest" | EPairTest _ -> "EPairTest" | ESymbolTest _ -> "ESymbolTest"
+        | ERecordTest _ -> "ERecordTest" | EAnnotTest _ -> "EAnnotTest" | ENominalTest _ -> "ENominalTest" | EUnitTest _ -> "EUnitTest" | ELitTest _ -> "ELitTest" | EDefaultLitTest _ -> "EDefaultLitTest" | ETypecase _ -> "ETypecase"
+
+    let private evalNodeShapeTy (x: TPrepass) =
+        match x with
+        | TForall' _ -> "TForall'" | TForall _ -> "TForall" | TArrow' _ -> "TArrow'" | TArrow _ -> "TArrow" | TExists -> "TExists"
+        | TJoinPoint' _ -> "TJoinPoint'" | TJoinPoint _ -> "TJoinPoint" | TPatternRef _ -> "TPatternRef" | TB _ -> "TB" | TLit _ -> "TLit" | TV _ -> "TV"
+        | TPair _ -> "TPair" | TFun _ -> "TFun" | TRecord _ -> "TRecord" | TModule _ -> "TModule" | TUnion _ -> "TUnion" | TSymbol _ -> "TSymbol"
+        | TApply _ -> "TApply" | TPrim _ -> "TPrim" | TTerm _ -> "TTerm" | TMacro _ -> "TMacro" | TNominal _ -> "TNominal" | TArray _ -> "TArray" | TLayout _ -> "TLayout" | TMetaV _ -> "TMetaV" | TTypecase _ -> "TTypecase"
+
+    let private evalPayload (kind: string) (shape: string) (nodeId: int) (site: string) (s: LangEnv) =
+        sprintf "semantic_eval_payload(kind=%s,shape=%s,node_id=%d,env_term=%d/%d,env_type=%d/%d,seq_len=%d,cse_depth=%d,trace_depth=%d,site=%s)"
+            kind shape nodeId s.env_global_term.Length s.env_stack_term.Length s.env_global_type.Length s.env_stack_type.Length s.seq.Count s.cse.Length s.trace.Length site
+
+    let private evalCell (kind: string) (shape: string) (nodeId: int) (site: string) (s: LangEnv) : EvalWorklist.ReplayCell =
+        { kind = kind
+          shape = shape
+          nodeId = nodeId
+          envGlobalTerm = s.env_global_term.Length
+          envStackTerm = s.env_stack_term.Length
+          envGlobalType = s.env_global_type.Length
+          envStackType = s.env_stack_type.Length
+          seqLen = s.seq.Count
+          cseDepth = s.cse.Length
+          traceDepth = s.trace.Length
+          site = site
+          cursor = 0
+          step = 0
+          status = "new" }
     
     /// ### show_ty
     let show_ty x =
@@ -14598,7 +15008,11 @@ module spiral_compiler =
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_tprepass_or fallback x
             let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
+            let semanticCellForTy nodeId = evalCell "ty" (evalNodeShapeTy x) nodeId site s
             if TermCycleFuse.isTripped() then
+                let nodeId0 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
+                EvalWorklist.ensureCaptured "ty_entry_global_fuse" |> ignore
+                EvalWorklist.attachSemanticCell "ty_entry" (semanticCellForTy nodeId0)
                 EvalWorklist.ensureCapturedAndRun "ty_entry_global_fuse" "ty_entry" 8 |> ignore
                 let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
                 raise_type_error s (sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting ty worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
@@ -14640,14 +15054,20 @@ module spiral_compiler =
                     CacheGeneration.requestSequential ()
                     let genNow = int (CacheGeneration.current())
                     DiagSidecar.emit (sprintf "%s ty cycle: nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site genNow reCount max_reentry big hs ks)
-                    if big || depth > 512 then
-                        TermCycleFuse.tripWithTrace (sprintf "ty#%d" nodeId) site depth genNow reCount max_reentry s.trace
-                        EvalWorklist.ensureCapturedAndRun "direct_ty_cycle_node" "ty_cycle" 16 |> ignore
+                    let frameOpt =
+                        if big || depth > 512 then
+                            TermCycleFuse.tripWithTrace (sprintf "ty#%d" nodeId) site depth genNow reCount max_reentry s.trace
+                            EvalWorklist.ensureCaptured "direct_ty_cycle_node" |> ignore
+                            EvalWorklist.attachSemanticCell "ty_cycle" (semanticCellForTy nodeId)
+                            EvalWorklist.ensureCapturedAndRun "direct_ty_cycle_node" "ty_cycle" 16
+                        else None
                     let errEnv = if depth > 256 then s else (add_trace s r0)
+                    let msg = sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth genNow reCount max_reentry big
+                    let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
                     if depth > 256 then
-                        raise_type_error_no_trace errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth genNow reCount max_reentry big)
+                        raise_type_error_no_trace errEnv msg
                     else
-                        raise_type_error errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth genNow reCount max_reentry big)
+                        raise_type_error errEnv msg
             if reKey > 1 then
                 if reKey = 2 then
                     DiagSidecar.emitKeyedSample (sprintf "[spiral_compiler] EJP0011W|ty|%s" nodeKey) (sprintf "[spiral_compiler] EJP0011W ty re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
@@ -14660,16 +15080,22 @@ module spiral_compiler =
                     DiagSidecar.emit (sprintf "%s ty cycle(key): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site genNow reKey max_reentry_key big hs ks)
                     let tc_count = TermCycleWatchdog.note ("ty:" + nodeKey) genNow
                     let tc_panic = big || tc_count >= 2
-                    if tc_panic then
-                        DiagSidecar.emit (sprintf "%s ty cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey genNow tc_count)
-                        TermCycleFuse.tripWithTrace ("ty:" + nodeKey) site depth genNow reKey max_reentry_key s.trace
-                        EvalWorklist.ensureCapturedAndRun "direct_ty_cycle_key" "ty_cycle" 16 |> ignore
+                    let frameOpt =
+                        if tc_panic then
+                            DiagSidecar.emit (sprintf "%s ty cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey genNow tc_count)
+                            TermCycleFuse.tripWithTrace ("ty:" + nodeKey) site depth genNow reKey max_reentry_key s.trace
+                            EvalWorklist.ensureCaptured "direct_ty_cycle_key" |> ignore
+                            EvalWorklist.attachSemanticCell "ty_cycle" (semanticCellForTy nodeId)
+                            EvalWorklist.ensureCapturedAndRun "direct_ty_cycle_key" "ty_cycle" 16
+                        else None
                     DiagJson.termCycle ("ty:" + nodeKey) depth site genNow reKey max_reentry_key big hs ks tc_count tc_panic
                     let errEnv = if depth > 256 then s else (add_trace s r0)
+                    let msg = sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth genNow reKey max_reentry_key big
+                    let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
                     if depth > 256 then
-                        raise_type_error_no_trace errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth genNow reKey max_reentry_key big)
+                        raise_type_error_no_trace errEnv msg
                     else
-                        raise_type_error errEnv (sprintf "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth genNow reKey max_reentry_key big)
+                        raise_type_error errEnv msg
                 
             // Maximum recursion depth before triggering BigStack pivot.
             // Parallel/degraded attempts stay conservative, but once alpha318+ has forced a
@@ -15056,7 +15482,11 @@ module spiral_compiler =
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_e_or fallback x
             let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
+            let semanticCellForTerm nodeId = evalCell "term" (evalNodeShapeTerm x) nodeId site s
             if TermCycleFuse.isTripped() then
+                let nodeId0 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
+                EvalWorklist.ensureCaptured "term_entry_global_fuse" |> ignore
+                EvalWorklist.attachSemanticCell "term_entry" (semanticCellForTerm nodeId0)
                 EvalWorklist.ensureCapturedAndRun "term_entry_global_fuse" "term_entry" 8 |> ignore
                 let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
                 raise_type_error s (sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting term worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
@@ -15105,14 +15535,20 @@ module spiral_compiler =
                     // ALPHA313: EJP0011 is non-retryable. Do not invalidate generation on term cycles;
                     // invalidation turns a local recursion bug into a global retry storm.
                     DiagSidecar.emit (sprintf "%s term cycle(no_invalidate): nodeId=%d depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeId depth site newGen reCount max_reentry big hs ks)
-                    if big || depth > 512 then
-                        TermCycleFuse.tripWithTrace (sprintf "term#%d" nodeId) site depth newGen reCount max_reentry s.trace
-                        EvalWorklist.ensureCapturedAndRun "direct_term_cycle_node" "term_cycle" 16 |> ignore
+                    let frameOpt =
+                        if big || depth > 512 then
+                            TermCycleFuse.tripWithTrace (sprintf "term#%d" nodeId) site depth newGen reCount max_reentry s.trace
+                            EvalWorklist.ensureCaptured "direct_term_cycle_node" |> ignore
+                            EvalWorklist.attachSemanticCell "term_cycle" (semanticCellForTerm nodeId)
+                            EvalWorklist.ensureCapturedAndRun "direct_term_cycle_node" "term_cycle" 16
+                        else None
                     let errEnv = if depth > 256 then s else (add_trace s r0)
+                    let msg = sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big
+                    let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
                     if depth > 256 then
-                        raise_type_error_no_trace errEnv (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
+                        raise_type_error_no_trace errEnv msg
                     else
-                        raise_type_error errEnv (sprintf "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeId depth newGen reCount max_reentry big)
+                        raise_type_error errEnv msg
             if reKey > 1 then
                 if reKey = 2 then
                     DiagSidecar.emitKeyedSample (sprintf "[spiral_compiler] EJP0011W|term|%s" nodeKey) (sprintf "[spiral_compiler] EJP0011W term re-entry (key, non-fatal): key=%s depth=%d site=%s" nodeKey depth site)
@@ -15132,13 +15568,19 @@ module spiral_compiler =
                     DiagSidecar.emit (sprintf "%s term cycle(key,no_invalidate): key=%s depth=%d site=%s gen=%d re=%d/%d big=%b hs=[%s] ks=[%s]" EJPCodes.EJP0011 nodeKey depth site newGen reKey max_reentry_key big hs ks)
                     let tc_count = TermCycleWatchdog.note nodeKey (int newGen)
                     let tc_panic = big || tc_count >= 2
-                    if tc_panic then
-                        DiagSidecar.emit (sprintf "%s term cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey (int newGen) tc_count)
-                        TermCycleFuse.tripWithTrace nodeKey site depth (int newGen) reKey max_reentry_key s.trace
-                        EvalWorklist.ensureCapturedAndRun "direct_term_cycle_key" "term_cycle" 16 |> ignore
+                    let frameOpt =
+                        if tc_panic then
+                            DiagSidecar.emit (sprintf "%s term cycle watchdog: PANIC key=%s gen=%d count=%d" EJPCodes.EJP0011 nodeKey (int newGen) tc_count)
+                            TermCycleFuse.tripWithTrace nodeKey site depth (int newGen) reKey max_reentry_key s.trace
+                            EvalWorklist.ensureCaptured "direct_term_cycle_key" |> ignore
+                            EvalWorklist.attachSemanticCell "term_cycle" (semanticCellForTerm nodeId)
+                            EvalWorklist.ensureCapturedAndRun "direct_term_cycle_key" "term_cycle" 16
+                        else None
                     DiagJson.termCycle nodeKey depth site (int newGen) reKey max_reentry_key big hs ks tc_count tc_panic
                     let errEnv = if depth > 256 then s else (add_trace s r0)
-                    raise_type_error errEnv (sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth (int newGen) reKey max_reentry_key big)
+                    let msg = sprintf "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" EJPCodes.EJP0011 site nodeKey depth (int newGen) reKey max_reentry_key big
+                    let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
+                    raise_type_error errEnv msg
                 
             // Maximum term recursion depth. Keep parallel attempts conservative, but give
             // forced-sequential fallback a larger legacy-style budget. This is the bridge toward
@@ -25312,14 +25754,28 @@ module spiral_compiler =
                                                         term_cycle_seq_stop_count <- term_cycle_seq_stop_count + 1
                                                         let fallback_reason = EvalFallbackPolicy.retryStopReasonForCycle term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
                                                         let cycle_stop_reason = EvalWorklistFrontier.reasonForCycle fallback_reason term_cycle_depth term_cycle_re term_cycle_max_re
-                                                        EvalWorklist.ensureCapturedAndRun cycle_stop_reason "retry_stop" 64 |> ignore
+                                                        let _replayFrame = EvalWorklist.ensureCapturedAndRun cycle_stop_reason "retry_stop" 64
+                                                        let replayCommitted = EvalWorklist.hasSemanticStepDone()
                                                         DiagJson.retryStop code cycle_stop_reason attempt max_attempts file backend term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
                                                         EvalWorklist.emitPanel "retry_stop"
                                                         EvalWorklistFrontier.emit code cycle_stop_reason term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
-                                                        // alpha334: if jp_wait already saw the sequential fuse at a deep re-entry frontier,
-                                                        // do not replay the same evaluator graph just to rediscover it one module later.
-                                                        // The next implementation step is a real explicit worklist, not another retry.
-                                                        raise (PartEvalTypeError(e.Data0, e.Data1))
+                                                        // ALPHA350: a committed replay reducer is no longer just diagnostic.
+                                                        // Alpha349 ended with semantic_step_committed and queue_depth=0, but retry_stop still raised
+                                                        // the stale EJP0011 message. Treat the committed replay as a resumable handoff and retry
+                                                        // the build once under the existing max_attempts envelope. If the replay keeps cycling,
+                                                        // the next attempt will produce a fresher frontier and still fail deterministically.
+                                                        if replayCommitted && attempt + 1 < max_attempts then
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_resume\",\"event\":\"retry_stop\",\"status\":\"semantic_step_done\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"policy\":\"retry_after_replay_commit\",\"single_flight\":1,\"next\":\"attempt_build\"}"
+                                                                    attempt (attempt + 1) max_attempts)
+                                                            CacheGeneration.invalidate (sprintf "BuildFile.replay_commit code=%s attempt=%d file=%s backend=%s" code attempt file backend) |> ignore
+                                                            raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                        else
+                                                            let finalMsg =
+                                                                match EvalWorklist.tryPeek() with
+                                                                | Some frame -> EvalWorklist.requiredMessage e.Data1 frame
+                                                                | None -> e.Data1
+                                                            raise (PartEvalTypeError(e.Data0, finalMsg))
 
                                                     let is_gen_wait_after_seq_cycle =
                                                         is_gen_wait
@@ -25537,9 +25993,24 @@ module spiral_compiler =
     
                                     // Max retry attempts: 3 (hardcoded SOTA default)
                                     let max_attempts = 4
+                                    let replayRetryPrefix = "__SPIRAL_REPLAY_RETRY__:"
+                                    let parseReplayRetryAttempt (msg: string) =
+                                        if System.String.IsNullOrEmpty msg || not (msg.StartsWith replayRetryPrefix) then None
+                                        else
+                                            let mutable n = 0
+                                            if System.Int32.TryParse(msg.Substring(replayRetryPrefix.Length), &n) then Some n else None
+                                    let rec attempt_driver attempt =
+                                        try
+                                            attempt_build attempt max_attempts
+                                        with
+                                        | :? System.InvalidOperationException as ex ->
+                                            match parseReplayRetryAttempt ex.Message with
+                                            | Some nextAttempt when nextAttempt >= 0 && nextAttempt < max_attempts ->
+                                                attempt_driver nextAttempt
+                                            | _ -> reraise ()
                                     let build_result =
                                         try
-                                            attempt_build 0 max_attempts
+                                            attempt_driver 0
                                         finally
                                             HopacExtensions.clearForcedConcurrencyForRetry ()
                                     build_result
