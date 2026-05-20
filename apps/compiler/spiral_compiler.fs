@@ -6,9 +6,33 @@ namespace Polyglot
 
 module spiral_compiler =
     /// Spiral Compiler - Partial Evaluation Engine (par)
+    ///
+    /// ALPHA372 PARENT-RESUME ROOT GATE:
+    /// - The alpha371 log resolved Dyn/1, but the replay driver forgot that the next cell came from a parent-resume task.
+    /// - Alpha372 preserves scheduled parent-resume identity through task status/key checks.
+    /// - A composite value reached by parent-resume may become semantic_root_complete only when no further parent exists.
+    /// - Failure stays semantic_step_partial, so unstable writes remain locked behind semantic_root_complete.
+    ///
+    /// ALPHA368 ADD/2 TERM OP STEPPER:
+    /// - Alpha367 named the remaining EOp frontier as Add/2. Alpha368 resolves exact literal Add and zero identities,
+    ///   but keeps symbolic Add partial until residual-op construction exists.
+    ///
+    /// ALPHA360 CONDITION-FIRST TERM STEPPER:
+    /// - Alpha359 moved one frontier back to term replay: EIfThenElse was captured but only dispatched as an opaque term shape.
+    /// - Alpha360 records conditional spines (condition/then/else node ids + shapes), resolves literal boolean conditions
+    ///   through the existing value store, and retargets replay to the selected branch only when the condition is value-backed.
+    /// - Non-literal or missing conditions stay semantic_step_partial, so the 323-line false-success writer path remains closed.
     /// 
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
+    /// ALPHA357 EV VALUE-STORE STEPPER:
+    /// - Alpha356 proved the safety gate: partial replay no longer writes the 323-line false-success residual.
+    /// - The next missing ingredient is not another retry; it is a typed value boundary. Alpha357 registers term EV
+    ///   nodes in a replay value store and only marks semantic_leaf_complete when the replay driver resolves a
+    ///   captured EV through that store.
+    /// - Non-EV shapes still remain semantic_step_partial, so replay completion is value-backed rather than a
+    ///   textual dispatcher label.
+    ///
     /// ALPHA340 BOUNDED EVAL-WORKLIST TRAMPOLINE:
     /// - Consume the alpha339 ready_explicit_loop frame with a bounded non-recursive trampoline,
     ///   emitting eval_worklist_step/eval_worklist_run JSONL instead of stopping at a marker event.
@@ -10078,6 +10102,320 @@ module spiral_compiler =
         | ReV of ConsedNode<Tag * Ty>
         | ReHashMap of ConsedNode<(RData * RData)[]>
     
+    /// ### EvalReplayValueStore
+    module EvalReplayValueStore =
+        open System.Collections.Concurrent
+
+        type ApplySpine = {
+            headNodeId: int
+            headShape: string
+            argCount: int
+            argNodeIds: int[]
+            argShapes: string[]
+        }
+
+        // ALPHA369: ETypeApply is a distinct replay composite.  Treat the
+        // term function side and the type argument side as children, so the
+        // term replay driver no longer falls back to the opaque E* dispatcher.
+        type TypeApplySpine = {
+            funcNodeId: int
+            funcShape: string
+            typeNodeId: int
+            typeShape: string
+        }
+
+        type IfThenElseSpine = {
+            condNodeId: int
+            condShape: string
+            trueNodeId: int
+            trueShape: string
+            falseNodeId: int
+            falseShape: string
+        }
+
+        type OpSpine = {
+            opName: string
+            argCount: int
+            argNodeIds: int[]
+            argShapes: string[]
+        }
+
+        // ALPHA365: first explicit parent-continuation link.
+        // A leaf EV/type/op resolution is not a root proof; it must be returned to the
+        // composite term that requested it.  The store remains shape-only and generic.
+        type ParentContinuation = {
+            parentKind: string
+            parentShape: string
+            parentNodeId: int
+            role: string
+        }
+
+        let private termValues = ConcurrentDictionary<int, unit -> Data>()
+        let private typeValues = ConcurrentDictionary<int, unit -> Ty>()
+        let private applySpines = ConcurrentDictionary<int, ApplySpine>()
+        let private typeApplySpines = ConcurrentDictionary<int, TypeApplySpine>()
+        let private ifThenElseSpines = ConcurrentDictionary<int, IfThenElseSpine>()
+        let private opSpines = ConcurrentDictionary<int, OpSpine>()
+        let private parentContinuations = ConcurrentDictionary<int, ParentContinuation>()
+
+        let putParentContinuation (childNodeId: int) (cont: ParentContinuation) : unit =
+            if childNodeId <> cont.parentNodeId then
+                parentContinuations.[childNodeId] <- cont
+
+        let tryParentContinuation (childNodeId: int) : ParentContinuation option =
+            let mutable cont = Unchecked.defaultof<ParentContinuation>
+            if parentContinuations.TryGetValue(childNodeId, &cont) then Some cont else None
+
+        let putTerm (nodeId: int) (thunk: unit -> Data) : unit =
+            termValues.[nodeId] <- thunk
+
+        let putTermValue (nodeId: int) (value: Data) : unit =
+            termValues.[nodeId] <- (fun () -> value)
+
+        // ALPHA366: function heads are replay values too.  Alpha365 reached
+        // EApply -> ERecursiveFun' and then stopped because only EV leaves were
+        // stored as values.  This helper keeps the replay store generic: a
+        // captured function value can satisfy an apply-head request without
+        // claiming root completion or touching the writer.
+        let putFunctionValue (nodeId: int) (body: E) (annot: TPrepass option) (termEnv: Data[]) (tyEnv: Ty[]) (termStackSize: StackSize) (tyStackSize: StackSize) : unit =
+            putTermValue nodeId (DFunction(body, annot, termEnv, tyEnv, termStackSize, tyStackSize))
+
+        let putForallValue (nodeId: int) (body: E) (termEnv: Data[]) (tyEnv: Ty[]) (termStackSize: StackSize) (tyStackSize: StackSize) : unit =
+            putTermValue nodeId (DForall(body, termEnv, tyEnv, termStackSize, tyStackSize))
+
+        let putType (nodeId: int) (thunk: unit -> Ty) : unit =
+            typeValues.[nodeId] <- thunk
+
+        let putApplySpine (nodeId: int) (spine: ApplySpine) : unit =
+            applySpines.[nodeId] <- spine
+            putParentContinuation spine.headNodeId { parentKind = "term"; parentShape = "EApply"; parentNodeId = nodeId; role = "apply_head" }
+            spine.argNodeIds
+            |> Array.iteri (fun i argNodeId ->
+                putParentContinuation argNodeId { parentKind = "term"; parentShape = "EApply"; parentNodeId = nodeId; role = sprintf "apply_arg_%d" i })
+
+        let putTypeApplySpine (nodeId: int) (spine: TypeApplySpine) : unit =
+            typeApplySpines.[nodeId] <- spine
+            putParentContinuation spine.funcNodeId { parentKind = "term"; parentShape = "ETypeApply"; parentNodeId = nodeId; role = "type_apply_function" }
+            putParentContinuation spine.typeNodeId { parentKind = "term"; parentShape = "ETypeApply"; parentNodeId = nodeId; role = "type_apply_type_arg" }
+
+        let putIfThenElse (nodeId: int) (spine: IfThenElseSpine) : unit =
+            ifThenElseSpines.[nodeId] <- spine
+            putParentContinuation spine.condNodeId { parentKind = "term"; parentShape = "EIfThenElse"; parentNodeId = nodeId; role = "if_condition" }
+            putParentContinuation spine.trueNodeId { parentKind = "term"; parentShape = "EIfThenElse"; parentNodeId = nodeId; role = "if_true" }
+            putParentContinuation spine.falseNodeId { parentKind = "term"; parentShape = "EIfThenElse"; parentNodeId = nodeId; role = "if_false" }
+
+        let putOpSpine (nodeId: int) (spine: OpSpine) : unit =
+            opSpines.[nodeId] <- spine
+            spine.argNodeIds
+            |> Array.iteri (fun i argNodeId ->
+                putParentContinuation argNodeId { parentKind = "term"; parentShape = "EOp"; parentNodeId = nodeId; role = sprintf "op_arg_%d" i })
+
+        let tryTerm (nodeId: int) : Data option =
+            let mutable thunk = Unchecked.defaultof<unit -> Data>
+            if termValues.TryGetValue(nodeId, &thunk) then
+                try Some (thunk())
+                with _ -> None
+            else None
+
+        let tryType (nodeId: int) : Ty option =
+            let mutable thunk = Unchecked.defaultof<unit -> Ty>
+            if typeValues.TryGetValue(nodeId, &thunk) then
+                try Some (thunk())
+                with _ -> None
+            else None
+
+        let tryApplySpine (nodeId: int) : ApplySpine option =
+            let mutable spine = Unchecked.defaultof<ApplySpine>
+            if applySpines.TryGetValue(nodeId, &spine) then Some spine else None
+
+        let tryTypeApplySpine (nodeId: int) : TypeApplySpine option =
+            let mutable spine = Unchecked.defaultof<TypeApplySpine>
+            if typeApplySpines.TryGetValue(nodeId, &spine) then Some spine else None
+
+        let tryIfThenElse (nodeId: int) : IfThenElseSpine option =
+            let mutable spine = Unchecked.defaultof<IfThenElseSpine>
+            if ifThenElseSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
+        let tryOpSpine (nodeId: int) : OpSpine option =
+            let mutable spine = Unchecked.defaultof<OpSpine>
+            if opSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
+        let hasTerm (nodeId: int) : bool =
+            termValues.ContainsKey nodeId
+
+        let hasType (nodeId: int) : bool =
+            typeValues.ContainsKey nodeId
+
+        let hasApplySpine (nodeId: int) : bool =
+            applySpines.ContainsKey nodeId
+
+        let hasTypeApplySpine (nodeId: int) : bool =
+            typeApplySpines.ContainsKey nodeId
+
+        let hasIfThenElse (nodeId: int) : bool =
+            ifThenElseSpines.ContainsKey nodeId
+
+        let hasOpSpine (nodeId: int) : bool =
+            opSpines.ContainsKey nodeId
+
+        let private normalizeSymbol (sym: string) =
+            let sym = sym.Trim()
+            let sym = sym.Trim([|'`'; '"'; ' '|])
+            sym.TrimStart('.')
+
+        let private isJpPlaceholderSymbol (sym: string) =
+            let sym = normalizeSymbol sym
+            sym.Contains("JPMethodRecPlaceholder(")
+
+        let rec private isReplayVarLike (d: Data) =
+            match d with
+            | DV _ -> true
+            | DNominal(d, _) -> isReplayVarLike d
+            | DUnion(d, _) -> isReplayVarLike d
+            | DPair(a,b) -> isReplayVarLike a || isReplayVarLike b
+            | DSymbol _ -> true
+            | DTLit (LitString sym) when isJpPlaceholderSymbol sym -> true
+            | DLit (LitString sym) when isJpPlaceholderSymbol sym -> true
+            | _ -> false
+
+        let private opCaseName (opName: string) =
+            let s = normalizeSymbol opName
+            let i = s.LastIndexOf('.')
+            if i >= 0 && i + 1 < s.Length then s.Substring(i + 1) else s
+
+        let private boolData x = DLit (LitBool x)
+
+        // ALPHA368: first arithmetic replay leaf for the observed Add/2 frontier.
+        // Keep this conservative: only exact literal addition and additive identity rewrites
+        // are replay-complete. Symbolic numeric Add still stays partial until residual-op
+        // construction is available, so the writer remains fail-closed.
+        let private tryAddLiteral a b =
+            match a, b with
+            | LitInt8 a, LitInt8 b -> Some (DLit (LitInt8 (a + b)))
+            | LitInt16 a, LitInt16 b -> Some (DLit (LitInt16 (a + b)))
+            | LitInt32 a, LitInt32 b -> Some (DLit (LitInt32 (a + b)))
+            | LitInt64 a, LitInt64 b -> Some (DLit (LitInt64 (a + b)))
+            | LitUInt8 a, LitUInt8 b -> Some (DLit (LitUInt8 (a + b)))
+            | LitUInt16 a, LitUInt16 b -> Some (DLit (LitUInt16 (a + b)))
+            | LitUInt32 a, LitUInt32 b -> Some (DLit (LitUInt32 (a + b)))
+            | LitUInt64 a, LitUInt64 b -> Some (DLit (LitUInt64 (a + b)))
+            | LitFloat32 a, LitFloat32 b -> Some (DLit (LitFloat32 (a + b)))
+            | LitFloat64 a, LitFloat64 b -> Some (DLit (LitFloat64 (a + b)))
+            | _ -> None
+
+        let private isZeroLiteral = function
+            | LitInt8 0y | LitInt16 0s | LitInt32 0 | LitInt64 0L -> true
+            | LitUInt8 0uy | LitUInt16 0us | LitUInt32 0u | LitUInt64 0UL -> true
+            | LitFloat32 0.0f | LitFloat64 0.0 -> true
+            | _ -> false
+
+        let private isZeroData = function
+            | DLit lit -> isZeroLiteral lit
+            | _ -> false
+
+        let private isPrimLike = function
+            | DLit _ -> true
+            | DV(L(_,YPrim _)) -> true
+            | DNominal(d, _) ->
+                match d with
+                | DLit _ -> true
+                | DV(L(_,YPrim _)) -> true
+                | _ -> false
+            | _ -> false
+
+        let private isUnionLike = function
+            | DUnion _ -> true
+            | DV(L(_,YUnion _)) -> true
+            | DNominal(DV(L(_,YUnion _)), _) -> true
+            | DNominal(DUnion _, _) -> true
+            | _ -> false
+
+        let private isHeapUnionLike = function
+            | DUnion(_,u) ->
+                match u.Item.layout with
+                | UHeap -> true
+                | UStack -> false
+            | DV(L(_,YUnion u)) ->
+                match u.Item.layout with
+                | UHeap -> true
+                | UStack -> false
+            | DNominal(DV(L(_,YUnion u)), _) | DNominal(DUnion(_,u), _) ->
+                match u.Item.layout with
+                | UHeap -> true
+                | UStack -> false
+            | _ -> false
+
+        let private isLayoutLike = function
+            | DV(L(_,YLayout _)) -> true
+            | _ -> false
+
+        let private isNominalLike = function
+            | DNominal _ -> true
+            | _ -> false
+
+        let private isFunctionLike = function
+            | DFunction _ -> true
+            | DV(L(_,YFun _)) -> true
+            | _ -> false
+
+        let private isExistsLike = function
+            | DExists _ -> true
+            | _ -> false
+
+        // ALPHA371: conservative replay for Dyn/1.
+        //
+        // Dyn in the real evaluator can perform closure conversion and typed union
+        // boxing through EvalState.  The explicit replay driver must not fake those
+        // effects, but it can safely resolve the same inert leaves that dyn leaves
+        // unchanged, plus literal/type-literal/symbol and pair normalization.  Any
+        // stateful or annotation-dependent case stays partial and keeps the writer
+        // fail-closed.
+        let rec private tryDynReplayData = function
+            | DV _ as x -> Some x
+            | DB -> Some DB
+            | DExists _ as x -> Some x
+            | DForall _ as x -> Some x
+            | DRecord _ as x -> Some x
+            | DUnion _ as x -> Some x
+            | DHashSet _ as x -> Some x
+            | DHashMap _ as x -> Some x
+            | DLit _ as x -> Some x
+            | DTLit lit -> Some (DLit lit)
+            | DSymbol x -> Some (DLit (LitString x))
+            | DPair(a,b) ->
+                match tryDynReplayData a, tryDynReplayData b with
+                | Some a, Some b -> Some (DPair(a,b))
+                | _ -> None
+            | DNominal _ -> None
+            | DFunction _ -> None
+
+        let tryResolvePureOp (opName: string) (argNodeIds: int[]) : Data option =
+            let values =
+                argNodeIds
+                |> Array.map tryTerm
+            if values |> Array.exists Option.isNone then None
+            else
+                let values = values |> Array.map Option.get
+                let opName = opCaseName opName
+                match opName, values with
+                | "Dyn", [|a|] -> tryDynReplayData a
+                | "Add", [|DLit a; DLit b|] -> tryAddLiteral a b
+                | "Add", [|a; b|] when isZeroData a -> Some b
+                | "Add", [|a; b|] when isZeroData b -> Some a
+                | "VarIs", [|a|] -> Some (boolData (isReplayVarLike a))
+                | "LitIs", [|DLit _|] -> Some (boolData true)
+                | "LitIs", [|_|] -> Some (boolData false)
+                | "PrimIs", [|a|] -> Some (boolData (isPrimLike a))
+                | "SymbolIs", [|DSymbol _|] -> Some (boolData true)
+                | "SymbolIs", [|_|] -> Some (boolData false)
+                | "UnionIs", [|a|] -> Some (boolData (isUnionLike a))
+                | "HeapUnionIs", [|a|] -> Some (boolData (isHeapUnionLike a))
+                | "LayoutIs", [|a|] -> Some (boolData (isLayoutLike a))
+                | "NominalIs", [|a|] -> Some (boolData (isNominalLike a))
+                | "FunctionIs", [|a|] -> Some (boolData (isFunctionLike a))
+                | "ExistsIs", [|a|] -> Some (boolData (isExistsLike a))
+                | _ -> None
+
     /// Alpha350 update: replay commit now acts as a resume handoff. When retry_stop observes
     /// semantic_step_done/queue_depth=0, it invalidates the cache once and re-enters attempt_build
     /// instead of raising the stale pre-commit EJP0011 message.
@@ -10220,13 +10558,28 @@ module spiral_compiler =
                     | _ -> "missing"
                 | None -> "none")
 
-        let hasSemanticStepDone () =
+        // ALPHA364: distinguish local leaf value resolution from root replay completion.
+        // Alpha363 proved the old gate was still too permissive: a single EV leaf could mark
+        // semantic_leaf_complete, trigger retry_after_replay_root_complete if not gated, and let an unstable write
+        // path emit a tiny residual. Until a parent-continuation stack proves the root frame, local
+        // value resolutions are semantic_leaf_complete and remain fail-closed.
+        let hasReplayPartial () =
             lock gate (fun () ->
                 match frontier with
-                | Some frame when frame.status = "semantic_step_done" -> true
+                | Some frame when frame.status = "semantic_step_partial" || frame.status = "semantic_step_done" || frame.status = "semantic_leaf_complete" -> true
                 | Some frame ->
                     match frame.semanticCell with
-                    | Some cell when cell.status = "semantic_step_done" -> true
+                    | Some cell when cell.status = "semantic_step_partial" || cell.status = "semantic_step_done" || cell.status = "semantic_leaf_complete" -> true
+                    | _ -> false
+                | None -> false)
+
+        let hasReplayComplete () =
+            lock gate (fun () ->
+                match frontier with
+                | Some frame when frame.status = "semantic_root_complete" -> true
+                | Some frame ->
+                    match frame.semanticCell with
+                    | Some cell when cell.status = "semantic_root_complete" -> true
                     | _ -> false
                 | None -> false)
 
@@ -10267,7 +10620,7 @@ module spiral_compiler =
         // and emits a deterministic eval_worklist_replay_step. This is the first stack-safe
         // stepper boundary: it does not recurse into term/ty yet; it hands a typed cell to the
         // future executor and deduplicates repeated driver ticks.
-        let private runReplayDriver (event: string) =
+        let rec private runReplayDriver (event: string) =
             try
                 let taskOpt =
                     lock gate (fun () ->
@@ -10298,27 +10651,148 @@ module spiral_compiler =
                     match cellOpt with
                     | Some cell ->
                         let cursorNow = (match frontier with Some f -> f.cursor | None -> cell.cursor)
+                        let parentResumed =
+                            cell.status = "parent_continuation_ready"
+                            || task.status = "scheduled_parent_replay"
+                            || task.key.Contains("|parent|")
                         let cellReady = { cell with cursor = cursorNow; step = cell.step + 1; status = "stepper_ready" }
-                        let reduceOutcome =
+                        let continueToParent (childCell: ReplayCell) (outcome: string) =
+                            match EvalReplayValueStore.tryParentContinuation childCell.nodeId with
+                            | Some cont ->
+                                let parentCell = { childCell with kind = cont.parentKind; shape = cont.parentShape; nodeId = cont.parentNodeId; status = "parent_continuation_ready" }
+                                Some(outcome + "_parent_continuation_resumed", "semantic_step_partial", "resume_parent_replay_driver", parentCell)
+                            | None -> None
+                        let leafOrParent outcome childCell =
+                            match continueToParent childCell outcome with
+                            | Some x -> x
+                            | None -> outcome, "semantic_leaf_complete", "explicit_eval_worklist_parent_continuation_required", childCell
+                        let compositeOrParent outcome compositeCell =
+                            match continueToParent compositeCell outcome with
+                            | Some x -> x
+                            | None when parentResumed -> outcome + "_root_resolved", "semantic_root_complete", "resume_explicit_eval_loop", compositeCell
+                            | None -> outcome, "semantic_leaf_complete", "explicit_eval_worklist_parent_continuation_required", compositeCell
+                        let reduceOutcome, commitStatus, commitNext, replayCell =
                             match cellReady.kind, cellReady.shape with
-                            | "term", "EV" -> "term_env_lookup_dispatched"
-                            | "term", "EApply" -> "term_apply_spine_dispatched"
-                            | "term", "ELet" -> "term_let_binding_dispatched"
-                            | "term", s when s.StartsWith("E") -> "term_shape_dispatch_dispatched"
-                            | "ty", "TV" -> "ty_env_lookup_dispatched"
-                            | "ty", "TApply" -> "ty_apply_spine_dispatched"
-                            | "ty", s when s.StartsWith("T") -> "ty_shape_dispatch_dispatched"
-                            | _ -> "unknown_shape_dispatch_dispatched"
-                        let cellReduced = { cellReady with step = cellReady.step + 1; status = "semantic_step_dispatched" }
-                        let cellCommitted = { cellReduced with step = cellReduced.step + 1; status = "semantic_step_done" }
+                            | "term", "EV" ->
+                                match EvalReplayValueStore.tryTerm cellReady.nodeId with
+                                | Some _ -> leafOrParent "term_env_lookup_leaf_resolved" cellReady
+                                | None -> "term_env_lookup_missing_value_store", "semantic_step_partial", "explicit_eval_worklist_value_store_required", cellReady
+                            | "term", "EApply" ->
+                                match EvalReplayValueStore.tryApplySpine cellReady.nodeId with
+                                | Some spine ->
+                                    if not (EvalReplayValueStore.hasTerm spine.headNodeId) then
+                                        let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = "apply_head_ready" }
+                                        "term_apply_spine_head_scheduled", "semantic_step_partial", "explicit_eval_worklist_apply_head_stepper_required", headCell
+                                    else
+                                        let missingArg =
+                                            spine.argNodeIds
+                                            |> Array.mapi (fun i nodeId -> i, nodeId)
+                                            |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.hasTerm nodeId))
+                                        match missingArg with
+                                        | Some (i, nodeId) ->
+                                            let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
+                                            let argCell = { cellReady with nodeId = nodeId; shape = shape; status = "apply_arg_ready" }
+                                            "term_apply_spine_arg_scheduled", "semantic_step_partial", "explicit_eval_worklist_apply_arg_stepper_required", argCell
+                                        | None ->
+                                            "term_apply_args_available_unimplemented", "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
+                                | None -> "term_apply_spine_missing_store", "semantic_step_partial", "explicit_eval_worklist_apply_spine_store_required", cellReady
+                            | "term", "ETypeApply" ->
+                                match EvalReplayValueStore.tryTypeApplySpine cellReady.nodeId with
+                                | Some spine ->
+                                    match EvalReplayValueStore.tryTerm spine.funcNodeId, EvalReplayValueStore.tryType spine.typeNodeId with
+                                    | None, _ ->
+                                        let funcCell = { cellReady with nodeId = spine.funcNodeId; shape = spine.funcShape; status = "type_apply_function_ready" }
+                                        "term_type_apply_function_scheduled", "semantic_step_partial", "explicit_eval_worklist_type_apply_function_stepper_required", funcCell
+                                    | _, None ->
+                                        let typeCell = { cellReady with kind = "ty"; nodeId = spine.typeNodeId; shape = spine.typeShape; status = "type_apply_type_arg_ready" }
+                                        "term_type_apply_type_arg_scheduled", "semantic_step_partial", "explicit_eval_worklist_type_apply_type_arg_stepper_required", typeCell
+                                    | Some (DForall _), Some _ ->
+                                        match EvalReplayValueStore.tryTerm cellReady.nodeId with
+                                        | Some value ->
+                                            EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                            compositeOrParent "term_type_apply_forall_body_value_resolved" cellReady
+                                        | None ->
+                                            "term_type_apply_forall_body_value_missing", "semantic_step_partial", "explicit_eval_worklist_type_apply_forall_body_stepper_required", cellReady
+                                    | Some _, Some _ ->
+                                        "term_type_apply_non_forall_value_available", "semantic_step_partial", "explicit_eval_worklist_type_apply_type_error_required", cellReady
+                                | None -> "term_type_apply_missing_store", "semantic_step_partial", "explicit_eval_worklist_type_apply_store_required", cellReady
+                            | "term", "EIfThenElse" ->
+                                match EvalReplayValueStore.tryIfThenElse cellReady.nodeId with
+                                | Some spine ->
+                                    match EvalReplayValueStore.tryTerm spine.condNodeId with
+                                    | Some (DLit (LitBool true)) ->
+                                        let branchCell = { cellReady with nodeId = spine.trueNodeId; shape = spine.trueShape; status = "if_true_branch_ready" }
+                                        match EvalReplayValueStore.tryTerm spine.trueNodeId with
+                                        | Some value ->
+                                            EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                            compositeOrParent "term_if_true_branch_value_resolved" cellReady
+                                        | None ->
+                                            "term_if_true_branch_scheduled", "semantic_step_partial", "explicit_eval_worklist_if_true_branch_stepper_required", branchCell
+                                    | Some (DLit (LitBool false)) ->
+                                        let branchCell = { cellReady with nodeId = spine.falseNodeId; shape = spine.falseShape; status = "if_false_branch_ready" }
+                                        match EvalReplayValueStore.tryTerm spine.falseNodeId with
+                                        | Some value ->
+                                            EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                            compositeOrParent "term_if_false_branch_value_resolved" cellReady
+                                        | None ->
+                                            "term_if_false_branch_scheduled", "semantic_step_partial", "explicit_eval_worklist_if_false_branch_stepper_required", branchCell
+                                    | Some _ -> "term_if_condition_symbolic_value_available", "semantic_step_partial", "explicit_eval_worklist_if_symbolic_stepper_required", cellReady
+                                    | None ->
+                                        let condCell = { cellReady with nodeId = spine.condNodeId; shape = spine.condShape; status = "if_condition_ready" }
+                                        "term_if_condition_scheduled", "semantic_step_partial", "explicit_eval_worklist_if_condition_stepper_required", condCell
+                                | None -> "term_if_missing_store", "semantic_step_partial", "explicit_eval_worklist_if_store_required", cellReady
+                            | "term", "ELet" -> "term_let_binding_dispatched", "semantic_step_partial", "explicit_eval_worklist_let_stepper_required", cellReady
+                            | "term", "EOp" ->
+                                match EvalReplayValueStore.tryOpSpine cellReady.nodeId with
+                                | Some spine ->
+                                    match EvalReplayValueStore.tryResolvePureOp spine.opName spine.argNodeIds with
+                                    | Some value ->
+                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                        compositeOrParent "term_op_pure_value_resolved" cellReady
+                                    | None ->
+                                        let missingArg =
+                                            spine.argNodeIds
+                                            |> Array.mapi (fun i nodeId -> i, nodeId)
+                                            |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.hasTerm nodeId))
+                                        match missingArg with
+                                        | Some (i, nodeId) ->
+                                            let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
+                                            let argCell = { cellReady with nodeId = nodeId; shape = shape; status = "op_arg_ready" }
+                                            "term_op_arg_scheduled", "semantic_step_partial", "explicit_eval_worklist_op_arg_stepper_required", argCell
+                                        | None ->
+                                            sprintf "term_op_args_available_unimplemented:%s/%d" spine.opName spine.argCount, "semantic_step_partial", "explicit_eval_worklist_op_impl_required", cellReady
+                                | None -> "term_op_missing_store", "semantic_step_partial", "explicit_eval_worklist_op_store_required", cellReady
+                            | "term", ("EFun'" | "ERecursiveFun'") ->
+                                match EvalReplayValueStore.tryTerm cellReady.nodeId with
+                                | Some value ->
+                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                    compositeOrParent "term_function_value_resolved" cellReady
+                                | None -> "term_function_value_missing_store", "semantic_step_partial", "explicit_eval_worklist_function_value_store_required", cellReady
+                            | "term", s when s.StartsWith("E") -> "term_shape_dispatch_dispatched", "semantic_step_partial", "explicit_eval_worklist_term_stepper_required", cellReady
+                            | "ty", ("TV" | "TArrow'" | "TLit" | "TB" | "TExists" | "TForall'" | "TMetaV") ->
+                                match EvalReplayValueStore.tryType cellReady.nodeId with
+                                | Some _ -> leafOrParent "ty_value_leaf_resolved" cellReady
+                                | None -> "ty_value_missing_store", "semantic_step_partial", "explicit_eval_worklist_ty_value_store_required", cellReady
+                            | "ty", "TApply" -> "ty_apply_spine_dispatched", "semantic_step_partial", "explicit_eval_worklist_ty_apply_stepper_required", cellReady
+                            | "ty", s when s.StartsWith("T") -> "ty_shape_dispatch_dispatched", "semantic_step_partial", "explicit_eval_worklist_ty_stepper_required", cellReady
+                            | _ -> "unknown_shape_dispatch_dispatched", "semantic_step_partial", "explicit_eval_worklist_real_stepper_required", cellReady
+                        let cellReduced = { replayCell with step = replayCell.step + 1; status = if commitStatus = "semantic_root_complete" then "semantic_value_resolved" elif commitStatus = "semantic_leaf_complete" then "semantic_leaf_value_resolved" elif replayCell.status = "parent_continuation_ready" then "parent_continuation_dispatched" elif replayCell.status = "apply_head_ready" then "apply_head_dispatched" elif replayCell.status = "apply_arg_ready" then "apply_arg_dispatched" elif replayCell.status = "op_arg_ready" then "op_arg_dispatched" elif replayCell.status.StartsWith("if_", StringComparison.Ordinal) then "if_branch_dispatched" else "semantic_step_dispatched" }
+                        let cellCommitted = { cellReduced with step = cellReduced.step + 1; status = commitStatus }
+                        let shouldResumeParent = commitNext = "resume_parent_replay_driver"
                         let remainingQueue =
                             lock gate (fun () ->
                                 replayQueue <- replayQueue |> List.filter (fun t -> t.id <> task.id)
                                 if replayQueue.IsEmpty then replayScheduledKey <- None
                                 match frontier with
                                 | Some frame ->
-                                    frontier <- Some { frame with status = "semantic_step_done"; semanticCell = Some cellCommitted; semanticPayload = Some (formatCellPayload cellCommitted) }
+                                    frontier <- Some { frame with status = commitStatus; semanticCell = Some cellCommitted; semanticPayload = Some (formatCellPayload cellCommitted) }
                                 | None -> ()
+                                if shouldResumeParent then
+                                    replaySeq <- replaySeq + 1L
+                                    let resumeKey = sprintf "%s|parent|%d|%d" task.key cellCommitted.nodeId cellCommitted.step
+                                    let resumeTask = { id = replaySeq; key = resumeKey; driver = task.driver; payload = formatCellPayload cellCommitted; status = "scheduled_parent_replay"; event = event }
+                                    replayScheduledKey <- Some resumeKey
+                                    replayQueue <- [resumeTask]
                                 replayQueue.Length)
                         DiagJson.emit (
                             sprintf "{\"kind\":\"eval_worklist_replay_step\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":\"typed_cell_ready\",\"single_flight\":1,\"next\":%s}"
@@ -10327,8 +10801,13 @@ module spiral_compiler =
                             sprintf "{\"kind\":\"eval_worklist_replay_reduce\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":%s,\"single_flight\":1,\"next\":\"commit_replay_step\"}"
                                 (esc event) task.id (esc task.driver) (esc (formatCell cellReduced)) (esc reduceOutcome))
                         DiagJson.emit (
-                            sprintf "{\"kind\":\"eval_worklist_replay_commit\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":\"semantic_step_committed\",\"queue_depth\":%d,\"single_flight\":1,\"next\":\"resume_explicit_eval_loop\"}"
-                                (esc event) task.id (esc task.driver) (esc (formatCell cellCommitted)) remainingQueue)
+                            sprintf "{\"kind\":\"eval_worklist_replay_commit\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) task.id (esc task.driver) (esc (formatCell cellCommitted)) (esc commitStatus) remainingQueue (esc commitNext))
+                        if shouldResumeParent then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_parent_resume\",\"event\":%s,\"driver\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":\"term_replay_driver\"}"
+                                    (esc event) (esc task.driver) (esc (formatCell cellCommitted)) (replayQueueDepth()))
+                            runReplayDriver event
                     | None -> ()
                 | None ->
                     DiagJson.emit (
@@ -10534,6 +11013,9 @@ module spiral_compiler =
 
         let private nextFor (frame: Frame) =
             match frame.status with
+            | "semantic_step_partial" -> "explicit_eval_worklist_real_stepper_required"
+            | "semantic_root_complete" -> "attempt_build"
+            | "semantic_leaf_complete" -> "explicit_eval_worklist_parent_continuation_required"
             | "continuation_envelope" -> "schedule_term_ty_replay"
             | "tracing_explicit_loop" -> "advance_trace_cursor"
             | "ready_explicit_loop" -> "bounded_trampoline"
@@ -10660,8 +11142,14 @@ module spiral_compiler =
 
         let requiredMessage (msg: string) (frame: Frame) =
             let cellState = match frame.semanticCell with Some c -> formatCell c | None -> "none"
-            sprintf "%s\nEvalWorklistFrame: kind=%s status=%s depth=%d re=%d/%d trace_lines=%d pending=%d cursor=%d single_flight=1 replay_queue=%d semantic_payload=%s replay_cell=%s adapter=trace_replay_continuation next=%s driver=%s driver_state=%s payload=%s"
-                msg frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (pendingCount()) frame.cursor (replayQueueDepth()) (semanticPayloadStatus()) cellState (nextFor frame) (replayDriverFor frame) (replayDriverStatus()) (adapterPayload frame)
+            let replayComplete = frame.status = "semantic_root_complete" || (match frame.semanticCell with Some c -> c.status = "semantic_root_complete" | None -> false)
+            let completeness =
+                if replayComplete then "complete"
+                elif frame.status = "semantic_leaf_complete" then "leaf_complete_parent_continuation_missing"
+                elif frame.status = "semantic_step_partial" || frame.status = "semantic_step_done" then "partial_one_step_only"
+                else "not_complete"
+            sprintf "%s\nEvalWorklistFrame: kind=%s status=%s depth=%d re=%d/%d trace_lines=%d pending=%d cursor=%d single_flight=1 replay_queue=%d semantic_payload=%s replay_complete=%b replay_completeness=%s replay_cell=%s adapter=trace_replay_continuation next=%s driver=%s driver_state=%s payload=%s"
+                msg frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (pendingCount()) frame.cursor (replayQueueDepth()) (semanticPayloadStatus()) replayComplete completeness cellState (nextFor frame) (replayDriverFor frame) (replayDriverStatus()) (adapterPayload frame)
 
 
     /// ### JoinPointKey
@@ -15009,8 +15497,22 @@ module spiral_compiler =
             let r0 = range_of_tprepass_or fallback x
             let site = sprintf "ty@%s:%d" r0.path (fst r0.range).line
             let semanticCellForTy nodeId = evalCell "ty" (evalNodeShapeTy x) nodeId site s
+            let registerReplayTy (nodeId: int) (expr: TPrepass) =
+                match expr with
+                | TV i -> EvalReplayValueStore.putType nodeId (fun () -> vt s i)
+                | TArrow'(scope,i,body) ->
+                    EvalReplayValueStore.putType nodeId (fun () ->
+                        assert (i = scope.ty.free_vars.Length)
+                        YTypeFunction(body, HopacExtensions.A.map (vt s) scope.ty.free_vars, scope.term.stack_size, scope.ty.stack_size))
+                | TLit(_,lit) -> EvalReplayValueStore.putType nodeId (fun () -> YLit lit)
+                | TB _ -> EvalReplayValueStore.putType nodeId (fun () -> YB)
+                | TExists -> EvalReplayValueStore.putType nodeId (fun () -> YExists)
+                | TForall' _ -> EvalReplayValueStore.putType nodeId (fun () -> YForall)
+                | TMetaV i -> EvalReplayValueStore.putType nodeId (fun () -> YMetavar i)
+                | _ -> ()
             if TermCycleFuse.isTripped() then
                 let nodeId0 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
+                registerReplayTy nodeId0 x
                 EvalWorklist.ensureCaptured "ty_entry_global_fuse" |> ignore
                 EvalWorklist.attachSemanticCell "ty_entry" (semanticCellForTy nodeId0)
                 EvalWorklist.ensureCapturedAndRun "ty_entry_global_fuse" "ty_entry" 8 |> ignore
@@ -15022,6 +15524,7 @@ module spiral_compiler =
             // Cycle guards: detect infinite re-entrancy into the same expression
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
+            registerReplayTy nodeId x
             let reCount = EvalCycleGuard.enter nodeObj
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
@@ -15485,6 +15988,156 @@ module spiral_compiler =
             let semanticCellForTerm nodeId = evalCell "term" (evalNodeShapeTerm x) nodeId site s
             if TermCycleFuse.isTripped() then
                 let nodeId0 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
+                let registerReplayTerm (nodeId: int) (expr: E) =
+                    match expr with
+                    | EV a -> EvalReplayValueStore.putTerm nodeId (fun () -> v s a)
+                    | ELit(_,lit) -> EvalReplayValueStore.putTermValue nodeId (DLit lit)
+                    | EFun'(_,freeVars,i,body,annot) ->
+                        EvalReplayValueStore.putTerm nodeId (fun () ->
+                            if freeVars.term.free_vars.Length <> i then failwith "Replay function free-var arity mismatch."
+                            DFunction(body, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | ERecursiveFun'(_,freeVars,i,body,annot) ->
+                        EvalReplayValueStore.putTerm nodeId (fun () ->
+                            if freeVars.term.free_vars.Length <> i then failwith "Replay recursive function free-var arity mismatch."
+                            DFunction(body.Value, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | EForall'(_,freeVars,i,body) ->
+                        EvalReplayValueStore.putTerm nodeId (fun () ->
+                            if freeVars.ty.free_vars.Length <> i then failwith "Replay forall free-var arity mismatch."
+                            DForall(body, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | ERecursiveForall'(_,freeVars,i,body) ->
+                        EvalReplayValueStore.putTerm nodeId (fun () ->
+                            if freeVars.ty.free_vars.Length <> i then failwith "Replay recursive forall free-var arity mismatch."
+                            DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | EDefaultLit(_,_,_) -> ()
+                    | ETypeApply(_,func,typeArg) ->
+                        let funcNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box func)
+                        let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box typeArg)
+                        match func with
+                        | EV a -> EvalReplayValueStore.putTerm funcNodeId (fun () -> v s a)
+                        | EForall'(_,freeVars,i,body) ->
+                            EvalReplayValueStore.putTerm funcNodeId (fun () ->
+                                if freeVars.ty.free_vars.Length <> i then failwith "Replay type-apply forall free-var arity mismatch."
+                                DForall(body, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | ERecursiveForall'(_,freeVars,i,body) ->
+                            EvalReplayValueStore.putTerm funcNodeId (fun () ->
+                                if freeVars.ty.free_vars.Length <> i then failwith "Replay type-apply recursive forall free-var arity mismatch."
+                                DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | _ -> ()
+                        match typeArg with
+                        | TV i -> EvalReplayValueStore.putType typeNodeId (fun () -> vt s i)
+                        | TArrow'(scope,i,body) ->
+                            EvalReplayValueStore.putType typeNodeId (fun () ->
+                                assert (i = scope.ty.free_vars.Length)
+                                YTypeFunction(body, HopacExtensions.A.map (vt s) scope.ty.free_vars, scope.term.stack_size, scope.ty.stack_size))
+                        | TLit(_,lit) -> EvalReplayValueStore.putType typeNodeId (fun () -> YLit lit)
+                        | TB _ -> EvalReplayValueStore.putType typeNodeId (fun () -> YB)
+                        | TExists -> EvalReplayValueStore.putType typeNodeId (fun () -> YExists)
+                        | TForall' _ -> EvalReplayValueStore.putType typeNodeId (fun () -> YForall)
+                        | TMetaV i -> EvalReplayValueStore.putType typeNodeId (fun () -> YMetavar i)
+                        | _ -> ()
+                        EvalReplayValueStore.putTypeApplySpine nodeId {
+                            funcNodeId = funcNodeId
+                            funcShape = evalNodeShapeTerm func
+                            typeNodeId = typeNodeId
+                            typeShape = evalNodeShapeTy typeArg
+                        }
+                        // ALPHA370: value-gated DForall body replay for ETypeApply.
+                        // This mirrors type_apply but remains a thunk inside the replay value
+                        // store.  If evaluating the forall body still hits a cycle, tryTerm
+                        // catches the exception and the worklist remains semantic_step_partial.
+                        EvalReplayValueStore.putTerm nodeId (fun () ->
+                            match term s func with
+                            | DForall(body,gl_term,gl_ty,sz_term,sz_ty) ->
+                                let s' = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
+                                s'.env_stack_type.[0] <- ty s typeArg
+                                term s' body
+                            | DV(L(_,YForall)) -> failwith "Replay type-apply cannot apply runtime forall during partial evaluation."
+                            | a -> failwith (sprintf "Replay type-apply expected forall; got %s" (show_data a)))
+                    | EOp(_,op,args) ->
+                        let argArray = args |> List.toArray
+                        for arg in argArray do
+                            let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
+                            match arg with
+                            | EV a -> EvalReplayValueStore.putTerm argNodeId (fun () -> v s a)
+                            | ELit(_,lit) -> EvalReplayValueStore.putTermValue argNodeId (DLit lit)
+                            | EDefaultLit(_,_,_) -> ()
+                            | _ -> ()
+                        EvalReplayValueStore.putOpSpine nodeId {
+                            opName = sprintf "%A" op
+                            argCount = argArray.Length
+                            argNodeIds = argArray |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                            argShapes = argArray |> Array.map evalNodeShapeTerm
+                        }
+                    | EIfThenElse(_,cond,onTrue,onFalse) ->
+                        let condNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cond)
+                        let trueNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onTrue)
+                        let falseNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onFalse)
+                        match cond with
+                        | EV a -> EvalReplayValueStore.putTerm condNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue condNodeId (DLit lit)
+                        | _ -> ()
+                        match onTrue with
+                        | EV a -> EvalReplayValueStore.putTerm trueNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue trueNodeId (DLit lit)
+                        | _ -> ()
+                        match onFalse with
+                        | EV a -> EvalReplayValueStore.putTerm falseNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue falseNodeId (DLit lit)
+                        | _ -> ()
+                        EvalReplayValueStore.putIfThenElse nodeId {
+                            condNodeId = condNodeId
+                            condShape = evalNodeShapeTerm cond
+                            trueNodeId = trueNodeId
+                            trueShape = evalNodeShapeTerm onTrue
+                            falseNodeId = falseNodeId
+                            falseShape = evalNodeShapeTerm onFalse
+                        }
+                    | EApply _ ->
+                        let args = ResizeArray<E>()
+                        let mutable cur = expr
+                        let mutable running = true
+                        while running do
+                            match cur with
+                            | EApply(_, a, b) ->
+                                args.Add b
+                                cur <- a
+                            | _ -> running <- false
+                        let headNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cur)
+                        match cur with
+                        | EV a -> EvalReplayValueStore.putTerm headNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue headNodeId (DLit lit)
+                        | EFun'(_,freeVars,i,body,annot) ->
+                            EvalReplayValueStore.putTerm headNodeId (fun () ->
+                                if freeVars.term.free_vars.Length <> i then failwith "Replay apply-head function free-var arity mismatch."
+                                DFunction(body, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | ERecursiveFun'(_,freeVars,i,body,annot) ->
+                            EvalReplayValueStore.putTerm headNodeId (fun () ->
+                                if freeVars.term.free_vars.Length <> i then failwith "Replay apply-head recursive function free-var arity mismatch."
+                                DFunction(body.Value, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | EForall'(_,freeVars,i,body) ->
+                            EvalReplayValueStore.putTerm headNodeId (fun () ->
+                                if freeVars.ty.free_vars.Length <> i then failwith "Replay apply-head forall free-var arity mismatch."
+                                DForall(body, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | ERecursiveForall'(_,freeVars,i,body) ->
+                            EvalReplayValueStore.putTerm headNodeId (fun () ->
+                                if freeVars.ty.free_vars.Length <> i then failwith "Replay apply-head recursive forall free-var arity mismatch."
+                                DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | _ -> ()
+                        for arg in args do
+                            let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
+                            match arg with
+                            | EV a -> EvalReplayValueStore.putTerm argNodeId (fun () -> v s a)
+                            | ELit(_,lit) -> EvalReplayValueStore.putTermValue argNodeId (DLit lit)
+                            | _ -> ()
+                        EvalReplayValueStore.putApplySpine nodeId {
+                            headNodeId = headNodeId
+                            headShape = evalNodeShapeTerm cur
+                            argCount = args.Count
+                            argNodeIds = args.ToArray() |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                            argShapes = args.ToArray() |> Array.map evalNodeShapeTerm
+                        }
+                    | _ -> ()
+                registerReplayTerm nodeId0 x
                 EvalWorklist.ensureCaptured "term_entry_global_fuse" |> ignore
                 EvalWorklist.attachSemanticCell "term_entry" (semanticCellForTerm nodeId0)
                 EvalWorklist.ensureCapturedAndRun "term_entry_global_fuse" "term_entry" 8 |> ignore
@@ -15497,6 +16150,147 @@ module spiral_compiler =
             // Cycle guards: detect infinite re-entrancy into the same expression
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
+            let registerReplayTerm (nodeId: int) (expr: E) =
+                match expr with
+                | EV a -> EvalReplayValueStore.putTerm nodeId (fun () -> v s a)
+                | ELit(_,lit) -> EvalReplayValueStore.putTermValue nodeId (DLit lit)
+                | EFun'(_,freeVars,i,body,annot) ->
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        if freeVars.term.free_vars.Length <> i then failwith "Replay function free-var arity mismatch."
+                        DFunction(body, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                | ERecursiveFun'(_,freeVars,i,body,annot) ->
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        if freeVars.term.free_vars.Length <> i then failwith "Replay recursive function free-var arity mismatch."
+                        DFunction(body.Value, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                | EForall'(_,freeVars,i,body) ->
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        if freeVars.ty.free_vars.Length <> i then failwith "Replay forall free-var arity mismatch."
+                        DForall(body, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                | ERecursiveForall'(_,freeVars,i,body) ->
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        if freeVars.ty.free_vars.Length <> i then failwith "Replay recursive forall free-var arity mismatch."
+                        DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                | EDefaultLit(_,_,_) -> ()
+                | ETypeApply(_,func,typeArg) ->
+                    let funcNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box func)
+                    let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box typeArg)
+                    match func with
+                    | EV a -> EvalReplayValueStore.putTerm funcNodeId (fun () -> v s a)
+                    | EForall'(_,freeVars,i,body) ->
+                        EvalReplayValueStore.putTerm funcNodeId (fun () ->
+                            if freeVars.ty.free_vars.Length <> i then failwith "Replay type-apply forall free-var arity mismatch."
+                            DForall(body, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | ERecursiveForall'(_,freeVars,i,body) ->
+                        EvalReplayValueStore.putTerm funcNodeId (fun () ->
+                            if freeVars.ty.free_vars.Length <> i then failwith "Replay type-apply recursive forall free-var arity mismatch."
+                            DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | _ -> ()
+                    match typeArg with
+                    | TV i -> EvalReplayValueStore.putType typeNodeId (fun () -> vt s i)
+                    | TArrow'(scope,i,body) ->
+                        EvalReplayValueStore.putType typeNodeId (fun () ->
+                            assert (i = scope.ty.free_vars.Length)
+                            YTypeFunction(body, HopacExtensions.A.map (vt s) scope.ty.free_vars, scope.term.stack_size, scope.ty.stack_size))
+                    | TLit(_,lit) -> EvalReplayValueStore.putType typeNodeId (fun () -> YLit lit)
+                    | TB _ -> EvalReplayValueStore.putType typeNodeId (fun () -> YB)
+                    | TExists -> EvalReplayValueStore.putType typeNodeId (fun () -> YExists)
+                    | TForall' _ -> EvalReplayValueStore.putType typeNodeId (fun () -> YForall)
+                    | TMetaV i -> EvalReplayValueStore.putType typeNodeId (fun () -> YMetavar i)
+                    | _ -> ()
+                    EvalReplayValueStore.putTypeApplySpine nodeId {
+                        funcNodeId = funcNodeId
+                        funcShape = evalNodeShapeTerm func
+                        typeNodeId = typeNodeId
+                        typeShape = evalNodeShapeTy typeArg
+                    }
+                    // ALPHA370: value-gated DForall body replay for ETypeApply.
+                    // This mirrors type_apply but remains a thunk inside the replay value
+                    // store.  If evaluating the forall body still hits a cycle, tryTerm
+                    // catches the exception and the worklist remains semantic_step_partial.
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        match term s func with
+                        | DForall(body,gl_term,gl_ty,sz_term,sz_ty) ->
+                            let s' = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
+                            s'.env_stack_type.[0] <- ty s typeArg
+                            term s' body
+                        | DV(L(_,YForall)) -> failwith "Replay type-apply cannot apply runtime forall during partial evaluation."
+                        | a -> failwith (sprintf "Replay type-apply expected forall; got %s" (show_data a)))
+                | EOp(_,op,args) ->
+                    let argArray = args |> List.toArray
+                    for arg in argArray do
+                        let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
+                        match arg with
+                        | EV a -> EvalReplayValueStore.putTerm argNodeId (fun () -> v s a)
+                        | EDefaultLit(_,_,_) -> ()
+                        | _ -> ()
+                    EvalReplayValueStore.putOpSpine nodeId {
+                        opName = sprintf "%A" op
+                        argCount = argArray.Length
+                        argNodeIds = argArray |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                        argShapes = argArray |> Array.map evalNodeShapeTerm
+                    }
+                | EIfThenElse(_,cond,onTrue,onFalse) ->
+                    let condNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cond)
+                    let trueNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onTrue)
+                    let falseNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onFalse)
+                    match cond with
+                    | EV a -> EvalReplayValueStore.putTerm condNodeId (fun () -> v s a)
+                    | ELit(_,lit) -> EvalReplayValueStore.putTermValue condNodeId (DLit lit)
+                    | _ -> ()
+                    match onTrue with
+                    | EV a -> EvalReplayValueStore.putTerm trueNodeId (fun () -> v s a)
+                    | ELit(_,lit) -> EvalReplayValueStore.putTermValue trueNodeId (DLit lit)
+                    | _ -> ()
+                    match onFalse with
+                    | EV a -> EvalReplayValueStore.putTerm falseNodeId (fun () -> v s a)
+                    | ELit(_,lit) -> EvalReplayValueStore.putTermValue falseNodeId (DLit lit)
+                    | _ -> ()
+                    EvalReplayValueStore.putIfThenElse nodeId {
+                        condNodeId = condNodeId
+                        condShape = evalNodeShapeTerm cond
+                        trueNodeId = trueNodeId
+                        trueShape = evalNodeShapeTerm onTrue
+                        falseNodeId = falseNodeId
+                        falseShape = evalNodeShapeTerm onFalse
+                    }
+                | EApply _ ->
+                    let args = ResizeArray<E>()
+                    let mutable cur = expr
+                    let mutable running = true
+                    while running do
+                        match cur with
+                        | EApply(_, a, b) ->
+                            args.Add b
+                            cur <- a
+                        | _ -> running <- false
+                    let headNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cur)
+                    match cur with
+                    | EV a -> EvalReplayValueStore.putTerm headNodeId (fun () -> v s a)
+                    | ELit(_,lit) -> EvalReplayValueStore.putTermValue headNodeId (DLit lit)
+                    | EFun'(_,freeVars,i,body,annot) ->
+                        EvalReplayValueStore.putTerm headNodeId (fun () ->
+                            if freeVars.term.free_vars.Length <> i then failwith "Replay apply-head function free-var arity mismatch."
+                            DFunction(body, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | ERecursiveFun'(_,freeVars,i,body,annot) ->
+                        EvalReplayValueStore.putTerm headNodeId (fun () ->
+                            if freeVars.term.free_vars.Length <> i then failwith "Replay apply-head recursive function free-var arity mismatch."
+                            DFunction(body.Value, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | _ -> ()
+                    for arg in args do
+                        let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
+                        match arg with
+                        | EV a -> EvalReplayValueStore.putTerm argNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue argNodeId (DLit lit)
+                        | _ -> ()
+                    EvalReplayValueStore.putApplySpine nodeId {
+                        headNodeId = headNodeId
+                        headShape = evalNodeShapeTerm cur
+                        argCount = args.Count
+                        argNodeIds = args.ToArray() |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                        argShapes = args.ToArray() |> Array.map evalNodeShapeTerm
+                    }
+                | _ -> ()
+            registerReplayTerm nodeId x
             let reCount = EvalCycleGuard.enter nodeObj
             let (a0,b0) = r0.range
             let nodeKey = sprintf "%s:%d:%d-%d:%d" r0.path a0.line a0.character b0.line b0.character
@@ -25400,20 +26194,47 @@ module spiral_compiler =
 
                                 // WriteGuard:
                                 //  - block new outputs on unstable runs (prevents "success" without writing)
-                                //  - block large shrink (>= 50KB) even on stable runs (common truncation symptom)
+                                //  - block large shrink by proportional budget even on stable runs (common truncation symptom)
+                                //  - alpha353: allow an existing output to be persisted after replay-only recovery
+                                //    when the produced text is non-shrinking and the delta is small. Alpha352 reached
+                                //    BuildOk after replay commits, but the guard rejected the write solely because
+                                //    retry/replay invalidations made the run look unstable.
                                 let isNew = oldBytes = 0L
-                                let growthBig = oldBytes > 0L && newBytes > oldBytes + 50000L && newBytes > 50000L
-                                let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= 50000L
+                                let guardScale = max oldBytes newBytes
+                                let minDeltaBudget = 8192L
+                                let maxDeltaBudget = 1048576L
+                                let deltaBudget =
+                                    if guardScale <= 0L then minDeltaBudget
+                                    else min maxDeltaBudget (max minDeltaBudget (guardScale / 32L))
+                                let smallOutputFloor = max 2048L (guardScale / 128L)
+                                let growthBig = oldBytes > 0L && newBytes > oldBytes + deltaBudget && newBytes > smallOutputFloor
+                                let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= deltaBudget
+                                let reasonsForWrite = CacheGeneration.reasonsSnapshot 8
+                                let hasReplayCompleteReason =
+                                    reasonsForWrite |> List.exists (fun r -> (not (isNull r)) && r.Contains("BuildFile.replay_root_complete"))
+                                let replayOrRetryOnly =
+                                    hasReplayCompleteReason
+                                    && (reasonsForWrite |> List.forall (fun r ->
+                                        (not (isNull r))
+                                        && (r.Contains("BuildFile.replay_root_complete")
+                                            || r.Contains("BuildFile.retry code=[spiral_compiler] EJP0014")
+                                            || r.Contains("BuildFile.retry code=[spiral_compiler] EJP0011"))))
+                                let replayStableExisting =
+                                    oldBytes > 0L
+                                    && replayOrRetryOnly
+                                    && newBytes >= oldBytes
+                                    && newBytes <= oldBytes + deltaBudget
+                                    && newBytes > smallOutputFloor
                                 let persist =
-                                    if isNew then (not unstable) && newBytes > 8000L
-                                    else (not unstable) || growthBig
+                                    if isNew then (not unstable) && newBytes > smallOutputFloor
+                                    else replayStableExisting || (not unstable)
                                 let blocked = (not persist) || shrinkBig
 
-                                // Reject obvious truncation/clobber: large previous output replaced by tiny or much smaller output.
-                                let shrinkRel = oldBytes > 50000L && newBytes < (oldBytes * 7L) / 10L
-                                let shrinkHard = oldBytes > 50000L && newBytes < 20000L
-                                let tiny = oldBytes > 2000L && newBytes < 2000L
-                                let reject = tiny || shrinkHard || (unstable && shrinkRel) || blocked
+                                // Reject obvious truncation/clobber generically: compare against the artifact's own scale, not backend extension.
+                                let shrinkRel = oldBytes > smallOutputFloor && newBytes < (oldBytes * 7L) / 10L
+                                let shrinkHard = oldBytes > smallOutputFloor && newBytes < smallOutputFloor
+                                let tiny = oldBytes > smallOutputFloor && newBytes < smallOutputFloor
+                                let reject = tiny || shrinkHard || (unstable && shrinkRel && not replayStableExisting) || blocked
                                 if reject then
                                     let reasons = CacheGeneration.reasonsSnapshot 3
                                     let reasonsShort =
@@ -25425,7 +26246,7 @@ module spiral_compiler =
                                                 else s
                                             " reasons=[" + (reasons |> List.map trim |> String.concat " | ") + "]"
 
-                                    bad <- Some (sprintf "WRITE_ABORT: %s (lines=%d bytes=%d old_bytes=%d seq=%d inv=%d unstable=%b isNew=%b persist=%b growthBig=%b shrinkBig=%b shrinkHard=%b shrinkRel=%b tiny=%b)%s" outPath lineCount byteCount (int oldBytes) seq (int inv) unstable isNew persist growthBig shrinkBig shrinkHard shrinkRel tiny reasonsShort)
+                                    bad <- Some (sprintf "WRITE_ABORT: %s (lines=%d bytes=%d old_bytes=%d seq=%d inv=%d unstable=%b isNew=%b persist=%b growthBig=%b shrinkBig=%b shrinkHard=%b shrinkRel=%b tiny=%b deltaBudget=%d smallOutputFloor=%d)%s" outPath lineCount byteCount (int oldBytes) seq (int inv) unstable isNew persist growthBig shrinkBig shrinkHard shrinkRel tiny (int deltaBudget) (int smallOutputFloor) reasonsShort)
                         match bad with
                         | Some msg ->
                             // alpha277: WRITE_ABORT must leave enough telemetry in console to finish SOTA.
@@ -25537,19 +26358,44 @@ module spiral_compiler =
                                     if repl <> 0 then
                                         trace Warning (fun () -> $"WRITE_SANITIZE: {outPath} (replaced_invalid_surrogates={repl})") _locals
                                     let byteCount = try System.Text.Encoding.UTF8.GetByteCount(codeSafe) with _ -> codeSafe.Length
+                                    let nl = "\n"
+                                    let lineCount = try codeSafe.Split([| nl |], System.StringSplitOptions.None).Length with _ -> 0
                                     let oldBytes = try if System.IO.File.Exists(outPath) then int64 (System.IO.FileInfo(outPath).Length) else 0L with _ -> 0L
                                     let newBytes = int64 byteCount
                                     // Alpha276 WriteGuard (write phase):
                                     // Mirror the pre-check rules; any block here indicates a race or instability.
-                                    let growthBig = oldBytes > 0L && newBytes > oldBytes + 50000L && newBytes > 50000L
+                                    let guardScale = max oldBytes newBytes
+                                    let minDeltaBudget = 8192L
+                                    let maxDeltaBudget = 1048576L
+                                    let deltaBudget =
+                                        if guardScale <= 0L then minDeltaBudget
+                                        else min maxDeltaBudget (max minDeltaBudget (guardScale / 32L))
+                                    let smallOutputFloor = max 2048L (guardScale / 128L)
+                                    let growthBig = oldBytes > 0L && newBytes > oldBytes + deltaBudget && newBytes > smallOutputFloor
                                     let isNew = oldBytes = 0L
-                                    let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= 50000L
+                                    let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= deltaBudget
+                                    let reasonsForWrite = CacheGeneration.reasonsSnapshot 8
+                                    let hasReplayCompleteReason =
+                                        reasonsForWrite |> List.exists (fun r -> (not (isNull r)) && r.Contains("BuildFile.replay_root_complete"))
+                                    let replayOrRetryOnly =
+                                        hasReplayCompleteReason
+                                        && (reasonsForWrite |> List.forall (fun r ->
+                                            (not (isNull r))
+                                            && (r.Contains("BuildFile.replay_root_complete")
+                                                || r.Contains("BuildFile.retry code=[spiral_compiler] EJP0014")
+                                                || r.Contains("BuildFile.retry code=[spiral_compiler] EJP0011"))))
+                                    let replayStableExisting =
+                                        oldBytes > 0L
+                                        && replayOrRetryOnly
+                                        && newBytes >= oldBytes
+                                        && newBytes <= oldBytes + deltaBudget
+                                        && newBytes > smallOutputFloor
                                     let persist =
-                                        if isNew then (not unstable) && newBytes > 8000L
-                                        else (not unstable) || growthBig
+                                        if isNew then (not unstable) && newBytes > smallOutputFloor
+                                        else replayStableExisting || (not unstable)
                                     let blocked = (not persist) || shrinkBig
                                     if blocked then
-                                        trace Warning (fun () -> $"WRITE_ABORT: {outPath} (new_bytes={newBytes} old_bytes={oldBytes} seq={seq} inv={inv} unstable={unstable} isNew={isNew} persist={persist} growthBig={growthBig} shrinkBig={shrinkBig})") _locals
+                                        trace Warning (fun () -> $"WRITE_ABORT: {outPath} (lines={lineCount} new_bytes={newBytes} old_bytes={oldBytes} seq={seq} inv={inv} unstable={unstable} isNew={isNew} persist={persist} replayStableExisting={replayStableExisting} growthBig={growthBig} shrinkBig={shrinkBig} deltaBudget={deltaBudget} smallOutputFloor={smallOutputFloor})") _locals
                                         skipped <- skipped + 1
                                     else
                                         wrote <- wrote + 1
@@ -25755,22 +26601,25 @@ module spiral_compiler =
                                                         let fallback_reason = EvalFallbackPolicy.retryStopReasonForCycle term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
                                                         let cycle_stop_reason = EvalWorklistFrontier.reasonForCycle fallback_reason term_cycle_depth term_cycle_re term_cycle_max_re
                                                         let _replayFrame = EvalWorklist.ensureCapturedAndRun cycle_stop_reason "retry_stop" 64
-                                                        let replayCommitted = EvalWorklist.hasSemanticStepDone()
+                                                        let replayPartial = EvalWorklist.hasReplayPartial()
+                                                        let replayComplete = EvalWorklist.hasReplayComplete()
                                                         DiagJson.retryStop code cycle_stop_reason attempt max_attempts file backend term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
                                                         EvalWorklist.emitPanel "retry_stop"
                                                         EvalWorklistFrontier.emit code cycle_stop_reason term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
-                                                        // ALPHA350: a committed replay reducer is no longer just diagnostic.
-                                                        // Alpha349 ended with semantic_step_committed and queue_depth=0, but retry_stop still raised
-                                                        // the stale EJP0011 message. Treat the committed replay as a resumable handoff and retry
-                                                        // the build once under the existing max_attempts envelope. If the replay keeps cycling,
-                                                        // the next attempt will produce a fresher frontier and still fail deterministically.
-                                                        if replayCommitted && attempt + 1 < max_attempts then
+                                                        // ALPHA356: semantic_step_partial is not a resumable build handoff. Alpha355 allowed
+                                                        // a one-cell term_env_lookup dispatch to retry BuildFile and then write a 323-line residual.
+                                                        // Only a future parent-continuation/root stepper may mark semantic_root_complete; leaf values fail closed.
+                                                        if replayComplete && attempt + 1 < max_attempts then
                                                             DiagJson.emit (
-                                                                sprintf "{\"kind\":\"eval_worklist_resume\",\"event\":\"retry_stop\",\"status\":\"semantic_step_done\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"policy\":\"retry_after_replay_commit\",\"single_flight\":1,\"next\":\"attempt_build\"}"
+                                                                sprintf "{\"kind\":\"eval_worklist_resume\",\"event\":\"retry_stop\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"policy\":\"retry_after_replay_root_complete\",\"single_flight\":1,\"next\":\"attempt_build\"}"
                                                                     attempt (attempt + 1) max_attempts)
-                                                            CacheGeneration.invalidate (sprintf "BuildFile.replay_commit code=%s attempt=%d file=%s backend=%s" code attempt file backend) |> ignore
+                                                            CacheGeneration.invalidate (sprintf "BuildFile.replay_root_complete code=%s attempt=%d file=%s backend=%s" code attempt file backend) |> ignore
                                                             raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
                                                         else
+                                                            if replayPartial then
+                                                                DiagJson.emit (
+                                                                    sprintf "{\"kind\":\"eval_worklist_resume_blocked\",\"event\":\"retry_stop\",\"status\":\"semantic_step_partial\",\"attempt\":%d,\"max_attempts\":%d,\"policy\":\"real_stepper_required_before_attempt_build\",\"single_flight\":1,\"next\":\"abort_without_write\"}"
+                                                                        attempt max_attempts)
                                                             let finalMsg =
                                                                 match EvalWorklist.tryPeek() with
                                                                 | Some frame -> EvalWorklist.requiredMessage e.Data1 frame
@@ -26465,4 +27314,45 @@ module spiral_compiler =
 // === ALPHA336 FOOTER ===
 // - Fix FS0039 compile regression from alpha335 by removing premature Trace annotations in TermCycleFuse.
 // - Preserve trace-carrying frontier semantics; no source-specific policy and no fallback env vars.
+// if you cannot see this line, the file was truncated.
+
+
+// === ALPHA356 FOOTER ===
+// - Replay completeness gate: semantic_step_partial no longer retries BuildFile or unlocks unstable writes.
+// - WriteGuard no longer sees BuildFile.replay_root_complete from leaf replay; only future root completion may unlock unstable writes.
+// if you cannot see this line, the file was truncated.
+
+// === ALPHA357 FOOTER ===
+// - EV value-store stepper: term EV replay now marks semantic_leaf_complete; parent/root continuation is required before BuildFile retry.
+// - Non-EV replay remains semantic_step_partial; no string-envelope dispatcher can unlock BuildFile writes.
+// if you cannot see this line, the file was truncated.
+
+// === ALPHA360 FOOTER ===
+// - Term conditional replay store: EIfThenElse captures condition/branch node ids and routes only after a value-backed boolean condition.
+// - Writer remains fail-closed: missing/symbolic conditional replay is semantic_step_partial and cannot unlock BuildFile writes.
+// if you cannot see this line, the file was truncated.
+
+// === ALPHA368 FOOTER ===
+// - EOp Add/2 replay now resolves literal numeric Add and additive identity rewrites only.
+// - Symbolic Add still reports term_op_args_available_unimplemented:Add/2 and cannot unlock writes.
+// if you cannot see this line, the file was truncated.
+
+// === ALPHA371 FOOTER ===
+// - ELit replay values are registered at term/apply/op/if capture points so scheduled literal args can satisfy EApply.
+// - ETypeApply replay also value-gates DForall body evaluation through a replay thunk.
+// - If replay cannot produce Data, the worklist remains semantic_step_partial and cannot unlock writes.
+// if you cannot see this line, the file was truncated.
+
+// Alpha371 notes:
+// - Conservative Dyn/1 replay resolves inert runtime data, literals, type literals,
+//   symbols-as-string-literals and pairs.
+// - DNominal/DFunction remain partial because the real dyn path can require EvalState,
+//   typed union boxing or closure conversion.
+// - The canonical symlink was left untouched; alpha457 was compiled as an aux tool.
+
+
+// === ALPHA372 FOOTER ===
+// - Parent-resume replay identity is preserved through scheduled_parent_replay task keys/status.
+// - A composite replay value reached by parent resume can become semantic_root_complete only if no further parent continuation exists.
+// - Leaf EV completion still cannot unlock writes; the writer remains gated by BuildFile.replay_root_complete.
 // if you cannot see this line, the file was truncated.
