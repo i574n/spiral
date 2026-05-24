@@ -7,6 +7,21 @@ namespace Polyglot
 module spiral_compiler =
     /// Spiral Compiler - Partial Evaluation Engine (par)
     ///
+    /// ALPHA444 LET/APPLY CHILD SCHEDULING:
+    /// - Alpha443 moved past the generic EMacro hole and exposed a concrete ELet body miss under rust/testing.spi:5.
+    /// - Let replay now has an explicit child spine, so alpha408_let_body_value_missing:EApply schedules that EApply child instead of replaying the same let.
+    /// - EApply head readiness now requires a resolved value, not merely a registered thunk, avoiding value_store_race -> apply_impl_required.
+    ///
+    /// ALPHA443 EMACRO/LET REPLAY VALUE GATE:
+    /// - Alpha442 proved multi-pass retry drain, then stalled on a concrete EMacro child under rust/testing.spi.
+    /// - The replay driver now resolves EMacro and ELet through the value store before falling back to shape-dispatch partials.
+    /// - EMacro replay thunks mirror the real macro evaluator while remaining fail-closed under tryTermDetailed.
+    ///
+    /// ALPHA442 RETRY DRAIN MULTI-PASS:
+    /// - Alpha441 recovered stale ESeq root-complete witnesses, then exposed a narrower EApply arg frontier.
+    /// - drainAfterActiveRun now performs up to eight bounded synchronous passes and emits eval_worklist_retry_drain_continue.
+    /// - This preserves retry caps, placeholder/shrink guards, and the writer gate while allowing replay-created child work to run immediately.
+    ///
     /// ALPHA387 WRITE-GATE HARDENING:
     /// - Alpha386 proved the dynamic join path by reaching term_apply_dynamic_join_value_resolved,
     ///   then BuildOk wrote while the run still reported unstable=True.
@@ -10277,6 +10292,29 @@ module spiral_compiler =
             argShapes: string[]
         }
 
+        // ALPHA438: ESeq is a composite term too.  Alpha437 reached the
+        // rust/testing.spi sequence and then fell through the generic E*
+        // dispatcher with explicit_eval_worklist_term_stepper_required.
+        // Keep the store conservative: first child must resolve to unit/
+        // placeholder-unit before the second child can satisfy the parent.
+        type SeqSpine = {
+            firstNodeId: int
+            firstShape: string
+            secondNodeId: int
+            secondShape: string
+        }
+
+        // ALPHA444: ELet is a composite term with replay children.
+        // Alpha443 proved the let thunk can fail with alpha408_let_body_value_missing:EApply
+        // while the retry drain keeps replaying the same parent.  Store body/success child
+        // ids so the driver can schedule the missing child explicitly and resume the parent.
+        type LetSpine = {
+            bodyNodeIds: int[]
+            bodyShapes: string[]
+            successNodeId: int
+            successShape: string
+        }
+
         // ALPHA365: first explicit parent-continuation link.
         // A leaf EV/type/op resolution is not a root proof; it must be returned to the
         // composite term that requested it.  The store remains shape-only and generic.
@@ -10293,6 +10331,13 @@ module spiral_compiler =
         let private typeApplySpines = ConcurrentDictionary<int, TypeApplySpine>()
         let private ifThenElseSpines = ConcurrentDictionary<int, IfThenElseSpine>()
         let private opSpines = ConcurrentDictionary<int, OpSpine>()
+        let private seqSpines = ConcurrentDictionary<int, SeqSpine>()
+        let private letSpines = ConcurrentDictionary<int, LetSpine>()
+        // ALPHA435: EOp replay needs the ambient LangEnv too.
+        // Alpha434 progressed to term_op_args_available_unimplemented:RecordMap/2;
+        // resolving RecordMap requires applying the mapper to each record field.
+        // Reuse the existing late-bound apply bridge through a conservative op context.
+        let private opContexts = ConcurrentDictionary<int, obj>()
         let private parentContinuations = ConcurrentDictionary<int, ParentContinuation>()
         let private applyContexts = ConcurrentDictionary<int, obj>()
         let private typeApplyContexts = ConcurrentDictionary<int, obj>()
@@ -10395,6 +10440,15 @@ module spiral_compiler =
             let mutable sObj = Unchecked.defaultof<obj>
             if typeApplyContexts.TryGetValue(nodeId, &sObj) then Some sObj else None
 
+        let putOpContext (nodeId: int) (sObj: obj) : unit =
+            opContexts.[nodeId] <- sObj
+            // Reuse the existing apply bridge for op-local mapped calls.
+            applyContexts.[nodeId] <- sObj
+
+        let tryOpContext (nodeId: int) : obj option =
+            let mutable sObj = Unchecked.defaultof<obj>
+            if opContexts.TryGetValue(nodeId, &sObj) then Some sObj else None
+
         let putTypeApplyBodyNode (parentNodeId: int) (bodyNodeId: int) : unit =
             if parentNodeId <> bodyNodeId then
                 typeApplyBodyNodes.[parentNodeId] <- bodyNodeId
@@ -10459,6 +10513,18 @@ module spiral_compiler =
             |> Array.iteri (fun i argNodeId ->
                 putParentContinuation argNodeId { parentKind = "term"; parentShape = "EOp"; parentNodeId = nodeId; role = sprintf "op_arg_%d" i })
 
+        let putSeqSpine (nodeId: int) (spine: SeqSpine) : unit =
+            seqSpines.[nodeId] <- spine
+            putParentContinuation spine.firstNodeId { parentKind = "term"; parentShape = "ESeq"; parentNodeId = nodeId; role = "seq_first" }
+            putParentContinuation spine.secondNodeId { parentKind = "term"; parentShape = "ESeq"; parentNodeId = nodeId; role = "seq_second" }
+
+        let putLetSpine (nodeId: int) (spine: LetSpine) : unit =
+            letSpines.[nodeId] <- spine
+            spine.bodyNodeIds
+            |> Array.iteri (fun i bodyNodeId ->
+                putParentContinuation bodyNodeId { parentKind = "term"; parentShape = "ELet"; parentNodeId = nodeId; role = sprintf "let_body_%d" i })
+            putParentContinuation spine.successNodeId { parentKind = "term"; parentShape = "ELet"; parentNodeId = nodeId; role = "let_success" }
+
         let tryTermDetailed (nodeId: int) : Choice<Data,string> =
             let mutable thunk = Unchecked.defaultof<unit -> Data>
             if termValues.TryGetValue(nodeId, &thunk) then
@@ -10500,8 +10566,26 @@ module spiral_compiler =
             let mutable spine = Unchecked.defaultof<OpSpine>
             if opSpines.TryGetValue(nodeId, &spine) then Some spine else None
 
+        let trySeqSpine (nodeId: int) : SeqSpine option =
+            let mutable spine = Unchecked.defaultof<SeqSpine>
+            if seqSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
+        let tryLetSpine (nodeId: int) : LetSpine option =
+            let mutable spine = Unchecked.defaultof<LetSpine>
+            if letSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
         let hasTerm (nodeId: int) : bool =
             termValues.ContainsKey nodeId
+
+        // ALPHA436: a registered thunk is not necessarily a resolved value.
+        // Alpha435 still reported RecordMap/2 as args_available because hasTerm only
+        // checked dictionary presence; replay thunks can fail closed while the child
+        // still needs an explicit worklist step.  Use this when choosing whether to
+        // schedule an op argument before declaring the op implementation missing.
+        let tryTermReady (nodeId: int) : bool =
+            match tryTermDetailed nodeId with
+            | Choice1Of2 _ -> true
+            | Choice2Of2 _ -> false
 
         let hasType (nodeId: int) : bool =
             typeValues.ContainsKey nodeId
@@ -10856,7 +10940,27 @@ module spiral_compiler =
             | DNominal _ -> None
             | DFunction _ -> None
 
-        let tryResolvePureOp (opName: string) (argNodeIds: int[]) : Data option =
+        let private recordMapArg (count: int) (k: string) (v: Data) =
+            DRecord(Map.empty |> Map.add (count, "key") (DSymbol k) |> Map.add (count + 1, "value") v)
+
+        let private tryRecordMapReplayDataWithContext (contextNodeId: int) (mapper: Data) (fields: Map<int * string, Data>) : Data option =
+            let mutable ok = true
+            let mutable out : Map<int * string, Data> = Map.empty
+            for KeyValue((i, k), v) in fields do
+                if ok then
+                    let arg = recordMapArg fields.Count k v
+                    match tryApplyReplayDataWithContext contextNodeId mapper [|arg|] with
+                    | Some mapped, "ok" ->
+                        out <- Map.add (i, k) mapped out
+                    | _, why when isDynamicJoinApplyReason why ->
+                        match tryDynamicJoinApplyReplayDataWithContext contextNodeId mapper [|arg|] with
+                        | Choice1Of2 mapped -> out <- Map.add (i, k) mapped out
+                        | Choice2Of2 _ -> ok <- false
+                    | _ ->
+                        ok <- false
+            if ok then Some (DRecord out) else None
+
+        let tryResolvePureOpWithContext (contextNodeId: int) (opName: string) (argNodeIds: int[]) : Data option =
             let values =
                 argNodeIds
                 |> Array.map tryTerm
@@ -10866,6 +10970,7 @@ module spiral_compiler =
                 let opName = opCaseName opName
                 match opName, values with
                 | "Dyn", [|a|] -> tryDynReplayData a
+                | "RecordMap", [|mapper; DRecord fields|] -> tryRecordMapReplayDataWithContext contextNodeId mapper fields
                 | op, [|DLit a; DLit b|] when op = "EQ" || op = "NEQ" || op = "LT" || op = "LTE" || op = "GT" || op = "GTE" -> tryCompareLiteral op a b
                 | "Add", [|DLit a; DLit b|] -> tryAddLiteral a b
                 | "Add", [|a; b|] when isZeroData a -> Some b
@@ -10883,6 +10988,9 @@ module spiral_compiler =
                 | "FunctionIs", [|a|] -> Some (boolData (isFunctionLike a))
                 | "ExistsIs", [|a|] -> Some (boolData (isExistsLike a))
                 | _ -> None
+
+        let tryResolvePureOp (opName: string) (argNodeIds: int[]) : Data option =
+            tryResolvePureOpWithContext -1 opName argNodeIds
 
     /// Alpha350 update: replay commit now acts as a resume handoff. When retry_stop observes
     /// semantic_step_done/queue_depth=0, it invalidates the cache once and re-enters attempt_build
@@ -11245,17 +11353,17 @@ module spiral_compiler =
                 if replayRootCompleteWitnessUtc = System.DateTime.MinValue then "none"
                 else sprintf "%s age_ms=%.0f" replayRootCompleteWitnessSummary ((System.DateTime.UtcNow - replayRootCompleteWitnessUtc).TotalMilliseconds))
 
-        // ALPHA389: terminal replay states are absorbing for the bounded trampoline.
-        // Alpha388 proved retry_stop_drain could reach semantic_root_complete, then
-        // a following drain tick rebuilt a continuation envelope from the already-complete
-        // cursor=trace_len frame and downgraded it to semantic_leaf_complete.  Treat
-        // completed/blocked semantic states as terminal run states; only continuation_envelope
-        // schedules a replay adapter.
+        // ALPHA439: only completed semantic states are absorbing for the bounded
+        // trampoline.  Alpha438 proved that treating semantic_step_partial as terminal
+        // strands a real child replay at cursor=trace_len: ESeq schedules its first
+        // child EApply, the child reports semantic_step_partial, and retry_stop aborts
+        // with explicit_eval_worklist_real_stepper_required instead of building the
+        // next replay continuation.  Keep root/leaf absorbing to preserve alpha389's
+        // no-downgrade invariant, but let partial/done states flow back into the
+        // continuation adapter when their trace cursor is exhausted.
         let private isSemanticTerminalStatus (status: string) =
             status = "semantic_root_complete"
             || status = "semantic_leaf_complete"
-            || status = "semantic_step_partial"
-            || status = "semantic_step_done"
 
         let private semanticTerminalNext (status: string) =
             if status = "semantic_root_complete" then "attempt_build"
@@ -11394,14 +11502,14 @@ module spiral_compiler =
                             | "term", "EApply" ->
                                 match EvalReplayValueStore.tryApplySpine cellReady.nodeId with
                                 | Some spine ->
-                                    if not (EvalReplayValueStore.hasTerm spine.headNodeId) then
+                                    if not (EvalReplayValueStore.tryTermReady spine.headNodeId) then
                                         let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = "apply_head_ready" }
                                         "term_apply_spine_head_scheduled", "semantic_step_partial", "explicit_eval_worklist_apply_head_stepper_required", headCell
                                     else
                                         let missingArg =
                                             spine.argNodeIds
                                             |> Array.mapi (fun i nodeId -> i, nodeId)
-                                            |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.hasTerm nodeId))
+                                            |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
                                         match missingArg with
                                         | Some (i, nodeId) ->
                                             let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
@@ -11438,8 +11546,21 @@ module spiral_compiler =
                                                             "term_apply_function_body_blocked:" + why + ":" + detail, "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", cellReady
                                                     else
                                                         "term_apply_args_available_unimplemented:" + why, "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
-                                            | _ ->
-                                                "term_apply_args_available_value_store_race", "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
+                                            | None, _ ->
+                                                let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = "apply_head_ready" }
+                                                "term_apply_head_value_store_race_scheduled", "semantic_step_partial", "explicit_eval_worklist_apply_head_stepper_required", headCell
+                                            | _, true ->
+                                                let missing =
+                                                    spine.argNodeIds
+                                                    |> Array.mapi (fun i nodeId -> i, nodeId)
+                                                    |> Array.tryFind (fun (_, nodeId) -> EvalReplayValueStore.tryTerm nodeId |> Option.isNone)
+                                                match missing with
+                                                | Some (i, nodeId) ->
+                                                    let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
+                                                    let argCell = { cellReady with nodeId = nodeId; shape = shape; status = "apply_arg_ready" }
+                                                    "term_apply_arg_value_store_race_scheduled", "semantic_step_partial", "explicit_eval_worklist_apply_arg_stepper_required", argCell
+                                                | None ->
+                                                    "term_apply_args_available_value_store_race", "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
                                 | None -> "term_apply_spine_missing_store", "semantic_step_partial", "explicit_eval_worklist_apply_spine_store_required", cellReady
                             | "term", "ETypeApply" ->
                                 match EvalReplayValueStore.tryTypeApplySpine cellReady.nodeId with
@@ -11517,11 +11638,65 @@ module spiral_compiler =
                                         let condCell = { cellReady with nodeId = spine.condNodeId; shape = spine.condShape; status = "if_condition_ready" }
                                         "term_if_condition_scheduled", "semantic_step_partial", "explicit_eval_worklist_if_condition_stepper_required", condCell
                                 | None -> "term_if_missing_store", "semantic_step_partial", "explicit_eval_worklist_if_store_required", cellReady
-                            | "term", "ELet" -> "term_let_binding_dispatched", "semantic_step_partial", "explicit_eval_worklist_let_stepper_required", cellReady
+                            | "term", "ELet" ->
+                                match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                | Choice1Of2 value ->
+                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                    compositeOrParent "term_let_value_resolved" cellReady
+                                | Choice2Of2 detail ->
+                                    match EvalReplayValueStore.tryLetSpine cellReady.nodeId with
+                                    | Some spine ->
+                                        let missingBody =
+                                            spine.bodyNodeIds
+                                            |> Array.mapi (fun i nodeId -> i, nodeId)
+                                            |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
+                                        match missingBody with
+                                        | Some (i, nodeId) ->
+                                            let shape = if i < spine.bodyShapes.Length then spine.bodyShapes.[i] else "unknown"
+                                            let bodyCell = { cellReady with nodeId = nodeId; shape = shape; status = "let_body_ready" }
+                                            "term_let_body_scheduled:" + detail, "semantic_step_partial", "explicit_eval_worklist_let_body_stepper_required", bodyCell
+                                        | None when not (EvalReplayValueStore.tryTermReady spine.successNodeId) ->
+                                            let succCell = { cellReady with nodeId = spine.successNodeId; shape = spine.successShape; status = "let_success_ready" }
+                                            "term_let_success_scheduled:" + detail, "semantic_step_partial", "explicit_eval_worklist_let_success_stepper_required", succCell
+                                        | None ->
+                                            "term_let_binding_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_let_stepper_required", cellReady
+                                    | None ->
+                                        "term_let_binding_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_let_stepper_required", cellReady
+                            | "term", "EMacro" ->
+                                match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                | Choice1Of2 value ->
+                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                    compositeOrParent "term_macro_value_resolved" cellReady
+                                | Choice2Of2 detail ->
+                                    "term_macro_value_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_macro_stepper_required", cellReady
+                            | "term", "ESeq" ->
+                                match EvalReplayValueStore.trySeqSpine cellReady.nodeId with
+                                | Some spine ->
+                                    let unitLike value =
+                                        match value with
+                                        | DB -> true
+                                        | DSymbol sym when sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPMethodUnknownRet(") -> true
+                                        | DV(L(_,YSymbol sym)) when sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPMethodUnknownRet(") -> true
+                                        | _ -> false
+                                    match EvalReplayValueStore.tryTerm spine.firstNodeId with
+                                    | None ->
+                                        let firstCell = { cellReady with nodeId = spine.firstNodeId; shape = spine.firstShape; status = "seq_first_ready" }
+                                        "term_seq_first_scheduled", "semantic_step_partial", "explicit_eval_worklist_seq_first_stepper_required", firstCell
+                                    | Some firstValue when unitLike firstValue ->
+                                        match EvalReplayValueStore.tryTerm spine.secondNodeId with
+                                        | Some secondValue ->
+                                            EvalReplayValueStore.putTermValue cellReady.nodeId secondValue
+                                            compositeOrParent "term_seq_second_value_resolved" cellReady
+                                        | None ->
+                                            let secondCell = { cellReady with nodeId = spine.secondNodeId; shape = spine.secondShape; status = "seq_second_ready" }
+                                            "term_seq_second_scheduled", "semantic_step_partial", "explicit_eval_worklist_seq_second_stepper_required", secondCell
+                                    | Some _ ->
+                                        "term_seq_first_non_unit_value_available", "semantic_step_partial", "explicit_eval_worklist_seq_type_error_required", cellReady
+                                | None -> "term_seq_missing_store", "semantic_step_partial", "explicit_eval_worklist_seq_store_required", cellReady
                             | "term", "EOp" ->
                                 match EvalReplayValueStore.tryOpSpine cellReady.nodeId with
                                 | Some spine ->
-                                    match EvalReplayValueStore.tryResolvePureOp spine.opName spine.argNodeIds with
+                                    match EvalReplayValueStore.tryResolvePureOpWithContext cellReady.nodeId spine.opName spine.argNodeIds with
                                     | Some value ->
                                         EvalReplayValueStore.putTermValue cellReady.nodeId value
                                         compositeOrParent (sprintf "term_op_pure_value_resolved:%s/%d" spine.opName spine.argCount) cellReady
@@ -11569,7 +11744,7 @@ module spiral_compiler =
                                     | _ ->
                                         "ty_shape_dispatch_dispatched:" + s, "semantic_step_partial", "explicit_eval_worklist_ty_stepper_required", cellReady
                             | _ -> "unknown_shape_dispatch_dispatched", "semantic_step_partial", "explicit_eval_worklist_real_stepper_required", cellReady
-                        let cellReduced = { replayCell with step = replayCell.step + 1; status = if commitStatus = "semantic_root_complete" then "semantic_value_resolved" elif commitStatus = "semantic_leaf_complete" then "semantic_leaf_value_resolved" elif replayCell.status = "parent_continuation_ready" then "parent_continuation_dispatched" elif replayCell.status = "apply_head_ready" then "apply_head_dispatched" elif replayCell.status = "apply_arg_ready" then "apply_arg_dispatched" elif replayCell.status = "op_arg_ready" then "op_arg_dispatched" elif replayCell.status.StartsWith("if_", StringComparison.Ordinal) then "if_branch_dispatched" else "semantic_step_dispatched" }
+                        let cellReduced = { replayCell with step = replayCell.step + 1; status = if commitStatus = "semantic_root_complete" then "semantic_value_resolved" elif commitStatus = "semantic_leaf_complete" then "semantic_leaf_value_resolved" elif replayCell.status = "parent_continuation_ready" then "parent_continuation_dispatched" elif replayCell.status = "apply_head_ready" then "apply_head_dispatched" elif replayCell.status = "apply_arg_ready" then "apply_arg_dispatched" elif replayCell.status = "let_body_ready" then "let_body_dispatched" elif replayCell.status = "let_success_ready" then "let_success_dispatched" elif replayCell.status = "op_arg_ready" then "op_arg_dispatched" elif replayCell.status.StartsWith("if_", StringComparison.Ordinal) then "if_branch_dispatched" else "semantic_step_dispatched" }
                         let cellCommitted = { cellReduced with step = cellReduced.step + 1; status = commitStatus }
                         let shouldResumeParent = commitNext = "resume_parent_replay_driver"
                         let remainingQueue =
@@ -12039,23 +12214,44 @@ module spiral_compiler =
         // proves it.
         let private drainAfterActiveRun (event: string) (budget: int) : Frame option =
             let limit = if budget <= 0 then 64 else min 256 (max 64 budget)
+            let maxPasses = 8
             let mutable waits = 0
             while waits < 16 && (lock gate (fun () -> activeRun)) do
                 System.Threading.Thread.Sleep 5
                 waits <- waits + 1
             let before = tryPeek()
-            let after =
-                if lock gate (fun () -> activeRun) then before
-                else runBounded event limit
-            // ALPHA403: runBounded returns the last pre-driver frame when a synchronous
-            // replay driver commits semantic_root_complete from scheduleReplay.  Re-peek
-            // after the drain so callers do not see stale continuation_envelope.
-            let after =
-                if hasReplayComplete() then
-                    match tryPeek() with
-                    | Some frame -> Some frame
-                    | None -> after
-                else after
+            let mutable after = before
+            let mutable pass = 0
+            let mutable keepGoing = true
+            while keepGoing && pass < maxPasses do
+                if lock gate (fun () -> activeRun) then
+                    keepGoing <- false
+                else
+                    if pass > 0 then
+                        let status, cursor, next =
+                            match after with
+                            | Some frame -> frame.status, frame.cursor, nextFor frame
+                            | None -> "missing_before_retry_drain_continue", -1, "retry_stop_raise"
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_retry_drain_continue\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"replayCompleteNow\":%b,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) pass (esc status) cursor (hasReplayComplete()) (pendingCount()) (esc next))
+                    let drained = runBounded event limit
+                    // ALPHA403: runBounded returns the last pre-driver frame when a synchronous
+                    // replay driver commits semantic_root_complete from scheduleReplay.  Re-peek
+                    // after the drain so callers do not see stale continuation_envelope.
+                    let canonical =
+                        if hasReplayComplete() then
+                            match tryPeek() with
+                            | Some frame -> Some frame
+                            | None -> drained
+                        else drained
+                    match canonical with
+                    | Some frame ->
+                        after <- Some frame
+                        pass <- pass + 1
+                    | None ->
+                        keepGoing <- false
+                        pass <- pass + 1
             match after with
             | Some _ -> after
             | None -> before
@@ -17223,16 +17419,33 @@ module spiral_compiler =
                         // type witness.  Pre-register every body/success child and read replay
                         // values first, so the let chain does not re-enter term_core merely to
                         // shuttle already-captured values across the local environment.
+                        // ALPHA444: also materialize the child spine so missing bodies are scheduled
+                        // explicitly.  Alpha443 ended with alpha408_let_body_value_missing:EApply at
+                        // rust/testing.spi:5 and the retry drain kept re-running the same parent let.
+                        let letBodyIds = ResizeArray<int>()
+                        let letBodyShapes = ResizeArray<string>()
+                        let mutable letSuccessId = nodeId
+                        let mutable letSuccessShape = "ELet"
                         let rec registerLetChildren (e: E) =
                             match e with
                             | ELet(_,_,body,on_succ) ->
                                 let bodyId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body)
+                                letBodyIds.Add bodyId
+                                letBodyShapes.Add (evalNodeShapeTerm body)
                                 registerReplayTerm bodyId body
                                 registerLetChildren on_succ
                             | other ->
                                 let otherId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box other)
+                                letSuccessId <- otherId
+                                letSuccessShape <- evalNodeShapeTerm other
                                 if otherId <> nodeId then registerReplayTerm otherId other
                         registerLetChildren expr
+                        EvalReplayValueStore.putLetSpine nodeId {
+                            bodyNodeIds = letBodyIds.ToArray()
+                            bodyShapes = letBodyShapes.ToArray()
+                            successNodeId = letSuccessId
+                            successShape = letSuccessShape
+                        }
                         EvalReplayValueStore.putTerm nodeId (fun () ->
                             let mutable replay_s = s
                             let mutable replay_e = expr
@@ -17257,6 +17470,57 @@ module spiral_compiler =
                                         replay_done <- true
                                     | None -> failwith ("alpha408_let_success_value_missing:" + evalNodeShapeTerm replay_e)
                             replay_result)
+                    | ESeq(_,first,second) ->
+                        let firstNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box first)
+                        let secondNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box second)
+                        registerReplayTerm firstNodeId first
+                        registerReplayTerm secondNodeId second
+                        match first with
+                        | EB _ -> EvalReplayValueStore.putTermValue firstNodeId DB
+                        | EV a -> EvalReplayValueStore.putTerm firstNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue firstNodeId (DLit lit)
+                        | EFun'(_,freeVars,i,body,annot) ->
+                            EvalReplayValueStore.putTerm firstNodeId (fun () ->
+                                if freeVars.term.free_vars.Length <> i then failwith "Replay seq-first function free-var arity mismatch."
+                                DFunction(body, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | EForall'(_,freeVars,i,body) ->
+                            EvalReplayValueStore.putTerm firstNodeId (fun () ->
+                                if freeVars.ty.free_vars.Length <> i then failwith "Replay seq-first forall free-var arity mismatch."
+                                DForall(body, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | _ -> ()
+                        match second with
+                        | EB _ -> EvalReplayValueStore.putTermValue secondNodeId DB
+                        | EV a -> EvalReplayValueStore.putTerm secondNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue secondNodeId (DLit lit)
+                        | EFun'(_,freeVars,i,body,annot) ->
+                            EvalReplayValueStore.putTerm secondNodeId (fun () ->
+                                if freeVars.term.free_vars.Length <> i then failwith "Replay seq-second function free-var arity mismatch."
+                                DFunction(body, annot, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | EForall'(_,freeVars,i,body) ->
+                            EvalReplayValueStore.putTerm secondNodeId (fun () ->
+                                if freeVars.ty.free_vars.Length <> i then failwith "Replay seq-second forall free-var arity mismatch."
+                                DForall(body, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                        | _ -> ()
+                        EvalReplayValueStore.putSeqSpine nodeId {
+                            firstNodeId = firstNodeId
+                            firstShape = evalNodeShapeTerm first
+                            secondNodeId = secondNodeId
+                            secondShape = evalNodeShapeTerm second
+                        }
+                        EvalReplayValueStore.putTerm nodeId (fun () ->
+                            let unitLike value =
+                                match value with
+                                | DB -> true
+                                | DSymbol sym when sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPMethodUnknownRet(") -> true
+                                | DV(L(_,YSymbol sym)) when sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPMethodUnknownRet(") -> true
+                                | _ -> false
+                            match EvalReplayValueStore.tryTerm firstNodeId with
+                            | Some firstValue when unitLike firstValue ->
+                                match EvalReplayValueStore.tryTerm secondNodeId with
+                                | Some secondValue -> secondValue
+                                | None -> failwith ("alpha438_seq_second_value_missing:" + evalNodeShapeTerm second)
+                            | Some other -> failwith (sprintf "alpha438_seq_expected_unit:%s" (show_data other))
+                            | None -> failwith ("alpha438_seq_first_value_missing:" + evalNodeShapeTerm first))
                     | EUnitTest(r,bind,on_succ,on_fail) ->
                         // ALPHA408: replay pattern-test branches when the unit check is already decidable.
                         // The 407 log exposed EUnitTest as a residual term under a completed type
@@ -17344,6 +17608,27 @@ module spiral_compiler =
                                 term s' body
                             | DV(L(_,YForall)) -> failwith "Replay type-apply cannot apply runtime forall during partial evaluation."
                             | a -> failwith (sprintf "Replay type-apply expected forall; got %s" (show_data a)))
+                    | EMacro(r,a,b) ->
+                        // ALPHA443: macros are real replay values too.  Alpha442 ended with
+                        // semantic_eval_cell(shape=EMacro) under rust/testing.spi:5 and only the
+                        // generic term_shape_dispatch fallback.  Register a fail-closed thunk that
+                        // mirrors the real evaluator; tryTermDetailed catches any recursive child
+                        // miss and keeps the worklist partial instead of faking completion.
+                        for m in a do
+                            match m with
+                            | MTerm(x,_) ->
+                                let childNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
+                                registerReplayTerm childNodeId x
+                            | _ -> ()
+                        EvalReplayValueStore.putTerm nodeId (fun () ->
+                            let s2 = add_trace s r
+                            let macroItems =
+                                a |> List.map (function
+                                    | MText x -> CMText x
+                                    | MTerm (x,is_inline) -> CMTerm(term s2 x |> dyn false s2, is_inline)
+                                    | MType x -> CMType(ty s2 x)
+                                    | MLitType x -> CMTypeLit(ty s2 x |> assert_ty_lit s2))
+                            push_typedop_no_rewrite s2 (TyMacro(macroItems)) (ty s2 b))
                     | ERecordWith(r,vars,withs,withouts) ->
                         EvalReplayValueStore.putTerm nodeId (fun () ->
                             let base_s = add_trace s r
@@ -17435,6 +17720,7 @@ module spiral_compiler =
                             | _ -> ()
                         let opReplayNodeIds = argArray |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
                         let opReplayName = sprintf "%A" op
+                        EvalReplayValueStore.putOpContext nodeId (box s)
                         EvalReplayValueStore.putOpSpine nodeId {
                             opName = opReplayName
                             argCount = argArray.Length
@@ -17442,7 +17728,7 @@ module spiral_compiler =
                             argShapes = argArray |> Array.map evalNodeShapeTerm
                         }
                         EvalReplayValueStore.putTerm nodeId (fun () ->
-                            match EvalReplayValueStore.tryResolvePureOp opReplayName opReplayNodeIds with
+                            match EvalReplayValueStore.tryResolvePureOpWithContext nodeId opReplayName opReplayNodeIds with
                             | Some value -> value
                             | None -> failwith (sprintf "alpha408_op_value_missing:%s/%d" opReplayName argArray.Length))
                     | EIfThenElse(_,cond,onTrue,onFalse) ->
@@ -17576,7 +17862,20 @@ module spiral_compiler =
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_global_fuse_term_value_missing\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_step_partial\",\"shape\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_record_or_term_stepper_required\"}"
                                     (DiagJson.esc (evalNodeShapeTerm x)))
-                            raise_type_error s (sprintf "%s: global term-cycle fuse has a root-complete witness but current term value is still partial first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d current_shape=%s" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0 (evalNodeShapeTerm x))
+                            // ALPHA441: alpha440 reached ESeq after a different term replay
+                            // had already produced a root-complete witness.  That proof is
+                            // useful for the worklist but not a value for the current ESeq;
+                            // treating it as fatal loses the next sequential trace.  For ESeq
+                            // only, clear the stale fuse and fall through to ordinary term
+                            // evaluation so the existing SeqSpine can schedule first/second.
+                            if termShape0 = "ESeq" then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_stale_root_witness_recovered\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_step_partial\",\"shape\":%s,\"first_key\":%s,\"first_site\":%s,\"first_depth\":%d,\"single_flight\":1,\"next\":\"fallthrough_term_eval\"}"
+                                        (DiagJson.esc termShape0) (DiagJson.esc k0) (DiagJson.esc s0) d0)
+                                EvalWorklist.parkActiveAndSelectKind "term" |> ignore
+                                TermCycleFuse.reset ()
+                            else
+                                raise_type_error s (sprintf "%s: global term-cycle fuse has a root-complete witness but current term value is still partial first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d current_shape=%s" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0 (evalNodeShapeTerm x))
                     else
                         if EvalWorklist.hasReplayCompleteOtherKind "term" then
                             DiagJson.emit "{\"kind\":\"eval_worklist_kind_local_fuse_reset\",\"event\":\"term_entry_global_fuse\",\"completed_kind\":\"other\",\"requested_kind\":\"term\",\"single_flight\":1,\"next\":\"continue_term_eval\"}"
@@ -17592,7 +17891,7 @@ module spiral_compiler =
             // Cycle guards: detect infinite re-entrancy into the same expression
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
-            let registerReplayTerm (nodeId: int) (expr: E) =
+            let rec registerReplayTerm (nodeId: int) (expr: E) =
                 match expr with
                 | EB _ -> EvalReplayValueStore.putTermValue nodeId DB
                 | EV a -> EvalReplayValueStore.putTerm nodeId (fun () -> v s a)
@@ -17614,6 +17913,41 @@ module spiral_compiler =
                         if freeVars.ty.free_vars.Length <> i then failwith "Replay recursive forall free-var arity mismatch."
                         DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
                 | EDefaultLit(_,_,_) -> ()
+                | ESeq(_,first,second) ->
+                    let firstNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box first)
+                    let secondNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box second)
+                    registerReplayTerm firstNodeId first
+                    registerReplayTerm secondNodeId second
+                    match first with
+                    | EB _ -> EvalReplayValueStore.putTermValue firstNodeId DB
+                    | EV a -> EvalReplayValueStore.putTerm firstNodeId (fun () -> v s a)
+                    | ELit(_,lit) -> EvalReplayValueStore.putTermValue firstNodeId (DLit lit)
+                    | _ -> ()
+                    match second with
+                    | EB _ -> EvalReplayValueStore.putTermValue secondNodeId DB
+                    | EV a -> EvalReplayValueStore.putTerm secondNodeId (fun () -> v s a)
+                    | ELit(_,lit) -> EvalReplayValueStore.putTermValue secondNodeId (DLit lit)
+                    | _ -> ()
+                    EvalReplayValueStore.putSeqSpine nodeId {
+                        firstNodeId = firstNodeId
+                        firstShape = evalNodeShapeTerm first
+                        secondNodeId = secondNodeId
+                        secondShape = evalNodeShapeTerm second
+                    }
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        let unitLike value =
+                            match value with
+                            | DB -> true
+                            | DSymbol sym when sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPMethodUnknownRet(") -> true
+                            | DV(L(_,YSymbol sym)) when sym.Contains("JPMethodRecPlaceholder(") || sym.Contains("JPTypeRecPlaceholder(") || sym.Contains("JPMethodUnknownRet(") -> true
+                            | _ -> false
+                        match EvalReplayValueStore.tryTerm firstNodeId with
+                        | Some firstValue when unitLike firstValue ->
+                            match EvalReplayValueStore.tryTerm secondNodeId with
+                            | Some secondValue -> secondValue
+                            | None -> failwith ("alpha438_seq_second_value_missing:" + evalNodeShapeTerm second)
+                        | Some other -> failwith (sprintf "alpha438_seq_expected_unit:%s" (show_data other))
+                        | None -> failwith ("alpha438_seq_first_value_missing:" + evalNodeShapeTerm first))
                 | ETypeApply(_,func,typeArg) ->
                     let funcNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box func)
                     let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box typeArg)
@@ -17773,6 +18107,7 @@ module spiral_compiler =
                         | EV a -> EvalReplayValueStore.putTerm argNodeId (fun () -> v s a)
                         | EDefaultLit(_,_,_) -> ()
                         | _ -> ()
+                    EvalReplayValueStore.putOpContext nodeId (box s)
                     EvalReplayValueStore.putOpSpine nodeId {
                         opName = sprintf "%A" op
                         argCount = argArray.Length
@@ -21378,11 +21713,33 @@ module spiral_compiler =
     
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                // ALPHA48: Updated tuple structure (dict, hc_table, gen) - no dict_ev
-                let jp_dict,_,_ = env.join_point_method.[jp_body]
+                // ALPHA440: alpha439 reached BuildOk, but the writer gate correctly rejected
+                // the tiny F# artifact because codegen fell back to CODEGEN JP PLACEHOLDER for missing
+                // body dictionaries.  Before using a placeholder, try a conservative alias: if exactly
+                // one residual JP dictionary with the same body name exists, reuse it.  This preserves
+                // alpha437's no-KeyNotFound safety while avoiding fake/shrunk BuildOk when the key object
+                // changed but the materialized body table is present.
                 let jp_body_name =
                     match jp_body with
                     | (C b, _) -> b
+                let jp_dict, jp_dict_missing =
+                    match env.join_point_method.TryGetValue jp_body with
+                    | true, (d,_,_) -> d, false
+                    | _ ->
+                        let aliases =
+                            env.join_point_method
+                            |> Seq.choose (fun (KeyValue(k,(d,_,_))) ->
+                                match k with
+                                | (C b, _) when b = jp_body_name -> Some d
+                                | _ -> None)
+                            |> Seq.truncate 2
+                            |> Seq.toArray
+                        match aliases with
+                        | [| d |] ->
+                            DiagSidecar.emit (sprintf "CODEGEN JP BODY DICT ALIAS method%i body=%s key=%A" i jp_body_name key)
+                            d, false
+                        | _ ->
+                            System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>>(HashIdentity.Reference), true
                 let ret_ty =
                     match key with
                     | C(_,_,t) -> t
@@ -21527,7 +21884,11 @@ module spiral_compiler =
                                 loop2 ()
                     loop2 ()
     
-                let a, range = get_v2 ()
+                let a, range =
+                    if jp_dict_missing then
+                        DiagSidecar.emit (sprintf "CODEGEN JP MISSING BODY DICT method%i body=%s key=%A" i jp_body_name key)
+                        placeholder()
+                    else get_v2 ()
                 {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
                 line s (sprintf "method%i (%s) : %s =" x.tag (args_tys x.free_vars) (tup_ty x.range))
@@ -21537,10 +21898,30 @@ module spiral_compiler =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
                 | YFun(domain,range,FT_Vanilla) ->
-                    let jp_dict,_,_ = env.join_point_closure.[jp_body]
+                    // ALPHA440: mirror the method-side alias lookup for closure bodies.  A
+                    // missing exact JP key should not immediately generate placeholder code if a single
+                    // body-name-equivalent closure dictionary has already been materialized.
                     let jp_body_name =
                         match jp_body with
                         | (C b, _) -> b
+                    let jp_dict, jp_dict_missing =
+                        match env.join_point_closure.TryGetValue jp_body with
+                        | true, (d,_,_) -> d, false
+                        | _ ->
+                            let aliases =
+                                env.join_point_closure
+                                |> Seq.choose (fun (KeyValue(k,(d,_,_))) ->
+                                    match k with
+                                    | (C b, _) when b = jp_body_name -> Some d
+                                    | _ -> None)
+                                |> Seq.truncate 2
+                                |> Seq.toArray
+                            match aliases with
+                            | [| d |] ->
+                                DiagSidecar.emit (sprintf "CODEGEN JP BODY DICT ALIAS closure%i body=%s key=%A" i jp_body_name key)
+                                d, false
+                            | _ ->
+                                System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<(Data * TypedBind []) option>>(HashIdentity.Reference), true
                     let range_ty =
                         match fun_ty with
                         | YFun(_, r, FT_Vanilla) -> r
@@ -21685,7 +22066,11 @@ module spiral_compiler =
                                     loop2 ()
                         loop2 ()
     
-                    let domain_args, body = get_v2 ()
+                    let domain_args, body =
+                        if jp_dict_missing then
+                            DiagSidecar.emit (sprintf "CODEGEN JP MISSING BODY DICT closure%i body=%s key=%A" i jp_body_name key)
+                            placeholder()
+                        else get_v2 ()
                     {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
                 | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
