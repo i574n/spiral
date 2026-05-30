@@ -1,3 +1,627 @@
+// ALPHA563 REENTRANT REPLAY STARVATION CONTRACT:
+// - Runtime 562 did not reach the alpha562 macro child terminal; it emitted only eval_worklist_reentrant_replay_driver_poke_suppressed.
+// - The storm alternated term EOp at real_core.spir:150 and term EV at spiral.spi:2669 while a replay driver was already active, so no replay_reduce/commit progress was visible.
+// - Alpha563 adds a bounded reentrant-poke ledger and pins semantic_reentrant_replay_driver_starvation_blocked when the same cell is suppressed repeatedly.
+// - This is diagnostic and fail-closed: it does not force recursive replay, invent macro/op values, mark root completion, write output, fake cache success, or fabricate BuildOk.
+//
+
+// ALPHA562 TERM APPLY CHILD DRIVER FIX:
+// - Runtime 561 proved alpha561 removed the literal-op blocker and resolved StringLitToSymbol/1.
+// - The new terminal is semantic_replay_child_schedule_repeat_blocked on an EMacro apply_arg_child at base.spi:67.
+// - The repeat is not a missing macro thunk: the scheduler was queuing a term apply child with the parent ty_replay_driver, so the child was repeatedly reintroduced instead of being reduced by the term replay driver.
+// - Alpha562 forces EApply head/arg child tasks onto term_replay_driver and prioritizes deferred EMacro cells after active-driver unwind.
+// - This remains fail-closed: no macro value, root completion, writer output, cache success, or BuildOk is fabricated.
+//
+
+// ALPHA560 UNITTEST REPLAY SPINE:
+// - Runtime 559 proved alpha559's joinpoint patch moved the terminal past EJoinPoint' and into backend.spi:3.
+// - The new terminal is semantic_replay_fingerprint_repeat_blocked after EUnitTest falls through generic term_shape_dispatch_dispatched.
+// - EUnitTest is a composite pattern-test term: replay must try its registered thunk and, on alpha408_unit_test_branch_value_missing, schedule the selected branch child.
+// - This remains fail-closed: no unit condition, branch value, writer output, cache success, or BuildOk is fabricated.
+//
+// ALPHA559 JOINPOINT VALUE REPLAY:
+// - Runtime 558 proved alpha558 moved past semantic_literal_op_body_stepper_blocked and exposed a more structural EJoinPoint' frontier.
+// - EJoinPoint' was still falling through the generic term E* dispatcher, so the replay fingerprint guard pinned semantic_joinpoint_term_stepper_blocked without ever trying the registered real join-point evaluator.
+// - Alpha559 registers EJoinPoint' as a real term replay thunk in both replay registration paths and adds an explicit EJoinPoint' replay branch that either resolves the value or pins semantic_joinpoint_value_blocked.
+// - No join-point value, BuildOk, root completion, cache invalidation, or writer output is fabricated; failed join-point execution remains fail-closed and diagnostic.
+//
+
+// ALPHA558 SOTA REGAUGE + ANNOTATED LITERAL BODY REPLAY:
+// - User review caught rating drift: current_project_sota near 1000 was invalid because there is still no BuildOk, no local F# compile proof, and runtime still stops on explicit replay terminals.
+// - Runtime 557 validated alpha557's TV classifier, but the primary pinned terminal regressed to semantic_literal_op_body_stepper_blocked on an EAnnotTest body at base.spi:67.
+// - Alpha558 keeps EOp literal bodies as terminal literal-op contracts, but lets EAnnotTest literal bodies flow into the existing AnnotTestSpine replay path so type/branch children can be scheduled.
+// - Ratings are rebaselined against end-to-end compiler readiness, not local diagnostic progress.
+// - No literal value, annotation branch value, payload, root proof, writer output, codegen, cache success, or BuildOk is fabricated.
+//
+
+// ALPHA557 TYPE-VARIABLE SNAPSHOT + TFUN TV TERMINAL:
+// - Runtime 556 proved alpha556 did not regress dynamic join or cache hygiene, but the terminal moved from generic TPair intent to a concrete tfun_body_child TV repeat.
+// - A TV child under TFun is environment-dependent; storing it as a deferred thunk can keep rescheduling the same node until replay_child_schedule_repeat fires.
+// - Alpha557 snapshots TV values from the active type environment during registerReplayTy when the index is in-bounds, and falls back to a ranked type-variable terminal when a TFun child TV still has no value.
+// - No type variable is fabricated: out-of-bounds or missing environment entries remain explicit semantic_type_variable_value_missing_blocked obligations.
+//
+// ALPHA556 TPAIR CHILD MATERIALIZATION:
+// - Runtime 555 validated the alpha554/555 dynamic-join path still advances: dynamic join resolves and no D(Lit) dynamic blocker returns.
+// - The new pinned terminal is semantic_replay_child_schedule_repeat_blocked at rust/testing.spi:27/7, with a TPair type argument fingerprint repeat inside the TFun body path.
+// - Alpha556 gives TPair the same explicit replay treatment as TFun: register left/right children, schedule each missing child through ty_replay_driver, then materialize YPair only when both child Ty values exist.
+// - No pair type, term value, root proof, writer output, cache success, or BuildOk is fabricated; missing children remain explicit worklist obligations.
+//
+
+// ALPHA555 TFUN MATERIALIZATION FROM CHILD VALUES:
+// - Runtime 554 proved alpha554 removed the dynamic join DLit blocker: term_apply_dynamic_join_value_resolved fired and no semantic_dynamic_join_apply_blocked remained.
+// - The next terminal is a lower-rank replay child schedule repeat around rust/testing.spi:5, after the ty replay driver repeatedly reports ty_tfun_conversion_blocked with both TFun children already scheduled.
+// - Alpha555 records the TFun FunType in TypeFunSpine and, when both arg/body child Ty values are available, materializes YFun directly into the replay type store instead of re-entering the original thunk.
+// - No type is fabricated before child Ty values exist; no term value, root proof, writer output, cache success, or BuildOk is fabricated.
+//
+
+// ALPHA554 DYNAMIC-JOIN LITERAL TAIL:
+// - Runtime 553 proved alpha553 succeeded: EJP0014 stayed at zero and macro/literal blockers disappeared.
+// - The new pinned terminal is semantic_dynamic_join_apply_blocked at real_core.spir:197.
+// - The bridge consumed the first dynamic nominal argument, produced a conservative replay placeholder, then refused the next ordinary DLit argument as runtime_function_apply_requires_dyn_typecheck.
+// - Alpha554 lets dynamic placeholder heads keep flowing across literal tails (DLit/DTLit) through the existing dynamic-join bridge, preserving fail-closed placeholder semantics.
+// - No literal value, dynamic result, root proof, writer output, cache success, replay completion, or BuildOk is fabricated.
+//
+// ALPHA553 MACRO REPLAY REGISTRATION + JP STALL PREEMPTION:
+// - Runtime 552 proved alpha552 moved past literal-op/AnnotTest terminalization, but the normal post-fuse registerReplayTerm path still omitted EMacro and produced term_thunk_missing at core.spi:56.
+// - Alpha553 mirrors the existing global-fuse EMacro replay thunk into the normal registerReplayTerm path, so EMacro children scheduled from EApply can be hydrated instead of pinned as missing thunks.
+// - The forced sequential jp_wait stall path now drains first, then prefers a pinned terminal, and if no terminal exists but a live explicit-worklist frame was produced, it aborts fail-closed as EJP0011 rather than emitting the original EJP0014 wrapper.
+// - No macro result, term value, type value, replay completion, root proof, writer output, cache success, or BuildOk is fabricated.
+//
+// ALPHA552 ANNOTATED LITERAL-OP BODY STEPPER:
+// - Alpha551 validated the retry/invalidation guard: EJP0014 and CacheGeneration.invalidate stayed at zero.
+// - The real frontier is now stable: semantic_literal_op_body_stepper_blocked on an EAnnotTest function body at backend.spi:26.
+// - Alpha552 starts materializing EAnnotTest function bodies as replay spines: annotation type, success branch, and failure branch get explicit child nodes.
+// - The EAnnotTest replay stepper schedules the annotation type child before re-forcing the body thunk, exposing a narrower branch-selection/type frontier instead of pinning the whole literal body.
+// - No literal value, branch result, root proof, writer output, BuildOk, macro result, or replay completion is fabricated.
+//
+
+// ALPHA551 JP-STALL ANY-RANK TERMINAL RETARGET:
+// - Alpha550 suppressed child-repeat churn, but runtime 550 still let a forced sequential JP stall throw EJP0014 and invalidate the cache while a pinned replay-fingerprint terminal already existed.
+// - Alpha551 keeps waiting for a high-rank terminal first; if the wait times out but any ranked terminal contract is already pinned, it aborts fail-closed as EJP0011 instead of spending the original EJP0014 retry/invalidation path.
+// - This is a diagnostic/liveness retarget only: no term value, type value, macro result, replay completion, root proof, writer output, cache success, or BuildOk is fabricated.
+// - Expected next runtime: no CacheGeneration.invalidate from EJP0014; either early EJP0011 on semantic_replay_fingerprint_repeat_blocked or, if a rank-100 macro pin appears in time, EJP0011 on semantic_macro_thunk_missing_blocked.
+//
+// ALPHA550 PINNED CHILD-REPEAT DEFER SUPPRESSOR:
+// - Alpha549 validated the jp-cycle fingerprint drain stop: no EJP0014, no replay fingerprint repeat terminal, and the run advanced to real semantic work.
+// - Runtime 549 exposed a new churn pocket: semantic_replay_child_schedule_repeat_blocked was pinned at rank 68, but deferred/late leaf scheduling kept re-emitting it before retry_stop selected the later literal-op terminal.
+// - Alpha550 treats any pinned terminal contract with rank >= 68 as a no-deferred-after-terminal condition and suppresses retry progress-yield for ranked terminal contracts, preserving the explicit blocker instead of scheduling stale deferred children.
+// - No term value, type value, root proof, writer output, BuildOk, literal op body, macro result, or replay completion is fabricated.
+//
+// ALPHA549 JP-CYCLE FINGERPRINT DRAIN STOP:
+// - Alpha548 proved the EJP0014 wrapper is gone: the final diagnostic is EJP0011 with the rank-100 semantic_macro_thunk_missing_blocked terminal.
+// - Runtime 548 still burned jp_wait_cycle_drain passes after semantic_replay_fingerprint_repeat_blocked before retry could surface the pinned macro thunk.
+// - Alpha549 treats replay fingerprint repeats and joinpoint term stepper blocks as drain-stopping terminals during jp_wait_cycle_drain as well as retry_stop_drain.
+// - No term value, type value, root proof, writer output, BuildOk, macro result, or replay completion is fabricated.
+//
+// ALPHA548 JP-PENDING PINNED-TERMINAL PREEMPTION:
+// - Alpha547 proved retry_stop_drain now honors the rank-100 macro terminal quickly, but jp_wait still waited on pending JP bodies until EJP0014.
+// - When jp_wait has semantic_root_complete + outstanding JP bodies while a rank>=90 terminal contract is already pinned, abort immediately with EJP0011 terminal evidence.
+// - Also retarget late jp_stall pinned-terminal aborts from original EJP0014 noise to the pinned terminal EJP0011 diagnostic without fabricating BuildOk or closing writer gates.
+//
+// ALPHA547 DYNAMIC TERMINAL DRAIN STOP:
+// - Alpha546 proved dynamic-join terminal pinning and child-schedule repeat evidence work: no watchdog, no EJP0014, and the final headline is semantic_dynamic_join_apply_blocked.
+// - Runtime 546 still burned 255 retry_stop_drain passes because semantic_dynamic_join_apply_blocked was pinned and preferred but not treated as a drain-stopping terminal.
+// - Alpha547 stops retry/jp drains immediately on semantic_dynamic_join_apply_blocked and semantic_replay_child_schedule_repeat_blocked, preserving the pinned diagnostic instead of re-running the same terminal replay.
+// - No dynamic value, root proof, writer output, BuildOk, or macro result is fabricated.
+//
+
+// ALPHA546 CHILD-SCHEDULE WATCHDOG CAP:
+// - Alpha545 made the final terminal message idempotent and reached the macro blocker cleanly, but runtime 545 exposed a ~245s watchdog gap.
+// - The hot loop repeatedly scheduled the same replay children around parsing.spi:257 / trace.spi:125 before retry_stop could retarget to the already-pinned macro terminal.
+// - Alpha546 adds a fail-closed child-schedule repeat terminal so repeated seq/apply/type/deferred child scheduling parks as evidence instead of waiting for JP watchdog.
+// - No term/type value, semantic_root_complete, writer output, BuildOk, or macro result is fabricated.
+//
+
+// ALPHA545 DYNAMIC-JOIN TERMINAL PIN + PRIMARY MESSAGE IDEMPOTENCE:
+// - Alpha544 proved the root-complete spin cap worked: retry-drain fell to 11 and EJP0014 disappeared.
+// - Runtime then exposed a repeated semantic_dynamic_join_apply_blocked frontier at real_core.spir:216 before the macro terminal was selected.
+// - Alpha545 promotes dynamic-join apply blockers into pinned terminal contracts and makes terminalPrimaryMessage idempotent, so nested pinned-terminal prose stops duplicating original_fuse/EvalWorklistFrame text.
+// - No dynamic value, root proof, writer output, BuildOk, or macro result is fabricated.
+
+// ALPHA544 JP-STALL PIN-WAIT + ROOT-COMPLETE SPIN CAP:
+/// - Alpha543 proved terminal-primary diagnostics work, but only after retry_stop_drain spun hundreds of times on semantic_root_complete.
+/// - Alpha544 gives forced-sequential EJP0014 a short fail-closed grace window to observe a concurrently pinned high-rank terminal before retry/abort.
+/// - retry_stop_drain now caps stale semantic_root_complete+pending frontier churn after the base drain passes instead of burning the full terminal extension.
+/// - A pinned terminal may now outrank semantic_root_complete during retry_stop_drain; this never fabricates BuildOk or opens writer gates.
+///
+// ALPHA543 PRIMARY TERMINAL MESSAGE CONTRACT:
+// - Alpha542 proved the jp_wait stall no longer invalidates the generation, but
+//   the final user-visible error still began with the stale global-fuse headline.
+// - Alpha543 makes a rank>=90 pinned terminal the primary diagnostic headline,
+//   preserving the original fuse text only as original_fuse metadata.
+// - No BuildOk, writer output, root value, or semantic completion is fabricated.
+
+// ALPHA542 JP-STALL PINNED-TERMINAL ABORT:
+/// - Alpha541 proved global-fuse terminal retargeting is now rate-limited and final BuildErrorTrace names the pinned macro terminal.
+/// - The remaining waste is an early EJP0014 jp_wait stall retry: it invalidates gen=0->1 even when a rank-100 pinned terminal is already available.
+/// - Alpha542 makes forced-sequential EJP0014 run one terminal preflight and abort without retry/invalidation if a high-rank pinned terminal is present.
+/// - Safety remains fail-closed: no BuildOk, writer output, root-complete value, term/type value, or codegen path is fabricated.
+// ALPHA541 PINNED-TERMINAL HARD ABORT:
+// - Alpha540 proved global-fuse abort retargeting worked, but emitted the
+//   retarget marker 377 times and still allowed stale semantic_root_complete
+//   replay returns after the rank-100 macro terminal was pinned.
+// - Alpha541 turns the pinned terminal into a hard fail-closed global-fuse
+//   contract: once a rank >= 90 terminal is present, global-fuse replay returns
+//   are suppressed and abort-retarget diagnostics are rate-limited.
+// - No writer output, successful build, root value, or fabricated semantic value is
+//   fabricated; this only prevents stale root completion from outranking the
+//   pinned terminal blocker.
+// ALPHA540 RUN_TESTS FUSE RETARGET:
+/// - Alpha539 proved the retry_stop panel and final EvalWorklistFrame now agree on semantic_macro_thunk_missing_blocked.
+/// - The apparent run_tests stall is now diagnosed as a pinned macro-thunk terminal at core.spi:56, not as a generic testing.run_tests loop.
+/// - Global term/type fuse abort messages are retargeted to any high-rank pinned terminal before raising, so UI/log readers stop chasing the stale run_tests/frontier key.
+/// - Safety remains fail-closed: no term value, type value, payload, root proof, writer output, BuildOk, retry budget, or codegen path is fabricated.
+
+// ALPHA539 PINNED-TERMINAL FRONTIER RETARGET:
+// - Alpha538 correctly preferred the rank-100 semantic_macro_thunk_missing_blocked
+//   contract during retry_stop_drain, but the final retry_stop panel/error still
+//   displayed the stale continuation_envelope frontier.
+// - When retry_stop_drain selects a high-rank pinned terminal, also retarget the
+//   visible frontier slots to that pinned frame so BuildErrorTrace and console panels
+//   report the same fail-closed blocker that the drain actually selected.
+// - This is diagnostic-state retargeting only: no term/type value, payload, root
+//   proof, writer output, BuildOk, codegen, or placeholder is fabricated.
+
+// ALPHA538 PINNED-TERMINAL DRAIN PRECEDENCE:
+// - Alpha537 proved emission-site terminal pinning: literal and macro blockers were pinned at emission, and retry_stop selected macro over the downstream let-success continuation.
+// - Runtime 537 also showed expensive semantic_replay_fingerprint_repeat_blocked churn before the pinned terminal became the final diagnostic.
+// - During retry_stop_drain, prefer an already pinned high-rank terminal (macro/literal/payload class) over lower-rank repeat or downstream continuation frames before deciding the canonical terminal.
+// - Safety remains fail-closed: no term value, type value, payload, root proof, writer output, BuildOk, codegen, or placeholder is fabricated.
+
+// ALPHA537 EMISSION-SITE TERMINAL PINNING:
+// - Alpha536 proved the generic terminal pin mechanism, but runtime 536 showed
+//   eval_worklist_literal_op_body_stepper_blocked and eval_worklist_macro_thunk_missing_blocked
+//   were emitted before retry_stop while only the downstream let-success continuation
+//   frame was pinned.
+// - Pin macro/literal terminal cells at the emission site, using their typed ReplayCell
+//   identity, so retry_stop can prefer the highest-ranked upstream terminal instead of
+//   the final let-success shadow.
+// - Safety remains fail-closed: no term value, type value, payload, root proof, writer
+//   output, BuildOk, codegen, or placeholder is fabricated.
+
+/// ALPHA536 TERMINAL-CONTRACT PINNING
+/// - Alpha535 proved the payload-missing pin was too narrow: the runtime log hydrated
+///   payload later, then exposed literal-op and macro-thunk blockers before the final
+///   let-success continuation diagnostic shadowed them.
+/// - Generalize the pin to the strongest explicit terminal contract seen by the
+///   worklist, ranked fail-closed: macro/literal/payload/type before downstream
+///   let-success/apply/deferred continuation terminals.
+/// - retry_stop now prefers that stronger pinned terminal when a weaker downstream
+///   terminal would otherwise produce the final PartEvalTypeError.
+/// - No BuildOk, writer/codegen, payload, root proof, literal, type value, macro thunk,
+///   or continuation value is fabricated by this patch.
+
+/// ALPHA535 PAYLOAD-MISSING PIN + PARTIAL HYGIENE:
+/// - Alpha534 validated alpha530's payload-missing terminal at runtime.spi:321:
+///   eval_worklist_replay_payload_missing_blocked fired and stopped jp_wait_cycle_drain.
+/// - The later retry_stop path still overwrote the final diagnostic with
+///   semantic_let_success_apply_continuation_blocked, hiding the earlier missing-payload
+///   contract that caused the replay driver to stop.
+/// - Pin the first semantic_replay_payload_missing_blocked frame and prefer it when a
+///   later terminal let-success continuation would otherwise shadow it in retry_stop.
+/// - Also include semantic_let_success_apply_continuation_blocked in hasReplayPartial,
+///   matching the terminal-status lists added in alpha531.
+/// - Safety remains fail-closed: no payload, value, BuildOk, writer output, codegen, or
+///   root proof is fabricated.
+///
+/// ALPHA534 ANNOTATED LITERAL BODY CONTRACT:
+/// - Alpha533 validated the let-success apply-continuation classifier as the final terminal,
+///   but it also exposed an earlier escape hatch: function_body_stepper_failed with
+///   body_shape=EAnnotTest and @arg0/DLit at backend.spi:26.
+/// - Alpha527 only classified literal-op function bodies when the scheduled body shape was
+///   exactly EOp.  Alpha534 widens that fail-closed classifier to EAnnotTest bodies too,
+///   reusing semantic_literal_op_body_stepper_blocked / eval_worklist_literal_op_body_stepper_blocked
+///   so annotated literal bodies no longer fall through to the generic function body stepper.
+/// - Safety remains fail-closed: no synthetic literal, apply, payload, root proof, BuildOk,
+///   writer output, codegen, or placeholder is fabricated.
+///
+/// 
+/// ALPHA533 LET-SUCCESS ALL-READY APPLY CONTRACT:
+/// - Alpha532 did not validate the EJoinPoint-specific fingerprint marker as the final frontier.
+///   The run advanced through dynamic bridges, macro thunk terminalization and hundreds of
+///   semantic_root_complete/attempt_build passes, then stopped at the precise alpha529 probe:
+///   eval_worklist_let_success_repair_all_ready_blocked followed by the generic
+///   semantic_let_success_apply_exception_blocked at rust/testing.spi:22.
+/// - Promote the all-ready repair blocker to its own terminal contract:
+///   semantic_let_success_all_ready_apply_blocked with next
+///   explicit_eval_worklist_let_success_all_ready_apply_required. This preserves the
+///   head/arg readiness evidence and prevents the generic NRE bucket from hiding it.
+/// - Safety remains fail-closed: no synthetic apply value, payload, BuildOk, writer output,
+///   codegen, or root proof is fabricated.
+///
+///
+/// ALPHA532 TERM JOINPOINT FINGERPRINT CONTRACT:
+/// - Alpha531 validated the let-success classifier once, but the final terminal moved to a
+///   repeated term replay fingerprint over EJoinPoint' at base.spi:67, framed through
+///   listm'.spi:36.  This is not a generic replay duplicate: it is a missing term
+///   joinpoint stepper contract.
+/// - Classify EJoinPoint' fingerprint repeats as semantic_joinpoint_term_stepper_blocked,
+///   emit eval_worklist_joinpoint_term_stepper_blocked, and terminalize it before the
+///   generic semantic_replay_fingerprint_repeat_blocked bucket hides the frontier.
+/// - Safety remains fail-closed: no term value, payload, BuildOk, writer output, codegen,
+///   or synthetic joinpoint result is fabricated.
+///
+///
+/// ALPHA531 LET-SUCCESS APPLY-CONTINUATION CLASSIFIER:
+/// - Alpha530 did not validate the payload-missing terminal marker; runtime bypassed it and
+///   advanced through dynamic function/record bridges, macro terminalization, and root-complete
+///   stores before returning to a NullReferenceException in the let-success apply-continuation
+///   path at rust/testing.spi:22.
+/// - Split this terminal from the generic semantic_apply_continuation_exception_blocked bucket:
+///   emit eval_worklist_let_success_apply_continuation_null_guarded and park the frontier as
+///   semantic_let_success_apply_continuation_blocked with an explicit next contract.
+/// - Safety remains fail-closed: no term value, payload, BuildOk, writer output, codegen, or
+///   synthetic apply result is fabricated.
+///
+// ALPHA530: terminalize missing semantic payload replay duplicate.
+// - Alpha529 compiled past FS0039 and moved the frontier to ty_replay_driver/driver_blocked_semantic_payload with semantic_eval_payload_missing.
+// - Duplicate missing-payload continuation envelopes are now parked as semantic_replay_payload_missing_blocked.
+// - This is fail-closed: no payload, value, root proof, BuildOk, writer output, or codegen is fabricated.
+
+/// ALPHA529 LET-SUCCESS NULL REPAIR PROBE:
+/// - Alpha528 compiled past the qualified literal-op helper and advanced much deeper:
+///   TJoinPoint' replay now stores/resumes values and the build reaches repeated
+///   semantic_root_complete / attempt_build handoff attempts.
+/// - The remaining terminal blocker is again the reducer-local let-success EApply
+///   NullReferenceException at rust/testing.spi:22.
+/// - Before classifying that NRE as terminal, inspect the let-success ApplySpine and
+///   fail-closed-reschedule any missing head/arg child.  If the apply term itself has
+///   become value-ready, store it and resume the existing parent continuation.
+/// - Emit eval_worklist_let_success_repair_* receipts so alpha530 can distinguish
+///   repaired child scheduling from a real all-ready apply contract gap.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic value is fabricated.
+///
+/// ALPHA528 LITERAL-OP HELPER SCOPE FIX:
+/// - Alpha527's runtime patch was structurally correct but used
+///   isFunctionBodyLiteralOpFailure from the outer replay driver without qualifying
+///   the helper that lives in EvalReplayValueStore.
+/// - Compile fix: call EvalReplayValueStore.isFunctionBodyLiteralOpFailure at the
+///   function-body EOp/DLit classifier site.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic literal-op value is fabricated.
+///
+
+/// ALPHA527 LITERAL-OP FUNCTION-BODY FRONTIER:
+/// - Alpha526 did not need the TJoinPoint blocker in the final trace; the run moved
+///   through pure op receipts such as NominalIs/1 and EQ/2, then repeatedly parked
+///   function_body_stepper_failed ... @arg0/DLit for EOp bodies in real_core.spir.
+/// - Classify DLiteral-driven EOp function-body misses as
+///   semantic_literal_op_body_stepper_blocked, emit
+///   eval_worklist_literal_op_body_stepper_blocked, and terminalize it before it
+///   re-enters retry-drain and collapses back into the known let_success blocker.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic literal-op value is fabricated.
+///
+/// ALPHA526 TJOINPOINT TYPE-STEPPER CONTRACT:
+/// - Alpha525 validated the macro-thunk classifier: eval_worklist_macro_thunk_missing_blocked
+///   fires and the run still reaches many semantic_root_complete receipts.
+/// - The next pre-terminal waste is a ty/TJoinPoint' replay at backend.spi:3/36/76:
+///   ty_shape_dispatch_dispatched:TJoinPoint' parks as a generic semantic_step_partial,
+///   schedules deferred-after-active TJoinPoint' replay, and only later collapses back into
+///   let_success_apply_exception.
+/// - Classify TJoinPoint' type-stepper gaps as semantic_tjoinpoint_stepper_blocked, emit
+///   eval_worklist_tjoinpoint_stepper_blocked, suppress deferred scheduling, and stop
+///   retry-drain before the generic let-success blocker obscures this frontier.
+/// - Safety remains fail-closed: no Ty, Data, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic join-point type is fabricated.
+///
+/// ALPHA525 MACRO-THUNK REPLAY CONTRACT:
+/// - Alpha524 compiled and moved past the record dynamic-key frontier, while preserving
+///   many semantic_root_complete returns.
+/// - The next sink is no longer unsupported_head:DRecord; it is EMacro replay parking as
+///   term_macro_value_blocked:term_thunk_missing, then repeating as
+///   semantic_replay_fingerprint_repeat_blocked before falling back into the old
+///   apply-continuation NRE blocker.
+/// - Classify missing macro thunks as a first-class terminal replay contract:
+///   semantic_macro_thunk_missing_blocked, emit eval_worklist_macro_thunk_missing_blocked,
+///   suppress deferred-after-active scheduling on that terminal, and abort without writer/build.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic macro value is fabricated.
+///
+/// /// ALPHA524 RECORD-DYNAMIC-KEY APPLY BRIDGE:
+/// - Alpha523 compiled past the tryPeek forward-reference fix and kept the log compact.
+/// - Runtime now reaches real semantic_root_complete returns, but the terminal blocker is
+///   semantic_apply_continuation_exception_blocked on a term/EApply continuation after an
+///   unsupported_head:DRecord@arg0/DB apply frontier.
+/// - Treat DRecord applied to a dynamic/replay key carrier (DB/DV/nominal/etc.) as a
+///   late-bound dynamic join lookup frontier, not as an unsupported compile-time head.
+/// - Emit eval_worklist_record_dynamic_key_bridge before attempting the existing dynamic
+///   join apply bridge, and remain fail-closed if that bridge cannot resolve it.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic value is fabricated.
+///
+/// ALPHA523 COMPILE FIX:
+/// - Alpha522 referenced tryPeek from runReplayDriver before the local function was declared.
+/// - Capture the terminal status inside the existing gate lock instead, preserving
+///   the alpha522 deferred-after-terminal suppression semantics without any forward reference.
+/// - Diagnostic-only compile fix; no writer/build/codegen success is fabricated.
+///
+/// ALPHA522 REPLAY FINGERPRINT TERMINALIZATION / DEFERRED SHIELD:
+/// - Alpha521 successfully kept compact logs and classified the first apply-continuation NRE,
+///   but the next runtime proved the main waste had moved again: ty/TPair replay
+///   repeatedly parked as semantic_replay_fingerprint_repeat_blocked while the finally
+///   path still scheduled deferred-after-active cells, rebuilding continuation_envelope.
+/// - Treat semantic_replay_fingerprint_repeat_blocked as a semantic terminal for
+///   retry-drain, suppress deferred-after-active scheduling once this terminal frontier
+///   is present, and emit eval_worklist_terminal_replay_fingerprint_repeat_drain_stopped.
+/// - Broaden the deferred EFun' NRE classifier to inspect the executing replay payload,
+///   not only alpha513ExecutingCellOpt, because alpha521 showed the blocked task can
+///   surface as a generic replay_driver_exception even when the payload is a deferred
+///   term/EFun' cell.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic value is fabricated.
+///
+/// ALPHA521 REPLAY-DRIVER CONTRACT NULL CLASSIFICATION:
+/// - Alpha520 proved compact logs are enough and terminal let-success progress-yield suppression works:
+///   eval_worklist_terminal_let_success_progress_yield_suppressed fires and aborts fail-closed.
+/// - The remaining pre-terminal waste is now visible before the final let-success blocker: runReplayDriver
+///   can still throw NullReferenceException for a term/EApply semantic_step_partial continuation and for
+///   a deferred EFun' replay cell.  Both are real contract gaps, not generic queue liveness.
+/// - Classify these two shapes as explicit replay contract blockers:
+///   semantic_apply_continuation_exception_blocked and semantic_deferred_function_replay_exception_blocked,
+///   emit dedicated receipts, wire nextFor/terminal status handling, and suppress progress-yield retries
+///   for these terminal replay-contract blockers.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output, BuildOk, codegen,
+///   placeholder, or synthetic value is fabricated.
+///
+/// ALPHA520 TERMINAL LET-SUCCESS YIELD SUPPRESSION:
+/// - Alpha519 validated compact logging and, more importantly, proved the reducer-local
+///   let-success guard now fires: eval_worklist_let_success_status_preserved_for_reducer
+///   and eval_worklist_let_success_apply_null_guarded are both present.
+/// - The remaining waste is scheduler-level: semantic_let_success_apply_exception_blocked
+///   is terminal and already names the missing real let-success apply contract, but the
+///   retry trampoline still consumes progress-yield budget and repeats the same failed
+///   attempt several times before aborting.
+/// - Suppress retry_stop_progress_yield when the selected frontier is already
+///   semantic_let_success_apply_exception_blocked, emit
+///   eval_worklist_terminal_let_success_progress_yield_suppressed, and abort without
+///   write/build exactly as before.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic value is fabricated.
+///
+/// ALPHA519 DIAGNOSTIC SAMPLING / COMPACT LOG MODE:
+/// - Alpha518 validated reducer-local let-success classification, but also proved the
+///   current JSON telemetry can spend megabytes repeating already-classified worklist
+///   liveness rows.
+/// - Keep exact terminal/failure markers unsampled, but sample high-volume liveness
+///   diagnostics by kind: first 8 events, then powers of two.
+/// - This preserves enough evidence to prove forward progress and estimate repetition,
+///   while making future alphas resumable from compact logs rather than multi-MB traces.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, placeholder, or synthetic value is fabricated.
+///
+/// ALPHA518 LET-SUCCESS STATUS PRESERVATION:
+/// - Alpha517 validated the driver-level null guard: eval_worklist_let_success_driver_null_guarded
+///   fires, retry_stop_drain stops at semantic_let_success_apply_exception_blocked, and writer/codegen
+///   remain fail-closed.
+/// - The remaining problem is stack placement, not classification.  The replay driver overwrote every
+///   captured cell as stepper_ready before reducer dispatch, so Alpha515's reducer-local let_success
+///   catch could not trigger; the exception surfaced only at runReplayDriver.
+/// - Preserve the original let_success_ready status for term/EApply replay cells at the typed reducer
+///   boundary and emit eval_worklist_let_success_status_preserved_for_reducer.  The existing reducer-local
+///   guard can now classify the exact missing let-success apply contract without the generic driver
+///   exception detour.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output, BuildOk, codegen,
+///   placeholder, or synthetic value is fabricated.
+///
+/// ALPHA517 LET-SUCCESS DRIVER-LEVEL NULL GUARD:
+/// - Alpha516 did not hit the expected @arg1/DFunction receipt; it proved the runtime
+///   now runs much deeper and exposes two concurrent facts: the dynamic-record bridge
+///   still fires for @arg0/DRecord, and the terminal replay-driver exception is again a
+///   let_success_ready term/EApply NullReferenceException after the queued task has
+///   already been consumed.
+/// - Alpha515's reducer-local catch was too low in the stack for this path.  Classify
+///   the runReplayDriver catch itself when the executing cell is let_success_ready,
+///   emit eval_worklist_let_success_driver_null_guarded, and park the frontier as
+///   semantic_let_success_apply_exception_blocked instead of the generic replay-driver
+///   exception blocker.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, or synthetic value is fabricated.
+///
+/// ALPHA516 DYNAMIC-FUNCTION ARG1 BRIDGE RECEIPT:
+/// - Alpha515 did not reach the let_success crash; the runtime was manually
+///   interrupted after 443 log lines, with no NullReferenceException and no
+///   replay-driver exception.
+/// - The visible frontier moved into a function-body dynamic bridge at
+///   trace.spi:308, specifically function_body_stepper_failed ... @arg1/DFunction,
+///   and still made typed replay progress through ETypeApply/EApply/ESeq.
+/// - Split the old generic dynamic-function body bridge receipt so @arg1/DFunction
+///   gets its own marker, and make bridge failure park as
+///   semantic_dynamic_join_apply_blocked instead of an ambiguous partial step.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, or synthetic value is fabricated.
+///
+/// ALPHA515 LET-SUCCESS APPLY EXCEPTION SEMANTIC BLOCKER:
+/// - Alpha514 validated the alpha513 empty-queue pin: the let_success_ready EApply
+///   now parks as a replay-driver exception and retry_stop_drain stops crisply.
+/// - The remaining sink is the reducer itself: a let_success_ready term/EApply can
+///   throw NullReferenceException before replay_step/replay_reduce/replay_commit
+///   are emitted.
+/// - Catch only that narrow let-success EApply crash inside the typed replay
+///   reducer, emit a dedicated receipt, and commit a semantic
+///   let_success_apply_exception_blocked frontier.  This makes the next alpha
+///   patch the missing let success contract instead of rediscovering a driver
+///   exception.
+/// - Safety remains fail-closed: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, codegen, or synthetic value is fabricated.
+///
+/// ALPHA514 ORPHAN-CAPTURED LEAF REPLAY:
+/// - Alpha513 did not hit the empty-queue NullReference path; instead it proved
+///   the retry-stop hygiene now terminates at pass 12, exposing a cleaner blocker:
+///   semantic_leaf_complete with replay_queue=0, parent continuation missing, and
+///   an attached captured EForall' cell at cursor 0.
+/// - Treat that leaf as live once inside retry_stop_drain: rebuild a continuation
+///   envelope from its attached cell and run the existing typed replay driver
+///   synchronously before the supervisor aborts with EJP0011.
+/// - This is still fail-closed: no root completion, writer output, BuildOk, codegen,
+///   or synthetic value is created; the patch only gives the captured cell its
+///   already-recorded replay chance.
+///
+/// ALPHA513 EMPTY-QUEUE REPLAY EXCEPTION PINNING:
+/// - Alpha512 proved the late-captured-leaf replay marker fires and the driver
+///   makes real typed progress again, but the let_success_ready EApply can throw
+///   NullReferenceException after the replay queue has already been consumed.
+/// - When that happens, preserve the executing task/cell as an explicit
+///   semantic_replay_driver_exception_blocked frontier instead of falling back to
+///   continuation_envelope and rescheduling the same crashing replay.
+/// - Stop retry_stop_drain immediately on that pinned terminal exception.  This
+///   is hygiene, not success: no Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, or codegen is fabricated.
+///
+/// ALPHA512 LATE-CAPTURED LEAF REPLAY:
+/// - Alpha511 removed the repeated replay-driver NullReference sink and proved the
+///   queued driver can now reduce hundreds of real term/ty replay steps.
+/// - The new terminal sink is not a live queue: retry_stop_drain reaches pass 255
+///   with replay_queue=0, frontier status semantic_leaf_complete, but the attached
+///   cell is still a freshly captured TFun at cursor == trace length.
+/// - A semantic leaf frame remains fail-closed as a non-root proof, but if its own
+///   attached cell is only captured/new, re-materialize the trace continuation once
+///   so the existing typed replay driver can reduce that late cell.
+/// - Also stop extended retry_stop_drain once it sees a stable leaf with no queue and
+///   no late captured cell left, avoiding another 256-pass no-op tail.
+/// - No root completion, writer output, BuildOk, codegen, or value store success is
+///   fabricated.
+///
+/// ALPHA511 REPLAY-DRIVER EXCEPTION FRONTIER:
+/// - Alpha510 proved the payload path now hydrates and prefers the queued replay cell,
+///   but the already-typed let_success_ready EApply now throws NullReferenceException
+///   inside the reducer before replay_step/replay_reduce/replay_commit can be emitted.
+/// - Do not leave that crashing task in the live queue for 254 identical retries.
+///   When runReplayDriver throws, consume the offending task, preserve its payload/cell
+///   on the frontier, and park as semantic_replay_driver_exception_blocked with a
+///   dedicated receipt for the next alpha.
+/// - Safety remains fail-closed: no Data/Ty/root completion/writer/codegen is fabricated;
+///   the crash becomes a typed, resumable blocker instead of a hidden loop.
+
+/// ALPHA510 REPLAY-CONTINUATION PAYLOAD PREFERENCE:
+/// - Alpha509 proved the fingerprint-live-queue drain fires, but the queued task stays
+///   at replay_id=1095/queue_depth=1 while the frontier remains
+///   semantic_replay_fingerprint_repeat_blocked.
+/// - runReplayDriver was choosing the current frontier semanticCell before trying the
+///   queued replay_continuation payload.  For fingerprint-repeat frontiers this can
+///   re-enter the stale blocked frame instead of the already queued typed child.
+/// - Prefer the queued replay_continuation semantic_eval_payload over the repeat-blocked
+///   frontier cell only in that narrow case, and emit an exception receipt if the typed
+///   replay still fails before commit.
+/// - Safety is unchanged: no Data, Ty, semantic_root_complete, writer output, BuildOk,
+///   or codegen is fabricated; this only changes which already-recorded ReplayCell is
+///   handed to the existing reducer.
+
+/// ALPHA509 FINGERPRINT LIVE-QUEUE DRIVER DRAIN:
+/// - Alpha508 proved that simply raising retry_stop_drain from 64 to 256 is now the
+///   wrong move: the drain reached pass 255 with replay_queue=1 while the canonical
+///   frontier was semantic_replay_fingerprint_repeat_blocked.
+/// - The live queue contains an already typed term_replay_driver cell
+///   (let_success_ready at testing.spi) but runBounded keeps re-reading the blocked
+///   fingerprint frame and never invokes the queued driver.
+/// - When retry_stop_drain sees a fingerprint-repeat frontier with a non-empty replay
+///   queue, run the existing replay driver once, then re-peek before applying terminal
+///   yield logic.  This mirrors the alpha505 leaf-complete queued replay drain, but
+///   targets the repeat blocker exposed by alpha508.
+/// - Safety is unchanged: no Data, Ty, semantic_root_complete, writer output, BuildOk,
+///   or codegen is fabricated; only an already queued typed replay task is allowed to
+///   run under the existing finite retry-stop bound.
+
+/// ALPHA508 RETRY-STOP PROGRESSIVE LIVE QUEUE DRAIN:
+/// - Alpha507 proved the longer terminal drain is not dead spinning: the live queue
+///   extension marker fired from pass 12 through pass 63, replay ids advanced to 1071,
+///   and the dynamic-record EApply leaf reached step 222 while replay_queue stayed 1.
+/// - Keep the policy fail-closed but raise the retry_stop_drain live-queue ceiling
+///   again, so the already queued typed replay can either discharge or expose a
+///   genuine non-queue blocker beyond the current DRecord bridge loop.
+/// - This does not fabricate Data, Ty, semantic_root_complete, writer output,
+///   BuildOk, or codegen; it only gives existing replay tasks more bounded turns.
+///
+/// ALPHA507 LIVE QUEUED-REPLAY DRAIN EXTENSION:
+/// - Alpha506 removed the DB dynamic-join blocker entirely and drove real replay through
+///   DV@arg0/DV, DV@arg1/DV, TFun/TB child work, and dynamic-record bridge returns.
+/// - The remaining retry stop is not a fresh missing writer/codegen proof: retry_stop_drain
+///   keeps advancing a queued term_replay_driver behind a semantic_leaf_complete frontier,
+///   but the fixed twelve-pass drain cap aborts with replay_queue still non-empty.
+/// - Let retry_stop_drain continue longer, still bounded, when queued replay is live.
+///   This only runs existing typed replay tasks; it does not fabricate Data, Ty, root
+///   completion, writer output, BuildOk, or codegen.
+///
+/// /// ALPHA505 LEAF-COMPLETE QUEUED-REPLAY DRAIN:
+/// - Alpha504 proved the ty/TFun<->TB artificial frame edge suppression works:
+///   the new marker fires and TFun parent-continuation cycle count drops to zero.
+/// - The new stop is a ty/TFun semantic_leaf_complete at spiral.spi:2670 with
+///   replay_queue still non-empty; retry_stop_drain keeps asking for a missing
+///   parent continuation instead of consuming the already queued replay tasks.
+/// - During retry-stop drain only, if a semantic_leaf_complete frontier has queued
+///   replay work, run the existing typed replay driver once and re-peek the
+///   frontier before applying terminal-yield logic.
+/// - This is scheduler-only and fail-closed: no value, Ty, root proof, writer
+///   output, BuildOk, or codegen is fabricated.
+
+/// ALPHA504 FRAME-SEMANTIC TY PINGPONG SUPPRESSION:
+/// - Alpha503 got past the ready-duplicate replay suppression and drove the
+///   let_success replay through apply/type-apply/deferred-ty children.
+/// - The new blocker is a scheduler-invented frame_semantic_child ping-pong:
+///   ty/TFun and ty/TB alternately install artificial parent continuations
+///   until the parent-continuation cycle guard parks TFun->TB.
+/// - Suppress only that artificial ty TFun<->TB frame-derived parent edge.
+///   Real explicit parent continuations, stored TypeFun/TypeTerm spines, replay
+///   drivers, values, writer gates, BuildOk, and codegen remain untouched.
+
+/// ALPHA503 READY-DUPLICATE REPLAY RERUN:
+/// - Alpha502 proved the leaf-yield LetSpine repair fires and reaches a real
+///   let_success_ready replay envelope, but retry_stop_drain then repeatedly saw
+///   the same driver_ready_replay_cell as a duplicate and refused to run it.
+/// - For alpha502 leaf-yield terminal-let envelopes only, allow a capped rerun of
+///   an already-ready duplicate replay task so the existing term replay driver can
+///   consume the queued child instead of parking on duplicate=1.
+/// - If the ready duplicate still repeats beyond the cap, park it as an explicit
+///   semantic_replay_fingerprint_repeat_blocked frontier. No value, Ty, root proof,
+///   writer output, BuildOk, or codegen is fabricated.
+
+/// ALPHA502 LEAF-YIELD LET REPAIR:
+/// - Alpha501 compiled and remained fail-closed, but its terminal ELet repair did not fire.
+/// - Runtime showed retry_stop_drain first drained a ty semantic_leaf_complete frame; the
+///   leaf-yield helper then selected the blocked term/ELet alternate and returned it
+///   directly, bypassing tryYieldParentContinuationCycleBlocked.
+/// - Repair that selected terminal ELet alternate in the leaf-yield path as well, by
+///   rebuilding an existing LetSpine child replay envelope before the drain can stop.
+/// - Still no fabricated values, writer opening, BuildOk synthesis, or codegen changes.
+/// - Alpha500 proved the body->success escape path still fires, but the new
+///   self-escape marker never appeared because the final ELet blocker is already
+///   parked as a terminal retry-drain frontier, not re-entering continueToParent.
+/// - When retry-drain sees a term/ELet semantic_parent_continuation_cycle_blocked
+///   frame, inspect the stored LetSpine and rebuild a continuation envelope for an
+///   existing missing body/success child before declaring the terminal blocker.
+/// - This is fail-closed and capped per let/role/node: it schedules only nodes
+///   already recorded in LetSpine and never fabricates Data, Ty, root completion,
+///   writer output, or BuildOk.
+
+/// ALPHA500 LET-SELF CYCLE ESCAPE:
+/// - Alpha499 proved the let-body cycle escape is real: the runtime emitted
+///   eval_worklist_parent_cycle_let_escape and scheduled let_success children.
+/// - The new blocker is one level higher: the ELet frame itself can become the
+///   child of a parent-continuation cycle after a scheduled success/body path,
+///   leaving retry_stop with semantic_parent_continuation_cycle_blocked and no
+///   queued replay.
+/// - When a term/ELet child reaches the parent-continuation cycle threshold,
+///   inspect its stored LetSpine directly and schedule any missing body/success
+///   child before declaring the parent edge terminal.
+/// - This stays fail-closed: it only queues an existing child replay from the
+///   registered spine; it does not invent Data, Ty, root completion, writer
+///   output, or BuildOk.
+
+/// ALPHA499 LET-BODY CYCLE ESCAPE:
+/// - Alpha498 proved the deferred-after-active-driver handoff works: the preserved
+///   TFun child was scheduled after the parent driver unwound and resolved back
+///   into the TPair parent.
+/// - The next blocker is no longer TTerm/TFun retention; it is an EApply->ELet
+///   parent-continuation cycle where the let body is already materialized by the
+///   dynamic-record bridge but the same let_body edge keeps being replayed.
+/// - When that exact cycle is detected, keep the cycle guard but redirect to the
+///   next missing let body or the let_success child instead of parking on the
+///   already-satisfied body edge.
+/// - This is fail-closed: it only fires for term EApply children of term ELet
+///   let_body_* continuations whose child term is already ready; it does not
+///   fabricate Data, Ty, root completion, writer output, or BuildOk.
+
 /// ALPHA498 DEFERRED REPLAY DRAIN:
     /// - Alpha497 proved deferred cells are now preserved, but the runtime stopped
     ///   with eval_worklist_deferred_replay_poke_suppressed/cross_kind_active_replay_driver:
@@ -37,6 +661,17 @@ namespace Polyglot
 #endif
 
 module spiral_compiler =
+    /// ALPHA506 DYNAMIC-DB APPLY JOIN:
+    /// - Alpha505 proved the leaf-complete queued replay drain fires and moved the
+    ///   frontier through concrete EUnitTest/EV/ELet/EOp reductions into the true
+    ///   dynamic-join blocker at rust.spi:257.
+    /// - The remaining repeat is a dynamic head after a DV arg where the next arg is DB:
+    ///   runtime_function_apply_requires_dyn_typecheck@arg1/DB.  Treat DB as a
+    ///   late-bound dynamic-join apply candidate so the existing runDynamicJoinApplyAfterDefinition
+    ///   path gets a chance to decide, instead of parking on the generic dyn-typecheck blocker.
+    /// - This is fail-closed: no DB/DV/Data is fabricated, concrete replay still runs first,
+    ///   and failure remains semantic_dynamic_join_apply_blocked / explicit_dynamic_join_apply_required.
+    ///
     /// ALPHA495 HOTFIX REPLAY-FINGERPRINT CANDIDATE TYPE:
     /// - Alpha494 introduced a compile-time ambiguity: liveNonRepeat only touched the
     ///   shared `status` field, so F# inferred it against ReplayTask at the filter site
@@ -1616,6 +2251,64 @@ module spiral_compiler =
                      .Replace("\t","\\t")
                 "\"" + s + "\""
         let private run_id = System.Guid.NewGuid().ToString("N")
+
+        // ALPHA519: bounded JSON telemetry sampling.
+        // Noisy worklist liveness events are useful for proving progress while a
+        // frontier is unknown, but after the same kind repeats hundreds of times they
+        // become storage pressure.  Sample only the noisy classes; terminal failures,
+        // blockers, explicit guards and build/error receipts still emit in full.
+        let private jsonKindCounts = System.Collections.Concurrent.ConcurrentDictionary<string,int>()
+
+        let private isPow2 (x: int) =
+            x > 0 && ((x &&& (x - 1)) = 0)
+
+        let private jsonStringField (field: string) (s: string) =
+            try
+                let needle = "\"" + field + "\":\""
+                let i = s.IndexOf(needle)
+                if i < 0 then ""
+                else
+                    let start = i + needle.Length
+                    let j = s.IndexOf("\"", start)
+                    if j < 0 then "" else s.Substring(start, j - start)
+            with _ -> ""
+
+        let private isNoisyJsonKind (kind: string) =
+            match kind with
+            | "eval_worklist_payload"
+            | "eval_worklist_frame"
+            | "term_cycle_fuse"
+            | "eval_worklist_sidecar_prefetch"
+            | "eval_worklist_run"
+            | "eval_worklist_consume"
+            | "eval_worklist_step"
+            | "eval_worklist_replay_driver"
+            | "eval_worklist_replay_payload_cell_hydrated"
+            | "eval_worklist_replay_step"
+            | "eval_worklist_replay_reduce"
+            | "eval_worklist_replay_commit"
+            | "eval_worklist_kind_local_active_reset"
+            | "eval_worklist_source_value_replay_return"
+            | "eval_worklist_adapter"
+            | "eval_worklist_replay_schedule"
+            | "eval_worklist_late_captured_leaf_cell_replayed"
+            | "eval_worklist_apply_function_body_dynamic_record_bridge"
+            | "eval_worklist_deferred_after_active_driver_scheduled"
+            | "eval_worklist_active_replay_cell_deferred"
+            | "eval_worklist_deferred_replay_poke_suppressed"
+            | "eval_worklist_parent_resume"
+            | "eval_worklist_parent_replay_status_preserved"
+            | "eval_worklist_cross_kind_replay_poke_suppressed" -> true
+            | _ -> false
+
+        let private shouldEmitJsonLine (line: string) =
+            let kind = jsonStringField "kind" line
+            if isNoisyJsonKind kind then
+                let c = jsonKindCounts.AddOrUpdate(kind, 1, (fun _ old -> old + 1))
+                c <= 8 || isPow2 c
+            else
+                true
+
         let emit (json: string) =
             try
                 let trimmed = if System.Object.ReferenceEquals(json,null) then "" else json.Trim()
@@ -1633,8 +2326,9 @@ module spiral_compiler =
                         let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
                         let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                         sprintf "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"diag\",\"msg\":%s}" ts pid tid (esc run_id) (esc trimmed)
-                System.Console.Error.WriteLine(line)
-                System.Console.Error.Flush()
+                if shouldEmitJsonLine line then
+                    System.Console.Error.WriteLine(line)
+                    System.Console.Error.Flush()
             with _ -> ()
         let retry (code: string) (gen_before: int) (gen_after: int) (attempt: int) (max_attempts: int) (file: string) (backend: string) (is_gen_wait: bool) (seq: bool) (dop_env: int) (dop_forced: int) =
             emit (sprintf "{\"kind\":\"retry\",\"code\":%s,\"gen_before\":%d,\"gen_after\":%d,\"attempt\":%d,\"max_attempts\":%d,\"file\":%s,\"backend\":%s,\"gen_wait\":%b,\"seq\":%b,\"dop_env\":%d,\"dop_forced\":%d}" (esc code) gen_before gen_after attempt max_attempts (esc file) (esc backend) is_gen_wait seq dop_env dop_forced)
@@ -10616,6 +11310,17 @@ module spiral_compiler =
             argShape: string
             bodyNodeId: int
             bodyShape: string
+            funType: FunType
+        }
+
+        // ALPHA556: TPair can be the type argument under TApply/TFun replay.
+        // Store its children explicitly so a TPair frontier does not fall through
+        // to generic ty_shape_dispatch_dispatched and repeat under child scheduling.
+        type TypePairSpine = {
+            leftNodeId: int
+            leftShape: string
+            rightNodeId: int
+            rightShape: string
         }
 
         type IfThenElseSpine = {
@@ -10625,6 +11330,29 @@ module spiral_compiler =
             trueShape: string
             falseNodeId: int
             falseShape: string
+        }
+
+        // ALPHA552: EAnnotTest function bodies need a first-class replay spine so
+        // literal-op bodies can schedule their annotation type and branch terms
+        // instead of parking the entire body as one opaque terminal.
+        type AnnotTestSpine = {
+            typeNodeId: int
+            typeShape: string
+            trueNodeId: int
+            trueShape: string
+            falseNodeId: int
+            falseShape: string
+        }
+
+        // ALPHA560: EUnitTest is a composite term.  The real thunk decides
+        // success/failure from the bound value, but when it reports the selected
+        // branch as missing, replay needs stable child ids instead of repeating
+        // the opaque E* dispatcher.
+        type UnitTestSpine = {
+            successNodeId: int
+            successShape: string
+            failNodeId: int
+            failShape: string
         }
 
         type OpSpine = {
@@ -10707,7 +11435,10 @@ module spiral_compiler =
         let private typeApplySpines = ConcurrentDictionary<int, TypeApplySpine>()
         let private typeTermSpines = ConcurrentDictionary<int, TypeTermSpine>()
         let private typeFunSpines = ConcurrentDictionary<int, TypeFunSpine>()
+        let private typePairSpines = ConcurrentDictionary<int, TypePairSpine>()
         let private ifThenElseSpines = ConcurrentDictionary<int, IfThenElseSpine>()
+        let private annotTestSpines = ConcurrentDictionary<int, AnnotTestSpine>()
+        let private unitTestSpines = ConcurrentDictionary<int, UnitTestSpine>()
         let private opSpines = ConcurrentDictionary<int, OpSpine>()
         let private seqSpines = ConcurrentDictionary<int, SeqSpine>()
         let private letSpines = ConcurrentDictionary<int, LetSpine>()
@@ -10905,6 +11636,13 @@ module spiral_compiler =
             termValues.[nodeId] <- (fun () -> value)
             termReady.[nodeId] <- 1uy
 
+        // ALPHA555: replay-side type values can be materialized only after their
+        // child Ty values already exist.  This avoids re-entering the original
+        // type thunk when TFun.arg and TFun.body are both resolved, but does not
+        // claim success for missing children.
+        let putTypeValue (nodeId: int) (value: Ty) : unit =
+            typeValues.[nodeId] <- (fun () -> value)
+
         // ALPHA366: function heads are replay values too.  Alpha365 reached
         // EApply -> ERecursiveFun' and then stopped because only EV leaves were
         // stored as values.  This helper keeps the replay store generic: a
@@ -10976,11 +11714,27 @@ module spiral_compiler =
             putParentContinuation spine.argNodeId { parentKind = "ty"; parentShape = "TFun"; parentNodeId = nodeId; role = "tfun_arg_child" }
             putParentContinuation spine.bodyNodeId { parentKind = "ty"; parentShape = "TFun"; parentNodeId = nodeId; role = "tfun_body_child" }
 
+        let putTypePairSpine (nodeId: int) (spine: TypePairSpine) : unit =
+            typePairSpines.[nodeId] <- spine
+            putParentContinuation spine.leftNodeId { parentKind = "ty"; parentShape = "TPair"; parentNodeId = nodeId; role = "tpair_left_child" }
+            putParentContinuation spine.rightNodeId { parentKind = "ty"; parentShape = "TPair"; parentNodeId = nodeId; role = "tpair_right_child" }
+
         let putIfThenElse (nodeId: int) (spine: IfThenElseSpine) : unit =
             ifThenElseSpines.[nodeId] <- spine
             putParentContinuation spine.condNodeId { parentKind = "term"; parentShape = "EIfThenElse"; parentNodeId = nodeId; role = "if_condition" }
             putParentContinuation spine.trueNodeId { parentKind = "term"; parentShape = "EIfThenElse"; parentNodeId = nodeId; role = "if_true" }
             putParentContinuation spine.falseNodeId { parentKind = "term"; parentShape = "EIfThenElse"; parentNodeId = nodeId; role = "if_false" }
+
+        let putAnnotTestSpine (nodeId: int) (spine: AnnotTestSpine) : unit =
+            annotTestSpines.[nodeId] <- spine
+            putParentContinuation spine.typeNodeId { parentKind = "term"; parentShape = "EAnnotTest"; parentNodeId = nodeId; role = "annot_test_type" }
+            putParentContinuation spine.trueNodeId { parentKind = "term"; parentShape = "EAnnotTest"; parentNodeId = nodeId; role = "annot_test_true" }
+            putParentContinuation spine.falseNodeId { parentKind = "term"; parentShape = "EAnnotTest"; parentNodeId = nodeId; role = "annot_test_false" }
+
+        let putUnitTestSpine (nodeId: int) (spine: UnitTestSpine) : unit =
+            unitTestSpines.[nodeId] <- spine
+            putParentContinuation spine.successNodeId { parentKind = "term"; parentShape = "EUnitTest"; parentNodeId = nodeId; role = "unit_test_success" }
+            putParentContinuation spine.failNodeId { parentKind = "term"; parentShape = "EUnitTest"; parentNodeId = nodeId; role = "unit_test_fail" }
 
         let putOpSpine (nodeId: int) (spine: OpSpine) : unit =
             opSpines.[nodeId] <- spine
@@ -11056,9 +11810,21 @@ module spiral_compiler =
             let mutable spine = Unchecked.defaultof<TypeFunSpine>
             if typeFunSpines.TryGetValue(nodeId, &spine) then Some spine else None
 
+        let tryTypePairSpine (nodeId: int) : TypePairSpine option =
+            let mutable spine = Unchecked.defaultof<TypePairSpine>
+            if typePairSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
         let tryIfThenElse (nodeId: int) : IfThenElseSpine option =
             let mutable spine = Unchecked.defaultof<IfThenElseSpine>
             if ifThenElseSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
+        let tryAnnotTestSpine (nodeId: int) : AnnotTestSpine option =
+            let mutable spine = Unchecked.defaultof<AnnotTestSpine>
+            if annotTestSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
+        let tryUnitTestSpine (nodeId: int) : UnitTestSpine option =
+            let mutable spine = Unchecked.defaultof<UnitTestSpine>
+            if unitTestSpines.TryGetValue(nodeId, &spine) then Some spine else None
 
         let tryOpSpine (nodeId: int) : OpSpine option =
             let mutable spine = Unchecked.defaultof<OpSpine>
@@ -11338,11 +12104,28 @@ module spiral_compiler =
         // head applied to a function/record-like value is still a late-bound dynamic
         // join frontier; let runDynamicJoinApplyAfterDefinition try it instead of
         // returning the old generic dyn-typecheck blocker forever.
+        //
+        // ALPHA506: alpha505 narrowed the repeat to
+        // runtime_function_apply_requires_dyn_typecheck@arg1/DB after a DV dynamic
+        // join head had already consumed the first dynamic arg.  DB is still not a
+        // fabricated value here; it is only permission to try the already-registered
+        // dynamic-join continuation.  If the continuation cannot handle DB, the
+        // existing semantic_dynamic_join_apply_blocked path remains fail-closed.
+        //
+        // ALPHA554: runtime 553 narrowed the dynamic-join repeat again:
+        // function_body_dynamic_arg_join_required consumed arg0/DNominal/DV and
+        // produced a conservative placeholder, but the very next application of that
+        // placeholder to arg1/DLit was rejected as a generic dyn-typecheck blocker.
+        // A literal tail is still part of the same late-bound dynamic call chain; route
+        // DLit/DTLit through the existing dynamic-join bridge rather than pinning it.
         let private isDynamicApplyJoinArgument (arg: Data) =
             if isReplayVarLike arg then true
             else
                 let caseName = dataCaseName arg
-                caseName.IndexOf("DFunction", StringComparison.Ordinal) >= 0
+                caseName = "DB"
+                || caseName = "DLit"
+                || caseName = "DTLit"
+                || caseName.IndexOf("DFunction", StringComparison.Ordinal) >= 0
                 || caseName.IndexOf("DRecord", StringComparison.Ordinal) >= 0
                 || caseName.IndexOf("DNominal", StringComparison.Ordinal) >= 0
                 || caseName.IndexOf("DV", StringComparison.Ordinal) >= 0
@@ -11356,6 +12139,7 @@ module spiral_compiler =
         let isDynamicJoinApplyReason (why: string) =
             why.StartsWith("function_body_dynamic_arg_join_required", StringComparison.Ordinal)
             || why.StartsWith("runtime_dynamic_apply_join_required", StringComparison.Ordinal)
+            || why.StartsWith("runtime_record_dynamic_key_required", StringComparison.Ordinal)
 
         // ALPHA467/469: a DFunction body can still throw while forcing the concrete
         // body even though one argument is a dynamic carrier.  In that case the
@@ -11373,6 +12157,15 @@ module spiral_compiler =
             why.StartsWith("function_body_stepper_failed:", StringComparison.Ordinal)
             && why.IndexOf("@arg", StringComparison.Ordinal) >= 0
             && why.IndexOf("/DFunction", StringComparison.Ordinal) >= 0
+
+        // ALPHA527: pure literal op bodies (real_core.spir comparisons / numeric guards)
+        // are not dynamic join frontiers.  When a function body fails with @arg*/DLit
+        // and the body child is EOp, surface the missing literal-op body stepper as a
+        // terminal semantic contract instead of scheduling the same body indefinitely.
+        let isFunctionBodyLiteralOpFailure (why: string) =
+            why.StartsWith("function_body_stepper_failed:", StringComparison.Ordinal)
+            && why.IndexOf("@arg", StringComparison.Ordinal) >= 0
+            && why.IndexOf("/DLit", StringComparison.Ordinal) >= 0
 
         // ALPHA472: the outer record bridge already treats record-like dynamic
         // carriers as valid late-bound join candidates.  The inner multi-arg
@@ -11393,6 +12186,8 @@ module spiral_compiler =
                 match fields |> Map.tryPick (fun (_, k) v -> if k = key then Some v else None) with
                 | Some v -> Choice1Of2 v
                 | None -> Choice2Of2 ("record_key_missing:" + key)
+            | DRecord _, arg when isDynamicApplyJoinArgument arg ->
+                Choice2Of2 ("runtime_record_dynamic_key_required:" + dataCaseName arg)
             | DV _, arg ->
                 match dynamicRuntimeApplyReason head arg with
                 | Some reason -> Choice2Of2 reason
@@ -11543,6 +12338,43 @@ module spiral_compiler =
                         ok <- false
             if ok then Some (DRecord out) else None
 
+        let private recordFoldArg (count: int) (state: Data) (k: string) (v: Data) =
+            DRecord(Map.empty |> Map.add (count, "state") state |> Map.add (count + 1, "key") (DSymbol k) |> Map.add (count + 2, "value") v)
+
+        let private tryRecordFoldReplayDataWithContext (contextNodeId: int) (folder: Data) (state0: Data) (fields: Map<int * string, Data>) : Data option =
+            let mutable ok = true
+            let mutable state = state0
+            for KeyValue((_i, k), v) in fields do
+                if ok then
+                    let arg = recordFoldArg fields.Count state k v
+                    match tryApplyReplayDataWithContext contextNodeId folder [|arg|] with
+                    | Some nextState, "ok" ->
+                        state <- nextState
+                    | _, why when isDynamicJoinApplyReason why ->
+                        match tryDynamicJoinApplyReplayDataWithContext contextNodeId folder [|arg|] with
+                        | Choice1Of2 nextState -> state <- nextState
+                        | Choice2Of2 _ -> ok <- false
+                    | _ ->
+                        ok <- false
+            if ok then Some state else None
+
+        let private tryRecordFoldBackReplayDataWithContext (contextNodeId: int) (folder: Data) (state0: Data) (fields: Map<int * string, Data>) : Data option =
+            let mutable ok = true
+            let mutable state = state0
+            for KeyValue((_i, k), v) in fields |> Seq.rev do
+                if ok then
+                    let arg = recordFoldArg fields.Count state k v
+                    match tryApplyReplayDataWithContext contextNodeId folder [|arg|] with
+                    | Some nextState, "ok" ->
+                        state <- nextState
+                    | _, why when isDynamicJoinApplyReason why ->
+                        match tryDynamicJoinApplyReplayDataWithContext contextNodeId folder [|arg|] with
+                        | Choice1Of2 nextState -> state <- nextState
+                        | Choice2Of2 _ -> ok <- false
+                    | _ ->
+                        ok <- false
+            if ok then Some state else None
+
         let tryResolvePureOpWithContext (contextNodeId: int) (opName: string) (argNodeIds: int[]) : Data option =
             let values =
                 argNodeIds
@@ -11554,6 +12386,8 @@ module spiral_compiler =
                 match opName, values with
                 | "Dyn", [|a|] -> tryDynReplayData a
                 | "RecordMap", [|mapper; DRecord fields|] -> tryRecordMapReplayDataWithContext contextNodeId mapper fields
+                | "RecordFold", [|folder; state; DRecord fields|] -> tryRecordFoldReplayDataWithContext contextNodeId folder state fields
+                | "RecordFoldBack", [|folder; state; DRecord fields|] -> tryRecordFoldBackReplayDataWithContext contextNodeId folder state fields
                 | op, [|DLit a; DLit b|] when op = "EQ" || op = "NEQ" || op = "LT" || op = "LTE" || op = "GT" || op = "GTE" -> tryCompareLiteral op a b
                 | "Add", [|DLit a; DLit b|] -> tryAddLiteral a b
                 | "Add", [|a; b|] when isZeroData a -> Some b
@@ -11659,13 +12493,63 @@ module spiral_compiler =
         let mutable private replaySeq = 0L
         let mutable private replayScheduledKey : string option = None
         let mutable private replayQueue : ReplayTask list = []
+        // ALPHA535: remember the first missing-payload replay terminal so later
+        // downstream terminals cannot shadow the root replay-payload contract.
+        let mutable private alpha535PinnedReplayPayloadMissing : Frame option = None
+        // ALPHA536: remember the strongest explicit terminal contract observed so a
+        // downstream let-success/apply/deferred blocker cannot shadow the real upstream
+        // missing stepper contract in retry_stop.
+        let mutable private alpha536PinnedTerminalContract : Frame option = None
         // ALPHA453: compact anti-repeat ledger for continuation replays that make no semantic progress.
         let private replayFingerprintRepeats = System.Collections.Generic.Dictionary<string,int>()
+        // ALPHA546: compact ledger for child replay scheduling that repeats the same semantic child.
+        // Alpha545 proved the final macro terminal is correct, but a 245s gap before retry_stop
+        // was spent re-scheduling the same seq/apply/deferred children around parsing.spi:257.
+        // Cap that repeat as a terminal contract so retry_stop can fail closed before JP watchdog.
+        let private replayChildScheduleRepeats = System.Collections.Generic.Dictionary<string,int>()
+        let private replay_child_schedule_repeat_cap = 8
+        // ALPHA563: reentrant semantic-cell attachments can starve the replay loop without ever
+        // reaching the child schedule repeat guard.  Runtime 562 emitted only reentrant-poke
+        // suppressions for the same EOp/EV cells while an active driver stayed alive.  Count
+        // those suppressions by semantic cell and promote the exact cell to a terminal contract.
+        let private reentrantReplayPokeRepeats = System.Collections.Generic.Dictionary<string,int>()
+        let private reentrant_replay_poke_repeat_cap = 64
+        let private replayReentrantPokeKey (cell: ReplayCell) =
+            sprintf "%s|%s|%d|%s" cell.kind cell.shape cell.nodeId cell.site
+        let private noteReentrantReplayPoke (cell: ReplayCell) =
+            let key = replayReentrantPokeKey cell
+            let count =
+                lock gate (fun () ->
+                    let mutable prior = 0
+                    let nextCount = if reentrantReplayPokeRepeats.TryGetValue(key, &prior) then prior + 1 else 1
+                    reentrantReplayPokeRepeats.[key] <- nextCount
+                    nextCount)
+            count, key
         // ALPHA492: compact anti-repeat ledger for stale root-complete retargets.
         // A root-complete shell is evidence for its original cell only; if the same
         // different incoming cell repeatedly retargets it, quarantine that retarget
         // as a terminal blocker instead of spinning another continuation envelope.
         let private staleRootRetargetRepeats = System.Collections.Generic.Dictionary<string,int>()
+        // ALPHA501: terminal ELet cycle repair attempts are capped per let/role/node.
+        // This prevents retry-drain from endlessly re-scheduling the same child while
+        // still allowing the live LetSpine to expose one more body/success replay.
+        let private letTerminalCycleRepairs = System.Collections.Generic.Dictionary<string,int>()
+        let private noteLetTerminalCycleRepairLocked (key: string) =
+            let mutable prior = 0
+            let next = if letTerminalCycleRepairs.TryGetValue(key, &prior) then prior + 1 else 1
+            letTerminalCycleRepairs.[key] <- next
+            next
+        // ALPHA503: a ready replay duplicate can be real progress if the task was
+        // produced by alpha502's leaf-yield terminal-let repair.  The old duplicate
+        // guard suppressed the already-ready task and left retry_stop_drain looping
+        // over duplicate=1.  Cap reruns by replay key so a bad envelope becomes a
+        // typed repeat blocker instead of an unbounded scheduler spin.
+        let private readyDuplicateReplayReruns = System.Collections.Generic.Dictionary<string,int>()
+        let private noteReadyDuplicateReplayRerunLocked (key: string) =
+            let mutable prior = 0
+            let next = if readyDuplicateReplayReruns.TryGetValue(key, &prior) then prior + 1 else 1
+            readyDuplicateReplayReruns.[key] <- next
+            next
         // ALPHA494: progress-bearing scheduler yields (fingerprint/stale-retarget)
         // can justify a bounded retry trampoline, but only if the selected frontier
         // is preserved across the immediate retry.  This counter is consumed by
@@ -11774,6 +12658,77 @@ module spiral_compiler =
                      .Replace("\t","\\t")
                 "\"" + s + "\""
 
+        let private alpha536TerminalContractRank (status: string) =
+            match status with
+            | "semantic_macro_thunk_missing_blocked" -> 100
+            | "semantic_literal_op_body_stepper_blocked" -> 95
+            | "semantic_dynamic_join_apply_blocked" -> 92
+            | "semantic_replay_payload_missing_blocked" -> 90
+            | "semantic_replay_child_schedule_repeat_blocked" -> 68
+            | "semantic_reentrant_replay_driver_starvation_blocked" -> 78
+            | "semantic_type_variable_value_missing_blocked" -> 80
+            | "semantic_tjoinpoint_stepper_blocked" -> 75
+            | "semantic_joinpoint_value_blocked" -> 74
+            | "semantic_joinpoint_term_stepper_blocked" -> 72
+            | "semantic_replay_driver_exception_blocked" -> 65
+            | "semantic_parent_continuation_cycle_blocked" -> 60
+            | "semantic_stale_root_retarget_blocked" -> 55
+            | "semantic_let_success_all_ready_apply_blocked" -> 45
+            | "semantic_apply_continuation_exception_blocked" -> 42
+            | "semantic_deferred_function_replay_exception_blocked" -> 40
+            | "semantic_let_success_apply_continuation_blocked" -> 35
+            | "semantic_let_success_apply_exception_blocked" -> 30
+            | "semantic_replay_fingerprint_repeat_blocked" -> 20
+            | _ -> 0
+
+        let private alpha536IsTerminalContractStatus (status: string) =
+            alpha536TerminalContractRank status > 0
+
+        let private alpha536TerminalNext (status: string) =
+            match status with
+            | "semantic_macro_thunk_missing_blocked" -> "explicit_eval_worklist_macro_thunk_required"
+            | "semantic_literal_op_body_stepper_blocked" -> "explicit_eval_worklist_literal_op_body_stepper_required"
+            | "semantic_dynamic_join_apply_blocked" -> "explicit_eval_worklist_dynamic_join_apply_required"
+            | "semantic_replay_payload_missing_blocked" -> "explicit_eval_worklist_replay_payload_required"
+            | "semantic_replay_child_schedule_repeat_blocked" -> "explicit_eval_worklist_replay_child_schedule_repeat_required"
+            | "semantic_reentrant_replay_driver_starvation_blocked" -> "explicit_eval_worklist_reentrant_replay_driver_starvation_required"
+            | "semantic_type_variable_value_missing_blocked" -> "explicit_eval_worklist_type_variable_env_required"
+            | "semantic_tjoinpoint_stepper_blocked" -> "explicit_eval_worklist_tjoinpoint_stepper_required"
+            | "semantic_joinpoint_value_blocked" -> "explicit_eval_worklist_joinpoint_value_required"
+            | "semantic_joinpoint_term_stepper_blocked" -> "explicit_eval_worklist_joinpoint_term_stepper_required"
+            | "semantic_replay_driver_exception_blocked" -> "explicit_eval_worklist_replay_driver_exception_required"
+            | "semantic_parent_continuation_cycle_blocked" -> "explicit_eval_worklist_parent_continuation_cycle_required"
+            | "semantic_stale_root_retarget_blocked" -> "explicit_eval_worklist_stale_root_retarget_required"
+            | "semantic_let_success_all_ready_apply_blocked" -> "explicit_eval_worklist_let_success_all_ready_apply_required"
+            | "semantic_apply_continuation_exception_blocked" -> "explicit_eval_worklist_apply_continuation_exception_required"
+            | "semantic_deferred_function_replay_exception_blocked" -> "explicit_eval_worklist_deferred_function_replay_exception_required"
+            | "semantic_let_success_apply_continuation_blocked" -> "explicit_eval_worklist_let_success_apply_continuation_required"
+            | "semantic_let_success_apply_exception_blocked" -> "explicit_eval_worklist_let_success_apply_exception_required"
+            | "semantic_replay_fingerprint_repeat_blocked" -> "explicit_eval_worklist_replay_fingerprint_repeat_required"
+            | _ -> "explicit_eval_worklist_real_stepper_required"
+
+        let private alpha536PinTerminalContractLocked (event: string) (frame: Frame) =
+            let rank = alpha536TerminalContractRank frame.status
+            if rank > 0 then
+                let priorRank =
+                    match alpha536PinnedTerminalContract with
+                    | Some prior -> alpha536TerminalContractRank prior.status
+                    | None -> 0
+                if priorRank < rank then
+                    alpha536PinnedTerminalContract <- Some frame
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_terminal_contract_pinned\",\"event\":%s,\"status\":%s,\"rank\":%d,\"prior_rank\":%d,\"site\":%s,\"key\":%s,\"single_flight\":1,\"next\":%s}"
+                            (esc event) (esc frame.status) rank priorRank (esc frame.site) (esc frame.key) (esc (alpha536TerminalNext frame.status)))
+
+        let private alpha536PinTerminalContract (event: string) (frame: Frame) =
+            lock gate (fun () -> alpha536PinTerminalContractLocked event frame)
+
+        let tryPinnedTerminalContract () =
+            lock gate (fun () -> alpha536PinnedTerminalContract)
+
+        let terminalContractRank (status: string) =
+            alpha536TerminalContractRank status
+
         let private compactTrace (tr: Trace) : Trace =
             let head = 16
             let tail = 16
@@ -11812,6 +12767,34 @@ module spiral_compiler =
                 add frontierTy
                 n)
 
+        // ALPHA544: EJP0014 can be raised while other forced-sequential workers are
+        // still converging on the real terminal contract.  Alpha543 showed a macro
+        // thunk pin appearing shortly after a semantic_root_complete+pending-JP-body
+        // deferral.  Wait briefly for an already-running worker to publish that pin
+        // before the retry gate spends time on root-complete churn.  This is
+        // diagnostic-only and fail-closed: it never marks replay complete, never
+        // writes output, and only returns an existing high-rank terminal contract.
+        let waitForPinnedTerminalContract (event: string) (tries: int) (sleepMs: int) =
+            let maxTries = max 1 (min 256 tries)
+            let delay = max 1 (min 50 sleepMs)
+            let rec loop i =
+                match tryPinnedTerminalContract() with
+                | Some pinned when terminalContractRank pinned.status >= 90 ->
+                    let rank = terminalContractRank pinned.status
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_wait_for_pinned_terminal_contract_observed\",\"event\":%s,\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"remaining_tries\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                            (esc event) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) i (pendingCount()) (esc (alpha536TerminalNext pinned.status)))
+                    Some pinned
+                | _ when i <= 0 ->
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_wait_for_pinned_terminal_contract_timeout\",\"event\":%s,\"tries\":%d,\"sleep_ms\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"continue_fail_closed\"}"
+                            (esc event) maxTries delay (pendingCount()))
+                    None
+                | _ ->
+                    System.Threading.Thread.Sleep delay
+                    loop (i - 1)
+            loop maxTries
+
         let private short (maxLen: int) (s: string) =
             if Object.ReferenceEquals(s,null) then ""
             elif maxLen <= 3 then s
@@ -11825,6 +12808,91 @@ module spiral_compiler =
         let private formatCell (cell: ReplayCell) =
             sprintf "semantic_eval_cell(kind=%s,shape=%s,node_id=%d,cursor=%d,step=%d,status=%s,site=%s)"
                 cell.kind cell.shape cell.nodeId cell.cursor cell.step cell.status cell.site
+
+        // ALPHA546: scheduling the same child identity again and again is now treated
+        // as a typed terminal obligation, not as useful replay progress.  The key
+        // intentionally ignores step/cursor because alpha545's watchdog gap changed
+        // those counters while returning to the same child obligation.
+        let private replayChildScheduleKey (role: string) (cell: ReplayCell) =
+            sprintf "%s|%s|%s|%d|%s" role cell.kind cell.shape cell.nodeId cell.site
+
+        let private noteReplayChildSchedule (role: string) (cell: ReplayCell) =
+            let key = replayChildScheduleKey role cell
+            let count =
+                lock gate (fun () ->
+                    let mutable prior = 0
+                    let nextCount = if replayChildScheduleRepeats.TryGetValue(key, &prior) then prior + 1 else 1
+                    replayChildScheduleRepeats.[key] <- nextCount
+                    nextCount)
+            count, key
+
+        // ALPHA537: pin terminal replay contracts at the emission site, not only
+        // when retry-drain later peeks the canonical frontier.  Alpha536 showed the
+        // earlier literal/macro terminal receipts could be shadowed by a downstream
+        // let-success continuation before alpha536PinTerminalContract saw them.
+        let private alpha537PinTerminalCell (event: string) (reason: string) (cell: ReplayCell) =
+            let status = cell.status
+            if alpha536IsTerminalContractStatus status then
+                let frame =
+                    { kind = cell.kind
+                      key = sprintf "%s:%s#%d" cell.kind cell.site cell.nodeId
+                      site = cell.site
+                      depth = cell.traceDepth
+                      re = 0
+                      maxRe = 0
+                      trace = []
+                      reason = reason
+                      status = status
+                      cursor = cell.cursor
+                      semanticPayload = Some (formatCellPayload cell)
+                      semanticCell = Some cell }
+                alpha536PinTerminalContract event frame
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_terminal_contract_emission_pinned\",\"event\":%s,\"status\":%s,\"rank\":%d,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"single_flight\":1,\"next\":%s}"
+                        (esc event) (esc status) (alpha536TerminalContractRank status) cell.nodeId (esc cell.shape) (esc cell.site) (esc (alpha536TerminalNext status)))
+
+
+        // ALPHA545: dynamic-join apply blockers are real terminal contracts once the
+        // concrete/dynamic bridge has failed closed.  Pin the blocked replay cell at
+        // emission so retry/global-fuse selection sees the dynamic frontier before it
+        // burns passes on a generic continuation envelope.
+        let private alpha545PinDynamicJoinBlocker (event: string) (reason: string) (detail: string) (cell: ReplayCell) =
+            let blockedCell = { cell with status = "semantic_dynamic_join_apply_blocked" }
+            alpha537PinTerminalCell event (reason + ":" + detail) blockedCell
+            DiagJson.emit (
+                sprintf "{\"kind\":\"eval_worklist_dynamic_join_terminal_pinned\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"status\":%s,\"rank\":%d,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":%s}"
+                    (esc event) blockedCell.nodeId (esc blockedCell.shape) (esc blockedCell.site) (esc blockedCell.status) (terminalContractRank blockedCell.status) (esc reason) (esc detail) (esc (alpha536TerminalNext blockedCell.status)))
+            blockedCell
+
+        // ALPHA538: retry_stop_drain should not let a lower-ranked replay-repeat or
+        // downstream continuation shadow a high-rank terminal that was already pinned
+        // at emission.  This only changes diagnostic selection; it does not mark replay
+        // complete, hydrate missing payloads, or fabricate semantic values.
+        let private alpha538PreferPinnedTerminalForRetryDrain (event: string) (frame: Frame) =
+            if event <> "retry_stop_drain" then Some frame
+            else
+                match tryPinnedTerminalContract() with
+                | Some pinned ->
+                    let pinnedRank = terminalContractRank pinned.status
+                    let frameRank = terminalContractRank frame.status
+                    let alpha544PinnedBeatsRootComplete =
+                        frame.status = "semantic_root_complete" && pinnedRank >= 90
+                    if pinnedRank >= 90 && (pinnedRank > frameRank || alpha544PinnedBeatsRootComplete) then
+                        // ALPHA539: make the visible retry_stop frontier agree with
+                        // the terminal chosen by alpha538, otherwise the final panel
+                        // still prints the stale continuation_envelope frame.
+                        lock gate (fun () ->
+                            frontier <- Some pinned
+                            slotSetLocked pinned)
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_retry_stop_frontier_retargeted_to_pinned_terminal\",\"event\":%s,\"old_status\":%s,\"new_status\":%s,\"old_rank\":%d,\"new_rank\":%d,\"old_site\":%s,\"new_site\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) (esc frame.status) (esc pinned.status) frameRank pinnedRank (esc frame.site) (esc pinned.site) (pendingCount()) (esc (alpha536TerminalNext pinned.status)))
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_retry_drain_pinned_terminal_preferred\",\"event\":%s,\"old_status\":%s,\"new_status\":%s,\"old_rank\":%d,\"new_rank\":%d,\"old_site\":%s,\"new_site\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) (esc frame.status) (esc pinned.status) frameRank pinnedRank (esc frame.site) (esc pinned.site) (pendingCount()) (esc (alpha536TerminalNext pinned.status)))
+                        Some pinned
+                    else Some frame
+                | None -> Some frame
 
         // ALPHA456: reconstruct a ReplayCell from the exact compact payload emitted
         // by formatCellPayload.  This bridges scheduled_parent_replay tasks that
@@ -11916,6 +12984,9 @@ module spiral_compiler =
                     | _ -> "missing"
                 | None -> "none")
 
+        let tryPinnedReplayPayloadMissing () =
+            lock gate (fun () -> alpha535PinnedReplayPayloadMissing)
+
         // ALPHA364: distinguish local leaf value resolution from root replay completion.
         // Alpha363 proved the old gate was still too permissive: a single EV leaf could mark
         // semantic_leaf_complete, trigger retry_after_replay_root_complete if not gated, and let an unstable write
@@ -11924,10 +12995,10 @@ module spiral_compiler =
         let hasReplayPartial () =
             lock gate (fun () ->
                 match frontier with
-                | Some frame when frame.status = "semantic_step_partial" || frame.status = "semantic_step_done" || frame.status = "semantic_leaf_complete" || frame.status = "semantic_parent_continuation_cycle_blocked" || frame.status = "semantic_type_variable_value_missing_blocked" || frame.status = "semantic_stale_root_retarget_blocked" -> true
+                | Some frame when frame.status = "semantic_step_partial" || frame.status = "semantic_step_done" || frame.status = "semantic_leaf_complete" || frame.status = "semantic_parent_continuation_cycle_blocked" || frame.status = "semantic_type_variable_value_missing_blocked" || frame.status = "semantic_stale_root_retarget_blocked" || frame.status = "semantic_replay_driver_exception_blocked" || frame.status = "semantic_replay_payload_missing_blocked" || frame.status = "semantic_replay_child_schedule_repeat_blocked" || frame.status = "semantic_macro_thunk_missing_blocked" || frame.status = "semantic_tjoinpoint_stepper_blocked" || frame.status = "semantic_literal_op_body_stepper_blocked" || frame.status = "semantic_let_success_apply_exception_blocked" || frame.status = "semantic_let_success_all_ready_apply_blocked" || frame.status = "semantic_let_success_apply_continuation_blocked" || frame.status = "semantic_apply_continuation_exception_blocked" || frame.status = "semantic_deferred_function_replay_exception_blocked" -> true
                 | Some frame ->
                     match frame.semanticCell with
-                    | Some cell when cell.status = "semantic_step_partial" || cell.status = "semantic_step_done" || cell.status = "semantic_leaf_complete" || cell.status = "semantic_parent_continuation_cycle_blocked" || cell.status = "semantic_type_variable_value_missing_blocked" || cell.status = "semantic_stale_root_retarget_blocked" -> true
+                    | Some cell when cell.status = "semantic_step_partial" || cell.status = "semantic_step_done" || cell.status = "semantic_leaf_complete" || cell.status = "semantic_parent_continuation_cycle_blocked" || cell.status = "semantic_type_variable_value_missing_blocked" || cell.status = "semantic_stale_root_retarget_blocked" || cell.status = "semantic_replay_driver_exception_blocked" || cell.status = "semantic_replay_payload_missing_blocked" || cell.status = "semantic_replay_child_schedule_repeat_blocked" || cell.status = "semantic_macro_thunk_missing_blocked" || cell.status = "semantic_tjoinpoint_stepper_blocked" || cell.status = "semantic_literal_op_body_stepper_blocked" || cell.status = "semantic_let_success_apply_exception_blocked" || cell.status = "semantic_let_success_all_ready_apply_blocked" || cell.status = "semantic_let_success_apply_continuation_blocked" || cell.status = "semantic_apply_continuation_exception_blocked" || cell.status = "semantic_deferred_function_replay_exception_blocked" -> true
                     | _ -> false
                 | None -> false)
 
@@ -12071,6 +13142,20 @@ module spiral_compiler =
             || status = "semantic_parent_continuation_cycle_blocked"
             || status = "semantic_type_variable_value_missing_blocked"
             || status = "semantic_stale_root_retarget_blocked"
+            || status = "semantic_replay_driver_exception_blocked"
+            || status = "semantic_replay_payload_missing_blocked"
+            || status = "semantic_replay_child_schedule_repeat_blocked"
+            || status = "semantic_replay_fingerprint_repeat_blocked"
+            || status = "semantic_joinpoint_term_stepper_blocked"
+            || status = "semantic_macro_thunk_missing_blocked"
+            || status = "semantic_tjoinpoint_stepper_blocked"
+            || status = "semantic_joinpoint_value_blocked"
+            || status = "semantic_literal_op_body_stepper_blocked"
+            || status = "semantic_let_success_apply_exception_blocked"
+            || status = "semantic_let_success_all_ready_apply_blocked"
+            || status = "semantic_let_success_apply_continuation_blocked"
+            || status = "semantic_apply_continuation_exception_blocked"
+            || status = "semantic_deferred_function_replay_exception_blocked"
 
         let private semanticTerminalNext (status: string) =
             if status = "semantic_root_complete" then "attempt_build"
@@ -12078,6 +13163,20 @@ module spiral_compiler =
             elif status = "semantic_parent_continuation_cycle_blocked" then "explicit_eval_worklist_parent_continuation_cycle_required"
             elif status = "semantic_type_variable_value_missing_blocked" then "explicit_eval_worklist_type_variable_env_required"
             elif status = "semantic_stale_root_retarget_blocked" then "explicit_eval_worklist_stale_root_retarget_required"
+            elif status = "semantic_replay_driver_exception_blocked" then "explicit_eval_worklist_replay_driver_exception_required"
+            elif status = "semantic_replay_payload_missing_blocked" then "explicit_eval_worklist_replay_payload_required"
+            elif status = "semantic_replay_child_schedule_repeat_blocked" then "explicit_eval_worklist_replay_child_schedule_repeat_required"
+            elif status = "semantic_replay_fingerprint_repeat_blocked" then "explicit_eval_worklist_replay_fingerprint_repeat_required"
+            elif status = "semantic_joinpoint_term_stepper_blocked" then "explicit_eval_worklist_joinpoint_term_stepper_required"
+            elif status = "semantic_macro_thunk_missing_blocked" then "explicit_eval_worklist_macro_thunk_required"
+            elif status = "semantic_tjoinpoint_stepper_blocked" then "explicit_eval_worklist_tjoinpoint_stepper_required"
+            elif status = "semantic_joinpoint_value_blocked" then "explicit_eval_worklist_joinpoint_value_required"
+            elif status = "semantic_literal_op_body_stepper_blocked" then "explicit_eval_worklist_literal_op_body_stepper_required"
+            elif status = "semantic_let_success_apply_exception_blocked" then "explicit_eval_worklist_let_success_apply_exception_required"
+            elif status = "semantic_let_success_all_ready_apply_blocked" then "explicit_eval_worklist_let_success_all_ready_apply_required"
+            elif status = "semantic_let_success_apply_continuation_blocked" then "explicit_eval_worklist_let_success_apply_continuation_required"
+            elif status = "semantic_apply_continuation_exception_blocked" then "explicit_eval_worklist_apply_continuation_exception_required"
+            elif status = "semantic_deferred_function_replay_exception_blocked" then "explicit_eval_worklist_deferred_function_replay_exception_required"
             else "explicit_eval_worklist_real_stepper_required"
 
         let private semanticPayloadOf (frame: Frame) =
@@ -12141,15 +13240,21 @@ module spiral_compiler =
         // that active tick is done and no replay task remains queued.
         let private tryScheduleDeferredAfterActiveDriver (event: string) =
             let deferredOpt =
-                match EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "TFun" -1 with
+                // ALPHA562: do not starve term macro apply-args behind the ty catch-all.
+                // Runtime 561 showed EMacro apply_arg_child was repeatedly scheduled while
+                // a ty replay driver remained active, then terminalized as child_schedule_repeat.
+                match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EMacro" -1 with
                 | Some cell -> Some cell
                 | None ->
-                    match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EFun'" -1 with
+                    match EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "TFun" -1 with
                     | Some cell -> Some cell
                     | None ->
-                        match EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "" -1 with
+                        match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EFun'" -1 with
                         | Some cell -> Some cell
-                        | None -> EvalReplayValueStore.tryTakeDeferredReplayCell "term" "" -1
+                        | None ->
+                            match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "" -1 with
+                            | Some cell -> Some cell
+                            | None -> EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "" -1
             match deferredOpt with
             | Some deferredCell ->
                 let replayCell : ReplayCell = {
@@ -12193,6 +13298,8 @@ module spiral_compiler =
 
         let rec private runReplayDriver (event: string) =
             lock gate (fun () -> replayDriverActiveDepth <- replayDriverActiveDepth + 1)
+            let mutable alpha513ExecutingTaskOpt : ReplayTask option = None
+            let mutable alpha513ExecutingCellOpt : ReplayCell option = None
             try
                 try
                     let taskOpt =
@@ -12200,15 +13307,25 @@ module spiral_compiler =
                             match replayQueue with
                             | task :: rest ->
                                 let frontierCellOpt = frontier |> Option.bind semanticCellOf
-                                let taskCellOpt =
-                                    match frontierCellOpt with
-                                    | Some _ -> None
-                                    | None -> tryReplayCellPayload task.payload
+                                let taskCellOpt = tryReplayCellPayload task.payload
+                                // ALPHA510: when the canonical frontier is already parked as a
+                                // fingerprint-repeat blocker, the queued replay_continuation is the
+                                // fresher work item.  Do not let the stale frontier cell shadow the
+                                // task payload; otherwise alpha509 keeps re-capturing replay_id 1095
+                                // without ever committing the queued let_success child.
+                                let preferTaskPayloadCell =
+                                    match frontier, taskCellOpt with
+                                    | Some frame, Some _ ->
+                                        frame.status = "semantic_replay_fingerprint_repeat_blocked"
+                                        && task.payload.Contains("replay_continuation")
+                                    | _ -> false
                                 let payloadHydrated = Option.isSome taskCellOpt
                                 let cellOpt =
-                                    match frontierCellOpt with
-                                    | Some _ -> frontierCellOpt
-                                    | None -> taskCellOpt
+                                    if preferTaskPayloadCell then taskCellOpt
+                                    else
+                                        match frontierCellOpt with
+                                        | Some _ -> frontierCellOpt
+                                        | None -> taskCellOpt
                                 if payloadHydrated then
                                     match taskCellOpt, frontier with
                                     | Some cell, Some frame ->
@@ -12231,10 +13348,12 @@ module spiral_compiler =
                                     else "driver_blocked_semantic_payload"
                                 let task' = { task with status = status }
                                 replayQueue <- task' :: rest
-                                Some(task', hasSemantic, cellOpt, payloadHydrated)
+                                Some(task', hasSemantic, cellOpt, payloadHydrated, preferTaskPayloadCell)
                             | [] -> None)
                     match taskOpt with
-                    | Some (task, hasSemantic, cellOpt, payloadHydrated) ->
+                    | Some (task, hasSemantic, cellOpt, payloadHydrated, preferTaskPayloadCell) ->
+                        alpha513ExecutingTaskOpt <- Some task
+                        alpha513ExecutingCellOpt <- cellOpt
                         let hasCell = Option.isSome cellOpt
                         let outcome =
                             if hasCell then "typed_replay_cell_captured"
@@ -12252,6 +13371,10 @@ module spiral_compiler =
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_replay_payload_cell_hydrated\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":\"execute_typed_replay_cell\"}"
                                     (esc event) task.id (esc task.driver) (esc task.status) (esc (match cellOpt with | Some c -> formatCell c | None -> "none")) (replayQueueDepth()))
+                        if preferTaskPayloadCell then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_replay_payload_preferred_over_repeat_frontier\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"cell\":%s,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"execute_payload_replay_cell\"}"
+                                    (esc event) task.id (esc task.driver) (esc task.status) (esc (match cellOpt with | Some c -> formatCell c | None -> "none")) (replayQueueDepth()) (pendingCount()))
                         match cellOpt with
                         | Some cell ->
                             let cursorNow = (match frontier with Some f -> f.cursor | None -> cell.cursor)
@@ -12259,16 +13382,101 @@ module spiral_compiler =
                                 cell.status = "parent_continuation_ready"
                                 || task.status = "scheduled_parent_replay"
                                 || task.key.Contains("|parent|")
-                            let cellReady = { cell with cursor = cursorNow; step = cell.step + 1; status = "stepper_ready" }
+                            let letSuccessReducerReplay =
+                                cell.kind = "term"
+                                && cell.shape = "EApply"
+                                && cell.status = "let_success_ready"
+                            let replayStepperStatus = if letSuccessReducerReplay then "let_success_ready" else "stepper_ready"
+                            let cellReady = { cell with cursor = cursorNow; step = cell.step + 1; status = replayStepperStatus }
+                            if letSuccessReducerReplay then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_let_success_status_preserved_for_reducer\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"execute_let_success_reducer_guard\"}"
+                                        (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) (replayQueueDepth()) (pendingCount()))
                             let continueToParent (childCell: ReplayCell) (outcome: string) =
                                 match EvalReplayValueStore.tryParentContinuation childCell.nodeId with
                                 | Some cont ->
                                     let edgeCount = EvalReplayValueStore.noteParentContinuationEdge childCell.kind childCell.shape childCell.nodeId cont
                                     if edgeCount > 8 then
-                                        let cycle =
-                                            sprintf "%s_parent_continuation_cycle_blocked:%s->%s:%s:count=%d"
-                                                outcome childCell.shape cont.parentShape cont.role edgeCount
-                                        Some(cycle, "semantic_parent_continuation_cycle_blocked", "explicit_eval_worklist_parent_continuation_cycle_required", childCell)
+                                        let tryLetSelfCycleEscape () =
+                                            if childCell.kind = "term"
+                                               && childCell.shape = "ELet" then
+                                                match EvalReplayValueStore.tryLetSpine childCell.nodeId with
+                                                | Some spine ->
+                                                    let missingBody =
+                                                        spine.bodyNodeIds
+                                                        |> Array.mapi (fun i nodeId -> i, nodeId)
+                                                        |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
+                                                    match missingBody with
+                                                    | Some (i, nodeId) ->
+                                                        let shape = if i < spine.bodyShapes.Length then spine.bodyShapes.[i] else "unknown"
+                                                        let bodyCell = { childCell with kind = "term"; shape = shape; nodeId = nodeId; status = "let_body_ready" }
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_parent_cycle_let_self_escape\",\"event\":%s,\"child\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"role\":%s,\"escape\":\"schedule_missing_body\",\"cell\":%s,\"single_flight\":1,\"next\":\"schedule_let_body_replay\"}"
+                                                                (esc event) (esc (formatCell childCell)) (esc cont.parentKind) (esc cont.parentShape) cont.parentNodeId (esc cont.role) (esc (formatCell bodyCell)))
+                                                        Some(outcome + "_let_self_cycle_missing_body_scheduled:" + cont.role, "semantic_step_partial", "schedule_let_body_replay", bodyCell)
+                                                    | None when not (EvalReplayValueStore.tryTermReady spine.successNodeId) ->
+                                                        let succCell = { childCell with kind = "term"; shape = spine.successShape; nodeId = spine.successNodeId; status = "let_success_ready" }
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_parent_cycle_let_self_escape\",\"event\":%s,\"child\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"role\":%s,\"escape\":\"schedule_success\",\"cell\":%s,\"single_flight\":1,\"next\":\"schedule_let_success_replay\"}"
+                                                                (esc event) (esc (formatCell childCell)) (esc cont.parentKind) (esc cont.parentShape) cont.parentNodeId (esc cont.role) (esc (formatCell succCell)))
+                                                        Some(outcome + "_let_self_cycle_success_scheduled:" + cont.role, "semantic_step_partial", "schedule_let_success_replay", succCell)
+                                                    | None ->
+                                                        match EvalReplayValueStore.tryTermDetailed childCell.nodeId with
+                                                        | Choice1Of2 value ->
+                                                            EvalReplayValueStore.putTermValue childCell.nodeId value
+                                                            let parentCell = { childCell with kind = cont.parentKind; shape = cont.parentShape; nodeId = cont.parentNodeId; status = "parent_continuation_ready" }
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_parent_cycle_let_self_escape\",\"event\":%s,\"child\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"role\":%s,\"escape\":\"resolved_parent\",\"cell\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                                    (esc event) (esc (formatCell childCell)) (esc cont.parentKind) (esc cont.parentShape) cont.parentNodeId (esc cont.role) (esc (formatCell parentCell)))
+                                                            Some(outcome + "_let_self_cycle_value_resolved:" + cont.role, "semantic_step_partial", "resume_parent_replay_driver", parentCell)
+                                                        | Choice2Of2 _ -> None
+                                                | None -> None
+                                            else None
+                                        let tryLetBodyCycleEscape () =
+                                            if childCell.kind = "term"
+                                               && childCell.shape = "EApply"
+                                               && cont.parentKind = "term"
+                                               && cont.parentShape = "ELet"
+                                               && cont.role.StartsWith("let_body_", StringComparison.Ordinal)
+                                               && EvalReplayValueStore.tryTermReady childCell.nodeId then
+                                                match EvalReplayValueStore.tryLetSpine cont.parentNodeId with
+                                                | Some spine ->
+                                                    let missingBody =
+                                                        spine.bodyNodeIds
+                                                        |> Array.mapi (fun i nodeId -> i, nodeId)
+                                                        |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
+                                                    match missingBody with
+                                                    | Some (i, nodeId) ->
+                                                        let shape = if i < spine.bodyShapes.Length then spine.bodyShapes.[i] else "unknown"
+                                                        let bodyCell = { childCell with kind = "term"; shape = shape; nodeId = nodeId; status = "let_body_ready" }
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_parent_cycle_let_escape\",\"event\":%s,\"child\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"role\":%s,\"escape\":\"schedule_missing_body\",\"cell\":%s,\"single_flight\":1,\"next\":\"schedule_let_body_replay\"}"
+                                                                (esc event) (esc (formatCell childCell)) (esc cont.parentKind) (esc cont.parentShape) cont.parentNodeId (esc cont.role) (esc (formatCell bodyCell)))
+                                                        Some(outcome + "_let_body_cycle_missing_body_scheduled:" + cont.role, "semantic_step_partial", "schedule_let_body_replay", bodyCell)
+                                                    | None when not (EvalReplayValueStore.tryTermReady spine.successNodeId) ->
+                                                        let succCell = { childCell with kind = "term"; shape = spine.successShape; nodeId = spine.successNodeId; status = "let_success_ready" }
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_parent_cycle_let_escape\",\"event\":%s,\"child\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"role\":%s,\"escape\":\"schedule_success\",\"cell\":%s,\"single_flight\":1,\"next\":\"schedule_let_success_replay\"}"
+                                                                (esc event) (esc (formatCell childCell)) (esc cont.parentKind) (esc cont.parentShape) cont.parentNodeId (esc cont.role) (esc (formatCell succCell)))
+                                                        Some(outcome + "_let_body_cycle_success_scheduled:" + cont.role, "semantic_step_partial", "schedule_let_success_replay", succCell)
+                                                    | None ->
+                                                        let parentCell = { childCell with kind = cont.parentKind; shape = cont.parentShape; nodeId = cont.parentNodeId; status = "parent_continuation_ready" }
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_parent_cycle_let_escape\",\"event\":%s,\"child\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"role\":%s,\"escape\":\"retry_parent_once\",\"cell\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                                (esc event) (esc (formatCell childCell)) (esc cont.parentKind) (esc cont.parentShape) cont.parentNodeId (esc cont.role) (esc (formatCell parentCell)))
+                                                        Some(outcome + "_let_body_cycle_parent_retry:" + cont.role, "semantic_step_partial", "resume_parent_replay_driver", parentCell)
+                                                | None -> None
+                                            else None
+                                        match tryLetSelfCycleEscape () with
+                                        | Some x -> Some x
+                                        | None ->
+                                            match tryLetBodyCycleEscape () with
+                                            | Some x -> Some x
+                                            | None ->
+                                                let cycle =
+                                                    sprintf "%s_parent_continuation_cycle_blocked:%s->%s:%s:count=%d"
+                                                        outcome childCell.shape cont.parentShape cont.role edgeCount
+                                                Some(cycle, "semantic_parent_continuation_cycle_blocked", "explicit_eval_worklist_parent_continuation_cycle_required", childCell)
                                     else
                                         let parentCell = { childCell with kind = cont.parentKind; shape = cont.parentShape; nodeId = cont.parentNodeId; status = "parent_continuation_ready" }
                                         Some(outcome + "_parent_continuation_resumed", "semantic_step_partial", "resume_parent_replay_driver", parentCell)
@@ -12336,117 +13544,211 @@ module spiral_compiler =
                                         compositeOrParent "term_symbol_value_resolved" cellReady
                                     | None -> "term_symbol_value_missing_store", "semantic_step_partial", "explicit_eval_worklist_symbol_value_store_required", cellReady
                                 | "term", "EApply" ->
-                                    match EvalReplayValueStore.tryApplySpine cellReady.nodeId with
-                                    | Some spine ->
-                                        if not (EvalReplayValueStore.tryTermReady spine.headNodeId) then
-                                            let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = "apply_head_ready" }
-                                            "term_apply_spine_head_scheduled", "semantic_step_partial", "schedule_apply_head_replay", headCell
-                                        else
-                                            let missingArg =
-                                                spine.argNodeIds
-                                                |> Array.mapi (fun i nodeId -> i, nodeId)
-                                                |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
-                                            match missingArg with
-                                            | Some (i, nodeId) ->
-                                                let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
-                                                let argCell = { cellReady with nodeId = nodeId; shape = shape; status = "apply_arg_ready" }
-                                                "term_apply_spine_arg_scheduled", "semantic_step_partial", "schedule_apply_arg_replay", argCell
-                                            | None ->
-                                                let headValue = EvalReplayValueStore.tryTerm spine.headNodeId
-                                                let argValues = spine.argNodeIds |> Array.map EvalReplayValueStore.tryTerm
-                                                match headValue, argValues |> Array.exists Option.isNone with
-                                                | Some head, false ->
-                                                    let values = argValues |> Array.map Option.get
-                                                    match EvalReplayValueStore.tryApplyReplayDataWithContext cellReady.nodeId head values with
-                                                    | Some value, "ok" ->
-                                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                        compositeOrParent "term_apply_args_value_resolved" cellReady
-                                                    | _, why ->
-                                                        // ALPHA376: once a DFunction head and all args are available, try the
-                                                        // value-gated EApply thunk registered by term_core_impl before declaring
-                                                        // the function body unimplemented.  tryTerm catches recursive failures,
-                                                        // so this cannot reopen the tiny-residual false-success path.
-                                                        if EvalReplayValueStore.isDynamicJoinApplyReason why then
-                                                            match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
-                                                            | Choice1Of2 value ->
-                                                                EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                                compositeOrParent ("term_apply_dynamic_join_value_resolved:" + why) cellReady
-                                                            | Choice2Of2 detail ->
-                                                                DiagJson.emit (
-                                                                    sprintf "{\"kind\":\"eval_worklist_dynamic_join_apply_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
-                                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail))
-                                                                "term_apply_function_body_dynamic_arg_blocked:" + why + ":" + detail, "semantic_dynamic_join_apply_blocked", "explicit_eval_worklist_dynamic_join_apply_required", cellReady
-                                                        elif EvalReplayValueStore.isFunctionBodyDynamicFunctionFailure why then
-                                                            match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
-                                                            | Choice1Of2 value ->
-                                                                EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                                DiagJson.emit (
-                                                                    sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_function_bridge\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
-                                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
-                                                                compositeOrParent ("term_apply_function_body_dynamic_function_bridge:" + why) cellReady
-                                                            | Choice2Of2 detail ->
-                                                                "term_apply_function_body_dynamic_function_bridge_blocked:" + why + ":" + detail, "semantic_step_partial", "explicit_eval_worklist_dynamic_join_apply_required", cellReady
-                                                        elif EvalReplayValueStore.isFunctionBodyDynamicRecordFailure why then
-                                                            match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
-                                                            | Choice1Of2 value ->
-                                                                EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                                DiagJson.emit (
-                                                                    sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_record_bridge\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
-                                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
-                                                                compositeOrParent ("term_apply_function_body_dynamic_record_bridge:" + why) cellReady
-                                                            | Choice2Of2 detail ->
-                                                                DiagJson.emit (
-                                                                    sprintf "{\"kind\":\"eval_worklist_dynamic_record_apply_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
-                                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail))
-                                                                "term_apply_function_body_dynamic_record_bridge_blocked:" + why + ":" + detail, "semantic_dynamic_join_apply_blocked", "explicit_eval_worklist_dynamic_join_apply_required", cellReady
-                                                        elif why.StartsWith("function_body_stepper", StringComparison.Ordinal) then
-                                                            // ALPHA459: if a previous pass scheduled the DFunction body child and
-                                                            // it has now resolved, consume it before trying the whole apply thunk.
-                                                            // Otherwise materialize that body as an explicit replay child.  This
-                                                            // turns the alpha458 trace.spi:295 / spiral.spi:2670 frontier from
-                                                            // repeated PartEvalTypeError thunk forcing into a real child stepper.
-                                                            match EvalReplayValueStore.tryApplyFunctionBodyValueAt cellReady.nodeId with
-                                                            | Some value ->
-                                                                EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                                compositeOrParent ("term_apply_function_body_child_value_resolved:" + why) cellReady
-                                                            | None ->
-                                                                let firstArg = if values.Length > 0 then Some values.[0] else None
-                                                                match firstArg with
-                                                                | Some argValue ->
-                                                                    match EvalReplayValueStore.tryScheduleApplyFunctionBodyReplayAt cellReady.nodeId head argValue with
-                                                                    | Choice1Of2 (bodyNodeId, bodyShape) ->
-                                                                        DiagJson.emit (
-                                                                            sprintf "{\"kind\":\"eval_worklist_apply_function_body_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_function_body_stepper_required\"}"
-                                                                                (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc cellReady.site) (esc why))
-                                                                        let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "apply_function_body_ready" }
-                                                                        "term_apply_function_body_scheduled:" + why, "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", bodyCell
-                                                                    | Choice2Of2 scheduleDetail ->
-                                                                        match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
-                                                                        | Choice1Of2 value ->
-                                                                            EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                                            compositeOrParent ("term_apply_function_body_value_resolved:" + why) cellReady
-                                                                        | Choice2Of2 detail ->
-                                                                            "term_apply_function_body_blocked:" + why + ":" + scheduleDetail + ":" + detail, "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", cellReady
+                                    try
+                                        match EvalReplayValueStore.tryApplySpine cellReady.nodeId with
+                                        | Some spine ->
+                                            if not (EvalReplayValueStore.tryTermReady spine.headNodeId) then
+                                                let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = "apply_head_ready" }
+                                                "term_apply_spine_head_scheduled", "semantic_step_partial", "schedule_apply_head_replay", headCell
+                                            else
+                                                let missingArg =
+                                                    spine.argNodeIds
+                                                    |> Array.mapi (fun i nodeId -> i, nodeId)
+                                                    |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
+                                                match missingArg with
+                                                | Some (i, nodeId) ->
+                                                    let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
+                                                    let argCell = { cellReady with nodeId = nodeId; shape = shape; status = "apply_arg_ready" }
+                                                    "term_apply_spine_arg_scheduled", "semantic_step_partial", "schedule_apply_arg_replay", argCell
+                                                | None ->
+                                                    let headValue = EvalReplayValueStore.tryTerm spine.headNodeId
+                                                    let argValues = spine.argNodeIds |> Array.map EvalReplayValueStore.tryTerm
+                                                    match headValue, argValues |> Array.exists Option.isNone with
+                                                    | Some head, false ->
+                                                        let values = argValues |> Array.map Option.get
+                                                        match EvalReplayValueStore.tryApplyReplayDataWithContext cellReady.nodeId head values with
+                                                        | Some value, "ok" ->
+                                                            EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                            compositeOrParent "term_apply_args_value_resolved" cellReady
+                                                        | _, why ->
+                                                            // ALPHA376: once a DFunction head and all args are available, try the
+                                                            // value-gated EApply thunk registered by term_core_impl before declaring
+                                                            // the function body unimplemented.  tryTerm catches recursive failures,
+                                                            // so this cannot reopen the tiny-residual false-success path.
+                                                            if EvalReplayValueStore.isDynamicJoinApplyReason why then
+                                                                if why.StartsWith("runtime_record_dynamic_key_required", StringComparison.Ordinal) then
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_record_dynamic_key_bridge\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"try_dynamic_join_apply\"}"
+                                                                            (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
+                                                                match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
+                                                                | Choice1Of2 value ->
+                                                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                                    compositeOrParent ("term_apply_dynamic_join_value_resolved:" + why) cellReady
+                                                                | Choice2Of2 detail ->
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_dynamic_join_apply_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
+                                                                            (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail))
+                                                                    let blockedCell = alpha545PinDynamicJoinBlocker event ("term_apply_function_body_dynamic_arg_blocked:" + why) detail cellReady
+                                                                    "term_apply_function_body_dynamic_arg_blocked:" + why + ":" + detail, blockedCell.status, alpha536TerminalNext blockedCell.status, blockedCell
+                                                            elif EvalReplayValueStore.isFunctionBodyDynamicFunctionFailure why then
+                                                                let bridgeKind =
+                                                                    if why.IndexOf("@arg1/DFunction", StringComparison.Ordinal) >= 0 then "eval_worklist_apply_function_body_dynamic_function_arg1_bridge"
+                                                                    else "eval_worklist_apply_function_body_dynamic_function_bridge"
+                                                                match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
+                                                                | Choice1Of2 value ->
+                                                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":%s,\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                                            (esc bridgeKind) (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
+                                                                    compositeOrParent ("term_apply_function_body_dynamic_function_bridge:" + why) cellReady
+                                                                | Choice2Of2 detail ->
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_function_bridge_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
+                                                                            (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail))
+                                                                    let blockedCell = alpha545PinDynamicJoinBlocker event ("term_apply_function_body_dynamic_function_bridge_blocked:" + why) detail cellReady
+                                                                    "term_apply_function_body_dynamic_function_bridge_blocked:" + why + ":" + detail, blockedCell.status, alpha536TerminalNext blockedCell.status, blockedCell
+                                                            elif EvalReplayValueStore.isFunctionBodyDynamicRecordFailure why then
+                                                                match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
+                                                                | Choice1Of2 value ->
+                                                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_record_bridge\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                                            (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
+                                                                    compositeOrParent ("term_apply_function_body_dynamic_record_bridge:" + why) cellReady
+                                                                | Choice2Of2 detail ->
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_dynamic_record_apply_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
+                                                                            (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail))
+                                                                    let blockedCell = alpha545PinDynamicJoinBlocker event ("term_apply_function_body_dynamic_record_bridge_blocked:" + why) detail cellReady
+                                                                    "term_apply_function_body_dynamic_record_bridge_blocked:" + why + ":" + detail, blockedCell.status, alpha536TerminalNext blockedCell.status, blockedCell
+                                                            elif why.StartsWith("function_body_stepper", StringComparison.Ordinal) then
+                                                                // ALPHA459: if a previous pass scheduled the DFunction body child and
+                                                                // it has now resolved, consume it before trying the whole apply thunk.
+                                                                // Otherwise materialize that body as an explicit replay child.  This
+                                                                // turns the alpha458 trace.spi:295 / spiral.spi:2670 frontier from
+                                                                // repeated PartEvalTypeError thunk forcing into a real child stepper.
+                                                                match EvalReplayValueStore.tryApplyFunctionBodyValueAt cellReady.nodeId with
+                                                                | Some value ->
+                                                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                                    compositeOrParent ("term_apply_function_body_child_value_resolved:" + why) cellReady
                                                                 | None ->
-                                                                    "term_apply_function_body_blocked:" + why + ":apply_args_empty", "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", cellReady
-                                                        else
-                                                            "term_apply_args_available_unimplemented:" + why, "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
-                                                | None, _ ->
+                                                                    let firstArg = if values.Length > 0 then Some values.[0] else None
+                                                                    match firstArg with
+                                                                    | Some argValue ->
+                                                                        match EvalReplayValueStore.tryScheduleApplyFunctionBodyReplayAt cellReady.nodeId head argValue with
+                                                                        | Choice1Of2 (bodyNodeId, bodyShape) ->
+                                                                            if bodyShape = "EAnnotTest" && EvalReplayValueStore.isFunctionBodyLiteralOpFailure why then
+                                                                                // ALPHA558: annotated literal-op bodies are composite replay bodies, not terminal literal ops.
+                                                                                // Runtime 557 proved the old classifier pinned EAnnotTest at base.spi:67 before the
+                                                                                // existing AnnotTestSpine could schedule its annotation type/branches.
+                                                                                DiagJson.emit (
+                                                                                    sprintf "{\"kind\":\"eval_worklist_literal_annot_test_body_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_test_body_stepper_required\"}"
+                                                                                        (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc cellReady.site) (esc why))
+                                                                                let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "annot_test_body_ready" }
+                                                                                "term_literal_annot_test_body_scheduled:" + why, "semantic_step_partial", "explicit_eval_worklist_annot_test_body_stepper_required", bodyCell
+                                                                            elif bodyShape = "EOp" && EvalReplayValueStore.isFunctionBodyLiteralOpFailure why then
+                                                                                match EvalReplayValueStore.tryOpSpine bodyNodeId with
+                                                                                | Some opSpine ->
+                                                                                    DiagJson.emit (
+                                                                                        sprintf "{\"kind\":\"eval_worklist_literal_op_body_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"op\":%s,\"arg_count\":%d,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_op_impl_required\"}"
+                                                                                            (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc opSpine.opName) opSpine.argCount (esc cellReady.site) (esc why))
+                                                                                    let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "op_body_ready" }
+                                                                                    "term_literal_op_body_replay_scheduled:" + opSpine.opName + "/" + string opSpine.argCount, "semantic_step_partial", "explicit_eval_worklist_op_impl_required", bodyCell
+                                                                                | None ->
+                                                                                    DiagJson.emit (
+                                                                                        sprintf "{\"kind\":\"eval_worklist_literal_op_body_stepper_blocked\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_literal_op_body_stepper_required\"}"
+                                                                                            (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc cellReady.site) (esc why))
+                                                                                    let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "semantic_literal_op_body_stepper_blocked" }
+                                                                                    alpha537PinTerminalCell event ("term_literal_op_function_body_blocked:" + why) bodyCell
+                                                                                    "term_literal_op_function_body_blocked:" + why, "semantic_literal_op_body_stepper_blocked", "explicit_eval_worklist_literal_op_body_stepper_required", bodyCell
+                                                                            else
+                                                                                DiagJson.emit (
+                                                                                    sprintf "{\"kind\":\"eval_worklist_apply_function_body_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_function_body_stepper_required\"}"
+                                                                                        (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc cellReady.site) (esc why))
+                                                                                let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "apply_function_body_ready" }
+                                                                                "term_apply_function_body_scheduled:" + why, "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", bodyCell
+                                                                        | Choice2Of2 scheduleDetail ->
+                                                                            match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                                                            | Choice1Of2 value ->
+                                                                                EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                                                compositeOrParent ("term_apply_function_body_value_resolved:" + why) cellReady
+                                                                            | Choice2Of2 detail ->
+                                                                                "term_apply_function_body_blocked:" + why + ":" + scheduleDetail + ":" + detail, "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", cellReady
+                                                                    | None ->
+                                                                        "term_apply_function_body_blocked:" + why + ":apply_args_empty", "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", cellReady
+                                                            else
+                                                                "term_apply_args_available_unimplemented:" + why, "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
+                                                    | None, _ ->
+                                                        let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = "apply_head_ready" }
+                                                        "term_apply_head_value_store_race_scheduled", "semantic_step_partial", "schedule_apply_head_replay", headCell
+                                                    | _, true ->
+                                                        let missing =
+                                                            spine.argNodeIds
+                                                            |> Array.mapi (fun i nodeId -> i, nodeId)
+                                                            |> Array.tryFind (fun (_, nodeId) -> EvalReplayValueStore.tryTerm nodeId |> Option.isNone)
+                                                        match missing with
+                                                        | Some (i, nodeId) ->
+                                                            let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
+                                                            let argCell = { cellReady with nodeId = nodeId; shape = shape; status = "apply_arg_ready" }
+                                                            "term_apply_arg_value_store_race_scheduled", "semantic_step_partial", "schedule_apply_arg_replay", argCell
+                                                        | None ->
+                                                            "term_apply_args_available_value_store_race", "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
+                                        | None -> "term_apply_spine_missing_store", "semantic_step_partial", "explicit_eval_worklist_apply_spine_store_required", cellReady
+                                    with
+                                    | :? NullReferenceException as ex when cellReady.status = "let_success_ready" ->
+                                        let detail = "NullReferenceException:" + ex.Message
+                                        let tryLetSuccessRepair () : (string * string * string * ReplayCell) option =
+                                            try
+                                                match EvalReplayValueStore.tryApplySpine cellReady.nodeId with
+                                                | Some spine when not (EvalReplayValueStore.tryTermReady spine.headNodeId) ->
                                                     let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = "apply_head_ready" }
-                                                    "term_apply_head_value_store_race_scheduled", "semantic_step_partial", "schedule_apply_head_replay", headCell
-                                                | _, true ->
-                                                    let missing =
+                                                    DiagJson.emit (
+                                                        sprintf "{\"kind\":\"eval_worklist_let_success_repair_head_scheduled\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"head_node_id\":%d,\"head_shape\":%s,\"error_type\":%s,\"message\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"schedule_apply_head_replay\"}"
+                                                            (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) spine.headNodeId (esc spine.headShape) (esc (ex.GetType().Name)) (esc ex.Message) (pendingCount()))
+                                                    Some("term_apply_let_success_head_rescheduled_after_null_guard:" + detail, "semantic_step_partial", "schedule_apply_head_replay", headCell)
+                                                | Some spine ->
+                                                    let missingArg =
                                                         spine.argNodeIds
                                                         |> Array.mapi (fun i nodeId -> i, nodeId)
-                                                        |> Array.tryFind (fun (_, nodeId) -> EvalReplayValueStore.tryTerm nodeId |> Option.isNone)
-                                                    match missing with
+                                                        |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
+                                                    match missingArg with
                                                     | Some (i, nodeId) ->
                                                         let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
                                                         let argCell = { cellReady with nodeId = nodeId; shape = shape; status = "apply_arg_ready" }
-                                                        "term_apply_arg_value_store_race_scheduled", "semantic_step_partial", "schedule_apply_arg_replay", argCell
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_let_success_repair_arg_scheduled\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"arg_index\":%d,\"arg_node_id\":%d,\"arg_shape\":%s,\"error_type\":%s,\"message\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"schedule_apply_arg_replay\"}"
+                                                                (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) i nodeId (esc shape) (esc (ex.GetType().Name)) (esc ex.Message) (pendingCount()))
+                                                        Some("term_apply_let_success_arg_rescheduled_after_null_guard:" + detail, "semantic_step_partial", "schedule_apply_arg_replay", argCell)
                                                     | None ->
-                                                        "term_apply_args_available_value_store_race", "semantic_step_partial", "explicit_eval_worklist_apply_impl_required", cellReady
-                                    | None -> "term_apply_spine_missing_store", "semantic_step_partial", "explicit_eval_worklist_apply_spine_store_required", cellReady
+                                                        match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                                        | Choice1Of2 value ->
+                                                            EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_let_success_repair_value_resolved\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"error_type\":%s,\"message\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                                    (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) (esc (ex.GetType().Name)) (esc ex.Message) (pendingCount()))
+                                                            Some(compositeOrParent ("term_apply_let_success_value_resolved_after_null_guard:" + detail) cellReady)
+                                                        | Choice2Of2 blocked ->
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_let_success_all_ready_apply_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"head_node_id\":%d,\"arg_count\":%d,\"detail\":%s,\"error_type\":%s,\"message\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_let_success_all_ready_apply_required\"}"
+                                                                    (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) spine.headNodeId spine.argNodeIds.Length (esc blocked) (esc (ex.GetType().Name)) (esc ex.Message) (pendingCount()))
+                                                            Some("term_apply_let_success_all_ready_blocked:" + blocked, "semantic_let_success_all_ready_apply_blocked", "explicit_eval_worklist_let_success_all_ready_apply_required", { cellReady with status = "let_success_all_ready_apply_blocked" })
+                                                | None ->
+                                                    DiagJson.emit (
+                                                        sprintf "{\"kind\":\"eval_worklist_let_success_repair_spine_missing\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"error_type\":%s,\"message\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_apply_spine_store_required\"}"
+                                                            (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) (esc (ex.GetType().Name)) (esc ex.Message) (pendingCount()))
+                                                    None
+                                            with repairEx ->
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_let_success_repair_exception\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"error_type\":%s,\"message\":%s,\"repair_error_type\":%s,\"repair_message\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_let_success_apply_exception_required\"}"
+                                                        (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) (esc (ex.GetType().Name)) (esc ex.Message) (esc (repairEx.GetType().Name)) (esc repairEx.Message) (pendingCount()))
+                                                None
+                                        match tryLetSuccessRepair () with
+                                        | Some repaired -> repaired
+                                        | None ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_let_success_apply_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"error_type\":%s,\"message\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_let_success_apply_exception_required\"}"
+                                                    (esc event) task.id (esc task.driver) (esc (formatCell cellReady)) (esc (ex.GetType().Name)) (esc ex.Message) (pendingCount()))
+                                            "term_apply_let_success_null_guarded:" + detail, "semantic_let_success_apply_exception_blocked", "explicit_eval_worklist_let_success_apply_exception_required", cellReady
                                 | "term", "ETypeApply" ->
                                     match EvalReplayValueStore.tryTypeApplySpine cellReady.nodeId with
                                     | Some spine ->
@@ -12508,6 +13810,28 @@ module spiral_compiler =
                                         | Some _, Some _ ->
                                             "term_type_apply_non_forall_value_available", "semantic_step_partial", "explicit_eval_worklist_type_apply_type_error_required", cellReady
                                     | None -> "term_type_apply_missing_store", "semantic_step_partial", "explicit_eval_worklist_type_apply_store_required", cellReady
+                                | "term", "EAnnotTest" ->
+                                    match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                    | Choice1Of2 value ->
+                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                        compositeOrParent "term_annot_test_value_resolved" cellReady
+                                    | Choice2Of2 detail ->
+                                        match EvalReplayValueStore.tryAnnotTestSpine cellReady.nodeId with
+                                        | Some spine ->
+                                            match EvalReplayValueStore.tryTypeDetailed spine.typeNodeId with
+                                            | Choice1Of2 _ ->
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_annot_test_type_resolved_body_pending\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_test_branch_selection_required\"}"
+                                                        (esc event) cellReady.nodeId spine.typeNodeId (esc cellReady.site) (esc detail))
+                                                "term_annot_test_branch_selection_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_annot_test_branch_selection_required", cellReady
+                                            | Choice2Of2 typeDetail ->
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_annot_test_type_child_scheduled\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"type_shape\":%s,\"site\":%s,\"detail\":%s,\"type_detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_test_type_stepper_required\"}"
+                                                        (esc event) cellReady.nodeId spine.typeNodeId (esc spine.typeShape) (esc cellReady.site) (esc detail) (esc typeDetail))
+                                                let typeCell = { cellReady with kind = "ty"; nodeId = spine.typeNodeId; shape = spine.typeShape; status = "annot_test_type_ready" }
+                                                "term_annot_test_type_scheduled:" + detail + ":" + typeDetail, "semantic_step_partial", "explicit_eval_worklist_annot_test_type_stepper_required", typeCell
+                                        | None ->
+                                            "term_annot_test_spine_missing:" + detail, "semantic_step_partial", "explicit_eval_worklist_annot_test_spine_required", cellReady
                                 | "term", "EIfThenElse" ->
                                     match EvalReplayValueStore.tryIfThenElse cellReady.nodeId with
                                     | Some spine ->
@@ -12563,7 +13887,15 @@ module spiral_compiler =
                                         EvalReplayValueStore.putTermValue cellReady.nodeId value
                                         compositeOrParent "term_macro_value_resolved" cellReady
                                     | Choice2Of2 detail ->
-                                        "term_macro_value_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_macro_stepper_required", cellReady
+                                        if detail.Contains("term_thunk_missing") then
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_macro_thunk_missing_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_macro_thunk_required\"}"
+                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                            let macroCell = { cellReady with status = "semantic_macro_thunk_missing_blocked" }
+                                            alpha537PinTerminalCell event ("term_macro_value_blocked:" + detail) macroCell
+                                            "term_macro_value_blocked:" + detail, "semantic_macro_thunk_missing_blocked", "explicit_eval_worklist_macro_thunk_required", macroCell
+                                        else
+                                            "term_macro_value_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_macro_stepper_required", cellReady
                                 | "term", "ESeq" ->
                                     match EvalReplayValueStore.trySeqSpine cellReady.nodeId with
                                     | Some spine ->
@@ -12599,7 +13931,7 @@ module spiral_compiler =
                                             let missingArg =
                                                 spine.argNodeIds
                                                 |> Array.mapi (fun i nodeId -> i, nodeId)
-                                                |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.hasTerm nodeId))
+                                                |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
                                             match missingArg with
                                             | Some (i, nodeId) ->
                                                 let shape = if i < spine.argShapes.Length then spine.argShapes.[i] else "unknown"
@@ -12658,6 +13990,56 @@ module spiral_compiler =
                                         leafOrParent "term_tterm_child_value_resolved" cellReady
                                     | Choice2Of2 detail ->
                                         "term_tterm_child_value_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_tterm_term_stepper_required", cellReady
+                                | "term", "EUnitTest" ->
+                                    // ALPHA560: EUnitTest is a branch-selecting composite term.
+                                    // Try the registered thunk; if it already picked a branch but
+                                    // that branch is missing, schedule that child instead of
+                                    // repeating generic term_shape_dispatch.
+                                    match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                    | Choice1Of2 value ->
+                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                        compositeOrParent "term_unit_test_value_resolved" cellReady
+                                    | Choice2Of2 detail ->
+                                        match EvalReplayValueStore.tryUnitTestSpine cellReady.nodeId with
+                                        | Some spine when detail.Contains("alpha408_unit_test_branch_value_missing") ->
+                                            let succMissing = not (EvalReplayValueStore.hasTermValue spine.successNodeId)
+                                            let failMissing = not (EvalReplayValueStore.hasTermValue spine.failNodeId)
+                                            let chooseSuccess =
+                                                if detail.Contains(spine.successShape) && not (detail.Contains(spine.failShape) && spine.failShape <> spine.successShape) then true
+                                                elif detail.Contains(spine.failShape) then false
+                                                else succMissing
+                                            let childNodeId = if chooseSuccess then spine.successNodeId else spine.failNodeId
+                                            let childShape = if chooseSuccess then spine.successShape else spine.failShape
+                                            let role = if chooseSuccess then "unit_test_success" else "unit_test_fail"
+                                            if (chooseSuccess && succMissing) || ((not chooseSuccess) && failMissing) then
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_unit_test_branch_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"child_node_id\":%d,\"child_shape\":%s,\"role\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_branch_stepper_required\"}"
+                                                        (esc event) cellReady.nodeId childNodeId (esc childShape) (esc role) (esc cellReady.site) (esc detail))
+                                                let childCell = { cellReady with nodeId = childNodeId; shape = childShape; status = "unit_test_branch_ready" }
+                                                "term_unit_test_branch_scheduled:" + role, "semantic_step_partial", "schedule_unit_test_branch_replay", childCell
+                                            else
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_unit_test_value_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_value_required\"}"
+                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                                "term_unit_test_value_blocked:" + detail, "semantic_unit_test_value_blocked", "explicit_eval_worklist_unit_test_value_required", cellReady
+                                        | _ ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_unit_test_value_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_value_required\"}"
+                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                            "term_unit_test_value_blocked:" + detail, "semantic_unit_test_value_blocked", "explicit_eval_worklist_unit_test_value_required", cellReady
+                                | "term", "EJoinPoint'" ->
+                                    // ALPHA559: EJoinPoint' now has a registered real term thunk.
+                                    // Try it explicitly before the generic E* dispatcher can repeat
+                                    // term_shape_dispatch_dispatched into semantic_joinpoint_term_stepper_blocked.
+                                    match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                    | Choice1Of2 value ->
+                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                        compositeOrParent "term_joinpoint_value_resolved" cellReady
+                                    | Choice2Of2 detail ->
+                                        DiagJson.emit (
+                                            sprintf "{\"kind\":\"eval_worklist_joinpoint_value_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_joinpoint_value_required\"}"
+                                                (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                        "term_joinpoint_value_blocked:" + detail, "semantic_joinpoint_value_blocked", "explicit_eval_worklist_joinpoint_value_required", cellReady
                                 | "term", s when s.StartsWith("E") -> "term_shape_dispatch_dispatched", "semantic_step_partial", "explicit_eval_worklist_term_stepper_required", cellReady
                                 // ALPHA394: exact replay for constructive type values.
                                 // Alpha393 proved that TPrim/TFun can reach the typed replay driver
@@ -12708,14 +14090,39 @@ module spiral_compiler =
                                             match EvalReplayValueStore.tryType spine.argNodeId, EvalReplayValueStore.tryType spine.bodyNodeId with
                                             | None, _ ->
                                                 let argCell = { cellReady with kind = "ty"; nodeId = spine.argNodeId; shape = spine.argShape; status = "tfun_arg_ready" }
-                                                "ty_tfun_arg_scheduled:" + detail, "semantic_step_partial", "schedule_tfun_child_replay", argCell
+                                                if spine.argShape = "TV" then
+                                                    "ty_tfun_arg_type_variable_missing:" + detail, "semantic_type_variable_value_missing_blocked", "explicit_eval_worklist_type_variable_env_required", argCell
+                                                else
+                                                    "ty_tfun_arg_scheduled:" + detail, "semantic_step_partial", "schedule_tfun_child_replay", argCell
                                             | _, None ->
                                                 let bodyCell = { cellReady with kind = "ty"; nodeId = spine.bodyNodeId; shape = spine.bodyShape; status = "tfun_body_ready" }
-                                                "ty_tfun_body_scheduled:" + detail, "semantic_step_partial", "schedule_tfun_child_replay", bodyCell
-                                            | Some _, Some _ ->
-                                                "ty_tfun_conversion_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_tfun_conversion_required", cellReady
+                                                if spine.bodyShape = "TV" then
+                                                    "ty_tfun_body_type_variable_missing:" + detail, "semantic_type_variable_value_missing_blocked", "explicit_eval_worklist_type_variable_env_required", bodyCell
+                                                else
+                                                    "ty_tfun_body_scheduled:" + detail, "semantic_step_partial", "schedule_tfun_child_replay", bodyCell
+                                            | Some argTy, Some bodyTy ->
+                                                EvalReplayValueStore.putTypeValue cellReady.nodeId (YFun(argTy, bodyTy, spine.funType))
+                                                tyRootOrParent ("ty_tfun_children_materialized:" + detail) cellReady
                                         | None ->
                                             "ty_tfun_spine_missing_store:" + detail, "semantic_step_partial", "explicit_eval_worklist_tfun_spine_required", cellReady
+                                | "ty", "TPair" ->
+                                    match EvalReplayValueStore.tryTypeDetailed cellReady.nodeId with
+                                    | Choice1Of2 _ -> tyRootOrParent "ty_store_value_resolved:TPair" cellReady
+                                    | Choice2Of2 detail ->
+                                        match EvalReplayValueStore.tryTypePairSpine cellReady.nodeId with
+                                        | Some spine ->
+                                            match EvalReplayValueStore.tryType spine.leftNodeId, EvalReplayValueStore.tryType spine.rightNodeId with
+                                            | None, _ ->
+                                                let leftCell = { cellReady with kind = "ty"; nodeId = spine.leftNodeId; shape = spine.leftShape; status = "tpair_left_ready" }
+                                                "ty_tpair_left_scheduled:" + detail, "semantic_step_partial", "schedule_tpair_child_replay", leftCell
+                                            | _, None ->
+                                                let rightCell = { cellReady with kind = "ty"; nodeId = spine.rightNodeId; shape = spine.rightShape; status = "tpair_right_ready" }
+                                                "ty_tpair_right_scheduled:" + detail, "semantic_step_partial", "schedule_tpair_child_replay", rightCell
+                                            | Some leftTy, Some rightTy ->
+                                                EvalReplayValueStore.putTypeValue cellReady.nodeId (YPair(leftTy, rightTy))
+                                                tyRootOrParent ("ty_tpair_children_materialized:" + detail) cellReady
+                                        | None ->
+                                            "ty_tpair_spine_missing_store:" + detail, "semantic_step_partial", "explicit_eval_worklist_tpair_spine_required", cellReady
                                 | "ty", s when s.StartsWith("T") ->
                                     match EvalReplayValueStore.tryTypeDetailed cellReady.nodeId with
                                     | Choice1Of2 _ -> tyRootOrParent ("ty_store_value_resolved:" + s) cellReady
@@ -12731,6 +14138,11 @@ module spiral_compiler =
                                             "ty_value_missing_store:" + detail, "semantic_step_partial", "explicit_eval_worklist_ty_value_store_required", cellReady
                                         | "TApply" ->
                                             "ty_apply_spine_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_ty_apply_stepper_required", cellReady
+                                        | "TJoinPoint'" ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_tjoinpoint_stepper_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_tjoinpoint_stepper_required\"}"
+                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                            "ty_tjoinpoint_stepper_blocked:" + detail, "semantic_tjoinpoint_stepper_blocked", "explicit_eval_worklist_tjoinpoint_stepper_required", cellReady
                                         | _ ->
                                             "ty_shape_dispatch_dispatched:" + s + ":" + detail, "semantic_step_partial", "explicit_eval_worklist_ty_stepper_required", cellReady
                                 | _ -> "unknown_shape_dispatch_dispatched", "semantic_step_partial", "explicit_eval_worklist_real_stepper_required", cellReady
@@ -12755,12 +14167,28 @@ module spiral_compiler =
                                         let nextCount = if replayFingerprintRepeats.TryGetValue(replayFingerprintKey, &prior) then prior + 1 else 1
                                         replayFingerprintRepeats.[replayFingerprintKey] <- nextCount
                                         nextCount)
-                            let replayFingerprintRepeat = replayFingerprintRepeatCount >= 3 && commitStatus <> "semantic_parent_continuation_cycle_blocked" && commitStatus <> "semantic_type_variable_value_missing_blocked"
-                            let reduceOutcome = if replayFingerprintRepeat then reduceOutcome + ":fingerprint_repeat" else reduceOutcome
-                            let commitStatus = if replayFingerprintRepeat then "semantic_replay_fingerprint_repeat_blocked" else commitStatus
-                            let commitNext = if replayFingerprintRepeat then "explicit_eval_worklist_replay_fingerprint_repeat_required" else commitNext
-                            let replayCell = if replayFingerprintRepeat then { replayCell with status = "replay_fingerprint_repeat_blocked" } else replayCell
-                            let cellReduced = { replayCell with step = replayCell.step + 1; status = if commitStatus = "semantic_root_complete" then "semantic_value_resolved" elif commitStatus = "semantic_leaf_complete" then "semantic_leaf_value_resolved" elif commitStatus = "semantic_parent_continuation_cycle_blocked" then "parent_continuation_cycle_blocked" elif commitStatus = "semantic_type_variable_value_missing_blocked" then "type_variable_value_missing_blocked" elif replayCell.status = "parent_continuation_ready" then "parent_continuation_dispatched" elif replayCell.status = "apply_head_ready" then "apply_head_dispatched" elif replayCell.status = "apply_arg_ready" then "apply_arg_dispatched" elif replayCell.status = "let_body_ready" then "let_body_dispatched" elif replayCell.status = "let_success_ready" then "let_success_dispatched" elif replayCell.status = "op_arg_ready" then "op_arg_dispatched" elif replayCell.status = "seq_first_ready" then "seq_first_dispatched" elif replayCell.status = "seq_second_ready" then "seq_second_dispatched" elif replayCell.status = "tterm_term_ready" then "tterm_term_dispatched" elif replayCell.status = "tfun_arg_ready" then "tfun_arg_dispatched" elif replayCell.status = "tfun_body_ready" then "tfun_body_dispatched" elif replayCell.status.StartsWith("if_", StringComparison.Ordinal) then "if_branch_dispatched" else "semantic_step_dispatched" }
+                            let replayFingerprintRepeat = replayFingerprintRepeatCount >= 3 && commitStatus <> "semantic_parent_continuation_cycle_blocked" && commitStatus <> "semantic_type_variable_value_missing_blocked" && commitStatus <> "semantic_tjoinpoint_stepper_blocked"
+                            let replayJoinpointTermRepeat =
+                                replayFingerprintRepeat
+                                && replayCell.kind = "term"
+                                && replayCell.shape = "EJoinPoint'"
+                            let reduceOutcome =
+                                if replayJoinpointTermRepeat then reduceOutcome + ":joinpoint_term_stepper_blocked"
+                                elif replayFingerprintRepeat then reduceOutcome + ":fingerprint_repeat"
+                                else reduceOutcome
+                            let commitStatus =
+                                if replayJoinpointTermRepeat then "semantic_joinpoint_term_stepper_blocked"
+                                elif replayFingerprintRepeat then "semantic_replay_fingerprint_repeat_blocked"
+                                else commitStatus
+                            let commitNext =
+                                if replayJoinpointTermRepeat then "explicit_eval_worklist_joinpoint_term_stepper_required"
+                                elif replayFingerprintRepeat then "explicit_eval_worklist_replay_fingerprint_repeat_required"
+                                else commitNext
+                            let replayCell =
+                                if replayJoinpointTermRepeat then { replayCell with status = "joinpoint_term_stepper_blocked" }
+                                elif replayFingerprintRepeat then { replayCell with status = "replay_fingerprint_repeat_blocked" }
+                                else replayCell
+                            let cellReduced = { replayCell with step = replayCell.step + 1; status = if commitStatus = "semantic_root_complete" then "semantic_value_resolved" elif commitStatus = "semantic_leaf_complete" then "semantic_leaf_value_resolved" elif commitStatus = "semantic_parent_continuation_cycle_blocked" then "parent_continuation_cycle_blocked" elif commitStatus = "semantic_type_variable_value_missing_blocked" then "type_variable_value_missing_blocked" elif replayCell.status = "parent_continuation_ready" then "parent_continuation_dispatched" elif replayCell.status = "apply_head_ready" then "apply_head_dispatched" elif replayCell.status = "apply_arg_ready" then "apply_arg_dispatched" elif replayCell.status = "let_body_ready" then "let_body_dispatched" elif replayCell.status = "let_success_ready" then "let_success_dispatched" elif replayCell.status = "op_arg_ready" then "op_arg_dispatched" elif replayCell.status = "seq_first_ready" then "seq_first_dispatched" elif replayCell.status = "seq_second_ready" then "seq_second_dispatched" elif replayCell.status = "tterm_term_ready" then "tterm_term_dispatched" elif replayCell.status = "tfun_arg_ready" then "tfun_arg_dispatched" elif replayCell.status = "tfun_body_ready" then "tfun_body_dispatched" elif replayCell.status = "tpair_left_ready" then "tpair_left_dispatched" elif replayCell.status = "tpair_right_ready" then "tpair_right_dispatched" elif replayCell.status.StartsWith("if_", StringComparison.Ordinal) then "if_branch_dispatched" else "semantic_step_dispatched" }
                             let cellCommitted = { cellReduced with step = cellReduced.step + 1; status = commitStatus }
                             let shouldResumeParent = commitNext = "resume_parent_replay_driver"
                             let shouldScheduleTypeApplyChild =
@@ -12768,6 +14196,7 @@ module spiral_compiler =
                                 || commitNext = "schedule_type_apply_type_arg_replay"
                             let shouldScheduleTTermChild = commitNext = "schedule_tterm_term_replay"
                             let shouldScheduleTFunChild = commitNext = "schedule_tfun_child_replay"
+                            let shouldScheduleTPairChild = commitNext = "schedule_tpair_child_replay"
                             let shouldScheduleDeferredChild = commitNext = "schedule_deferred_replay_child"
                             let shouldScheduleRecordWithChild = commitNext = "schedule_record_with_child_replay"
                             let shouldScheduleSeqChild = commitNext = "schedule_seq_child_replay"
@@ -12777,6 +14206,56 @@ module spiral_compiler =
                             let shouldScheduleApplyChild =
                                 commitNext = "schedule_apply_head_replay"
                                 || commitNext = "schedule_apply_arg_replay"
+                            let scheduledChildRole =
+                                if shouldScheduleApplyChild then
+                                    if commitNext = "schedule_apply_head_replay" then "apply_head_child" else "apply_arg_child"
+                                elif shouldScheduleTypeApplyChild then
+                                    if commitNext = "schedule_type_apply_type_arg_replay" then "type_apply_type_arg_child" else "type_apply_function_child"
+                                elif shouldScheduleTTermChild then "tterm_term_child"
+                                elif shouldScheduleTFunChild then
+                                    if replayCell.status = "tfun_arg_ready" || cellReduced.status = "tfun_arg_dispatched" then "tfun_arg_child" else "tfun_body_child"
+                                elif shouldScheduleTPairChild then
+                                    if replayCell.status = "tpair_left_ready" || cellReduced.status = "tpair_left_dispatched" then "tpair_left_child" else "tpair_right_child"
+                                elif shouldScheduleDeferredChild then "deferred_replay_child"
+                                elif shouldScheduleRecordWithChild then "record_with_child"
+                                elif shouldScheduleSeqChild then "seq_child"
+                                elif shouldScheduleLetChild then
+                                    if commitNext = "schedule_let_success_replay" then "let_success_child" else "let_body_child"
+                                else ""
+                            let childScheduleRepeatCount, childScheduleRepeatKey =
+                                if System.String.IsNullOrWhiteSpace scheduledChildRole then 0, ""
+                                else noteReplayChildSchedule scheduledChildRole cellCommitted
+                            let childScheduleRepeatBlocked =
+                                childScheduleRepeatCount >= replay_child_schedule_repeat_cap
+                                && commitStatus = "semantic_step_partial"
+                                && not replayFingerprintRepeat
+                            let reduceOutcome =
+                                if childScheduleRepeatBlocked then reduceOutcome + ":child_schedule_repeat"
+                                else reduceOutcome
+                            let commitStatus =
+                                if childScheduleRepeatBlocked then "semantic_replay_child_schedule_repeat_blocked"
+                                else commitStatus
+                            let commitNext =
+                                if childScheduleRepeatBlocked then "explicit_eval_worklist_replay_child_schedule_repeat_required"
+                                else commitNext
+                            let cellCommitted =
+                                if childScheduleRepeatBlocked then { cellCommitted with status = commitStatus }
+                                else cellCommitted
+                            if childScheduleRepeatBlocked then
+                                alpha537PinTerminalCell event ("replay_child_schedule_repeat:" + childScheduleRepeatKey) cellCommitted
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_replay_child_schedule_repeat_blocked\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_replay_child_schedule_repeat_required\"}"
+                                        (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) (esc (formatCell cellCommitted)) (pendingCount()))
+                            let shouldResumeParent = shouldResumeParent && not childScheduleRepeatBlocked
+                            let shouldScheduleApplyChild = shouldScheduleApplyChild && not childScheduleRepeatBlocked
+                            let shouldScheduleTypeApplyChild = shouldScheduleTypeApplyChild && not childScheduleRepeatBlocked
+                            let shouldScheduleTTermChild = shouldScheduleTTermChild && not childScheduleRepeatBlocked
+                            let shouldScheduleTFunChild = shouldScheduleTFunChild && not childScheduleRepeatBlocked
+                            let shouldScheduleTPairChild = shouldScheduleTPairChild && not childScheduleRepeatBlocked
+                            let shouldScheduleDeferredChild = shouldScheduleDeferredChild && not childScheduleRepeatBlocked
+                            let shouldScheduleRecordWithChild = shouldScheduleRecordWithChild && not childScheduleRepeatBlocked
+                            let shouldScheduleSeqChild = shouldScheduleSeqChild && not childScheduleRepeatBlocked
+                            let shouldScheduleLetChild = shouldScheduleLetChild && not childScheduleRepeatBlocked
                             let remainingQueue =
                                 lock gate (fun () ->
                                     replayQueue <- replayQueue |> List.filter (fun t -> t.id <> task.id)
@@ -12800,8 +14279,13 @@ module spiral_compiler =
                                         let childRole =
                                             if commitNext = "schedule_apply_head_replay" then "apply_head_child"
                                             else "apply_arg_child"
+                                        // ALPHA562: EApply children are term cells even when the enclosing
+                                        // replay reduction is executing from a ty parent continuation.
+                                        // Queue them on term_replay_driver; using task.driver here made
+                                        // EMacro apply args repeat under ty_replay_driver until terminal.
+                                        let childDriver = "term_replay_driver"
                                         let childKey = sprintf "%s|%s|%d|%d" task.key childRole cellCommitted.nodeId cellCommitted.step
-                                        let childTask = { id = replaySeq; key = childKey; driver = task.driver; payload = formatCellPayload cellCommitted; status = "scheduled_replay"; event = event }
+                                        let childTask = { id = replaySeq; key = childKey; driver = childDriver; payload = formatCellPayload cellCommitted; status = "scheduled_replay"; event = event }
                                         replayScheduledKey <- Some childKey
                                         replayQueue <- [childTask]
                                     elif shouldScheduleTypeApplyChild then
@@ -12828,6 +14312,15 @@ module spiral_compiler =
                                         let childRole =
                                             if replayCell.status = "tfun_arg_ready" || cellReduced.status = "tfun_arg_dispatched" then "tfun_arg_child"
                                             else "tfun_body_child"
+                                        let childKey = sprintf "%s|%s|%d|%d" task.key childRole cellCommitted.nodeId cellCommitted.step
+                                        let childTask = { id = replaySeq; key = childKey; driver = "ty_replay_driver"; payload = formatCellPayload cellCommitted; status = "scheduled_replay"; event = event }
+                                        replayScheduledKey <- Some childKey
+                                        replayQueue <- [childTask]
+                                    elif shouldScheduleTPairChild then
+                                        replaySeq <- replaySeq + 1L
+                                        let childRole =
+                                            if replayCell.status = "tpair_left_ready" || cellReduced.status = "tpair_left_dispatched" then "tpair_left_child"
+                                            else "tpair_right_child"
                                         let childKey = sprintf "%s|%s|%d|%d" task.key childRole cellCommitted.nodeId cellCommitted.step
                                         let childTask = { id = replaySeq; key = childKey; driver = "ty_replay_driver"; payload = formatCellPayload cellCommitted; status = "scheduled_replay"; event = event }
                                         replayScheduledKey <- Some childKey
@@ -12893,7 +14386,11 @@ module spiral_compiler =
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_replay_commit\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"cell\":%s,\"outcome\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":%s}"
                                     (esc event) task.id (esc task.driver) (esc (formatCell cellCommitted)) (esc commitStatus) remainingQueue (esc commitNext))
-                            if replayFingerprintRepeat then
+                            if replayJoinpointTermRepeat then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_joinpoint_term_stepper_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"repeat_count\":%d,\"fingerprint\":%s,\"cell\":%s,\"outcome\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_joinpoint_term_stepper_required\"}"
+                                        (esc event) task.id (esc task.driver) replayFingerprintRepeatCount (esc replayFingerprintKey) (esc (formatCell cellCommitted)) (esc reduceOutcome) (pendingCount()))
+                            if replayFingerprintRepeat && not replayJoinpointTermRepeat then
                                 DiagJson.emit (
                                     sprintf "{\"kind\":\"eval_worklist_replay_fingerprint_repeat\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"repeat_count\":%d,\"fingerprint\":%s,\"cell\":%s,\"outcome\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_replay_fingerprint_repeat_required\"}"
                                         (esc event) task.id (esc task.driver) replayFingerprintRepeatCount (esc replayFingerprintKey) (esc (formatCell cellCommitted)) (esc reduceOutcome) (pendingCount()))
@@ -12906,9 +14403,10 @@ module spiral_compiler =
                                 let childRole =
                                     if commitNext = "schedule_apply_head_replay" then "apply_head_child"
                                     else "apply_arg_child"
+                                let childDriver = "term_replay_driver"
                                 DiagJson.emit (
                                     sprintf "{\"kind\":\"eval_worklist_apply_child_replay_scheduled\",\"event\":%s,\"driver\":%s,\"role\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":\"term_replay_driver\"}"
-                                        (esc event) (esc task.driver) (esc childRole) (esc (formatCell cellCommitted)) (replayQueueDepth()))
+                                        (esc event) (esc childDriver) (esc childRole) (esc (formatCell cellCommitted)) (replayQueueDepth()))
                                 runReplayDriver event
                             elif shouldScheduleTypeApplyChild then
                                 let childRole =
@@ -12935,6 +14433,14 @@ module spiral_compiler =
                                     else "tfun_body_child"
                                 DiagJson.emit (
                                     sprintf "{\"kind\":\"eval_worklist_tfun_child_replay_scheduled\",\"event\":%s,\"driver\":\"ty_replay_driver\",\"role\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":\"ty_replay_driver\"}"
+                                        (esc event) (esc childRole) (esc (formatCell cellCommitted)) (replayQueueDepth()))
+                                runReplayDriver event
+                            elif shouldScheduleTPairChild then
+                                let childRole =
+                                    if replayCell.status = "tpair_left_ready" || cellReduced.status = "tpair_left_dispatched" then "tpair_left_child"
+                                    else "tpair_right_child"
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_tpair_child_replay_scheduled\",\"event\":%s,\"driver\":\"ty_replay_driver\",\"role\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":\"ty_replay_driver\"}"
                                         (esc event) (esc childRole) (esc (formatCell cellCommitted)) (replayQueueDepth()))
                                 runReplayDriver event
                             elif shouldScheduleDeferredChild then
@@ -12966,13 +14472,194 @@ module spiral_compiler =
                         DiagJson.emit (
                             sprintf "{\"kind\":\"eval_worklist_replay_driver\",\"event\":%s,\"replay_id\":0,\"driver\":\"none\",\"status\":\"empty\",\"queue_depth\":0,\"outcome\":\"no_replay_task\",\"single_flight\":1,\"next\":\"none\"}"
                                 (esc event))
-                with _ -> ()
+                with ex ->
+                    let alpha517LetSuccessDriverNull =
+                        ex :? NullReferenceException
+                        && (match alpha513ExecutingCellOpt with
+                            | Some cell -> cell.kind = "term" && cell.shape = "EApply" && cell.status = "let_success_ready"
+                            | None -> false)
+                    let alpha521ApplyContinuationDriverNull =
+                        ex :? NullReferenceException
+                        && (match alpha513ExecutingCellOpt with
+                            | Some cell -> cell.kind = "term" && cell.shape = "EApply" && cell.status = "semantic_step_partial"
+                            | None -> false)
+                    let alpha531LetSuccessApplyContinuationDriverNull =
+                        alpha521ApplyContinuationDriverNull
+                        && (match alpha513ExecutingCellOpt with
+                            | Some cell ->
+                                cell.site.Contains("rust/testing.spi:22", StringComparison.Ordinal)
+                                || cell.site.Contains("spiral.spi:2671", StringComparison.Ordinal)
+                            | None -> false)
+                    let alpha522DeferredFunctionPayloadNull =
+                        match alpha513ExecutingTaskOpt with
+                        | Some task ->
+                            task.payload.Contains("kind=term,shape=EFun'", StringComparison.Ordinal)
+                            && task.payload.Contains("status=deferred_after_active_driver_ready", StringComparison.Ordinal)
+                        | None -> false
+                    let alpha521DeferredFunctionDriverNull =
+                        ex :? NullReferenceException
+                        && ((match alpha513ExecutingCellOpt with
+                             | Some cell -> cell.kind = "term" && cell.shape = "EFun'" && cell.status = "deferred_after_active_driver_ready"
+                             | None -> false)
+                            || alpha522DeferredFunctionPayloadNull)
+                    let alpha517BlockedStatus =
+                        if alpha517LetSuccessDriverNull then "semantic_let_success_apply_exception_blocked"
+                        elif alpha531LetSuccessApplyContinuationDriverNull then "semantic_let_success_apply_continuation_blocked"
+                        elif alpha521ApplyContinuationDriverNull then "semantic_apply_continuation_exception_blocked"
+                        elif alpha521DeferredFunctionDriverNull then "semantic_deferred_function_replay_exception_blocked"
+                        else "semantic_replay_driver_exception_blocked"
+                    let alpha517BlockedCellStatus =
+                        if alpha517LetSuccessDriverNull then "let_success_apply_exception_blocked"
+                        elif alpha531LetSuccessApplyContinuationDriverNull then "let_success_apply_continuation_blocked"
+                        elif alpha521ApplyContinuationDriverNull then "apply_continuation_exception_blocked"
+                        elif alpha521DeferredFunctionDriverNull then "deferred_function_replay_exception_blocked"
+                        else "replay_driver_exception_blocked"
+                    let alpha517ReasonTag =
+                        if alpha517LetSuccessDriverNull then "alpha517_let_success_replay_driver_null"
+                        elif alpha531LetSuccessApplyContinuationDriverNull then "alpha531_let_success_apply_continuation_driver_null"
+                        elif alpha521ApplyContinuationDriverNull then "alpha521_apply_continuation_replay_driver_null"
+                        elif alpha521DeferredFunctionDriverNull then "alpha521_deferred_function_replay_driver_null"
+                        else "replay_driver_exception"
+                    let alpha517Next =
+                        if alpha517LetSuccessDriverNull then "explicit_eval_worklist_let_success_apply_exception_required"
+                        elif alpha531LetSuccessApplyContinuationDriverNull then "explicit_eval_worklist_let_success_apply_continuation_required"
+                        elif alpha521ApplyContinuationDriverNull then "explicit_eval_worklist_apply_continuation_exception_required"
+                        elif alpha521DeferredFunctionDriverNull then "explicit_eval_worklist_deferred_function_replay_exception_required"
+                        else "explicit_eval_worklist_replay_driver_exception_required"
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_replay_driver_exception\",\"event\":%s,\"error_type\":%s,\"message\":%s,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"surface_replay_driver_exception\"}"
+                            (esc event) (esc (ex.GetType().Name)) (esc ex.Message) (replayQueueDepth()) (pendingCount()))
+                    let blocked =
+                        lock gate (fun () ->
+                            match replayQueue, frontier with
+                            | task :: rest, Some frame ->
+                                let taskCellOpt = tryReplayCellPayload task.payload
+                                let cellText =
+                                    match taskCellOpt with
+                                    | Some cell -> formatCell cell
+                                    | None ->
+                                        match frame.semanticCell with
+                                        | Some cell -> formatCell cell
+                                        | None -> "none"
+                                let blockedCellOpt =
+                                    match taskCellOpt with
+                                    | Some cell -> Some { cell with status = alpha517BlockedCellStatus }
+                                    | None -> frame.semanticCell
+                                let baseReason = if isNull frame.reason then "" else frame.reason
+                                let frame' =
+                                    { frame with
+                                        status = alpha517BlockedStatus
+                                        reason = baseReason + ":" + alpha517ReasonTag + ":" + ex.GetType().Name
+                                        semanticCell = blockedCellOpt
+                                        semanticPayload = Some task.payload }
+                                replayQueue <- rest
+                                if replayQueue.IsEmpty then replayScheduledKey <- None
+                                frontier <- Some frame'
+                                slotSetLocked frame'
+                                Some(task.id, task.driver, task.status, task.payload, cellText, replayQueue.Length)
+                            | task :: rest, None ->
+                                let cellText =
+                                    match tryReplayCellPayload task.payload with
+                                    | Some cell -> formatCell cell
+                                    | None -> "none"
+                                replayQueue <- rest
+                                if replayQueue.IsEmpty then replayScheduledKey <- None
+                                Some(task.id, task.driver, task.status, task.payload, cellText, replayQueue.Length)
+                            | [], Some frame ->
+                                // ALPHA513: the crashing replay task may already have
+                                // been consumed by the recursive driver before the
+                                // exception unwinds.  Pin the executing task/cell anyway
+                                // so the next retry pass cannot rebuild the same
+                                // continuation_envelope and throw again.
+                                match alpha513ExecutingTaskOpt with
+                                | Some task ->
+                                    let cellText =
+                                        match alpha513ExecutingCellOpt with
+                                        | Some cell -> formatCell cell
+                                        | None ->
+                                            match frame.semanticCell with
+                                            | Some cell -> formatCell cell
+                                            | None -> "none"
+                                    let blockedCellOpt =
+                                        match alpha513ExecutingCellOpt with
+                                        | Some cell -> Some { cell with status = alpha517BlockedCellStatus }
+                                        | None ->
+                                            match frame.semanticCell with
+                                            | Some cell -> Some { cell with status = alpha517BlockedCellStatus }
+                                            | None -> None
+                                    let baseReason = if isNull frame.reason then "" else frame.reason
+                                    let frame' =
+                                        { frame with
+                                            status = alpha517BlockedStatus
+                                            reason = baseReason + ":" + alpha517ReasonTag + ":" + ex.GetType().Name
+                                            semanticCell = blockedCellOpt
+                                            semanticPayload = Some task.payload }
+                                    replayScheduledKey <- None
+                                    frontier <- Some frame'
+                                    slotSetLocked frame'
+                                    Some(task.id, task.driver, task.status, task.payload, cellText, 0)
+                                | None -> None
+                            | [], _ -> None)
+                    match blocked with
+                    | Some (rid, driver, status, payload, cellText, qdAfter) ->
+                        if alpha517LetSuccessDriverNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_let_success_driver_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc alpha517BlockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc alpha517Next))
+                        if alpha531LetSuccessApplyContinuationDriverNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_let_success_apply_continuation_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc alpha517BlockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc alpha517Next))
+                        if alpha521ApplyContinuationDriverNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_apply_continuation_driver_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc alpha517BlockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc alpha517Next))
+                        if alpha521DeferredFunctionDriverNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_deferred_function_driver_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc alpha517BlockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc alpha517Next))
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_replay_driver_exception_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"payload\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) rid (esc driver) (esc status) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) (esc payload) qdAfter (pendingCount()) (esc alpha517Next))
+                        if qdAfter = 0 then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_empty_queue_replay_driver_exception_pinned\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"error_type\":%s,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"stop_retry_drain_on_pinned_exception\"}"
+                                    (esc event) rid (esc driver) (esc (ex.GetType().Name)) (esc cellText) (pendingCount()))
+                    | None -> ()
             finally
-                let drainDeferred =
+                let drainDeferred, alpha522TerminalNoDeferred, alpha523TerminalStatus =
                     lock gate (fun () ->
                         replayDriverActiveDepth <- max 0 (replayDriverActiveDepth - 1)
-                        replayDriverActiveDepth = 0 && replayQueue.IsEmpty)
-                if drainDeferred && tryScheduleDeferredAfterActiveDriver event then
+                        let terminalStatus =
+                            match frontier with
+                            | Some frame -> frame.status
+                            | None -> "missing_terminal_frontier"
+                        let pinnedTerminalNoDeferred =
+                            match alpha536PinnedTerminalContract with
+                            | Some pinned when alpha536TerminalContractRank pinned.status >= 68 -> true
+                            | _ -> false
+                        let terminalNoDeferred =
+                            terminalStatus = "semantic_replay_fingerprint_repeat_blocked"
+                            || terminalStatus = "semantic_joinpoint_term_stepper_blocked"
+                            || terminalStatus = "semantic_replay_payload_missing_blocked"
+                            || terminalStatus = "semantic_macro_thunk_missing_blocked"
+                            || terminalStatus = "semantic_tjoinpoint_stepper_blocked"
+                            || terminalStatus = "semantic_joinpoint_value_blocked"
+                            || terminalStatus = "semantic_literal_op_body_stepper_blocked"
+                            || terminalStatus = "semantic_replay_driver_exception_blocked"
+                            || terminalStatus = "semantic_let_success_apply_exception_blocked"
+                            || terminalStatus = "semantic_let_success_all_ready_apply_blocked"
+                            || terminalStatus = "semantic_let_success_apply_continuation_blocked"
+                            || terminalStatus = "semantic_apply_continuation_exception_blocked"
+                            || terminalStatus = "semantic_deferred_function_replay_exception_blocked"
+                            || pinnedTerminalNoDeferred
+                        replayDriverActiveDepth = 0 && replayQueue.IsEmpty, terminalNoDeferred, terminalStatus)
+                if drainDeferred && alpha522TerminalNoDeferred then
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_deferred_after_terminal_suppressed\",\"event\":%s,\"status\":%s,\"single_flight\":1,\"next\":\"explicit_terminal_replay_contract\"}"
+                            (esc event)
+                            (esc alpha523TerminalStatus))
+                elif drainDeferred && tryScheduleDeferredAfterActiveDriver event then
                     runReplayDriver event
 
         let frontierSummary () =
@@ -13141,8 +14828,30 @@ module spiral_compiler =
                             // Alpha448 ended with EOp(real_core.spir:150) as semantic_leaf_complete
                             // while the frame/key still represented the ETypeApply at spiral.spi:2671.
                             // Without this edge the driver can only repeat leaf_complete_parent_continuation_missing.
+                            // ALPHA504: frame_semantic_child is an artificial edge used to
+                            // retain useful same-kind parent context, but alpha503 proved the
+                            // ty/TFun <-> ty/TB pair can become a pure scheduler ping-pong after
+                            // the real TypeFun/TypeTerm children have already been driven.  Do
+                            // not invent that one edge; explicit parent continuations and stored
+                            // type spines still drive the real work.
+                            let frameDerivedTyPingPongSuppressed =
+                                match frame.semanticCell with
+                                | Some parent ->
+                                    parent.kind = "ty"
+                                    && cell.kind = "ty"
+                                    && parent.nodeId <> cell.nodeId
+                                    && ((parent.shape = "TFun" && cell.shape = "TB") || (parent.shape = "TB" && cell.shape = "TFun"))
+                                | None -> false
                             let frameDerivedParent =
-                                if sameNodeParentReplayProtected || activeReplayCellProtected || staleRootComplete then false
+                                if sameNodeParentReplayProtected || activeReplayCellProtected || staleRootComplete || frameDerivedTyPingPongSuppressed then
+                                    if frameDerivedTyPingPongSuppressed then
+                                        match frame.semanticCell with
+                                        | Some parent ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_frame_semantic_ty_pingpong_suppressed\",\"event\":%s,\"parent\":%s,\"child\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"skip_artificial_frame_parent_edge\"}"
+                                                    (esc event) (esc (formatCell parent)) (esc (formatCell cell)) (pendingCount()))
+                                        | None -> ()
+                                    false
                                 else
                                     match frame.semanticCell with
                                     | Some parent when parent.kind = cell.kind && parent.nodeId <> cell.nodeId ->
@@ -13277,9 +14986,16 @@ module spiral_compiler =
                             sprintf "{\"kind\":\"eval_worklist_deferred_replay_poke_suppressed\",\"event\":%s,\"reason\":%s,\"queue_depth\":%d,\"semantic_payload\":%s,\"single_flight\":1,\"next\":\"await_existing_replay_tick\"}"
                                 (esc event) (esc suppressKind) (replayQueueDepth()) (esc suppressedReason))
                         if suppressReentrantReplayPoke then
+                            let reentrantCount, reentrantKey = noteReentrantReplayPoke cell
+                            if reentrantCount = reentrant_replay_poke_repeat_cap then
+                                let blockedCell = { cell with status = "semantic_reentrant_replay_driver_starvation_blocked" }
+                                alpha537PinTerminalCell event ("reentrant_replay_driver_starvation:" + reentrantKey) blockedCell
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_reentrant_replay_driver_starvation_blocked\",\"event\":%s,\"incoming_kind\":%s,\"incoming_shape\":%s,\"incoming_site\":%s,\"incoming_node_id\":%d,\"repeat_count\":%d,\"repeat_cap\":%d,\"repeat_key\":%s,\"queue_depth\":%d,\"active_depth\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_reentrant_replay_driver_starvation_required\"}"
+                                        (esc event) (esc cell.kind) (esc cell.shape) (esc cell.site) cell.nodeId reentrantCount reentrant_replay_poke_repeat_cap (esc reentrantKey) (replayQueueDepth()) (lock gate (fun () -> replayDriverActiveDepth)))
                             DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_reentrant_replay_driver_poke_suppressed\",\"event\":%s,\"incoming_kind\":%s,\"incoming_shape\":%s,\"incoming_site\":%s,\"incoming_node_id\":%d,\"queue_depth\":%d,\"active_depth\":%d,\"semantic_payload\":%s,\"single_flight\":1,\"next\":\"continue_active_replay_driver\"}"
-                                    (esc event) (esc cell.kind) (esc cell.shape) (esc cell.site) cell.nodeId (replayQueueDepth()) (lock gate (fun () -> replayDriverActiveDepth)) (esc attachStatus))
+                                sprintf "{\"kind\":\"eval_worklist_reentrant_replay_driver_poke_suppressed\",\"event\":%s,\"incoming_kind\":%s,\"incoming_shape\":%s,\"incoming_site\":%s,\"incoming_node_id\":%d,\"queue_depth\":%d,\"active_depth\":%d,\"repeat_count\":%d,\"repeat_cap\":%d,\"repeat_key\":%s,\"semantic_payload\":%s,\"single_flight\":1,\"next\":\"continue_active_replay_driver\"}"
+                                    (esc event) (esc cell.kind) (esc cell.shape) (esc cell.site) cell.nodeId (replayQueueDepth()) (lock gate (fun () -> replayDriverActiveDepth)) reentrantCount reentrant_replay_poke_repeat_cap (esc reentrantKey) (esc attachStatus))
                         elif suppressCrossKindReplayPoke then
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_cross_kind_replay_poke_suppressed\",\"event\":%s,\"incoming_kind\":%s,\"incoming_shape\":%s,\"incoming_site\":%s,\"incoming_node_id\":%d,\"queue_depth\":%d,\"semantic_payload\":%s,\"single_flight\":1,\"next\":\"await_existing_replay_tick\"}"
@@ -13309,6 +15025,8 @@ module spiral_compiler =
                 replayScheduledKey <- None
                 replayQueue <- []
                 replayFingerprintRepeats.Clear()
+                replayChildScheduleRepeats.Clear()
+                reentrantReplayPokeRepeats.Clear()
                 staleRootRetargetRepeats.Clear()
                 progressYieldCount <- 0)
 
@@ -13424,7 +15142,20 @@ module spiral_compiler =
 
         let private nextFor (frame: Frame) =
             match frame.status with
+            | "semantic_replay_driver_exception_blocked" -> "explicit_eval_worklist_replay_driver_exception_required"
+            | "semantic_replay_payload_missing_blocked" -> "explicit_eval_worklist_replay_payload_required"
+            | "semantic_replay_child_schedule_repeat_blocked" -> "explicit_eval_worklist_replay_child_schedule_repeat_required"
+            | "semantic_let_success_apply_exception_blocked" -> "explicit_eval_worklist_let_success_apply_exception_required"
+            | "semantic_let_success_all_ready_apply_blocked" -> "explicit_eval_worklist_let_success_all_ready_apply_required"
+            | "semantic_let_success_apply_continuation_blocked" -> "explicit_eval_worklist_let_success_apply_continuation_required"
+            | "semantic_apply_continuation_exception_blocked" -> "explicit_eval_worklist_apply_continuation_exception_required"
+            | "semantic_deferred_function_replay_exception_blocked" -> "explicit_eval_worklist_deferred_function_replay_exception_required"
             | "semantic_replay_fingerprint_repeat_blocked" -> "explicit_eval_worklist_replay_fingerprint_repeat_required"
+            | "semantic_joinpoint_term_stepper_blocked" -> "explicit_eval_worklist_joinpoint_term_stepper_required"
+            | "semantic_macro_thunk_missing_blocked" -> "explicit_eval_worklist_macro_thunk_required"
+            | "semantic_tjoinpoint_stepper_blocked" -> "explicit_eval_worklist_tjoinpoint_stepper_required"
+            | "semantic_joinpoint_value_blocked" -> "explicit_eval_worklist_joinpoint_value_required"
+            | "semantic_literal_op_body_stepper_blocked" -> "explicit_eval_worklist_literal_op_body_stepper_required"
             | "semantic_dynamic_join_apply_blocked" -> "explicit_eval_worklist_dynamic_join_apply_required"
             | "semantic_parent_continuation_cycle_blocked" -> "explicit_eval_worklist_parent_continuation_cycle_required"
             | "semantic_type_variable_value_missing_blocked" -> "explicit_eval_worklist_type_variable_env_required"
@@ -13471,12 +15202,64 @@ module spiral_compiler =
                                 match other with
                                 | Some alt when not (sameCycle alt frame) && alt.status <> "semantic_leaf_complete" && alt.status <> "semantic_root_complete" -> Some alt
                                 | _ -> None
+                            let tryRepairAlternateTerminalLetCycleLocked (alt: Frame) : Frame option =
+                                match alt.semanticCell with
+                                | Some cell when alt.status = "semantic_parent_continuation_cycle_blocked"
+                                                 && alt.kind = "term"
+                                                 && cell.kind = "term"
+                                                 && cell.shape = "ELet" ->
+                                    match EvalReplayValueStore.tryLetSpine cell.nodeId with
+                                    | Some spine ->
+                                        let makeChildReplay role shape nodeId status nextLabel =
+                                            let repairKey = sprintf "%d|leaf_yield|%s|%d" cell.nodeId role nodeId
+                                            let attempt = noteLetTerminalCycleRepairLocked repairKey
+                                            if attempt > 8 then None
+                                            else
+                                                EvalReplayValueStore.putParentContinuation nodeId {
+                                                    parentKind = cell.kind
+                                                    parentShape = cell.shape
+                                                    parentNodeId = cell.nodeId
+                                                    role = role
+                                                }
+                                                let childCell = { cell with shape = shape; nodeId = nodeId; status = status; step = 0 }
+                                                let repaired =
+                                                    { alt with
+                                                        status = "continuation_envelope"
+                                                        cursor = alt.trace.Length
+                                                        reason = alt.reason + ":alpha502_leaf_yield_terminal_let_cycle_replay"
+                                                        semanticPayload = Some(formatCellPayload childCell)
+                                                        semanticCell = Some childCell }
+                                                frontier <- Some repaired
+                                                slotSetLocked repaired
+                                                replayScheduledKey <- None
+                                                replayQueue <- []
+                                                noteProgressYieldLocked ()
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_terminal_let_cycle_replay\",\"event\":%s,\"route\":\"leaf_yield\",\"let_node_id\":%d,\"role\":%s,\"attempt\":%d,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                                        (esc event) cell.nodeId (esc role) attempt (esc (formatCell childCell)) (pendingCount()) (esc nextLabel))
+                                                Some repaired
+                                        let missingBody =
+                                            spine.bodyNodeIds
+                                            |> Array.mapi (fun i nodeId -> i, nodeId)
+                                            |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
+                                        match missingBody with
+                                        | Some (i, nodeId) ->
+                                            let shape = if i < spine.bodyShapes.Length then spine.bodyShapes.[i] else "unknown"
+                                            makeChildReplay (sprintf "let_body_%d" i) shape nodeId "let_body_ready" "schedule_let_body_replay"
+                                        | None when not (EvalReplayValueStore.tryTermReady spine.successNodeId) ->
+                                            makeChildReplay "let_success" spine.successShape spine.successNodeId "let_success_ready" "schedule_let_success_replay"
+                                        | None -> None
+                                    | None -> None
+                                | _ -> None
                             match alternate with
                             | Some alt ->
-                                frontier <- Some alt
-                                replayScheduledKey <- None
-                                replayQueue <- []
-                                Some alt
+                                match tryRepairAlternateTerminalLetCycleLocked alt with
+                                | Some repaired -> Some repaired
+                                | None ->
+                                    frontier <- Some alt
+                                    replayScheduledKey <- None
+                                    replayQueue <- []
+                                    Some alt
                             | None -> None)
                 match switched with
                 | Some alt ->
@@ -13495,6 +15278,67 @@ module spiral_compiler =
         // spinning another replay envelope.
         let private tryYieldParentContinuationCycleBlocked (event: string) (frame: Frame) : Frame option =
             try
+                let tryRepairTerminalLetCycleLocked () =
+                    match frame.semanticCell with
+                    | Some cell when frame.status = "semantic_parent_continuation_cycle_blocked"
+                                     && frame.kind = "term"
+                                     && cell.kind = "term"
+                                     && cell.shape = "ELet" ->
+                        match EvalReplayValueStore.tryLetSpine cell.nodeId with
+                        | Some spine ->
+                            let makeChildReplay role shape nodeId status nextLabel =
+                                let repairKey = sprintf "%d|%s|%d" cell.nodeId role nodeId
+                                let attempt = noteLetTerminalCycleRepairLocked repairKey
+                                if attempt > 8 then None
+                                else
+                                    EvalReplayValueStore.putParentContinuation nodeId {
+                                        parentKind = cell.kind
+                                        parentShape = cell.shape
+                                        parentNodeId = cell.nodeId
+                                        role = role
+                                    }
+                                    let childCell = { cell with shape = shape; nodeId = nodeId; status = status; step = 0 }
+                                    let repaired =
+                                        { frame with
+                                            status = "continuation_envelope"
+                                            cursor = frame.trace.Length
+                                            reason = frame.reason + ":alpha501_terminal_let_cycle_replay"
+                                            semanticPayload = Some(formatCellPayload childCell)
+                                            semanticCell = Some childCell }
+                                    frontier <- Some repaired
+                                    slotSetLocked repaired
+                                    replayScheduledKey <- None
+                                    replayQueue <- []
+                                    noteProgressYieldLocked ()
+                                    DiagJson.emit (
+                                        sprintf "{\"kind\":\"eval_worklist_terminal_let_cycle_replay\",\"event\":%s,\"let_node_id\":%d,\"role\":%s,\"attempt\":%d,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                            (esc event) cell.nodeId (esc role) attempt (esc (formatCell childCell)) (pendingCount()) (esc nextLabel))
+                                    Some repaired
+                            let missingBody =
+                                spine.bodyNodeIds
+                                |> Array.mapi (fun i nodeId -> i, nodeId)
+                                |> Array.tryFind (fun (_, nodeId) -> not (EvalReplayValueStore.tryTermReady nodeId))
+                            match missingBody with
+                            | Some (i, nodeId) ->
+                                let shape = if i < spine.bodyShapes.Length then spine.bodyShapes.[i] else "unknown"
+                                makeChildReplay (sprintf "let_body_%d" i) shape nodeId "let_body_ready" "schedule_let_body_replay"
+                            | None when not (EvalReplayValueStore.tryTermReady spine.successNodeId) ->
+                                makeChildReplay "let_success" spine.successShape spine.successNodeId "let_success_ready" "schedule_let_success_replay"
+                            | None ->
+                                match EvalReplayValueStore.tryTermDetailed cell.nodeId with
+                                | Choice1Of2 value ->
+                                    EvalReplayValueStore.putTermValue cell.nodeId value
+                                    let resolvedCell = { cell with status = "semantic_leaf_complete" }
+                                    let resolved = { frame with status = "semantic_leaf_complete"; semanticCell = Some resolvedCell; semanticPayload = Some(formatCellPayload resolvedCell) }
+                                    frontier <- Some resolved
+                                    slotSetLocked resolved
+                                    DiagJson.emit (
+                                        sprintf "{\"kind\":\"eval_worklist_terminal_let_cycle_replay\",\"event\":%s,\"let_node_id\":%d,\"role\":\"let_self\",\"attempt\":0,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_parent_continuation_required\"}"
+                                            (esc event) cell.nodeId (esc (formatCell resolvedCell)) (pendingCount()))
+                                    Some resolved
+                                | Choice2Of2 _ -> None
+                        | None -> None
+                    | _ -> None
                 let switched =
                     lock gate (fun () ->
                         let blockedCycle =
@@ -13503,30 +15347,41 @@ module spiral_compiler =
                             && not (frameReplayCompleteAny frame)
                         if not blockedCycle then None
                         else
-                            slotSetLocked frame
-                            let candidates =
-                                [ frontierTerm; frontierTy ]
-                                |> List.choose (fun x -> x)
-                                |> List.filter (fun alt ->
-                                    not (sameCycle alt frame)
-                                    && alt.status <> "semantic_parent_continuation_cycle_blocked"
-                                    && alt.status <> "semantic_replay_fingerprint_repeat_blocked"
-                                    && alt.status <> "semantic_leaf_complete")
-                            let selected =
-                                match candidates |> List.tryFind (fun alt -> alt.status = "semantic_root_complete") with
-                                | Some root -> Some root
-                                | None ->
-                                    match candidates |> List.tryFind (fun alt -> alt.status = "continuation_envelope" || alt.status = "ready_explicit_loop" || alt.status = "tracing_explicit_loop") with
-                                    | Some live -> Some live
-                                    | None -> candidates |> List.tryHead
-                            match selected with
-                            | Some alt ->
-                                frontier <- Some alt
-                                replayScheduledKey <- None
-                                replayQueue <- []
-                                Some alt
-                            | None -> None)
+                            match tryRepairTerminalLetCycleLocked () with
+                            | Some repaired -> Some repaired
+                            | None ->
+                                slotSetLocked frame
+                                let candidates =
+                                    [ frontierTerm; frontierTy ]
+                                    |> List.choose (fun x -> x)
+                                    |> List.filter (fun alt ->
+                                        not (sameCycle alt frame)
+                                        && alt.status <> "semantic_parent_continuation_cycle_blocked"
+                                        && alt.status <> "semantic_replay_fingerprint_repeat_blocked"
+                                        && alt.status <> "semantic_joinpoint_term_stepper_blocked"
+                                        && alt.status <> "semantic_joinpoint_value_blocked"
+                                        && alt.status <> "semantic_replay_payload_missing_blocked"
+                                        && alt.status <> "semantic_macro_thunk_missing_blocked"
+                                        && alt.status <> "semantic_tjoinpoint_stepper_blocked"
+                                        && alt.status <> "semantic_literal_op_body_stepper_blocked"
+                                        && alt.status <> "semantic_leaf_complete")
+                                let selected =
+                                    match candidates |> List.tryFind (fun alt -> alt.status = "semantic_root_complete") with
+                                    | Some root -> Some root
+                                    | None ->
+                                        match candidates |> List.tryFind (fun alt -> alt.status = "continuation_envelope" || alt.status = "ready_explicit_loop" || alt.status = "tracing_explicit_loop") with
+                                        | Some live -> Some live
+                                        | None -> candidates |> List.tryHead
+                                match selected with
+                                | Some alt ->
+                                    frontier <- Some alt
+                                    replayScheduledKey <- None
+                                    replayQueue <- []
+                                    Some alt
+                                | None -> None)
                 match switched with
+                | Some alt when alt.status = "continuation_envelope" && alt.reason.Contains("alpha501_terminal_let_cycle_replay") ->
+                    Some alt
                 | Some alt ->
                     DiagJson.emit (
                         sprintf "{\"kind\":\"eval_worklist_parent_continuation_cycle_yielded\",\"event\":%s,\"blocked_kind\":%s,\"blocked_status\":%s,\"selected_kind\":%s,\"selected_status\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"drain_selected_frontier\"}"
@@ -13557,6 +15412,10 @@ module spiral_compiler =
                                     && alt.status <> "semantic_type_variable_value_missing_blocked"
                                     && alt.status <> "semantic_parent_continuation_cycle_blocked"
                                     && alt.status <> "semantic_replay_fingerprint_repeat_blocked"
+                                    && alt.status <> "semantic_replay_payload_missing_blocked"
+                                    && alt.status <> "semantic_macro_thunk_missing_blocked"
+                                    && alt.status <> "semantic_tjoinpoint_stepper_blocked"
+                                    && alt.status <> "semantic_literal_op_body_stepper_blocked"
                                     && alt.status <> "semantic_leaf_complete")
                             let selected =
                                 match candidates |> List.tryFind (fun alt -> alt.status = "semantic_root_complete") with
@@ -13605,6 +15464,10 @@ module spiral_compiler =
                                     && alt.status <> "semantic_type_variable_value_missing_blocked"
                                     && alt.status <> "semantic_parent_continuation_cycle_blocked"
                                     && alt.status <> "semantic_replay_fingerprint_repeat_blocked"
+                                    && alt.status <> "semantic_replay_payload_missing_blocked"
+                                    && alt.status <> "semantic_macro_thunk_missing_blocked"
+                                    && alt.status <> "semantic_tjoinpoint_stepper_blocked"
+                                    && alt.status <> "semantic_literal_op_body_stepper_blocked"
                                     && alt.status <> "semantic_leaf_complete")
                             let selected =
                                 match candidates |> List.tryFind (fun alt -> alt.status = "semantic_root_complete") with
@@ -13681,6 +15544,8 @@ module spiral_compiler =
                             slotSetLocked frame
                             let liveNonRepeat (alt: Frame) =
                                 alt.status <> "semantic_replay_fingerprint_repeat_blocked"
+                                && alt.status <> "semantic_joinpoint_term_stepper_blocked"
+                                && alt.status <> "semantic_joinpoint_value_blocked"
                                 && alt.status <> "semantic_parent_continuation_cycle_blocked"
                                 && alt.status <> "semantic_type_variable_value_missing_blocked"
                                 && alt.status <> "semantic_stale_root_retarget_blocked"
@@ -13750,6 +15615,10 @@ module spiral_compiler =
                                 |> List.filter (fun alt ->
                                     not (sameCycle alt frame)
                                     && alt.status <> "semantic_replay_fingerprint_repeat_blocked"
+                                    && alt.status <> "semantic_replay_payload_missing_blocked"
+                                    && alt.status <> "semantic_macro_thunk_missing_blocked"
+                                    && alt.status <> "semantic_tjoinpoint_stepper_blocked"
+                                    && alt.status <> "semantic_literal_op_body_stepper_blocked"
                                     && alt.status <> "semantic_leaf_complete"
                                     && alt.status <> "semantic_dynamic_join_apply_blocked")
                             let selected =
@@ -13922,21 +15791,60 @@ module spiral_compiler =
                     && task.status = "driver_blocked_semantic_payload"
                     && task.payload.Contains("semantic_eval_payload_missing")
                 let rerunBlockedDuplicate = duplicate && task.status = "driver_blocked_semantic_payload" && not blockedMissingDuplicate
+                let readyDuplicateCandidate =
+                    duplicate
+                    && (task.status = "driver_ready_replay_cell" || task.status = "driver_ready_semantic_payload")
+                    && frame.status = "continuation_envelope"
+                    && frame.reason.Contains("alpha502_leaf_yield_terminal_let_cycle_replay")
+                let readyDuplicateAttempt =
+                    if readyDuplicateCandidate then lock gate (fun () -> noteReadyDuplicateReplayRerunLocked key) else 0
+                let rerunReadyDuplicate = readyDuplicateCandidate && readyDuplicateAttempt <= 4
+                let blockReadyDuplicate = readyDuplicateCandidate && readyDuplicateAttempt > 4
+                let duplicateNext =
+                    if blockedMissingDuplicate then "blocked_payload_duplicate_suppressed"
+                    elif rerunBlockedDuplicate then "rerun_blocked_replay_driver"
+                    elif rerunReadyDuplicate then "rerun_ready_duplicate_replay_driver"
+                    elif blockReadyDuplicate then "ready_duplicate_replay_cap"
+                    else "already_scheduled"
                 DiagJson.emit (
                     sprintf "{\"kind\":\"eval_worklist_replay_schedule\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"queue_depth\":%d,\"duplicate\":%d,\"payload\":%s,\"single_flight\":1,\"next\":%s}"
-                        (esc event) task.id (esc task.driver) (esc task.status) (replayQueueDepth()) (if duplicate then 1 else 0) (esc task.payload) (esc (if duplicate then (if blockedMissingDuplicate then "blocked_payload_duplicate_suppressed" elif rerunBlockedDuplicate then "rerun_blocked_replay_driver" else "already_scheduled") else task.driver)))
+                        (esc event) task.id (esc task.driver) (esc task.status) (replayQueueDepth()) (if duplicate then 1 else 0) (esc task.payload) (esc (if duplicate then duplicateNext else task.driver)))
                 if blockedMissingDuplicate then
                     lock gate (fun () ->
                         match frontier with
                         | Some frame ->
-                            let frame' = { frame with status = "semantic_payload_required" }
+                            let frame' = { frame with status = "semantic_replay_payload_missing_blocked"; reason = frame.reason + ":alpha530_missing_semantic_payload" }
+                            frontier <- Some frame'
+                            slotSetLocked frame'
+                            alpha535PinnedReplayPayloadMissing <- Some frame'
+                            alpha536PinTerminalContractLocked event frame'
+                        | None -> ())
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_replay_payload_missing_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":\"semantic_replay_payload_missing_blocked\",\"queue_depth\":%d,\"payload\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_replay_payload_required\"}"
+                            (esc event) task.id (esc task.driver) (replayQueueDepth()) (esc task.payload) (pendingCount()))
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_replay_payload_missing_pinned\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":\"semantic_replay_payload_missing_blocked\",\"pending\":%d,\"single_flight\":1,\"next\":\"prefer_payload_missing_terminal\"}"
+                            (esc event) task.id (esc task.driver) (pendingCount()))
+                elif blockReadyDuplicate then
+                    lock gate (fun () ->
+                        match frontier with
+                        | Some frame ->
+                            let frame' =
+                                { frame with
+                                    status = "semantic_replay_fingerprint_repeat_blocked"
+                                    reason = frame.reason + ":alpha503_ready_duplicate_replay_cap" }
                             frontier <- Some frame'
                             slotSetLocked frame'
                         | None -> ())
                     DiagJson.emit (
-                        sprintf "{\"kind\":\"eval_worklist_blocked_replay_duplicate_suppressed\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":\"semantic_payload_required\",\"queue_depth\":%d,\"payload\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"await_semantic_eval_payload\"}"
-                            (esc event) task.id (esc task.driver) (replayQueueDepth()) (esc task.payload) (pendingCount()))
-                elif (not duplicate) || rerunBlockedDuplicate then runReplayDriver event
+                        sprintf "{\"kind\":\"eval_worklist_ready_duplicate_replay_cap\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"attempt\":%d,\"cap\":4,\"status\":\"semantic_replay_fingerprint_repeat_blocked\",\"queue_depth\":%d,\"payload\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_replay_fingerprint_repeat_required\"}"
+                            (esc event) task.id (esc task.driver) readyDuplicateAttempt (replayQueueDepth()) (esc task.payload) (pendingCount()))
+                elif (not duplicate) || rerunBlockedDuplicate || rerunReadyDuplicate then
+                    if rerunReadyDuplicate then
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_ready_duplicate_replay_driver_rerun\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"attempt\":%d,\"cap\":4,\"queue_depth\":%d,\"payload\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) task.id (esc task.driver) readyDuplicateAttempt (replayQueueDepth()) (esc task.payload) (pendingCount()) (esc task.driver))
+                    runReplayDriver event
             with _ -> ()
 
         let private beginRun (event: string) =
@@ -13953,9 +15861,32 @@ module spiral_compiler =
                 | None -> None
                 | Some f ->
                     let loc = traceAt f f.cursor
+                    let capturedLeafCell =
+                        f.status = "semantic_leaf_complete"
+                        && (match f.semanticCell with
+                            | Some cell -> cell.status = "captured" || cell.status = "new"
+                            | None -> false)
+                    let lateCapturedLeafCell =
+                        capturedLeafCell
+                        && f.cursor >= f.trace.Length
+                    let orphanCapturedLeafCell =
+                        event = "retry_stop_drain"
+                        && capturedLeafCell
+                        && f.cursor < f.trace.Length
+                        && replayQueueDepth() = 0
                     let status', cursor', next' =
-                        if f.status = "semantic_replay_fingerprint_repeat_blocked" then
+                        if f.status = "semantic_replay_driver_exception_blocked" then
+                            f.status, f.cursor, "explicit_eval_worklist_replay_driver_exception_required"
+                        elif f.status = "semantic_replay_fingerprint_repeat_blocked" then
                             f.status, f.cursor, "explicit_eval_worklist_replay_fingerprint_repeat_required"
+                        elif f.status = "semantic_joinpoint_term_stepper_blocked" then
+                            f.status, f.cursor, "explicit_eval_worklist_joinpoint_term_stepper_required"
+                        elif f.status = "semantic_joinpoint_value_blocked" then
+                            f.status, f.cursor, "explicit_eval_worklist_joinpoint_value_required"
+                        elif lateCapturedLeafCell then
+                            "continuation_envelope", f.cursor, "alpha512_replay_late_captured_leaf_cell"
+                        elif orphanCapturedLeafCell then
+                            "continuation_envelope", f.cursor, "alpha514_replay_orphan_captured_leaf_cell"
                         elif isSemanticTerminalStatus f.status then
                             // ALPHA389: never rebuild a replay envelope from a semantic terminal state.
                             // Root completion must survive retry_stop_drain so BuildFile can retry safely.
@@ -13974,6 +15905,18 @@ module spiral_compiler =
                     DiagJson.emit (
                         sprintf "{\"kind\":\"eval_worklist_step\",\"event\":%s,\"step\":%d,\"budget\":%d,\"frame_kind\":%s,\"status\":%s,\"cursor\":%d,\"trace_loc\":%s,\"single_flight\":1,\"next\":%s}"
                             (esc event) step limit (esc f'.kind) (esc f'.status) f'.cursor (esc loc) (esc next'))
+                    if next' = "alpha512_replay_late_captured_leaf_cell" || next' = "alpha514_replay_orphan_captured_leaf_cell" then
+                        let cellText =
+                            match f.semanticCell with
+                            | Some cell -> formatCell cell
+                            | None -> "none"
+                        let marker =
+                            if next' = "alpha514_replay_orphan_captured_leaf_cell"
+                            then "eval_worklist_orphan_captured_leaf_cell_replayed"
+                            else "eval_worklist_late_captured_leaf_cell_replayed"
+                        DiagJson.emit (
+                            sprintf "{\"kind\":%s,\"event\":%s,\"frame_kind\":%s,\"frame_status\":%s,\"cursor\":%d,\"trace_lines\":%d,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"schedule_term_ty_replay\"}"
+                                (esc marker) (esc event) (esc f.kind) (esc f.status) f.cursor f.trace.Length (esc cellText) (pendingCount()))
                     if isTerminalAdapter f' then
                         emitAdapter event f'
                         scheduleReplay event f'
@@ -13992,7 +15935,7 @@ module spiral_compiler =
                             | Some f ->
                                 last <- Some f
                                 steps <- steps + 1
-                                blocked <- isTerminalAdapter f || isSemanticTerminalStatus f.status || f.status = "semantic_replay_fingerprint_repeat_blocked" || f.status = "semantic_payload_required"
+                                blocked <- isTerminalAdapter f || isSemanticTerminalStatus f.status || f.status = "semantic_replay_fingerprint_repeat_blocked" || f.status = "semantic_joinpoint_term_stepper_blocked" || f.status = "semantic_joinpoint_value_blocked" || f.status = "semantic_replay_driver_exception_blocked" || f.status = "semantic_replay_payload_missing_blocked" || f.status = "semantic_payload_required"
                             | None ->
                                 blocked <- true
                         let finalCursor =
@@ -14033,7 +15976,18 @@ module spiral_compiler =
             // ALPHA471: the repeat-yield path can expose a two-kind dynamic-arg handoff
             // (term EApply blocked while a ty/TFun frontier resolves).  Keep the bound small,
             // but allow enough passes to alternate once after the first explicit dynamic block.
-            let maxPasses = 12
+            let baseMaxPasses = 12
+            // ALPHA507: retry_stop_drain may still be making real queued-replay
+            // progress after twelve passes (alpha506 ended with replay_queue=1 and
+            // a term_replay_driver still advancing the dynamic-record bridge).  Extend
+            // only this terminal drain, and keep the bound finite/fail-closed.
+            let maxPasses =
+                // ALPHA508: alpha507 still made visible forward progress at pass 63
+                // (same live queue, higher replay id, higher EApply step).  Keep the
+                // extension terminal-only and finite, but allow enough turns for this
+                // dynamic-record bridge to either discharge or reveal the next blocker.
+                if event = "retry_stop_drain" then 256
+                else baseMaxPasses
             let mutable waits = 0
             while waits < 16 && (lock gate (fun () -> activeRun)) do
                 System.Threading.Thread.Sleep 5
@@ -14054,6 +16008,14 @@ module spiral_compiler =
                         DiagJson.emit (
                             sprintf "{\"kind\":\"eval_worklist_retry_drain_continue\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"replayCompleteNow\":%b,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
                                 (esc event) pass (esc status) cursor (hasReplayComplete()) (pendingCount()) (esc next))
+                    if event = "retry_stop_drain" && pass >= baseMaxPasses && replayQueueDepth() > 0 then
+                        let status, cursor, next =
+                            match after with
+                            | Some frame -> frame.status, frame.cursor, nextFor frame
+                            | None -> "missing_before_retry_drain_live_queue_extend", -1, "run_replay_driver"
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_retry_drain_live_queue_extend\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) pass (esc status) cursor (replayQueueDepth()) (pendingCount()) (esc next))
                     let drained = runBounded event limit
                     // ALPHA403: runBounded returns the last pre-driver frame when a synchronous
                     // replay driver commits semantic_root_complete from scheduleReplay.  Re-peek
@@ -14063,8 +16025,60 @@ module spiral_compiler =
                         | Some frame when frame.status = "semantic_parent_continuation_cycle_blocked" -> Some frame
                         | Some frame when hasReplayComplete() -> Some frame
                         | _ -> drained
-                    let canonical =
+                    let canonicalFingerprintQueued =
                         match canonical0 with
+                        | Some frame when event = "retry_stop_drain" && (frame.status = "semantic_replay_fingerprint_repeat_blocked" || frame.status = "semantic_joinpoint_term_stepper_blocked") && replayQueueDepth() > 0 ->
+                            let qd0 = replayQueueDepth()
+                            let cellText =
+                                match frame.semanticCell with
+                                | Some cell -> formatCell cell
+                                | None -> "none"
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_replay_fingerprint_live_queue_drain\",\"event\":%s,\"status\":%s,\"cursor\":%d,\"queue_depth_before\":%d,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"run_replay_driver\"}"
+                                    (esc event) (esc frame.status) frame.cursor qd0 (esc cellText) (pendingCount()))
+                            runReplayDriver event
+                            let qd1 = replayQueueDepth()
+                            let afterDriver =
+                                match tryPeek() with
+                                | Some frame' -> Some frame'
+                                | None -> canonical0
+                            let statusAfter, cursorAfter =
+                                match afterDriver with
+                                | Some frame' -> frame'.status, frame'.cursor
+                                | None -> "missing_after_fingerprint_live_queue_drain", -1
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_replay_fingerprint_live_queue_drain_result\",\"event\":%s,\"status\":%s,\"cursor\":%d,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) (esc statusAfter) cursorAfter qd1 (pendingCount()) (esc (if qd1 > 0 then "continue_retry_drain" else "retry_drain_repeek")))
+                            afterDriver
+                        | _ -> canonical0
+                    let canonicalQueued =
+                        match canonicalFingerprintQueued with
+                        | Some frame when frame.status = "semantic_leaf_complete" && replayQueueDepth() > 0 ->
+                            let qd0 = replayQueueDepth()
+                            let cellText =
+                                match frame.semanticCell with
+                                | Some cell -> formatCell cell
+                                | None -> "none"
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_leaf_complete_queued_replay_drain\",\"event\":%s,\"status\":%s,\"cursor\":%d,\"queue_depth_before\":%d,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"run_replay_driver\"}"
+                                    (esc event) (esc frame.status) frame.cursor qd0 (esc cellText) (pendingCount()))
+                            runReplayDriver event
+                            let qd1 = replayQueueDepth()
+                            let afterDriver =
+                                match tryPeek() with
+                                | Some frame' -> Some frame'
+                                | None -> canonicalFingerprintQueued
+                            let statusAfter, cursorAfter =
+                                match afterDriver with
+                                | Some frame' -> frame'.status, frame'.cursor
+                                | None -> "missing_after_leaf_queued_replay_drain", -1
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_leaf_complete_queued_replay_drain_result\",\"event\":%s,\"status\":%s,\"cursor\":%d,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) (esc statusAfter) cursorAfter qd1 (pendingCount()) (esc (if qd1 > 0 then "continue_retry_drain" else "retry_drain_repeek")))
+                            afterDriver
+                        | _ -> canonicalFingerprintQueued
+                    let canonical =
+                        match canonicalQueued with
                         | Some frame ->
                             match tryYieldParentContinuationCycleBlocked event frame with
                             | Some selected -> Some selected
@@ -14083,15 +16097,50 @@ module spiral_compiler =
                                             | None ->
                                                 match tryYieldDynamicArgApplyBlocked event frame with
                                                 | Some selected -> Some selected
-                                                | None -> canonical0
-                        | None -> canonical0
+                                                | None -> canonicalQueued
+                        | None -> canonicalQueued
+                    let canonical =
+                        match canonical with
+                        | Some frame -> alpha538PreferPinnedTerminalForRetryDrain event frame
+                        | None -> None
                     match canonical with
                     | Some frame ->
                         after <- Some frame
                         pass <- pass + 1
-                        if frame.status = "semantic_parent_continuation_cycle_blocked" || frame.status = "semantic_type_variable_value_missing_blocked" || frame.status = "semantic_stale_root_retarget_blocked" then
+                        alpha536PinTerminalContract event frame
+                        if (event = "retry_stop_drain" || event = "jp_wait_cycle_drain") && (frame.status = "semantic_replay_fingerprint_repeat_blocked" || frame.status = "semantic_joinpoint_term_stepper_blocked") then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_terminal_replay_fingerprint_repeat_drain_stopped\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) pass (esc frame.status) frame.cursor (replayQueueDepth()) (pendingCount()) (esc (nextFor frame)))
+                            keepGoing <- false
+                        elif event = "retry_stop_drain" && frame.status = "semantic_let_success_apply_exception_blocked" && replayQueueDepth() = 0 then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_terminal_let_success_apply_exception_drain_stopped\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) pass (esc frame.status) frame.cursor (pendingCount()) (esc (nextFor frame)))
+                            keepGoing <- false
+                        elif frame.status = "semantic_dynamic_join_apply_blocked" || frame.status = "semantic_replay_child_schedule_repeat_blocked" then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_terminal_pinned_contract_drain_stopped\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"rank\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) pass (esc frame.status) frame.cursor (alpha536TerminalContractRank frame.status) (pendingCount()) (esc (nextFor frame)))
+                            keepGoing <- false
+                        elif frame.status = "semantic_parent_continuation_cycle_blocked" || frame.status = "semantic_type_variable_value_missing_blocked" || frame.status = "semantic_stale_root_retarget_blocked" || frame.status = "semantic_replay_payload_missing_blocked" || frame.status = "semantic_joinpoint_term_stepper_blocked" || frame.status = "semantic_joinpoint_value_blocked" || frame.status = "semantic_macro_thunk_missing_blocked" || frame.status = "semantic_tjoinpoint_stepper_blocked" || frame.status = "semantic_literal_op_body_stepper_blocked" || frame.status = "semantic_let_success_all_ready_apply_blocked" || frame.status = "semantic_let_success_all_ready_apply_blocked" || frame.status = "semantic_let_success_apply_continuation_blocked" || frame.status = "semantic_apply_continuation_exception_blocked" || frame.status = "semantic_deferred_function_replay_exception_blocked" then
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_terminal_retry_drain_stopped\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) pass (esc frame.status) frame.cursor (pendingCount()) (esc (nextFor frame)))
+                            keepGoing <- false
+                        elif event = "retry_stop_drain" && frame.status = "semantic_replay_driver_exception_blocked" && replayQueueDepth() = 0 then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_terminal_replay_exception_drain_stopped\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) pass (esc frame.status) frame.cursor (pendingCount()) (esc (nextFor frame)))
+                            keepGoing <- false
+                        elif event = "retry_stop_drain" && pass >= baseMaxPasses && frame.status = "semantic_root_complete" && pendingCount() > 0 && replayQueueDepth() = 0 then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_retry_stop_root_complete_pending_jobs_drain_stopped\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"abort_without_write_or_wait_for_real_terminal\"}"
+                                    (esc event) pass (esc frame.status) frame.cursor (pendingCount()))
+                            keepGoing <- false
+                        elif event = "retry_stop_drain" && pass >= baseMaxPasses && frame.status = "semantic_leaf_complete" && replayQueueDepth() = 0 then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_terminal_leaf_no_queue_drain_stopped\",\"event\":%s,\"pass\":%d,\"status\":%s,\"cursor\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
                                     (esc event) pass (esc frame.status) frame.cursor (pendingCount()) (esc (nextFor frame)))
                             keepGoing <- false
                     | None ->
@@ -14168,15 +16217,105 @@ module spiral_compiler =
             let completeness =
                 if replayComplete then "complete"
                 elif frame.status = "semantic_leaf_complete" then "leaf_complete_parent_continuation_missing"
+                elif frame.status = "semantic_replay_driver_exception_blocked" then "replay_driver_exception_blocked"
+                elif frame.status = "semantic_replay_payload_missing_blocked" then "replay_payload_missing_blocked"
+                elif frame.status = "semantic_joinpoint_value_blocked" then "joinpoint_value_blocked"
                 elif frame.status = "semantic_replay_fingerprint_repeat_blocked" then "replay_fingerprint_repeat_blocked"
+                elif frame.status = "semantic_joinpoint_term_stepper_blocked" then "joinpoint_term_stepper_blocked"
+                elif frame.status = "semantic_macro_thunk_missing_blocked" then "macro_thunk_missing_blocked"
+                elif frame.status = "semantic_tjoinpoint_stepper_blocked" then "tjoinpoint_stepper_blocked"
+                elif frame.status = "semantic_literal_op_body_stepper_blocked" then "literal_op_body_stepper_blocked"
                 elif frame.status = "semantic_dynamic_join_apply_blocked" then "dynamic_join_apply_blocked"
                 elif frame.status = "semantic_parent_continuation_cycle_blocked" then "parent_continuation_cycle_blocked"
                 elif frame.status = "semantic_type_variable_value_missing_blocked" then "type_variable_value_missing_blocked"
                 elif frame.status = "semantic_stale_root_retarget_blocked" then "stale_root_retarget_blocked"
+                elif frame.status = "semantic_let_success_apply_exception_blocked" then "let_success_apply_exception_blocked"
+                elif frame.status = "semantic_let_success_all_ready_apply_blocked" then "let_success_all_ready_apply_blocked"
+                elif frame.status = "semantic_let_success_apply_continuation_blocked" then "let_success_apply_continuation_blocked"
+                elif frame.status = "semantic_apply_continuation_exception_blocked" then "apply_continuation_exception_blocked"
+                elif frame.status = "semantic_deferred_function_replay_exception_blocked" then "deferred_function_replay_exception_blocked"
                 elif frame.status = "semantic_step_partial" || frame.status = "semantic_step_done" then "partial_one_step_only"
                 else "not_complete"
             sprintf "%s\nEvalWorklistFrame: kind=%s status=%s depth=%d re=%d/%d trace_lines=%d pending=%d cursor=%d single_flight=1 replay_queue=%d semantic_payload=%s replay_complete=%b replay_completeness=%s replay_cell=%s adapter=trace_replay_continuation next=%s driver=%s driver_state=%s payload=%s"
                 msg frame.kind frame.status frame.depth frame.re frame.maxRe frame.trace.Length (pendingCount()) frame.cursor (replayQueueDepth()) (semanticPayloadStatus()) replayComplete completeness cellState (nextFor frame) (replayDriverFor frame) (replayDriverStatus()) (adapterPayload frame)
+
+
+        // ALPHA540: when a global fuse abort is raised after retry_stop has already
+        // selected a high-rank terminal, make the raised message name that terminal.
+        // This prevents run_tests/root-source traces from looking like the live
+        // problem when the real blocker is the pinned macro/literal/payload contract.
+        //
+        // ALPHA541: the alpha540 marker proved the retarget worked but also showed
+        // unbounded marker churn: 377 retarget events in alpha540, followed by stale
+        // semantic_root_complete returns.  Treat rank >= 90 pinned terminals as a
+        // hard global-fuse contract and rate-limit marker emission by pinned key.
+        let private alpha541GlobalFuseTerminalRetargetSeen = System.Collections.Concurrent.ConcurrentDictionary<string, int>()
+
+        let private alpha541RetargetSeenOnce (key: string) =
+            alpha541GlobalFuseTerminalRetargetSeen.TryAdd(key, 1)
+
+        let private alpha541HighRankPinnedTerminal () =
+            match tryPinnedTerminalContract() with
+            | Some pinned ->
+                let rank = terminalContractRank pinned.status
+                if rank >= 90 then Some (pinned, rank) else None
+            | None -> None
+
+        let private alpha543TrimOriginalFuseForMessage (msg: string) =
+            let withoutFrame =
+                let marker = "\nEvalWorklistFrame:"
+                let idx = msg.IndexOf(marker, System.StringComparison.Ordinal)
+                if idx >= 0 then msg.Substring(0, idx) else msg
+            withoutFrame.Replace("\r", " ").Replace("\n", " ⏎ ")
+
+        let terminalPrimaryMessage (requestedKind: string) (msg: string) (pinned: Frame) (rank: int) =
+            let emitKey = sprintf "primary|%s|%s|%s" requestedKind pinned.status pinned.key
+            if alpha541RetargetSeenOnce emitKey then
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_terminal_primary_message_selected\",\"event\":%s,\"requested_kind\":%s,\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                        (esc "terminal_primary_message") (esc requestedKind) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) (esc (nextFor pinned)))
+            let primaryPrefix = "[spiral_compiler] EJP0011: pinned terminal contract blocked"
+            let alreadyPrimary =
+                not (System.String.IsNullOrEmpty msg)
+                && msg.StartsWith(primaryPrefix, System.StringComparison.Ordinal)
+                && msg.IndexOf("pinned_terminal=", System.StringComparison.Ordinal) >= 0
+            if alreadyPrimary then
+                if alpha541RetargetSeenOnce (emitKey + "|idempotent") then
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_terminal_primary_message_idempotent\",\"event\":%s,\"requested_kind\":%s,\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                            (esc "terminal_primary_message") (esc requestedKind) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) (esc (nextFor pinned)))
+                if msg.IndexOf("\nEvalWorklistFrame:", System.StringComparison.Ordinal) >= 0 then msg else requiredMessage msg pinned
+            else
+                let originalFuse = alpha543TrimOriginalFuseForMessage msg
+                let pinnedMsg =
+                    sprintf "[spiral_compiler] EJP0011: pinned terminal contract blocked status=%s rank=%d site=%s requested_kind=%s\npinned_terminal=%s pinned_rank=%d pinned_site=%s requested_kind=%s original_fuse=%s"
+                        pinned.status rank pinned.site requestedKind pinned.status rank pinned.site requestedKind originalFuse
+                requiredMessage pinnedMsg pinned
+
+        let private alpha541PinnedTerminalMessage (requestedKind: string) (msg: string) (pinned: Frame) (rank: int) =
+            terminalPrimaryMessage requestedKind msg pinned rank
+
+        let retargetGlobalFuseAbortMessage (event: string) (requestedKind: string) (msg: string) =
+            match alpha541HighRankPinnedTerminal() with
+            | Some (pinned, rank) ->
+                let emitKey = sprintf "abort|%s|%s|%s|%s" event requestedKind pinned.status pinned.key
+                if alpha541RetargetSeenOnce emitKey then
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_global_fuse_abort_retargeted_to_pinned_terminal\",\"event\":%s,\"requested_kind\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"pending\":%d,\"single_flight\":1,\"rate_limited\":1,\"next\":%s}"
+                            (esc event) (esc requestedKind) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) (esc (nextFor pinned)))
+                alpha541PinnedTerminalMessage requestedKind msg pinned rank
+            | None -> msg
+
+        let trySuppressGlobalFuseReplayReturnForPinnedTerminal (event: string) (requestedKind: string) (shape: string) (msg: string) =
+            match alpha541HighRankPinnedTerminal() with
+            | Some (pinned, rank) ->
+                let emitKey = sprintf "return|%s|%s|%s|%s|%s" event requestedKind shape pinned.status pinned.key
+                if alpha541RetargetSeenOnce emitKey then
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_global_fuse_replay_return_suppressed_by_pinned_terminal\",\"event\":%s,\"requested_kind\":%s,\"shape\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                            (esc event) (esc requestedKind) (esc shape) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) (esc (nextFor pinned)))
+                Some (alpha541PinnedTerminalMessage requestedKind msg pinned rank)
+            | None -> None
 
 
     /// ### JoinPointKey
@@ -17952,15 +20091,38 @@ module spiral_compiler =
                         let jpBodiesStillPending =
                             pending_root_now > 0L || done_root_now < enq_root_now
                         if frame.status = "semantic_root_complete" && jpBodiesStillPending then
-                            // ALPHA478: alpha477 proved jp_wait can reduce a replay root far enough to
-                            // produce source values, but closing the barrier while JP bodies are still
-                            // pending lets F# codegen run with empty method/closure dictionaries.  Do not
-                            // promote this to BuildFile.replay_root_complete yet; clear the local fuse and
-                            // let the waiter keep draining the outstanding JP work.
-                            DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_jp_wait_root_complete_pending_jobs_deferred\",\"event\":\"jp_wait_cycle_preflight\",\"status\":\"semantic_root_complete\",\"pending\":%d,\"enqueued\":%d,\"done\":%d,\"current_count\":%d,\"single_flight\":1,\"next\":\"continue_wait_for_jp_bodies\"}"
-                                    pending_root_now enq_root_now done_root_now cc_root_now)
-                            try TermCycleFuse.reset() with _ -> ()
+                            // ALPHA548: alpha547 made retry_stop_drain stop on the rank-100 macro terminal,
+                            // but jp_wait still kept waiting for JP bodies after a root-complete replay proof.
+                            // If a high-rank terminal is already pinned, the outstanding JP body wait is not
+                            // useful progress; abort as the pinned terminal EJP0011 contract before EJP0014.
+                            let alpha548PendingPinnedTerminal =
+                                try
+                                    match EvalWorklist.tryPinnedTerminalContract() with
+                                    | Some pinned when EvalWorklist.terminalContractRank pinned.status >= 90 -> Some pinned
+                                    | _ -> None
+                                with _ -> None
+                            match alpha548PendingPinnedTerminal with
+                            | Some pinned ->
+                                let rank = EvalWorklist.terminalContractRank pinned.status
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_jp_wait_root_complete_pending_pinned_terminal_abort\",\"event\":\"jp_wait_cycle_preflight\",\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"pending\":%d,\"enqueued\":%d,\"done\":%d,\"current_count\":%d,\"single_flight\":1,\"next\":\"explicit_pinned_terminal_contract\"}"
+                                        (DiagJson.esc pinned.status) rank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) pending_root_now enq_root_now done_root_now cc_root_now)
+                                let msg =
+                                    sprintf "%s: jp_wait root-complete pending JP bodies blocked by pinned terminal contract status=%s site=%s pending=%d enqueued=%d done=%d current_count=%d"
+                                        EJPCodes.EJP0011 pinned.status pinned.site pending_root_now enq_root_now done_root_now cc_root_now
+                                DiagSidecar.emit (EvalWorklist.requiredMessage msg pinned)
+                                EvalWorklistFrontier.emit EJPCodes.EJP0011 "jp_wait_root_complete_pending_pinned_terminal" pinned.key pinned.site pinned.depth pinned.re pinned.maxRe
+                                raise (PartEvalTypeError(frame.trace, EvalWorklist.requiredMessage msg pinned))
+                            | None ->
+                                // ALPHA478: alpha477 proved jp_wait can reduce a replay root far enough to
+                                // produce source values, but closing the barrier while JP bodies are still
+                                // pending lets F# codegen run with empty method/closure dictionaries.  Do not
+                                // promote this to BuildFile.replay_root_complete yet; clear the local fuse and
+                                // let the waiter keep draining the outstanding JP work.
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_jp_wait_root_complete_pending_jobs_deferred\",\"event\":\"jp_wait_cycle_preflight\",\"status\":\"semantic_root_complete\",\"pending\":%d,\"enqueued\":%d,\"done\":%d,\"current_count\":%d,\"single_flight\":1,\"next\":\"continue_wait_for_jp_bodies\"}"
+                                        pending_root_now enq_root_now done_root_now cc_root_now)
+                                try TermCycleFuse.reset() with _ -> ()
                         elif frame.status = "semantic_root_complete" then
                             // ALPHA397/478: only close the local JP barrier when there are no outstanding
                             // JP body jobs.  This preserves the replay-root writer witness without allowing
@@ -18066,14 +20228,71 @@ module spiral_compiler =
                         else
                             let snap = diag_snapshot (sprintf "jp_wait stall iter=%d pending=%d" iterations pending_now)
                             let msg = sprintf "[spiral_compiler] EJP0014: jp_wait stalled for %dms iter=%d pending=%d q=%d cc=%d gen=%d abort_ms=%d clock=%s" idle_or_elapsed_ms iterations pending_now jp_work_q.Count cc gen0 jp_wait_stall_abort_ms (if seq_wait_now then "elapsed" else "idle")
-                            if seq_wait_now then
-                                try
-                                    DiagJson.emit (sprintf "{\"kind\":\"eval_frontier\",\"code\":\"%s\",\"reason\":\"forced_seq_jp_wait_stall\",\"wait_ms\":%d,\"pending\":%d,\"q\":%d,\"cc\":%d,\"policy\":\"jp_liveness_or_stack_safe_worklist_required\",\"policy_next\":\"explicit_eval_worklist\"}" EJPCodes.EJP0014 idle_or_elapsed_ms pending_now jp_work_q.Count cc)
-                                    // ALPHA391: one bounded explicit-worklist preflight before the noisy EJP0014 retry path.
-                                    // This is diagnostic/liveness only; BuildFile still decides whether replay_root_complete
-                                    // is strong enough to retry or write.
-                                    EvalWorklist.drainJpStallPreflight "jp_wait_stall" 256 |> ignore
-                                with _ -> ()
+                            // ALPHA553: drain before deciding whether the stall is really EJP0014.
+                            // Runtime 552 showed the old path emitted the EJP0014 frontier first,
+                            // then the explicit worklist made progress and later selected a true
+                            // EJP0011 terminal.  Keep this fail-closed: no writer/root proof is
+                            // produced here, but live explicit-worklist evidence should not be
+                            // mislabeled as the original stall wrapper.
+                            let alpha553StallPreflightFrame =
+                                if seq_wait_now then
+                                    try
+                                        let drained = EvalWorklist.drainJpStallPreflight "jp_wait_stall" 256
+                                        match drained with
+                                        | Some frame ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_jp_wait_stall_preflight_drained\",\"event\":\"jp_wait_stall\",\"status\":%s,\"cursor\":%d,\"pending\":%d,\"q\":%d,\"cc\":%d,\"wait_ms\":%d,\"single_flight\":1,\"next\":\"prefer_terminal_or_live_frame\"}"
+                                                    (DiagJson.esc frame.status) frame.cursor pending_now jp_work_q.Count cc idle_or_elapsed_ms)
+                                        | None ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_jp_wait_stall_preflight_empty\",\"event\":\"jp_wait_stall\",\"pending\":%d,\"q\":%d,\"cc\":%d,\"wait_ms\":%d,\"single_flight\":1,\"next\":\"fallback_stall_policy\"}"
+                                                    pending_now jp_work_q.Count cc idle_or_elapsed_ms)
+                                        drained
+                                    with _ -> None
+                                else None
+
+                            // ALPHA548/553: the stall preflight can discover and pin the true terminal while
+                            // servicing a stale root-complete/pending-JP wait.  Surface that terminal now
+                            // as EJP0011 rather than throwing the original EJP0014 wrapper.
+                            let alpha548StallPinnedTerminal =
+                                if seq_wait_now then
+                                    try
+                                        match EvalWorklist.tryPinnedTerminalContract() with
+                                        | Some pinned when EvalWorklist.terminalContractRank pinned.status >= 90 -> Some pinned
+                                        | _ -> None
+                                    with _ -> None
+                                else None
+                            match alpha548StallPinnedTerminal with
+                            | Some pinned ->
+                                let rank = EvalWorklist.terminalContractRank pinned.status
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_jp_wait_stall_pinned_terminal_preempted\",\"event\":\"jp_wait_stall\",\"code\":%s,\"original_code\":%s,\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"wait_ms\":%d,\"pending\":%d,\"q\":%d,\"cc\":%d,\"single_flight\":1,\"next\":\"explicit_pinned_terminal_contract\"}"
+                                        (DiagJson.esc EJPCodes.EJP0011) (DiagJson.esc EJPCodes.EJP0014) (DiagJson.esc pinned.status) rank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) idle_or_elapsed_ms pending_now jp_work_q.Count cc)
+                                let terminalMsg =
+                                    EvalWorklist.requiredMessage
+                                        (sprintf "%s: jp_wait stall preflight found pinned terminal contract; original_code=%s wait_ms=%d pending=%d q=%d cc=%d"
+                                            EJPCodes.EJP0011 EJPCodes.EJP0014 idle_or_elapsed_ms pending_now jp_work_q.Count cc)
+                                        pinned
+                                DiagSidecar.emit terminalMsg
+                                raise (PartEvalTypeError([], terminalMsg))
+                            | None ->
+                                match alpha553StallPreflightFrame with
+                                | Some frame when seq_wait_now ->
+                                    DiagJson.emit (
+                                        sprintf "{\"kind\":\"eval_worklist_jp_wait_stall_live_frame_preempted\",\"event\":\"jp_wait_stall\",\"code\":%s,\"original_code\":%s,\"status\":%s,\"site\":%s,\"key\":%s,\"wait_ms\":%d,\"pending\":%d,\"q\":%d,\"cc\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_live_frame_required\"}"
+                                            (DiagJson.esc EJPCodes.EJP0011) (DiagJson.esc EJPCodes.EJP0014) (DiagJson.esc frame.status) (DiagJson.esc frame.site) (DiagJson.esc frame.key) idle_or_elapsed_ms pending_now jp_work_q.Count cc)
+                                    let liveMsg =
+                                        EvalWorklist.requiredMessage
+                                            (sprintf "%s: jp_wait stall preflight produced a live explicit-worklist frame; original_code=%s status=%s wait_ms=%d pending=%d q=%d cc=%d"
+                                                EJPCodes.EJP0011 EJPCodes.EJP0014 frame.status idle_or_elapsed_ms pending_now jp_work_q.Count cc)
+                                            frame
+                                    DiagSidecar.emit liveMsg
+                                    raise (PartEvalTypeError(frame.trace, liveMsg))
+                                | _ ->
+                                    if seq_wait_now then
+                                        try
+                                            DiagJson.emit (sprintf "{\"kind\":\"eval_frontier\",\"code\":\"%s\",\"reason\":\"forced_seq_jp_wait_stall\",\"wait_ms\":%d,\"pending\":%d,\"q\":%d,\"cc\":%d,\"policy\":\"jp_liveness_or_stack_safe_worklist_required\",\"policy_next\":\"explicit_eval_worklist\"}" EJPCodes.EJP0014 idle_or_elapsed_ms pending_now jp_work_q.Count cc)
+                                        with _ -> ()
 
                             // Alpha217/332: include current JP panel + top slow jobs. Under forced sequential
                             // keep this tiny; hotkey summaries in retry diagnostics carry the aggregate signal.
@@ -18644,7 +20863,24 @@ module spiral_compiler =
                     | Some value -> value
                     | None -> failwith ("alpha395_type_child_missing:" + label + ":" + evalNodeShapeTy child)
                 match expr with
-                | TV i -> EvalReplayValueStore.putType nodeId (fun () -> vt s i)
+                | TV i ->
+                    // ALPHA557: TV is environment-dependent, so snapshot the current
+                    // type environment when it is available instead of leaving a thunk
+                    // that can be forced after another replay environment has reused
+                    // the same AST node id.  Missing/out-of-bounds variables stay
+                    // fail-closed through the old thunk and terminal TV diagnostic.
+                    let globalTypeLen =
+                        if obj.ReferenceEquals(s.env_global_type, null) then 0
+                        else s.env_global_type.Length
+                    let stackTypeLen =
+                        if obj.ReferenceEquals(s.env_stack_type, null) then 0
+                        else s.env_stack_type.Length
+                    if i >= 0 && i < globalTypeLen then
+                        EvalReplayValueStore.putTypeValue nodeId s.env_global_type.[i]
+                    elif i >= globalTypeLen && (i - globalTypeLen) >= 0 && (i - globalTypeLen) < stackTypeLen then
+                        EvalReplayValueStore.putTypeValue nodeId s.env_stack_type.[i - globalTypeLen]
+                    else
+                        EvalReplayValueStore.putType nodeId (fun () -> vt s i)
                 | TArrow'(scope,i,body) ->
                     EvalReplayValueStore.putType nodeId (fun () ->
                         assert (i = scope.ty.free_vars.Length)
@@ -18688,7 +20924,18 @@ module spiral_compiler =
                         | got ->
                             failwith ("alpha398_type_apply_expected_record_nominal_typefunction_or_metavar:" + show_ty got))
                 | TNominal i -> EvalReplayValueStore.putType nodeId (fun () -> YNominal env.nominals.[i])
-                | TPair(_,a,b) -> EvalReplayValueStore.putType nodeId (fun () -> YPair(childType "TPair.left" a, childType "TPair.right" b))
+                | TPair(_,a,b) ->
+                    let leftNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box a)
+                    let rightNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box b)
+                    registerReplayTy leftNodeId a
+                    registerReplayTy rightNodeId b
+                    EvalReplayValueStore.putTypePairSpine nodeId {
+                        leftNodeId = leftNodeId
+                        leftShape = evalNodeShapeTy a
+                        rightNodeId = rightNodeId
+                        rightShape = evalNodeShapeTy b
+                    }
+                    EvalReplayValueStore.putType nodeId (fun () -> YPair(childType "TPair.left" a, childType "TPair.right" b))
                 | TFun(a,b,t) ->
                     let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box a)
                     let bodyNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box b)
@@ -18699,6 +20946,7 @@ module spiral_compiler =
                         argShape = evalNodeShapeTy a
                         bodyNodeId = bodyNodeId
                         bodyShape = evalNodeShapeTy b
+                        funType = t
                     }
                     EvalReplayValueStore.putType nodeId (fun () -> YFun(childType "TFun.arg" a, childType "TFun.body" b,t))
                 | TModule a ->
@@ -18798,19 +21046,25 @@ module spiral_compiler =
                         | Some _ -> EvalWorklist.hasReplayCompleteKind "ty"
                         | None -> EvalWorklist.hasReplayCompleteKind "ty"
                     if globalReplayComplete then
-                        match EvalReplayValueStore.tryType nodeId0 with
-                        | Some value ->
-                            DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_global_fuse_replay_return\",\"event\":\"ty_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_ty_value\"}"
-                                    (DiagJson.esc (evalNodeShapeTy x)))
-                            DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_fuse_clear_after_replay_return\",\"event\":\"ty_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_ty_value\"}"
-                                    (DiagJson.esc (evalNodeShapeTy x)))
-                            TermCycleFuse.reset ()
-                            raise (EvalReplayTyReturn value)
+                        let shape0 = evalNodeShapeTy x
+                        let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
+                        let replayReturnMsg =
+                            sprintf "%s: global type replay return suppressed after pinned terminal first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0
+                        match EvalWorklist.trySuppressGlobalFuseReplayReturnForPinnedTerminal "ty_entry_global_fuse" "ty" shape0 replayReturnMsg with
+                        | Some msg -> raise_type_error s msg
                         | None ->
-                            let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
-                            raise_type_error s (sprintf "%s: global term-cycle fuse completed but replay type value was missing first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
+                            match EvalReplayValueStore.tryType nodeId0 with
+                            | Some value ->
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_global_fuse_replay_return\",\"event\":\"ty_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_ty_value\"}"
+                                        (DiagJson.esc shape0))
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_fuse_clear_after_replay_return\",\"event\":\"ty_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_ty_value\"}"
+                                        (DiagJson.esc shape0))
+                                TermCycleFuse.reset ()
+                                raise (EvalReplayTyReturn value)
+                            | None ->
+                                raise_type_error s (sprintf "%s: global term-cycle fuse completed but replay type value was missing first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
                     else
                         if EvalWorklist.hasReplayCompleteOtherKind "ty" then
                             DiagJson.emit "{\"kind\":\"eval_worklist_kind_local_fuse_reset\",\"event\":\"ty_entry_global_fuse\",\"completed_kind\":\"other\",\"requested_kind\":\"ty\",\"single_flight\":1,\"next\":\"continue_ty_eval\"}"
@@ -18818,7 +21072,9 @@ module spiral_compiler =
                             TermCycleFuse.reset()
                         else
                             let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
-                            raise_type_error s (sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting ty worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
+                            let msg = sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting ty worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0
+                            let msg = EvalWorklist.retargetGlobalFuseAbortMessage "ty_entry_global_fuse" "ty" msg
+                            raise_type_error s msg
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
     
@@ -19342,6 +21598,12 @@ module spiral_compiler =
                         EvalReplayValueStore.putTerm nodeId (fun () ->
                             if freeVars.ty.free_vars.Length <> i then failwith "Replay recursive forall free-var arity mismatch."
                             DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                    | EJoinPoint'(_,_,_,_,_,_) ->
+                        // ALPHA559: EJoinPoint' is a first-class term value computation.
+                        // Register the existing evaluator thunk so the replay driver can
+                        // attempt real join-point materialization instead of falling through
+                        // to the opaque E* dispatcher and repeating term_shape_dispatch.
+                        EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
                     | EDefaultLit(_,_,_) -> ()
                     | ELet _ ->
                         // ALPHA408: conservative replay for let-spines exposed by alpha407.
@@ -19463,6 +21725,12 @@ module spiral_compiler =
                         let failNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box on_fail)
                         registerReplayTerm succNodeId on_succ
                         registerReplayTerm failNodeId on_fail
+                        EvalReplayValueStore.putUnitTestSpine nodeId {
+                            successNodeId = succNodeId
+                            successShape = evalNodeShapeTerm on_succ
+                            failNodeId = failNodeId
+                            failShape = evalNodeShapeTerm on_fail
+                        }
                         EvalReplayValueStore.putTerm nodeId (fun () ->
                             let s2 = add_trace s r
                             let branch, branchNodeId =
@@ -19686,6 +21954,7 @@ module spiral_compiler =
                         let opReplayNodeIds = argArray |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
                         let opReplayName = sprintf "%A" op
                         EvalReplayValueStore.putOpContext nodeId (box s)
+                        EvalReplayValueStore.putApplyContext nodeId (box s)
                         EvalReplayValueStore.putOpSpine nodeId {
                             opName = opReplayName
                             argCount = argArray.Length
@@ -19813,25 +22082,30 @@ module spiral_compiler =
                         | Some _ -> EvalWorklist.hasReplayCompleteKind "term"
                         | None -> EvalWorklist.hasReplayCompleteKind "term"
                     if globalReplayComplete then
-                        match EvalReplayValueStore.tryTerm nodeId0 with
-                        | Some value ->
-                            DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_global_fuse_term_replay_return\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_term_value\"}"
-                                    (DiagJson.esc (evalNodeShapeTerm x)))
-                            DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_fuse_clear_after_replay_return\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_term_value\"}"
-                                    (DiagJson.esc termShape0))
-                            EvalReplayValueStore.putTermSourceValue termSourceKey0 value
-                            DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_source_value_stored\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"source_key\":%s,\"single_flight\":1,\"next\":\"return_term_value\"}"
-                                    (DiagJson.esc termShape0) (DiagJson.esc termSourceKey0))
-                            TermCycleFuse.reset ()
-                            raise (EvalReplayTermReturn value)
+                        let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
+                        let replayReturnMsg =
+                            sprintf "%s: global term replay return suppressed after pinned terminal first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0
+                        match EvalWorklist.trySuppressGlobalFuseReplayReturnForPinnedTerminal "term_entry_global_fuse" "term" termShape0 replayReturnMsg with
+                        | Some msg -> raise_type_error s msg
                         | None ->
-                            let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
-                            DiagJson.emit (
-                                sprintf "{\"kind\":\"eval_worklist_global_fuse_term_value_missing\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_step_partial\",\"shape\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_record_or_term_stepper_required\"}"
-                                    (DiagJson.esc (evalNodeShapeTerm x)))
+                            match EvalReplayValueStore.tryTerm nodeId0 with
+                            | Some value ->
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_global_fuse_term_replay_return\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_term_value\"}"
+                                        (DiagJson.esc (evalNodeShapeTerm x)))
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_fuse_clear_after_replay_return\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"single_flight\":1,\"next\":\"return_term_value\"}"
+                                        (DiagJson.esc termShape0))
+                                EvalReplayValueStore.putTermSourceValue termSourceKey0 value
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_source_value_stored\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_root_complete\",\"shape\":%s,\"source_key\":%s,\"single_flight\":1,\"next\":\"return_term_value\"}"
+                                        (DiagJson.esc termShape0) (DiagJson.esc termSourceKey0))
+                                TermCycleFuse.reset ()
+                                raise (EvalReplayTermReturn value)
+                            | None ->
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_global_fuse_term_value_missing\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_step_partial\",\"shape\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_record_or_term_stepper_required\"}"
+                                        (DiagJson.esc (evalNodeShapeTerm x)))
                             // ALPHA441: alpha440 reached ESeq after a different term replay
                             // had already produced a root-complete witness.  That proof is
                             // useful for the worklist but not a value for the current ESeq;
@@ -19853,7 +22127,9 @@ module spiral_compiler =
                             TermCycleFuse.reset()
                         else
                             let k0, s0, d0, g0, re0, max0 = TermCycleFuse.describe()
-                            raise_type_error s (sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting term worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0)
+                            let msg = sprintf "%s: global term-cycle fuse already tripped first_key=%s first_site=%s first_depth=%d gen=%d re=%d/%d; aborting term worker before StackOverflow" EJPCodes.EJP0011 k0 s0 d0 g0 re0 max0
+                            let msg = EvalWorklist.retargetGlobalFuseAbortMessage "term_entry_global_fuse" "term" msg
+                            raise_type_error s msg
     
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
@@ -19883,6 +22159,11 @@ module spiral_compiler =
                     EvalReplayValueStore.putTerm nodeId (fun () ->
                         if freeVars.ty.free_vars.Length <> i then failwith "Replay recursive forall free-var arity mismatch."
                         DForall(body.Value, HopacExtensions.A.map (v s) freeVars.term.free_vars, HopacExtensions.A.map (vt s) freeVars.ty.free_vars, freeVars.term.stack_size, freeVars.ty.stack_size))
+                | EJoinPoint'(_,_,_,_,_,_) ->
+                    // ALPHA559: mirror the global-fuse registration path for
+                    // normal retry/replay.  The EJoinPoint' branch below remains
+                    // fail-closed if the real evaluator still cannot materialize it.
+                    EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
                 | EDefaultLit(_,_,_) -> ()
                 | ESeq(_,first,second) ->
                     let firstNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box first)
@@ -19921,6 +22202,27 @@ module spiral_compiler =
                             | None -> failwith ("alpha438_seq_second_value_missing:" + evalNodeShapeTerm second)
                         | Some other -> failwith (sprintf "alpha438_seq_expected_unit:%s" (show_data other))
                         | None -> failwith ("alpha438_seq_first_value_missing:" + evalNodeShapeTerm first))
+                | EUnitTest(r,bind,on_succ,on_fail) ->
+                    // ALPHA560: mirror the global-fuse registration path for normal retry/replay.
+                    let succNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box on_succ)
+                    let failNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box on_fail)
+                    registerReplayTerm succNodeId on_succ
+                    registerReplayTerm failNodeId on_fail
+                    EvalReplayValueStore.putUnitTestSpine nodeId {
+                        successNodeId = succNodeId
+                        successShape = evalNodeShapeTerm on_succ
+                        failNodeId = failNodeId
+                        failShape = evalNodeShapeTerm on_fail
+                    }
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        let s2 = add_trace s r
+                        let branch, branchNodeId =
+                            match v s2 bind with
+                            | DB -> on_succ, succNodeId
+                            | _ -> on_fail, failNodeId
+                        match EvalReplayValueStore.tryTerm branchNodeId with
+                        | Some value -> value
+                        | None -> failwith ("alpha408_unit_test_branch_value_missing:" + evalNodeShapeTerm branch))
                 | ETypeApply(_,func,typeArg) ->
                     let funcNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box func)
                     let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box typeArg)
@@ -19993,6 +22295,27 @@ module spiral_compiler =
                             term s' body
                         | DV(L(_,YForall)) -> failwith "Replay type-apply cannot apply runtime forall during partial evaluation."
                         | a -> failwith (sprintf "Replay type-apply expected forall; got %s" (show_data a)))
+                | EMacro(r,a,b) ->
+                    // ALPHA553: the normal post-fuse registerReplayTerm path must mirror
+                    // the global-fuse EMacro thunk above.  Runtime 552 scheduled an
+                    // EMacro apply-argument child at core.spi:56, but this second
+                    // register path had no EMacro case, so tryTermDetailed reported
+                    // term_thunk_missing and pinned semantic_macro_thunk_missing_blocked.
+                    for m in a do
+                        match m with
+                        | MTerm(x,_) ->
+                            let childNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
+                            registerReplayTerm childNodeId x
+                        | _ -> ()
+                    EvalReplayValueStore.putTerm nodeId (fun () ->
+                        let s2 = add_trace s r
+                        let macroItems =
+                            a |> List.map (function
+                                | MText x -> CMText x
+                                | MTerm (x,is_inline) -> CMTerm(term s2 x |> dyn false s2, is_inline)
+                                | MType x -> CMType(ty s2 x)
+                                | MLitType x -> CMTypeLit(ty s2 x |> assert_ty_lit s2))
+                        push_typedop_no_rewrite s2 (TyMacro(macroItems)) (ty s2 b))
                 | ERecordWith(r,vars,withs,withouts) ->
                     let recordChildTerms =
                         let xs = ResizeArray<string * E>()
@@ -20107,11 +22430,15 @@ module spiral_compiler =
                     let argArray = args |> List.toArray
                     for arg in argArray do
                         let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
+                        registerReplayTerm argNodeId arg
                         match arg with
                         | EV a -> EvalReplayValueStore.putTerm argNodeId (fun () -> v s a)
+                        | ELit(_,lit) -> EvalReplayValueStore.putTermValue argNodeId (DLit lit)
+                        | ESymbol(_,sym) -> EvalReplayValueStore.putTermValue argNodeId (DSymbol sym)
                         | EDefaultLit(_,_,_) -> ()
                         | _ -> ()
                     EvalReplayValueStore.putOpContext nodeId (box s)
+                    EvalReplayValueStore.putApplyContext nodeId (box s)
                     EvalReplayValueStore.putOpSpine nodeId {
                         opName = sprintf "%A" op
                         argCount = argArray.Length
@@ -20573,11 +22900,48 @@ module spiral_compiler =
                     let bodyNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body)
                     EvalReplayValueStore.putParentContinuation bodyNodeId { parentKind = "term"; parentShape = "EApply"; parentNodeId = parentNodeId; role = "apply_function_body" }
                     EvalReplayValueStore.putApplyFunctionBodyNode parentNodeId bodyNodeId
+                    let mkBodyEnv () =
+                        let s' = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
+                        s'.env_stack_term.[0] <- arg
+                        s'
+                    match body with
+                    | EAnnotTest(_, annotTy, _bind, onSucc, onFail) ->
+                        let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box annotTy)
+                        let trueNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onSucc)
+                        let falseNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onFail)
+                        EvalReplayValueStore.putType typeNodeId (fun () -> ty (mkBodyEnv()) annotTy)
+                        EvalReplayValueStore.putTerm trueNodeId (fun () -> term (mkBodyEnv()) onSucc)
+                        EvalReplayValueStore.putTerm falseNodeId (fun () -> term (mkBodyEnv()) onFail)
+                        EvalReplayValueStore.putAnnotTestSpine bodyNodeId {
+                            typeNodeId = typeNodeId
+                            typeShape = evalNodeShapeTy annotTy
+                            trueNodeId = trueNodeId
+                            trueShape = evalNodeShapeTerm onSucc
+                            falseNodeId = falseNodeId
+                            falseShape = evalNodeShapeTerm onFail
+                        }
+                    | EOp(_, op, args) ->
+                        let bodyEnv = mkBodyEnv()
+                        let argArray = args |> List.toArray
+                        for argExpr in argArray do
+                            let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box argExpr)
+                            match argExpr with
+                            | EV a -> EvalReplayValueStore.putTerm argNodeId (fun () -> v bodyEnv a)
+                            | ELit(_,lit) -> EvalReplayValueStore.putTermValue argNodeId (DLit lit)
+                            | ESymbol(_,sym) -> EvalReplayValueStore.putTermValue argNodeId (DSymbol sym)
+                            | EB _ -> EvalReplayValueStore.putTermValue argNodeId DB
+                            | _ -> EvalReplayValueStore.putTerm argNodeId (fun () -> term bodyEnv argExpr)
+                        EvalReplayValueStore.putOpContext bodyNodeId (box bodyEnv)
+                        EvalReplayValueStore.putApplyContext bodyNodeId (box bodyEnv)
+                        EvalReplayValueStore.putOpSpine bodyNodeId {
+                            opName = sprintf "%A" op
+                            argCount = argArray.Length
+                            argNodeIds = argArray |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                            argShapes = argArray |> Array.map evalNodeShapeTerm
+                        }
+                    | _ -> ()
                     if not (EvalReplayValueStore.hasTerm bodyNodeId) then
-                        EvalReplayValueStore.putTerm bodyNodeId (fun () ->
-                            let s' = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
-                            s'.env_stack_term.[0] <- arg
-                            term s' body)
+                        EvalReplayValueStore.putTerm bodyNodeId (fun () -> term (mkBodyEnv()) body)
                     Choice1Of2 (bodyNodeId, evalNodeShapeTerm body)
                 | DV(L(_,YFun _)) ->
                     Choice2Of2 "apply_function_body_runtime_fun"
@@ -30834,8 +33198,51 @@ module spiral_compiler =
                                                                 TermCycleFuse.reset ()
                                                                 raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
                                                             else
+                                                                let alpha520PeekedFrameBeforeProgress = EvalWorklist.tryPeek()
+                                                                let alpha520BlockedStatusBeforeProgress =
+                                                                    match alpha520PeekedFrameBeforeProgress with
+                                                                    | Some frame -> frame.status
+                                                                    | None -> "semantic_step_partial"
+                                                                let alpha536PeekedFrameBeforeProgress =
+                                                                    match alpha520PeekedFrameBeforeProgress, EvalWorklist.tryPinnedTerminalContract() with
+                                                                    | Some frame, Some pinned when EvalWorklist.terminalContractRank frame.status > 0 && EvalWorklist.terminalContractRank pinned.status > EvalWorklist.terminalContractRank frame.status ->
+                                                                        DiagJson.emit (
+                                                                            sprintf "{\"kind\":\"eval_worklist_terminal_contract_pin_selected\",\"event\":\"retry_stop\",\"old_status\":%s,\"new_status\":%s,\"old_rank\":%d,\"new_rank\":%d,\"old_site\":%s,\"new_site\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"abort_without_write\"}"
+                                                                                (DiagJson.esc frame.status) (DiagJson.esc pinned.status) (EvalWorklist.terminalContractRank frame.status) (EvalWorklist.terminalContractRank pinned.status) (DiagJson.esc frame.site) (DiagJson.esc pinned.site) (EvalWorklist.pendingCount()))
+                                                                        Some pinned
+                                                                    | None, Some pinned ->
+                                                                        DiagJson.emit (
+                                                                            sprintf "{\"kind\":\"eval_worklist_terminal_contract_pin_selected\",\"event\":\"retry_stop\",\"old_status\":\"none\",\"new_status\":%s,\"old_rank\":0,\"new_rank\":%d,\"old_site\":\"none\",\"new_site\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"abort_without_write\"}"
+                                                                                (DiagJson.esc pinned.status) (EvalWorklist.terminalContractRank pinned.status) (DiagJson.esc pinned.site) (EvalWorklist.pendingCount()))
+                                                                        Some pinned
+                                                                    | _ -> alpha520PeekedFrameBeforeProgress
+                                                                let alpha535BlockedStatusBeforeProgress =
+                                                                    match alpha536PeekedFrameBeforeProgress with
+                                                                    | Some frame -> frame.status
+                                                                    | None -> alpha520BlockedStatusBeforeProgress
+                                                                let alpha520TerminalLetSuccessBlocked =
+                                                                    alpha535BlockedStatusBeforeProgress = "semantic_let_success_apply_exception_blocked"
+                                                                let alpha521TerminalReplayContractBlocked =
+                                                                    alpha520TerminalLetSuccessBlocked
+                                                                    || alpha535BlockedStatusBeforeProgress = "semantic_replay_payload_missing_blocked"
+                                                                    || alpha535BlockedStatusBeforeProgress = "semantic_macro_thunk_missing_blocked"
+                                                                    || alpha535BlockedStatusBeforeProgress = "semantic_tjoinpoint_stepper_blocked"
+                                                                    || alpha535BlockedStatusBeforeProgress = "semantic_literal_op_body_stepper_blocked"
+                                                                    || alpha535BlockedStatusBeforeProgress = "semantic_let_success_apply_continuation_blocked"
+                                                                    || alpha535BlockedStatusBeforeProgress = "semantic_apply_continuation_exception_blocked"
+                                                                    || alpha535BlockedStatusBeforeProgress = "semantic_deferred_function_replay_exception_blocked"
+                                                                     || EvalWorklist.terminalContractRank alpha535BlockedStatusBeforeProgress >= 68
+                                                                if replayPartial && alpha520TerminalLetSuccessBlocked then
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_terminal_let_success_progress_yield_suppressed\",\"event\":\"retry_stop\",\"status\":%s,\"attempt\":%d,\"max_attempts\":%d,\"yield_used\":%d,\"yield_cap\":%d,\"policy\":\"terminal_let_success_blocker_abort_without_retry\",\"single_flight\":1,\"next\":\"abort_without_write\"}"
+                                                                            (DiagJson.esc alpha535BlockedStatusBeforeProgress) attempt max_attempts frontier_yield_retry_count frontier_yield_retry_cap)
+                                                                elif replayPartial && alpha521TerminalReplayContractBlocked then
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_terminal_replay_contract_progress_yield_suppressed\",\"event\":\"retry_stop\",\"status\":%s,\"attempt\":%d,\"max_attempts\":%d,\"yield_used\":%d,\"yield_cap\":%d,\"policy\":\"terminal_replay_contract_blocker_abort_without_retry\",\"single_flight\":1,\"next\":\"abort_without_write\"}"
+                                                                            (DiagJson.esc alpha535BlockedStatusBeforeProgress) attempt max_attempts frontier_yield_retry_count frontier_yield_retry_cap)
                                                                 let progressYieldRetry =
                                                                     replayPartial
+                                                                    && not alpha521TerminalReplayContractBlocked
                                                                     && attempt + 1 <= root_complete_replay_attempt_cap
                                                                     && frontier_yield_retry_count < frontier_yield_retry_cap
                                                                     && EvalWorklist.tryConsumeProgressYield()
@@ -30847,17 +33254,16 @@ module spiral_compiler =
                                                                     preserve_progress_frontier_next_attempt <- true
                                                                     TermCycleFuse.reset ()
                                                                     raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
-                                                                let peekedFrame = EvalWorklist.tryPeek()
-                                                                let blockedStatus =
-                                                                    match peekedFrame with
-                                                                    | Some frame -> frame.status
-                                                                    | None -> "semantic_step_partial"
+                                                                let peekedFrame = alpha536PeekedFrameBeforeProgress
+                                                                let blockedStatus = alpha535BlockedStatusBeforeProgress
                                                                 if replayPartial then
                                                                     DiagJson.emit (
                                                                         sprintf "{\"kind\":\"eval_worklist_resume_blocked\",\"event\":\"retry_stop\",\"status\":%s,\"attempt\":%d,\"max_attempts\":%d,\"policy\":\"real_stepper_required_before_attempt_build\",\"single_flight\":1,\"next\":\"abort_without_write\"}"
                                                                             (DiagJson.esc blockedStatus) attempt max_attempts)
                                                                 let finalMsg =
                                                                     match peekedFrame with
+                                                                    | Some frame when EvalWorklist.terminalContractRank frame.status >= 90 ->
+                                                                        EvalWorklist.terminalPrimaryMessage "retry_stop" e.Data1 frame (EvalWorklist.terminalContractRank frame.status)
                                                                     | Some frame -> EvalWorklist.requiredMessage e.Data1 frame
                                                                     | None -> e.Data1
                                                                 raise (PartEvalTypeError(e.Data0, finalMsg))
@@ -30894,6 +33300,45 @@ module spiral_compiler =
 
                                                     let is_jp_stall =
                                                         code = EJPCodes.EJP0014
+
+                                                    let alpha542JpStallPinnedTerminal =
+                                                        if is_jp_stall && CacheGeneration.isSequentialRequested() then
+                                                            try
+                                                                EvalWorklist.drainJpStallPreflight "jp_stall_terminal_preflight" 256 |> ignore
+                                                                match EvalWorklist.tryPinnedTerminalContract() with
+                                                                | Some pinned when EvalWorklist.terminalContractRank pinned.status >= 90 -> Some pinned
+                                                                | _ ->
+                                                                    match EvalWorklist.waitForPinnedTerminalContract "jp_stall_terminal_preflight_wait" 96 10 with
+                                                                    | Some pinned -> Some pinned
+                                                                    | None ->
+                                                                        match EvalWorklist.tryPinnedTerminalContract() with
+                                                                        | Some pinned when EvalWorklist.terminalContractRank pinned.status > 0 ->
+                                                                            let rank = EvalWorklist.terminalContractRank pinned.status
+                                                                            DiagJson.emit (
+                                                                                sprintf "{\"kind\":\"eval_worklist_jp_stall_any_rank_terminal_abort_without_retry\",\"event\":\"jp_stall_terminal_preflight\",\"code\":%s,\"terminal_code\":%s,\"original_code\":%s,\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"attempt\":%d,\"max_attempts\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                                                                    (DiagJson.esc EJPCodes.EJP0011) (DiagJson.esc EJPCodes.EJP0011) (DiagJson.esc code) (DiagJson.esc pinned.status) rank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) attempt max_attempts (EvalWorklist.pendingCount()) (DiagJson.esc "explicit_eval_worklist_terminal_contract_required"))
+                                                                            Some pinned
+                                                                        | _ -> None
+                                                            with _ -> None
+                                                        else None
+
+                                                    match alpha542JpStallPinnedTerminal with
+                                                    | Some pinned ->
+                                                        let rank = EvalWorklist.terminalContractRank pinned.status
+                                                        let terminalCode = EJPCodes.EJP0011
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_jp_stall_pinned_terminal_abort_without_retry\",\"event\":\"jp_stall_terminal_preflight\",\"code\":%s,\"terminal_code\":%s,\"original_code\":%s,\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"attempt\":%d,\"max_attempts\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"abort_without_write\"}"
+                                                                (DiagJson.esc terminalCode) (DiagJson.esc terminalCode) (DiagJson.esc code) (DiagJson.esc pinned.status) rank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) attempt max_attempts (EvalWorklist.pendingCount()))
+                                                        DiagJson.retryStop terminalCode "jp_wait_stall_pinned_terminal_abort_without_retry" attempt max_attempts file backend pinned.key pinned.site pinned.depth pinned.re pinned.maxRe
+                                                        let terminalMsg =
+                                                            let msg =
+                                                                sprintf "%s: pinned terminal contract blocked jp_wait stall; original_code=%s"
+                                                                    terminalCode code
+                                                            EvalWorklist.requiredMessage
+                                                                (sprintf "%s\njp_stall_terminal_abort_without_retry=1 original_code=%s" msg code)
+                                                                pinned
+                                                        raise (PartEvalTypeError(e.Data0, terminalMsg))
+                                                    | None -> ()
 
                                                     let jp_stall_replay_complete =
                                                         is_jp_stall
