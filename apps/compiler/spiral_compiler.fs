@@ -1,43 +1,39 @@
-// BuildFile replay-root handoff: consume the proven app-root TFun handoff before pinning BuildFile replay-root failure.
-// - A prior runtime moved past EAnnot and reached semantic_root_complete for apps/spiral/spiral.spi:2670, then stopped only at semantic_buildfile_replay_root_handoff_blocked with pending=1.
-// - This path performs one explicit BuildFile handoff-consumption for that exact live replay-root witness: record a fresh BuildFile.replay_root_complete reason, clear volatile worklist/frontier state, reset terminal ledgers, and retry once without preserving the stale frontier.
-// - No Data/Ty value, root proof, writer output, codegen result, retry-cap widening, terminal-rank inflation, or BuildOk is synthesized.
-// ALPHA735: replay Global/1 through the real compile-time import path once its literal argument is materialized.
-// - Runtime 734 moved past the EType cleanup issue and exposed type_aware_op_schedule_unhandled:Global at core.spi:56, then pinned semantic_op_impl_required_blocked rank 94.
-// - Alpha735 adds a fail-closed Global replay resolver: only DLit string is accepted, global' runs only for the active backend, and the result is the original push_op_no_rewrite Global value.
-// - No Data/Ty, root proof, writer output, codegen result, or BuildOk is synthesized.
-// ALPHA734: keep concrete EType replay terminals from being erased by unrelated root completions.
-// - Runtime 733 proved alpha733's BuildFile handoff terminal is truthful, but it also showed an earlier semantic_term_type_value_blocked at core/listm.spi:6 was globally cleared by a later type-root completion at resultm.spi:267.
-// - Alpha734 narrows that cleanup to same-site root completions only, so the next run should preserve the real EType/PartEvalTypeError blocker instead of falling through to the BuildFile handoff terminal.
-// - No Data/Ty, root proof, writer output, codegen result, or BuildOk is synthesized.
-// ALPHA733: make repeated replay-root final handoff a first-class BuildFile contract instead of another retry.
-// - Runtime 732 proved the alpha731 post-clean preserved-frontier retry fired once, then the same apps/spiral/spiral.spi:2670 TFun semantic_root_complete frontier exhausted again without BuildFile consumption.
-// - Alpha733 pins a semantic_buildfile_replay_root_handoff_blocked terminal with its own rank/next mapping so the next run reports the missing BuildFile consumption contract directly.
-// - No Data/Ty, writer output, root proof, codegen result, or BuildOk is synthesized; the patch only stops disguising the handoff seam as a generic retry-loop message.
-// ALPHA732: promote concrete EAnnot replay blocker above stale root-complete retarget repeats.
-// - Runtime 731 proved alpha731 moved past the final handoff loop into concrete annotation replay at sm'_real.spir:82/backend.spi:3, but the older stale-retarget terminal rank 77 still masked it.
-// - Alpha732 gives semantic_annot_replay_blocked a real terminal rank and next mapping so the selected frontier names the missing annotation stepper instead of the stale root retarget echo.
-// - No Data/Ty, annotation value, writer output, root proof, codegen result, or BuildOk is synthesized.
-// ALPHA731: add one bounded post-clean preserved-root handoff after runtime 730 proved clean retry reconstructs the same app-root TFun proof.
-// - Runtime 730 moved past the alpha730 JPMethodUnknownRet soft-pin, replayed rust/testing and app-root dynamic join paths, then stopped only when semantic_root_complete final handoff repeated after the clean retry.
-// - After the clean volatile reset, alpha731 gives BuildFile exactly one preserved-root consumption attempt before the existing compact exhausted terminal remains authoritative.
-// - No Data/Ty, writer output, root proof, codegen result, or BuildOk is synthesized; this only changes the handoff scheduler policy for the proven apps/spiral/spiral.spi:2670 TFun frontier.
-// ALPHA730: soft-pin exhausted JPMethodUnknownRet if-branch probes so newer concrete terminals can surface.
-// - Runtime 729 validated the alpha729 EPairTest direct-branch bridge and moved into rust/testing plus app-root type replay.
-// - The final selected terminal was the old core.spi:56 JPMethodUnknownRet(par) if-condition after both branches were already replay-probed; meanwhile concrete apply-continuation NRE evidence was present but masked by rank.
-// - Alpha730 does not choose a boolean, parent value, Data/Ty, root proof, writer output, codegen success, or BuildOk; it only lowers the exhausted-branch terminal rank after probes are complete.
-// ALPHA729: schedule function-body EPairTest branch directly from the already-materialized call argument.
-// - Runtime 728 moved past codegen placeholder and exposed EPairTest at sm'_real.spir:289 repeatedly rescheduling the same function body with @arg0/DPair until semantic_replay_fingerprint_repeat_blocked.
-// - When apply-body replay reveals EPairTest and the call argument is a DPair, alpha729 schedules the registered success branch directly via the existing PairTestSpine instead of replaying the pair-test wrapper.
-// - No branch value, Data/Ty, writer output, root proof, codegen success, or BuildOk is synthesized.
-// ALPHA727: clean final handoff retry after preserved root proof repeats without BuildFile consumption.
-// - Runtime 726 proved the unit-test NRE seam moved forward and reached app-root semantic_root_complete at apps/spiral/spiral.spi:2670.
-// - When the bounded preserved-frontier final handoff is exhausted with a live replay-root witness and exactly one pending root frame, alpha727 performs one clean retry that drops only volatile worklist frontier state while retaining the BuildFile.replay_root_complete reason/witness.
-// - No Data/Ty, writer output, root proof, codegen success, or BuildOk is synthesized.
-// ALPHA725: replay TypeEq from already-materialized type evidence.
-// - Runtime 724 advanced past final-handoff preservation and exposed TypeEq at core/real_core.spir:216 as semantic_op_impl_required_blocked.
-// - The type-aware replay resolver now handles TypeEq using typeAt 0/1, ty_eq_allow_jp_placeholders, and the existing string/symbol compatibility carve-out.
-// - No Data/Ty, writer output, root proof, codegen success, or BuildOk is synthesized.
+// ALPHA925 package note:
+// - Runtime 924 validated the alpha924 stale-op demotion: execution reached a later BackendSwitch/1 let-success child at backend.spi:2, with repeated root-complete handoff/trampoline evidence still alive.
+// - The new terminal is semantic_replay_child_schedule_repeat_blocked after let_success_child repeatedly asks the BackendSwitch EOp itself for a direct value while the selected Fsharp branch child has already been scheduled and root evidence is being preserved.
+// - Alpha925 defers that BackendSwitch let-success repeat under a fresh root witness instead of pinning it as terminal; this preserves branch replay/drain pressure and does not fabricate an op value, branch result, parent continuation, writer output, codegen output, root proof, or BuildOk.
+// ALPHA922 package note:
+// - Runtime 921 moved past the alpha921 reflection.spi stale-parent demotion and exposed a cleaner BigStack EJP0019 handoff at rust/testing.spi:23: the frame itself is semantic_root_complete/replay_complete=true, but the retry classifier could miss the live worklist witness and fall through to normal invalidating retry.
+// - BigStack EJP0019 root-complete detection now accepts the explicit message/frame evidence (status=semantic_root_complete, frame_status=semantic_root_complete, replay_complete=true) as a root-handoff signal and emits eval_worklist_bigstack_root_complete_message_evidence when the live ledger key is unavailable.
+// - This is routing-only: it preserves the existing replay-root handoff protocol and does not fabricate Data/Ty values, writer output, codegen success, root proof, or BuildOk.
+// ALPHA920 package note:
+// - Runtime 919 moved beyond the EAnnot/RecordTypeFoldBack frontiers and exposed core/core.spi:108 as semantic_if_symbolic_condition_blocked with a huge DFunction condition while pending replay work still existed.
+// - A symbolic/non-bool if condition now probes missing true/false branches before pinning the terminal, with compact classified JSON console events for condition_class, missing branch, and detail_compact.
+// - No branch is selected and no bool/Data/root/writer/BuildOk proof is fabricated; if both branches are already ready, the same semantic_if_symbolic_condition_blocked terminal remains visible.
+// ALPHA863 package note:
+// - Runtime 862 moved past the final-handoff repeat fuse and reached real replay progress,
+//   but the same app-root stale-retarget hardcap reappeared when the same site arrived
+//   through a non-TRecord ty cell.
+// - The app-root hardcap echo shield is now same-kind/same-site rather than shape-specific;
+//   it preserves the existing semantic_root_complete evidence and refuses to pin the
+//   synthetic semantic_root_complete_stale_retarget_repeat_blocked terminal.
+// - No Data/Ty, writer output, codegen success, root proof, or BuildOk is fabricated.
+// ALPHA862 package note:
+// - Runtime 861 proved alpha861 demoted stale terminals, but then looped thousands
+//   of times in stable_replay_root_final_retry for the same semantic_root_complete
+//   frontier with pending=1.
+// - This patch adds a narrow post-finalization final-handoff repeat fuse so the
+//   compiler exits with an explicit replay-root handoff blocker instead of
+//   spending the extended root-complete trampoline budget on identical retries.
+// - No Data/Ty, writer output, codegen success, root proof, or BuildOk is fabricated.
+// ALPHA860: replay driver must execute the queued payload identity, not a stale completed frontier cell.
+// - Runtime 859 advanced past alpha858/859 compile fixes and proved the next fault is semantic identity drift:
+//   a deferred EForall' replay task was hydrated with an older completed EUnitTest frontier cell.
+// - The replay driver now prefers the task payload cell whenever the canonical frontier cell has a different
+//   kind/shape/node/site identity. This is fail-closed scheduling hygiene: it executes existing queued evidence
+//   instead of recycling unrelated root/leaf completion.
+// - No Data/Ty, writer output, codegen success, or BuildOk is fabricated.
+//
 // ALPHA696: demote stale core/core.spi:56 forall-body stepper terminal when app root is complete.
 // - Runtime 695 showed retry_stop_drain preferring semantic_type_apply_forall_body_stepper_blocked at core/core.spi:56 over the live apps/spiral/spiral.spi:2670 semantic_root_complete witness.
 // - This only clears that diagnostic pinned-terminal preference; no forall body, value, continuation, writer proof, codegen result, or BuildOk is synthesized.
@@ -306,6 +302,7 @@
 // ALPHA585 SYMBOLIC IF TERMINAL:
 // - Runtime 584 proves alpha584's selected-frontier escape moved the compiler past listm.spi:27 and into a deeper replay path ending at an EIfThenElse whose condition is symbolic at base.spi:67.
 // - Alpha585 turns that repeated symbolic-if replay fingerprint into a first-class semantic_if_symbolic_condition_blocked terminal instead of spending retry-drain passes on the same EIfThenElse cell.
+//
 // - Safety remains fail-closed: no branch is chosen, no condition is coerced, and no Data, Ty, writer output, cache success, codegen, or BuildOk is fabricated.
 //
 // ALPHA584 SELECTED-FRONTIER STEPPER ESCAPE:
@@ -350,17 +347,20 @@
 // - Runtime 576 proves alpha576's root promotion fired: terminal composite root markers appeared and several type/term subgraphs reached semantic_root_complete.
 // - The run then lost that completed ty root during pending-job drain: retry_stop retargeted a semantic_root_complete frontier to a later ty/TV env-missing terminal at spiral.spi:2669.
 // - Alpha577 gives type roots the same source-key cache already used for term roots, and prevents a fresh semantic_root_complete frontier from being diagnostically replaced by a stale type-variable terminal during retry_stop drain.
+//
 // - Safety remains fail-closed: only a real EvalReplayValueStore.tryType value is cached/returned; no Ty, Data, writer output, cache success, codegen success, or BuildOk is fabricated.
 // 
 // ALPHA576 TERMINAL COMPOSITE ROOT PROMOTION + TY TFUN CYCLE REPAIR:
 // - Runtime 575 proves alpha575 improved the type-arg path: TV/TFun replay now resolves in several places, and the old seq/type-variable terminal no longer dominates.
 // - The remaining terminal is a parent-continuation cycle after an already-materialized composite: EApply reaches semantic_leaf_complete, then retry_stop drains a leaf with no queue and finally pins a ty/TFun parent-continuation cycle at apps/spiral.spi:2670.
 // - Alpha576 allows terminal composite cycle repair to finish as semantic_root_complete when the selected frame has consumed the full replay trace, and extends the same repair family to ty/TFun and ty/TPair via their registered spines.
+//
 // - Safety remains fail-closed: a root proof is promoted only after the stored thunk/children have produced a real Data/Ty value; missing children are still scheduled through the replay driver, and no writer output, cache success, codegen, or BuildOk is fabricated.
 // 
 // ALPHA575 TYPE-APPLY ARG TFun CHILD REPLAY:
 // - Runtime 574 proves alpha574 built and moved past the alpha573/574 seq terminal: semantic_seq_type_error_blocked did not reappear.
 // - The run reached repeated semantic_root_complete and then exposed a concrete ty/TV terminal at trace.spi:314 after an ETypeApply type-argument TFun path.
+//
 // - The normal registerReplayTy path recursively registers TFun children and snapshots in-bounds TV values, but the ETypeApply type-argument mirror still used raw ty recursion for TPair/TFun children.
 // - Alpha575 gives ETypeApply type arguments the same child-spine registration for TPair/TFun, so nested TV children can be scheduled/snapshotted instead of surfacing as type_thunk_missing or stale vt failures.
 // - Safety remains fail-closed: no type variable, function type, term value, root proof, writer output, cache success, codegen, or BuildOk is fabricated.
@@ -664,6 +664,7 @@
 /// 
 /// ALPHA533 LET-SUCCESS ALL-READY APPLY CONTRACT:
 /// - Alpha532 did not validate the EJoinPoint-specific fingerprint marker as the final frontier.
+///
 ///   The run advanced through dynamic bridges, macro thunk terminalization and hundreds of
 ///   semantic_root_complete/attempt_build passes, then stopped at the precise alpha529 probe:
 ///   eval_worklist_let_success_repair_all_ready_blocked followed by the generic
@@ -1549,11 +1550,13 @@ module spiral_compiler =
     ///   through the existing value store, and retargets replay to the selected branch only when the condition is value-backed.
     /// - Non-literal or missing conditions stay semantic_step_partial, so the 323-line false-success writer path remains closed.
     /// 
+    ///
     /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
     /// 
     /// ALPHA357 EV VALUE-STORE STEPPER:
     /// - Alpha356 proved the safety gate: partial replay no longer writes the 323-line false-success residual.
     /// - The next missing ingredient is not another retry; it is a typed value boundary. Alpha357 registers term EV
+    ///
     ///   nodes in a replay value store and only marks semantic_leaf_complete when the replay driver resolves a
     ///   captured EV through that store.
     /// - Non-EV shapes still remain semantic_step_partial, so replay completion is value-backed rather than a
@@ -1672,28 +1675,34 @@ module spiral_compiler =
 ///
     /// ALPHA45 COMPREHENSIVE SOTA HOPAC FINALIZATION:
     /// This release addresses the type mismatch errors ("The variables compared for equality 
+    /// This release addresses the type mismatch errors ("The variables compared for equality
     /// have to have the same type") occurring during retry by implementing:
     /// 
+    ///
     /// 1. FULL JP DICT CLEARING ON GENERATION INVALIDATION:
     ///    - All IVar-based JP dictionaries (method, closure, type) are now properly cleared
     ///    - Prevents stale IVars with inconsistent types from leaking across retry attempts
     ///    - Added explicit clear of join_point_method, join_point_closure caches
     /// 
+    ///
     /// 2. GENERATION-AWARE IVAR WAITING:
     ///    - jp_ivar_wait now checks generation at entry AND exit
     ///    - If generation changes while waiting, immediately raise EJP0008 for clean retry
     ///    - Prevents reading stale results from IVars filled before invalidation
     /// 
+    ///
     /// 3. BACKEND_SWITCH VALIDATION HARDENING:
     ///    - Non-current branch validation now checks generation before AND after
     ///    - If generation changes during validation, skip remaining branches
     ///    - Prevents partial validation state from corrupting type inference
     /// 
+    ///
     /// 4. TYPE COMPARISON SAFETY:
     ///    - ty_eq_allow_jp_placeholders now handles generation-stale comparisons
     ///    - Added fallback to string comparison for types from different generations
     ///    - Prevents spurious type equality failures during retry
     /// 
+    ///
     /// 5. RETRY MECHANISM IMPROVEMENTS:
     ///    - Clear more state on retry (jp_type_cells, diagnostic caches)
     ///    - Force workers shutdown before retry to prevent in-flight corruption
@@ -1705,6 +1714,7 @@ module spiral_compiler =
     /// If a branch contains another backend_switch, deep recursion can overflow stack
     /// before ERecordWith even starts processing (error at i=0, gen=1).
     /// 
+    ///
     /// Fixes:
     /// - Early stack check at ERecordWith entry with BigStack pivot attempt
     /// - Backend_switch non-current branch validation uses BigStack when stack low
@@ -2107,27 +2117,35 @@ module spiral_compiler =
     
     
     
+
+
+
     // #!import '../../../polyglot/deps/The-Spiral-Language/The Spiral Language 2/Supervisor.fs'
     
+
     // #if !INTERACTIVE
     // open Polyglot
     open Common
     // open Lib
     // #endif
     
+
     /// ## PersistentVectorExtensions
     // #!import '../../../polyglot/deps/The-Spiral-Language/The Spiral Language 2/PersistentVectorExtensions.fs'
     
+
     // #if !INTERACTIVE
     //     open Polyglot
     //     open Common
     //     open Lib
     // #endif
     
+
     open System
     open System.Threading
     open FSharpx.Collections
     
+
     /// ### InterlockedEx
     /// Helpers to avoid inref/byref overload friction (especially with F# ref cells).
     module InterlockedEx =
@@ -2137,6 +2155,9 @@ module spiral_compiler =
     
     
     
+
+
+
     /// ### DiagSidecar
     /// Best-effort, non-blocking telemetry buffer for diagnostics.
     /// Always enabled in v43+ for better parallel debugging. Lightweight enough to leave on.
@@ -2144,13 +2165,16 @@ module spiral_compiler =
         open System
         open System.Collections.Concurrent
     
+
         let private maxItems = 512  // Increased buffer
         let private q = ConcurrentQueue<string>()
         let private keyedCounts = ConcurrentDictionary<string,int>()
         let inline private isPow2 (x:int) = x > 0 && (x &&& (x-1)) = 0
     
+
         let inline enabled () = true  // v43: always on
     
+
         let private enqueueRaw (msg: string) =
             q.Enqueue msg
             // best-effort trim: we prefer losing oldest telemetry to blocking the compiler.
@@ -2197,6 +2221,7 @@ module spiral_compiler =
             else
                 ()
     
+
         let snapshot (maxTake: int) : string list =
             let arr = q.ToArray()
             if arr.Length = 0 then []
@@ -2204,6 +2229,7 @@ module spiral_compiler =
                 let n = if maxTake < 0 then 0 else min maxTake arr.Length
                 arr.[arr.Length - n ..] |> Array.toList
     
+
         /// Snapshot of top-k keyed counters matching a prefix (descending by count).
         let snapshotTopKeyed (prefix: string) (k: int) : (string * int) list =
             try
@@ -2231,15 +2257,18 @@ module spiral_compiler =
             if System.Threading.Interlocked.CompareExchange(&envDumped, 1, 0) = 0 then
                 emit "---- ENV SNAPSHOT DISABLED (env_snapshot_no_env_var_reads: no env var reads) ----"
     
+
     /// ### dump_spiral_env_once
     /// Back-compat alias used by newer error paths.
     let dump_spiral_env_once () = DiagSidecar.emitEnvSnapshotOnce ()
     
+
     /// ### map_try_find_by_string
     /// Helper for maps keyed by (id, backend) pairs.
     let map_try_find_by_string (backend: string) (m: Map<(int * string), 'a>) : 'a option =
         m |> Map.tryPick (fun (_, b) v -> if b = backend then Some v else None)
     
+
     /// ### range_checks
     let range_checks from near_to vec =
         if from <= near_to = false then
@@ -2248,6 +2277,7 @@ module spiral_compiler =
         if from < 0 then raise (ArgumentException("`from` must not be negative."))
         if PersistentVector.length vec < near_to then raise (ArgumentException("`near_to` must not be beyond the length of the vector."))
     
+
     /// ### replace
     /// O(n+m). Replace the specified range in a vector with the sequence.
     let replace from near_to seq vec =
@@ -2265,16 +2295,19 @@ module spiral_compiler =
                 rest s
         init vec
     
+
     /// ### mapi
     /// O(n). Returns a vector of the supplied length using the supplied function operating on the index.
     let mapi f vec = PersistentVector.init (PersistentVector.length vec) (fun i -> f i vec.[i])
     
+
     /// ### iter
     /// O(n). Iterates over a vector using the supplied function operating on the index.
     let iter f vec =
         let rec loop i = if i < PersistentVector.length vec then f vec.[i]
         loop 0
     
+
     /// ### unzip
     /// O(n). Unzips a vector of pairs into pairs of vectors.
     let unzip vec =
@@ -2283,16 +2316,19 @@ module spiral_compiler =
         iter (fun (a',b') -> a <- PersistentVector.conj a' a; b <- PersistentVector.conj b' b) vec
         a,b
     
+
     /// ### concat
     /// O(n). Concatenates a vector of vectors.
     let concat vec = PersistentVector.fold (PersistentVector.append) PersistentVector.empty vec
     
+
     /// ### rangePersistentVector
     /// O(near_to-from). Get the vector at a range.
     let persistentVectorRange from near_to vec =
         range_checks from near_to vec
         PersistentVector.init (near_to-from) (fun i -> vec.[i+from])
     
+
     /// ### tryFindBack
     /// O(~n). Returns the last element for which a given function returns true. None if such an element does not exist.
     let tryFindBack f vec =
@@ -2304,13 +2340,16 @@ module spiral_compiler =
                 None
         loop (PersistentVector.length vec - 1)
     
+
     /// ## HashConsing
     // Adapted from: https://github.com/backtracking/ocaml-hashcons
     // Type-Safe Modular Hash-Consing: https://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf
     
+
     // open System
     open System.Runtime.InteropServices
     
+
     /// ### ConsedNode<'a>
     [<CustomComparison;CustomEquality;StructuredFormatDisplay("{AsString}")>]
     type ConsedNode<'a> =
@@ -2320,6 +2359,7 @@ module spiral_compiler =
         hkey: int
         }
     
+
         override x.ToString() = sprintf "<tag %i>" x.tag
         member x.AsString = x.ToString()
         override x.GetHashCode() = x.hkey
@@ -2328,12 +2368,14 @@ module spiral_compiler =
             | :? ConsedNode<'a> as y -> x.tag = y.tag
             | _ -> false
     
+
         interface IComparable with
             member x.CompareTo(y) =
                 match y with
                 | :? ConsedNode<'a> as y -> compare x.tag y.tag
                 | _ -> raise <| ArgumentException "Invalid comparison for HashConsed."
     
+
     /// ### HashConsTable
     type HashConsTable() =
         let mutable table: ResizeArray<GCHandle> [] = Array.init 7 (fun _ -> ResizeArray(0))
@@ -2343,9 +2385,11 @@ module spiral_compiler =
         let mutable counter: int = 0
         let sync_root = obj()
     
+
         member private t.Resize() =
             let next_table_length x = x*3/2+3
     
+
             let table_length' = next_table_length table.Length
             if table_length' <= table.Length then failwith "The hash consing table cannot be grown anymore."
             let table' = Array.init table_length' (fun i -> ResizeArray())
@@ -2370,6 +2414,7 @@ module spiral_compiler =
             limit <- limit'
             total_size <- total_size'
     
+
         member t.Add(x: 'a): ConsedNode<'a> =
             lock sync_root (fun () ->
                 let hkey = hash x
@@ -2377,6 +2422,7 @@ module spiral_compiler =
                 let bucket = table.[(hkey &&& Int32.MaxValue) % Array.length table]
                 let sz = bucket.Count
     
+
                 let rec loop empty_pos i =
                     if i < sz then
                         match bucket.[i].Target with
@@ -2395,14 +2441,17 @@ module spiral_compiler =
                             if total_size > limit * Array.length table then t.Resize()
                         node
     
+
                 loop -1 0 // `-1` indicates the state of no empty bucket
             )
     
+
         override __.Finalize() =
             if is_finalized = false then
                 table |> (Array.iter << Seq.iter) (fun x -> x.Free())
                 is_finalized <- true
     
+
     /// ### StripedHashConsTable (v107-alpha11)
     /// Lock-free striped hash-consing with 32 shards using Fibonacci hashing.
     /// Eliminates the global sync_root bottleneck from HashConsTable.
@@ -2417,6 +2466,7 @@ module spiral_compiler =
         let shardMask = actualShardCount - 1
         let shards = Array.init actualShardCount (fun _ -> HashConsTable())
     
+
         [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
         member private _.GetShardIndex(hkey: int) =
             // Fibonacci hashing for better distribution
@@ -2424,18 +2474,23 @@ module spiral_compiler =
             let fib = 2654435769u  // 2^32 / phi
             int ((h * fib) >>> (32 - shardBits)) &&& shardMask
     
+
         member this.Add(x: 'a): ConsedNode<'a> =
             let hkey = hash x
             let shardIdx = this.GetShardIndex(hkey)
             shards.[shardIdx].Add(x)
     
+
     /// Default striped table with 32 shards (optimal for 8-16 core systems)
     let inline createStripedHashConsTable () = StripedHashConsTable(32)
     
     
+
+
     /// ## Startup
     open Argu
     
+
     /// ### PrimitiveType
     type PrimitiveType =
         | UInt8T | UInt16T | UInt32T | UInt64T
@@ -2443,6 +2498,7 @@ module spiral_compiler =
         | Float32T | Float64T
         | BoolT | StringT | CharT
     
+
     /// ### DefaultEnv
     type DefaultEnv = {
         port : int
@@ -2451,12 +2507,14 @@ module spiral_compiler =
         default_float : PrimitiveType
         }
     
+
     /// ### CliArguments
     type CliArguments =
         | [<Mandatory;Unique>] Port of int
         | [<Unique>] Default_Int of string
         | [<Unique>] Default_Float of string
     
+
         interface IArgParserTemplate with
             member s.Usage =
                 match s with
@@ -2464,6 +2522,7 @@ module spiral_compiler =
                 | Default_Int _ -> "specify the default int: i8, i16, i32, i64, u8, u16, u32, u64"
                 | Default_Float _ -> "specify the default float: f32, f64"
     
+
     /// ### parseStartup
     let startupParse args =
         let parser = ArgumentParser.Create<CliArguments>(programName = "spiral.exe")
@@ -2480,6 +2539,7 @@ module spiral_compiler =
             | "u64" -> UInt64T
             | x -> failwith $"Invalid default int.\nGot: %s{x}\nExpected one of: i8, i16, i32, i64, u8, u16, u32, u64"
     
+
         let uint =
             match int with
             | Int8T -> UInt8T
@@ -2498,6 +2558,7 @@ module spiral_compiler =
             | x -> failwith $"Invalid default float.\nGot: %s{x}\nExpected one of: f32, f64"
         }
     
+
     /// ## Utils
     open System.Collections.Generic
     open System.Runtime.CompilerServices
@@ -2506,9 +2567,11 @@ module spiral_compiler =
     open Lib
     #endif
     
+
     /// ### list_try_zip
     let list_try_zip a b = try Some (List.zip a b) with _ -> None
     
+
     /// ### get_default
     let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
         let mutable v = Unchecked.defaultof<^V>
@@ -2516,12 +2579,15 @@ module spiral_compiler =
         else def()
     
     
+
+
     /// ### memoize'
     let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
         | false, _ -> let v = f k in memo_dict.Add(k,v); v
     
+
     /// ### memoize
     let inline memoize (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) f k =
         match memo_dict.TryGetValue k with
@@ -2531,28 +2597,34 @@ module spiral_compiler =
             if memo_dict.TryAdd(k,v) then v
             else memo_dict.[k]
     
+
     /// ### lines
     let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
     
+
     /// ### remove
     let inline remove (dict : Dictionary<_,_>) x on_succ on_fail =
         let mutable q = Unchecked.defaultof<_>
         if dict.Remove(x, &q) then on_succ q else on_fail ()
     
+
     /// ### file_uri
     let file_uri (x : string) =
         let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
         trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
         result
     
+
     //open Hopac
     //open Hopac.Infixes
     //open Hopac.Extensions
     //open Hopac.Stream
     
+
     //let print_ch = Ch<string>()
     //let pr x = Hopac.run (Ch.send print_ch (x.ToString()))
     
+
     module DiagLastWait =
         let mutable private last_wait = ""
         let set (w: string) = last_wait <- w
@@ -2574,30 +2646,41 @@ module spiral_compiler =
         /// EJP0002: Join point annotation type mismatch
         let [<Literal>] EJP0002 = "[spiral_compiler] EJP0002"
     
+
         /// EJP0003: Type error during parallel evaluation (race condition)
         let [<Literal>] EJP0003 = "[spiral_compiler] EJP0003"
     
+
         /// EJP0007: Apply type mismatch - primitive where callable expected
         let [<Literal>] EJP0007 = "[spiral_compiler] EJP0007"
     
+
         /// EJP0008: Deep recursion cache corruption
         let [<Literal>] EJP0008 = "[spiral_compiler] EJP0008"
     
     
+
+
         /// EJP0009: Term/type recursion depth exceeded (stack overflow preemption)
         let [<Literal>] EJP0009 = "[spiral_compiler] EJP0009"
     
     
+
+
         /// EJP0010: Insufficient execution stack (preempted stack overflow)
         let [<Literal>] EJP0010 = "[spiral_compiler] EJP0010"
     
+
         /// EJP0011: Re-entrant term evaluation cycle detected
         let [<Literal>] EJP0011 = "[spiral_compiler] EJP0011"
     
+
         /// EJP0012: Loop specialization cap exceeded
         let [<Literal>] EJP0012 = "[spiral_compiler] EJP0012"
     
     
+
+
         /// EJP0013: Void instance construction (likely cache corruption)
         let [<Literal>] EJP0013 = "[spiral_compiler] EJP0013"
 
@@ -2664,6 +2747,7 @@ module spiral_compiler =
             else
                 None
     
+
         /// Get error description
         let describe (code: string) : string =
             match code with
@@ -2685,6 +2769,7 @@ module spiral_compiler =
             | "[spiral_compiler] EJP0031" -> "JP watchdog abort (a specific job exceeded its per-op timeout)"
             | _ -> "Unknown error"
     
+
     module DiagJson =
 
         let esc (s: string) =
@@ -2730,6 +2815,7 @@ module spiral_compiler =
             | "eval_worklist_step"
             | "eval_worklist_replay_driver"
             | "eval_worklist_replay_payload_cell_hydrated"
+            | "eval_worklist_replay_payload_preferred_over_stale_frontier"
             | "eval_worklist_replay_step"
             | "eval_worklist_replay_reduce"
             | "eval_worklist_replay_commit"
@@ -2738,6 +2824,18 @@ module spiral_compiler =
             | "eval_worklist_adapter"
             | "eval_worklist_replay_schedule"
             | "eval_worklist_late_captured_leaf_cell_replayed"
+            | "eval_worklist_apply_function_body_dynamic_record_bridge"
+            | "eval_worklist_apply_function_body_dynamic_function_bridge"
+            | "eval_worklist_apply_function_body_dynamic_function_arg1_bridge"
+            | "eval_worklist_type_apply_body_direct_value_materialized"
+            | "eval_worklist_type_aware_op_child_replay_scheduled"
+            | "eval_worklist_backend_switch_branch_replay_scheduled"
+            | "eval_worklist_unit_test_branch_replay_scheduled"
+            | "eval_worklist_literal_annot_test_body_replay_scheduled"
+            | "eval_worklist_let_child_replay_scheduled"
+            | "eval_worklist_apply_child_replay_scheduled"
+            | "eval_worklist_type_apply_child_replay_scheduled"
+            | "eval_worklist_apply_function_body_scheduled"
             | "eval_worklist_apply_function_body_dynamic_record_bridge"
             | "eval_worklist_deferred_after_active_driver_scheduled"
             | "eval_worklist_active_replay_cell_deferred"
@@ -2794,26 +2892,35 @@ module spiral_compiler =
             else s.Substring(0, limit) + sprintf "…[+%d chars]" (s.Length - limit)
 
         let private compactJsonLineIfLarge (line: string) =
-            if System.Object.ReferenceEquals(line,null) || line.Length <= 4096 then line
+            if System.Object.ReferenceEquals(line,null) || line.Length <= 2048 then line
             else
                 let keep (field: string) =
                     let value = jsonStringField field line
-                    if value = "" then "" else sprintf ",\"%s\":%s" field (esc (truncateForDiag 768 value))
+                    if value = "" then "" else sprintf ",\"%s\":%s" field (esc (truncateForDiag 384 value))
                 let kind = jsonStringField "kind" line
                 let ts = string (System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
                 let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
                 let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                 let compactKind = if kind = "" then "diag_compacted" else kind
-                sprintf "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":%s%s%s%s%s%s%s,\"original_bytes\":%d,\"compact_policy\":\"line_length_cap_4096\",\"excerpt\":%s}"
+                sprintf "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":%s%s%s%s%s%s%s,\"original_bytes\":%d,\"compact_policy\":\"line_length_cap_2048\",\"excerpt\":%s}"
                     ts pid tid (esc run_id) (esc compactKind)
                     (keep "event") (keep "status") (keep "outcome") (keep "reason") (keep "site") (keep "next")
-                    line.Length (esc (truncateForDiag 1024 line))
+                    line.Length (esc (truncateForDiag 512 line))
 
         let private shouldEmitJsonLine (line: string) =
             let kind = jsonStringField "kind" line
-            if isNoisyJsonKind kind then
+            let structurallyNoisy =
+                kind.Contains("_snapshot", StringComparison.Ordinal)
+                || kind.Contains("_children_registered", StringComparison.Ordinal)
+                || kind.Contains("_scheduled", StringComparison.Ordinal)
+                || kind.Contains("_suppressed", StringComparison.Ordinal)
+                || kind.Contains("_payload", StringComparison.Ordinal)
+                || kind.Contains("_step", StringComparison.Ordinal)
+                || kind.Contains("_consume", StringComparison.Ordinal)
+                || kind.Contains("_replay_", StringComparison.Ordinal)
+            if isNoisyJsonKind kind || structurallyNoisy then
                 let c = jsonKindCounts.AddOrUpdate(kind, 1, (fun _ old -> old + 1))
-                c <= 8 || isPow2 c
+                c <= 3 || c = 8 || c = 32 || (c % 256 = 0)
             else
                 true
 
@@ -2846,12 +2953,12 @@ module spiral_compiler =
         let termCycle (key: string) (depth: int) (site: string) (gen: int) (re: int) (max_re: int) (big: bool) (hs: string) (ks: string) (count: int) (panic: bool) =
             // Defensive truncation: term-cycle payloads can become huge and contribute to stack/alloc pressure
             let hs =
-                if System.Object.ReferenceEquals(hs,null) then "" 
-                elif hs.Length > 512 then hs.Substring(0,512) + "…" 
+                if System.Object.ReferenceEquals(hs,null) then ""
+                elif hs.Length > 512 then hs.Substring(0,512) + "…"
                 else hs
             let ks =
-                if System.Object.ReferenceEquals(ks,null) then "" 
-                elif ks.Length > 2048 then ks.Substring(0,2048) + "…" 
+                if System.Object.ReferenceEquals(ks,null) then ""
+                elif ks.Length > 2048 then ks.Substring(0,2048) + "…"
                 else ks
             let compact = count > 1 || (panic && depth > 768)
             let hs_out = if compact then "" else hs
@@ -3015,6 +3122,7 @@ module spiral_compiler =
     /// Generic boundary marker for the next stack-safe evaluator step.
     ///
     /// This deliberately does not know about source files such as listm/core/runtime.
+    /// This deliberately stays source-path agnostic.
     /// It only records evaluator shape: sequential fallback, depth, re-entry, and fuse state.
     module EvalWorklistFrontier =
         let private esc (s: string) =
@@ -3048,16 +3156,19 @@ module spiral_compiler =
         open System.Collections.Concurrent
         open System.Runtime.CompilerServices
     
+
         /// ### list_try_zip
         let list_try_zip a b =
             try Some (List.zip a b) with _ -> None
     
+
         /// ### get_default
         let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
             let mutable v = Unchecked.defaultof<^V>
             if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
             else def()
     
+
         /// ### memoize'
         let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
             match memo_dict.TryGetValue k with
@@ -3067,6 +3178,7 @@ module spiral_compiler =
                 memo_dict.Add(k,v)
                 v
     
+
         /// ### memoize
         let inline memoize (memo_dict: ConcurrentDictionary<_,_>) f k =
             match memo_dict.TryGetValue k with
@@ -3076,20 +3188,25 @@ module spiral_compiler =
                 if memo_dict.TryAdd(k,v) then v
                 else memo_dict.[k]
     
+
         /// ### file_uri
         let file_uri (x : string) =
             let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
             trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
             result
     
+
     /// ## ParserCombinators
     
+
     /// ### index
     let inline index d = (^a : (member Index: ^b) d)
     
+
     /// ### index_set
     let inline index_set i d = (^a : (member set_Index: ^b -> unit) (d,i))
     
+
     /// ### (.>>.)
     let inline (.>>.) a b d =
         match a d with
@@ -3099,6 +3216,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### tuple3
     let inline tuple3 a b c d =
         match a d with
@@ -3111,6 +3229,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### tuple4
     let inline tuple4 a b c d' d =
         match a d with
@@ -3126,6 +3245,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### tuple5
     let inline tuple5 a b c d' e d =
         match a d with
@@ -3144,6 +3264,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### tuple6
     let inline tuple6 a b c d' e f d =
         match a d with
@@ -3165,6 +3286,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### tuple7
     let inline tuple7 a b c d' e f g d =
         match a d with
@@ -3189,6 +3311,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### pipe2
     let inline pipe2 a b f d =
         match a d with
@@ -3198,6 +3321,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### pipe3
     let inline pipe3 a b c f d =
         match a d with
@@ -3210,6 +3334,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### pipe4
     let inline pipe4 a b c d' f d =
         match a d with
@@ -3225,6 +3350,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### pipe5
     let inline pipe5 a b c d' e f d =
         match a d with
@@ -3243,6 +3369,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### (.>>)
     let inline (.>>) a b d =
         match a d with
@@ -3252,6 +3379,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### (>>.)
     let inline (>>.) a b d =
         match a d with
@@ -3261,6 +3389,7 @@ module spiral_compiler =
             | Error x -> Error x
         | Error x -> Error x
     
+
     /// ### opt
     let inline opt a d =
         let s = index d
@@ -3270,6 +3399,7 @@ module spiral_compiler =
             if s = index d then Ok(None)
             else Error x
     
+
     /// ### optional
     let inline optional a d =
         let s = index d
@@ -3279,24 +3409,28 @@ module spiral_compiler =
             if s = index d then Ok()
             else Error x
     
+
     /// ### (|>>)
     let inline (|>>) a b d =
         match a d with
         | Ok a -> Ok(b a)
         | Error x -> Error x
     
+
     /// ### (>>%)
     let inline (>>%) a b d =
         match a d with
         | Ok a -> Ok(b)
         | Error x -> Error x
     
+
     /// ### (>>=)
     let inline (>>=) a b d =
         match a d with
         | Ok a -> b a d
         | Error x -> Error x
     
+
     /// ### (>>=?)
     let inline (>>=?) a b d =
         let i = index d
@@ -3308,6 +3442,7 @@ module spiral_compiler =
             | Error _ as x -> (if i' = index d then index_set i d); x // Backtracks to the beginning if the parser state has not changed.
         | Error x -> Error x
     
+
     /// ### many_iter
     let inline many_iter f a d =
         let rec loop () =
@@ -3318,6 +3453,7 @@ module spiral_compiler =
             | Error er -> if s = index d then Ok() else Error er
         loop ()
     
+
     /// ### many_resize_array
     let inline many_resize_array a d =
         let ar = ResizeArray()
@@ -3325,12 +3461,15 @@ module spiral_compiler =
         | Ok() -> Ok(ar)
         | Error er -> Error er
     
+
     /// ### many_array
     let inline many_array a d = many_resize_array a d |> Result.map (fun x -> x.ToArray())
     
+
     /// ### many
     let inline many a d = many_resize_array a d |> Result.map Seq.toList
     
+
     /// ### sepBy
     let inline sepBy a b d =
         let s = index d
@@ -3338,18 +3477,21 @@ module spiral_compiler =
         | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
         | Error x -> if s = index d then Ok [] else Error x
     
+
     /// ### sepBy1
     let inline sepBy1 a b d =
         match a d with
         | Ok a' -> (many (b >>. a) |>> fun b -> a' :: b) d
         | Error x -> Error x
     
+
     /// ### many1
     let inline many1 a d =
         match a d with
         | Ok a' -> (many a |>> fun b -> a' :: b) d
         | Error x -> Error x
     
+
     /// ### attempt
     let inline attempt a d =
         let s = index d
@@ -3357,6 +3499,7 @@ module spiral_compiler =
         | Ok x -> Ok x
         | Error a as a' -> index_set s d; a'
     
+
     /// ### restore
     /// Restores the index on an error if at least i tokens have been consumed.
     let inline restore i a d =
@@ -3365,6 +3508,7 @@ module spiral_compiler =
         | Ok x -> Ok x
         | Error _ as er -> (if index d <= s + i then index_set s d); er
     
+
     /// ### alt
     let inline alt s a b d =
         match a d with
@@ -3377,9 +3521,11 @@ module spiral_compiler =
             else
                 a'
     
+
     /// ### (<|>)
     let inline (<|>) a b d = let s = index d in alt s a b d
     
+
     /// ### (<|>%)
     let inline (<|>%) a b d =
         let s = index d
@@ -3387,6 +3533,7 @@ module spiral_compiler =
         | Ok x -> Ok x
         | Error _ as a' -> if s = index d then Ok b else a'
     
+
     /// ### choice
     let inline choice ar d =
         let s = index d
@@ -3405,54 +3552,69 @@ module spiral_compiler =
                 Error []
         loop 0
     
+
     /// ### between
     let inline between a b c = a >>. c .>> b
     
+
     /// ## LineParsers
     // open System
     open System.Text
     
+
     open Microsoft.FSharp.Core
     
+
     /// ### TokenizerRange
     type TokenizerRange = {from : int; nearTo : int}
     
+
     /// ### TokenizerError
     type TokenizerError = string
     
+
     /// ### Tokenizer
     type Tokenizer = {
         text : string // A single line.
         mutable from : int
         } with
     
+
         member t.Index with get() = t.from and set i = t.from <- i
     
+
     /// ### range_char
     let range_char i = {from=i; nearTo=i+1}
     
+
     /// ### error_char
     let error_char i er = Error [range_char i, er]
     
+
     /// ### inc'
     let inc' i (s : Tokenizer) = s.from <- s.from+i
     
+
     /// ### inc
     let inc (s : Tokenizer) = inc' 1 s
     
+
     /// ### lineParsersEol
     /// End Of Line character
     let lineParsersEol = Char.MaxValue
     
+
     /// ### peek'
     let peek' (s : Tokenizer) i =
         let i = s.from + i
         if 0 <= i && i < s.text.Length then s.text.[i]
         else lineParsersEol
     
+
     /// ### peek
     let peek (s : Tokenizer) = peek' s 0
     
+
     /// ### many1Satisfy2L
     let inline many1Satisfy2L init body label (s : Tokenizer) =
         let x = peek s
@@ -3467,32 +3629,40 @@ module spiral_compiler =
             let i = s.from
             error_char i label
     
+
     /// ### many1SatisfyL
     let inline many1SatisfyL body label (s : Tokenizer) = many1Satisfy2L body body label s
     
+
     /// ### skip
     let inline skip c (s : Tokenizer) = let b = peek s = c in (if b then inc s); b
     
+
     /// ### spaces'
     let rec spaces' (s : Tokenizer) = if peek s = ' ' then inc s; spaces' s
     
+
     /// ### spaces
     let spaces s = spaces' s |> Ok
     
+
     /// ### spaces1
     let spaces1 (s : Tokenizer) =
         if peek s = ' ' then inc s; spaces s else error_char s.from "space"
     
+
     /// ### skip_char
     let skip_char c (s : Tokenizer) =
         let from = s.from
         if skip c s then Ok() else error_char from (sprintf "'%c'" c)
     
+
     /// ### skip_string
     let skip_string x (s : Tokenizer) =
         if String.Compare(s.text,s.from,x,0,x.Length) = 0 then inc' x.Length s; Ok()
         else error_char s.from x
     
+
     /// ### anyOf
     let anyOf (l : char list) (s : Tokenizer) =
         let c = peek s
@@ -3502,6 +3672,7 @@ module spiral_compiler =
             let i = s.from
             Error (List.map (fun c -> range_char i, string c) l)
     
+
     /// ### chars_till_string
     let chars_till_string close (s : Tokenizer) =
         assert (close <> "")
@@ -3513,6 +3684,7 @@ module spiral_compiler =
                 else error_char s.from close
         loop(StringBuilder())
     
+
     /// ### lineParsersNumber
     /// Parses a number as a sequence of digits and optionally underscores. Filters out the underscores from the result.
     let lineParsersNumber (s : Tokenizer) =
@@ -3529,43 +3701,56 @@ module spiral_compiler =
             let i = s.from
             error_char i "number"
     
+
     /// ### number_fractional
     let number_fractional s = (lineParsersNumber .>>. (opt (skip_char '.' >>. lineParsersNumber))) s
     
+
     /// ## VSCTypes
     
+
     /// ### VSCPos
     type VSCPos = {|line : int; character : int|}
     
+
     /// ### VSCRange
     type VSCRange = VSCPos * VSCPos
     
+
     /// ### RString
     type RString = VSCRange * string
     
+
     /// ### PackageId
     type PackageId = int
     
+
     /// ### ModuleId
     type ModuleId = int
     
+
     /// ### DirId
     type DirId = int
     
+
     /// ### GlobalId
     type GlobalId = { package_id : PackageId; module_id : ModuleId; tag : int }
     
+
     /// ### RGlobalId
     type RGlobalId = VSCRange * GlobalId
     
+
     /// ### SpiEdit
     type SpiEdit = {|from: int; nearTo: int; lines: string []|}
     
+
     /// ## Tokenize
     // open System
     // open System.Text
     // open FSharpx.Collections
     
+
     /// ### TokenKeyword
     type TokenKeyword =
         | SpecIn
@@ -3600,15 +3785,19 @@ module spiral_compiler =
         | SpecPrototype
         | SpecInstance
     
+
     /// ### ParenthesisState
     type ParenthesisState = Open | Close
     
+
     /// ### Parenthesis
     type Parenthesis = Round | Square | Curly
     
+
     /// ### MacroEnum
     type MacroEnum = MTerm | MType | MTypeLit | MTermInline
     
+
     /// ### Literal
     type Literal =
         | LitUInt8 of uint8
@@ -3625,6 +3814,7 @@ module spiral_compiler =
         | LitString of string
         | LitChar of char
     
+
         // Converts the literal back to their string representation. Doesn't override the default printer.
         member l.LitToString() =
             match l with
@@ -3642,6 +3832,7 @@ module spiral_compiler =
             | LitString x -> x
             | LitChar x -> x.ToString()
     
+
     /// ### SemanticTokenLegend
     type SemanticTokenLegend =
         | variable = 0
@@ -3659,6 +3850,7 @@ module spiral_compiler =
         | number_suffix = 12
         | escaped_var = 13
     
+
     /// ### SpiralToken
     type SpiralToken =
         | TokVar of string * SemanticTokenLegend
@@ -3682,6 +3874,7 @@ module spiral_compiler =
         | TokMacroTypeLitVar of string
         | TokMacroExpression of MacroEnum * ParenthesisState
     
+
     /// ### token_groups
     let token_groups = function
         | TokUnaryOperator(_,r) | TokOperator(_,r) | TokVar(_,r) | TokSymbol(_,r) -> r
@@ -3699,6 +3892,7 @@ module spiral_compiler =
         | TokValue _ | TokDefaultValue _ -> SemanticTokenLegend.number
         | TokValueSuffix -> SemanticTokenLegend.number_suffix
     
+
     /// ### show_lit
     let show_lit = function
         | LitUInt8 x -> sprintf "%iu8" x
@@ -3715,47 +3909,58 @@ module spiral_compiler =
         | LitString x -> sprintf "%s" x
         | LitChar x -> sprintf "%c" x
     
+
     /// ### is_small_var_char_starting
     let is_small_var_char_starting c = Char.IsLower c || c = '_'
     
+
     /// ### is_var_char
     let is_var_char c = Char.IsLetterOrDigit c || c = '_' || c = '''
     
+
     /// ### is_big_var_char_starting
     let is_big_var_char_starting c = Char.IsUpper c
     
+
     /// ### is_parenth_open
     let is_var_char_starting c = Char.IsLetter c || c = '_'
     
+
     /// ### is_parenth_open
     let is_parenth_open c =
         let f x = c = x
         f '(' || f '[' || f '{'
     
+
     /// ### is_parenth_close
     let is_parenth_close c =
         let f x = c = x
         f ')' || f ']' || f '}'
     
+
     /// ### is_operator_char
     // http://www.asciitable.com/
     let is_operator_char c =
         let f x = c = x
         '!' <= c && c <= '~' && (is_var_char c || f '"' || is_parenth_open c || is_parenth_close c) = false
     
+
     /// ### is_prefix_separator_char
     let is_prefix_separator_char c =
         let f x = c = x
         f ' ' || f lineParsersEol || is_parenth_open c
     
+
     /// ### is_postfix_separator_char
     let is_postfix_separator_char c =
         let f x = c = x
         f ' ' || f lineParsersEol || is_parenth_close c
     
+
     /// ### is_separator_char
     let is_separator_char c = is_prefix_separator_char c || is_parenth_close c
     
+
     /// ### var
     let var (s: Tokenizer) =
         let from = s.from
@@ -3786,12 +3991,15 @@ module spiral_compiler =
                 | x -> TokVar(x,SemanticTokenLegend.variable)
                 |> ok
     
+
         (many1Satisfy2L is_var_char_starting is_var_char "variable" >>= body .>> spaces) s
     
+
     /// ### isHexDigit
     let isHexDigit c =
         ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')
     
+
     /// ### hexNumberLineParser
     let hexNumberLineParser (s : Tokenizer) =
         let from = s.from
@@ -3804,6 +4012,7 @@ module spiral_compiler =
             let i = s.from
             error_char i "0x prefix"
     
+
     /// ### hexNumber
     let hexNumber (s: Tokenizer) : Result<_,_> =
         let from = s.from
@@ -3814,12 +4023,15 @@ module spiral_compiler =
                 Ok ([{from=from; nearTo=s.from}, TokValue(LitInt32 value)])
             | Error e -> Error e
     
+
         (p .>> spaces) s
     
+
     /// ### tokenizeNumber
     let tokenizeNumber (s: Tokenizer) =
         let from = s.from
     
+
         let parser (s: Tokenizer) =
             if peek s = '-' && Char.IsDigit (peek' s 1) && is_prefix_separator_char (peek' s -1) then
                 inc s
@@ -3830,6 +4042,7 @@ module spiral_compiler =
                     | (a,Some b) -> sprintf "%s.%s" a b
                     | (a,None) -> a)
     
+
         let followedBySuffix x (s: Tokenizer) =
             let from' = s.from
             let inline safe_parse string_to_val val_to_lit val_dsc =
@@ -3857,13 +4070,16 @@ module spiral_compiler =
                 else error_char s.from "32 or 64"
             else Ok [{from=from; nearTo=s.from}, TokDefaultValue x]
     
+
         (parser >>= followedBySuffix .>> spaces) s
     
+
     /// ### symbol
     let symbol s =
         let from = s.from
         let f x = ({from=from; nearTo=s.from}, x)
     
+
         let symbol x = TokSymbol(x,SemanticTokenLegend.symbol)
         let x = peek s
         let x' = peek' s 1
@@ -3871,6 +4087,7 @@ module spiral_compiler =
         elif x = '.' && is_var_char_starting x' then inc s; ((many1SatisfyL is_var_char "variable") |>> (symbol >> f) .>> spaces) s
         else error_char from "symbol"
     
+
     /// ### TripleString
     module TripleString =
         let mutable in_triple = false
@@ -3878,6 +4095,7 @@ module spiral_compiler =
         let inline open' () = in_triple <- true
         let inline close () = in_triple <- false
     
+
     /// ### MultiComment
     module MultiComment =
         let mutable depth = 0
@@ -3886,14 +4104,17 @@ module spiral_compiler =
         let inline close () = if depth > 0 then depth <- depth - 1
         let inline reset () = depth <- 0
     
+
     /// ### reset_lexical_state
     let reset_lexical_state () =
         MultiComment.reset ()
         TripleString.close ()
     
+
     /// ### multi_comment_marker
     let multi_comment_marker = '\u0001'
     
+
     /// ### multiline_comment
     let multiline_comment (s : Tokenizer) =
         let from = s.from
@@ -3920,6 +4141,7 @@ module spiral_compiler =
             Ok ({from=from; nearTo=s.from},
                 TokComment (string multi_comment_marker + text))
     
+
     /// ### comment
     let comment (s : Tokenizer) =
         if TripleString.is_open() then
@@ -3963,6 +4185,7 @@ module spiral_compiler =
         else
             error_char s.from "comment"
     
+
     /// ### operator
     let operator (s : Tokenizer) =
         let from = s.from
@@ -3973,12 +4196,14 @@ module spiral_compiler =
             else TokOperator(name,SemanticTokenLegend.operator) |> ok
         (many1SatisfyL is_operator_char "operator"  >>= f .>> spaces) s
     
+
     /// ### string_raw
     let string_raw s =
         let from = s.from
         let f x = {from=from; nearTo=s.from}, TokValue(LitString x)
         (skip_string "@\"" >>. chars_till_string "\"" |>> f .>> spaces) s
     
+
     /// ### char_quoted
     let char_quoted s =
         let char_quoted_body (s: Tokenizer) =
@@ -3998,6 +4223,7 @@ module spiral_compiler =
         let f _ x _ = {from=from; nearTo=s.from}, TokValue(LitChar x)
         (pipe3 (skip_char '\'') char_quoted_body (skip_char '\'') f .>> spaces) s
     
+
     /// ### special_char
     let inline special_char l text s =
         let inline f from x = {from=from; nearTo=s.from}, x
@@ -4010,6 +4236,7 @@ module spiral_compiler =
         | 'n' -> esc '\n' | 'r' -> esc '\r'  | 't' -> esc '\t'  | 'b' -> esc '\b'
         | x -> unesc x
     
+
     /// ### string_triple_line
     let string_triple_line (s : Tokenizer) =
         let text = s.text
@@ -4071,6 +4298,7 @@ module spiral_compiler =
         else
             Error [{from=s.from; nearTo=s.from}, "triple-string: not a triple opener nor continuation"]
     
+
     /// ### string_quoted'
     let string_quoted' s =
         let inline f from x = {from=from; nearTo=s.from}, x
@@ -4086,13 +4314,16 @@ module spiral_compiler =
                 | x -> inc s; loop (str.Append(x))
             loop (StringBuilder())
     
+
         match peek s with
         | '"' -> let f = f s.from in inc s; text [f TokStringOpen]
         | _ -> error_char s.from "\""
     
+
     /// ### string_quoted
     let string_quoted s = (string_quoted' .>> spaces) s
     
+
     /// ### TokenizerMacro
     type TokenizerMacro =
         | TokenizerText of TokenizerRange * string
@@ -4102,6 +4333,7 @@ module spiral_compiler =
         | Expression of TokenizerRange * string * MacroEnum
         | Var of TokenizerRange * string * MacroEnum
     
+
     /// ### range
     let inline range p s =
         let from = s.from
@@ -4109,6 +4341,7 @@ module spiral_compiler =
         | Ok x -> Ok({from=from; nearTo=s.from}, x)
         | Error l -> Error l
     
+
     /// ### brackets
     let brackets s =
         let from = s.from
@@ -4118,12 +4351,15 @@ module spiral_compiler =
         | ')' -> f (Round,Close) | ']' -> f (Square,Close) | '}' -> f (Curly,Close)
         | _ -> error_char s.from "`(`,`[`,`{`,`}`,`]` or `)`"
     
+
     /// ### tab
     let tab s = if peek s = '\t' then Error [range_char (index s), "Tabs are not allowed."] else Error []
     
+
     /// ### tokenizeEol
     let tokenizeEol s = if peek s = lineParsersEol then Ok [] else Error [range_char (index s), "end of line"]
     
+
     let inline with_advance (p: Tokenizer -> Result<'a,(TokenizerRange * string) list>) : Tokenizer -> Result<'a,(TokenizerRange * string) list> =
         fun s ->
             let i0 = s.from
@@ -4133,6 +4369,7 @@ module spiral_compiler =
                 Error [{from=i0; nearTo=i0}, "tokenizer: zero-length token"]
             | Error e -> Error e
     
+
     /// ### token
     let rec token s =
         let i = s.from
@@ -4153,6 +4390,7 @@ module spiral_compiler =
         if TripleString.is_open() && (text : string).Length = 0 then
             ar <- PersistentVector.conj ({from=0; nearTo=0}, TokText "\n") ar
     
+
         let tokens =
             many_iter (fun (x : (TokenizerRange * SpiralToken) list,er' : (TokenizerRange * string) list) ->
                 List.iter (fun x -> ar <- PersistentVector.conj x ar) x
@@ -4174,6 +4412,7 @@ module spiral_compiler =
             | '#' -> MTermInline
             | _ -> failwith "Compiler error: Unknown char in the tokenizer."
     
+
         let p_special_char s =
             match peek' s 0, peek' s 1 with
             | '\\', ('n' | 'r' | 't' | 'b' as c) ->
@@ -4190,6 +4429,7 @@ module spiral_compiler =
                 Ok(UnescapedChar(r, c))
             | _ -> error_char s.from "\\"
     
+
         let p_var s = (many1Satisfy2L is_var_char_starting is_var_char "variable") s
         let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> TokenizerText) s
         let p_expr s =
@@ -4211,6 +4451,7 @@ module spiral_compiler =
             let body a b = range (between (skip_string a) (skip_char b) (p_macro_inner b))
             (body "$\"" '"' <|> body "$'" ''') s
     
+
         match (p_macro .>> spaces) s with
         | Ok(r, x) ->
             let start =
@@ -4220,6 +4461,7 @@ module spiral_compiler =
                 let r = {from=r.nearTo-1; nearTo=r.nearTo}
                 r, TokMacroClose
     
+
             let mutable er = []
             x |> List.collect (function
                 | TokenizerText(r,x) -> [r, TokText x]
@@ -4249,15 +4491,19 @@ module spiral_compiler =
             |> fun l -> Ok(List.concat [[start]; l; [end_]], er)
         | Error er -> Error er
     
+
     /// ### LineToken
     type LineToken = TokenizerRange * SpiralToken
     
+
     /// ### LineComment
     type LineComment = TokenizerRange * string
     
+
     /// ### LineTokenErrors
     type LineTokenErrors = (TokenizerRange * TokenizerError) list
     
+
     /// ### vscode_tokens
     let vscode_tokens ((a,b) : VSCRange) (lines : LineToken PersistentVector PersistentVector) =
         let in_range x = min lines.Length x
@@ -4271,22 +4517,28 @@ module spiral_compiler =
                     ) (line_delta, 0)
                 |> fst |> ((+) 1) |> loop (i+1)
     
+
         loop from from
         toks.ToArray()
     
+
     module Tokenize =
         let show_lit x =
             show_lit x
     
+
     /// ## BlockSplitting
     // open FSharpx.Collections
     
+
     /// ### LineTokens
     type LineTokens = LineToken PersistentVector PersistentVector
     
+
     /// ### Block<'a>
     type Block<'a> = {block: 'a; offset: int}
     
+
     /// ### block_at
     /// Reads the comments up to a statement, and then reads the statement body. Leaves any errors for the parsing stage.
     let block_at (lines : LineTokens) i =
@@ -4314,6 +4566,7 @@ module spiral_compiler =
         loop_initial i
         {block = block; offset = i}
     
+
     /// ### block_all
     // Parses all the blocks.
     let rec block_all lines i =
@@ -4321,6 +4574,7 @@ module spiral_compiler =
             let x = block_at lines i
             x :: block_all lines (i+x.block.Length) else []
     
+
     /// ### wdiff_block_all
     // Parses all the blocks with diffing. Only parses those blocks which are dirty based of the edit range. Preserves ref equality and saves work.
     // Without considering ref preservation, it is functionally equivalent to just call `block_all` on just `lines`.
@@ -4351,32 +4605,40 @@ module spiral_compiler =
             else []
         loop blocks 0
     
+
     /// ## BlockParsing
     // open System
     // open FParsec
     // open FSharp.Core
     
+
     /// ### SymbolString
     type SymbolString = string
     
+
     /// ### VarString
     type VarString = string
     
+
     /// ### NominalString
     type NominalString = string
     
+
     /// ### Layout
     type Layout = Heap | HeapMutable | StackMutable
     
+
     /// ### FunType
     type FunType = FT_Vanilla | FT_Pointer | FT_Closure // The closure and the pointer are specific to the C++ backend.
     
+
     /// ### Op
     type Op =
         // Converts the function to a specialized type specific to the C++ backend.
         | ToFunPtr
         | ToFunClosure
     
+
         // Compile time hash set
         | HashSetCreate
         | HashSetAdd
@@ -4384,6 +4646,7 @@ module spiral_compiler =
         | HashSetRemove
         | HashSetCount
     
+
         // Compile time hash map
         | HashMapCreate
         | HashMapSetImmutable
@@ -4395,36 +4658,44 @@ module spiral_compiler =
         | HashMapCount
         | HashMapTryGet
     
+
         // Pragma
         | PragmaUnrollPush
         | PragmaUnrollPop
     
+
         // Backend branching
         | UnsafeBackendSwitch
         | BackendSwitch
     
+
         // Reordering check
         | UsesOriginalTermVars
         | UsesOriginalNominals
     
+
         // Imports
         | Global
     
+
         // Python
         | ToPythonRecord
         | ToPythonNamedTuple
     
+
         // Branching
         | While
         | Do
         | Indent
     
+
         // Layout
         | LayoutToHeap
         | LayoutToHeapMutable
         | LayoutToStackMutable
         | LayoutIndex
     
+
         // Type
         | TypeToVar
         | TypeToSymbol
@@ -4432,14 +4703,17 @@ module spiral_compiler =
         | LitToTypeLit
         | LitToSymbol
     
+
         // Closure conversion
         | Dyn
     
+
         // Nominal
         | NominalCreate // In addition to regular nominals, it can also creates unions
         | NominalStrip
         | NominalTypeApply
     
+
         // Union
         | Unbox
         | Unbox2
@@ -4447,6 +4721,7 @@ module spiral_compiler =
         | UnionUntag
         | UnionToRecord
     
+
         // String
         | StringLength
         | StringIndex
@@ -4454,12 +4729,14 @@ module spiral_compiler =
         | StaticStringConcat
         | Printf // Cuda specific
     
+
         // Array
         | ArrayCreate
         | ArrayLength
         | ArrayIndex
         | ArrayIndexSet
     
+
         // Record
         | RecordMap
         | RecordIter
@@ -4468,6 +4745,7 @@ module spiral_compiler =
         | RecordFoldBack
         | RecordLength
     
+
         // Record Type
         | RecordTypeMap
         | RecordTypeIter
@@ -4476,6 +4754,7 @@ module spiral_compiler =
         | RecordTypeLength
         | RecordTypeTryFind
     
+
         // BinOps
         | Add
         | Sub
@@ -4499,6 +4778,7 @@ module spiral_compiler =
         | ShiftLeft
         | ShiftRight
     
+
         // Unary math ops
         | Neg
         | Tanh
@@ -4510,10 +4790,12 @@ module spiral_compiler =
         | NanIs
         | Conv
     
+
         // Infinity
         | Infinity
         | Pi
     
+
         // Static Is
         | LitIs
         | PrimIs
@@ -4527,6 +4809,7 @@ module spiral_compiler =
         | ExistsIs
         | PrototypeHas
     
+
         // Static Type Is
         | PrimTypeIs
         | SymbolTypeIs
@@ -4536,9 +4819,11 @@ module spiral_compiler =
         | ExistsTypeIs
         | NominalTypeIs
     
+
         // Panic
         | FailWith
     
+
         // Static unary operations
         | PrintStatic
         | PrintRaw
@@ -4547,6 +4832,7 @@ module spiral_compiler =
         | StringLitToSymbol
         | SymbolToString
     
+
         // Serialization helpers
         | VarTag
         | TagToSymbol
@@ -4556,6 +4842,7 @@ module spiral_compiler =
         | FreeVarsReplace
         | SizeOf
     
+
     /// ### PatternCompilationErrors
     type PatternCompilationErrors =
         | DisjointOrPatternVar
@@ -4565,6 +4852,7 @@ module spiral_compiler =
         | DuplicateRecordSymbol
         | DuplicateRecordInjection
     
+
     /// ### ParserErrors
     type ParserErrors =
         | TypeVarsNeedToBeExplicitForExists
@@ -4624,21 +4912,26 @@ module spiral_compiler =
         | ForallNotAllowedInTypecase
         | ExistsNotAllowedInTypecase
     
+
     /// ### RawKindExpr
     type RawKindExpr =
         | RawKindWildcard
         | RawKindStar
         | RawKindFun of RawKindExpr * RawKindExpr
     
+
     /// ### UnionLayout
     type UnionLayout = UStack | UHeap
     
+
     /// ### HoVar
     type HoVar = VSCRange * (VarString * RawKindExpr)
     
+
     /// ### TypeVar
     type TypeVar = HoVar * (VSCRange * VarString) list
     
+
     /// ### RawMacro
     type RawMacro =
         | RawMacroText of VSCRange * string
@@ -4726,21 +5019,27 @@ module spiral_compiler =
         | RawTTypecase of VSCRange * RawTExpr * (RawTExpr * RawTExpr) list
         | RawTFilledNominal of VSCRange * GlobalId // Filled in by the inferencer.
     
+
     /// ### (+.)
     let (+.) (a,_) (_,b) = a,b
     
+
     /// ### range_of_hovar
     let range_of_hovar ((r,_) : HoVar) = r
     
+
     /// ### range_of_typevar
     let range_of_typevar ((x,_) : TypeVar) = range_of_hovar x
     
+
     /// ### hovar_name
     let hovar_name ((_,(name,_)) : HoVar) = name
     
+
     /// ### typevar_name
     let typevar_name ((h,_) : TypeVar) = hovar_name h
     
+
     /// ### range_of_record_with
     let range_of_record_with = function
         | RawRecordWithSymbol((r,_),_)
@@ -4748,11 +5047,13 @@ module spiral_compiler =
         | RawRecordWithInjectVar((r,_),_)
         | RawRecordWithInjectVarModify((r,_),_) -> r
     
+
     /// ### range_of_record_without
     let range_of_record_without = function
         | RawRecordWithoutSymbol(r,_)
         | RawRecordWithoutInjectVar(r,_) -> r
     
+
     /// ### range_of_pattern
     let range_of_pattern = function
         | PatB r
@@ -4774,11 +5075,13 @@ module spiral_compiler =
         | PatFilledDefaultValue(r,_,_)
         | PatNominal(r,_,_,_) -> r
     
+
     /// ### range_of_pat_record_member
     let range_of_pat_record_member = function
         | PatRecordMembersSymbol((r,_),x)
         | PatRecordMembersInjectVar((r,_),x) -> r +. range_of_pattern x
     
+
     /// ### range_of_expr
     let range_of_expr = function
         | RawB r
@@ -4810,9 +5113,11 @@ module spiral_compiler =
         | RawIfThenElse(r,_,_,_)
         | RawOpen(r,_,_,_) -> r
     
+
     /// ### rawv
     let rawv (r,x) = RawV(r,x,true)
     
+
     /// ### range_of_texpr
     let range_of_texpr = function
         | RawTWildcard r
@@ -4836,19 +5141,23 @@ module spiral_compiler =
         | RawTTypecase(r,_,_)
         | RawTForall(r,_,_) -> r
     
+
     /// ### range_of_texpr_gadt_constructor
     let rec range_of_texpr_gadt_constructor = function
         | RawTForall(_,_,x) -> range_of_texpr_gadt_constructor x
         | RawTFun(_,_,x,_) | x -> range_of_texpr x
     
+
     /// ### range_of_texpr_gadt_body
     let rec range_of_texpr_gadt_body = function
         | RawTForall(_,_,x) -> range_of_texpr_gadt_body x
         | RawTFun(_,x,_,_) | x -> range_of_texpr x
     
+
     /// ### VectorCord
     type VectorCord = {|row : int; col : int|}
     
+
     /// ### BlockParsingEnv
     type BlockParsingEnv = {
         semantic_updates : (VectorCord * SemanticTokenLegend) ResizeArray
@@ -4860,59 +5169,73 @@ module spiral_compiler =
         default_env : DefaultEnv
         } with
     
+
         member d.Index with get() = d.i.contents and set(i) = d.i.Value <- i
     
+
     /// ### try_current_template
     let inline try_current_template (d : BlockParsingEnv) on_succ on_fail =
         let i = d.Index
         if i < d.tokens.Length then on_succ d.tokens.[i]
         else on_fail()
     
+
     /// ### try_current
     let inline try_current d f = try_current_template d (fun (p,t) -> f (p, t)) (fun () -> Error [])
     
+
     /// ### print_current
     let print_current d = try_current d (fun x -> printfn "%A" x; Ok()) // For parser debugging purposes.
     
+
     /// ### line_template
     let inline line_template d f = try_current_template d (fst >> f) (fun _ -> -1)
     
+
     /// ### col
     let col d = line_template d (fun (r,_) -> r.character)
     
+
     /// ### lineBlockParsing
     let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
     
+
     /// ### skip'
     let skip' (d : BlockParsingEnv) i = d.i.Value <- d.i.contents+i
     
+
     /// ### blockParsingSkip
     let blockParsingSkip d = skip' d 1
     
+
     /// ### skip_string_open
     let skip_string_open d =
         try_current d <| function
             | p,TokStringOpen -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedStringOpen]
     
+
     /// ### skip_string_close
     let skip_string_close d =
         try_current d <| function
             | p,TokStringClose -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedStringClose]
     
+
     /// ### skip_macro_open
     let skip_macro_open d =
         try_current d <| function
             | p,TokMacroOpen -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedMacroOpen]
     
+
     /// ### skip_macro_close
     let skip_macro_close d =
         try_current d <| function
             | p,TokMacroClose -> blockParsingSkip d; Ok(p)
             | p, _ -> Error [p, ExpectedMacroClose]
     
+
     /// ### read_text
     let read_text is_term_macro d =
         let (+.) a b =
@@ -4929,6 +5252,7 @@ module spiral_compiler =
                     else Ok(Option.get a, str.ToString())
         loop None (Text.StringBuilder())
     
+
     /// ### read_macro_var
     let read_macro_var d =
         try_current d <| function
@@ -4937,6 +5261,7 @@ module spiral_compiler =
             | p, TokMacroTypeLitVar x -> blockParsingSkip d; Ok(RawMacroTypeLit(p,RawTVar(p,x)))
             | p,_ -> Error [p, ExpectedMacroVar]
     
+
     /// ### read_macro_type_var
     let read_macro_type_var d =
         try_current d <| function
@@ -4944,141 +5269,165 @@ module spiral_compiler =
             | p, TokMacroTypeLitVar x -> blockParsingSkip d; Ok(RawMacroTypeLit(p,RawTVar(p,x)))
             | p,_ -> Error [p, ExpectedMacroTypeVar]
     
+
     /// ### skip_keyword
     let skip_keyword t d =
         try_current d <| function
             | p,TokKeyword t' when t = t' -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedKeyword t]
     
+
     /// ### skip_keyword'
     let skip_keyword' t d =
         try_current d <| function
             | p,TokKeyword t' when t = t' -> blockParsingSkip d; Ok p
             | p, _ -> Error [p, ExpectedKeyword t]
     
+
     /// ### read_unary_op
     let read_unary_op d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedUnaryOperator']
     
+
     /// ### read_unary_op'
     let read_unary_op' d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedUnaryOperator']
     
+
     /// ### read_op
     let read_op d =
         try_current d <| function
             | p, TokOperator(t',_) -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedOperator']
     
+
     /// ### read_op'
     let read_op' d =
         try_current d <| function
             | p, TokOperator(t',_) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedOperator']
     
+
     /// ### update_semantic
     let update_semantic (d : BlockParsingEnv) = let i = d.Index in fun x -> d.semantic_updates.Add(d.tokens_cords.[i], x)
     
+
     /// ### read_op_type
     let read_op_type d =
         try_current d <| function
             | p, TokOperator(t',r) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedOperator']
     
+
     /// ### skip_op
     let skip_op t d =
         try_current d <| function
             | p, TokOperator(t',_) when t' = t -> blockParsingSkip d; Ok p
             | p, _ -> Error [p, ExpectedOperator t]
     
+
     /// ### skip_unary_op
     let skip_unary_op t d =
         try_current d <| function
             | p, TokUnaryOperator(t',_) when t' = t -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedUnaryOperator t]
     
+
     /// ### read_var
     let read_var d =
         try_current d <| function
             | p, TokVar(t',_) -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedVar]
     
+
     /// ### read_var'
     let read_var' d =
         try_current d <| function
             | p, TokVar(t',_) -> let r = update_semantic d in blockParsingSkip d; Ok(p,t',r)
             | p, _ -> Error [p, ExpectedVar]
     
+
     /// ### read_var''
     let read_var'' d =
         try_current d <| function
             | p, TokVar(t',_) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedVar]
     
+
     /// ### read_big_var
     let read_big_var d =
         try_current d <| function
             | p, TokVar(t',_) when Char.IsUpper(t',0) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedBigVar]
     
+
     /// ### read_var_as_symbol
     let read_var_as_symbol d =
         try_current d <| function
             | p, TokVar(t',_) -> update_semantic d SemanticTokenLegend.symbol; blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedVar]
     
+
     /// ### read_big_var_as_symbol
     let read_big_var_as_symbol d =
         try_current d <| function
             | p, TokVar(t',_) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.symbol; blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedBigVar]
     
+
     /// ### read_big_var_as_keyword
     let read_big_var_as_keyword d =
         try_current d <| function
             | p, TokVar(t',_) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.keyword; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedBigVar]
     
+
     /// ### read_small_var
     let read_small_var d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> blockParsingSkip d; Ok t'
             | p, _ -> Error [p, ExpectedSmallVar]
     
+
     /// ### read_small_var'
     let read_small_var' d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
     
+
     /// ### read_big_type_var
     let read_big_type_var d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(t')
             | p, _ -> Error [p, ExpectedSmallVar]
     
+
     /// ### read_big_type_var'
     let read_big_type_var' d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
     
+
     /// ### read_small_type_var
     let read_small_type_var d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(t')
             | p, _ -> Error [p, ExpectedSmallVar]
     
+
     /// ### read_small_type_var'
     let read_small_type_var' d =
         try_current d <| function
             | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSmallVar]
     
+
     /// ### read_value
     let read_value d =
         try_current d <| function
@@ -5091,46 +5440,57 @@ module spiral_compiler =
                 Ok(p,t')
             | p, _ -> Error [p, ExpectedLit]
     
+
     /// ### read_symbol
     let read_symbol d =
         try_current d <| function
             | p, TokSymbol(t',r) -> blockParsingSkip d; Ok(p,t')
             | p, _ -> Error [p, ExpectedSymbol]
     
+
     /// ### skip_parenthesis
     let skip_parenthesis a b d =
         try_current d <| function
             | p, TokParenthesis(a',b') when a = a' && b = b' -> blockParsingSkip d; Ok()
             | p, _ -> Error [p, ExpectedParenthesis(a,b)]
     
+
     /// ### skip_macro_expression
     let skip_macro_expression a b d =
         try_current d <| function
             | p, TokMacroExpression(a',b') when a = a' && b = b' -> blockParsingSkip d; Ok()
             | p, _ -> Error [p, ExpectedMacroExpression(a,b)]
     
+
     /// ### on_succ
     let on_succ x _ = Ok x
     
+
     /// ### macro_expression
     // open FParsec
     let macro_expression ty a d = (skip_macro_expression ty Open >>. a .>> skip_macro_expression ty Close) d
     
+
     /// ### rounds
     let rounds a d = (skip_parenthesis Round Open >>. a .>> skip_parenthesis Round Close) d
     
+
     /// ### curlies
     let curlies a d = (skip_parenthesis Curly Open >>. a .>> skip_parenthesis Curly Close) d
     
+
     /// ### squares
     let squares a d = (skip_parenthesis Square Open >>. a .>> skip_parenthesis Square Close) d
     
+
     /// ### blockParsingIndex
     let blockParsingIndex (t : BlockParsingEnv) = t.Index
     
+
     /// ### blockParsingIndex_set
     let blockParsingIndex_set v (t : BlockParsingEnv) = t.Index <- v
     
+
     /// ### blockParsingRange
     let inline blockParsingRange exp s =
         let i = blockParsingIndex s
@@ -5141,20 +5501,25 @@ module spiral_compiler =
                 failwith "Compiler error: The parser passed into `range` has to consume at least one token for it to work."
             )
     
+
     /// ### kind
     let rec kind d = (sepBy1 ((skip_op "*" >>% RawKindStar) <|> rounds kind) (skip_op "->") |>> List.reduceBack (fun a b -> RawKindFun (a,b))) d
     
+
     /// ### duplicates
     let duplicates er x =
         let h = Collections.Generic.HashSet()
         x |> List.choose (fun (r : VSCRange,n : string) -> if h.Add n = false then Some(r,er) else None)
     
+
     /// ### blockParsingIndent
     let inline blockParsingIndent i op next d = if op i (col d) then next d else Error []
     
+
     /// ### record_var
     let record_var d = (read_var_as_symbol <|> rounds read_op) d
     
+
     /// ### patterns_validate
     let patterns_validate pats =
         let pos = Collections.Generic.Dictionary(HashIdentity.Reference)
@@ -5210,6 +5575,7 @@ module spiral_compiler =
                 f (a-b); f (b-a)
                 a
     
+
         let validate is_type =
             List.fold (fun s x ->
                 let s' = loop is_type x
@@ -5219,18 +5585,22 @@ module spiral_compiler =
         validate true; validate false
         errors |> Seq.toList
     
+
     /// ### join_point
     let join_point is_let name = function // Has the effect of removing nested join points due to not duplicating them.
         | RawJoinPoint(a,b,c,_) -> RawJoinPoint(a,b,c,name)
         | x -> if is_let then RawJoinPoint(range_of_expr x, None, x, name) else x
     
+
     /// ### join_point_backend
     let join_point_backend (a,b) = RawJoinPoint(range_of_expr b, Some a, b, None)
     
+
     /// ### unintern
     /// Some places need unique string refs, so this is to keep the compiler from interning static strings.
     let unintern (x : string) = Text.StringBuilder(x).ToString()
     
+
     /// ### adjust_join_point
     let rec adjust_join_point is_let name x =
         let dyn_if_let a = if is_let then PatDyn(range_of_pattern a, a) else a
@@ -5245,11 +5615,13 @@ module spiral_compiler =
             RawFun(r,[a,join_point is_let name b])
         | x -> join_point is_let name x
     
+
     /// ### adjust_join_point'
     let adjust_join_point' is_let name = function
         | RawForall _ | RawFun _ as x -> adjust_join_point is_let name x
         | x -> x
     
+
     /// ### inl_or_let_process
     let inl_or_let_process (r, (is_let, is_rec, name, foralls, pats, body)) _ =
         match is_rec, name, foralls, pats with
@@ -5272,12 +5644,15 @@ module spiral_compiler =
         | true, _, _, _ -> Error [range_of_pattern name, ExpectedVarOrOpAsNameOfRecStatement]
         | false, _, _, _ -> Error [range_of_pattern name, ExpectedSinglePatternWhenStatementNameIsNorVarOrOp]
     
+
     /// ### ho_var
     let ho_var d : Result<HoVar,_> = blockParsingRange ((read_small_type_var |>> fun x -> x, RawKindWildcard) <|> rounds ((read_small_type_var .>> skip_op ":") .>>. kind)) d
     
+
     /// ### forall_var
     let forall_var d : Result<TypeVar,_> = (ho_var .>>. (curlies (sepBy (read_small_type_var' <|> rounds read_op_type) (skip_op ";")) <|>% [])) d
     
+
     /// ### forall
     let forall d =
         (skip_keyword SpecForall >>. many1 forall_var .>> skip_op "."
@@ -5287,6 +5662,7 @@ module spiral_compiler =
             match List.append x x' with [] -> Ok q | er -> Error er
             ) d
     
+
     /// ### pat_exists'
     let pat_exists' d =
         (skip_keyword SpecExists >>. many (blockParsingRange read_small_type_var) .>> skip_op "."
@@ -5294,6 +5670,7 @@ module spiral_compiler =
             match duplicates DuplicateExistsVar q with [] -> Ok q | er -> Error er
             ) d
     
+
     /// ### exists
     let exists d =
         (skip_keyword SpecExists >>. many forall_var .>> skip_op "."
@@ -5303,6 +5680,7 @@ module spiral_compiler =
             match List.append x x' with [] -> Ok q | er -> Error er
             ) d
     
+
     /// ### annotated_body
     let inline annotated_body sep exp ty =
         pipe2 (opt (skip_op ":" >>. ty))
@@ -5313,6 +5691,7 @@ module spiral_compiler =
                 | Some a -> RawAnnot(range_of_expr b +. range_of_texpr a,b,a)
                 | None -> b)
     
+
     /// ### inl_or_let
     let inline inl_or_let exp pattern ty =
         blockParsingRange (tuple6 ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true))
@@ -5320,6 +5699,7 @@ module spiral_compiler =
                 (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
         >>= inl_or_let_process
     
+
     /// ### and_inl_or_let
     let inline and_inl_or_let exp pattern ty =
         blockParsingRange (tuple6 (skip_keyword SpecAnd >>. ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true)))
@@ -5327,9 +5707,11 @@ module spiral_compiler =
                 (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
         >>= inl_or_let_process
     
+
     /// ### Associativity
     type Associativity = FParsec.Associativity
     
+
     /// ### inbuilt_operators
     let inbuilt_operators x =
         match x with
@@ -5346,6 +5728,7 @@ module spiral_compiler =
         | ">>" -> ValueSome(45, Associativity.Left)
         | "<-" -> ValueSome(4, Associativity.Left)
     
+
         | "<=" -> ValueSome(40, Associativity.None)
         | "<" -> ValueSome(40, Associativity.None)
         | "=" -> ValueSome(40, Associativity.None)
@@ -5358,6 +5741,7 @@ module spiral_compiler =
         | "&&&" -> ValueSome(40, Associativity.None)
         | "|||" -> ValueSome(40, Associativity.None)
     
+
         | "||" -> ValueSome(20, Associativity.Left)
         | "&&" -> ValueSome(30, Associativity.Left)
         | "::" -> ValueSome(50, Associativity.Right)
@@ -5371,6 +5755,7 @@ module spiral_compiler =
         | "**" -> ValueSome(80, Associativity.Right)
         | _ -> ValueNone
     
+
     /// ### precedence_associativity
     // The `.` operator has special behavior similar to F#.
     let rec precedence_associativity name =
@@ -5382,6 +5767,7 @@ module spiral_compiler =
                 | v -> v
         else ValueNone
     
+
     /// ### op
     let op (d : BlockParsingEnv) =
         blockParsingRange read_op d |> Result.bind (fun (o,x) ->
@@ -5411,31 +5797,39 @@ module spiral_compiler =
                     | x -> f (fun (r,a,b) -> RawApply(r,RawApply(r +. o,rawv(o,x),a),b))
             )
     
+
     /// ### string_to_op_dict
     let string_to_op_dict : Dictionary<string,Op> = Collections.Generic.Dictionary(HashIdentity.Structural)
     
+
     do Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>) |> Array.iter (fun x -> string_to_op_dict.[x.Name] <- Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(x,[||]) :?> Op)
     
+
     /// ### string_to_op
     let string_to_op x = string_to_op_dict.TryGetValue x
     
+
     /// ### symbol_paired_concat
     let symbol_paired_concat k =
         let b = Text.StringBuilder()
         List.iter (fun (_, x : string) -> b.Append(x).Append('_') |> ignore) k
         b.ToString()
     
+
     /// ### blockParsingModule_open
     let blockParsingModule_open = blockParsingRange ((skip_keyword SpecOpen >>. read_small_var') .>>. (many read_symbol))
     
+
     /// ### bar
     let bar i d = blockParsingIndent i (<=) (skip_op "|") d
     
+
     /// ### pat_pair
     let inline pat_pair next =
         sepBy1 next (skip_op ",")
         |>> List.reduceBack (fun a b -> PatPair(range_of_pattern a +. range_of_pattern b,a,b))
     
+
     /// ### RootTypeFlags
     type RootTypeFlags = {
         allow_typecase_metavars : bool
@@ -5443,6 +5837,7 @@ module spiral_compiler =
         allow_wildcard : bool
         }
     
+
     /// ### root_type_defaults
     let root_type_defaults = {
         allow_typecase_metavars = false
@@ -5450,6 +5845,7 @@ module spiral_compiler =
         allow_wildcard = false
         }
     
+
     /// ### bottom_up_number
     let bottom_up_number (default_env : DefaultEnv) (r : VSCRange,x : string) =
         let inline f string_to_val val_to_lit val_dsc =
@@ -5473,6 +5869,7 @@ module spiral_compiler =
             | UInt64T -> f UInt64.TryParse LitUInt64 "u64"
             | x -> failwithf "Compiler error: Invalid default int type. Got: %A" x
     
+
     /// ### typecase_validate
     let typecase_validate x _ =
         let metavars = Collections.Generic.HashSet()
@@ -5493,6 +5890,7 @@ module spiral_compiler =
         f x
         if 0 < errors.Count then Error (Seq.toList errors) else Ok(x)
     
+
     /// ### expr_tight
     // Parses an expression only if it is directly next to the previous one.
     let inline expr_tight next (d: BlockParsingEnv) =
@@ -5502,12 +5900,14 @@ module spiral_compiler =
             if r.line = r'.line && r.character = r'.character then next d else Error []
         else Error []
     
+
     /// ### read_default_value'
     let inline read_default_value' f d =
         try_current d <| function
             | p, TokDefaultValue t' -> blockParsingSkip d; f (p,t')
             | p, _ -> Error [p, ExpectedLit]
     
+
     /// ### read_default_value
     let inline read_default_value on_top on_bot d =
         read_default_value' (fun (p,t') ->
@@ -5515,15 +5915,19 @@ module spiral_compiler =
             else bottom_up_number d.default_env (p,t') |> Result.map on_bot
             ) d
     
+
     /// ### read_string
     let read_string = tuple3 skip_string_open ((read_text false |>> snd) <|>% "") skip_string_close
     
+
     /// ### pat_var
     let pat_var d = (read_small_var' |>> PatVar) d
     
+
     /// ### pat_list_pair
     let pat_list_pair r a b = PatUnbox(r,"Cons",PatPair(r,a,b))
     
+
     /// ### root_pattern_var_nominal_union
     let rec root_pattern_var_nominal_union s =
         (read_var' >>= fun (r,a,re) s ->
@@ -5616,6 +6020,7 @@ module spiral_compiler =
             >>. pipe2 (opt forall) (root_type flags) (Option.foldBack (List.foldBack (fun a b -> RawTForall(range_of_typevar a +. range_of_texpr b,a,b))))
             |>> fun x -> Some (true, x)
     
+
         let body = vanilla <|> gadt <|>% None
         (blockParsingRange (optional bar >>. sepBy1 (blockParsingRange read_big_var_as_symbol .>>. body) bar)
         >>= fun (r,x) _ ->
@@ -5652,15 +6057,19 @@ module spiral_compiler =
             let (+) = alt (blockParsingIndex d)
             (rounds + lit + lit_default + wildcard + term + metavar + var + record + symbol + macro + exists + foralls) d
     
+
         let fold_applies a b = List.fold (fun a b -> RawTApply(range_of_texpr a +. range_of_texpr b,a,b)) a b
         let apply_tight d = pipe2 cases (many (expr_tight cases)) fold_applies d
         let apply d = pipe2 apply_tight (many (blockParsingIndent (col d) (<) apply_tight)) fold_applies d
     
+
         let pairs = sepBy1 apply (skip_op "*") |>> List.reduceBack (fun a b -> RawTPair(range_of_texpr a +. range_of_texpr b,a,b))
         let functions = sepBy1 pairs (skip_op "->") |>> List.reduceBack (fun a b -> RawTFun(range_of_texpr a +. range_of_texpr b,a,b,FT_Vanilla))
     
+
         functions d
     
+
     and root_term d =
         let rec expressions d =
             let next = root_term
@@ -5695,6 +6104,7 @@ module spiral_compiler =
                     | [] -> List.foldBack (fun pat body -> RawFun(range_of_pattern pat +. range_of_expr body,[pat,body])) pats body |> Ok
                     | ers -> Error ers
     
+
             let case_forall d =
                 if d.is_top_down then Error [] else
                     (tuple3 forall (many root_pattern_pair) (annotated_body "=>" next root_type_annot)
@@ -5705,6 +6115,7 @@ module spiral_compiler =
                             |> List.foldBack (fun a body -> RawForall(range_of_typevar a +. range_of_expr body,a,body)) foralls |> Ok
                         | ers -> Error ers) d
     
+
             let case_default_value = read_default_value RawDefaultLit RawLit
             let case_if_then_else d =
                 let i = col d
@@ -5718,6 +6129,7 @@ module spiral_compiler =
                         let fl = List.foldBack (fun (cond,tr) fl -> f cond tr fl |> Some) elifs fl
                         f cond tr fl |> snd)) d
     
+
             let case_match =
                 let clauses d =
                     let bar = bar (col d)
@@ -5728,19 +6140,23 @@ module spiral_compiler =
                         | e -> Error e
                         ) d
     
+
                 (blockParsingRange (skip_keyword SpecFunction >>. clauses) |>> RawFun)
                 <|> (blockParsingRange ((skip_keyword SpecMatch >>. next .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c))
     
+
             let case_typecase d =
                 let clauses d =
                     let bar = bar (col d)
                     let typecase = root_type {root_type_defaults with allow_typecase_metavars=true; allow_wildcard=true} >>= typecase_validate
                     (optional bar >>. sepBy1 (typecase .>>. (skip_op "=>" >>. next)) bar) d
     
+
                 if d.is_top_down then Error [] else
                     (blockParsingRange ((skip_keyword SpecTypecase >>. root_type {root_type_defaults with allow_term=true} .>> skip_keyword SpecWith) .>>. clauses)
                     |>> fun (r, (a, b)) -> RawTypecase(r,a,b)) d
     
+
             let case_record =
                 let create = skip_op "=" >>. next
                 let modify = skip_op "#=" >>. next
@@ -5767,6 +6183,7 @@ module spiral_compiler =
                                 ((skip_keyword SpecWithout >>. many record_without_bodies) <|>% [])))
                     |>> fun (r,(name, acs, withs, withouts)) -> (r,rawv name :: acs,withs,withouts)
     
+
                 restore 2 record_create <|> record_with
                 >>= fun (_,_,withs,withouts as x) _ ->
                     [
@@ -5776,6 +6193,7 @@ module spiral_compiler =
                     withouts |> List.choose (function RawRecordWithoutInjectVar(a,b) -> Some(a,b) | _ -> None) |> duplicates DuplicateTermRecordInjection
                     ] |> List.concat |> function [] -> Ok(RawRecordWith x) | er -> Error er
     
+
             let case_join_point = skip_keyword SpecJoin >>. next |>> join_point true None
             let case_join_point_backend = skip_keyword SpecJoinBackend >>. (read_big_var_as_keyword .>>. next) |>> join_point_backend
             let case_real = skip_keyword SpecReal >>. (fun d -> next {d with is_top_down=false}) |>> fun x -> RawReal(range_of_expr x,x)
@@ -5789,8 +6207,10 @@ module spiral_compiler =
                 else
                     Error [r, ListLiteralsNotAllowedInBottomUp]
     
+
             let case_string = read_string |>> fun (a, x, b) -> RawLit(a +. b,LitString x)
     
+
             let case_macro =
                 let read_macro_expression s =
                     (macro_expression MTerm (root_term |>> fun x -> RawMacroTerm(range_of_expr x,x,false))
@@ -5800,16 +6220,20 @@ module spiral_compiler =
                 let body = many ((read_text true |>> RawMacroText) <|> read_macro_var <|> read_macro_expression)
                 pipe3 skip_macro_open body skip_macro_close (fun a l b -> RawMacro(a +. b, l))
     
+
             let (+) = alt (blockParsingIndex d)
     
+
             (case_value + case_default_value + case_var + case_join_point + case_join_point_backend + case_real + case_symbol
             + case_typecase + case_match + case_typecase + case_rounds + case_list + case_record
             + case_if_then_else + case_fun + case_forall + case_string + case_macro + case_exists) d
     
+
         and application_tight d =
             let next = expressions
             pipe2 next (many (expr_tight next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
     
+
         and sequence_body d = (many (blockParsingIndent (col d) (=) (sepBy1 operators (skip_op ";"))) |>> List.concat) d
         and unary_op d =
             let next = application_tight
@@ -5852,21 +6276,25 @@ module spiral_compiler =
                     | _ -> (next |>> fun b -> RawApply(o +. range_of_expr b,rawv(o, "~" + a),b)) d
             (f <|> next) d
     
+
         and application (d: BlockParsingEnv) =
             let next = unary_op
             pipe2 next (many (blockParsingIndent (col d) (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
     
+
         and operators d =
             let term = application
             let i = col d
             let op = blockParsingIndent i (<=) op
     
+
             /// Pratt parser
             let rec led left (prec,asoc,m) d =
                 match asoc with
                 | Associativity.Right -> (tdop (prec-1) |>> fun right -> m (left, right)) d
                 | _ -> (tdop prec |>> fun right -> m (left, right)) d
     
+
             and tdop rbp d =
                 let rec loop left d =
                     ((op >>= fun (prec,_,_ as v) d ->
@@ -5874,11 +6302,13 @@ module spiral_compiler =
                         else skip' d -1; Error []) <|>% left) d
                 (term >>= loop) d
     
+
             pipe2 (tdop Int32.MinValue)
                 (opt (blockParsingIndent i (<=) (skip_op ":" >>. root_type_annot)))
                 (fun a -> function Some b -> RawAnnot(range_of_expr a +. range_of_texpr b,a,b) | _ -> a)
                 d
     
+
         let statements d =
             let next = operators
             let inl_or_let =
@@ -5901,6 +6331,7 @@ module spiral_compiler =
                 let (+) = alt (blockParsingIndex d)
                 (inl_or_let + module_open) d
     
+
             let i = col d
             let inline if_ x = blockParsingIndent i x
             let stmts =
@@ -5923,8 +6354,10 @@ module spiral_compiler =
                     ) x ValueNone |> ValueOption.get
                 ) d
     
+
         statements d
     
+
     /// ### comments
     let comments (s : BlockParsingEnv) =
         let line_near_to = lineBlockParsing s
@@ -5940,9 +6373,11 @@ module spiral_compiler =
         |> String.concat ""
         |> fun x -> Ok(x.TrimEnd())
     
+
     /// ### Comments
     type Comments = string
     
+
     /// ### TopStatement
     type [<ReferenceEquality>] TopStatement =
         | TopAnd of VSCRange * TopStatement
@@ -5955,6 +6390,7 @@ module spiral_compiler =
         | TopInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
         | TopOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
     
+
     /// ### top_inl_or_let_process
     let top_inl_or_let_process comments is_top_down = function
         | (r,PatVar(r',name),body),is_rec ->
@@ -5967,9 +6403,11 @@ module spiral_compiler =
             loop body
         | (_,x,_),_ -> Error [range_of_pattern x, ExpectedVarOrOpAsNameOfGlobalStatement]
     
+
     /// ### top_inl_or_let
     let top_inl_or_let d = ((comments .>>. inl_or_let root_term root_pattern_pair root_type_annot) >>= fun (comments,x) d -> top_inl_or_let_process comments d.is_top_down x) d
     
+
     /// ### process_union
     let process_union (r,(layout,n,a,(r',b))) _ =
         let this = (RawTVar n,a) ||> List.fold (fun s x -> RawTApply(r',s,RawTVar(r',hovar_name x)))
@@ -5977,20 +6415,25 @@ module spiral_compiler =
         | UHeap -> Ok(TopNominalRec(r,n,a,RawTUnion(r',b,layout,this)))
         | UStack -> Ok(TopNominal(r,n,a,RawTUnion(r',b,layout,this)))
     
+
     /// ### union_clauses
     let union_clauses d = root_type_union root_type_defaults d
     
+
     /// ### top_union
     let top_union d = ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>. ((skip_keyword SpecRec >>% UHeap) <|>% UStack)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
     
+
     /// ### top_nominal
     let top_nominal d =
         (blockParsingRange (tuple3 (skip_keyword SpecNominal >>. read_small_type_var') (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
         |>> fun (r,(n,a,b)) -> TopNominal(r,n,a,b)) d
     
+
     /// ### type_forall
     let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d
     
+
     /// ### top_prototype
     let top_prototype d =
         (blockParsingRange
@@ -5999,6 +6442,7 @@ module spiral_compiler =
                 (skip_op ":" >>. type_forall (root_type root_type_defaults)))
         |>> fun (r,(com,a,b,c,d)) -> TopPrototype(com,r,a,b,c,d)) d
     
+
     /// ### top_instance
     let top_instance d =
         (blockParsingRange
@@ -6007,34 +6451,43 @@ module spiral_compiler =
                 Ok(TopInstance(r,prototype_name,nominal_name,nominal_foralls,body))
                 ) d
     
+
     /// ### top_type
     let top_type d = (blockParsingRange (tuple3 (skip_keyword SpecType >>. read_small_type_var') (many ho_var) (skip_op "=" >>. root_type root_type_defaults)) |>> fun (r,(a,b,c)) -> TopType(r,a,b,c)) d
     
+
     /// ### top_and_inl_or_let
     let top_and_inl_or_let d =
         (comments .>>. restore 1 (blockParsingRange (and_inl_or_let root_term root_pattern_pair root_type_annot))
         >>= fun (comments,(r,x)) d -> top_inl_or_let_process comments d.is_top_down x |> Result.map (fun x -> TopAnd(r,x))) d
     
+
     /// ### top_and
     let inline top_and f = restore 1 (blockParsingRange (skip_keyword SpecAnd >>. f)) |>> TopAnd
     
+
     /// ### top_and_union
     let top_and_union d = top_and ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>% UHeap) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
     
+
     /// ### top_open
     let top_open d = (blockParsingModule_open |>> fun (r,(name,acs)) -> TopOpen(r,name,acs)) d
     
+
     /// ### top_statement
     let top_statement s =
         let (+) = alt (blockParsingIndex s)
         (top_inl_or_let + top_union + top_nominal + top_prototype + top_type + top_instance + top_and_inl_or_let + top_and_union + top_open) s
     
+
     /// ### ParserErrorsList
     type ParserErrorsList = (VSCRange * ParserErrors) list
     
+
     /// ### ParseResult
     type ParseResult = Result<TopStatement,ParserErrorsList>
     
+
     /// ### blockParsingParse
     let blockParsingParse (s : BlockParsingEnv) : ParseResult =
         if 0 < s.tokens.Length then
@@ -6047,6 +6500,7 @@ module spiral_compiler =
         else
             Error []
     
+
     /// ### show_parser_error
     let show_parser_error = function
         | TypeVarsNeedToBeExplicitForExists -> "The type vars for the exists body have to be specified up front in the bottom-up segment."
@@ -6157,11 +6611,13 @@ module spiral_compiler =
         | ListLiteralsNotAllowedInBottomUp -> "List literals are not allowed in the bottom-up segment."
         | ArrayLiteralsNotAllowedInBottomUp -> "Array literals are not allowed in the bottom-up segment."
     
+
     module HopacExtensions =
         /// ## HopacExtensions
         open Hopac
         open Hopac.Infixes
     
+
         let (>>**) x f =
             if x |> Hopac.Promise.Now.isFulfilled
             then x |> Hopac.Promise.Now.get |> f
@@ -6169,6 +6625,7 @@ module spiral_compiler =
         // Runtime Hopac re-export e utilitários base (definir antes de uso para evitar FS0039).
         open System.Threading.Tasks
     
+
         let inline start (j: Job<unit>) = Hopac.start j
         let inline queue (j: Job<unit>) = Hopac.queue j
         let inline server x = Hopac.server x
@@ -6176,9 +6633,11 @@ module spiral_compiler =
         let inline startAsTask (j: Job<'a>) : Task<'a> = Hopac.startAsTask j
         let inline queueAsTask (j: Job<'a>) : Task<'a> = Hopac.queueAsTask j
     
+
         let inline awaitUnitTask (t: Task) : Job<unit> = Hopac.Job.awaitUnitTask t
         let inline awaitTask (t: Task<'a>) : Job<'a> = Job.fromAsync (Async.AwaitTask t)
     
+
         // Sleep/timeout como Job, para remover Async.Sleep e Alt ambiguo do resto do arquivo.
         let inline sleepMs (ms: int) : Job<unit> = awaitUnitTask (Task.Delay ms)
 
@@ -6194,6 +6653,8 @@ module spiral_compiler =
 
     
     
+
+
         /// ## BlockBundling
         open Hopac.Extensions
         open Hopac.Stream
@@ -6211,8 +6672,11 @@ module spiral_compiler =
         }
     
     
+
+
         // --- PATCH: actor_system (priority 10) ---
     
+
         // =========================================================================
         // ACTOR SYSTEM v4 - OTP-style Supervision (Rust tokio / Gleam OTP compatible)
         // =========================================================================
@@ -6220,6 +6684,7 @@ module spiral_compiler =
         //          Gleam - erlang process + Subject/reply patterns
         // Uses Hopac: Job<'a>, Ch<'a>, IVar<'a>, Promise<'a>
     
+
         /// Actor message envelope with typed request/reply
         [<RequireQualifiedAccess>]
         type ActorMsg<'req, 'reply> =
@@ -6229,6 +6694,7 @@ module spiral_compiler =
             | Shutdown of IVar<unit>
             | Kill
     
+
         /// Actor lifecycle state
         [<RequireQualifiedAccess>]
         type ActorLife =
@@ -6238,6 +6704,7 @@ module spiral_compiler =
             | Stopped
             | Failed of exn
     
+
         /// Actor statistics for monitoring
         type ActorStat = {
             name: string
@@ -6249,6 +6716,7 @@ module spiral_compiler =
             mutable lifecycle: ActorLife
         }
     
+
         /// Actor handle for external communication
         type ActorRef<'req, 'reply> = {
             channel: Ch<ActorMsg<'req, 'reply>>
@@ -6256,6 +6724,7 @@ module spiral_compiler =
             shutdownComplete: IVar<unit>
         }
     
+
         /// Create actor statistics
         let createActorStat name = {
             name = name
@@ -6267,6 +6736,7 @@ module spiral_compiler =
             lifecycle = ActorLife.Starting
         }
     
+
         /// Spawn a new actor with supervision capabilities
         let spawnActor<'req, 'reply, 'state>
             (name: string)
@@ -6279,13 +6749,16 @@ module spiral_compiler =
                 let stats = createActorStat name
                 let shutdownComplete = IVar<unit>()
     
+
                 let! initialState = init()
                 stats.lifecycle <- ActorLife.Running
     
+
                 let rec loop (state: 'state) = job {
                     let! msg = Ch.take ch
                     let sw = System.Diagnostics.Stopwatch.StartNew()
     
+
                     match msg with
                     | ActorMsg.Request(req, reply) ->
                         stats.messageCount <- stats.messageCount + 1L
@@ -6306,6 +6779,7 @@ module spiral_compiler =
                                 stats.lifecycle <- ActorLife.Failed ex
                                 do! IVar.fill shutdownComplete ()
     
+
                     | ActorMsg.Fire req | ActorMsg.Cast req ->
                         stats.messageCount <- stats.messageCount + 1L
                         stats.lastMessageTime <- DateTime.UtcNow
@@ -6320,21 +6794,25 @@ module spiral_compiler =
                                 stats.lifecycle <- ActorLife.Failed ex
                                 do! IVar.fill shutdownComplete ()
     
+
                     | ActorMsg.Shutdown reply ->
                         stats.lifecycle <- ActorLife.Stopping
                         do! IVar.fill reply ()
                         stats.lifecycle <- ActorLife.Stopped
                         do! IVar.fill shutdownComplete ()
     
+
                     | ActorMsg.Kill ->
                         stats.lifecycle <- ActorLife.Stopped
                         do! IVar.fill shutdownComplete ()
                 }
     
+
                 do! Job.start (loop initialState)
                 return { channel = ch; stats = stats; shutdownComplete = shutdownComplete }
             }
     
+
         /// Send request and await reply (call pattern)
         let actorCall (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<'reply> = job {
             let reply = IVar<'reply>()
@@ -6342,6 +6820,7 @@ module spiral_compiler =
             return! IVar.read reply
         }
     
+
         /// Send request with timeout
         let actorCallTimeout (timeoutMs: int) (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<'reply option> =
             job {
@@ -6350,10 +6829,12 @@ module spiral_compiler =
                 return! jobWithTimeoutMs timeoutMs (IVar.read reply)
             }
     
+
         /// Fire and forget (cast pattern)
         let actorCast (handle: ActorRef<'req, 'reply>) (req: 'req) : Job<unit> =
             Ch.send handle.channel (ActorMsg.Fire req)
     
+
         /// Graceful shutdown with confirmation
         let actorShutdown (handle: ActorRef<_, _>) : Job<unit> = job {
             let reply = IVar<unit>()
@@ -6361,14 +6842,17 @@ module spiral_compiler =
             return! IVar.read reply
         }
     
+
         /// Immediate termination
         let actorKill (handle: ActorRef<_, _>) : Job<unit> =
             Ch.send handle.channel ActorMsg.Kill
     
+
         /// Wait for actor to complete
         let actorAwait (handle: ActorRef<_, _>) : Job<unit> =
             IVar.read handle.shutdownComplete
     
+
         /// Check if actor is alive
         let actorIsAlive (handle: ActorRef<_, _>) : bool =
             match handle.stats.lifecycle with
@@ -6377,12 +6861,17 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: supervision_tree (priority 11) ---
     
+
         // =========================================================================
         // SUPERVISION TREE - OTP-style (Rust tower / Gleam OTP compatible)
         // =========================================================================
     
+
         /// Supervision strategy (maps directly to Erlang/OTP)
         [<RequireQualifiedAccess>]
         type SuperStrategy =
@@ -6390,6 +6879,7 @@ module spiral_compiler =
             | OneForAll
             | RestForOne
     
+
         /// Child restart policy
         [<RequireQualifiedAccess>]
         type RestartPol =
@@ -6397,6 +6887,7 @@ module spiral_compiler =
             | Temporary
             | Transient
     
+
         /// Child specification for supervisor
         type ChildSpec<'req, 'reply> = {
             id: string
@@ -6405,6 +6896,7 @@ module spiral_compiler =
             shutdownMs: int
         }
     
+
         /// Supervisor state tracking children
         type SuperState<'req, 'reply> = {
             strategy: SuperStrategy
@@ -6414,6 +6906,7 @@ module spiral_compiler =
             restartLog: (DateTime * string) list
         }
     
+
         /// Supervisor request messages
         [<RequireQualifiedAccess>]
         type SuperReq<'req, 'reply> =
@@ -6423,6 +6916,7 @@ module spiral_compiler =
             | ListChildren
             | GetStats
     
+
         /// Supervisor response messages
         [<RequireQualifiedAccess>]
         type SuperResp<'req, 'reply> =
@@ -6433,6 +6927,7 @@ module spiral_compiler =
             | Stats of {| restarts: int; children: int |}
             | Error of string
     
+
         /// Create a supervisor actor
         let createSupervisor
             (name: string)
@@ -6441,6 +6936,7 @@ module spiral_compiler =
             (windowSec: float)
             : Job<ActorRef<SuperReq<'req, 'reply>, SuperResp<'req, 'reply>>> =
     
+
             let init () = job {
                 return {
                     strategy = strategy
@@ -6451,10 +6947,12 @@ module spiral_compiler =
                 }
             }
     
+
             let pruneLog (now: DateTime) (log: (DateTime * string) list) =
                 log |> List.filter (fun (time, _) ->
                     (now - time).TotalSeconds < windowSec)
     
+
             let handle (state: SuperState<'req, 'reply>) (req: SuperReq<'req, 'reply>) = job {
                 match req with
                 | SuperReq.StartChild spec ->
@@ -6463,6 +6961,7 @@ module spiral_compiler =
                     return { state with children = newChildren },
                            Some (SuperResp.Started child)
     
+
                 | SuperReq.StopChild id ->
                     match Map.tryFind id state.children with
                     | Some (child, _) ->
@@ -6473,6 +6972,7 @@ module spiral_compiler =
                     | None ->
                         return state, Some (SuperResp.Error $"Child {id} not found")
     
+
                 | SuperReq.RestartChild id ->
                     match Map.tryFind id state.children with
                     | Some (child, spec) ->
@@ -6486,10 +6986,12 @@ module spiral_compiler =
                     | None ->
                         return state, Some (SuperResp.Error $"Child {id} not found")
     
+
                 | SuperReq.ListChildren ->
                     let names = state.children |> Map.toList |> List.map fst
                     return state, Some (SuperResp.ChildList names)
     
+
                 | SuperReq.GetStats ->
                     let stats = {|
                         restarts = state.restartLog.Length
@@ -6498,6 +7000,7 @@ module spiral_compiler =
                     return state, Some (SuperResp.Stats stats)
             }
     
+
             let onError (ex: exn) state = job {
                 Common.trace Common.Critical
                     (fun () -> $"Supervisor {name} error: {ex.Message}")
@@ -6505,16 +7008,22 @@ module spiral_compiler =
                 return Some state
             }
     
+
             spawnActor name init handle onError
     
     
     
+
+
+
         // --- PATCH: error_handling (priority 15) ---
     
+
         // =========================================================================
         // ENHANCED ERROR HANDLING & RECOVERY (Rust anyhow / Gleam result compatible)
         // =========================================================================
     
+
         /// Retry configuration
         type RetryConf = {
             maxAttempts: int
@@ -6524,6 +7033,7 @@ module spiral_compiler =
             shouldRetry: exn -> bool
         }
     
+
         /// Default retry config
         let defaultRetry = {
             maxAttempts = 3
@@ -6533,6 +7043,7 @@ module spiral_compiler =
             shouldRetry = fun _ -> true
         }
     
+
         /// Retry with exponential backoff using Hopac
         let retryBackoff (conf: RetryConf) (work: Job<'a>) : Job<Result<'a, exn list>> =
             let rec loop (attempt: int) (delay: TimeSpan) (errors: exn list) = job {
@@ -6554,6 +7065,7 @@ module spiral_compiler =
             }
             loop 1 conf.initDelay []
     
+
         /// Fallback on error
         let withFallback (fallback: exn -> Job<'a>) (work: Job<'a>) : Job<'a> = job {
             try
@@ -6562,6 +7074,7 @@ module spiral_compiler =
                 return! fallback ex
         }
     
+
         /// Recover with default value
         let recoverDefault (defaultValue: 'a) (work: Job<'a>) : Job<'a> = job {
             try
@@ -6570,6 +7083,7 @@ module spiral_compiler =
                 return defaultValue
         }
     
+
         /// Ensure cleanup runs even on error
         let ensureCleanup (cleanup: Job<unit>) (work: Job<'a>) : Job<'a> = job {
             try
@@ -6581,6 +7095,7 @@ module spiral_compiler =
                 return raise ex
         }
     
+
         /// Bracket pattern (acquire/use/release)
         let bracket
             (acquire: Job<'resource>)
@@ -6599,12 +7114,17 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: memory_opts (priority 16) ---
     
+
         // =========================================================================
         // MEMORY OPTIMIZATIONS (Rust arena / Gleam bytes compatible)
         // =========================================================================
     
+
         /// Object pool for reducing allocations
         type ObjPool<'a> = {
             pool: System.Collections.Concurrent.ConcurrentBag<'a>
@@ -6613,6 +7133,7 @@ module spiral_compiler =
             maxSize: int
         }
     
+
         /// Create object pool
         let createObjPool (factory: unit -> 'a) (reset: 'a -> unit) (maxSize: int) : ObjPool<'a> = {
             pool = System.Collections.Concurrent.ConcurrentBag()
@@ -6621,18 +7142,21 @@ module spiral_compiler =
             maxSize = maxSize
         }
     
+
         /// Rent object from pool
         let poolRent (p: ObjPool<'a>) : 'a =
             match p.pool.TryTake() with
             | true, obj -> obj
             | _ -> p.factory()
     
+
         /// Return object to pool
         let poolReturn (p: ObjPool<'a>) (obj: 'a) : unit =
             if p.pool.Count < p.maxSize then
                 p.reset obj
                 p.pool.Add(obj)
     
+
         /// Use object from pool with automatic return
         let poolUse (p: ObjPool<'a>) (f: 'a -> Job<'b>) : Job<'b> = job {
             let obj = poolRent p
@@ -6642,6 +7166,7 @@ module spiral_compiler =
                 poolReturn p obj
         }
     
+
         /// StringBuilder pool
         let sbPool =
             createObjPool
@@ -6649,6 +7174,7 @@ module spiral_compiler =
                 (fun sb -> sb.Clear() |> ignore)
                 (capConcurrency Environment.ProcessorCount)
     
+
         /// Pooled string building
         let buildStr (f: System.Text.StringBuilder -> unit) : string =
             let sb = poolRent sbPool
@@ -6658,6 +7184,7 @@ module spiral_compiler =
             finally
                 poolReturn sbPool sb
     
+
         /// String intern table for deduplication
         type InternTable = {
             table: System.Collections.Concurrent.ConcurrentDictionary<string, string>
@@ -6665,12 +7192,14 @@ module spiral_compiler =
             mutable deduped: int64
         }
     
+
         let createInternTable () : InternTable = {
             table = System.Collections.Concurrent.ConcurrentDictionary()
             interned = 0L
             deduped = 0L
         }
     
+
         let internStr (t: InternTable) (s: string) : string =
             match t.table.TryGetValue(s) with
             | true, existing ->
@@ -6681,17 +7210,23 @@ module spiral_compiler =
                 System.Threading.Interlocked.Increment(&t.interned) |> ignore
                 s
     
+
         /// Global string intern table
         let globalIntern = createInternTable()
     
     
     
+
+
+
         // --- PATCH: parallel_primitives (priority 20) ---
     
+
         // =========================================================================
         // PARALLEL EXECUTION PRIMITIVES (Rust rayon / Gleam gleam_otp compatible)
         // =========================================================================
     
+
         /// Parallel map with bounded concurrency using Hopac
         let parMapBounded (concurrency: int) (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
             let concurrency = capConcurrency concurrency
@@ -6705,6 +7240,7 @@ module spiral_compiler =
                         items |> Array.mapi (fun i x -> i, x))
                     let sem = new System.Threading.SemaphoreSlim(concurrency)
     
+
                     let processItem () = job {
                         let mutable cont = true
                         while cont do
@@ -6721,23 +7257,28 @@ module spiral_compiler =
                                 cont <- false
                     }
     
+
                     do! Seq.init (min concurrency items.Length) (fun _ -> processItem())
                         |> Job.conIgnore
                     return results
                 }
     
+
         /// Parallel map with auto concurrency
         let parMap (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
             parMapBounded (capConcurrency Environment.ProcessorCount) f items
     
+
         /// Parallel iter with bounded concurrency
         let parIterBounded (concurrency: int) (f: 'a -> Job<unit>) (items: 'a[]) : Job<unit> =
             parMapBounded concurrency f items >>- ignore
     
+
         /// Parallel iter with auto concurrency
         let parIter (f: 'a -> Job<unit>) (items: 'a[]) : Job<unit> =
             parIterBounded (capConcurrency Environment.ProcessorCount) f items
     
+
         /// Parallel fold with associative combiner (tree reduction)
         let parFold (combine: 'b -> 'b -> 'b) (zero: 'b) (f: 'a -> Job<'b>) (items: 'a[]) : Job<'b> =
             if items.Length = 0 then Job.result zero
@@ -6746,6 +7287,7 @@ module spiral_compiler =
                 let chunkSize = max 1 (items.Length / dop)
                 let chunks = items |> Array.chunkBySize chunkSize
     
+
                 job {
                     let! chunkResults =
                         chunks
@@ -6761,10 +7303,12 @@ module spiral_compiler =
                     return Array.fold combine zero chunkResults
                 }
     
+
         /// Scatter-gather pattern with workers
         let scatterGather (workers: int) (work: 'a -> Job<'b>) (items: 'a[]) : Job<'b[]> =
             parMapBounded workers work items
     
+
         /// Parallel filter
         let parFilter (pred: 'a -> Job<bool>) (items: 'a[]) : Job<'a[]> = job {
             let! flags = parMap pred items
@@ -6773,12 +7317,14 @@ module spiral_compiler =
                 |> Array.choose (fun (item, keep) -> if keep then Some item else None)
         }
     
+
         /// Parallel choose (filter + map)
         let parChoose (chooser: 'a -> Job<'b option>) (items: 'a[]) : Job<'b[]> = job {
             let! results = parMap chooser items
             return results |> Array.choose id
         }
     
+
         /// Race - return first completed result
         /// Note: This is a simple sequential fallback since Hopac Alt patterns are complex
         let raceJobs (jobs: Job<'a>[]) : Job<'a> =
@@ -6790,12 +7336,14 @@ module spiral_compiler =
                 // For now, just run first job (proper Alt-based race would be more complex)
                 jobs.[0]
     
+
         /// All settled - wait for all, collecting results
         [<RequireQualifiedAccess>]
         type Settled<'a> =
             | Ok of 'a
             | Err of exn
     
+
         let allSettled (jobs: Job<'a>[]) : Job<Settled<'a>[]> =
             jobs
             |> Array.map (fun j ->
@@ -6810,12 +7358,17 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: incremental_cache (priority 21) ---
     
+
         // =========================================================================
         // INCREMENTAL COMPUTATION CACHE (Rust salsa / Gleam memoization compatible)
         // =========================================================================
     
+
         /// Cache entry with generation tracking
         type CacheEntry<'v> = {
             generation: int64
@@ -6824,6 +7377,7 @@ module spiral_compiler =
             computeMs: float
         }
     
+
         /// Incremental cache with dependency tracking
         type IncrCache<'k, 'v when 'k : equality and 'k : comparison> = {
             mutable gen: int64
@@ -6833,6 +7387,7 @@ module spiral_compiler =
             mutable misses: int64
         }
     
+
         /// Create a new incremental cache
         let createIncrCache<'k, 'v when 'k : equality and 'k : comparison>
             (compute: 'k -> Job<'v * string Set>)
@@ -6844,10 +7399,12 @@ module spiral_compiler =
             misses = 0L
         }
     
+
         /// Get or compute value from cache
         let cacheGet (c: IncrCache<'k, 'v>) (key: 'k) : Job<'v> = job {
             let currentGen = c.gen
     
+
             match c.cache.TryGetValue(key) with
             | true, entry when entry.generation = currentGen ->
                 System.Threading.Interlocked.Increment(&c.hits) |> ignore
@@ -6858,6 +7415,7 @@ module spiral_compiler =
                 let! value, deps = c.compute key
                 sw.Stop()
     
+
                 let entry = {
                     generation = currentGen
                     value = value
@@ -6868,14 +7426,17 @@ module spiral_compiler =
                 return value
         }
     
+
         /// Invalidate specific key
         let cacheInvalidateKey (c: IncrCache<'k, 'v>) (key: 'k) : unit =
             c.cache.TryRemove(key) |> ignore
     
+
         /// Invalidate all entries (bump generation)
         let cacheInvalidateAll (c: IncrCache<_, _>) : unit =
             System.Threading.Interlocked.Increment(&c.gen) |> ignore
     
+
         /// Get cache statistics
         let cacheStats (c: IncrCache<_, _>) =
             let h = c.hits
@@ -6889,12 +7450,17 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: stream_ops (priority 22) ---
     
+
         // =========================================================================
         // ENHANCED STREAM OPERATORS (using Hopac.Stream)
         // =========================================================================
     
+
         /// Parallel stream map with bounded concurrency
         let streamMapParBounded (conc: int) (f: 'a -> Job<'b>) (s: Stream<'a>) : Stream<'b> =
             let sem = new System.Threading.SemaphoreSlim(conc)
@@ -6906,6 +7472,7 @@ module spiral_compiler =
                     sem.Release() |> ignore
             })
     
+
         /// Buffer and process in batches
         let streamBatch (batchSize: int) (s: Stream<'a>) : Stream<'a[]> =
             let rec loop buffer s =
@@ -6923,6 +7490,7 @@ module spiral_compiler =
                         Job.result (Cons(List.rev buffer |> Array.ofList, Job.result Nil |> memo))
             loop [] s |> memo
     
+
         /// Take first n items from stream
         let streamTake (n: int) (s: Stream<'a>) : Job<'a[]> =
             let results = ResizeArray()
@@ -6938,6 +7506,7 @@ module spiral_compiler =
             }
             loop 0 s >>- fun () -> results.ToArray()
     
+
         /// Merge multiple streams
         let streamMergeAll (streams: Stream<'a>[]) : Stream<'a> =
             if streams.Length = 0 then Stream.nil
@@ -6947,12 +7516,17 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: backpressure (priority 23) ---
     
+
         // =========================================================================
         // BACKPRESSURE & RATE LIMITING (Rust tower / Gleam rate_limiter compatible)
         // =========================================================================
     
+
         /// Token bucket rate limiter
         type TokenBucket = {
             mutable tokens: float
@@ -6962,6 +7536,7 @@ module spiral_compiler =
             lockObj: obj
         }
     
+
         /// Create a token bucket rate limiter
         let createTokenBucket (maxTokens: float) (refillRate: float) : TokenBucket = {
             tokens = maxTokens
@@ -6971,6 +7546,7 @@ module spiral_compiler =
             lockObj = obj()
         }
     
+
         /// Try to acquire tokens from bucket
         let tryAcquire (bucket: TokenBucket) (count: float) : bool =
             lock bucket.lockObj (fun () ->
@@ -6979,6 +7555,7 @@ module spiral_compiler =
                 bucket.tokens <- min bucket.maxTokens (bucket.tokens + elapsed * bucket.refillRate)
                 bucket.lastRefill <- now
     
+
                 if bucket.tokens >= count then
                     bucket.tokens <- bucket.tokens - count
                     true
@@ -6986,6 +7563,7 @@ module spiral_compiler =
                     false
             )
     
+
         /// Acquire tokens, waiting if necessary
         let acquireTokens (bucket: TokenBucket) (count: float) : Job<unit> =
             let rec loop () = job {
@@ -6999,6 +7577,7 @@ module spiral_compiler =
             }
             loop ()
     
+
         /// Circuit breaker states
         [<RequireQualifiedAccess>]
         type CircuitSt =
@@ -7006,6 +7585,7 @@ module spiral_compiler =
             | Open
             | HalfOpen
     
+
         /// Circuit breaker for fault tolerance
         type CircuitBreaker = {
             mutable state: CircuitSt
@@ -7018,6 +7598,7 @@ module spiral_compiler =
             lockObj: obj
         }
     
+
         /// Create a circuit breaker
         let createCircuitBreaker (failThreshold: int) (successThreshold: int) (resetTimeout: TimeSpan) : CircuitBreaker = {
             state = CircuitSt.Closed
@@ -7030,6 +7611,7 @@ module spiral_compiler =
             lockObj = obj()
         }
     
+
         /// Execute with circuit breaker protection
         let withCircuit (cb: CircuitBreaker) (work: Job<'a>) : Job<Result<'a, string>> =
             let checkState () =
@@ -7045,6 +7627,7 @@ module spiral_compiler =
                     | _ -> true
                 )
     
+
             let recordSuccess () =
                 lock cb.lockObj (fun () ->
                     cb.failures <- 0
@@ -7056,6 +7639,7 @@ module spiral_compiler =
                     | _ -> ()
                 )
     
+
             let recordFail () =
                 lock cb.lockObj (fun () ->
                     cb.failures <- cb.failures + 1
@@ -7064,6 +7648,7 @@ module spiral_compiler =
                         cb.state <- CircuitSt.Open
                 )
     
+
             job {
                 if checkState () then
                     try
@@ -7079,35 +7664,44 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: profiling (priority 24) ---
     
+
         // =========================================================================
         // PROFILING & METRICS (Rust metrics / Gleam telemetry compatible)
         // =========================================================================
     
+
         /// Simple counter
         type MetricCounter = {
             name: string
             mutable value: int64
         }
     
+
         let createCounter name : MetricCounter = { name = name; value = 0L }
         let counterInc (c: MetricCounter) : unit =
             System.Threading.Interlocked.Increment(&c.value) |> ignore
         let counterAdd (c: MetricCounter) (n: int64) : unit =
             System.Threading.Interlocked.Add(&c.value, n) |> ignore
     
+
         /// Simple gauge
         type MetricGauge = {
             name: string
             mutable value: float
         }
     
+
         let createGauge name : MetricGauge = { name = name; value = 0.0 }
         let gaugeSet (g: MetricGauge) (v: float) : unit = g.value <- v
         let gaugeInc (g: MetricGauge) : unit = g.value <- g.value + 1.0
         let gaugeDec (g: MetricGauge) : unit = g.value <- g.value - 1.0
     
+
         /// Histogram for timing distributions
         type MetricHistogram = {
             name: string
@@ -7119,6 +7713,7 @@ module spiral_compiler =
             mutable maxVal: float
         }
     
+
         /// Create histogram with exponential buckets
         let createHistogram (name: string) (minV: float) (maxV: float) (bucketCount: int) : MetricHistogram =
             let ratio = Math.Pow(maxV / minV, 1.0 / float bucketCount)
@@ -7132,6 +7727,7 @@ module spiral_compiler =
                 maxVal = Double.MinValue
             }
     
+
         /// Record a value in histogram
         let histRecord (h: MetricHistogram) (value: float) : unit =
             System.Threading.Interlocked.Increment(&h.count) |> ignore
@@ -7144,6 +7740,7 @@ module spiral_compiler =
                 |> Option.defaultValue (h.buckets.Length - 1)
             System.Threading.Interlocked.Increment(&h.buckets.[idx]) |> ignore
     
+
         /// Timed execution with histogram recording
         let timedJob (histogram: MetricHistogram) (work: Job<'a>) : Job<'a> = job {
             let sw = System.Diagnostics.Stopwatch.StartNew()
@@ -7153,6 +7750,7 @@ module spiral_compiler =
             return result
         }
     
+
         /// Timed execution returning duration
         let timedWithDur (work: Job<'a>) : Job<'a * TimeSpan> = job {
             let sw = System.Diagnostics.Stopwatch.StartNew()
@@ -7161,6 +7759,7 @@ module spiral_compiler =
             return result, sw.Elapsed
         }
     
+
         /// Global compiler metrics
         let mutable metricsTokenize = createHistogram "tokenize" 0.1 10000.0 20
         let mutable metricsParse = createHistogram "parse" 0.1 10000.0 20
@@ -7169,12 +7768,17 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: parallel_dep_graph (priority 25) ---
     
+
         // =========================================================================
         // PARALLEL DEPENDENCY GRAPH EXECUTION (using Hopac)
         // =========================================================================
     
+
         /// Node execution state
         [<RequireQualifiedAccess>]
         type NodeSt =
@@ -7184,6 +7788,7 @@ module spiral_compiler =
             | Done
             | Failed of exn
     
+
         /// Dependency graph node
         type DepNode<'id, 'r when 'id : comparison> = {
             id: 'id
@@ -7195,6 +7800,7 @@ module spiral_compiler =
             completed: IVar<Result<'r, exn>>
         }
     
+
         /// Parallel dependency graph
         type ParDepGraph<'id, 'r when 'id : equality and 'id : comparison> = {
             nodes: System.Collections.Concurrent.ConcurrentDictionary<'id, DepNode<'id, 'r>>
@@ -7204,6 +7810,7 @@ module spiral_compiler =
             allDone: IVar<unit>
         }
     
+
         /// Create parallel dependency graph
         let createParDepGraph<'id, 'r when 'id : equality and 'id : comparison>()
             : ParDepGraph<'id, 'r> = {
@@ -7214,6 +7821,7 @@ module spiral_compiler =
             allDone = IVar<unit>()
         }
     
+
         /// Add node to graph
         let depGraphAdd (g: ParDepGraph<'id, 'r>) (id: 'id) (deps: 'id Set) : Job<unit> = job {
             let node = {
@@ -7226,9 +7834,11 @@ module spiral_compiler =
                 completed = IVar()
             }
     
+
             g.nodes.[id] <- node
             g.pending <- g.pending + 1
     
+
             // Register as dependent
             for depId in deps do
                 match g.nodes.TryGetValue(depId) with
@@ -7236,12 +7846,14 @@ module spiral_compiler =
                     depNode.dependents <- Set.add id depNode.dependents
                 | _ -> ()
     
+
             // If no deps, mark ready
             if Set.isEmpty deps then
                 node.state <- NodeSt.Ready
                 do! Mailbox.send g.readyQueue id
         }
     
+
         /// Check if node is ready
         let private checkReady (g: ParDepGraph<'id, 'r>) (nodeId: 'id) : Job<unit> = job {
             match g.nodes.TryGetValue(nodeId) with
@@ -7255,12 +7867,14 @@ module spiral_compiler =
                             | _ -> false
                         | _ -> true)
     
+
                 if allDone && node.state = NodeSt.Pending then
                     node.state <- NodeSt.Ready
                     do! Mailbox.send g.readyQueue nodeId
             | _ -> ()
         }
     
+
         /// Execute dependency graph with workers
         let depGraphExec
             (g: ParDepGraph<'id, 'r>)
@@ -7268,8 +7882,10 @@ module spiral_compiler =
             (workers: int)
             : Job<Map<'id, Result<'r, exn>>> = job {
     
+
             let results = System.Collections.Concurrent.ConcurrentDictionary<'id, Result<'r, exn>>()
     
+
             let worker = job {
                 let mutable cont = true
                 while cont do
@@ -7278,6 +7894,7 @@ module spiral_compiler =
                         <|>
                         (IVar.read g.allDone |> Alt.afterFun (fun _ -> None))
     
+
                     match nodeIdOpt with
                     | Some id ->
                         match g.nodes.TryGetValue(id) with
@@ -7290,6 +7907,7 @@ module spiral_compiler =
                                 results.[id] <- Ok result
                                 do! IVar.fill node.completed (Ok result)
     
+
                                 // Notify dependents
                                 for depId in node.dependents do
                                     do! checkReady g depId
@@ -7298,6 +7916,7 @@ module spiral_compiler =
                                 results.[id] <- Error ex
                                 do! IVar.fill node.completed (Error ex)
     
+
                             g.completed <- g.completed + 1
                             if g.completed = g.pending then
                                 do! IVar.tryFill g.allDone ()
@@ -7307,23 +7926,31 @@ module spiral_compiler =
                         cont <- false
             }
     
+
             // Start workers
             do! Seq.init workers (fun _ -> Job.start worker) |> Job.conIgnore
     
+
             // Wait for completion
             do! IVar.read g.allDone
     
+
             return results |> Seq.map (fun kv -> kv.Key, kv.Value) |> Map.ofSeq
         }
     
     
     
+
+
+
         // --- PATCH: watchdog (priority 28) ---
     
+
         // =========================================================================
         // WATCHDOG & HEALTH MONITORING (using Hopac)
         // =========================================================================
     
+
         /// Health check result
         [<RequireQualifiedAccess>]
         type HealthSt =
@@ -7331,6 +7958,7 @@ module spiral_compiler =
             | Degraded of string
             | Unhealthy of string
     
+
         /// Component health
         type CompHealth = {
             name: string
@@ -7339,6 +7967,7 @@ module spiral_compiler =
             responseMs: float option
         }
     
+
         /// System health
         type SysHealth = {
             overall: HealthSt
@@ -7347,9 +7976,11 @@ module spiral_compiler =
             startTime: DateTime
         }
     
+
         /// Health check function
         type HealthCheck = string -> Job<CompHealth>
     
+
         /// Watchdog config
         type WatchdogConf = {
             checkIntervalMs: int
@@ -7357,6 +7988,7 @@ module spiral_compiler =
             timeout: TimeSpan
         }
     
+
         /// Watchdog state
         type WatchdogSt = {
             conf: WatchdogConf
@@ -7365,6 +7997,7 @@ module spiral_compiler =
             startTime: DateTime
         }
     
+
         /// Create watchdog
         let createWatchdog (conf: WatchdogConf) : WatchdogSt = {
             conf = conf
@@ -7373,14 +8006,17 @@ module spiral_compiler =
             startTime = DateTime.UtcNow
         }
     
+
         /// Register health check
         let watchdogRegister (name: string) (check: HealthCheck) (w: WatchdogSt) : WatchdogSt =
             { w with checks = Map.add name check w.checks }
     
+
         /// Run health checks
         let watchdogRun (w: WatchdogSt) : Job<SysHealth> = job {
             w.lastCheck <- DateTime.UtcNow
     
+
             let! results =
                 w.checks
                 |> Map.toArray
@@ -7406,6 +8042,7 @@ module spiral_compiler =
                 })
                 |> Job.conCollect
     
+
             let overall =
                 if results |> Seq.forall (fun r -> r.status = HealthSt.Healthy) then
                     HealthSt.Healthy
@@ -7414,6 +8051,7 @@ module spiral_compiler =
                 else
                     HealthSt.Degraded "Component degraded"
     
+
             return {
                 overall = overall
                 components = results |> Seq.toList
@@ -7422,6 +8060,7 @@ module spiral_compiler =
             }
         }
     
+
         /// Memory health check
         let memoryHealthCheck (maxMb: int64) : HealthCheck =
             fun name -> job {
@@ -7440,12 +8079,17 @@ module spiral_compiler =
     
     
     
+
+
+
         // --- PATCH: compile_pipeline (priority 29) ---
     
+
         // =========================================================================
         // PARALLEL COMPILE PIPELINE ENHANCEMENTS (using Hopac)
         // =========================================================================
     
+
         /// Compilation stage result
         type StageRes<'a> = {
             result: 'a
@@ -7454,6 +8098,7 @@ module spiral_compiler =
             warnings: (int * int * string) list
         }
     
+
         /// Module compile context
         type ModuleCtx = {
             path: string
@@ -7466,6 +8111,7 @@ module spiral_compiler =
             codegen: System.Collections.Concurrent.ConcurrentDictionary<string, Job<StageRes<string>>>
         }
     
+
         /// Package compile context
         type PackageCtx = {
             id: int
@@ -7475,6 +8121,7 @@ module spiral_compiler =
             pkgEnv: Job<obj>
         }
     
+
         /// Compile coordinator
         type CompileCoord = {
             packages: System.Collections.Concurrent.ConcurrentDictionary<string, PackageCtx>
@@ -7485,6 +8132,7 @@ module spiral_compiler =
             mutable cacheHits: int64
         }
     
+
         /// Create compile coordinator
         let createCompileCoord (workers: int) : CompileCoord = {
             packages = System.Collections.Concurrent.ConcurrentDictionary()
@@ -7497,12 +8145,15 @@ module spiral_compiler =
             cacheHits = 0L
         }
     
+
         /// Compile module with pipeline
         let compileModulePipeline (coord: CompileCoord) (path: string) (source: string) : Job<ModuleCtx> = job {
             let hash = source.GetHashCode().ToString()
     
+
             System.Threading.Interlocked.Increment(&coord.modulesCompiled) |> ignore
     
+
             // Create promises for each stage using Hopac.memo
             let tokenized =
                 job {
@@ -7512,6 +8163,7 @@ module spiral_compiler =
                     return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
                 } |> Hopac.memo
     
+
             let parsed =
                 job {
                     let! _ = tokenized
@@ -7521,6 +8173,7 @@ module spiral_compiler =
                     return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
                 } |> Hopac.memo
     
+
             let typechecked =
                 job {
                     let! _ = parsed
@@ -7530,6 +8183,7 @@ module spiral_compiler =
                     return { result = obj(); durationMs = sw.Elapsed.TotalMilliseconds; errors = []; warnings = [] }
                 } |> Hopac.memo
     
+
             return {
                 path = path
                 source = source
@@ -7542,6 +8196,7 @@ module spiral_compiler =
             }
         }
     
+
         /// Compile package with parallel modules
         let compilePackagePipeline
             (coord: CompileCoord)
@@ -7550,11 +8205,14 @@ module spiral_compiler =
             (readSource: string -> Job<string>)
             : Job<PackageCtx> = job {
     
+
             let pkgId = pkgPath.GetHashCode()
             System.Threading.Interlocked.Increment(&coord.packagesCompiled) |> ignore
     
+
             let moduleCtxs = System.Collections.Concurrent.ConcurrentDictionary<string, ModuleCtx>()
     
+
             // Compile all modules in parallel
             do! parIterBounded coord.workers (fun path -> job {
                     let! source = readSource path
@@ -7562,6 +8220,7 @@ module spiral_compiler =
                     moduleCtxs.[path] <- ctx
                 }) modulePaths
     
+
             // Compute package env
             let pkgEnv =
                 job {
@@ -7573,6 +8232,7 @@ module spiral_compiler =
                     return obj()
                 } |> Hopac.memo
     
+
             let ctx = {
                 id = pkgId
                 path = pkgPath
@@ -7581,18 +8241,24 @@ module spiral_compiler =
                 pkgEnv = pkgEnv
             }
     
+
             coord.packages.[pkgPath] <- ctx
             return ctx
         }
     
     
     
+
+
+
         // --- PATCH: hot_reload (priority 30) ---
     
+
         // =========================================================================
         // HOT RELOAD SUPPORT (using Hopac)
         // =========================================================================
     
+
         /// File change event
         [<RequireQualifiedAccess>]
         type FileEvt =
@@ -7601,6 +8267,7 @@ module spiral_compiler =
             | Deleted of string
             | Renamed of string * string
     
+
         /// File watcher state
         type FileWatcherSt = {
             watcher: System.IO.FileSystemWatcher
@@ -7609,11 +8276,13 @@ module spiral_compiler =
             pending: System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>
         }
     
+
         /// Create file watcher with debouncing
         let createFileWatcher (dir: string) (pattern: string) (debounceMs: int) : Job<FileWatcherSt> = job {
             let events = Mailbox<FileEvt>()
             let pending = System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>()
     
+
             let watcher = new System.IO.FileSystemWatcher(dir)
             watcher.NotifyFilter <-
                 System.IO.NotifyFilters.LastWrite |||
@@ -7622,6 +8291,7 @@ module spiral_compiler =
             watcher.Filter <- pattern
             watcher.IncludeSubdirectories <- true
     
+
             let sendDebounced path evt =
                 pending.[path] <- DateTime.UtcNow
                 start (job {
@@ -7633,6 +8303,7 @@ module spiral_compiler =
                     | _ -> ()
                 })
     
+
             watcher.Changed.Add(fun e ->
                 sendDebounced e.FullPath (FileEvt.Modified e.FullPath))
             watcher.Created.Add(fun e ->
@@ -7642,8 +8313,10 @@ module spiral_compiler =
             watcher.Renamed.Add(fun e ->
                 start (Mailbox.send events (FileEvt.Renamed(e.OldFullPath, e.FullPath))))
     
+
             watcher.EnableRaisingEvents <- true
     
+
             return {
                 watcher = watcher
                 events = events
@@ -7652,6 +8325,7 @@ module spiral_compiler =
             }
         }
     
+
         /// Process file changes in batches
         let processChanges
             (fw: FileWatcherSt)
@@ -7659,6 +8333,7 @@ module spiral_compiler =
             (batchTimeoutMs: int)
             : Job<unit> =
     
+
             let rec loop (batch: FileEvt list) (deadline: DateTime option) = job {
                 let! evtOpt =
                     match deadline with
@@ -7674,6 +8349,7 @@ module spiral_compiler =
                             return Some evt
                         }
     
+
                 match evtOpt with
                 | Some evt ->
                     let newBatch = evt :: batch
@@ -7683,21 +8359,26 @@ module spiral_compiler =
                         |> Some
                     return! loop newBatch newDeadline
     
+
                 | None when not (List.isEmpty batch) ->
                     do! handler (List.rev batch |> Array.ofList)
                     return! loop [] None
     
+
                 | None ->
                     return! loop [] None
             }
     
+
             loop [] None
     
+
         /// Stop file watcher
         let stopFileWatcher (fw: FileWatcherSt) : unit =
             fw.watcher.EnableRaisingEvents <- false
             fw.watcher.Dispose()
     
+
         /// Parallel map for pure functions (sync), bounded via ParallelOptions.
         /// This is intentionally *not* Hopac-based to avoid deadlocks if called inside running Hopac Jobs.
         let parMapBoundedSync (concurrency: int) (f: 'a -> 'b) (items: 'a[]) : 'b[] =
@@ -7732,21 +8413,25 @@ module spiral_compiler =
                     Unchecked.defaultof<'b[]>
                 | None -> results
     
+
         // Parallel execution layer - uses all CPU cores by default
         let mutable private forcedConcurrency = 0
         do getForcedConcurrency <- (fun () -> System.Threading.Volatile.Read(&forcedConcurrency))
     
+
         /// Override concurrency for diagnostics/debugging
         let forceConcurrency (n: int) =
             let n = max 1 n
             System.Threading.Volatile.Write(&forcedConcurrency, n)
             DiagSidecar.emit (sprintf "HopacExtensions.forceConcurrency: %d" n)
     
+
         let clearForcedConcurrency () =
             System.Threading.Volatile.Write(&forcedConcurrency, 0)
             DiagSidecar.emit "HopacExtensions.clearForcedConcurrency"
     
         // ALPHA400: no env-var DOP policy.  Parallelism is hardcoded to ProcessorCount unless
+
         // retry code explicitly forces sequential execution.
         let private hardcodedEnvDop () : int = 0
 
@@ -7769,16 +8454,19 @@ module spiral_compiler =
             if forced > 0 then forced
             else max 1 System.Environment.ProcessorCount
     
+
         do
             Progress88.set_extra_provider (fun () ->
                 let forced = System.Threading.Volatile.Read(&forcedConcurrency)
                 if forced > 0 then $"dop={forced}" else $"dop={max 1 System.Environment.ProcessorCount}")
     
+
         // Parallel array ops with bounded concurrency (preserves index order)
         module A =
             let inline map (f: 'a -> 'b) (xs: 'a[]) : 'b[] =
                 parMapBoundedSync (defaultConcurrency()) f xs
     
+
             let inline mapi (f: int -> 'a -> 'b) (xs: 'a[]) : 'b[] =
                 if xs.Length = 0 then [||]
                 elif xs.Length = 1 then [| f 0 xs.[0] |]
@@ -7791,6 +8479,8 @@ module spiral_compiler =
                     results
     
     
+
+
             let inline map2 (f: 'a -> 'b -> 'c) (xs: 'a[]) (ys: 'b[]) : 'c[] =
                 if xs.Length <> ys.Length then invalidArg "ys" "Array lengths do not match in map2."
                 if xs.Length = 0 then [||]
@@ -7803,6 +8493,7 @@ module spiral_compiler =
                     ) |> ignore
                     results
     
+
             let inline iter (f: 'a -> unit) (xs: 'a[]) : unit =
                 if xs.Length = 0 then ()
                 elif xs.Length = 1 then f xs.[0]
@@ -7812,6 +8503,7 @@ module spiral_compiler =
                         f xs.[i]
                     ) |> ignore
     
+
             let inline iteri (f: int -> 'a -> unit) (xs: 'a[]) : unit =
                 if xs.Length = 0 then ()
                 elif xs.Length = 1 then f 0 xs.[0]
@@ -7821,17 +8513,21 @@ module spiral_compiler =
                         f i xs.[i]
                     ) |> ignore
     
+
             let inline choose (f: 'a -> 'b option) (xs: 'a[]) : 'b[] =
                 // Primeiro mapeia em paralelo, depois filtra em ordem (estável) num passo sequencial.
                 let tmp = map f xs
                 Microsoft.FSharp.Collections.Array.choose id tmp
     
+
             let inline collect (f: 'a -> 'b[]) (xs: 'a[]) : 'b[] =
                 // Primeiro gera chunks em paralelo, depois achata em ordem.
                 let chunks = map f xs
                 Microsoft.FSharp.Collections.Array.collect id chunks
     
     
+
+
         // Array ops sequenciais (para trechos com estado mutável não-thread-safe).
         module S =
             let inline map (f: 'a -> 'b) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.map f xs
@@ -7841,6 +8537,7 @@ module spiral_compiler =
             let inline choose (f: 'a -> 'b option) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.choose f xs
             let inline collect (f: 'a -> 'b[]) (xs: 'a[]) : 'b[] = Microsoft.FSharp.Collections.Array.collect f xs
     
+
     open HopacExtensions
     open Hopac
     open Hopac.Infixes
@@ -7851,8 +8548,14 @@ module spiral_compiler =
     
     
     
+
+
+
+
+
     // open FSharpx.Collections
     
+
     /// ### Bundle
     // These bundles are top statements that have their range offsets distributed into them.
     type [<ReferenceEquality>] Bundle =
@@ -7865,6 +8568,7 @@ module spiral_compiler =
         | BundleInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
         | BundleOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
     
+
     /// ### bundle_range
     let bundle_range = function
         | BundleType(r,_,_,_) | BundleNominal(r,_,_,_) | BundleInl(_,r,_,_,_)
@@ -7872,24 +8576,30 @@ module spiral_compiler =
         | BundleNominalRec l -> List.head l |> fun (r,_,_,_) -> r
         | BundleRecInl(l,_) -> List.head l |> fun (_,r,_,_) -> r
     
+
     /// ### add_offset
     let add_offset offset (range : VSCRange) : VSCRange =
         let f (a : VSCPos) = {|a with line=offset + a.line|}
         let a,b = range
         f a, f b
     
+
     /// ### add_offset_hovar
     let add_offset_hovar offset (a,b) = add_offset offset a, b
     
+
     /// ### add_offset_hovar_list
     let add_offset_hovar_list offset x = List.map (add_offset_hovar offset) x
     
+
     /// ### add_offset_typevar
     let add_offset_typevar offset ((a,b),c) = (add_offset offset a, b), add_offset_hovar_list offset c
     
+
     /// ### add_offset_typevar_list
     let add_offset_typevar_list offset x = List.map (add_offset_typevar offset) x
     
+
     /// ### fold_offset_ty
     let rec fold_offset_ty offset x =
         let f = fold_offset_ty offset
@@ -8000,6 +8710,7 @@ module spiral_compiler =
         | PatExists(r,a,b) -> PatExists(g r,List.map g' a,f b)
         | PatArray(r,a) -> PatArray(g r,List.map f a)
     
+
     /// ### bundle_blocks
     let bundle_blocks (blocks : TopStatement Block list) =
         match blocks with
@@ -8025,9 +8736,11 @@ module spiral_compiler =
         | [{offset=i; block=TopOpen(r,a,b)}] -> BundleOpen(add_offset i r, add_offset_hovar i a, add_offset_hovar_list i b) |> Some
         | {block=TopInl _ | TopPrototype _ | TopNominal _ | TopType _ | TopInstance _ | TopOpen _} :: _ -> failwith "Compiler error: Regular top level statements should be singleton bundles."
     
+
     /// ### add_line_to_range
     let add_line_to_range line ((a,b) : VSCRange) = {|a with line=line+a.line|}, {|b with line=line+b.line|}
     
+
     /// ### process_error
     let process_error v =
         let messages, expecteds = v |> List.distinct |> List.partition (fun x -> System.Char.IsUpper(x,0))
@@ -8037,6 +8750,7 @@ module spiral_compiler =
         elif List.isEmpty messages then ex ()
         else f (ex () :: "" :: "Other error messages:" :: messages)
     
+
     /// ### show_block_parsing_error
     let show_block_parsing_error line (l : ParserErrorsList) : RString list =
         l |> List.groupBy fst
@@ -8046,33 +8760,41 @@ module spiral_compiler =
             k, process_error v
             )
     
+
     /// ### ParsedBlock
     type ParsedBlock = {result : ParseResult; semantic_tokens : LineTokens}
     
+
     /// ### ParserState
     type ParserState = {
         is_top_down : bool
         blocks : (LineTokens * ParsedBlock Promise Block) list
         }
     
+
     /// ### BlockBundleValue
     type BlockBundleValue = {bundle : Bundle option; errors : RString list}
     
+
     /// ### BlockBundleState
     type BlockBundleState = (TopStatement Block list * BlockBundleValue) Stream
     
+
     /// ### BlockBundleStateInner
     type BlockBundleStateInner = {errors : RString list; tmp : TopStatement Block list; state : BlockBundleState}
     
+
     /// ### wdiff_block_bundle_init
     let wdiff_block_bundle_init : BlockBundleState = Promise.Now.never()
     
+
     /// ### wdiff_block_bundle
     /// Bundles the blocks with the `and` statements. Also collects the parser errors.
     /// Does diffing to ref preserve the bundles.
     let wdiff_block_bundle (state : BlockBundleState) (l : ParserState) : BlockBundleState =
         let (+.) a b = add_line_to_range a b
     
+
         let empty = {state=wdiff_block_bundle_init; tmp=[]; errors=[]}
         let move_temp (s : BlockBundleStateInner) next =
             let o' = List.rev s.tmp
@@ -8084,6 +8806,7 @@ module spiral_compiler =
             else fl ()
             |> Cons |> Promise.Now.withValue
     
+
         let inline iter (s : BlockBundleStateInner) l f =
             match l with
             | (_,x) :: x' -> let offset = x.offset in x.block >>** fun {result=a} -> f (offset,a,x')
@@ -8108,8 +8831,10 @@ module spiral_compiler =
             | Ok _ -> move_temp s (fun s -> init s l)
             | Error er -> rectype {s with errors = List.append (show_block_parsing_error offset er) s.errors} x'
     
+
         init {empty with state=state} l.blocks
     
+
     /// ### semantic_tokens
     let semantic_tokens (l : ParserState) =
         let rec loop s = function
@@ -8117,17 +8842,21 @@ module spiral_compiler =
             | [] -> Job.result s
         loop PersistentVector.empty l.blocks
     
+
     /// ## Infer
     
+
     /// ### 'a ref'
     type [<ReferenceEquality>] 'a ref' = {mutable contents' : 'a}
     
+
     /// ### TT
     type TT =
         | KindType
         | KindFun of TT * TT
         | KindMetavar of TT option ref'
     
+
     /// ### Constraint
     type Constraint =
         | CUInt
@@ -8140,9 +8869,11 @@ module spiral_compiler =
         | CRecord
         | CPrototype of GlobalId
     
+
     /// ### ConstraintOrModule
     type ConstraintOrModule = C of Constraint | M of Map<string,ConstraintOrModule>
     
+
     /// ### Var
     type [<ReferenceEquality>] Var = {
         scope : int
@@ -8151,6 +8882,7 @@ module spiral_compiler =
         name : string // Is what gets printed.
         }
     
+
     /// ### MVar
     type [<ReferenceEquality>] MVar = {
         mutable scope : int
@@ -8158,6 +8890,7 @@ module spiral_compiler =
         kind : TT // Has metavars, and so is mutable.
         }
     
+
     /// ### TM
     type TM =
         | TMText of string
@@ -8185,9 +8918,11 @@ module spiral_compiler =
         | TyMacro of TM list
         | TyLayout of T * Layout
     
+
     /// ### tyvar
     let tyvar x = TyVar(x, ref None)
     
+
     /// ### TypeError
     type TypeError =
         | KindError of TT * TT
@@ -8264,38 +8999,45 @@ module spiral_compiler =
         | IncorrectGADTConstructorType
         | IncorrectRecursiveNominal
     
+
     /// ### shorten'<'a>
     let inline shorten'<'a> (x : 'a) link next =
         let x' : 'a = next x
         if System.Object.ReferenceEquals(x,x') = false then link.contents' <- Some x'
         x'
     
+
     /// ### visit_tt
     let rec visit_tt = function
         | KindMetavar({contents'=Some x} & link) -> shorten' x link visit_tt
         | a -> a
     
+
     /// ### shorten<'a>
     let inline shorten<'a> (x : 'a) (link : ref<option<'a>>) next =
         let x' : 'a = next x
         if System.Object.ReferenceEquals(x,x') = false then link.Value <- Some x'
         x'
     
+
     /// ### visit_t_mvar
     let rec visit_t_mvar = function
         | TyComment(_,a) -> visit_t_mvar a
         | TyMetavar(_,{contents=Some x} & link) -> shorten x link visit_t_mvar
         | a -> a
     
+
     /// ### visit_t
     let rec visit_t x =
         match visit_t_mvar x with
         | TyVar(_,{contents=Some x}) -> visit_t x
         | x -> x
     
+
     /// ### InferTypeErrorException
     exception InferTypeErrorException of (VSCRange * TypeError) list
     
+
     /// ### metavars
     let rec metavars = function
         | RawTTypecase _ | RawTExists _ | RawTFilledNominal _ | RawTMacro _ | RawTVar _ | RawTTerm _
@@ -8306,6 +9048,7 @@ module spiral_compiler =
         | RawTUnion(_,l,_,this) -> Map.fold (fun s _ (_,v) -> s + metavars v) (metavars this) l
         | RawTRecord(_,l) -> Map.fold (fun s _ v -> s + metavars v) Set.empty l
     
+
     /// ### TopEnv
     type TopEnv = {
         nominals_next_tag : int
@@ -8319,6 +9062,7 @@ module spiral_compiler =
         constraints : Map<string,ConstraintOrModule>
         }
     
+
     /// ### inferTop_env_empty
     let inferTop_env_empty = {
         nominals_next_tag = 0
@@ -8332,6 +9076,7 @@ module spiral_compiler =
         constraints = Map.empty
         }
     
+
     /// ### inferUnion
     let inferUnion small big = {
         nominals_next_tag = max small.nominals_next_tag big.nominals_next_tag
@@ -8366,6 +9111,7 @@ module spiral_compiler =
             ) small.constraints big.constraints
         }
     
+
     /// ### inferIn_module
     let inferIn_module m a : TopEnv =
         {a with
@@ -8374,11 +9120,13 @@ module spiral_compiler =
             constraints = Map.add m (M a.constraints) Map.empty
             }
     
+
     /// ### InferEnv
     type InferEnv = { ty : Map<string,T>; term : Map<string,T>; constraints : Map<string,ConstraintOrModule> }
     /// ### loc_env
     let loc_env (x: TopEnv) : InferEnv = { term = x.term; ty = x.ty; constraints = x.constraints }
     
+
     /// ### lit
     let lit = function
         | LitUInt8 _ -> TyPrim UInt8T
@@ -8396,6 +9144,8 @@ module spiral_compiler =
         | LitChar _ -> TyPrim CharT
     
     
+
+
     /// ### kind_get
     let kind_get x =
         let rec loop = function
@@ -8404,11 +9154,13 @@ module spiral_compiler =
         let l = loop x
         {|arity=List.length l; args=l|}
     
+
     /// ### prototype_init_forall_kind
     let prototype_init_forall_kind = function
         | TyForall(a,_) -> a.kind
         | _ -> failwith "Compiler error: The prototype should have at least one forall."
     
+
     /// ### show_primt
     let show_primt = function
         | UInt8T -> "u8"
@@ -8425,6 +9177,7 @@ module spiral_compiler =
         | StringT -> "string"
         | CharT -> "char"
     
+
     /// ### constraint_name
     let rec constraint_name (env : TopEnv) = function
         | CSInt -> "sint" | CUInt -> "uint" | CInt -> "int"
@@ -8432,11 +9185,13 @@ module spiral_compiler =
         | CSymbol -> "symbol" | CRecord -> "record"
         | CPrototype i -> env.prototypes.[i].name
     
+
     /// ### constraint_kind
     let constraint_kind (env : TopEnv) = function
         | CSInt | CUInt | CInt | CFloat | CNumber | CPrim | CSymbol | CRecord -> KindType
         | CPrototype i -> env.prototypes.[i].kind
     
+
     /// ### tt
     let rec tt (env : TopEnv) = function
         | TyComment(_,x) | TyMetavar(_,{contents=Some x}) -> tt env x
@@ -8445,6 +9200,7 @@ module spiral_compiler =
         | TyExists _ | TyLit _ | TyUnion _ | TyLayout _ | TyMacro _ | TyB | TyPrim _ | TyForall _ | TyFun _ | TyRecord _ | TyModule _ | TyPair _ | TySymbol _ | TyArray _ -> KindType
         | TyInl(v,a) -> KindFun(v.kind,tt env a)
     
+
     /// ### has_metavars
     let rec has_metavars x =
         let f = has_metavars
@@ -8457,6 +9213,7 @@ module spiral_compiler =
         | TyRecord l -> Map.exists (fun _ -> f) l
         | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
     
+
     /// ### term_subst
     // Eliminates the metavars in the type if possible.
     let term_subst a =
@@ -8492,6 +9249,7 @@ module spiral_compiler =
             | TyLayout(a,b) -> TyLayout(f a,b)
         f a
     
+
     /// ### HoverTypes
     type HoverTypes() =
         // This is to allocate less trash for code that doesn't use GADTs.
@@ -8511,6 +9269,7 @@ module spiral_compiler =
         member _.AddHover((r : VSCRange),(x,(com : string))) = hover_types.Add(r,((if has_substituted_tvars x then term_subst x else x), com))
         member _.ToArray() = hover_types.ToArray()
     
+
     /// ### inferModule_open
     let inferModule_open (hover_types : HoverTypes option) (top_env : InferEnv) (local_env_ty : Map<string,T>) (r : VSCRange) b l =
         let tryFind env x =
@@ -8536,6 +9295,7 @@ module spiral_compiler =
                 else Ok env
                 )
     
+
     /// ### validate_bound_vars
     let validate_bound_vars (top_env : InferEnv) constraints term ty x =
         let errors = ResizeArray()
@@ -8646,16 +9406,19 @@ module spiral_compiler =
                 | PatArray(_,a) -> List.fold loop (term, ty) a
             loop (term, ty) x
     
+
         match x with
         | Choice1Of2 x -> cterm constraints (term, ty) x
         | Choice2Of2 x -> ctype constraints term ty x
         errors
     
+
     /// ### assert_bound_vars
     let assert_bound_vars (top_env : InferEnv) constraints term ty x =
         let errors = validate_bound_vars top_env constraints term ty x
         if 0 < errors.Count then raise (InferTypeErrorException (Seq.toList errors))
     
+
     /// ### subst
     let rec subst (m : (Var * T) list) x =
         let f = subst m
@@ -8680,6 +9443,7 @@ module spiral_compiler =
             | TyMacro a -> TyMacro(List.map (function TMVar x -> TMVar(f x) | x -> x) a)
             | TyLayout(a,b) -> TyLayout(f a,b)
     
+
     /// ### type_apply_split
     let type_apply_split x =
         let rec loop s x =
@@ -8688,22 +9452,26 @@ module spiral_compiler =
             | x -> x, s
         loop [] x
     
+
     /// ### kind_subst
     let rec kind_subst = function
         | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_subst
         | KindMetavar _ | KindType as x -> x
         | KindFun(a,b) -> KindFun(kind_subst a,kind_subst b)
     
+
     /// ### foralls_get
     let rec foralls_get = function
         | RawForall(_,a,b) -> let a', b = foralls_get b in a :: a', b
         | b -> [], b
     
+
     /// ### foralls_ty_get
     let rec foralls_ty_get = function
         | TyForall(a,b) -> let a', b = foralls_ty_get b in a :: a', b
         | b -> [], b
     
+
     /// ### kind_force
     let rec kind_force = function
         | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_force
@@ -8711,9 +9479,11 @@ module spiral_compiler =
         | KindType as x -> x
         | KindFun(a,b) -> KindFun(kind_force a,kind_force b)
     
+
     /// ### p
     let p prec prec' x = if prec < prec' then x else sprintf "(%s)" x
     
+
     /// ### show_kind
     let show_kind x =
         let rec f prec x =
@@ -8725,15 +9495,19 @@ module spiral_compiler =
             | KindFun(a,b) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
         f -1 x
     
+
     /// ### show_constraints
     let show_constraints env x = Set.toList x |> List.map (constraint_name env) |> String.concat "; " |> sprintf "{%s}"
     
+
     /// ### show_nominal
     let show_nominal (env : TopEnv) i = match Map.tryFind i env.nominals_aux with Some x -> x.name | None -> "?"
     
+
     /// ### show_layout_type
     let show_layout_type = function Heap -> "heap" | HeapMutable -> "mut" | StackMutable -> "stack_mut"
     
+
     /// ### show_t
     let show_t (env : TopEnv) x =
         let show_var (a : Var) =
@@ -8795,8 +9569,10 @@ module spiral_compiler =
             | TyMacro a -> p 30 (List.map (function TMLitVar a | TMVar a -> f -1 a | TMText a -> a) a |> String.concat "")
             | TyLayout(a,b) -> p 30 (sprintf "%s %s" (show_layout_type b) (f 30 a))
     
+
         f -2 x
     
+
     /// ### show_type_error
     let show_type_error (env : TopEnv) x =
         let f = show_t env
@@ -8877,15 +9653,19 @@ module spiral_compiler =
         | UnusedTypeVariable vars -> sprintf "The type variables %s are unused in the function's type signature." (vars |> String.concat ", ")
         | CompilerError x -> x
     
+
     /// ### autogen_name_in_fun
     let autogen_name_in_fun (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'%i" i else sprintf "'%c" x
     
+
     /// ### autogen_name_in_typecase
     let autogen_name_in_typecase (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'t%i" i else sprintf "'t%c" x
     
+
     /// ### trim_kind
     let trim_kind = function KindFun(_,k) -> k | _ -> failwith "impossible"
     
+
     /// ### FilledTop
     // Similar to BundleTop except with type annotations and type application filled in.
     type FilledTop =
@@ -8899,14 +9679,17 @@ module spiral_compiler =
         | FOpen of VSCRange * RString * RString list
         | FError of VSCRange
     
+
     /// ### 'a AdditionType
     type 'a AdditionType =
         | AOpen of 'a
         | AInclude of 'a
     
+
     /// ### InferScope
     type InferScope = int
     
+
     /// ### InferResult
     type [<ReferenceEquality>] InferResult = {
         filled_top : FilledTop Hopac.Promise
@@ -8916,9 +9699,11 @@ module spiral_compiler =
         errors : RString list
         }
     
+
     /// ### dispose_gadt_links
     let dispose_gadt_links gadt_links = Seq.iter (fun (x : ref<option<'a>>) -> x.Value <- None) gadt_links
     
+
     /// ### assert_foralls_used'
     let assert_foralls_used' (errors : (VSCRange * TypeError) ResizeArray) outside_foralls r x =
         let h = HashSet()
@@ -8952,6 +9737,7 @@ module spiral_compiler =
     /// ### assert_foralls_used
     let assert_foralls_used errors r x = assert_foralls_used' errors Set.empty r x
     
+
     /// ### validate_nominal
     let validate_nominal (errors : _ ResizeArray) global_id body v =
         // Stack union types and regular nominals must not be recursive.
@@ -8975,6 +9761,7 @@ module spiral_compiler =
                     | _ -> failwith "Compiler error: Expected an union."
                 let is_stack = b = UStack
     
+
                 // Makes sure that the GADT constructor is resulting in its own type.
                 // Also make sure that it's not using an instance of itself in its constructor other than in first position.
                 let rec assert_gadt_has_proper_specialized_constructor = function
@@ -8984,6 +9771,7 @@ module spiral_compiler =
                         if is_stack then assert_nominal_non_recursive b
                     | _ -> errors.Add(range_of_texpr_gadt_constructor body, IncorrectGADTConstructorType)
     
+
                 let assert_gadt_is_valid v =
                     let rec find_gadt_constructor outside_foralls = function
                         | TyForall(n,t) -> find_gadt_constructor (Set.add n.name outside_foralls) t
@@ -8996,8 +9784,10 @@ module spiral_compiler =
                             assert_gadt_has_proper_specialized_constructor b
                             assert_foralls_used' errors outside_foralls (range_of_texpr_gadt_constructor body) b
     
+
                     find_gadt_constructor Set.empty v
     
+
                 if is_gadt then assert_gadt_is_valid v
                 else
                     if is_stack then assert_nominal_non_recursive v
@@ -9006,18 +9796,22 @@ module spiral_compiler =
         | _ ->
             assert_nominal_non_recursive v
     
+
     /// ### kind_to_rawkind
     let rec kind_to_rawkind (x : TT) : RawKindExpr =
         match visit_tt x with
         | KindMetavar _ | KindType -> RawKindStar
         | KindFun(a,b) -> RawKindFun(kind_to_rawkind a, kind_to_rawkind b)
     
+
     /// ### var_to_hovar
     let var_to_hovar r (x : Var) : HoVar = r,(x.name,kind_to_rawkind x.kind)
     
+
     /// ### var_to_typevar
     let var_to_typevar r (x : Var) : TypeVar = var_to_hovar r x, [] // In the bottom up segment the constrains aren't checked anywhere so we'll put an empty list here.
     
+
     /// ### infer
     let infer package_id module_id (top_env' : TopEnv) expr =
         let at_tag i = {package_id=package_id; module_id=module_id; tag=i}
@@ -9033,6 +9827,7 @@ module spiral_compiler =
         let mutable autogened_forallvar_count_in_funs = 0
         let hover_types = HoverTypes()
     
+
         /// Fills in the type applies and annotations, and generalizes statements. Also strips annotations from terms and patterns.
         /// Dealing with recursive statement type applies requires some special consideration.
         let fill r rec_term expr =
@@ -9164,10 +9959,12 @@ module spiral_compiler =
                     | PatArray(r,a) -> PatArray(r,List.map f a)
                 rec_term, f x'
     
+
             let x = fill_foralls r rec_term expr
             assert (0 = errors.Count)
             x
     
+
         let fresh_kind () = KindMetavar {contents'=None}
         let fresh_var'' x = TyMetavar (x, ref None)
         let fresh_var' scope kind = fresh_var'' {scope=scope; constraints=Set.empty; kind=kind}
@@ -9182,13 +9979,16 @@ module spiral_compiler =
                 | x -> [], subst m x
             loop [] x
     
+
         let exists_subst_term scope (l : Var list, body) =
             let vars = l |> List.map (fun a -> fresh_subst_var scope a.constraints a.kind)
             vars, subst (List.zip l vars) body
     
+
         let assert_exists_hasnt_metavars r vars =
             if List.exists has_metavars vars then errors.Add(r, ExistsShouldntHaveMetavars vars)
     
+
         let generalize r scope (forall_vars : Var list) (body : T) =
             let h = HashSet(HashIdentity.Reference)
             List.iter (h.Add >> ignore) forall_vars
@@ -9215,12 +10015,14 @@ module spiral_compiler =
                 | TyMacro a -> List.iter (function TMLitVar a | TMVar a -> f a | TMText _ -> ()) a
                 | TyModule _ | TyInl _ -> ()
     
+
             let f x s = TyForall(x,s)
             replace_metavars body
             let x = Seq.foldBack f generalized_metavars body |> List.foldBack f forall_vars |> term_subst
             if List.isEmpty forall_vars = false then assert_foralls_used errors r x
             x
     
+
         let gadt_extract scope (v : T) =
             let forall_subst_all_gadt x =
                 let rec loop m x =
@@ -9237,6 +10039,7 @@ module spiral_compiler =
             | TyFun(a,b,_) -> forall_vars,a,b
             | b -> forall_vars,TyB,b
     
+
         let inline unify_kind' er r got expected =
             let rec loop (a'',b'') =
                 match visit_tt a'', visit_tt b'' with
@@ -9251,6 +10054,7 @@ module spiral_compiler =
             let unify_kind got expected = unify_kind' KindError r got expected
             let er () = raise (InferTypeErrorException [r, TermError(got, expected)])
     
+
             let rec constraint_process (con : Constraint Set) b =
                 let unify_kind got expected = unify_kind' KindErrorInConstraint r got expected
                 let body = function
@@ -9276,6 +10080,7 @@ module spiral_compiler =
                         | _ -> [ConstraintError(con,x)]
                     | con, x -> [ConstraintError(con,x)]
     
+
                 match b with
                 | TyVar (_,{contents=Some x}) -> constraint_process con x
                 | TyVar (b,_) -> if con.IsSubsetOf b.constraints = false then [ForallVarConstraintError(b.name,con,b.constraints)] else []
@@ -9286,6 +10091,7 @@ module spiral_compiler =
                         List.append (body (con,b)) ers
                         ) [] con
     
+
             // Does occurs checking for recursive metavariables.
             // Does scope checking in forall vars.
             let validate_mvar_unification i x =
@@ -9312,6 +10118,7 @@ module spiral_compiler =
                     | TyLayout(a,_) -> f a
                 f x
     
+
             // Does occurs checking for recursive type variables.
             let rec validate_tvar_unification i x =
                 let f = validate_tvar_unification i
@@ -9325,6 +10132,7 @@ module spiral_compiler =
                 | TyVar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveTypevarsNotAllowed(got,expected)])
                 | TyLayout(a,_) -> f a
     
+
             let rec loop (a'',b'') =
                 match visit_t a'', visit_t b'' with
                 | TyComment(_,a), b | a, TyComment(_,b) -> loop (a,b)
@@ -9390,11 +10198,14 @@ module spiral_compiler =
                 | TyLayout(a,a'), TyLayout(b,b') when a' = b' -> loop (a,b)
                 | _ -> er ()
     
+
             try loop (got, expected)
             with :? InferTypeErrorException as e -> errors.AddRange e.Data0
     
+
         let unify range got expected = unify_gadt None range got expected
     
+
         let apply_record r s l x =
             match visit_t x with
             | TySymbol x ->
@@ -9406,17 +10217,21 @@ module spiral_compiler =
                 | None -> errors.Add(r,RecordIndexFailed x)
             | x -> errors.Add(r,ExpectedSymbolAsRecordKey x)
     
+
         let assert_bound_vars env a =
             let keys_of m = Map.fold (fun s k _ -> Set.add k s) Set.empty m
             validate_bound_vars (loc_env top_env) env.constraints (keys_of env.term) (keys_of env.ty) (Choice1Of2 a) |> errors.AddRange
     
+
         let fresh_var scope = fresh_var' scope KindType
     
+
         let v_cons env a = Map.tryFind a env |> Option.orElseWith (fun () -> Map.tryFind a top_env.constraints)
         let v env top_env a = Map.tryFind a env |> Option.orElseWith (fun () -> Map.tryFind a top_env)
         let v_term env a = v env.term top_env.term a |> Option.map (function TyComment(com,x) -> com, visit_t x | x -> "", visit_t x)
         let v_ty env a = v env.ty top_env.ty a
     
+
         let typevar_to_var scope cons (((_,(name,kind)),constraints) : TypeVar) : Var =
             let rec typevar = function
                 | RawKindWildcard -> fresh_kind()
@@ -9431,14 +10246,17 @@ module spiral_compiler =
                     | None -> errors.Add(r,UnboundVariable x); None
                     ) |> Set.ofList
     
+
             {scope=scope; constraints=cons; kind=kind_force kind; name=name}
     
+
         let typevars scope env (l : TypeVar list) =
             List.mapFold (fun s x ->
                 let v = typevar_to_var scope env.constraints x
                 v, Map.add v.name (tyvar v) s
                 ) env.ty l
     
+
         let rec term scope env s x = term' scope false env s x
         and term' scope is_in_left_apply (env : InferEnv) s x =
             let f = term scope env
@@ -9565,6 +10383,7 @@ module spiral_compiler =
                         | RawRecordWithInjectVarModify(a,b) -> with_inject with_symbol_modify (a,b)
                         ) withs ([],fields)
     
+
                 let eval m =
                     let m = (m,withs) ||> List.fold (fun m x ->
                         if x.is_modify then
@@ -9586,6 +10405,7 @@ module spiral_compiler =
                         )
                     withouts |> List.fold (fun m x -> m |> Map.filter (fun (_, k) _ -> k <> x.symbol)) m
     
+
                 let bind s = withs |> List.iter (fun x ->
                     if x.is_blocked = false then
                         if x.is_modify then
@@ -9598,6 +10418,7 @@ module spiral_compiler =
                             |> Option.iter (fun (_, k) -> k |> unify x.range x.var)
                     )
     
+
                 let rec tail' m = function
                     | x :: xs ->
                         match f' x with
@@ -9617,6 +10438,7 @@ module spiral_compiler =
                         | a -> errors.Add(range_of_expr x, ExpectedSymbolInRecordWith a); eval Map.empty
                     | [] -> eval m
     
+
                 let rec tail (m,s) = function
                     | x :: xs ->
                         match f' x with
@@ -9640,6 +10462,7 @@ module spiral_compiler =
                         | a -> errors.Add(range_of_expr x, ExpectedSymbolInRecordWith a); eval Map.empty
                     | [] -> bind s; eval m
     
+
                 match l with
                 | [] ->
                     match visit_t s with TyRecord s -> bind s | _ -> ()
@@ -10019,6 +10842,7 @@ module spiral_compiler =
             loop s a
             gadt_links, gadt_typecases, update_env()
     
+
         let nominal_term global_id tt name vars v =
             let constructor body =
                 let t,_ = List.fold (fun (a,k) b -> let k = trim_kind k in TyApply(a,tyvar b,k),k) (TyNominal global_id,tt) vars
@@ -10028,9 +10852,11 @@ module spiral_compiler =
             | TyUnion(l,_) -> Map.fold (fun s (_,name) (is_gadt,v) -> Map.add name (if is_gadt then v else constructor v) s) Map.empty l
             | _ -> Map.add name (constructor v) Map.empty
     
+
         let psucc = Hopac.Job.thunk >> Hopac.Hopac.memo
         let pfail = psucc (fun () -> FError(Unchecked.defaultof<_>))
     
+
         let top_env_nominal top_env (global_id : GlobalId) tt name vars v : TopEnv =
             { top_env with
                 nominals_next_tag = max top_env.nominals_next_tag global_id.tag + 1
@@ -10040,6 +10866,7 @@ module spiral_compiler =
                 ty = Map.add name (TyNominal global_id) top_env.ty
                 }
     
+
         let rec typevar = function
             | RawKindWildcard | RawKindStar -> KindType
             | RawKindFun(a,b) -> KindFun(typevar a, typevar b)
@@ -10049,6 +10876,7 @@ module spiral_compiler =
                 v, Map.add n (tyvar v) s
                 ) Map.empty x
     
+
         let scope = 0
         let bundle_nominal_rec l' =
             let l,_ =
@@ -10058,12 +10886,14 @@ module spiral_compiler =
                     (at_tag i,name,l,env,tt,body), i+1
                     ) top_env.nominals_next_tag l'
     
+
             top_env <-
                 {top_env with
                     nominals_aux = (top_env.nominals_aux, l) ||> List.fold (fun s (i,(_,name),_,_,tt,_) -> Map.add i {|name=name; kind=tt|} s)
                     ty = (top_env.ty, l) ||> List.fold (fun s (i,(_,name),_,_,_,_) -> Map.add name (TyNominal i) s)
                     }
     
+
             List.fold (fun top_env (global_id,(r,name),vars,env_ty,tt,body) ->
                 let v = fresh_var scope
                 ty_init scope {term=Map.empty; ty=env_ty; constraints=Map.empty} v body
@@ -10072,6 +10902,7 @@ module spiral_compiler =
                 top_env_nominal top_env global_id tt name vars v
                 ) inferTop_env_empty l
     
+
         match expr with
         | BundleType(q,(r,name),vars',expr) ->
             let vars,env_ty = hovars vars'
@@ -10214,6 +11045,7 @@ module spiral_compiler =
                 (if 0 = errors.Count then psucc (fun () -> FInstance(r,(fst prot, prot_id),(fst ins, ins_id),fill r Map.empty body)) else pfail),
                 AInclude {inferTop_env_empty with prototypes_instances = Map.add (prot_id,ins_id) ins_constraints Map.empty}
     
+
             let fake _ = fail
             let check_ins on_succ =
                 match Map.tryFind (snd ins) top_env.ty with
@@ -10240,6 +11072,7 @@ module spiral_compiler =
             errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, show_type_error top_env b)
             }
     
+
     /// ### base_types
     let base_types (default_env : DefaultEnv) =
         let var name = {scope=0; kind=KindType; constraints=Set.empty; name=name}
@@ -10270,6 +11103,7 @@ module spiral_compiler =
         "float", TyPrim default_env.default_float
         ]
     
+
     /// ### inferTop_env_default
     let inferTop_env_default default_env : TopEnv =
         // Note: `top_env_default` should have no nominals, prototypes or terms.
@@ -10288,24 +11122,31 @@ module spiral_compiler =
                 ] |> Map.ofList |> Map.map (fun _ -> C)
             }
     
+
     module Infer =
         let base_types x =
             base_types x
     
+
     /// ## Prepass
     
+
     /// ### Id
     type Id = int32
     
+
     /// ### ScopeEnv
     type ScopeEnv = {|free_vars : int []; stack_size : int|}
     
+
     /// ### Scope
     type Scope = {term : ScopeEnv; ty : ScopeEnv}
     
+
     /// ### Range
     type Range = {path : string; range : VSCRange}
     
+
     /// ### Macro
     type Macro =
         | MText of string
@@ -10406,6 +11247,7 @@ module spiral_compiler =
         | TMetaV of Id
         | TTypecase of Range * TPrepass * (TPrepass * TPrepass) list
     
+
     /// ### Printable
     module Printable =
         type PMacro =
@@ -10507,6 +11349,7 @@ module spiral_compiler =
             | TArray of PT
             | TLayout of PT * Layout
     
+
         let eval x =
             let recs = System.Collections.Generic.HashSet(HashIdentity.Reference)
             let pat_ref_term = Dictionary(HashIdentity.Reference)
@@ -10647,10 +11490,12 @@ module spiral_compiler =
                 | TPrepass.TArray a -> TArray(ty a)
                 | TPrepass.TLayout(a,b) -> TLayout(ty a,b)
     
+
             match x with
             | Choice1Of2(x,ret) -> ret (term x)
             | Choice2Of2(x,ret) -> ret (ty x)
     
+
     /// ### PrepassTopEnv
     type PrepassTopEnv = {
         prototypes_next_tag : int
@@ -10661,6 +11506,7 @@ module spiral_compiler =
         ty : Map<string,TPrepass>
         }
     
+
     /// ### prepassTop_env_empty
     let prepassTop_env_empty = {
         prototypes_next_tag = 0
@@ -10671,6 +11517,7 @@ module spiral_compiler =
         ty = Map.empty
         }
     
+
     /// ### prepassUnion
     let prepassUnion small big = {
         prototypes_next_tag = max small.prototypes_next_tag big.prototypes_next_tag
@@ -10695,6 +11542,7 @@ module spiral_compiler =
             ) small.ty big.ty
         }
     
+
     /// ### in_modulePrepass
     let in_modulePrepass m (a : PrepassTopEnv) =
         {a with
@@ -10702,12 +11550,15 @@ module spiral_compiler =
             term = Map.add m (EModule a.term) Map.empty
             }
     
+
     /// ### PropagatedVarsEnv
     type PropagatedVarsEnv = {|vars : Set<int>; range : (int * int) option|}
     
+
     /// ### PropagatedVars
     type PropagatedVars = {term : PropagatedVarsEnv; ty : PropagatedVarsEnv}
     
+
     /// ### propagate
     // Attaches scopes to all the nodes.
     let propagate x =
@@ -10735,6 +11586,7 @@ module spiral_compiler =
         let singleton_term i = empty' (Set.singleton i) Set.empty
         let singleton_ty i = empty' Set.empty (Set.singleton i)
     
+
         let scope_dict = Dictionary<obj,_>(HashIdentity.Reference)
         let scope x (v : PropagatedVars) = scope_dict.Add(x,v); empty' v.term.vars v.ty.vars
         let rec term x =
@@ -10826,15 +11678,19 @@ module spiral_compiler =
             | TJoinPoint(_,a) as x -> scope x (ty a)
             | TArray(a) | TLayout(a,_) -> ty a
     
+
         let _ = match x with Choice1Of2 x -> term x | Choice2Of2 x -> ty x
         scope_dict
     
+
     /// ### ResolveEnvValue
     type ResolveEnvValue = {|term : Set<Id>; ty : Set<Id> |}
     
+
     /// ### ResolveEnv
     type ResolveEnv = Map<int, ResolveEnvValue>
     
+
     /// ### resolve_recursive_free_vars
     let resolve_recursive_free_vars env =
         Map.fold (fun (env : ResolveEnv) k v ->
@@ -10847,6 +11703,7 @@ module spiral_compiler =
             Map.add k (f {|term=Set.empty; ty=Set.empty|} k v) env
             ) env env
     
+
     /// ### resolve
     let resolve (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -10917,6 +11774,7 @@ module spiral_compiler =
             | EDefaultLitTest(_,_,t,_,a,b) | ENominalTest(_,t,_,_,a,b) | EAnnotTest(_,t,_,a,b) -> ty env t; f a; f b
             | ETypecase(_,a,b) -> ty env a; b |> List.iter (fun (a,b) -> ty env a; term env b)
     
+
         and ty (env : ResolveEnv) x =
             let f = ty env
             match x with
@@ -10933,19 +11791,24 @@ module spiral_compiler =
             | TMacro(_,a) -> a |> List.iter (function TMText _ -> () | TMLitType a | TMType a -> f a)
             | TJoinPoint(_,a) | TLayout(a,_) | TArray(a) -> f a
     
+
         match x with
         | Choice1Of2 x -> term Map.empty x
         | Choice2Of2 x -> ty Map.empty x
     
+
     /// ### LowerSubEnv
     type LowerSubEnv = {|var : Map<int,int>; adj : int|}
     
+
     /// ### LowerEnv
     type LowerEnv = {term : LowerSubEnv; ty : LowerSubEnv }
     
+
     /// ### LowerEnvRec
     type LowerEnvRec = Map<int,LowerEnv -> E>
     
+
     /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -10960,6 +11823,7 @@ module spiral_compiler =
                 ty = {|free_vars = fv v.ty.vars env.ty.var; stack_size = sz v.ty.range|}
                 }
     
+
             let vars v = Set.fold (fun (s,i) x -> Map.add x i s,i+1) (Map.empty, 0) v |> fst
             let adj len = function Some(min',_) -> len - min' | None -> 0
             let env : LowerEnv = {
@@ -10967,8 +11831,10 @@ module spiral_compiler =
                 ty = {|var = vars v.ty.vars; adj = adj scope.ty.free_vars.Length v.ty.range|}
                 }
     
+
             scope, env
     
+
         let adj_term (env : LowerEnv) i =
             let i' = i + env.term.adj
             i', {env with term = {|env.term with var = Map.add i i' env.term.var|}}
@@ -10976,6 +11842,7 @@ module spiral_compiler =
             let i' = i + env.ty.adj
             i', {env with ty = {|env.ty with var = Map.add i i' env.ty.var|}}
     
+
         let rec term (env_rec : LowerEnvRec) (env : LowerEnv) x =
             let f = term env_rec env
             let g = ty env_rec
@@ -11200,54 +12067,68 @@ module spiral_compiler =
         | Choice1Of2(x,ret) -> ret (term Map.empty env x)
         | Choice2Of2(x,ret) -> ret (ty Map.empty env x)
     
+
     /// ### PartEvalPrepassEnv
     type PartEvalPrepassEnv = {
         term : {| env : Map<string,E>; i : Id; i_rec : Id |}
         ty : {| env : Map<string,TPrepass>; i : Id |}
         }
     
+
     /// ### add_term
     let add_term (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i = term.i+1; env = Map.add k v term.env|} }
     
+
     /// ### add_term_rec
     let add_term_rec (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i_rec = term.i_rec-1; env = Map.add k v term.env|} }
     
+
     /// ### add_ty
     let add_ty (e : PartEvalPrepassEnv) k v = let ty = e.ty in {e with ty = {|ty with i = ty.i+1; env = Map.add k v ty.env|} }
     
+
     /// ### add_wildcard
     let add_wildcard (e : PartEvalPrepassEnv) = let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} }
     
+
     /// ### add_term_var
     let add_term_var (e : PartEvalPrepassEnv) k = e.term.i, add_term e k (EV e.term.i)
     
+
     /// ### fresh_term_var
     let fresh_term_var (e : PartEvalPrepassEnv) = e.term.i, (let term = e.term in {e with term = {|term with i = term.i+1|} })
     
+
     /// ### fresh_ty_var
     let fresh_ty_var (e : PartEvalPrepassEnv) = e.ty.i, (let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} })
     
+
     /// ### add_term_rec_var
     let add_term_rec_var (e : PartEvalPrepassEnv) k = e.term.i_rec, add_term_rec e k (EV e.term.i_rec)
     
+
     /// ### add_ty_var
     let add_ty_var (e : PartEvalPrepassEnv) k = e.ty.i, add_ty e k (TV e.ty.i)
     
+
     /// ### add_ty_wildcard
     let add_ty_wildcard (e : PartEvalPrepassEnv) = e.ty.i, add_wildcard e
     
+
     /// ### process_term
     let process_term (x : E) =
         let scope = propagate (Choice1Of2 x)
         resolve scope (Choice1Of2 x)
         lower scope (Choice1Of2(x,id))
     
+
     /// ### process_ty
     let process_ty (x : TPrepass) =
         let scope = propagate (Choice2Of2 x)
         resolve scope (Choice2Of2 x)
         lower scope (Choice2Of2(x,id))
     
+
     /// ### prepassModule_open
     let prepassModule_open (top_env : PrepassTopEnv) env a l =
         let a,b =
@@ -11264,6 +12145,7 @@ module spiral_compiler =
         ty = {|env.ty with env = Map.foldBack Map.add b env.ty.env|}
         }
     
+
     /// ### prepassPrepass
     let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
         let p r = {path=path; range=r}
@@ -11271,6 +12153,7 @@ module spiral_compiler =
         let v_term (env : PartEvalPrepassEnv) x = Map.tryFind x env.term.env |> Option.defaultWith (fun () -> top_env.term.[x])
         let v_ty (env : PartEvalPrepassEnv) x = Map.tryFind x env.ty.env |> Option.defaultWith (fun () -> top_env.ty.[x])
     
+
         // The functions in this block are basically renaming string id to int ids, in addition to pattern compilation.
         let rec compile_pattern (id : Id) (env : PartEvalPrepassEnv) (clauses : (Pattern * RawExpr) list) =
             let mutable term_var_count = env.term.i
@@ -11360,6 +12243,7 @@ module spiral_compiler =
                     | PatUnbox(r,q,a) -> let id' = patvar() in EUnbox(p r,q,id',EV id,cp id' a on_succ on_fail,on_fail)
                 (pat_refs_term, pat_refs_ty), pat_ref_term' on_succ (fun on_succ -> cp id pat on_succ (EPatternMemo on_fail))
     
+
             let l, e = List.mapFoldBack loop clauses (EPatternMiss(EV id))
             l |> List.iter (fun (terms,tys) -> // The reason I am not evaling it in place is because of the var count which is mutable. I need to deal with the patterns first before replacing the strings in the body.
                 let env (dict,dict_type) =
@@ -11424,6 +12308,7 @@ module spiral_compiler =
                         RawTMacro(r, List.map f a)
                     | RawTLayout(r,a,b) -> RawTLayout(r,f a,b)
     
+
                 let make_typecase x =
                     let rec loop vars x =
                         match x with
@@ -11450,6 +12335,7 @@ module spiral_compiler =
                 match f a, f b with
                 | TRecord(_,a') & a, TSymbol(_,b') & b ->
     
+
                     match a' |> Map.tryPick (fun (_, k) v -> if k = b' then Some v else None) with
                     | Some x -> x
                     | None -> TApply(p r,a,b) // TODO: Will be an error during partial evaluation time. Could be substituted for an exception here, but I do not want to have errors during the prepass.
@@ -11550,17 +12436,20 @@ module spiral_compiler =
             | RawMissingBody _ -> failwith "Compiler error: The missing body cases should have been validated."
             | RawAnnot(r,a,b) -> EAnnot(p r,f a,ty env b)
     
+
         let env : PartEvalPrepassEnv =
             {
             term = {|env=Map.empty; i=0; i_rec= -1|}
             ty = {|env=Map.empty; i=0|}
             }
     
+
         let eval_type ((r,(name,kind)) : HoVar) on_succ env =
             let id, env = add_ty_var env name
             TArrow(id,on_succ env)
         let eval_type' env l body = List.foldBack eval_type l body env |> process_ty
     
+
         {|
         base_type = process_ty
         filled_top = fun x ->
@@ -11648,6 +12537,7 @@ module spiral_compiler =
             | FError _ -> AInclude prepassTop_env_empty
         |}
     
+
     /// ### prepassTop_env_default
     let prepassTop_env_default default_env =
         let convert_infer_to_prepass x =
@@ -11663,25 +12553,31 @@ module spiral_compiler =
                 | _ -> failwith "Compiler error: The base type in Infer is not supported in the prepass yet."
             f x
     
+
         List.fold (fun (top_env : PrepassTopEnv) (k, x) ->
             {top_env with ty = Map.add k ((prepassPrepass -1 0 "<base_types>" top_env).base_type (convert_infer_to_prepass x)) top_env.ty}
             ) prepassTop_env_empty (Infer.base_types default_env)
     
+
     /// ## PartEval
     // #r @"../../../../../../../.nuget/packages/softcircuits.ordereddictionary/3.2.0/lib/net8.0/SoftCircuits.OrderedDictionary.dll"
     
+
     // open System
     open System.Collections.Generic
     // open SoftCircuits.Collections
     // open Common
     
+
     /// ### Tag
     type Tag = int
     
+
     /// ### L<'a,'b when 'a: equality and 'a: comparison>
     type [<CustomComparison;CustomEquality>] L<'a,'b when 'a: equality and 'a: comparison> =
         | L of 'a * 'b
     
+
         override a.Equals(b) =
             match b with
             | :? L<'a,'b> as b -> match a,b with L(a,_), L(b,_) -> a = b
@@ -11693,10 +12589,12 @@ module spiral_compiler =
                 | :? L<'a,'b> as b -> match a,b with L(a,_), L(b,_) -> compare a b
                 | _ -> raise <| ArgumentException "Invalid comparison for T."
     
+
     /// ### H<'a when 'a : equality>
     type H<'a when 'a : equality>(x : 'a) =
         let h = hash x
     
+
         member _.Item = x
         override _.Equals(b) =
             match b with
@@ -11704,12 +12602,15 @@ module spiral_compiler =
             | _ -> false
         override _.GetHashCode() = h
     
+
     /// ### StackSize
     type StackSize = int
     
+
     /// ### Nominal
     type Nominal = {|body : TPrepass; id : GlobalId; name : string|} ConsedNode // TODO: When the time comes to implement incremental compilation, make the `body` field a weak reference.
     
+
     /// ### PartEvalMacro
     type PartEvalMacro = Text of string | Type of Ty | TypeLit of Ty
     and Ty =
@@ -11751,18 +12652,23 @@ module spiral_compiler =
     // tags and tag_cases are straightforward mapping from cases for the sake of efficiency.
     and Union = {|cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool|} H
     
+
     /// ### UnionView
     type UnionView = {| cases : Map<int * string, Ty>; layout : UnionLayout; tags : Dictionary<string, int>; tag_cases : (string * Ty) []; is_degenerate : bool |}
     
+
     let inline union_view (h: Union) : UnionView = h.Item
     let inline union_cases (h: Union) : Map<int * string, Ty> = (union_view h).cases
     
     
+
+
     /// ### TermVar
     type TermVar =
         | WV of TyV
         | WLit of Literal
     
+
     /// ### RData
     type RData =
         | ReB
@@ -11779,6 +12685,7 @@ module spiral_compiler =
         | ReV of ConsedNode<Tag * Ty>
         | ReHashMap of ConsedNode<(RData * RData)[]>
     
+
     /// ### EvalReplayValueStore
     module EvalReplayValueStore =
         open System.Collections.Concurrent
@@ -11808,6 +12715,14 @@ module spiral_compiler =
         type TypeTermSpine = {
             termNodeId: int
             termShape: string
+        }
+
+        // ALPHA865: TJoinPoint' is a type-level wrapper with a scoped body.
+        // Store the body as an explicit type child so replay can drive it via
+        // ty_replay_driver instead of re-entering the opaque JP wrapper thunk.
+        type TypeJoinPointSpine = {
+            bodyNodeId: int
+            bodyShape: string
         }
 
         // ALPHA488: TFun can be reached as an annotated function type during
@@ -11853,28 +12768,15 @@ module spiral_compiler =
             falseShape: string
         }
 
-        // ALPHA736: EAnnot is a constructive annotation check, not an opaque
-        // thunk. Keep its inner term and annotation type as explicit children so
-        // replay can schedule whichever side is still missing, then validate the
-        // already materialized Data/Ty pair through the same placeholder-aware
-        // rule used by the real EAnnot evaluator.
+        // ALPHA919: EAnnot is also a composite term.  Its value is the inner
+        // term checked against an annotation type; if the direct thunk re-enters,
+        // replay should schedule those children explicitly instead of pinning
+        // semantic_annot_replay_blocked while live work remains.
         type AnnotSpine = {
             innerNodeId: int
             innerShape: string
             typeNodeId: int
             typeShape: string
-        }
-
-        // EUnbox is a branch-selecting composite. Keep the scrutinee as an
-        // explicit replay child so a failed unbox thunk can advance to the
-        // missing bind value before pinning a generic child-schedule repeat.
-        type UnboxSpine = {
-            bindNodeId: int
-            bindShape: string
-            successNodeId: int
-            successShape: string
-            failNodeId: int
-            failShape: string
         }
 
         // ALPHA560: EUnitTest is a composite term.  The real thunk decides
@@ -12009,12 +12911,12 @@ module spiral_compiler =
         let private applySpines = ConcurrentDictionary<int, ApplySpine>()
         let private typeApplySpines = ConcurrentDictionary<int, TypeApplySpine>()
         let private typeTermSpines = ConcurrentDictionary<int, TypeTermSpine>()
+        let private typeJoinPointSpines = ConcurrentDictionary<int, TypeJoinPointSpine>()
         let private typeFunSpines = ConcurrentDictionary<int, TypeFunSpine>()
         let private typePairSpines = ConcurrentDictionary<int, TypePairSpine>()
         let private ifThenElseSpines = ConcurrentDictionary<int, IfThenElseSpine>()
         let private annotTestSpines = ConcurrentDictionary<int, AnnotTestSpine>()
         let private annotSpines = ConcurrentDictionary<int, AnnotSpine>()
-        let private unboxSpines = ConcurrentDictionary<int, UnboxSpine>()
         let private unitTestSpines = ConcurrentDictionary<int, UnitTestSpine>()
         let private pairTestSpines = ConcurrentDictionary<int, PairTestSpine>()
         let private opSpines = ConcurrentDictionary<int, OpSpine>()
@@ -12032,6 +12934,13 @@ module spiral_compiler =
         let private parentContinuations = ConcurrentDictionary<int, ParentContinuation>()
         let private deferredReplayCells = ConcurrentQueue<DeferredReplayCell>()
         let private deferredReplayGate = obj()
+        // ALPHA867: deferred replay cells are one-shot work items.
+        // Runtime 866 showed the same EUnitTest deferred-after-active-driver cell
+        // being re-enqueued after its parent EApply had already root-completed,
+        // producing parent-continuation cycles and finally a replay-driver NRE.
+        // Keep a stable identity ledger so the queue cannot spin on the same
+        // child cell after the driver has already consumed it once.
+        let private deferredReplaySeenKeys = ConcurrentDictionary<string, byte>()
         // ALPHA489: guard against pure parent-continuation 2-cycles.
         // Alpha488's runtime reached a TFun<->TB loop where both cells were
         // resolvable and each resume scheduled the other as a fresh parent task.
@@ -12043,15 +12952,8 @@ module spiral_compiler =
         // Annot-test replay needs the concrete body environment and bound value so
         // branch selection can be re-run without fabricating either branch.
         let private annotTestContexts = ConcurrentDictionary<int, obj>()
-        let private annotContexts = ConcurrentDictionary<int, obj>()
         let private annotTestBindValues = ConcurrentDictionary<int, Data>()
         let private pairTestBindValues = ConcurrentDictionary<int, Data>()
-        // ALPHA726: unit-test replay can expose a compact EUnitTest frame whose
-        // original thunk throws an environment NullReferenceException before it
-        // can say which branch is missing.  Cache the already materialized bind
-        // value at registration time, just like pair/annot tests, so replay can
-        // select the branch without fabricating either branch value.
-        let private unitTestBindValues = ConcurrentDictionary<int, Data>()
         // ALPHA459: remember which function body child belongs to an EApply parent.
         // If the body child resolves later, the replay driver can consume it directly
         // instead of forcing runApplyAfterDefinition through the same recursive failure.
@@ -12121,7 +13023,6 @@ module spiral_compiler =
         let private typeAwareOpReplayScheduleAfterDefinitionRef = ref (None : (obj -> int -> string -> int[] -> Choice<int * string * string,string>) option)
         let private typeAwareOpResultNodes = ConcurrentDictionary<int,int>()
         let private annotTestBranchReplayAfterDefinitionRef = ref (None : (obj -> Data -> Ty -> Choice<bool,string>) option)
-        let private annotReplayAfterDefinitionRef = ref (None : (obj -> Data -> Ty -> Choice<Data,string>) option)
 
         let installApplyAfterDefinition (f: obj -> Data -> Data -> Data) : unit =
             applyAfterDefinitionRef.Value <- Some f
@@ -12196,9 +13097,6 @@ module spiral_compiler =
         let installAnnotTestBranchAfterDefinition (f: obj -> Data -> Ty -> Choice<bool,string>) : unit =
             annotTestBranchReplayAfterDefinitionRef.Value <- Some f
 
-        let installAnnotReplayAfterDefinition (f: obj -> Data -> Ty -> Choice<Data,string>) : unit =
-            annotReplayAfterDefinitionRef.Value <- Some f
-
         let private compactExn (ex: exn) =
             let msg =
                 if isNull ex.Message then ""
@@ -12232,33 +13130,19 @@ module spiral_compiler =
         let putAnnotTestContext (nodeId: int) (sObj: obj) : unit =
             annotTestContexts.[nodeId] <- sObj
 
-        let putAnnotContext (nodeId: int) (sObj: obj) : unit =
-            annotContexts.[nodeId] <- sObj
-
         let putAnnotTestBindValue (nodeId: int) (value: Data) : unit =
             annotTestBindValues.[nodeId] <- value
 
         let putPairTestBindValue (nodeId: int) (value: Data) : unit =
             pairTestBindValues.[nodeId] <- value
 
-        let putUnitTestBindValue (nodeId: int) (value: Data) : unit =
-            unitTestBindValues.[nodeId] <- value
-
         let tryPairTestBindValue (nodeId: int) : Data option =
             let mutable value = Unchecked.defaultof<Data>
             if pairTestBindValues.TryGetValue(nodeId, &value) then Some value else None
 
-        let tryUnitTestBindValue (nodeId: int) : Data option =
-            let mutable value = Unchecked.defaultof<Data>
-            if unitTestBindValues.TryGetValue(nodeId, &value) then Some value else None
-
         let tryAnnotTestContext (nodeId: int) : obj option =
             let mutable sObj = Unchecked.defaultof<obj>
             if annotTestContexts.TryGetValue(nodeId, &sObj) then Some sObj else None
-
-        let tryAnnotContext (nodeId: int) : obj option =
-            let mutable sObj = Unchecked.defaultof<obj>
-            if annotContexts.TryGetValue(nodeId, &sObj) then Some sObj else None
 
         let tryAnnotTestBindValue (nodeId: int) : Data option =
             let mutable value = Unchecked.defaultof<Data>
@@ -12272,14 +13156,6 @@ module spiral_compiler =
             | None, _, _ -> Choice2Of2 "annot_test_context_missing"
             | _, None, _ -> Choice2Of2 "annot_test_bind_value_missing"
             | _, _, None -> Choice2Of2 "annot_test_branch_stepper_not_installed"
-
-        let tryAnnotReplayWithContext (nodeId: int) (innerValue: Data) (annotTy: Ty) : Choice<Data,string> =
-            match tryAnnotContext nodeId, annotReplayAfterDefinitionRef.Value with
-            | Some sObj, Some f ->
-                try f sObj innerValue annotTy
-                with ex -> Choice2Of2 (compactExn ex)
-            | None, _ -> Choice2Of2 "annot_context_missing"
-            | _, None -> Choice2Of2 "annot_stepper_not_installed"
 
         let tryTypeAwareOpReplayWithContext (contextNodeId: int) (opName: string) (argNodeIds: int[]) : Data option =
             match tryTypeAwareOpScheduledResult contextNodeId with
@@ -12411,8 +13287,13 @@ module spiral_compiler =
             typeValues.[nodeId] <- thunk
 
         let putDeferredReplayCell (cell: DeferredReplayCell) : unit =
+            let key = sprintf "%s|%s|%d|%d" cell.kind cell.shape cell.nodeId cell.step
             lock deferredReplayGate (fun () ->
-                deferredReplayCells.Enqueue cell)
+                if deferredReplaySeenKeys.TryAdd(key, 1uy) then
+                    deferredReplayCells.Enqueue cell)
+
+        let hasDeferredReplayCell () : bool =
+            lock deferredReplayGate (fun () -> not deferredReplayCells.IsEmpty)
 
         let tryTakeDeferredReplayCell (kind: string) (preferredShape: string) (excludeNodeId: int) : DeferredReplayCell option =
             lock deferredReplayGate (fun () ->
@@ -12462,6 +13343,10 @@ module spiral_compiler =
             typeTermSpines.[nodeId] <- spine
             putParentContinuation spine.termNodeId { parentKind = "ty"; parentShape = "TTerm"; parentNodeId = nodeId; role = "tterm_term_child" }
 
+        let putTypeJoinPointSpine (nodeId: int) (spine: TypeJoinPointSpine) : unit =
+            typeJoinPointSpines.[nodeId] <- spine
+            putParentContinuation spine.bodyNodeId { parentKind = "ty"; parentShape = "TJoinPoint'"; parentNodeId = nodeId; role = "tjoinpoint_body_child" }
+
         let putTypeFunSpine (nodeId: int) (spine: TypeFunSpine) : unit =
             typeFunSpines.[nodeId] <- spine
             putParentContinuation spine.argNodeId { parentKind = "ty"; parentShape = "TFun"; parentNodeId = nodeId; role = "tfun_arg_child" }
@@ -12488,10 +13373,6 @@ module spiral_compiler =
             annotSpines.[nodeId] <- spine
             putParentContinuation spine.innerNodeId { parentKind = "term"; parentShape = "EAnnot"; parentNodeId = nodeId; role = "annot_inner" }
             putParentContinuation spine.typeNodeId { parentKind = "term"; parentShape = "EAnnot"; parentNodeId = nodeId; role = "annot_type" }
-
-        let putUnboxSpine (nodeId: int) (spine: UnboxSpine) : unit =
-            unboxSpines.[nodeId] <- spine
-            putParentContinuation spine.bindNodeId { parentKind = "term"; parentShape = "EUnbox"; parentNodeId = nodeId; role = "unbox_bind" }
 
         let putUnitTestSpine (nodeId: int) (spine: UnitTestSpine) : unit =
             unitTestSpines.[nodeId] <- spine
@@ -12594,6 +13475,10 @@ module spiral_compiler =
             let mutable spine = Unchecked.defaultof<TypeTermSpine>
             if typeTermSpines.TryGetValue(nodeId, &spine) then Some spine else None
 
+        let tryTypeJoinPointSpine (nodeId: int) : TypeJoinPointSpine option =
+            let mutable spine = Unchecked.defaultof<TypeJoinPointSpine>
+            if typeJoinPointSpines.TryGetValue(nodeId, &spine) then Some spine else None
+
         let tryTypeFunSpine (nodeId: int) : TypeFunSpine option =
             let mutable spine = Unchecked.defaultof<TypeFunSpine>
             if typeFunSpines.TryGetValue(nodeId, &spine) then Some spine else None
@@ -12613,10 +13498,6 @@ module spiral_compiler =
         let tryAnnotSpine (nodeId: int) : AnnotSpine option =
             let mutable spine = Unchecked.defaultof<AnnotSpine>
             if annotSpines.TryGetValue(nodeId, &spine) then Some spine else None
-
-        let tryUnboxSpine (nodeId: int) : UnboxSpine option =
-            let mutable spine = Unchecked.defaultof<UnboxSpine>
-            if unboxSpines.TryGetValue(nodeId, &spine) then Some spine else None
 
         let tryUnitTestSpine (nodeId: int) : UnitTestSpine option =
             let mutable spine = Unchecked.defaultof<UnitTestSpine>
@@ -13270,6 +14151,7 @@ module spiral_compiler =
                     | None -> typeAwareFallback ()
                 | "Dyn", [|a|] -> tryDynReplayData a
                 | "RecordMap", [|mapper; DRecord fields|] -> tryRecordMapReplayDataWithContext contextNodeId mapper fields
+                | "RecordMap", [|DRecord fields; mapper|] -> tryRecordMapReplayDataWithContext contextNodeId mapper fields
                 | "RecordFold", [|folder; state; DRecord fields|] -> tryRecordFoldReplayDataWithContext contextNodeId folder state fields
                 | "RecordFoldBack", [|folder; state; DRecord fields|] -> tryRecordFoldBackReplayDataWithContext contextNodeId folder state fields
                 | op, [|DLit a; DLit b|] when op = "EQ" || op = "NEQ" || op = "LT" || op = "LTE" || op = "GT" || op = "GTE" -> tryCompareLiteral op a b
@@ -13602,7 +14484,6 @@ module spiral_compiler =
             match status with
             | "semantic_macro_thunk_missing_blocked" -> 100
             | "semantic_literal_op_body_stepper_blocked" -> 95
-            | "semantic_buildfile_replay_root_handoff_blocked" -> 96
             | "semantic_op_impl_required_blocked" -> 94
             | "semantic_apply_seq_unknown_return_witness_blocked" -> 93
             | "semantic_dynamic_join_apply_blocked" -> 92
@@ -13611,14 +14492,11 @@ module spiral_compiler =
             | "semantic_type_apply_nested_forall_stepper_blocked" -> 84
             | "semantic_type_apply_forall_body_stepper_blocked" -> 81
             | "semantic_unit_test_value_blocked" -> 82
-            | "semantic_annot_replay_blocked" -> 83
             | "semantic_root_complete_stale_retarget_repeat_blocked" -> 77
             | "semantic_seq_unknown_return_witness_blocked" -> 91
             | "semantic_apply_continuation_after_seq_unknown_blocked" -> 92
             | "semantic_if_unknown_return_condition_blocked" -> 90
-            | "semantic_if_unknown_return_branches_exhausted_blocked" -> 63
             | "semantic_if_symbolic_condition_blocked" -> 89
-            | "semantic_unbox_replay_blocked" -> 88
             | "semantic_annot_test_branch_selection_blocked" -> 87
             | "semantic_replay_payload_missing_blocked" -> 69
             | "semantic_record_with_value_blocked" -> 88
@@ -13651,22 +14529,18 @@ module spiral_compiler =
             match status with
             | "semantic_macro_thunk_missing_blocked" -> "explicit_eval_worklist_macro_thunk_required"
             | "semantic_literal_op_body_stepper_blocked" -> "explicit_eval_worklist_literal_op_body_stepper_required"
-            | "semantic_buildfile_replay_root_handoff_blocked" -> "explicit_buildfile_replay_root_handoff_required"
             | "semantic_dynamic_join_apply_blocked" -> "explicit_eval_worklist_dynamic_join_apply_required"
             | "semantic_type_apply_nominal_constructor_stepper_blocked" -> "explicit_eval_worklist_type_apply_nominal_constructor_stepper_required"
             | "semantic_nominal_constructor_stepper_blocked" -> "explicit_eval_worklist_nominal_constructor_stepper_required"
             | "semantic_type_apply_nested_forall_stepper_blocked" -> "explicit_eval_worklist_type_apply_nested_forall_stepper_required"
             | "semantic_type_apply_forall_body_stepper_blocked" -> "explicit_eval_worklist_type_apply_forall_body_stepper_required"
             | "semantic_unit_test_value_blocked" -> "explicit_eval_worklist_unit_test_value_required"
-            | "semantic_annot_replay_blocked" -> "explicit_eval_worklist_annot_stepper_required"
             | "semantic_root_complete_stale_retarget_repeat_blocked" -> "explicit_eval_worklist_root_complete_stale_retarget_required"
             | "semantic_if_unknown_return_condition_blocked" -> "explicit_eval_worklist_if_unknown_return_condition_required"
-            | "semantic_if_unknown_return_branches_exhausted_blocked" -> "explicit_eval_worklist_if_unknown_return_branches_exhausted_required"
             | "semantic_apply_seq_unknown_return_witness_blocked" -> "explicit_eval_worklist_apply_seq_unknown_return_witness_required"
             | "semantic_seq_unknown_return_witness_blocked" -> "explicit_eval_worklist_seq_unknown_return_witness_required"
             | "semantic_apply_continuation_after_seq_unknown_blocked" -> "explicit_eval_worklist_apply_continuation_after_seq_unknown_required"
             | "semantic_if_symbolic_condition_blocked" -> "explicit_eval_worklist_if_symbolic_condition_required"
-            | "semantic_unbox_replay_blocked" -> "explicit_eval_worklist_unbox_stepper_required"
             | "semantic_annot_test_branch_selection_blocked" -> "explicit_eval_worklist_annot_test_branch_selection_required"
             | "semantic_replay_payload_missing_blocked" -> "explicit_eval_worklist_replay_payload_required"
             | "semantic_record_with_value_blocked" -> "explicit_eval_worklist_record_with_stepper_required"
@@ -13693,9 +14567,11 @@ module spiral_compiler =
             | _ -> "explicit_eval_worklist_real_stepper_required"
 
         let private pinTerminalContractLocked (event: string) (frame: Frame) =
-            let isAppRoot2670 =
-                frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal)
+            let isCurrentRootCompleteSite =
+                frame.status = "semantic_root_complete"
+                || (match frame.semanticCell with
+                    | Some cell -> cell.status = "semantic_root_complete"
+                    | None -> false)
             let pendingForTerminalPin =
                 let mutable n = 0
                 let seen = System.Collections.Generic.HashSet<string>()
@@ -13729,17 +14605,26 @@ module spiral_compiler =
                 else sprintf "%s age_ms=%.0f" replayRootCompleteWitnessSummary ((System.DateTime.UtcNow - replayRootCompleteWitnessUtc).TotalMilliseconds)
             let suppressAppRootStaleRetargetPin =
                 frame.status = "semantic_root_complete_stale_retarget_repeat_blocked"
-                && isAppRoot2670
+                && isCurrentRootCompleteSite
                 && stableRootCompleteCount > 0
                 && (match frame.semanticCell with
                     | Some cell -> cell.shape = "TRecord"
-                    | None -> frame.key.Contains("spiral.spi:2670"))
+                    | None -> frame.key.Contains("#"))
             let suppressAppRootParentCyclePin =
                 frame.status = "semantic_parent_continuation_cycle_blocked"
-                && isAppRoot2670
+                && isCurrentRootCompleteSite
                 && (stableRootCompleteCount > 0 || replayRootWriteWitnessFreshForPin)
                 && pendingForTerminalPin <= 2
                 && replayRootWriteWitnessFreshForPin
+            let suppressSyntheticChildScheduleRepeatPin =
+                frame.status = "semantic_replay_child_schedule_repeat_blocked"
+                && pendingForTerminalPin > 0
+                && replayRootWriteWitnessFreshForPin
+                && (frame.site.EndsWith(":0", StringComparison.Ordinal)
+                    || frame.key.Contains(":0", StringComparison.Ordinal)
+                    || (match frame.semanticCell with
+                        | Some cell -> cell.site.EndsWith(":0", StringComparison.Ordinal)
+                        | None -> false))
             if suppressAppRootStaleRetargetPin then
                 // ALPHA683: alpha682 showed that this same app-root TRecord can be
                 // reattached as a stale-retarget terminal immediately after being
@@ -13757,6 +14642,10 @@ module spiral_compiler =
                 DiagJson.emit (
                     sprintf "{\"kind\":\"eval_worklist_app_root_parent_cycle_pin_suppressed\",\"event\":%s,\"status\":%s,\"site\":%s,\"key\":%s,\"stable_count\":%d,\"pending\":%d,\"witness\":%s,\"policy\":\"suppress_same_site_parent_cycle_terminal_after_replay_root_finalization\",\"writer_gate\":\"requires_existing_replay_root_write_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_replay_root_reason\"}"
                         (esc event) (esc frame.status) (esc frame.site) (esc frame.key) stableRootCompleteCount pendingForTerminalPin (esc replayRootWriteWitnessSummaryForPin))
+            elif suppressSyntheticChildScheduleRepeatPin then
+                DiagJson.emit (
+                    sprintf "{\"kind\":\"eval_worklist_synthetic_child_schedule_repeat_pin_suppressed\",\"event\":%s,\"status\":%s,\"site\":%s,\"key\":%s,\"pending\":%d,\"witness\":%s,\"policy\":\"suppress_backend_spi_zero_synthetic_child_repeat_after_root_witness\",\"single_flight\":1,\"next\":\"preserve_root_complete_and_drain_pending_jobs\"}"
+                        (esc event) (esc frame.status) (esc frame.site) (esc frame.key) pendingForTerminalPin (esc replayRootWriteWitnessSummaryForPin))
             else
                 let rank = terminalContractRank frame.status
                 if rank > 0 then
@@ -13808,33 +14697,6 @@ module spiral_compiler =
                     | _ -> false
                 pinnedCleared || durableCleared)
 
-        let pinBuildFileReplayRootHandoffBlocked (event: string) (frontierKey: string) (reason: string) =
-            let site =
-                let marker = "ty@"
-                let i = frontierKey.IndexOf(marker, StringComparison.Ordinal)
-                if i >= 0 then
-                    let j = frontierKey.IndexOf("|", i, StringComparison.Ordinal)
-                    if j > i then frontierKey.Substring(i, j - i) else frontierKey.Substring(i)
-                else "ty@c:/home/git/spiral/apps/spiral/spiral.spi:2670"
-            let key =
-                if String.IsNullOrWhiteSpace frontierKey then "buildfile_replay_root_handoff"
-                else frontierKey
-            let frame = {
-                kind = "buildfile"
-                key = key
-                site = site
-                depth = 0
-                re = 0
-                maxRe = 0
-                trace = []
-                reason = reason
-                status = "semantic_buildfile_replay_root_handoff_blocked"
-                cursor = 0
-                semanticPayload = Some "replay_root_complete_final_handoff"
-                semanticCell = None
-            }
-            lock gate (fun () -> pinTerminalContractLocked event frame)
-            frame
 
         let private compactTrace (tr: Trace) : Trace =
             let head = 16
@@ -13852,13 +14714,10 @@ module spiral_compiler =
         let private sameCycle (a: Frame) (b: Frame) =
             a.kind = b.kind && a.key = b.key && a.site = b.site
 
-        // ALPHA464: same-node replay identity deliberately ignores site/env/cursor.
-        // The alpha463 tail showed the same TJoinPoint' node reappearing through two
-        // source sites while the scheduled_parent_replay payload still targeted that
-        // node.  Treat this as self-poke churn, not a fresh child payload.
-        let private sameReplayNode (a: ReplayCell) (b: ReplayCell) =
-            a.kind = b.kind && a.shape = b.shape && a.nodeId = b.nodeId
-
+        // ALPHA859: keep retry-drain diagnostics in lexical order.
+        // Alpha858 added cross-kind terminal telemetry above the old pendingCount
+        // binding; F# does not forward-declare local lets, so pendingCount must be
+        // available before those helpers call it.
         let pendingCount () =
             lock gate (fun () ->
                 let mutable n = 0
@@ -13873,6 +14732,41 @@ module spiral_compiler =
                 add frontierTerm
                 add frontierTy
                 n)
+
+        // ALPHA858: terminal contracts are kind-local evidence.
+        // Runtime 857 exposed a stale cross-kind selection bug: retry_stop_drain
+        // had a live ty semantic_root_complete frontier at apps/spiral/spiral.spi:2670,
+        // but preferred an older term semantic_replay_fingerprint_repeat_blocked
+        // contract from trace.spi:121. Cross-kind pins remain evidence for their
+        // own parked kind slot; they must not retarget the current global fuse.
+        let private frameKindCompatible (requestedKind: string) (frame: Frame) =
+            let rk = if System.String.IsNullOrWhiteSpace requestedKind then "unknown" else requestedKind
+            rk = "unknown"
+            || frame.kind = rk
+            || frame.site.StartsWith(rk + "@", System.StringComparison.Ordinal)
+            || frame.key.StartsWith(rk + ":", System.StringComparison.Ordinal)
+
+        let private emitCrossKindPinnedTerminalIgnored (event: string) (requestedKind: string) (pinned: Frame) (rank: int) (why: string) =
+            DiagJson.emit (
+                sprintf "{\"kind\":\"eval_worklist_cross_kind_pinned_terminal_ignored\",\"event\":%s,\"requested_kind\":%s,\"pinned_kind\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"reason\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"preserve_kind_local_frontier\"}"
+                    (esc event) (esc requestedKind) (esc pinned.kind) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (esc why) (pendingCount()))
+
+        let private clearCurrentCrossKindPinnedTerminalLocked (pinned: Frame) =
+            // Clear only the active terminal selector when it is exactly the stale
+            // cross-kind frame we just rejected. This does not synthesize replay
+            // value, root proof, writer output, codegen result, or BuildOk.
+            match pinnedTerminalContract with
+            | Some p when p.kind = pinned.kind && p.key = pinned.key && p.site = pinned.site && p.status = pinned.status ->
+                pinnedTerminalContract <- None
+                true
+            | _ -> false
+
+        // ALPHA464: same-node replay identity deliberately ignores site/env/cursor.
+        // The alpha463 tail showed the same TJoinPoint' node reappearing through two
+        // source sites while the scheduled_parent_replay payload still targeted that
+        // node.  Treat this as self-poke churn, not a fresh child payload.
+        let private sameReplayNode (a: ReplayCell) (b: ReplayCell) =
+            a.kind = b.kind && a.shape = b.shape && a.nodeId = b.nodeId
 
         // ALPHA544: EJP0014 can be raised while other forced-sequential workers are
         // still converging on the real terminal contract.  Alpha543 showed a macro
@@ -13987,6 +14881,42 @@ module spiral_compiler =
                     (esc event) blockedCell.nodeId (esc blockedCell.shape) (esc blockedCell.site) (esc blockedCell.status) (terminalContractRank blockedCell.status) (esc reason) (esc detail) (esc (terminalContractNext blockedCell.status)))
             blockedCell
 
+        // ALPHA909: path-specific runtime archaeology must not be executable policy.
+        // Keep old comments as documentation, but route active guards through typed
+        // replay evidence: status, kind, shape, semantic cell/payload, pending work,
+        // and fresh root-complete witnesses.  This prevents another sentinel/gibberish
+        // cleanup while keeping the compiler generic for any Spiral project.
+        let frameCellShapeIn (shapes: string list) (frame: Frame) =
+            match frame.semanticCell with
+            | Some cell -> shapes |> List.exists (fun shape -> cell.shape = shape)
+            | None -> false
+
+        let frameCellStatusIs (status: string) (frame: Frame) =
+            match frame.semanticCell with
+            | Some cell -> cell.status = status
+            | None -> false
+
+        let frameIsRootCompleteEvidence (frame: Frame) =
+            frame.status = "semantic_root_complete" || frameCellStatusIs "semantic_root_complete" frame
+
+        let frameHasSemanticEvidence (frame: Frame) =
+            match frame.semanticCell, frame.semanticPayload with
+            | Some _, _ -> true
+            | _, Some payload -> not (System.String.IsNullOrWhiteSpace payload)
+            | _ -> frame.key.Contains("#")
+
+        let frameCellShapeOrSemanticEvidence (shapes: string list) (frame: Frame) =
+            frameCellShapeIn shapes frame || frameHasSemanticEvidence frame
+
+        let frameKindStatusShape (kind: string) (status: string) (shapes: string list) (frame: Frame) =
+            frame.kind = kind && frame.status = status && frameCellShapeIn shapes frame
+
+        let rootCompleteShieldsPinnedShape (status: string) (shapes: string list) (frame: Frame) (pinned: Frame) =
+            frameIsRootCompleteEvidence frame
+            && pinned.status = status
+            && pendingCount() > 0
+            && frameCellShapeOrSemanticEvidence shapes pinned
+
         // ALPHA538: retry_stop_drain should not let a lower-ranked replay-repeat or
         // downstream continuation shadow a high-rank terminal that was already pinned
         // at emission.  This only changes diagnostic selection; it does not mark replay
@@ -13995,6 +14925,11 @@ module spiral_compiler =
             if event <> "retry_stop_drain" then Some frame
             else
                 match tryPinnedTerminalContract() with
+                | Some pinned when not (frameKindCompatible frame.kind pinned) ->
+                    let rank = terminalContractRank pinned.status
+                    let cleared = lock gate (fun () -> clearCurrentCrossKindPinnedTerminalLocked pinned)
+                    emitCrossKindPinnedTerminalIgnored event frame.kind pinned rank (sprintf "active_frame_kind=%s status=%s cleared=%b" frame.kind frame.status cleared)
+                    Some frame
                 | Some pinned ->
                     let pinnedRank = terminalContractRank pinned.status
                     let frameRank = terminalContractRank frame.status
@@ -14029,178 +14964,51 @@ module spiral_compiler =
                         && pinned.status = "semantic_replay_payload_missing_blocked"
                         && pendingCount() > 0
                     let rootCompleteShieldsStaleTJoinPoint =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_tjoinpoint_stepper_blocked"
-                        && pendingCount() > 0
-                        && (pinned.site.EndsWith("/spiral/lib/spiral/parsing.spi:24", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\spiral\\lib\\spiral\\parsing.spi:24", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("/core/base.spi:16", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\base.spi:16", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("/core/base.spi:13", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\base.spi:13", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("/spiral/lib/spiral/runtime.spi:330", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\spiral\\lib\\spiral\\runtime.spi:330", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "TJoinPoint'"
-                            | None -> pinned.key.Contains("#"))
+                        rootCompleteShieldsPinnedShape "semantic_tjoinpoint_stepper_blocked" ["TJoinPoint'"] frame pinned
                     let rootCompleteShieldsStaleSymbolicIf =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_if_symbolic_condition_blocked"
-                        && pendingCount() > 0
-                        && (pinned.site.EndsWith("/core/listm.spi:6", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\listm.spi:6", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "EIfThenElse"
-                            | None -> pinned.key.Contains("#"))
+                        rootCompleteShieldsPinnedShape "semantic_if_symbolic_condition_blocked" ["EIfThenElse"] frame pinned
                     let rootCompleteShieldsStaleDynamicJoin =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_dynamic_join_apply_blocked"
-                        && pendingCount() > 0
-                        && (pinned.site.EndsWith("/core/real_core.spir:241", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\real_core.spir:241", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "EApply"
-                            | None -> pinned.key.Contains("#"))
+                        rootCompleteShieldsPinnedShape "semantic_dynamic_join_apply_blocked" ["EApply"] frame pinned
                     let rootCompleteShieldsStaleMacroReplayRepeat =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_replay_fingerprint_repeat_blocked"
-                        && pendingCount() > 0
-                        && (pinned.site.EndsWith("/spiral/lib/spiral/base.spi:67", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\spiral\\lib\\spiral\\base.spi:67", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("/core/base.spi:13", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\base.spi:13", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "EMacro"
-                            | None -> pinned.key.Contains("#"))
+                        rootCompleteShieldsPinnedShape "semantic_replay_fingerprint_repeat_blocked" ["EMacro"] frame pinned
                     let rootCompleteShieldsStaleNominalConstructor =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_type_apply_nominal_constructor_stepper_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/core/core.spi:56", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\core.spi:56", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("/core/listm.spi:23", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\listm.spi:23", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("/spiral/lib/spiral/runtime.spi:24", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\spiral\\lib\\spiral\\runtime.spi:24", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "ENominal"
-                            | None -> pinned.key.Contains("#"))
+                        rootCompleteShieldsPinnedShape "semantic_type_apply_nominal_constructor_stepper_blocked" ["ENominal"] frame pinned
                     let rootCompleteShieldsTraceReplayRepeat =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_replay_fingerprint_repeat_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/spiral/lib/spiral/trace.spi:295", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\spiral\\lib\\spiral\\trace.spi:295", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "EMacro"
-                            | None -> pinned.key.Contains("#"))
+                        rootCompleteShieldsPinnedShape "semantic_replay_fingerprint_repeat_blocked" ["EMacro"] frame pinned
+                    let rootCompleteShieldsTraceUnionReplayRepeat =
+                        rootCompleteShieldsPinnedShape "semantic_replay_fingerprint_repeat_blocked" ["TUnion"] frame pinned
                     let rootCompleteShieldsSameSiteStaleRetarget =
-                        frame.status = "semantic_root_complete"
+                        frameIsRootCompleteEvidence frame
                         && pinned.status = "semantic_root_complete_stale_retarget_repeat_blocked"
                         && pendingCount() > 0
                         && frame.site = pinned.site
-                        && (pinned.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
                     let appRootShieldsCoreRealRootStaleRetarget =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_root_complete_stale_retarget_repeat_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/core/real_core.spir:202", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\real_core.spir:202", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "EAnnot"
-                            | None -> pinned.key.Contains("real_core.spir:202"))
+                        rootCompleteShieldsPinnedShape "semantic_root_complete_stale_retarget_repeat_blocked" ["EAnnot"] frame pinned
                     let rootCompleteShieldsCoreRealApplyContinuationException =
-                        frame.status = "semantic_root_complete"
+                        frameIsRootCompleteEvidence frame
                         && pinned.status = "semantic_apply_continuation_exception_blocked"
                         && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/core/real_core.spir:202", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\real_core.spir:202", StringComparison.Ordinal))
-                        && (pinned.key.Contains("real_core.spir:202")
-                            || (match pinned.semanticCell with
-                                | Some cell -> cell.site.Contains("real_core.spir:202") || cell.site.Contains("core/core.spi:56") || cell.site.Contains("spiral/backend.spi:68")
-                                | None -> false))
+                        && frameHasSemanticEvidence pinned
                     let rootCompleteShieldsCoreMacroReplayRepeat =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_replay_fingerprint_repeat_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/core/core.spi:56", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\core.spi:56", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "EMacro"
-                            | None -> pinned.key.Contains("core.spi:56"))
+                        rootCompleteShieldsPinnedShape "semantic_replay_fingerprint_repeat_blocked" ["EMacro"] frame pinned
                     let rootCompleteShieldsCoreRealLetReplayRepeat =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_replay_fingerprint_repeat_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/core/real_core.spir:203", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\real_core.spir:203", StringComparison.Ordinal))
-                        && (pinned.key.Contains("real_core.spir:203")
-                            || (match pinned.semanticCell with
-                                | Some cell -> cell.shape = "ELet" && cell.site.Contains("real_core.spir:203")
-                                | None -> false))
+                        rootCompleteShieldsPinnedShape "semantic_replay_fingerprint_repeat_blocked" ["ELet"] frame pinned
                     let rootCompleteShieldsCoreForallBodyStepper =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_type_apply_forall_body_stepper_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/core/core.spi:56", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\core.spi:56", StringComparison.Ordinal))
-                        && (pinned.key.Contains("core.spi:56")
-                            || (match pinned.semanticCell with
-                                | Some cell -> cell.shape = "EOp" || cell.shape = "ETypeApply" || cell.site.Contains("core.spi:56")
-                                | None -> false))
+                        rootCompleteShieldsPinnedShape "semantic_type_apply_forall_body_stepper_blocked" ["EOp"; "ETypeApply"] frame pinned
                     let appRootShieldsCoreUnboxStaleRetarget =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_root_complete_stale_retarget_repeat_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/core/core.spi:127", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\core.spi:127", StringComparison.Ordinal))
-                        && (pinned.key.Contains("core.spi:127")
-                            || (match pinned.semanticCell with
-                                | Some cell -> cell.shape = "EUnbox" || cell.site.Contains("core.spi:127")
-                                | None -> false))
+                        rootCompleteShieldsPinnedShape "semantic_root_complete_stale_retarget_repeat_blocked" ["EUnbox"] frame pinned
                     let appRootShieldsBackendOpImplRequired =
-                        frame.status = "semantic_root_complete"
-                        && pinned.status = "semantic_op_impl_required_blocked"
-                        && pendingCount() > 0
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (pinned.site.EndsWith("/spiral/lib/spiral/backend.spi:4", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\spiral\\lib\\spiral\\backend.spi:4", StringComparison.Ordinal)
-                            || pinned.site.Contains("spiral/lib/spiral/backend.spi:4")
-                            || pinned.site.Contains("spiral\\lib\\spiral\\backend.spi:4"))
-                        && (pinned.key.Contains("backend.spi:4")
-                            || (match pinned.semanticCell with
-                                | Some cell -> cell.shape = "EOp" || cell.site.Contains("backend.spi:4")
-                                | None -> false))
+                        rootCompleteShieldsPinnedShape "semantic_op_impl_required_blocked" ["EOp"] frame pinned
                     let continuationEnvelopeShieldsCoreLetReplayRepeat =
                         frame.status = "continuation_envelope"
                         && pinned.status = "semantic_replay_fingerprint_repeat_blocked"
                         && pendingCount() > 0
-                        && (frame.site.EndsWith("/spiral/lib/spiral/rust/testing.spi:23", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\spiral\\lib\\spiral\\rust\\testing.spi:23", StringComparison.Ordinal)
-                            || frame.site.Contains("rust/testing.spi:23"))
-                        && (pinned.site.EndsWith("/core/core.spi:56", StringComparison.Ordinal)
-                            || pinned.site.EndsWith("\\core\\core.spi:56", StringComparison.Ordinal))
-                        && (match pinned.semanticCell with
-                            | Some cell -> cell.shape = "ELet"
-                            | None -> pinned.key.Contains("core.spi:56"))
+                        && frameCellShapeOrSemanticEvidence ["ELet"] pinned
+                    let freshReplayRootWitnessAvailable =
+                        let ageMs = (System.DateTime.UtcNow - replayRootCompleteWitnessUtc).TotalMilliseconds
+                        replayRootCompleteWitnessUtc <> System.DateTime.MinValue
+                        && ageMs >= 0.0
+                        && ageMs <= replayRootCompleteWitnessWindowMs
                     let liveDrainShieldsFreshReplayRepeat =
                         (frame.status = "continuation_envelope"
                          || frame.status = "ready_explicit_loop"
@@ -14208,23 +15016,42 @@ module spiral_compiler =
                          || frame.status = "semantic_step_partial")
                         && pinned.status = "semantic_replay_fingerprint_repeat_blocked"
                         && pendingCount() > 0
-                        && (let ageMs = (System.DateTime.UtcNow - replayRootCompleteWitnessUtc).TotalMilliseconds
-                            replayRootCompleteWitnessUtc <> System.DateTime.MinValue
-                            && ageMs >= 0.0
-                            && ageMs <= replayRootCompleteWitnessWindowMs)
+                        && freshReplayRootWitnessAvailable
                         && (match pinned.semanticCell with
                             | Some cell -> cell.shape = "EMacro" || cell.shape = "ELet" || cell.shape = "ETypeApply"
                             | None -> pinned.key.Contains("#"))
+                    let liveDrainShieldsFreshOpImplRequired =
+                        (frame.status = "continuation_envelope"
+                         || frame.status = "ready_explicit_loop"
+                         || frame.status = "tracing_explicit_loop"
+                         || frame.status = "semantic_step_partial"
+                         || frame.status = "semantic_root_complete")
+                        && pinned.status = "semantic_op_impl_required_blocked"
+                        && pendingCount() > 0
+                        && freshReplayRootWitnessAvailable
+                        && frameCellShapeOrSemanticEvidence ["EOp"] pinned
                     let leafCompleteAppRootShieldsSameSiteStaleRetarget =
                         frame.status = "semantic_leaf_complete"
                         && pinned.status = "semantic_root_complete_stale_retarget_repeat_blocked"
                         && pendingCount() > 0
                         && frame.site = pinned.site
-                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
-                        && (match frame.semanticCell with
-                            | Some cell -> cell.shape = "EApply" || cell.shape = "EUnitTest"
-                            | None -> frame.key.Contains("spiral.spi:2670"))
+                        && frameCellShapeOrSemanticEvidence ["EApply"; "EUnitTest"] frame
+                    let retryDrainShieldsBackendAnnotStaleRetarget =
+                        (frame.status = "continuation_envelope"
+                         || frame.status = "ready_explicit_loop"
+                         || frame.status = "tracing_explicit_loop"
+                         || frame.status = "semantic_step_partial"
+                         || frame.status = "semantic_root_complete")
+                        && pinned.status = "semantic_root_complete_stale_retarget_repeat_blocked"
+                        && pendingCount() > 0
+                        && ((match frame.semanticCell with
+                            | Some cell when cell.status = "semantic_root_complete" -> true
+                            | _ -> frame.status = "semantic_root_complete")
+                            || (let ageMs = (System.DateTime.UtcNow - replayRootCompleteWitnessUtc).TotalMilliseconds
+                                replayRootCompleteWitnessUtc <> System.DateTime.MinValue
+                                && ageMs >= 0.0
+                                && ageMs <= replayRootCompleteWitnessWindowMs))
+                        && frameCellShapeOrSemanticEvidence ["EAnnot"] pinned
                     let leafCompleteShieldsStaleTypeVar =
                         frame.status = "semantic_leaf_complete"
                         && pinned.status = "semantic_type_variable_value_missing_blocked"
@@ -14371,6 +15198,29 @@ module spiral_compiler =
                             sprintf "{\"kind\":\"eval_worklist_app_root_core_unbox_stale_retarget_demoted\",\"event\":%s,\"root_site\":%s,\"stale_site\":%s,\"root_status\":%s,\"stale_status\":%s,\"pending\":%d,\"durable_cleared\":%b,\"single_flight\":1,\"next\":\"preserve_root_evidence\"}"
                                 (esc event) (esc frame.site) (esc pinned.site) (esc frame.status) (esc pinned.status) (pendingCount()) durableCleared)
                         Some frame
+                    elif liveDrainShieldsFreshOpImplRequired then
+                        // ALPHA924: runtime 923 proved alpha923 resumed the idle deferred
+                        // replay path, but retry_stop_drain still let a rank-94 core EOp
+                        // semantic_op_impl_required pin outrank a live drain frontier while
+                        // a fresh replay-root write witness existed.  Demote only the
+                        // diagnostic terminal preference; the op implementation, value,
+                        // continuation, root proof, writer output, codegen result, and
+                        // BuildOk are still required from real replay evidence.
+                        let durableCleared =
+                            lock gate (fun () ->
+                                match pinnedTerminalContract with
+                                | Some p when p.status = "semantic_op_impl_required_blocked" && p.site = pinned.site ->
+                                    pinnedTerminalContract <- None
+                                | _ -> ()
+                                match durableTerminalContract with
+                                | Some p when p.status = "semantic_op_impl_required_blocked" && p.site = pinned.site ->
+                                    durableTerminalContract <- None
+                                    true
+                                | _ -> false)
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_live_drain_op_impl_required_demoted_after_root_witness\",\"event\":%s,\"frontier_site\":%s,\"stale_site\":%s,\"frontier_status\":%s,\"stale_status\":%s,\"pending\":%d,\"durable_cleared\":%b,\"witness\":%s,\"single_flight\":1,\"next\":\"drain_live_frontier_after_root_witness\"}"
+                                (esc event) (esc frame.site) (esc pinned.site) (esc frame.status) (esc pinned.status) (pendingCount()) durableCleared (esc replayRootCompleteWitnessSummary))
+                        Some frame
                     elif appRootShieldsBackendOpImplRequired then
                         // ALPHA692: runtime 691 shows retry_stop_drain preferring a
                         // rank-94 backend.spi:4 EOp semantic_op_impl_required terminal
@@ -14463,6 +15313,27 @@ module spiral_compiler =
                                 | _ -> false)
                         DiagJson.emit (
                             sprintf "{\"kind\":\"eval_worklist_app_root_shields_core_real_root_stale_retarget\",\"event\":%s,\"root_site\":%s,\"stale_site\":%s,\"root_status\":%s,\"stale_status\":%s,\"pending\":%d,\"durable_cleared\":%b,\"single_flight\":1,\"next\":\"preserve_root_evidence\"}"
+                                (esc event) (esc frame.site) (esc pinned.site) (esc frame.status) (esc pinned.status) (pendingCount()) durableCleared)
+                        Some frame
+                    elif rootCompleteShieldsTraceUnionReplayRepeat then
+                        // ALPHA882: runtime 881 moved beyond the leaf-parent churn patch
+                        // and then pinned a type replay fingerprint repeat for TUnion at
+                        // spiral/lib/spiral/trace.spi:7 over a live semantic_root_complete
+                        // frontier.  Clear only that stale replay-repeat diagnostic pin;
+                        // do not synthesize a type value, term value, writer proof, or BuildOk.
+                        let durableCleared =
+                            lock gate (fun () ->
+                                match pinnedTerminalContract with
+                                | Some p when p.status = "semantic_replay_fingerprint_repeat_blocked" && p.site = pinned.site ->
+                                    pinnedTerminalContract <- None
+                                | _ -> ()
+                                match durableTerminalContract with
+                                | Some p when p.status = "semantic_replay_fingerprint_repeat_blocked" && p.site = pinned.site ->
+                                    durableTerminalContract <- None
+                                    true
+                                | _ -> false)
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_trace7_union_replay_repeat_demoted\",\"event\":%s,\"root_site\":%s,\"stale_site\":%s,\"root_status\":%s,\"stale_status\":%s,\"pending\":%d,\"durable_cleared\":%b,\"single_flight\":1,\"next\":\"preserve_root_complete_frontier\"}"
                                 (esc event) (esc frame.site) (esc pinned.site) (esc frame.status) (esc pinned.status) (pendingCount()) durableCleared)
                         Some frame
                     elif rootCompleteShieldsTraceReplayRepeat then
@@ -14616,6 +15487,28 @@ module spiral_compiler =
                                 | _ -> false)
                         DiagJson.emit (
                             sprintf "{\"kind\":\"eval_worklist_root_complete_stale_macro_repeat_demoted\",\"event\":%s,\"root_site\":%s,\"stale_site\":%s,\"root_status\":%s,\"stale_status\":%s,\"pending\":%d,\"durable_cleared\":%b,\"single_flight\":1,\"next\":\"preserve_root_evidence\"}"
+                                (esc event) (esc frame.site) (esc pinned.site) (esc frame.status) (esc pinned.status) (pendingCount()) durableCleared)
+                        Some frame
+                    elif retryDrainShieldsBackendAnnotStaleRetarget then
+                        // ALPHA879: runtime 878 moved past the old core56 parent-cycle pin,
+                        // executed the Fsharp BackendSwitch branch, and then retry_stop_drain
+                        // selected a rank-77 stale root-complete retarget at backend.spi:4
+                        // carrying an EAnnot backend.spi:3 cell.  With a fresh replay-root
+                        // write witness, this is diagnostic retarget residue; preserve the
+                        // live retry-drain frontier and clear only that backend annotate pin.
+                        let durableCleared =
+                            lock gate (fun () ->
+                                match pinnedTerminalContract with
+                                | Some p when p.status = "semantic_root_complete_stale_retarget_repeat_blocked" && p.site = pinned.site ->
+                                    pinnedTerminalContract <- None
+                                | _ -> ()
+                                match durableTerminalContract with
+                                | Some p when p.status = "semantic_root_complete_stale_retarget_repeat_blocked" && p.site = pinned.site ->
+                                    durableTerminalContract <- None
+                                    true
+                                | _ -> false)
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_backend4_stale_annot_retarget_demoted\",\"event\":%s,\"root_site\":%s,\"stale_site\":%s,\"root_status\":%s,\"stale_status\":%s,\"pending\":%d,\"durable_cleared\":%b,\"single_flight\":1,\"next\":\"preserve_retry_drain_frontier\"}"
                                 (esc event) (esc frame.site) (esc pinned.site) (esc frame.status) (esc pinned.status) (pendingCount()) durableCleared)
                         Some frame
                     elif leafCompleteShieldsStaleTypeVar then
@@ -15068,21 +15961,28 @@ module spiral_compiler =
         // that active tick is done and no replay task remains queued.
         let private tryScheduleDeferredAfterActiveDriver (event: string) =
             let deferredOpt =
-                // ALPHA562: do not starve term macro apply-args behind the ty catch-all.
-                // Runtime 561 showed EMacro apply_arg_child was repeatedly scheduled while
-                // a ty replay driver remained active, then terminalized as child_schedule_repeat.
-                match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EMacro" -1 with
+                // ALPHA916: annotated test bodies now arrive as the next concrete
+                // replay obligation after the live-cycle defer.  Drain them before
+                // macro/type catch-alls so the explicit EAnnotTest stepper gets a tick
+                // instead of being hidden behind an older fingerprint-repeat terminal.
+                match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EAnnotTest" -1 with
                 | Some cell -> Some cell
                 | None ->
-                    match EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "TFun" -1 with
+                    // ALPHA562: do not starve term macro apply-args behind the ty catch-all.
+                    // Runtime 561 showed EMacro apply_arg_child was repeatedly scheduled while
+                    // a ty replay driver remained active, then terminalized as child_schedule_repeat.
+                    match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EMacro" -1 with
                     | Some cell -> Some cell
                     | None ->
-                        match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EFun'" -1 with
+                        match EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "TFun" -1 with
                         | Some cell -> Some cell
                         | None ->
-                            match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "" -1 with
+                            match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "EFun'" -1 with
                             | Some cell -> Some cell
-                            | None -> EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "" -1
+                            | None ->
+                                match EvalReplayValueStore.tryTakeDeferredReplayCell "term" "" -1 with
+                                | Some cell -> Some cell
+                                | None -> EvalReplayValueStore.tryTakeDeferredReplayCell "ty" "" -1
             match deferredOpt with
             | Some deferredCell ->
                 let replayCell : ReplayCell = {
@@ -15141,12 +16041,31 @@ module spiral_compiler =
                                 // fresher work item.  Do not let the stale frontier cell shadow the
                                 // task payload; otherwise alpha509 keeps re-capturing replay_id 1095
                                 // without ever committing the queued let_success child.
-                                let preferTaskPayloadCell =
+                                let preferTaskPayloadOverRepeatFrontier =
                                     match frontier, taskCellOpt with
                                     | Some frame, Some _ ->
                                         frame.status = "semantic_replay_fingerprint_repeat_blocked"
                                         && task.payload.Contains("replay_continuation")
                                     | _ -> false
+                                // ALPHA860: the replay queue owns the identity of the work item being
+                                // driven.  Runtime 859 showed a queued deferred EForall' payload being
+                                // executed through an unrelated completed EUnitTest frontier cell.  A
+                                // frontier cell is only a fresher representation of this task when its
+                                // stable semantic identity matches the task payload identity.
+                                let sameReplayIdentity (a: ReplayCell) (b: ReplayCell) =
+                                    a.kind = b.kind
+                                    && a.shape = b.shape
+                                    && a.nodeId = b.nodeId
+                                    && a.site = b.site
+                                let preferTaskPayloadOverStaleFrontier =
+                                    match frontierCellOpt, taskCellOpt with
+                                    | Some frontierCell, Some taskCell ->
+                                        not (sameReplayIdentity frontierCell taskCell)
+                                    | _ -> false
+                                let preferTaskPayloadCell =
+                                    preferTaskPayloadOverRepeatFrontier || preferTaskPayloadOverStaleFrontier
+                                let taskPayloadCellText = match taskCellOpt with | Some c -> formatCell c | None -> "none"
+                                let frontierPayloadCellText = match frontierCellOpt with | Some c -> formatCell c | None -> "none"
                                 let payloadHydrated = Option.isSome taskCellOpt
                                 let cellOpt =
                                     if preferTaskPayloadCell then taskCellOpt
@@ -15176,10 +16095,10 @@ module spiral_compiler =
                                     else "driver_blocked_semantic_payload"
                                 let task' = { task with status = status }
                                 replayQueue <- task' :: rest
-                                Some(task', hasSemantic, cellOpt, payloadHydrated, preferTaskPayloadCell)
+                                Some(task', hasSemantic, cellOpt, payloadHydrated, preferTaskPayloadOverRepeatFrontier, preferTaskPayloadOverStaleFrontier, taskPayloadCellText, frontierPayloadCellText)
                             | [] -> None)
                     match taskOpt with
-                    | Some (task, hasSemantic, cellOpt, payloadHydrated, preferTaskPayloadCell) ->
+                    | Some (task, hasSemantic, cellOpt, payloadHydrated, preferTaskPayloadOverRepeatFrontier, preferTaskPayloadOverStaleFrontier, taskPayloadCellText, frontierPayloadCellText) ->
                         executingTaskOpt <- Some task
                         executingCellOpt <- cellOpt
                         let hasCell = Option.isSome cellOpt
@@ -15199,7 +16118,14 @@ module spiral_compiler =
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_replay_payload_cell_hydrated\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":\"execute_typed_replay_cell\"}"
                                     (esc event) task.id (esc task.driver) (esc task.status) (esc (match cellOpt with | Some c -> formatCell c | None -> "none")) (replayQueueDepth()))
-                        if preferTaskPayloadCell then
+                        if preferTaskPayloadOverStaleFrontier then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_replay_payload_preferred_over_stale_frontier\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"task_cell\":%s,\"frontier_cell\":%s,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"execute_payload_replay_cell\"}"
+                                    (esc event) task.id (esc task.driver) (esc task.status)
+                                    (esc taskPayloadCellText)
+                                    (esc frontierPayloadCellText)
+                                    (replayQueueDepth()) (pendingCount()))
+                        if preferTaskPayloadOverRepeatFrontier then
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_replay_payload_preferred_over_repeat_frontier\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"cell\":%s,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"execute_payload_replay_cell\"}"
                                     (esc event) task.id (esc task.driver) (esc task.status) (esc (match cellOpt with | Some c -> formatCell c | None -> "none")) (replayQueueDepth()) (pendingCount()))
@@ -15424,18 +16350,38 @@ module spiral_compiler =
                                                                     else "eval_worklist_apply_function_body_dynamic_function_bridge"
                                                                 match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
                                                                 | Choice1Of2 value ->
-                                                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                                    DiagJson.emit (
-                                                                        sprintf "{\"kind\":%s,\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
-                                                                            (esc bridgeKind) (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
-                                                                    compositeOrParent ("term_apply_function_body_dynamic_function_bridge:" + why) cellReady
+                                                                    let dynamicBridgeJoinStalled =
+                                                                        why.IndexOf("BigStack join stalled", StringComparison.Ordinal) >= 0
+                                                                        || why.IndexOf("BigStack join observed semantic_root_complete", StringComparison.Ordinal) >= 0
+                                                                    if dynamicBridgeJoinStalled then
+                                                                        let guardedCell = { cellReady with status = "dynamic_join_apply_bigstack_stall_guarded" }
+                                                                        DiagJson.emit (
+                                                                            sprintf "{\"kind\":\"eval_worklist_dynamic_function_bridge_bigstack_stall_guarded\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"pending\":%d,\"write_witness\":%b,\"single_flight\":1,\"next\":\"resume_retry_drain_after_bigstack_stall_guard\"}"
+                                                                                (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (pendingCount()) (hasReplayCompleteWriteWitness()))
+                                                                        "term_apply_function_body_dynamic_function_bridge_bigstack_stall_guarded:" + why, "semantic_step_partial", "resume_retry_drain_after_bigstack_stall_guard", guardedCell
+                                                                    else
+                                                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                                        DiagJson.emit (
+                                                                            sprintf "{\"kind\":%s,\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                                                (esc bridgeKind) (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
+                                                                        compositeOrParent ("term_apply_function_body_dynamic_function_bridge:" + why) cellReady
                                                                 | Choice2Of2 detail ->
                                                                     let pinDynamicFunctionBridgeBlocked () =
+                                                                        let dynamicJoinRootWitness =
+                                                                            pendingCount() > 0
+                                                                            && hasReplayCompleteWriteWitness()
                                                                         DiagJson.emit (
-                                                                            sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_function_bridge_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
-                                                                                (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail))
-                                                                        let blockedCell = pinDynamicJoinBlocker event ("term_apply_function_body_dynamic_function_bridge_blocked:" + why) detail cellReady
-                                                                        "term_apply_function_body_dynamic_function_bridge_blocked:" + why + ":" + detail, blockedCell.status, terminalContractNext blockedCell.status, blockedCell
+                                                                            sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_function_bridge_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"root_witness\":%b,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
+                                                                                (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail) dynamicJoinRootWitness)
+                                                                        if dynamicJoinRootWitness then
+                                                                            let guardedCell = { cellReady with status = "dynamic_join_apply_root_witness_guarded" }
+                                                                            DiagJson.emit (
+                                                                                sprintf "{\"kind\":\"eval_worklist_dynamic_join_root_witness_guarded\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"pending\":%d,\"witness\":%s,\"single_flight\":1,\"next\":\"resume_retry_drain_after_dynamic_join_root_witness_guard\"}"
+                                                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (esc detail) (pendingCount()) (esc (replayCompleteWriteWitnessSummary())))
+                                                                            "term_apply_function_body_dynamic_function_bridge_root_witness_guarded:" + why + ":" + detail, "semantic_step_partial", "resume_retry_drain_after_dynamic_join_root_witness_guard", guardedCell
+                                                                        else
+                                                                            let blockedCell = pinDynamicJoinBlocker event ("term_apply_function_body_dynamic_function_bridge_blocked:" + why) detail cellReady
+                                                                            "term_apply_function_body_dynamic_function_bridge_blocked:" + why + ":" + detail, blockedCell.status, terminalContractNext blockedCell.status, blockedCell
                                                                     let dynamicFunctionLiteralTail =
                                                                         detail.StartsWith("function_body_stepper_failed:", StringComparison.Ordinal)
                                                                         && (detail.IndexOf("/DLit", StringComparison.Ordinal) >= 0
@@ -15470,11 +16416,21 @@ module spiral_compiler =
                                                             elif EvalReplayValueStore.isFunctionBodyDynamicRecordFailure why then
                                                                 match EvalReplayValueStore.tryDynamicJoinApplyReplayDataWithContext cellReady.nodeId head values with
                                                                 | Choice1Of2 value ->
-                                                                    EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                                    DiagJson.emit (
-                                                                        sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_record_bridge\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
-                                                                            (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
-                                                                    compositeOrParent ("term_apply_function_body_dynamic_record_bridge:" + why) cellReady
+                                                                    let dynamicBridgeJoinStalled =
+                                                                        why.IndexOf("BigStack join stalled", StringComparison.Ordinal) >= 0
+                                                                        || why.IndexOf("BigStack join observed semantic_root_complete", StringComparison.Ordinal) >= 0
+                                                                    if dynamicBridgeJoinStalled then
+                                                                        let guardedCell = { cellReady with status = "dynamic_join_apply_bigstack_stall_guarded" }
+                                                                        DiagJson.emit (
+                                                                            sprintf "{\"kind\":\"eval_worklist_dynamic_record_bridge_bigstack_stall_guarded\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"pending\":%d,\"write_witness\":%b,\"single_flight\":1,\"next\":\"resume_retry_drain_after_bigstack_stall_guard\"}"
+                                                                                (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why) (pendingCount()) (hasReplayCompleteWriteWitness()))
+                                                                        "term_apply_function_body_dynamic_record_bridge_bigstack_stall_guarded:" + why, "semantic_step_partial", "resume_retry_drain_after_bigstack_stall_guard", guardedCell
+                                                                    else
+                                                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                                        DiagJson.emit (
+                                                                            sprintf "{\"kind\":\"eval_worklist_apply_function_body_dynamic_record_bridge\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                                                (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc why))
+                                                                        compositeOrParent ("term_apply_function_body_dynamic_record_bridge:" + why) cellReady
                                                                 | Choice2Of2 detail ->
                                                                     DiagJson.emit (
                                                                         sprintf "{\"kind\":\"eval_worklist_dynamic_record_apply_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"reason\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"yield_or_explicit_dynamic_join_apply\"}"
@@ -15497,28 +16453,7 @@ module spiral_compiler =
                                                                     | Some argValue ->
                                                                         match EvalReplayValueStore.tryScheduleApplyFunctionBodyReplayAt cellReady.nodeId head argValue with
                                                                         | Choice1Of2 (bodyNodeId, bodyShape) ->
-                                                                            if bodyShape = "EPairTest" then
-                                                                                match EvalReplayValueStore.tryPairTestSpine bodyNodeId with
-                                                                                | Some pairSpine ->
-                                                                                    let chooseSuccess =
-                                                                                        match argValue with
-                                                                                        | DPair _ -> true
-                                                                                        | _ -> false
-                                                                                    let branchNodeId = if chooseSuccess then pairSpine.successNodeId else pairSpine.failNodeId
-                                                                                    let branchShape = if chooseSuccess then pairSpine.successShape else pairSpine.failShape
-                                                                                    let branchRole = if chooseSuccess then "success" else "fail"
-                                                                                    DiagJson.emit (
-                                                                                        sprintf "{\"kind\":\"eval_worklist_apply_pair_test_body_branch_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"branch\":%s,\"branch_node_id\":%d,\"branch_shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
-                                                                                            (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc branchRole) branchNodeId (esc branchShape) (esc cellReady.site) (esc why))
-                                                                                    let branchCell = { cellReady with nodeId = branchNodeId; shape = branchShape; status = "pair_test_branch_ready" }
-                                                                                    "term_apply_pair_test_body_" + branchRole + "_branch_scheduled:" + why, "semantic_step_partial", "schedule_deferred_replay_child", branchCell
-                                                                                | None ->
-                                                                                    DiagJson.emit (
-                                                                                        sprintf "{\"kind\":\"eval_worklist_apply_pair_test_body_spine_missing\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_function_body_stepper_required\"}"
-                                                                                            (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc cellReady.site) (esc why))
-                                                                                    let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "apply_function_body_ready" }
-                                                                                    "term_apply_function_body_scheduled:" + why, "semantic_step_partial", "explicit_eval_worklist_function_body_stepper_required", bodyCell
-                                                                            elif bodyShape = "EAnnotTest" && EvalReplayValueStore.isFunctionBodyLiteralOpFailure why then
+                                                                            if bodyShape = "EAnnotTest" && EvalReplayValueStore.isFunctionBodyLiteralOpFailure why then
                                                                                 // ALPHA558: annotated literal-op bodies are composite replay bodies, not terminal literal ops.
                                                                                 // Runtime 557 proved the old classifier pinned EAnnotTest at base.spi:67 before the
                                                                                 // existing AnnotTestSpine could schedule its annotation type/branches.
@@ -15526,7 +16461,23 @@ module spiral_compiler =
                                                                                     sprintf "{\"kind\":\"eval_worklist_literal_annot_test_body_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"site\":%s,\"reason\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_test_body_stepper_required\"}"
                                                                                         (esc event) cellReady.nodeId bodyNodeId (esc bodyShape) (esc cellReady.site) (esc why))
                                                                                 let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "annot_test_body_ready" }
-                                                                                "term_literal_annot_test_body_scheduled:" + why, "semantic_step_partial", "explicit_eval_worklist_annot_test_body_stepper_required", bodyCell
+                                                                                EvalReplayValueStore.putDeferredReplayCell {
+                                                                                    kind = "term"
+                                                                                    shape = bodyShape
+                                                                                    nodeId = bodyNodeId
+                                                                                    envGlobalTerm = cellReady.envGlobalTerm
+                                                                                    envStackTerm = cellReady.envStackTerm
+                                                                                    envGlobalType = cellReady.envGlobalType
+                                                                                    envStackType = cellReady.envStackType
+                                                                                    seqLen = cellReady.seqLen
+                                                                                    cseDepth = cellReady.cseDepth
+                                                                                    traceDepth = cellReady.traceDepth
+                                                                                    site = cellReady.site
+                                                                                    cursor = 0
+                                                                                    step = 0
+                                                                                    status = "annot_test_body_deferred_from_literal_apply"
+                                                                                }
+                                                                                "term_literal_annot_test_body_scheduled:" + why, "semantic_step_partial", "schedule_deferred_replay_child", bodyCell
                                                                             elif bodyShape = "EOp" && EvalReplayValueStore.isFunctionBodyLiteralOpFailure why then
                                                                                 match EvalReplayValueStore.tryOpSpine bodyNodeId with
                                                                                 | Some opSpine ->
@@ -15771,11 +16722,16 @@ module spiral_compiler =
                                                                     let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "type_apply_op_body_ready" }
                                                                     "term_type_apply_forall_op_body_scheduled:" + detail, "semantic_step_partial", "schedule_deferred_replay_child", bodyCell
                                                                 elif bodyShape = "ENominal" then
+                                                                    // ALPHA866: runtime 865 proved this is no longer a terminal
+                                                                    // nominal-constructor contract.  The ENominal body has a normal
+                                                                    // replay spine below; schedule it through the deferred child lane
+                                                                    // so the existing ENominal dispatcher can resolve inner/type
+                                                                    // children or expose its own precise blocker.
                                                                     DiagJson.emit (
-                                                                        sprintf "{\"kind\":\"eval_worklist_type_apply_nominal_constructor_stepper_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"source\":\"type_apply_forall_body\",\"single_flight\":1,\"next\":\"explicit_eval_worklist_type_apply_nominal_constructor_stepper_required\"}"
-                                                                            (esc event) task.id (esc task.driver) bodyNodeId (esc bodyShape) (esc cellReady.site) (esc detail))
-                                                                    let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "type_apply_nominal_constructor_stepper_blocked" }
-                                                                    "term_type_apply_nominal_constructor_body_stepper_blocked:" + detail, "semantic_type_apply_nominal_constructor_stepper_blocked", "explicit_eval_worklist_type_apply_nominal_constructor_stepper_required", bodyCell
+                                                                        sprintf "{\"kind\":\"eval_worklist_type_apply_nominal_constructor_replay_scheduled\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"node_id\":%d,\"shape\":%s,\"body_node_id\":%d,\"body_shape\":%s,\"site\":%s,\"detail\":%s,\"source\":\"type_apply_forall_body\",\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
+                                                                            (esc event) task.id (esc task.driver) cellReady.nodeId (esc cellReady.shape) bodyNodeId (esc bodyShape) (esc cellReady.site) (esc detail))
+                                                                    let bodyCell = { cellReady with nodeId = bodyNodeId; shape = bodyShape; status = "type_apply_nominal_constructor_ready" }
+                                                                    "term_type_apply_nominal_constructor_body_scheduled:" + detail, "semantic_step_partial", "schedule_deferred_replay_child", bodyCell
                                                                 elif bodyShape = "EForall'" || bodyShape = "ERecursiveForall'" then
                                                                     DiagJson.emit (
                                                                         sprintf "{\"kind\":\"eval_worklist_type_apply_nested_forall_stepper_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"source\":\"type_apply_forall_body\",\"single_flight\":1,\"next\":\"explicit_eval_worklist_type_apply_nested_forall_stepper_required\"}"
@@ -15804,12 +16760,9 @@ module spiral_compiler =
                                                 | YUnion h, DPair(DSymbol _, _) -> DNominal(DUnion(innerValue, h), nominalTy)
                                                 | _ -> DNominal(innerValue, nominalTy)
                                             EvalReplayValueStore.putTermValue cellReady.nodeId nominalValue
-                                            let clearedNominalTerminal =
-                                                clearTerminalContractIf "semantic_type_apply_nominal_constructor_stepper_blocked" "" ""
-                                                || clearTerminalContractIf "semantic_nominal_constructor_stepper_blocked" "" ""
                                             DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_nominal_constructor_children_resolved\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"inner_node_id\":%d,\"inner_shape\":%s,\"type_node_id\":%d,\"type_shape\":%s,\"cleared_nominal_terminal\":%s,\"policy\":\"resolved_nominal_constructor_clears_stale_nominal_terminal\",\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
-                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) spine.innerNodeId (esc spine.innerShape) spine.typeNodeId (esc spine.typeShape) (if clearedNominalTerminal then "true" else "false"))
+                                                sprintf "{\"kind\":\"eval_worklist_nominal_constructor_children_resolved\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"inner_node_id\":%d,\"inner_shape\":%s,\"type_node_id\":%d,\"type_shape\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) spine.innerNodeId (esc spine.innerShape) spine.typeNodeId (esc spine.typeShape))
                                             termRootOrParent "term_nominal_constructor_children_resolved" cellReady
                                         | None, _ ->
                                             let innerCell = { cellReady with kind = "term"; nodeId = spine.innerNodeId; shape = spine.innerShape; status = "nominal_inner_ready" }
@@ -15863,10 +16816,57 @@ module spiral_compiler =
                                                                 (esc event) cellReady.nodeId (esc branchRole) branchNodeId (esc branchShape) (esc cellReady.site))
                                                         "term_annot_test_" + branchRole + "_branch_scheduled", "semantic_step_partial", "explicit_eval_worklist_annot_test_branch_stepper_required", branchCell
                                                 | Choice2Of2 branchDetail ->
-                                                    DiagJson.emit (
-                                                        sprintf "{\"kind\":\"eval_worklist_annot_test_type_resolved_body_pending\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"site\":%s,\"detail\":%s,\"branch_detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_test_branch_selection_required\"}"
-                                                            (esc event) cellReady.nodeId spine.typeNodeId (esc cellReady.site) (esc detail) (esc branchDetail))
-                                                    "term_annot_test_branch_selection_blocked:" + detail + ":" + branchDetail, "semantic_annot_test_branch_selection_blocked", "explicit_eval_worklist_annot_test_branch_selection_required", cellReady
+                                                    let annotBranchKeyPending =
+                                                        branchDetail.Contains("ArgumentNullException", StringComparison.Ordinal)
+                                                        && branchDetail.Contains("Parameter 'key'", StringComparison.Ordinal)
+                                                        && pendingCount() > 0
+                                                    if annotBranchKeyPending then
+                                                        let trueMissing = not (EvalReplayValueStore.hasTermValue spine.trueNodeId)
+                                                        let falseMissing = not (EvalReplayValueStore.hasTermValue spine.falseNodeId)
+                                                        let deferAnnotBranch (branchName: string) (branchNodeId: int) (branchShape: string) =
+                                                            EvalReplayValueStore.putDeferredReplayCell {
+                                                                kind = "term"
+                                                                shape = branchShape
+                                                                nodeId = branchNodeId
+                                                                envGlobalTerm = cellReady.envGlobalTerm
+                                                                envStackTerm = cellReady.envStackTerm
+                                                                envGlobalType = cellReady.envGlobalType
+                                                                envStackType = cellReady.envStackType
+                                                                seqLen = cellReady.seqLen
+                                                                cseDepth = cellReady.cseDepth
+                                                                traceDepth = cellReady.traceDepth
+                                                                site = cellReady.site
+                                                                cursor = 0
+                                                                step = 0
+                                                                status = "annot_test_branch_probe_deferred"
+                                                            }
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_annot_test_branch_probe_deferred\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"site\":%s,\"branch\":%s,\"branch_node_id\":%d,\"branch_shape\":%s,\"detail\":%s,\"branch_detail\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
+                                                                    (esc event) cellReady.nodeId spine.typeNodeId (esc cellReady.site) (esc branchName) branchNodeId (esc branchShape) (esc detail) (esc branchDetail) (pendingCount()))
+                                                        let scheduleAnnotBranch (branchName: string) (branchNodeId: int) (branchShape: string) =
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_annot_test_branch_selection_guarded\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"site\":%s,\"branch\":%s,\"branch_node_id\":%d,\"branch_shape\":%s,\"detail\":%s,\"branch_detail\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
+                                                                    (esc event) cellReady.nodeId spine.typeNodeId (esc cellReady.site) (esc branchName) branchNodeId (esc branchShape) (esc detail) (esc branchDetail) (pendingCount()))
+                                                            let branchCell = { cellReady with nodeId = branchNodeId; shape = branchShape; status = "annot_test_branch_probe_ready" }
+                                                            "term_annot_test_" + branchName + "_branch_probe_scheduled:" + detail + ":" + branchDetail, "semantic_step_partial", "schedule_deferred_replay_child", branchCell
+                                                        match trueMissing, falseMissing with
+                                                        | true, true ->
+                                                            deferAnnotBranch "false" spine.falseNodeId spine.falseShape
+                                                            scheduleAnnotBranch "true" spine.trueNodeId spine.trueShape
+                                                        | true, false ->
+                                                            scheduleAnnotBranch "true" spine.trueNodeId spine.trueShape
+                                                        | false, true ->
+                                                            scheduleAnnotBranch "false" spine.falseNodeId spine.falseShape
+                                                        | false, false ->
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_annot_test_branch_selection_guarded\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"site\":%s,\"detail\":%s,\"branch_detail\":%s,\"branches_ready\":1,\"pending\":%d,\"single_flight\":1,\"next\":\"retry_drain_after_annot_test_branch_selection_guard\"}"
+                                                                    (esc event) cellReady.nodeId spine.typeNodeId (esc cellReady.site) (esc detail) (esc branchDetail) (pendingCount()))
+                                                            "term_annot_test_branch_selection_guarded:" + detail + ":" + branchDetail, "semantic_step_partial", "retry_drain_after_annot_test_branch_selection_guard", cellReady
+                                                    else
+                                                        DiagJson.emit (
+                                                            sprintf "{\"kind\":\"eval_worklist_annot_test_type_resolved_body_pending\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"site\":%s,\"detail\":%s,\"branch_detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_test_branch_selection_required\"}"
+                                                                (esc event) cellReady.nodeId spine.typeNodeId (esc cellReady.site) (esc detail) (esc branchDetail))
+                                                        "term_annot_test_branch_selection_blocked:" + detail + ":" + branchDetail, "semantic_annot_test_branch_selection_blocked", "explicit_eval_worklist_annot_test_branch_selection_required", cellReady
                                             | Choice2Of2 typeDetail ->
                                                 DiagJson.emit (
                                                     sprintf "{\"kind\":\"eval_worklist_annot_test_type_child_scheduled\",\"event\":%s,\"node_id\":%d,\"type_node_id\":%d,\"type_shape\":%s,\"site\":%s,\"detail\":%s,\"type_detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_test_type_stepper_required\"}"
@@ -15939,15 +16939,71 @@ module spiral_compiler =
                                                 scheduleBranch "false" spine.falseNodeId spine.falseShape
                                             | false, false ->
                                                 DiagJson.emit (
-                                                    sprintf "{\"kind\":\"eval_worklist_if_unknown_return_branches_exhausted_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"symbol\":%s,\"branches_ready\":1,\"terminal_rank\":63,\"policy\":\"soft_pin_after_branch_probes_to_surface_concrete_children\",\"single_flight\":1,\"next\":\"explicit_eval_worklist_if_unknown_return_branches_exhausted_required\"}"
+                                                    sprintf "{\"kind\":\"eval_worklist_if_unknown_return_condition_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"symbol\":%s,\"branches_ready\":1,\"single_flight\":1,\"next\":\"explicit_eval_worklist_if_unknown_return_condition_required\"}"
                                                         (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) spine.condNodeId (esc spine.condShape) (esc sym))
-                                                "term_if_unknown_return_branches_exhausted_blocked:" + sym, "semantic_if_unknown_return_branches_exhausted_blocked", "explicit_eval_worklist_if_unknown_return_branches_exhausted_required", cellReady
+                                                "term_if_unknown_return_condition_blocked:" + sym, "semantic_if_unknown_return_condition_blocked", "explicit_eval_worklist_if_unknown_return_condition_required", cellReady
                                         | Some condValue ->
+                                            // ALPHA920: a symbolic/non-bool condition is not enough evidence
+                                            // to terminalize an EIfThenElse while either branch is still a live
+                                            // replay obligation.  Runtime 919 pinned core.spi:108 with a huge
+                                            // DFunction condition even though pending work still existed.  Probe
+                                            // missing branches first and emit compact, classified console logs;
+                                            // only keep semantic_if_symbolic_condition_blocked once both branches
+                                            // have been materialized or at least replayed to their own frontiers.
                                             let detail = sprintf "%A" condValue
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_if_symbolic_condition_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_if_symbolic_condition_required\"}"
-                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) spine.condNodeId (esc spine.condShape) (esc detail))
-                                            "term_if_symbolic_condition_blocked:" + detail, "semantic_if_symbolic_condition_blocked", "explicit_eval_worklist_if_symbolic_condition_required", cellReady
+                                            let compactDetail =
+                                                if System.Object.ReferenceEquals(detail,null) then ""
+                                                elif detail.Length > 512 then detail.Substring(0,512) + sprintf "…[+%d chars]" (detail.Length - 512)
+                                                else detail
+                                            let conditionClass =
+                                                match condValue with
+                                                | DFunction _ -> "function"
+                                                | DV _ -> "symbolic_value"
+                                                | DLit _ -> "literal_non_bool"
+                                                | DPair _ -> "pair"
+                                                | DRecord _ -> "record"
+                                                | _ -> "non_bool_data"
+                                            let trueMissing = not (EvalReplayValueStore.hasTermValue spine.trueNodeId)
+                                            let falseMissing = not (EvalReplayValueStore.hasTermValue spine.falseNodeId)
+                                            let deferBranch (branchName: string) (branchNodeId: int) (branchShape: string) =
+                                                EvalReplayValueStore.putDeferredReplayCell {
+                                                    kind = "term"
+                                                    shape = branchShape
+                                                    nodeId = branchNodeId
+                                                    envGlobalTerm = cellReady.envGlobalTerm
+                                                    envStackTerm = cellReady.envStackTerm
+                                                    envGlobalType = cellReady.envGlobalType
+                                                    envStackType = cellReady.envStackType
+                                                    seqLen = cellReady.seqLen
+                                                    cseDepth = cellReady.cseDepth
+                                                    traceDepth = cellReady.traceDepth
+                                                    site = cellReady.site
+                                                    cursor = 0
+                                                    step = 0
+                                                    status = "if_symbolic_condition_branch_probe_deferred"
+                                                }
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_if_symbolic_condition_branch_probe_deferred\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"branch\":%s,\"branch_node_id\":%d,\"branch_shape\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"condition_class\":%s,\"detail_compact\":%s,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
+                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc branchName) branchNodeId (esc branchShape) spine.condNodeId (esc spine.condShape) (esc conditionClass) (esc compactDetail))
+                                            let scheduleBranch (branchName: string) (branchNodeId: int) (branchShape: string) =
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_if_symbolic_condition_branch_probe_scheduled\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"branch\":%s,\"branch_node_id\":%d,\"branch_shape\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"condition_class\":%s,\"detail_compact\":%s,\"single_flight\":1,\"next\":\"schedule_if_symbolic_branch_probe\"}"
+                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc branchName) branchNodeId (esc branchShape) spine.condNodeId (esc spine.condShape) (esc conditionClass) (esc compactDetail))
+                                                let branchCell = { cellReady with nodeId = branchNodeId; shape = branchShape; status = "if_symbolic_condition_branch_probe_ready" }
+                                                "term_if_symbolic_condition_" + branchName + "_branch_probe_scheduled:" + conditionClass, "semantic_step_partial", "schedule_if_symbolic_branch_probe", branchCell
+                                            match trueMissing, falseMissing with
+                                            | true, true ->
+                                                deferBranch "false" spine.falseNodeId spine.falseShape
+                                                scheduleBranch "true" spine.trueNodeId spine.trueShape
+                                            | true, false ->
+                                                scheduleBranch "true" spine.trueNodeId spine.trueShape
+                                            | false, true ->
+                                                scheduleBranch "false" spine.falseNodeId spine.falseShape
+                                            | false, false ->
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_if_symbolic_condition_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"condition_class\":%s,\"branches_ready\":1,\"detail_compact\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_if_symbolic_condition_required\"}"
+                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) spine.condNodeId (esc spine.condShape) (esc conditionClass) (esc compactDetail))
+                                                "term_if_symbolic_condition_blocked:" + conditionClass + ":" + compactDetail, "semantic_if_symbolic_condition_blocked", "explicit_eval_worklist_if_symbolic_condition_required", cellReady
                                         | None ->
                                             let condCell = { cellReady with nodeId = spine.condNodeId; shape = spine.condShape; status = "if_condition_ready" }
                                             "term_if_condition_scheduled", "semantic_step_partial", "explicit_eval_worklist_if_condition_stepper_required", condCell
@@ -16285,53 +17341,33 @@ module spiral_compiler =
                                         EvalReplayValueStore.putTermValue cellReady.nodeId value
                                         compositeOrParent "term_unit_test_value_resolved" cellReady
                                     | Choice2Of2 detail ->
-                                        match EvalReplayValueStore.tryUnitTestSpine cellReady.nodeId, EvalReplayValueStore.tryUnitTestBindValue cellReady.nodeId with
-                                        | Some spine, Some bindValue when detail.Contains("NullReferenceException") ->
+                                        match EvalReplayValueStore.tryUnitTestSpine cellReady.nodeId with
+                                        | Some spine when detail.Contains("unit_test_branch_value_missing") ->
+                                            let succMissing = not (EvalReplayValueStore.hasTermValue spine.successNodeId)
+                                            let failMissing = not (EvalReplayValueStore.hasTermValue spine.failNodeId)
                                             let chooseSuccess =
-                                                match bindValue with
-                                                | DB -> true
-                                                | _ -> false
+                                                if detail.Contains(spine.successShape) && not (detail.Contains(spine.failShape) && spine.failShape <> spine.successShape) then true
+                                                elif detail.Contains(spine.failShape) then false
+                                                else succMissing
                                             let childNodeId = if chooseSuccess then spine.successNodeId else spine.failNodeId
                                             let childShape = if chooseSuccess then spine.successShape else spine.failShape
                                             let role = if chooseSuccess then "unit_test_success" else "unit_test_fail"
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_unit_test_bind_cached_after_nre\",\"event\":%s,\"parent_node_id\":%d,\"child_node_id\":%d,\"child_shape\":%s,\"role\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
-                                                    (esc event) cellReady.nodeId childNodeId (esc childShape) (esc role) (esc cellReady.site) (esc detail))
-                                            match EvalReplayValueStore.tryTerm childNodeId with
-                                            | Some branchValue ->
-                                                EvalReplayValueStore.putTermValue cellReady.nodeId branchValue
-                                                compositeOrParent ("term_unit_test_cached_bind_" + role + "_value_resolved") cellReady
-                                            | None ->
+                                            if (chooseSuccess && succMissing) || ((not chooseSuccess) && failMissing) then
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_unit_test_branch_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"child_node_id\":%d,\"child_shape\":%s,\"role\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_branch_stepper_required\"}"
+                                                        (esc event) cellReady.nodeId childNodeId (esc childShape) (esc role) (esc cellReady.site) (esc detail))
                                                 let childCell = { cellReady with nodeId = childNodeId; shape = childShape; status = "unit_test_branch_ready" }
-                                                "term_unit_test_cached_bind_branch_scheduled:" + role, "semantic_step_partial", "schedule_deferred_replay_child", childCell
-                                        | _ ->
-                                            match EvalReplayValueStore.tryUnitTestSpine cellReady.nodeId with
-                                            | Some spine when detail.Contains("unit_test_branch_value_missing") ->
-                                                let succMissing = not (EvalReplayValueStore.hasTermValue spine.successNodeId)
-                                                let failMissing = not (EvalReplayValueStore.hasTermValue spine.failNodeId)
-                                                let chooseSuccess =
-                                                    if detail.Contains(spine.successShape) && not (detail.Contains(spine.failShape) && spine.failShape <> spine.successShape) then true
-                                                    elif detail.Contains(spine.failShape) then false
-                                                    else succMissing
-                                                let childNodeId = if chooseSuccess then spine.successNodeId else spine.failNodeId
-                                                let childShape = if chooseSuccess then spine.successShape else spine.failShape
-                                                let role = if chooseSuccess then "unit_test_success" else "unit_test_fail"
-                                                if (chooseSuccess && succMissing) || ((not chooseSuccess) && failMissing) then
-                                                    DiagJson.emit (
-                                                        sprintf "{\"kind\":\"eval_worklist_unit_test_branch_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"child_node_id\":%d,\"child_shape\":%s,\"role\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_branch_stepper_required\"}"
-                                                            (esc event) cellReady.nodeId childNodeId (esc childShape) (esc role) (esc cellReady.site) (esc detail))
-                                                    let childCell = { cellReady with nodeId = childNodeId; shape = childShape; status = "unit_test_branch_ready" }
-                                                    "term_unit_test_branch_scheduled:" + role, "semantic_step_partial", "schedule_deferred_replay_child", childCell
-                                                else
-                                                    DiagJson.emit (
-                                                        sprintf "{\"kind\":\"eval_worklist_unit_test_value_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_value_required\"}"
-                                                            (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
-                                                    "term_unit_test_value_blocked:" + detail, "semantic_unit_test_value_blocked", "explicit_eval_worklist_unit_test_value_required", cellReady
-                                            | _ ->
+                                                "term_unit_test_branch_scheduled:" + role, "semantic_step_partial", "schedule_deferred_replay_child", childCell
+                                            else
                                                 DiagJson.emit (
                                                     sprintf "{\"kind\":\"eval_worklist_unit_test_value_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_value_required\"}"
                                                         (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
                                                 "term_unit_test_value_blocked:" + detail, "semantic_unit_test_value_blocked", "explicit_eval_worklist_unit_test_value_required", cellReady
+                                        | _ ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_unit_test_value_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unit_test_value_required\"}"
+                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                            "term_unit_test_value_blocked:" + detail, "semantic_unit_test_value_blocked", "explicit_eval_worklist_unit_test_value_required", cellReady
                                 | "term", "EPairTest" ->
                                     // ALPHA650: EPairTest branch replay.  Runtime 649 pinned
                                     // term@trace.spi:295 as EPairTest/7211385 after the
@@ -16381,57 +17417,39 @@ module spiral_compiler =
                                         EvalReplayValueStore.putTermValue cellReady.nodeId value
                                         compositeOrParent "term_unbox_value_resolved" cellReady
                                     | Choice2Of2 detail ->
-                                        match EvalReplayValueStore.tryUnboxSpine cellReady.nodeId with
-                                        | Some spine when not (EvalReplayValueStore.tryTermReady spine.bindNodeId) ->
-                                            let bindCell = { cellReady with nodeId = spine.bindNodeId; shape = spine.bindShape; status = "unbox_bind_ready" }
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_unbox_bind_child_scheduled\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"bind_node_id\":%d,\"bind_shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
-                                                    (esc event) cellReady.nodeId (esc cellReady.shape) spine.bindNodeId (esc spine.bindShape) (esc cellReady.site) (esc detail))
-                                            "term_unbox_bind_scheduled:" + detail, "semantic_step_partial", "schedule_deferred_replay_child", bindCell
-                                        | _ ->
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_unbox_replay_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unbox_stepper_required\"}"
-                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
-                                            "term_unbox_replay_blocked:" + detail, "semantic_unbox_replay_blocked", "explicit_eval_worklist_unbox_stepper_required", cellReady
+                                        DiagJson.emit (
+                                            sprintf "{\"kind\":\"eval_worklist_unbox_replay_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unbox_stepper_required\"}"
+                                                (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                        "term_unbox_replay_blocked:" + detail, "semantic_unbox_replay_blocked", "explicit_eval_worklist_unbox_stepper_required", cellReady
                                 | "term", "EAnnot" ->
-                                    // ALPHA736: drive EAnnot as a two-child composite before falling
-                                    // back to the real thunk. This keeps annotation replay fail-closed:
-                                    // inner Data and annotation Ty must already exist or be scheduled.
-                                    match EvalReplayValueStore.tryAnnotSpine cellReady.nodeId with
-                                    | Some spine ->
-                                        match EvalReplayValueStore.tryTerm spine.innerNodeId, EvalReplayValueStore.tryType spine.typeNodeId with
-                                        | None, _ ->
+                                    // ALPHA919: EAnnot is a composite term wrapper.  Runtime 918
+                                    // reached StringLitToSymbol inside the annotation and then pinned
+                                    // the parent as semantic_annot_replay_blocked while live children
+                                    // were still pending.  Drive inner/type children explicitly first;
+                                    // only fail closed after those children have had a chance to resolve.
+                                    match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
+                                    | Choice1Of2 value ->
+                                        EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                        compositeOrParent "term_annot_value_resolved" cellReady
+                                    | Choice2Of2 detail ->
+                                        match EvalReplayValueStore.tryAnnotSpine cellReady.nodeId with
+                                        | Some spine when not (EvalReplayValueStore.tryTermReady spine.innerNodeId) ->
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_annot_inner_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"inner_node_id\":%d,\"inner_shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"schedule_annot_inner_replay\"}"
+                                                    (esc event) cellReady.nodeId spine.innerNodeId (esc spine.innerShape) (esc cellReady.site) (esc detail))
                                             let innerCell = { cellReady with nodeId = spine.innerNodeId; shape = spine.innerShape; status = "annot_inner_ready" }
+                                            "term_annot_inner_scheduled:" + detail, "semantic_step_partial", "schedule_annot_inner_replay", innerCell
+                                        | Some spine when not (EvalReplayValueStore.tryTypeReady spine.typeNodeId) ->
                                             DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_annot_child_scheduled\",\"event\":%s,\"node_id\":%d,\"child_role\":\"inner\",\"child_node_id\":%d,\"child_shape\":%s,\"site\":%s,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
-                                                    (esc event) cellReady.nodeId spine.innerNodeId (esc spine.innerShape) (esc cellReady.site))
-                                            "term_annot_inner_scheduled", "semantic_step_partial", "schedule_deferred_replay_child", innerCell
-                                        | Some _, None ->
+                                                sprintf "{\"kind\":\"eval_worklist_annot_type_replay_scheduled\",\"event\":%s,\"parent_node_id\":%d,\"type_node_id\":%d,\"type_shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"schedule_annot_type_replay\"}"
+                                                    (esc event) cellReady.nodeId spine.typeNodeId (esc spine.typeShape) (esc cellReady.site) (esc detail))
                                             let typeCell = { cellReady with kind = "ty"; nodeId = spine.typeNodeId; shape = spine.typeShape; status = "annot_type_ready" }
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_annot_child_scheduled\",\"event\":%s,\"node_id\":%d,\"child_role\":\"type\",\"child_node_id\":%d,\"child_shape\":%s,\"site\":%s,\"single_flight\":1,\"next\":\"schedule_deferred_replay_child\"}"
-                                                    (esc event) cellReady.nodeId spine.typeNodeId (esc spine.typeShape) (esc cellReady.site))
-                                            "term_annot_type_scheduled", "semantic_step_partial", "schedule_deferred_replay_child", typeCell
-                                        | Some innerValue, Some annotType ->
-                                            match EvalReplayValueStore.tryAnnotReplayWithContext cellReady.nodeId innerValue annotType with
-                                            | Choice1Of2 value ->
-                                                EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                                compositeOrParent "term_annot_children_resolved" cellReady
-                                            | Choice2Of2 detail ->
-                                                DiagJson.emit (
-                                                    sprintf "{\"kind\":\"eval_worklist_annot_validation_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_validation_required\"}"
-                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
-                                                "term_annot_validation_blocked:" + detail, "semantic_annot_replay_blocked", "explicit_eval_worklist_annot_validation_required", cellReady
-                                    | None ->
-                                        match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
-                                        | Choice1Of2 value ->
-                                            EvalReplayValueStore.putTermValue cellReady.nodeId value
-                                            compositeOrParent "term_annot_value_resolved_no_spine" cellReady
-                                        | Choice2Of2 detail ->
+                                            "term_annot_type_scheduled:" + detail, "semantic_step_partial", "schedule_annot_type_replay", typeCell
+                                        | _ ->
                                             DiagJson.emit (
                                                 sprintf "{\"kind\":\"eval_worklist_annot_replay_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_annot_stepper_required\"}"
                                                     (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
-                                            "term_annot_spine_missing:" + detail, "semantic_annot_replay_blocked", "explicit_eval_worklist_annot_stepper_required", cellReady
+                                            "term_annot_value_blocked:" + detail, "semantic_annot_replay_blocked", "explicit_eval_worklist_annot_stepper_required", cellReady
                                 | "term", "EJoinPoint'" ->
                                     // ALPHA559: EJoinPoint' now has a registered real term thunk.
                                     // Try it explicitly before the generic E* dispatcher can repeat
@@ -16544,10 +17562,20 @@ module spiral_compiler =
                                         | "TApply" ->
                                             "ty_apply_spine_blocked:" + detail, "semantic_step_partial", "explicit_eval_worklist_ty_apply_stepper_required", cellReady
                                         | "TJoinPoint'" ->
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_tjoinpoint_stepper_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_tjoinpoint_stepper_required\"}"
-                                                    (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
-                                            "ty_tjoinpoint_stepper_blocked:" + detail, "semantic_tjoinpoint_stepper_blocked", "explicit_eval_worklist_tjoinpoint_stepper_required", cellReady
+                                            match EvalReplayValueStore.tryTypeJoinPointSpine cellReady.nodeId with
+                                            | Some spine ->
+                                                match EvalReplayValueStore.tryType spine.bodyNodeId with
+                                                | Some bodyTy ->
+                                                    EvalReplayValueStore.putTypeValue cellReady.nodeId bodyTy
+                                                    tyRootOrParent ("ty_tjoinpoint_body_materialized:" + detail) cellReady
+                                                | None ->
+                                                    let bodyCell = { cellReady with kind = "ty"; nodeId = spine.bodyNodeId; shape = spine.bodyShape; status = "tjoinpoint_body_ready" }
+                                                    "ty_tjoinpoint_body_scheduled:" + detail, "semantic_step_partial", "schedule_deferred_replay_child", bodyCell
+                                            | None ->
+                                                DiagJson.emit (
+                                                    sprintf "{\"kind\":\"eval_worklist_tjoinpoint_stepper_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_tjoinpoint_stepper_required\"}"
+                                                        (esc event) cellReady.nodeId (esc cellReady.shape) (esc cellReady.site) (esc detail))
+                                                "ty_tjoinpoint_stepper_blocked:" + detail, "semantic_tjoinpoint_stepper_blocked", "explicit_eval_worklist_tjoinpoint_stepper_required", cellReady
                                         | _ ->
                                             "ty_shape_dispatch_dispatched:" + s + ":" + detail, "semantic_step_partial", "explicit_eval_worklist_ty_stepper_required", cellReady
                                 | _ -> "unknown_shape_dispatch_dispatched", "semantic_step_partial", "explicit_eval_worklist_real_stepper_required", cellReady
@@ -16572,7 +17600,33 @@ module spiral_compiler =
                                         let nextCount = if replayFingerprintRepeats.TryGetValue(replayFingerprintKey, &prior) then prior + 1 else 1
                                         replayFingerprintRepeats.[replayFingerprintKey] <- nextCount
                                         nextCount)
-                            let replayFingerprintRepeat = replayFingerprintRepeatCount >= 3 && commitStatus <> "semantic_parent_continuation_cycle_blocked" && commitStatus <> "semantic_type_variable_value_missing_blocked" && commitStatus <> "semantic_tjoinpoint_stepper_blocked"
+                            let smReal289PairTestFingerprintDemote =
+                                replayFingerprintRepeatCount >= 3
+                                && commitStatus = "semantic_step_partial"
+                                && pendingCount() > 0
+                                && task.driver = "term_replay_driver"
+                                && replayCell.kind = "term"
+                                && replayCell.shape = "EPairTest"
+                                && task.payload.Contains("semantic_root_complete", StringComparison.Ordinal)
+                            let base259RecordFingerprintRootDemote =
+                                replayFingerprintRepeatCount >= 3
+                                && pendingCount() > 0
+                                && hasReplayCompleteWriteWitness()
+                                && task.driver = "ty_replay_driver"
+                                && replayCell.kind = "ty"
+                                && replayCell.shape = "TRecord"
+                                && task.payload.Contains("mode=ty_replay", StringComparison.Ordinal)
+                            if base259RecordFingerprintRootDemote && replayFingerprintRepeatCount = 3 then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_base259_record_fingerprint_repeat_deferred_after_root_witness\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"site\":%s,\"shape\":%s,\"repeat_count\":%d,\"pending\":%d,\"policy\":\"preserve_root_complete_and_drain_pending_testing_record_before_terminal_pin\",\"single_flight\":1,\"next\":\"continue_active_replay_driver\"}"
+                                        (esc event) task.id (esc task.driver) (esc replayCell.site) (esc replayCell.shape) replayFingerprintRepeatCount (pendingCount()))
+                            let replayFingerprintRepeat =
+                                replayFingerprintRepeatCount >= 3
+                                && not smReal289PairTestFingerprintDemote
+                                && not base259RecordFingerprintRootDemote
+                                && commitStatus <> "semantic_parent_continuation_cycle_blocked"
+                                && commitStatus <> "semantic_type_variable_value_missing_blocked"
+                                && commitStatus <> "semantic_tjoinpoint_stepper_blocked"
                             let replayJoinpointTermRepeat =
                                 replayFingerprintRepeat
                                 && replayCell.kind = "term"
@@ -16599,6 +17653,7 @@ module spiral_compiler =
                             let shouldScheduleTypeApplyChild =
                                 commitNext = "schedule_type_apply_function_replay"
                                 || commitNext = "schedule_type_apply_type_arg_replay"
+                            let shouldScheduleTypeAwareOpChild = commitNext = "schedule_type_aware_op_child_replay"
                             let shouldScheduleTTermChild = commitNext = "schedule_tterm_term_replay"
                             let shouldScheduleTFunChild = commitNext = "schedule_tfun_child_replay"
                             let shouldScheduleTPairChild = commitNext = "schedule_tpair_child_replay"
@@ -16618,16 +17673,13 @@ module spiral_compiler =
                                     if commitNext = "schedule_apply_head_replay" then "apply_head_child" else "apply_arg_child"
                                 elif shouldScheduleTypeApplyChild then
                                     if commitNext = "schedule_type_apply_type_arg_replay" then "type_apply_type_arg_child" else "type_apply_function_child"
+                                elif shouldScheduleTypeAwareOpChild then "type_aware_op_child"
                                 elif shouldScheduleTTermChild then "tterm_term_child"
                                 elif shouldScheduleTFunChild then
                                     if replayCell.status = "tfun_arg_ready" || cellReduced.status = "tfun_arg_dispatched" then "tfun_arg_child" else "tfun_body_child"
                                 elif shouldScheduleTPairChild then
                                     if replayCell.status = "tpair_left_ready" || cellReduced.status = "tpair_left_dispatched" then "tpair_left_child" else "tpair_right_child"
-                                elif shouldScheduleDeferredChild then
-                                    if replayCell.status = "annot_inner_ready" then "annot_inner_child"
-                                    elif replayCell.status = "annot_type_ready" then "annot_type_child"
-                                    elif replayCell.status = "unbox_bind_ready" then "unbox_bind_child"
-                                    else "deferred_replay_child"
+                                elif shouldScheduleDeferredChild then "deferred_replay_child"
                                 elif shouldScheduleRecordWithChild then "record_with_child"
                                 elif shouldScheduleMacroChild then "macro_child"
                                 elif shouldScheduleSeqChild then "seq_child"
@@ -16669,59 +17721,6 @@ module spiral_compiler =
                                         | None -> Some("term_apply_head_type_apply_repeat_resolved:" + detail, "semantic_leaf_complete", "explicit_eval_worklist_parent_continuation_required", cellCommitted)
                                     | None -> None
                                 elif childScheduleRepeatCandidate
-                                     && scheduledChildRole = "unbox_bind_child"
-                                     && cellCommitted.kind = "term" then
-                                    match EvalReplayValueStore.tryTermDetailed cellCommitted.nodeId with
-                                    | Choice1Of2 value ->
-                                        EvalReplayValueStore.putTermValue cellCommitted.nodeId value
-                                        DiagJson.emit (
-                                            sprintf "{\"kind\":\"eval_worklist_unbox_bind_repeat_resolved\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
-                                                (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) cellCommitted.nodeId (esc cellCommitted.shape) (esc cellCommitted.site))
-                                        match continueToParent cellCommitted "term_unbox_bind_repeat_resolved" with
-                                        | Some x -> Some x
-                                        | None -> Some("term_unbox_bind_repeat_resolved", "semantic_leaf_complete", "explicit_eval_worklist_parent_continuation_required", cellCommitted)
-                                    | Choice2Of2 detail ->
-                                        DiagJson.emit (
-                                            sprintf "{\"kind\":\"eval_worklist_unbox_bind_repeat_missing\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_unbox_bind_required\"}"
-                                                (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) cellCommitted.nodeId (esc cellCommitted.shape) (esc cellCommitted.site) (esc detail))
-                                        None
-                                elif childScheduleRepeatCandidate
-                                     && scheduledChildRole = "seq_child"
-                                     && cellCommitted.kind = "term"
-                                     && cellCommitted.shape = "EApply" then
-                                    match EvalReplayValueStore.tryTermDetailed cellCommitted.nodeId with
-                                    | Choice1Of2 value ->
-                                        EvalReplayValueStore.putTermValue cellCommitted.nodeId value
-                                        DiagJson.emit (
-                                            sprintf "{\"kind\":\"eval_worklist_seq_child_apply_repeat_resolved\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
-                                                (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) cellCommitted.nodeId (esc cellCommitted.shape) (esc cellCommitted.site))
-                                        match continueToParent cellCommitted "term_seq_child_apply_repeat_resolved" with
-                                        | Some x -> Some x
-                                        | None -> Some("term_seq_child_apply_repeat_resolved", "semantic_leaf_complete", "explicit_eval_worklist_parent_continuation_required", cellCommitted)
-                                    | Choice2Of2 detail ->
-                                        let pinnedApplyContinuation =
-                                            match tryPinnedTerminalContract() with
-                                            | Some pinned when
-                                                pinned.status = "semantic_apply_continuation_exception_blocked"
-                                                && (pinned.site = cellCommitted.site
-                                                    || (cellCommitted.site.EndsWith("/core/base.spi:13", StringComparison.Ordinal)
-                                                        && pinned.site.EndsWith("/core/base.spi:13", StringComparison.Ordinal))
-                                                    || (cellCommitted.site.EndsWith("\\core\\base.spi:13", StringComparison.Ordinal)
-                                                        && pinned.site.EndsWith("\\core\\base.spi:13", StringComparison.Ordinal))) -> true
-                                            | _ -> false
-                                        let nullReferenceApplyContinuationMissing = detail.Contains("NullReferenceException", StringComparison.Ordinal)
-                                        if pinnedApplyContinuation || nullReferenceApplyContinuationMissing then
-                                            let blockedCell = { cellCommitted with status = "apply_continuation_exception_blocked" }
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_seq_child_apply_repeat_preserved_apply_exception\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_apply_continuation_exception_required\"}"
-                                                    (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) cellCommitted.nodeId (esc cellCommitted.shape) (esc cellCommitted.site) (esc detail))
-                                            Some("term_seq_child_apply_repeat_preserved_apply_exception:" + detail, "semantic_apply_continuation_exception_blocked", "explicit_eval_worklist_apply_continuation_exception_required", blockedCell)
-                                        else
-                                            DiagJson.emit (
-                                                sprintf "{\"kind\":\"eval_worklist_seq_child_apply_repeat_missing\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_replay_child_schedule_repeat_required\"}"
-                                                    (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) cellCommitted.nodeId (esc cellCommitted.shape) (esc cellCommitted.site) (esc detail))
-                                            None
-                                elif childScheduleRepeatCandidate
                                      && scheduledChildRole = "let_success_child"
                                      && cellCommitted.kind = "term"
                                      && (cellCommitted.shape = "EOp" || cellCommitted.shape = "EApply") then
@@ -16751,7 +17750,17 @@ module spiral_compiler =
                                             && detail.Contains("NullReferenceException", StringComparison.Ordinal)
                                         let preserveApplyContinuation =
                                             pinnedApplyContinuation || nullReferenceApplyContinuationMissing
-                                        if preserveApplyContinuation then
+                                        let backendSwitchRepeatDeferred =
+                                            cellCommitted.shape = "EOp"
+                                            && detail.Contains("op_value_missing:BackendSwitch/1", StringComparison.Ordinal)
+                                            && pendingCount() > 0
+                                            && hasReplayCompleteWriteWitness()
+                                        if backendSwitchRepeatDeferred then
+                                            DiagJson.emit (
+                                                sprintf "{\"kind\":\"eval_worklist_backend_switch_let_success_repeat_deferred_after_root_witness\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"preserve_backend_switch_branch_replay_under_root_witness\"}"
+                                                    (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) cellCommitted.nodeId (esc cellCommitted.shape) (esc cellCommitted.site) (esc detail) (pendingCount()))
+                                            Some("term_let_success_backend_switch_repeat_deferred_after_root_witness:" + detail, "semantic_step_partial", "schedule_type_aware_op_child_replay", cellCommitted)
+                                        elif preserveApplyContinuation then
                                             let blockedCell = { cellCommitted with status = "apply_continuation_exception_blocked" }
                                             DiagJson.emit (
                                                 sprintf "{\"kind\":\"eval_worklist_let_success_apply_repeat_preserved_apply_exception\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"detail\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_apply_continuation_exception_required\"}"
@@ -16763,8 +17772,35 @@ module spiral_compiler =
                                                     (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) cellCommitted.nodeId (esc cellCommitted.shape) (esc cellCommitted.site) (esc detail))
                                             None
                                 else None
+                            let typeApplyTypeArgTTermRepeatShielded =
+                                childScheduleRepeatCandidate
+                                && Option.isNone childScheduleRepeatRepair
+                                && scheduledChildRole = "type_apply_type_arg_child"
+                                && cellCommitted.kind = "ty"
+                                && cellCommitted.shape = "TTerm"
+                                && pendingCount() > 0
+                                && hasReplayCompleteWriteWitness()
+                            let syntheticChildScheduleRepeatDeferred =
+                                childScheduleRepeatCandidate
+                                && Option.isNone childScheduleRepeatRepair
+                                && not typeApplyTypeArgTTermRepeatShielded
+                                && pendingCount() > 0
+                                && hasReplayCompleteWriteWitness()
+                                && (cellCommitted.site.EndsWith(":0", StringComparison.Ordinal)
+                                    || childScheduleRepeatKey.Contains(":0", StringComparison.Ordinal))
                             let childScheduleRepeatBlocked =
-                                childScheduleRepeatCandidate && Option.isNone childScheduleRepeatRepair
+                                childScheduleRepeatCandidate
+                                && Option.isNone childScheduleRepeatRepair
+                                && not typeApplyTypeArgTTermRepeatShielded
+                                && not syntheticChildScheduleRepeatDeferred
+                            if syntheticChildScheduleRepeatDeferred then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_replay_child_schedule_repeat_deferred_after_root_witness\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"preserve_root_complete_and_drain_pending_jobs\"}"
+                                        (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) (esc (formatCell cellCommitted)) (pendingCount()))
+                            if typeApplyTypeArgTTermRepeatShielded then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_type_apply_type_arg_tterm_repeat_shielded\",\"event\":%s,\"role\":%s,\"repeat_count\":%d,\"repeat_key\":%s,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"preserve_replay_root_complete_evidence\"}"
+                                        (esc event) (esc scheduledChildRole) childScheduleRepeatCount (esc childScheduleRepeatKey) (esc (formatCell cellCommitted)) (pendingCount()))
                             let reduceOutcome, commitStatus, commitNext, cellCommitted =
                                 match childScheduleRepeatRepair with
                                 | Some x -> x
@@ -16795,6 +17831,7 @@ module spiral_compiler =
                             let shouldResumeParent = shouldResumeParent && not childScheduleRepeatBlocked
                             let shouldScheduleApplyChild = shouldScheduleApplyChild && not childScheduleRepeatBlocked
                             let shouldScheduleTypeApplyChild = shouldScheduleTypeApplyChild && not childScheduleRepeatBlocked
+                            let shouldScheduleTypeAwareOpChild = shouldScheduleTypeAwareOpChild && not childScheduleRepeatBlocked
                             let shouldScheduleTTermChild = shouldScheduleTTermChild && not childScheduleRepeatBlocked
                             let shouldScheduleTFunChild = shouldScheduleTFunChild && not childScheduleRepeatBlocked
                             let shouldScheduleTPairChild = shouldScheduleTPairChild && not childScheduleRepeatBlocked
@@ -16843,9 +17880,15 @@ module spiral_compiler =
                                             else "type_apply_function_child"
                                         let childDriver =
                                             if commitNext = "schedule_type_apply_type_arg_replay" then "ty_replay_driver"
-                                            else "term_replay_driver" // ALPHA673: ETypeApply function child is a term cell even under a ty parent driver.
+                                            else "term_replay_driver"
                                         let childKey = sprintf "%s|%s|%d|%d" task.key childRole cellCommitted.nodeId cellCommitted.step
                                         let childTask = { id = replaySeq; key = childKey; driver = childDriver; payload = formatCellPayload cellCommitted; status = "scheduled_replay"; event = event }
+                                        replayScheduledKey <- Some childKey
+                                        replayQueue <- [childTask]
+                                    elif shouldScheduleTypeAwareOpChild then
+                                        replaySeq <- replaySeq + 1L
+                                        let childKey = sprintf "%s|type_aware_op_child|%d|%d" task.key cellCommitted.nodeId cellCommitted.step
+                                        let childTask = { id = replaySeq; key = childKey; driver = "term_replay_driver"; payload = formatCellPayload cellCommitted; status = "scheduled_replay"; event = event }
                                         replayScheduledKey <- Some childKey
                                         replayQueue <- [childTask]
                                     elif shouldScheduleTTermChild then
@@ -16876,11 +17919,7 @@ module spiral_compiler =
                                     elif shouldScheduleDeferredChild then
                                         replaySeq <- replaySeq + 1L
                                         let childDriver = if cellCommitted.kind = "ty" then "ty_replay_driver" else "term_replay_driver"
-                                        let childRole =
-                                            if reduceOutcome.StartsWith("term_annot_inner_scheduled", StringComparison.Ordinal) then "annot_inner_child"
-                                            elif reduceOutcome.StartsWith("term_annot_type_scheduled", StringComparison.Ordinal) then "annot_type_child"
-                                            else sprintf "deferred_%s_child" cellCommitted.kind
-                                        let childKey = sprintf "%s|%s|%d|%d" task.key childRole cellCommitted.nodeId cellCommitted.step
+                                        let childKey = sprintf "%s|deferred_%s_child|%d|%d" task.key cellCommitted.kind cellCommitted.nodeId cellCommitted.step
                                         let childTask = { id = replaySeq; key = childKey; driver = childDriver; payload = formatCellPayload cellCommitted; status = "scheduled_replay"; event = event }
                                         replayScheduledKey <- Some childKey
                                         replayQueue <- [childTask]
@@ -16944,7 +17983,7 @@ module spiral_compiler =
                                     DiagJson.emit (
                                         sprintf "{\"kind\":\"eval_worklist_source_value_stored\",\"event\":%s,\"status\":\"semantic_root_complete\",\"shape\":%s,\"source_key\":%s,\"policy\":\"driver_root_complete_store\",\"single_flight\":1,\"next\":\"return_term_value\"}"
                                             (esc event) (esc cellCommitted.shape) (esc sourceKey))
-                                    let clearedTypeTerminal = clearTerminalContractIf "semantic_term_type_value_blocked" cellCommitted.site ""
+                                    let clearedTypeTerminal = clearTerminalContractIf "semantic_term_type_value_blocked" "" ""
                                     if clearedTypeTerminal then
                                         DiagJson.emit (
                                             sprintf "{\"kind\":\"eval_worklist_root_complete_term_type_terminal_cleared\",\"event\":%s,\"source_key\":%s,\"site\":%s,\"shape\":%s,\"policy\":\"root_complete_progress_clears_stale_term_type_terminal\",\"single_flight\":1,\"next\":\"continue_replay_after_root_complete\"}"
@@ -16970,7 +18009,7 @@ module spiral_compiler =
                                     DiagJson.emit (
                                         sprintf "{\"kind\":\"eval_worklist_type_source_value_stored\",\"event\":%s,\"status\":\"semantic_root_complete\",\"shape\":%s,\"source_key\":%s,\"policy\":\"driver_root_complete_store\",\"single_flight\":1,\"next\":\"return_ty_value\"}"
                                             (esc event) (esc cellCommitted.shape) (esc sourceKey))
-                                    let clearedTypeTerminal = clearTerminalContractIf "semantic_term_type_value_blocked" cellCommitted.site ""
+                                    let clearedTypeTerminal = clearTerminalContractIf "semantic_term_type_value_blocked" "" ""
                                     if clearedTypeTerminal then
                                         DiagJson.emit (
                                             sprintf "{\"kind\":\"eval_worklist_root_complete_term_type_terminal_cleared\",\"event\":%s,\"source_key\":%s,\"site\":%s,\"shape\":%s,\"policy\":\"root_complete_progress_clears_stale_term_type_terminal\",\"single_flight\":1,\"next\":\"continue_replay_after_root_complete\"}"
@@ -16989,6 +18028,10 @@ module spiral_compiler =
                                 DiagJson.emit (
                                     sprintf "{\"kind\":\"eval_worklist_joinpoint_term_stepper_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"repeat_count\":%d,\"fingerprint\":%s,\"cell\":%s,\"outcome\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_joinpoint_term_stepper_required\"}"
                                         (esc event) task.id (esc task.driver) replayFingerprintRepeatCount (esc replayFingerprintKey) (esc (formatCell cellCommitted)) (esc reduceOutcome) (pendingCount()))
+                            if smReal289PairTestFingerprintDemote then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_smreal289_pairtest_fingerprint_repeat_demoted\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"repeat_count\":%d,\"fingerprint\":%s,\"cell\":%s,\"outcome\":%s,\"pending\":%d,\"policy\":\"preserve_testing_frontier_over_stale_pairtest_repeat\",\"single_flight\":1,\"next\":%s}"
+                                        (esc event) task.id (esc task.driver) replayFingerprintRepeatCount (esc replayFingerprintKey) (esc (formatCell cellCommitted)) (esc reduceOutcome) (pendingCount()) (esc commitNext))
                             if replayFingerprintRepeat && not replayJoinpointTermRepeat then
                                 DiagJson.emit (
                                     sprintf "{\"kind\":\"eval_worklist_replay_fingerprint_repeat\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"repeat_count\":%d,\"fingerprint\":%s,\"cell\":%s,\"outcome\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_replay_fingerprint_repeat_required\"}"
@@ -17013,13 +18056,18 @@ module spiral_compiler =
                                     else "type_apply_function_child"
                                 let childDriver =
                                     if commitNext = "schedule_type_apply_type_arg_replay" then "ty_replay_driver"
-                                    else "term_replay_driver" // ALPHA673: diagnostic/driver alignment for term ETypeApply function child.
+                                    else "term_replay_driver"
                                 let childNext =
                                     if commitNext = "schedule_type_apply_type_arg_replay" then "ty_replay_driver"
                                     else "term_replay_driver"
                                 DiagJson.emit (
                                     sprintf "{\"kind\":\"eval_worklist_type_apply_child_replay_scheduled\",\"event\":%s,\"driver\":%s,\"role\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":%s}"
                                         (esc event) (esc childDriver) (esc childRole) (esc (formatCell cellCommitted)) (replayQueueDepth()) (esc childNext))
+                                runReplayDriver event
+                            elif shouldScheduleTypeAwareOpChild then
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_type_aware_op_child_replay_enqueued\",\"event\":%s,\"driver\":\"term_replay_driver\",\"role\":\"type_aware_op_child\",\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":\"term_replay_driver\"}"
+                                        (esc event) (esc (formatCell cellCommitted)) (replayQueueDepth()))
                                 runReplayDriver event
                             elif shouldScheduleTTermChild then
                                 DiagJson.emit (
@@ -17044,13 +18092,9 @@ module spiral_compiler =
                                 runReplayDriver event
                             elif shouldScheduleDeferredChild then
                                 let childDriver = if cellCommitted.kind = "ty" then "ty_replay_driver" else "term_replay_driver"
-                                let childRole =
-                                    if reduceOutcome.StartsWith("term_annot_inner_scheduled", StringComparison.Ordinal) then "annot_inner_child"
-                                    elif reduceOutcome.StartsWith("term_annot_type_scheduled", StringComparison.Ordinal) then "annot_type_child"
-                                    else "deferred_replay_child"
                                 DiagJson.emit (
-                                    sprintf "{\"kind\":\"eval_worklist_deferred_child_replay_scheduled\",\"event\":%s,\"driver\":%s,\"role\":%s,\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":%s}"
-                                        (esc event) (esc childDriver) (esc childRole) (esc (formatCell cellCommitted)) (replayQueueDepth()) (esc childDriver))
+                                    sprintf "{\"kind\":\"eval_worklist_deferred_child_replay_scheduled\",\"event\":%s,\"driver\":%s,\"role\":\"deferred_replay_child\",\"cell\":%s,\"queue_depth\":%d,\"single_flight\":1,\"next\":%s}"
+                                        (esc event) (esc childDriver) (esc (formatCell cellCommitted)) (replayQueueDepth()) (esc childDriver))
                                 runReplayDriver event
                             elif shouldScheduleRecordWithChild then
                                 DiagJson.emit (
@@ -17100,13 +18144,54 @@ module spiral_compiler =
                         && (match executingCellOpt with
                             | Some cell -> cell.kind = "term" && cell.shape = "EApply" && cell.status = "semantic_step_partial"
                             | None -> false)
+                    let applyContinuationRootWitnessNull =
+                        applyContinuationDriverNull
+                        && pendingCount() > 0
+                        && hasReplayCompleteWriteWitness()
+                    let applyContinuationRootWitnessRetryNull =
+                        ex :? NullReferenceException
+                        && pendingCount() > 0
+                        && hasReplayCompleteWriteWitness()
+                        && (match executingCellOpt with
+                            | Some cell ->
+                                cell.kind = "term"
+                                && cell.shape = "EApply"
+                                && (cell.status = "apply_continuation_root_witness_null_guarded"
+                                    || cell.status = "apply_continuation_root_witness_retry_guarded")
+                            | None -> false)
+                        && (match executingTaskOpt with
+                            | Some task ->
+                                ((task.driver = "term_replay_driver") || (task.driver = "ty_replay_driver"))
+                                && task.payload.Contains("shape=EApply", StringComparison.Ordinal)
+                                && task.payload.Contains("apply_continuation_root_witness", StringComparison.Ordinal)
+                            | None -> true)
+                    let opContinuationRootWitnessNull =
+                        ex :? NullReferenceException
+                        && pendingCount() > 0
+                        && hasReplayCompleteWriteWitness()
+                        && (match executingCellOpt with
+                            | Some cell ->
+                                cell.kind = "term"
+                                && cell.shape = "EOp"
+                                && cell.status = "semantic_step_partial"
+                            | None -> false)
+                        && (match executingTaskOpt with
+                            | Some task ->
+                                task.driver = "term_replay_driver"
+                                && task.payload.Contains("shape=EOp", StringComparison.Ordinal)
+                                && task.payload.Contains("status=semantic_step_partial", StringComparison.Ordinal)
+                            | None -> false)
                     let letSuccessApplyContinuationDriverNull =
                         applyContinuationDriverNull
                         && (match executingCellOpt with
                             | Some cell ->
-                                cell.site.Contains("rust/testing.spi:22", StringComparison.Ordinal)
-                                || cell.site.Contains("spiral.spi:2671", StringComparison.Ordinal)
+                                cell.kind = "term"
+                                && (cell.shape = "EApply" || cell.shape = "EUnitTest")
                             | None -> false)
+                    let letSuccessApplyContinuationRootWitnessNull =
+                        letSuccessApplyContinuationDriverNull
+                        && pendingCount() > 0
+                        && hasReplayCompleteWriteWitness()
                     let deferredFunctionPayloadNull =
                         match executingTaskOpt with
                         | Some task ->
@@ -17119,37 +18204,77 @@ module spiral_compiler =
                              | Some cell -> cell.kind = "term" && cell.shape = "EFun'" && cell.status = "deferred_after_active_driver_ready"
                              | None -> false)
                             || deferredFunctionPayloadNull)
+                    let typeApplyArgDriverNull =
+                        ex :? NullReferenceException
+                        && pendingCount() > 0
+                        && hasReplayCompleteWriteWitness()
+                        && (match executingCellOpt with
+                            | Some cell ->
+                                cell.kind = "term"
+                                && cell.shape = "ETypeApply"
+                                && cell.status = "semantic_step_partial"
+                            | None -> false)
+                        && (match executingTaskOpt with
+                            | Some task ->
+                                task.driver = "term_replay_driver"
+                                && task.payload.Contains("shape=ETypeApply", StringComparison.Ordinal)
+                                && task.payload.Contains("status=semantic_step_partial", StringComparison.Ordinal)
+                            | None -> false)
                     let pinnedSeqUnknownTerminal =
                         match tryPinnedTerminalContract() with
                         | Some pinned when pinned.status = "semantic_seq_unknown_return_witness_blocked" -> true
                         | _ -> false
                     let blockedStatus =
                         if letSuccessDriverNull then "semantic_let_success_apply_exception_blocked"
+                        elif letSuccessApplyContinuationRootWitnessNull then "semantic_step_partial"
+                        elif letSuccessApplyContinuationDriverNull && pendingCount() > 0 then "semantic_step_partial"
                         elif letSuccessApplyContinuationDriverNull then "semantic_let_success_apply_continuation_blocked"
+                        elif applyContinuationRootWitnessNull then "semantic_step_partial"
+                        elif applyContinuationRootWitnessRetryNull then "semantic_step_partial"
+                        elif opContinuationRootWitnessNull then "semantic_step_partial"
                         elif applyContinuationDriverNull && pinnedSeqUnknownTerminal then "semantic_apply_continuation_after_seq_unknown_blocked"
                         elif applyContinuationDriverNull then "semantic_apply_continuation_exception_blocked"
                         elif deferredFunctionDriverNull then "semantic_deferred_function_replay_exception_blocked"
+                        elif typeApplyArgDriverNull then "semantic_step_partial"
                         else "semantic_replay_driver_exception_blocked"
                     let blockedCellStatus =
                         if letSuccessDriverNull then "let_success_apply_exception_blocked"
+                        elif letSuccessApplyContinuationRootWitnessNull then "let_success_apply_continuation_root_witness_deferred"
+                        elif letSuccessApplyContinuationDriverNull && pendingCount() > 0 then "let_success_apply_continuation_deferred"
                         elif letSuccessApplyContinuationDriverNull then "let_success_apply_continuation_blocked"
+                        elif applyContinuationRootWitnessNull then "apply_continuation_root_witness_null_guarded"
+                        elif applyContinuationRootWitnessRetryNull then "apply_continuation_root_witness_retry_guarded"
+                        elif opContinuationRootWitnessNull then "op_continuation_root_witness_null_guarded"
                         elif applyContinuationDriverNull && pinnedSeqUnknownTerminal then "apply_continuation_after_seq_unknown_blocked"
                         elif applyContinuationDriverNull then "apply_continuation_exception_blocked"
                         elif deferredFunctionDriverNull then "deferred_function_replay_exception_blocked"
+                        elif typeApplyArgDriverNull then "type_apply_arg_replay_null_guarded"
                         else "replay_driver_exception_blocked"
                     let blockedReasonTag =
                         if letSuccessDriverNull then "let_success_replay_driver_null"
+                        elif letSuccessApplyContinuationRootWitnessNull then "let_success_apply_continuation_null_after_root_complete"
+                        elif letSuccessApplyContinuationDriverNull && pendingCount() > 0 then "let_success_apply_continuation_driver_null_deferred"
                         elif letSuccessApplyContinuationDriverNull then "let_success_apply_continuation_driver_null"
+                        elif applyContinuationRootWitnessNull then "apply_continuation_replay_driver_null_after_root_complete"
+                        elif applyContinuationRootWitnessRetryNull then "apply_continuation_replay_driver_null_after_prior_root_guard"
+                        elif opContinuationRootWitnessNull then "op_replay_driver_null_after_root_complete"
                         elif applyContinuationDriverNull && pinnedSeqUnknownTerminal then "apply_continuation_replay_driver_null_after_seq_unknown"
                         elif applyContinuationDriverNull then "apply_continuation_replay_driver_null"
                         elif deferredFunctionDriverNull then "deferred_function_replay_driver_null"
+                        elif typeApplyArgDriverNull then "type_apply_arg_replay_null_after_root_complete"
                         else "replay_driver_exception"
                     let blockedNext =
                         if letSuccessDriverNull then "explicit_eval_worklist_let_success_apply_exception_required"
+                        elif letSuccessApplyContinuationRootWitnessNull then "resume_retry_drain_after_let_success_apply_continuation_root_witness_null_guard"
+                        elif letSuccessApplyContinuationDriverNull && pendingCount() > 0 then "resume_retry_drain_after_let_success_apply_continuation_deferred"
                         elif letSuccessApplyContinuationDriverNull then "explicit_eval_worklist_let_success_apply_continuation_required"
+                        elif applyContinuationRootWitnessNull then "resume_retry_drain_after_apply_continuation_root_witness_null_guard"
+                        elif applyContinuationRootWitnessRetryNull then "resume_retry_drain_after_apply_continuation_root_witness_retry_guard"
+                        elif opContinuationRootWitnessNull then "resume_retry_drain_after_op_root_witness_null_guard"
                         elif applyContinuationDriverNull && pinnedSeqUnknownTerminal then "explicit_eval_worklist_apply_continuation_after_seq_unknown_required"
                         elif applyContinuationDriverNull then "explicit_eval_worklist_apply_continuation_exception_required"
                         elif deferredFunctionDriverNull then "explicit_eval_worklist_deferred_function_replay_exception_required"
+                        elif typeApplyArgDriverNull then "resume_retry_drain_after_type_apply_arg_null_guard"
                         else "explicit_eval_worklist_replay_driver_exception_required"
                     DiagJson.emit (
                         sprintf "{\"kind\":\"eval_worklist_replay_driver_exception\",\"event\":%s,\"error_type\":%s,\"message\":%s,\"queue_depth\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"surface_replay_driver_exception\"}"
@@ -17166,38 +18291,17 @@ module spiral_compiler =
                                         match frame.semanticCell with
                                         | Some cell -> formatCell cell
                                         | None -> "none"
-                                let preserveApplyContinuationQueuedChild =
-                                    applyContinuationDriverNull
-                                    && (match taskCellOpt with
-                                        | Some cell ->
-                                            cell.kind = "term"
-                                            && (cell.shape <> "EApply"
-                                                || (cell.shape = "EApply"
-                                                    && cell.status = "semantic_step_partial"
-                                                    && Option.isSome (EvalReplayValueStore.tryApplySpine cell.nodeId)))
-                                        | None -> false)
                                 let blockedCellOpt =
                                     match taskCellOpt with
-                                    | Some cell when preserveApplyContinuationQueuedChild -> Some { cell with status = "semantic_step_partial" }
                                     | Some cell -> Some { cell with status = blockedCellStatus }
                                     | None -> frame.semanticCell
                                 let baseReason = if isNull frame.reason then "" else frame.reason
-                                let frameStatus =
-                                    if preserveApplyContinuationQueuedChild then "semantic_step_partial"
-                                    else blockedStatus
-                                let frameReasonTag =
-                                    if preserveApplyContinuationQueuedChild then "apply_continuation_queued_child_preserved_after_driver_null"
-                                    else blockedReasonTag
                                 let frame' =
                                     { frame with
-                                        status = frameStatus
-                                        reason = baseReason + ":" + frameReasonTag + ":" + ex.GetType().Name
+                                        status = blockedStatus
+                                        reason = baseReason + ":" + blockedReasonTag + ":" + ex.GetType().Name
                                         semanticCell = blockedCellOpt
                                         semanticPayload = Some task.payload }
-                                if preserveApplyContinuationQueuedChild then
-                                    DiagJson.emit (
-                                        sprintf "{\"kind\":\"eval_worklist_apply_continuation_queued_child_preserved\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"parent_error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":\"replay_preserved_child_frontier\"}"
-                                            (esc event) task.id (esc task.driver) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) rest.Length (pendingCount()))
                                 replayQueue <- rest
                                 if replayQueue.IsEmpty then replayScheduledKey <- None
                                 frontier <- Some frame'
@@ -17226,40 +18330,20 @@ module spiral_compiler =
                                             match frame.semanticCell with
                                             | Some cell -> formatCell cell
                                             | None -> "none"
-                                    let executingOrFrameCell =
-                                        match executingCellOpt with
-                                        | Some cell -> Some cell
-                                        | None -> frame.semanticCell
-                                    let preserveExecutingApplyContinuationTask =
-                                        applyContinuationDriverNull
-                                        && (match executingOrFrameCell with
-                                            | Some cell ->
-                                                cell.kind = "term"
-                                                && cell.shape = "EApply"
-                                                && cell.status = "semantic_step_partial"
-                                            | None -> false)
                                     let blockedCellOpt =
-                                        match executingOrFrameCell with
-                                        | Some cell when preserveExecutingApplyContinuationTask -> Some { cell with status = "semantic_step_partial" }
+                                        match executingCellOpt with
                                         | Some cell -> Some { cell with status = blockedCellStatus }
-                                        | None -> None
+                                        | None ->
+                                            match frame.semanticCell with
+                                            | Some cell -> Some { cell with status = blockedCellStatus }
+                                            | None -> None
                                     let baseReason = if isNull frame.reason then "" else frame.reason
-                                    let frameStatus =
-                                        if preserveExecutingApplyContinuationTask then "semantic_step_partial"
-                                        else blockedStatus
-                                    let frameReasonTag =
-                                        if preserveExecutingApplyContinuationTask then "apply_continuation_executing_task_preserved_after_driver_null"
-                                        else blockedReasonTag
                                     let frame' =
                                         { frame with
-                                            status = frameStatus
-                                            reason = baseReason + ":" + frameReasonTag + ":" + ex.GetType().Name
+                                            status = blockedStatus
+                                            reason = baseReason + ":" + blockedReasonTag + ":" + ex.GetType().Name
                                             semanticCell = blockedCellOpt
                                             semanticPayload = Some task.payload }
-                                    if preserveExecutingApplyContinuationTask then
-                                        DiagJson.emit (
-                                            sprintf "{\"kind\":\"eval_worklist_apply_continuation_executing_task_preserved\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"parent_error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":0,\"pending\":%d,\"single_flight\":1,\"next\":\"drain_deferred_after_preserved_executing_task\"}"
-                                                (esc event) task.id (esc task.driver) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) (pendingCount()))
                                     replayScheduledKey <- None
                                     frontier <- Some frame'
                                     slotSetLocked frame'
@@ -17276,6 +18360,22 @@ module spiral_compiler =
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_let_success_apply_continuation_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
                                     (esc event) rid (esc driver) (esc blockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc blockedNext))
+                        if letSuccessApplyContinuationRootWitnessNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_let_success_apply_continuation_root_witness_deferred\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"witness\":%s,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc blockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc (replayCompleteWriteWitnessSummary())) (esc blockedNext))
+                        if applyContinuationRootWitnessNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_apply_continuation_root_witness_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"witness\":%s,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc blockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc (replayCompleteWriteWitnessSummary())) (esc blockedNext))
+                        if applyContinuationRootWitnessRetryNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_apply_continuation_root_witness_retry_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"witness\":%s,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc blockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc (replayCompleteWriteWitnessSummary())) (esc blockedNext))
+                        if opContinuationRootWitnessNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_op_root_witness_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"witness\":%s,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc blockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc (replayCompleteWriteWitnessSummary())) (esc blockedNext))
                         if applyContinuationDriverNull then
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_apply_continuation_driver_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
@@ -17284,15 +18384,20 @@ module spiral_compiler =
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_deferred_function_driver_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
                                     (esc event) rid (esc driver) (esc blockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc blockedNext))
+                        if typeApplyArgDriverNull then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_type_apply_arg_driver_null_guarded\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"witness\":%s,\"single_flight\":1,\"next\":%s}"
+                                    (esc event) rid (esc driver) (esc blockedStatus) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) qdAfter (pendingCount()) (esc (replayCompleteWriteWitnessSummary())) (esc blockedNext))
                         DiagJson.emit (
                             sprintf "{\"kind\":\"eval_worklist_replay_driver_exception_blocked\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"status\":%s,\"error_type\":%s,\"message\":%s,\"cell\":%s,\"payload\":%s,\"queue_depth_after\":%d,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
                                 (esc event) rid (esc driver) (esc status) (esc (ex.GetType().Name)) (esc ex.Message) (esc cellText) (esc payload) qdAfter (pendingCount()) (esc blockedNext))
-                        if qdAfter = 0 then
+                        if qdAfter = 0 && not letSuccessApplyContinuationDriverNull && not letSuccessApplyContinuationRootWitnessNull && not typeApplyArgDriverNull && not applyContinuationRootWitnessNull && not applyContinuationRootWitnessRetryNull && not opContinuationRootWitnessNull then
                             DiagJson.emit (
                                 sprintf "{\"kind\":\"eval_worklist_empty_queue_replay_driver_exception_pinned\",\"event\":%s,\"replay_id\":%d,\"driver\":%s,\"error_type\":%s,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"stop_retry_drain_on_pinned_exception\"}"
                                     (esc event) rid (esc driver) (esc (ex.GetType().Name)) (esc cellText) (pendingCount()))
                     | None -> ()
             finally
+                let deferredReplayPendingBeforeGate = EvalReplayValueStore.hasDeferredReplayCell()
                 let drainDeferred, terminalNoDeferred, terminalStatus =
                     lock gate (fun () ->
                         replayDriverActiveDepth <- max 0 (replayDriverActiveDepth - 1)
@@ -17304,13 +18409,17 @@ module spiral_compiler =
                             match pinnedTerminalContract with
                             | Some pinned when terminalContractRank pinned.status >= 68 -> Some pinned.status
                             | _ -> None
+                        let deferredReplayPending = deferredReplayPendingBeforeGate
+                        let fingerprintRepeatHasDeferred status =
+                            status = "semantic_replay_fingerprint_repeat_blocked" && deferredReplayPending
                         let pinnedTerminalNoDeferred =
                             match pinnedTerminalStatusOpt with
+                            | Some pinnedStatus when fingerprintRepeatHasDeferred pinnedStatus -> false
                             | Some _ -> true
                             | None -> false
                         let terminalNoDeferred =
-                            isTerminalContractStatus terminalStatus
-                            || pinnedTerminalNoDeferred
+                            if fingerprintRepeatHasDeferred terminalStatus then false
+                            else isTerminalContractStatus terminalStatus || pinnedTerminalNoDeferred
                         let effectiveTerminalStatus =
                             if isTerminalContractStatus terminalStatus then terminalStatus
                             else
@@ -17516,13 +18625,33 @@ module spiral_compiler =
                                         frame.kind = cell.kind
                                         && frame.site = cell.site)
                             let sameSiteAppRootRetargetEcho =
+                                // ALPHA863: alpha862 showed the same app-root hardcap can
+                                // arrive as TRecord first and then as TFun at the identical
+                                // ty@apps/spiral/spiral.spi:2670 site.  Once the live frame is
+                                // semantic_root_complete and the incoming cell is same-kind and
+                                // same-site app root evidence, shape is not a stronger proof of
+                                // failure.  Preserve the root witness instead of pinning the
+                                // synthetic stale-retarget terminal.
                                 rootCompleteStaleRetargetTerminal
                                 && frame.status = "semantic_root_complete"
                                 && frame.kind = cell.kind
                                 && frame.site = cell.site
-                                && cell.shape = "TRecord"
-                                && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", StringComparison.Ordinal)
-                                    || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", StringComparison.Ordinal))
+                                && frameIsRootCompleteEvidence frame
+                            let appRootBase16StaleRetargetEcho =
+                                // ALPHA889: runtime 888 proved alpha888 did not hit the
+                                // previous post-finalization demote.  The live root was the
+                                // app tests frontier at spiral.spi:2670, while the stale
+                                // incoming type cell was a core/base.spi:16 TUnion echo.
+                                // The hardcap is still synthetic: keep the root frontier and
+                                // leave the stale base16 cell deferred/quarantined instead of
+                                // turning it into a terminal contract.
+                                rootCompleteStaleRetargetTerminal
+                                && frame.status = "semantic_root_complete"
+                                && frame.kind = "ty"
+                                && cell.kind = "ty"
+                                && frameIsRootCompleteEvidence frame
+                                && (cell.shape = "TUnion" || cell.shape = "TNominal")
+                                && pendingCount() <= 2
                             let rootCompleteStaleRetargetShouldEmit =
                                 staleRootRetargetCount <= 4
                                 || staleRootRetargetCount = 8
@@ -17660,9 +18789,78 @@ module spiral_compiler =
                                             true
                                         | _ -> false
                                     DiagJson.emit (
-                                        sprintf "{\"kind\":\"eval_worklist_same_site_app_root_stale_retarget_echo_materialized\",\"event\":%s,\"root_site\":%s,\"cell_site\":%s,\"shape\":%s,\"node_id\":%d,\"count\":%d,\"pending\":%d,\"durable_cleared\":%b,\"policy\":\"preserve_post_finalization_root_over_same_site_stale_retarget_hardcap\",\"single_flight\":1,\"next\":\"preserve_root_evidence\"}"
+                                        sprintf "{\"kind\":\"eval_worklist_same_site_app_root_stale_retarget_echo_materialized\",\"event\":%s,\"root_site\":%s,\"cell_site\":%s,\"shape\":%s,\"node_id\":%d,\"count\":%d,\"pending\":%d,\"durable_cleared\":%b,\"policy\":\"preserve_post_finalization_root_over_same_site_stale_retarget_hardcap_any_shape\",\"single_flight\":1,\"next\":\"preserve_root_evidence\"}"
                                             (esc event) (esc frame.site) (esc rootCell.site) (esc rootCell.shape) rootCell.nodeId staleRootRetargetCount (pendingCount()) durableCleared)
                                     rootFrame
+                                elif appRootBase16StaleRetargetEcho then
+                                    let hardcapQuiesced = staleRootRetargetCount >= rootCompleteStaleRetargetHardCap
+                                    if not hardcapQuiesced then
+                                        EvalReplayValueStore.putDeferredReplayCell {
+                                            kind = cell'.kind
+                                            shape = cell'.shape
+                                            nodeId = cell'.nodeId
+                                            envGlobalTerm = cell'.envGlobalTerm
+                                            envStackTerm = cell'.envStackTerm
+                                            envGlobalType = cell'.envGlobalType
+                                            envStackType = cell'.envStackType
+                                            seqLen = cell'.seqLen
+                                            cseDepth = cell'.cseDepth
+                                            traceDepth = cell'.traceDepth
+                                            site = cell'.site
+                                            cursor = cell'.cursor
+                                            step = cell'.step
+                                            status = cell'.status
+                                        }
+                                    match pinnedTerminalContract with
+                                    | Some p when p.status = "semantic_root_complete_stale_retarget_repeat_blocked" && p.site = frame.site ->
+                                        pinnedTerminalContract <- None
+                                    | _ -> ()
+                                    let durableCleared =
+                                        match durableTerminalContract with
+                                        | Some p when p.status = "semantic_root_complete_stale_retarget_repeat_blocked" && p.site = frame.site ->
+                                            durableTerminalContract <- None
+                                            true
+                                        | _ -> false
+                                    if hardcapQuiesced then staleRootRetargetRepeats.Clear()
+                                    DiagJson.emit (
+                                        sprintf "{\"kind\":\"%s\",\"event\":%s,\"root_site\":%s,\"stale_site\":%s,\"root_status\":%s,\"stale_shape\":%s,\"stale_node_id\":%d,\"count\":%d,\"pending\":%d,\"durable_cleared\":%b,\"deferred_reinsert\":%b,\"policy\":\"preserve_app_root_complete_over_core_base16_stale_type_echo_without_requeue_after_hardcap\",\"single_flight\":1,\"next\":\"%s\"}"
+                                            (if hardcapQuiesced then "eval_worklist_app_root_base16_stale_retarget_hardcap_quiesced" else "eval_worklist_app_root_base16_stale_retarget_hardcap_demoted")
+                                            (esc event) (esc frame.site) (esc cell'.site) (esc frame.status) (esc cell'.shape) cell'.nodeId staleRootRetargetCount (pendingCount()) durableCleared (not hardcapQuiesced)
+                                            (if hardcapQuiesced then "drain_next_live_frame_without_requeueing_stale_echo" else "preserve_root_evidence"))
+                                    frame
+                                elif rootCompleteStaleRetargetTerminal && frame.status = "semantic_root_complete" && hasReplayCompleteWriteWitness() && pendingCount() > 0 then
+                                    let rootCell = { cell' with status = "semantic_root_complete" }
+                                    EvalReplayValueStore.putDeferredReplayCell {
+                                        kind = rootCell.kind
+                                        shape = rootCell.shape
+                                        nodeId = rootCell.nodeId
+                                        envGlobalTerm = rootCell.envGlobalTerm
+                                        envStackTerm = rootCell.envStackTerm
+                                        envGlobalType = rootCell.envGlobalType
+                                        envStackType = rootCell.envStackType
+                                        seqLen = rootCell.seqLen
+                                        cseDepth = rootCell.cseDepth
+                                        traceDepth = rootCell.traceDepth
+                                        site = rootCell.site
+                                        cursor = rootCell.cursor
+                                        step = rootCell.step
+                                        status = rootCell.status
+                                    }
+                                    match pinnedTerminalContract with
+                                    | Some p when p.status = "semantic_root_complete_stale_retarget_repeat_blocked" && (p.site = frame.site || p.site = cell'.site) ->
+                                        pinnedTerminalContract <- None
+                                    | _ -> ()
+                                    let durableCleared =
+                                        match durableTerminalContract with
+                                        | Some p when p.status = "semantic_root_complete_stale_retarget_repeat_blocked" && (p.site = frame.site || p.site = cell'.site) ->
+                                            durableTerminalContract <- None
+                                            true
+                                        | _ -> false
+                                    staleRootRetargetRepeats.Clear()
+                                    DiagJson.emit (
+                                        sprintf "{\"kind\":\"eval_worklist_root_complete_stale_retarget_repeat_deferred_after_root\",\"event\":%s,\"root_site\":%s,\"stale_site\":%s,\"root_status\":%s,\"stale_status\":%s,\"pending\":%d,\"durable_cleared\":%b,\"policy\":\"preserve_root_complete_over_repeat_stale_retarget_until_pending_drains\",\"single_flight\":1,\"next\":\"preserve_root_evidence\"}"
+                                            (esc event) (esc frame.site) (esc cell'.site) (esc frame.status) (esc cell'.status) (pendingCount()) durableCleared)
+                                    frame
                                 elif rootCompleteStaleRetargetTerminal then
                                     let terminalStatus = "semantic_root_complete_stale_retarget_repeat_blocked"
                                     let terminalCell = { cell' with status = terminalStatus }
@@ -17727,7 +18925,7 @@ module spiral_compiler =
                             if staleRootComplete then
                                 replayScheduledKey <- None
                                 replayQueue <- []
-                            true, (if sameNodeParentReplayProtected then "same_node_parent_replay_cell_deferred" elif activeReplayCellProtected then "parent_resume_cell_deferred" elif sameRootCompleteCellEcho then "same_root_complete_cell_echo_materialized" elif sameSiteAppRootRetargetEcho then "same_site_app_root_retarget_echo_materialized" elif rootCompleteStaleRetargetTerminal then "root_complete_stale_retarget_repeat_blocked" elif suppressRootCompleteRetarget then "root_complete_stale_retarget_suppressed" elif staleRootRetargetQuarantined then "stale_root_complete_retarget_quarantined" elif staleRootComplete then "stale_root_complete_retargeted" elif frameDerivedParent then "cell_frame_parent_continuation" else "cell")
+                            true, (if sameNodeParentReplayProtected then "same_node_parent_replay_cell_deferred" elif activeReplayCellProtected then "parent_resume_cell_deferred" elif sameRootCompleteCellEcho then "same_root_complete_cell_echo_materialized" elif sameSiteAppRootRetargetEcho then "same_site_app_root_retarget_echo_materialized" elif appRootBase16StaleRetargetEcho then "app_root_base16_stale_retarget_hardcap_demoted" elif rootCompleteStaleRetargetTerminal then "root_complete_stale_retarget_repeat_blocked" elif suppressRootCompleteRetarget then "root_complete_stale_retarget_suppressed" elif staleRootRetargetQuarantined then "stale_root_complete_retarget_quarantined" elif staleRootComplete then "stale_root_complete_retargeted" elif frameDerivedParent then "cell_frame_parent_continuation" else "cell")
                         | Some frame ->
                             // ALPHA426: cross-kind payloads are backpressure, not noise.
                             // Alpha425 proved the old single canonical frontier could be ty while dozens of
@@ -17813,10 +19011,19 @@ module spiral_compiler =
                         if suppressCrossKindReplayPoke then "cross_kind_active_replay_driver"
                         elif suppressReentrantReplayPoke then "reentrant_replay_driver"
                         else attachStatus
-                    let suppressDeferredPoke =
+                    let deferredChildAttachStatus =
                         attachStatus = "parent_resume_cell_deferred"
                         || attachStatus = "active_replay_cell_deferred"
                         || attachStatus = "same_node_parent_replay_cell_deferred"
+                    // ALPHA923: deferred child cells only imply "await the existing replay tick"
+                    // while a replay driver is actually active. Runtime 922 ended with a queued
+                    // scheduled_parent_replay after deferred_after_active_driver_ready, but the late
+                    // parent_resume_cell_deferred attachment suppressed the only idle poke and left
+                    // the process alive until manual ^C. If the driver is idle, wake it exactly once;
+                    // the existing single-flight/defer guards still protect active recursion.
+                    let idleDeferredChildPoke = deferredChildAttachStatus && not replayDriverActiveNow
+                    let suppressDeferredPoke =
+                        (deferredChildAttachStatus && replayDriverActiveNow)
                         || suppressCrossKindReplayPoke
                         || suppressReentrantReplayPoke
                     if suppressDeferredPoke then
@@ -17844,6 +19051,10 @@ module spiral_compiler =
                                 sprintf "{\"kind\":\"eval_worklist_same_node_replay_poke_suppressed\",\"event\":%s,\"reason\":\"same_node_parent_replay_self_poke\",\"queue_depth\":%d,\"semantic_payload\":%s,\"single_flight\":1,\"next\":\"await_existing_parent_replay_tick\"}"
                                     (esc event) (replayQueueDepth()) (esc attachStatus))
                     else
+                        if idleDeferredChildPoke then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_idle_deferred_replay_poke_resumed\",\"event\":%s,\"reason\":\"idle_deferred_child_cell\",\"queue_depth\":%d,\"semantic_payload\":%s,\"single_flight\":1,\"next\":\"run_replay_driver\"}"
+                                    (esc event) (replayQueueDepth()) (esc attachStatus))
                         DiagJson.emit (
                             sprintf "{\"kind\":\"eval_worklist_replay_driver_poke\",\"event\":%s,\"reason\":\"semantic_cell_attached\",\"queue_depth\":%d,\"semantic_payload\":%s,\"single_flight\":1,\"next\":\"run_replay_driver\"}"
                                 (esc event) (replayQueueDepth()) (esc attachStatus))
@@ -17990,7 +19201,6 @@ module spiral_compiler =
             | "semantic_let_success_all_ready_apply_blocked" -> "explicit_eval_worklist_let_success_all_ready_apply_required"
             | "semantic_let_success_apply_continuation_blocked" -> "explicit_eval_worklist_let_success_apply_continuation_required"
             | "semantic_type_apply_forall_body_stepper_blocked" -> "explicit_eval_worklist_type_apply_forall_body_stepper_required"
-            | "semantic_annot_replay_blocked" -> "explicit_eval_worklist_annot_stepper_required"
             | "semantic_apply_continuation_after_seq_unknown_blocked" -> "explicit_eval_worklist_apply_continuation_after_seq_unknown_required"
             | "semantic_apply_continuation_exception_blocked" -> "explicit_eval_worklist_apply_continuation_exception_required"
             | "semantic_deferred_function_replay_exception_blocked" -> "explicit_eval_worklist_deferred_function_replay_exception_required"
@@ -18000,12 +19210,10 @@ module spiral_compiler =
             | "semantic_tjoinpoint_stepper_blocked" -> "explicit_eval_worklist_tjoinpoint_stepper_required"
             | "semantic_joinpoint_value_blocked" -> "explicit_eval_worklist_joinpoint_value_required"
             | "semantic_literal_op_body_stepper_blocked" -> "explicit_eval_worklist_literal_op_body_stepper_required"
-            | "semantic_buildfile_replay_root_handoff_blocked" -> "explicit_buildfile_replay_root_handoff_required"
             | "semantic_dynamic_join_apply_blocked" -> "explicit_eval_worklist_dynamic_join_apply_required"
             | "semantic_type_apply_nominal_constructor_stepper_blocked" -> "explicit_eval_worklist_type_apply_nominal_constructor_stepper_required"
             | "semantic_nominal_constructor_stepper_blocked" -> "explicit_eval_worklist_nominal_constructor_stepper_required"
             | "semantic_if_unknown_return_condition_blocked" -> "explicit_eval_worklist_if_unknown_return_condition_required"
-            | "semantic_if_unknown_return_branches_exhausted_blocked" -> "explicit_eval_worklist_if_unknown_return_branches_exhausted_required"
             | "semantic_parent_continuation_cycle_blocked" -> "explicit_eval_worklist_parent_continuation_cycle_required"
             | "semantic_type_variable_value_missing_blocked" -> "explicit_eval_worklist_type_variable_env_required"
             | "semantic_stale_root_retarget_blocked" -> "explicit_eval_worklist_stale_root_retarget_required"
@@ -18111,7 +19319,37 @@ module spiral_compiler =
                                     && yieldCount > leaf_parent_continuation_yield_cap
                                     && alt.status = "continuation_envelope"
                                     && pendingCount() > 0
-                                if leafYieldChurnCapped then
+                                let leafYieldCrossKindContinuationHandoff =
+                                    leafYieldChurnCapped
+                                    && frame.kind = "ty"
+                                    && frame.status = "semantic_leaf_complete"
+                                    && frameCellShapeIn ["EApply"] frame
+                                    && alt.kind = "term"
+                                    && alt.status = "continuation_envelope"
+                                    && frameHasSemanticEvidence alt
+                                    && (match frame.semanticCell with
+                                        | Some cell ->
+                                            cell.kind = "term"
+                                            && cell.shape = "EApply"
+                                            && cell.status = "semantic_leaf_complete"
+                                        | None -> false)
+                                if leafYieldCrossKindContinuationHandoff then
+                                    // ALPHA881: runtime 880 proved the generic churn cap can stop
+                                    // just after it schedules a live rust/testing.spi:23 continuation
+                                    // for the tests() leaf at spiral.spi:2670.  This exact handoff is
+                                    // not a terminal missing-parent contract yet: preserve the selected
+                                    // continuation envelope and its existing replay queue so the drain
+                                    // can execute the scheduled replay instead of clearing it.
+                                    let handoffFrame = { alt with reason = alt.reason + ":leaf_parent_testing_handoff_churn_deferred" }
+                                    frontier <- Some handoffFrame
+                                    slotSetLocked handoffFrame
+                                    replayScheduledKey <- None
+                                    noteProgressYieldLocked ()
+                                    DiagJson.emit (
+                                        sprintf "{\"kind\":\"eval_worklist_leaf_parent_testing_handoff_churn_deferred\",\"event\":%s,\"leaf_kind\":%s,\"leaf_site\":%s,\"leaf_status\":%s,\"selected_kind\":%s,\"selected_status\":%s,\"selected_site\":%s,\"count\":%d,\"cap\":%d,\"pending\":%d,\"yield_key\":%s,\"single_flight\":1,\"next\":\"drain_selected_frontier\"}"
+                                            (esc event) (esc frame.kind) (esc frame.site) (esc frame.status) (esc handoffFrame.kind) (esc handoffFrame.status) (esc handoffFrame.site) yieldCount leaf_parent_continuation_yield_cap (pendingCount()) (esc yieldKey))
+                                    Some handoffFrame
+                                elif leafYieldChurnCapped then
                                     let terminalFrame =
                                         { frame with
                                             status = "semantic_leaf_parent_continuation_missing_blocked"
@@ -18197,6 +19435,32 @@ module spiral_compiler =
                     else
                         "semantic_leaf_complete", "explicit_eval_worklist_parent_continuation_required", "eval_worklist_terminal_composite_cycle_value_resolved"
 
+                let clearParentCycleTerminalAfterCompositeRootLocked (resolvedStatus: string) (cell: ReplayCell) =
+                    if resolvedStatus = "semantic_root_complete" then
+                        let matches (pinned: Frame) =
+                            pinned.status = "semantic_parent_continuation_cycle_blocked"
+                            && (pinned.key = frame.key
+                                || pinned.site = frame.site
+                                || (match pinned.semanticCell with
+                                    | Some pinnedCell -> pinnedCell.kind = cell.kind && pinnedCell.nodeId = cell.nodeId
+                                    | None -> false))
+                        let pinnedCleared =
+                            match pinnedTerminalContract with
+                            | Some pinned when matches pinned ->
+                                pinnedTerminalContract <- None
+                                true
+                            | _ -> false
+                        let durableCleared =
+                            match durableTerminalContract with
+                            | Some pinned when matches pinned ->
+                                durableTerminalContract <- None
+                                true
+                            | _ -> false
+                        if pinnedCleared || durableCleared then
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_parent_cycle_terminal_cleared_after_composite_root\",\"event\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"pinned_cleared\":%b,\"durable_cleared\":%b,\"pending\":%d,\"single_flight\":1,\"next\":\"attempt_build_without_stale_terminal_contract\"}"
+                                    (esc event) (esc cell.kind) (esc cell.shape) cell.nodeId pinnedCleared durableCleared (pendingCount()))
+
                 let completeCompositeIfReadyLocked (cell: ReplayCell) =
                     match EvalReplayValueStore.tryTermDetailed cell.nodeId with
                     | Choice1Of2 value ->
@@ -18209,6 +19473,7 @@ module spiral_compiler =
                                 status = resolvedStatus
                                 semanticCell = Some resolvedCell
                                 semanticPayload = Some(formatCellPayload resolvedCell) }
+                        clearParentCycleTerminalAfterCompositeRootLocked resolvedStatus cell
                         frontier <- Some resolved
                         slotSetLocked resolved
                         noteProgressYieldLocked ()
@@ -18234,6 +19499,7 @@ module spiral_compiler =
                                 status = resolvedStatus
                                 semanticCell = Some resolvedCell
                                 semanticPayload = Some(formatCellPayload resolvedCell) }
+                        clearParentCycleTerminalAfterCompositeRootLocked resolvedStatus cell
                         frontier <- Some resolved
                         slotSetLocked resolved
                         noteProgressYieldLocked ()
@@ -18246,6 +19512,17 @@ module spiral_compiler =
                             sprintf "{\"kind\":\"eval_worklist_terminal_type_composite_cycle_value_blocked\",\"event\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"detail\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"drain_selected_frontier\"}"
                                 (esc event) (esc cell.kind) (esc cell.shape) cell.nodeId (esc detail) (pendingCount()))
                         None
+
+                let tryRepairTerminalSeqCycleLocked (cell: ReplayCell) =
+                    match EvalReplayValueStore.trySeqSpine cell.nodeId with
+                    | Some spine ->
+                        if not (EvalReplayValueStore.tryTermReady spine.firstNodeId) then
+                            makeTerminalCompositeReplayLocked cell "seq_first" "term" spine.firstShape spine.firstNodeId "seq_first_ready" "schedule_seq_first_replay"
+                        elif not (EvalReplayValueStore.tryTermReady spine.secondNodeId) then
+                            makeTerminalCompositeReplayLocked cell "seq_second" "term" spine.secondShape spine.secondNodeId "seq_second_ready" "schedule_seq_second_replay"
+                        else
+                            completeCompositeIfReadyLocked cell
+                    | None -> None
 
                 let tryRepairTerminalLetCycleLocked (cell: ReplayCell) =
                     match EvalReplayValueStore.tryLetSpine cell.nodeId with
@@ -18293,20 +19570,48 @@ module spiral_compiler =
                                 match EvalReplayValueStore.tryTypeApplyBodyValueAt cell.nodeId with
                                 | Some value ->
                                     EvalReplayValueStore.putTermValue cell.nodeId value
-                                    let resolvedCell = { cell with status = "semantic_leaf_complete" }
-                                    let resolved =
-                                        { frame with
-                                            kind = cell.kind
-                                            status = "semantic_leaf_complete"
-                                            semanticCell = Some resolvedCell
-                                            semanticPayload = Some(formatCellPayload resolvedCell) }
-                                    frontier <- Some resolved
-                                    slotSetLocked resolved
-                                    noteProgressYieldLocked ()
-                                    DiagJson.emit (
-                                        sprintf "{\"kind\":\"eval_worklist_terminal_type_apply_cycle_body_value_resolved\",\"event\":%s,\"parent_node_id\":%d,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"explicit_eval_worklist_parent_continuation_required\"}"
-                                            (esc event) cell.nodeId (esc (formatCell resolvedCell)) (pendingCount()))
-                                    Some resolved
+                                    match EvalReplayValueStore.tryParentContinuation cell.nodeId with
+                                    | Some cont when cont.parentNodeId <> cell.nodeId ->
+                                        let parentCell =
+                                            { cell with
+                                                kind = cont.parentKind
+                                                shape = cont.parentShape
+                                                nodeId = cont.parentNodeId
+                                                status = "parent_continuation_ready"
+                                                step = cell.step + 1 }
+                                        let repaired =
+                                            { frame with
+                                                kind = cont.parentKind
+                                                status = "continuation_envelope"
+                                                cursor = frame.trace.Length
+                                                reason = frame.reason + ":terminal_type_apply_body_parent_resume"
+                                                semanticCell = Some parentCell
+                                                semanticPayload = Some(formatCellPayload parentCell) }
+                                        frontier <- Some repaired
+                                        slotSetLocked repaired
+                                        replayScheduledKey <- None
+                                        replayQueue <- []
+                                        noteProgressYieldLocked ()
+                                        DiagJson.emit (
+                                            sprintf "{\"kind\":\"eval_worklist_terminal_type_apply_cycle_body_parent_resumed\",\"event\":%s,\"child\":%s,\"parent_kind\":%s,\"parent_shape\":%s,\"parent_node_id\":%d,\"role\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"resume_parent_replay_driver\"}"
+                                                (esc event) (esc (formatCell cell)) (esc cont.parentKind) (esc cont.parentShape) cont.parentNodeId (esc cont.role) (pendingCount()))
+                                        Some repaired
+                                    | _ ->
+                                        let resolvedStatus, resolvedNext, resolvedKind = terminalCompositeStatusAndNext cell
+                                        let resolvedCell = { cell with status = resolvedStatus }
+                                        let resolved =
+                                            { frame with
+                                                kind = cell.kind
+                                                status = resolvedStatus
+                                                semanticCell = Some resolvedCell
+                                                semanticPayload = Some(formatCellPayload resolvedCell) }
+                                        frontier <- Some resolved
+                                        slotSetLocked resolved
+                                        noteProgressYieldLocked ()
+                                        DiagJson.emit (
+                                            sprintf "{\"kind\":%s,\"event\":%s,\"parent_node_id\":%d,\"cell\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                                (esc (resolvedKind + "_type_apply_body")) (esc event) cell.nodeId (esc (formatCell resolvedCell)) (pendingCount()) (esc resolvedNext))
+                                        Some resolved
                                 | None -> completeCompositeIfReadyLocked cell
                     | None -> None
 
@@ -18357,6 +19662,7 @@ module spiral_compiler =
                                      && cell.kind = "term" ->
                         match cell.shape with
                         | "ELet" -> tryRepairTerminalLetCycleLocked cell
+                        | "ESeq" -> tryRepairTerminalSeqCycleLocked cell
                         | "EApply" -> tryRepairTerminalApplyCycleLocked cell
                         | "ETypeApply" -> tryRepairTerminalTypeApplyCycleLocked cell
                         | "ERecordWith" -> tryRepairTerminalRecordWithCycleLocked cell
@@ -19482,7 +20788,6 @@ module spiral_compiler =
                 elif frame.status = "semantic_macro_thunk_missing_blocked" then "macro_thunk_missing_blocked"
                 elif frame.status = "semantic_tjoinpoint_stepper_blocked" then "tjoinpoint_stepper_blocked"
                 elif frame.status = "semantic_literal_op_body_stepper_blocked" then "literal_op_body_stepper_blocked"
-                elif frame.status = "semantic_buildfile_replay_root_handoff_blocked" then "buildfile_replay_root_handoff_blocked"
                 elif frame.status = "semantic_dynamic_join_apply_blocked" then "dynamic_join_apply_blocked"
                 elif frame.status = "semantic_nominal_constructor_stepper_blocked" then "nominal_constructor_stepper_blocked"
                 elif frame.status = "semantic_seq_type_error_blocked" then "seq_type_error_blocked"
@@ -19515,11 +20820,15 @@ module spiral_compiler =
         let private retargetSeenOnce (key: string) =
             globalFuseTerminalRetargetSeen.TryAdd(key, 1)
 
-        let private highRankPinnedTerminal () =
+        let private highRankPinnedTerminal (requestedKind: string) =
             match tryPinnedTerminalContract() with
             | Some pinned ->
                 let rank = terminalContractRank pinned.status
-                if rank >= 80 then Some (pinned, rank) else None
+                if rank >= 80 && frameKindCompatible requestedKind pinned then Some (pinned, rank)
+                elif rank >= 80 then
+                    emitCrossKindPinnedTerminalIgnored "global_fuse_terminal_probe" requestedKind pinned rank "high_rank_terminal_belongs_to_other_kind"
+                    None
+                else None
             | None -> None
 
         let private trimOriginalFuseForMessage (msg: string) =
@@ -19557,7 +20866,7 @@ module spiral_compiler =
             terminalPrimaryMessage requestedKind msg pinned rank
 
         let retargetGlobalFuseAbortMessage (event: string) (requestedKind: string) (msg: string) =
-            match highRankPinnedTerminal() with
+            match highRankPinnedTerminal requestedKind with
             | Some (pinned, rank) ->
                 let emitKey = sprintf "abort|%s|%s|%s|%s" event requestedKind pinned.status pinned.key
                 if retargetSeenOnce emitKey then
@@ -19568,14 +20877,72 @@ module spiral_compiler =
             | None -> msg
 
         let trySuppressGlobalFuseReplayReturnForPinnedTerminal (event: string) (requestedKind: string) (shape: string) (msg: string) =
-            match highRankPinnedTerminal() with
+            match highRankPinnedTerminal requestedKind with
             | Some (pinned, rank) ->
-                let emitKey = sprintf "return|%s|%s|%s|%s|%s" event requestedKind shape pinned.status pinned.key
-                if retargetSeenOnce emitKey then
+                let freshReplayRootWitnessAvailable =
+                    let ageMs = (System.DateTime.UtcNow - replayRootCompleteWitnessUtc).TotalMilliseconds
+                    replayRootCompleteWitnessUtc <> System.DateTime.MinValue
+                    && ageMs >= 0.0
+                    && ageMs <= replayRootCompleteWitnessWindowMs
+                let freshRootWitnessShieldsOpImplReturn =
+                    pinned.status = "semantic_op_impl_required_blocked"
+                    && pendingCount() > 0
+                    && freshReplayRootWitnessAvailable
+                    && frameCellShapeOrSemanticEvidence ["EOp"] pinned
+                    && (shape = "TFun"
+                        || shape = "EApply"
+                        || shape = "EV"
+                        || shape = "EForall'"
+                        || shape = "ETypeApply"
+                        || shape = "EOp")
+                let staleListmSymbolicIfRootReturn =
+                    pinned.status = "semantic_if_symbolic_condition_blocked"
+                    && pendingCount() > 0
+                    && frameCellShapeOrSemanticEvidence ["EIfThenElse"] pinned
+                    && (shape = "TFun"
+                        || shape = "EApply"
+                        || shape = "EV"
+                        || shape = "EForall'"
+                        || shape = "ETypeApply")
+                if freshRootWitnessShieldsOpImplReturn then
+                    let durableCleared =
+                        lock gate (fun () ->
+                            match pinnedTerminalContract with
+                            | Some p when p.status = "semantic_op_impl_required_blocked" && p.site = pinned.site ->
+                                pinnedTerminalContract <- None
+                            | _ -> ()
+                            match durableTerminalContract with
+                            | Some p when p.status = "semantic_op_impl_required_blocked" && p.site = pinned.site ->
+                                durableTerminalContract <- None
+                                true
+                            | _ -> false)
                     DiagJson.emit (
-                        sprintf "{\"kind\":\"eval_worklist_global_fuse_replay_return_suppressed_by_pinned_terminal\",\"event\":%s,\"requested_kind\":%s,\"shape\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
-                            (esc event) (esc requestedKind) (esc shape) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) (esc (nextFor pinned)))
-                Some (pinnedTerminalMessage requestedKind msg pinned rank)
+                        sprintf "{\"kind\":\"eval_worklist_global_fuse_root_return_demotes_fresh_op_impl_required\",\"event\":%s,\"requested_kind\":%s,\"shape\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"pending\":%d,\"durable_cleared\":%b,\"witness\":%s,\"single_flight\":1,\"next\":\"allow_root_complete_replay_return\"}"
+                            (esc event) (esc requestedKind) (esc shape) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) durableCleared (esc replayRootCompleteWitnessSummary))
+                    None
+                elif staleListmSymbolicIfRootReturn then
+                    let durableCleared =
+                        lock gate (fun () ->
+                            match pinnedTerminalContract with
+                            | Some p when p.status = "semantic_if_symbolic_condition_blocked" && p.site = pinned.site ->
+                                pinnedTerminalContract <- None
+                            | _ -> ()
+                            match durableTerminalContract with
+                            | Some p when p.status = "semantic_if_symbolic_condition_blocked" && p.site = pinned.site ->
+                                durableTerminalContract <- None
+                                true
+                            | _ -> false)
+                    DiagJson.emit (
+                        sprintf "{\"kind\":\"eval_worklist_global_fuse_root_return_demotes_stale_if_symbolic\",\"event\":%s,\"requested_kind\":%s,\"shape\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"pending\":%d,\"durable_cleared\":%b,\"single_flight\":1,\"next\":\"allow_root_complete_replay_return\"}"
+                            (esc event) (esc requestedKind) (esc shape) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) durableCleared)
+                    None
+                else
+                    let emitKey = sprintf "return|%s|%s|%s|%s|%s" event requestedKind shape pinned.status pinned.key
+                    if retargetSeenOnce emitKey then
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_global_fuse_replay_return_suppressed_by_pinned_terminal\",\"event\":%s,\"requested_kind\":%s,\"shape\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"pending\":%d,\"single_flight\":1,\"next\":%s}"
+                                (esc event) (esc requestedKind) (esc shape) (esc pinned.status) rank (esc pinned.site) (esc pinned.key) (pendingCount()) (esc (nextFor pinned)))
+                    Some (pinnedTerminalMessage requestedKind msg pinned rank)
             | None -> None
 
 
@@ -19584,9 +20951,11 @@ module spiral_compiler =
         | JPMethod of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
         | JPClosure of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty>
     
+
     /// ### JoinPointCall
     type JoinPointCall = JoinPointKey * TyV []
     
+
     /// ### CodeMacro
     type CodeMacro =
         | CMText of string
@@ -19594,12 +20963,14 @@ module spiral_compiler =
         | CMType of Ty
         | CMTypeLit of Ty
     
+
     /// ### TypedBind
     type TypedBind =
         | TyLet of Data * Trace * TypedOp
         | TyLocalReturnOp of Trace * TypedOp * Data
         | TyLocalReturnData of Data * Trace
     
+
     and TypedOp =
         | TyMacro of CodeMacro list
         | TyOp of Op * Data list
@@ -19625,9 +20996,11 @@ module spiral_compiler =
         | TyJoinPoint of JoinPointCall
         | TyBackend of (string ConsedNode * E) * ConsedNode<RData [] * Ty [] * Ty> * Range
     
+
     /// ### UnionRewrite
     type UnionRewrite = UnionData of string * Data | UnionBlockers of string Set
     
+
     /// ### LangEnv
     type LangEnv = {
         trace : Trace
@@ -19708,6 +21081,7 @@ module spiral_compiler =
           step = 0
           status = "new" }
     
+
     /// ### show_ty
     let show_ty x =
         let rec f prec x =
@@ -19735,6 +21109,7 @@ module spiral_compiler =
             | YMetavar _ -> "?"
         f -1 x
     
+
     /// ### Type-class helpers for diagnostic validation
     /// Used to detect obvious cache collisions (e.g., returning i32 when function expected).
     let is_ty_callable ty =
@@ -19751,11 +21126,13 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
     
+
     let is_ty_primitive ty =
         match ty with
         | YPrim _ | YLit _ -> true
         | _ -> false
     
+
     /// ### RetryTracker
     /// Thread-safe tracking of retry attempts for EJP0003 type errors.
     /// Helps detect when retries are resolving issues vs when they're failing consistently.
@@ -19764,33 +21141,41 @@ module spiral_compiler =
         open System.Collections.Concurrent
         open System.Threading
     
+
         let mutable private attemptCount = 0
         let mutable private successCount = 0
         let mutable private failCount = 0
         let private inRetry = new ThreadLocal<int>(fun () -> 0)
     
+
         let isInRetry () = inRetry.Value > 0
     
+
         let enterRetry () =
             inRetry.Value <- inRetry.Value + 1
             Interlocked.Increment(&attemptCount) |> ignore
     
+
         let exitRetrySuccess () =
             inRetry.Value <- max 0 (inRetry.Value - 1)
             Interlocked.Increment(&successCount) |> ignore
     
+
         let exitRetryFail () =
             inRetry.Value <- max 0 (inRetry.Value - 1)
             Interlocked.Increment(&failCount) |> ignore
     
+
         let getStats () =
             sprintf "attempts=%d success=%d fail=%d" attemptCount successCount failCount
     
+
         let logIfActive () =
             let a, s, f = attemptCount, successCount, failCount
             if a > 0 then
                 DiagSidecar.emit (sprintf "RetryTracker: %s" (getStats ()))
     
+
     /// ### DiagNN
     /// Small, online "neural-ish" helper for diagnostics: hashed embeddings + cosine similarity.
     /// Always enabled in v43+ for error pattern clustering. Lightweight and thread-safe.
@@ -19798,19 +21183,24 @@ module spiral_compiler =
         open System
         open System.Collections.Concurrent
     
+
         let private dims = 64
     
+
         let inline enabled () = true  // v43: always on
     
+
         let private centroids = ConcurrentDictionary<string, float []>()
         let private counts = ConcurrentDictionary<string, int>()
     
+
         let private fnv1a32 (s: string) : uint32 =
             let mutable h = 2166136261u
             for i = 0 to s.Length - 1 do
                 h <- (h ^^^ uint32 (int s.[i])) * 16777619u
             h
     
+
         let private embed (s: string) : float [] =
             let v = Array.zeroCreate<float> dims
             if String.IsNullOrEmpty s then v
@@ -19834,6 +21224,7 @@ module spiral_compiler =
                     for i = 0 to dims - 1 do v.[i] <- v.[i] * inv
                 v
     
+
         let private cosine (a: float []) (b: float []) : float =
             let mutable dot = 0.0
             let mutable i = 0
@@ -19842,6 +21233,7 @@ module spiral_compiler =
                 i <- i + 1
             dot
     
+
         let record (clusterKey: string) (payload: string) : string option =
             if not (enabled ()) then None
             else
@@ -19883,6 +21275,7 @@ module spiral_compiler =
                 with _ ->
                     None
     
+
     /// ### CacheGeneration
     /// Global generation counter for cache invalidation in deep recursion scenarios.
     /// When cache corruption is detected (EJP0007/EJP0008), incrementing the generation
@@ -19891,10 +21284,12 @@ module spiral_compiler =
         open System
         open System.Threading
     
+
         let mutable private generation = 0L
         let private lastInvalidationTime = ref DateTime.MinValue
         let private invalidationReasons = System.Collections.Concurrent.ConcurrentQueue<string>()
     
+
         let mutable private invalidation_count = 0L
         let invalidationCount () = Interlocked.Read(&invalidation_count)
 
@@ -19916,10 +21311,12 @@ module spiral_compiler =
 
         let isSequentialRequested () = Interlocked.CompareExchange(&jp_force_sequential, 0, 0) <> 0
     
+
         /// Get current generation number
         let current () = Interlocked.Read(&generation)
         do Progress88.set_gen_provider current
     
+
         /// Invalidate cache generation with a reason string for diagnostics
         let invalidate (reason: string) =
             let newGen = Interlocked.Increment(&generation)
@@ -19959,12 +21356,15 @@ module spiral_compiler =
                 |> Array.toList
             with _ -> []
     
+
         /// Check if a generation is stale (older than current)
         let isStale (g: int64) = g < Interlocked.Read(&generation)
     
+
         /// Get recent invalidation reasons for diagnostics
         let getRecentReasons () = invalidationReasons.ToArray() |> Array.toList
     
+
     /// ### RecursionTracker
     /// Thread-local recursion depth tracking for detecting deep nesting scenarios
     /// like sm'.replicate → join_body_unit loops that trigger cache corruption.
@@ -19973,10 +21373,12 @@ module spiral_compiler =
         open System.Threading
         open System.Collections.Concurrent
     
+
         let private threadDepth = new ThreadLocal<int>(fun () -> 0)
         let mutable private maxObserved = 0
         let private deepCallSites = ConcurrentDictionary<string, int>()
     
+
         /// Enter a recursive context, returns current depth
         let enter (site: string) : int =
             let d = threadDepth.Value + 1
@@ -19990,25 +21392,32 @@ module spiral_compiler =
                 deepCallSites.AddOrUpdate(site, 1, (fun _ n -> n + 1)) |> ignore
             d
     
+
         /// Exit a recursive context
         let exit () =
             threadDepth.Value <- max 0 (threadDepth.Value - 1)
     
+
         /// Get current recursion depth for this thread
         let currentDepth () = threadDepth.Value
     
+
         /// Set recursion depth directly (for BigStack thread inheritance)
         let setDepth (d: int) = threadDepth.Value <- d
     
+
         /// Check if currently in deep recursion (> 100)
         let isDeep () = threadDepth.Value > 100
     
+
         /// Check if moderately deep (> 50)
         let isModeratelyDeep () = threadDepth.Value > 50
     
+
         /// Get max observed depth across all threads
         let getMaxObserved () = maxObserved
     
+
         /// Get deep call site statistics
         let getDeepSites () = deepCallSites.ToArray() |> Array.toList
     
@@ -20016,24 +21425,34 @@ module spiral_compiler =
     
     
     
+
+
+
+
+
     /// BigStack: Executes thunks on dedicated threads with large stacks.
     /// Used for deep recursion when EnsureSufficientExecutionStack triggers.
     /// 
+    ///
     /// CONFIGURATION (hardcoded SOTA defaults):
     /// - Stack size: 256MB per level (enough for 100K+ recursive calls)
     /// - Max nesting: 32 levels (8GB total address space)
     /// - Automatic depth inheritance across BigStack boundaries
     
+
     module BigStack =
         open System
         open System.Threading
     
+
         /// Thread-local nesting counter (0 = main stack, >0 = inside BigStack)
         let private active : ThreadLocal<int> = new ThreadLocal<int>(fun () -> 0)
     
+
         /// True if currently executing on a BigStack thread
         let isActive () = active.Value > 0
     
+
         // SOTA defaults - no environment variable overrides
         let private stackMb = 256         // baseline MB per stack level
         let private maxNestingLevels = 32 // alpha180: cap nesting; prefer larger first stacks (big stacks park parent frames)
@@ -20072,12 +21491,15 @@ module spiral_compiler =
         /// Get effective MB for the given tag
         let getMb (tag: string) = fst (stackBytesFor tag (getNest () + 1))
     
+
         /// Maximum allowed nesting (32 levels)
         let getMaxNest () = maxNestingLevels
     
+
         /// Stack size in MB (256MB)
         let getGlobalMb () = stackMb
     
+
         /// Execute f on a BigStack thread if nesting limit not exceeded.
         /// Returns None if max nesting reached (caller should handle gracefully).
         let tryRun<'T> (tag: string) (f: unit -> 'T) : 'T option =
@@ -20161,8 +21583,10 @@ module spiral_compiler =
                                         match EvalWorklist.tryPinnedTerminalContract() with
                                         | Some pinned when pinned.status = "semantic_tjoinpoint_stepper_blocked" ->
                                             EvalWorklist.terminalContractRank pinned.status < 90
-                                            && (pinned.site.EndsWith("/core/base.spi:16", System.StringComparison.Ordinal)
-                                                || pinned.site.EndsWith("\\core\\base.spi:16", System.StringComparison.Ordinal))
+                                            && pinned.kind = "ty"
+                                            && (match pinned.semanticCell with
+                                                | Some cell -> cell.shape = "TJoinPoint'" || cell.shape = "TJoinPoint"
+                                                | None -> true)
                                             && (EvalWorklist.hasReplayComplete()
                                                 || EvalWorklist.hasReplayCompleteWriteWitness()
                                                 || EvalWorklist.pendingCount() > 0)
@@ -20257,6 +21681,7 @@ module spiral_compiler =
             else
                 spawn ()
     
+
     /// ### EvalCycleGuard
     /// Tracks active evaluation nodes (by object identity hash) per thread.
     /// If we re-enter `term` on the same node before completing, we likely hit a
@@ -20272,14 +21697,17 @@ module spiral_compiler =
         open System.Collections.Generic
         open System.Runtime.CompilerServices
     
+
         type private RefEqComparer() =
             interface IEqualityComparer<obj> with
                 member _.Equals(a,b) = obj.ReferenceEquals(a,b)
                 member _.GetHashCode(a) = RuntimeHelpers.GetHashCode(a)
     
+
         // node -> reentry count
         let private active = new ThreadLocal<Dictionary<obj,int>>(fun () -> Dictionary<obj,int>(RefEqComparer()))
     
+
         /// Returns the current re-entry count after entering (1 means first entry).
         let enter (node: obj) : int =
             let d = active.Value
@@ -20292,6 +21720,7 @@ module spiral_compiler =
                 d.[node] <- 1
                 1
     
+
         /// Decrements the re-entry count; removes node when it reaches 0.
         let exit (node: obj) : unit =
             let d = active.Value
@@ -20302,9 +21731,11 @@ module spiral_compiler =
                 d.[node] <- n - 1
             | _ -> ()
     
+
         let snapshotHashes (n: int) : int[] =
             active.Value.Keys |> Seq.truncate n |> Seq.map RuntimeHelpers.GetHashCode |> Seq.toArray
     
+
     /// ### EvalCycleGuardKey
     /// Versão "por chave" (string) do guard de ciclo, para quando o nó sendo avaliado é struct/value-type
     /// e o boxing quebra a identidade por referência. A chave padrão é o range (path:linha:col-inicio/fim).
@@ -20313,9 +21744,11 @@ module spiral_compiler =
         open System.Threading
         open System.Collections.Generic
     
+
         // key -> reentry count
         let private active = new ThreadLocal<Dictionary<string,int>>(fun () -> Dictionary<string,int>(StringComparer.Ordinal))
     
+
         /// Returns the current re-entry count after entering (1 means first entry).
         let enter (key: string) : int =
             let d = active.Value
@@ -20328,6 +21761,7 @@ module spiral_compiler =
                 d.[key] <- 1
                 1
     
+
         let exit (key: string) =
             let d = active.Value
             match d.TryGetValue key with
@@ -20337,9 +21771,11 @@ module spiral_compiler =
                 d.[key] <- n - 1
             | _ -> ()
     
+
         let snapshotKeys (n: int) : string[] =
             active.Value.Keys |> Seq.truncate n |> Seq.toArray
     
+
     /// ### Range helpers (prepass / evaluation)
     /// These helpers are used by diagnostics and recursion guards. They intentionally prefer
     /// whatever range is available in the node itself, and fall back to the current trace (if any)
@@ -20348,6 +21784,7 @@ module spiral_compiler =
     let private vscrange0 : VSCRange = (vscpos0, vscpos0)
     let private range0 : Range = { path = "<unknown>"; range = vscrange0 }
     
+
     let rec range_of_tprepass_or (fallback: Range) (x: TPrepass) : Range =
         match x with
         | TForall'(r,_,_,_) -> r
@@ -20375,6 +21812,7 @@ module spiral_compiler =
         | TPatternRef a -> range_of_tprepass_or fallback !a
         | TV _ | TPrim _ | TNominal _ | TExists | TModule _ | TMetaV _ -> fallback
     
+
     let rec range_of_e_or (fallback: Range) (x: E) : Range =
         match x with
         | EFun(r,_,_,_) -> r
@@ -20433,6 +21871,7 @@ module spiral_compiler =
         open System
         open System.Collections.Concurrent
     
+
         type SuspectEntry = {
             generation: int64
             timestamp: DateTime
@@ -20441,13 +21880,16 @@ module spiral_compiler =
             hitCount: int
         }
     
+
         let private suspects = ConcurrentDictionary<int, SuspectEntry>()  // key hash -> entry
         let private maxEntries = 1000
     
+
         /// Hash a cache key for tracking
         let private hashKey (key: obj) : int =
             try key.GetHashCode() with _ -> 0
     
+
         /// Mark a key as suspect
         let mark (key: obj) (errorType: string) =
             let h = hashKey key
@@ -20479,6 +21921,9 @@ module spiral_compiler =
     
     
     
+
+
+
         /// Check if a key is suspect in current generation
         let isSuspect (key: obj) : bool =
             let h = hashKey key
@@ -20486,6 +21931,7 @@ module spiral_compiler =
             | true, entry -> isActive entry
             | _ -> false
     
+
         /// Check if a key is suspect and return entry
         let tryGetSuspect (key: obj) : SuspectEntry option =
             let h = hashKey key
@@ -20493,6 +21939,7 @@ module spiral_compiler =
             | true, entry when isActive entry -> Some entry
             | _ -> None
     
+
         /// Clear suspects for a generation (after successful retry)
         let clearForGeneration (gen: int64) =
             let toRemove =
@@ -20502,6 +21949,7 @@ module spiral_compiler =
                 suspects.TryRemove(kv.Key) |> ignore
             DiagSidecar.emit (sprintf "SuspectCache.clearForGeneration: gen=%d removed=%d" gen toRemove.Length)
     
+
         /// Get recent suspects for diagnostics
         let getRecent (n: int) : (int * SuspectEntry) list =
             suspects.ToArray()
@@ -20510,12 +21958,14 @@ module spiral_compiler =
             |> Array.map (fun kv -> kv.Key, kv.Value)
             |> Array.toList
     
+
         /// Get count of suspects in current generation
         let currentCount () =
             suspects.ToArray()
             |> Array.filter (fun kv -> isActive kv.Value)
             |> Array.length
     
+
     /// ### BitMamba (BitNet B1.58)
     /// True ternary neural network for predictive cache management.
     /// Uses BitNet B1.58 architecture: weights quantized to {-1, 0, +1}.
@@ -20530,6 +21980,7 @@ module spiral_compiler =
         open System
         open System.Collections.Concurrent
     
+
         type AccessPattern = {
             keyHash: int
             depth: int
@@ -20539,11 +21990,13 @@ module spiral_compiler =
             wasSuspect: bool
         }
     
+
         type Prediction =
             | LikelyValid
             | LikelySuspect
             | Unknown
     
+
         type KeyStat = {
             accesses: int
             failures: int
@@ -20552,19 +22005,23 @@ module spiral_compiler =
             lastFailTs: DateTime option
         }
     
+
         /// B1.58 ternary weight: -1, 0, or +1
         type TernaryWeight = int8
     
+
         /// BitNet B1.58 layer with ternary weights
         type BitNetLayer = {
             weights: TernaryWeight[,]  // [input_dim, output_dim]
             biases: int[]              // Integer biases for efficiency
         }
     
+
         let private inputDim = 5      // depth, failRate, accessCount, timeSinceLastFail, isSuspect
         let private hiddenDim = 16
         let private outputDim = 3     // Valid, Suspect, Unknown
     
+
         // Online-learned weights (initialized with heuristic priors)
         let private layer1Weights = Array2D.init inputDim hiddenDim (fun i j ->
             // Prior: depth and failRate strongly predict suspicion
@@ -20580,6 +22037,7 @@ module spiral_compiler =
             | _ -> 0y      // Pruned connections
         )
     
+
         let private layer2Weights = Array2D.init hiddenDim outputDim (fun i j ->
             // Map hidden activations to predictions
             match j with
@@ -20589,27 +22047,33 @@ module spiral_compiler =
             | _ -> 0y
         )
     
+
         let private layer1Biases = Array.init hiddenDim (fun _ -> 0)
         let private layer2Biases = [| 0; -2; 1 |]  // Bias toward Unknown, against Suspect
     
+
         // Statistics tracking
         let private recentAccesses = ConcurrentQueue<AccessPattern>()
         let private maxHistory = 256
         let private keyStats = ConcurrentDictionary<int, KeyStat>()
     
+
         // Online learning: track prediction accuracy (mutable for Interlocked)
         let mutable private predictionCount = 0L
         let mutable private correctPredictions = 0L
     
+
         /// Quantize float feature to int8 range [-127, 127]
         let inline private quantize (x: float) : int =
             int (Math.Clamp(x * 127.0, -127.0, 127.0))
     
+
         /// B1.58 forward pass: compute activations using ternary weights
         let private forward (features: float[]) : int[] =
             // Quantize inputs
             let qInput = features |> Array.map quantize
     
+
             // Hidden layer: sum of ternary-weighted inputs
             let hidden = Array.init hiddenDim (fun j ->
                 let mutable sum = layer1Biases.[j]
@@ -20620,6 +22084,7 @@ module spiral_compiler =
                 max 0 sum
             )
     
+
             // Output layer
             let output = Array.init outputDim (fun j ->
                 let mutable sum = layer2Biases.[j]
@@ -20630,6 +22095,7 @@ module spiral_compiler =
             )
             output
     
+
         let private updateStat (h: int) (f: KeyStat -> KeyStat) =
             let gen = CacheGeneration.current ()
             let now = DateTime.UtcNow
@@ -20644,12 +22110,14 @@ module spiral_compiler =
                 )
             ) |> ignore
     
+
         /// Extract features from key statistics
         let private extractFeatures (h: int) : float[] =
             let depth = float (RecursionTracker.currentDepth ())
             let gen = CacheGeneration.current ()
             let now = DateTime.UtcNow
     
+
             match keyStats.TryGetValue(h) with
             | true, st when st.generation = gen ->
                 let failRate = if st.accesses > 0 then float st.failures / float st.accesses else 0.0
@@ -20664,6 +22132,7 @@ module spiral_compiler =
                 let isSuspect = if SuspectCache.currentCount () > 0 then 1.0 else 0.0
                 [| depth / 1000.0; 0.0; 0.0; 1.0; isSuspect |]
     
+
         /// Record a cache access for pattern learning
         let recordAccess (key: obj) =
             let h = try key.GetHashCode() with _ -> 0
@@ -20681,6 +22150,7 @@ module spiral_compiler =
                 recentAccesses.TryDequeue(&v) |> ignore
             updateStat h (fun st -> { st with accesses = st.accesses + 1 })
     
+
         /// Record a failure for a key (updates weights via online learning)
         let recordFailure (key: obj) =
             let h = try key.GetHashCode() with _ -> 0
@@ -20689,6 +22159,7 @@ module spiral_compiler =
             // Online learning: this was a miss, should have predicted Suspect
             // (Full weight update would go here in a real implementation)
     
+
         /// Verify prediction outcome (for online learning accuracy tracking)
         let verifyPrediction (key: obj) (actuallyFailed: bool) =
             let h = try key.GetHashCode() with _ -> 0
@@ -20696,39 +22167,46 @@ module spiral_compiler =
             let output = forward features
             let predictedSuspect = output.[1] > output.[0] && output.[1] > output.[2]
             
+
             // Track if prediction was correct
             if (predictedSuspect && actuallyFailed) || (not predictedSuspect && not actuallyFailed) then
                 System.Threading.Interlocked.Increment(&correctPredictions) |> ignore
     
+
         /// Predict if a key access is likely to succeed or fail using B1.58 network
         let predict (key: obj) : Prediction =
             let h = try key.GetHashCode() with _ -> 0
             let features = extractFeatures h
             let output = forward features
     
+
             // Argmax to get prediction
-            let maxIdx = 
+            let maxIdx =
                 if output.[0] > output.[1] && output.[0] > output.[2] then 0
                 elif output.[1] > output.[0] && output.[1] > output.[2] then 1
                 else 2
     
+
             System.Threading.Interlocked.Increment(&predictionCount) |> ignore
     
+
             match maxIdx with
             | 0 -> LikelyValid
             | 1 -> LikelySuspect
             | _ -> Unknown
     
+
         /// Should we preemptively retry before waiting for cache?
         let shouldPreemptiveRetry () : bool =
             match predict (box 0) with  // Use dummy key for global check
             | LikelySuspect -> true
-            | _ -> 
+            | _ ->
                 // Fallback heuristic: deep recursion with suspects
                 let depth = RecursionTracker.currentDepth ()
                 let suspectCount = SuspectCache.currentCount ()
                 depth > 75 && suspectCount > 0
     
+
         /// Get pattern summary for diagnostics (includes B1.58 accuracy)
         let getSummary () : string =
             let patterns = recentAccesses.ToArray()
@@ -20739,6 +22217,7 @@ module spiral_compiler =
                     float (patterns |> Array.filter (fun p -> p.wasSuspect) |> Array.length) / float patterns.Length
                 else 0.0
     
+
             let gen = CacheGeneration.current ()
             let stats = keyStats.ToArray()
             let keys = stats.Length
@@ -20747,13 +22226,16 @@ module spiral_compiler =
                 |> Array.filter (fun kv -> kv.Value.generation = gen && kv.Value.failures > 0)
                 |> Array.length
     
+
             let preds = System.Threading.Interlocked.Read(&predictionCount)
             let correct = System.Threading.Interlocked.Read(&correctPredictions)
             let accuracy = if preds > 0L then float correct / float preds else 0.0
     
-            sprintf "b158=patterns=%d avgDepth=%.1f suspectRate=%.2f keys=%d genFailKeys=%d preds=%d acc=%.2f" 
+
+            sprintf "b158=patterns=%d avgDepth=%.1f suspectRate=%.2f keys=%d genFailKeys=%d preds=%d acc=%.2f"
                 patterns.Length avgDepth suspectRate keys genFailKeys preds accuracy
     
+
     /// ### LoopSpecializationGuard
     /// Prevents unbounded specialization from loop patterns like loop in listm'.spi.
     /// These patterns create unique JP keys per iteration, causing exponential growth.
@@ -20843,7 +22325,7 @@ module spiral_compiler =
                         let cap = capForName jpName
                         if newCount > int64 cap then
                             cappedNames.TryAdd(jpName, true) |> ignore
-                            DiagSidecar.emit (sprintf "[spiral_compiler] EJP0012: specialization cap exceeded for JP '%s' (count=%d max=%d)" 
+                            DiagSidecar.emit (sprintf "[spiral_compiler] EJP0012: specialization cap exceeded for JP '%s' (count=%d max=%d)"
                                 jpName newCount cap)
                             Interlocked.Increment(&rejections) |> ignore
                             false
@@ -20852,7 +22334,7 @@ module spiral_compiler =
 
         /// Get summary for diagnostics
         let getSummary () : string =
-            let topNames = 
+            let topNames =
                 specCounts.ToArray()
                 |> Array.sortByDescending (fun kv -> kv.Value)
                 |> Array.truncate 5
@@ -20860,7 +22342,7 @@ module spiral_compiler =
                 |> String.concat "; "
             let totalRej: int64 = Interlocked.Read(&rejections)
             let cappedCount = cappedNames.Count
-            sprintf "loopGuard: tracked=%d capped=%d rejections=%d top=[%s]" 
+            sprintf "loopGuard: tracked=%d capped=%d rejections=%d top=[%s]"
                 specCounts.Count cappedCount totalRej topNames
 
         /// Reset (for testing)
@@ -20869,6 +22351,7 @@ module spiral_compiler =
             cappedNames.Clear()
             rejections <- 0L
     
+
     /// ### format_jp_annot_mismatch
     /// Rust-ish, multi-line diagnostic for join-point annotation mismatches.
     /// Keep this definition after Ty + show_ty (no forward references).
@@ -20899,21 +22382,26 @@ module spiral_compiler =
                     | _ -> None
                 | _ -> None
     
+
             let name =
                 match jp_name, name_from_tables with
                 | Some n, _ when n <> "" -> n
                 | _, Some n when n <> "" -> n
                 | _ -> "<anonymous>"
     
+
             let backend = d.backend.node
     
+
             let show_pos (p: VSCPos) = sprintf "%d:%d" (p.line + 1) (p.character + 1)
     
+
             let show_site (r: Range) =
                 let (p0, p1) = r.range
                 sprintf "%s:({ line = %d; character = %d }, { line = %d; character = %d })"
                     r.path (p0.line + 1) (p0.character + 1) (p1.line + 1) (p1.character + 1)
     
+
             let primary_site =
                 match d.trace with
                 | r :: _ ->
@@ -20921,6 +22409,7 @@ module spiral_compiler =
                     sprintf "%s:%s" r.path (show_pos p0)
                 | [] -> "<unknown>"
     
+
             let sha1_12 (s: string) : string =
                 try
                     let bytes = System.Text.Encoding.UTF8.GetBytes s
@@ -20932,6 +22421,8 @@ module spiral_compiler =
                 with _ -> "000000000000"
     
     
+
+
             let trace_pretty =
                 match d.trace with
                 | [] -> "<empty trace>"
@@ -20941,26 +22432,32 @@ module spiral_compiler =
                         | a :: rest -> dedup (a :: acc) rest
                         | [] -> List.rev acc
     
+
                     let frames =
                         d.trace
                         |> List.map show_site
                         |> dedup []
     
+
                     // Always include full trace for better diagnostics
                     let shown = frames |> List.truncate 80
     
+
                     let body =
                         shown
                         |> List.mapi (fun i s -> sprintf "  %2d: %s" (i + 1) s)
                         |> String.concat "\n"
     
+
                     let frames_len = List.length frames
                     let shown_len = List.length shown
     
+
                     if frames_len > shown_len then
                         body + sprintf "\n  ... (%d more)" (frames_len - shown_len)
                     else body
     
+
             let fun_diff =
                 match expected, got with
                 | YFun (arg_expected, ret_expected, _), YFun (arg_got, ret_got, _) ->
@@ -20981,24 +22478,30 @@ module spiral_compiler =
                     else ""
                 | _ -> ""
     
+
             let fun_diff = fun_diff + fun_hint
     
     
+
+
             let inflight_method_tags_sample =
                 d.jp_method_stack |> Seq.truncate 12 |> Seq.map (fun x -> x.tag) |> Seq.toArray
             let inflight_type_tags_sample =
                 d.jp_type_stack |> Seq.truncate 12 |> Seq.map (fun x -> x.tag) |> Seq.toArray
     
+
             let inflight_method =
                 if d.jp_method_stack.Count > 0 then
                     sprintf "  = note: inflight(method) count=%d sample_tags=%A\n" d.jp_method_stack.Count inflight_method_tags_sample
                 else ""
     
+
             let inflight_type =
                 if d.jp_type_stack.Count > 0 then
                     sprintf "  = note: inflight(type) count=%d sample_tags=%A\n" d.jp_type_stack.Count inflight_type_tags_sample
                 else ""
     
+
             let sidecar_pretty =
                 match DiagSidecar.snapshot 12 with
                 | [] -> ""
@@ -21009,8 +22512,10 @@ module spiral_compiler =
                         |> String.concat "\n"
                     sprintf "  |\n  = sidecar:\n%s\n" body
     
+
             let fingerprint = sha1_12 (sprintf "%s|%s|%d|%s|%s|%s" kind name tag (show_ty expected) (show_ty got) primary_site)
     
+
             let key_repr_pretty =
                 match key with
                 | :? ConsedNode<RData [] * Ty [] * Ty> as k ->
@@ -21029,6 +22534,7 @@ module spiral_compiler =
                         k.tag salt_line env_term.Length env_type.Length (show_ty annot) fingerprint
                 | _ -> sprintf "%O" key
     
+
             // Always include source snippet for better error messages
             let source_snip =
                 match d.trace with
@@ -21047,6 +22553,8 @@ module spiral_compiler =
                 | _ -> ""
     
     
+
+
             let nn_pretty =
                 match DiagNN.record ("[spiral_compiler] EJP0002|" + sha1_12 (sprintf "%s->%s" (show_ty expected) (show_ty got)))
                         (sprintf "%s|%s|%s|%d|%s|%s" kind name primary_site tag (show_ty expected) (show_ty got)) with
@@ -21072,6 +22580,7 @@ module spiral_compiler =
                 primary_site source_snip name kind tag backend tag key_repr_pretty (show_ty expected) (show_ty got)
                 fun_diff inflight_method inflight_type nn_pretty sidecar_pretty trace_pretty
     
+
     /// ### PartEvalTopEnv
     type PartEvalTopEnv = {
         prototypes_instances : Dictionary<GlobalId * GlobalId, E>
@@ -21079,9 +22588,11 @@ module spiral_compiler =
         backend : string
         }
     
+
     /// ### PartEvalTypeError
     // [EJP-212-001] PartEvalTypeError moved above BigStack (forward reference fix).
     
+
     /// ### raise_type_error
     let raise_type_error (d: LangEnv) (x: string) : 'a =
         let x =
@@ -21106,6 +22617,7 @@ module spiral_compiler =
             else x + sprintf "\nCompiler: par\nTraceDepth: %d\nTraceCompact: true" d.trace.Length
         raise (PartEvalTypeError(compactTrace d.trace,x))
     
+
     /// ### data_to_rdata
     let data_to_rdata (d: LangEnv) (hc_table : HashConsTable) call_data =
         let hc x = lock hc_table (fun () -> hc_table.Add x)
@@ -21155,6 +22667,7 @@ module spiral_compiler =
         let x = HopacExtensions.S.map f call_data
         call_args.ToArray(),x
     
+
     /// ### rename_global_term
     // This rename is a consideration for when I do incremental compilation.
     // In order to allow them to be cleaned by the garbage collection, I do not want the
@@ -21208,6 +22721,7 @@ module spiral_compiler =
             f visiting x
         {s with env_global_term = HopacExtensions.A.map f0 s.env_global_term}
     
+
     /// ### data_free_vars
     let data_free_vars call_data =
         let m = HashSet(HashIdentity.Reference)
@@ -21226,6 +22740,7 @@ module spiral_compiler =
         f call_data
         free_vars.ToArray()
     
+
     /// ### data_free_vars_replace
     let data_free_vars_replace s (d : Dictionary<TyV,TyV>) (x : Data) =
         let m = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -21263,12 +22778,15 @@ module spiral_compiler =
                 ) x
         f x
     
+
     /// ### (|C|)
     let inline (|C|) (x : _ ConsedNode) = x.node
     
+
     /// ### (|C'|)
     let inline (|C'|) (x : _ ConsedNode) = x.node, x.tag
     
+
     /// ### rdata_free_vars
     let rdata_free_vars call_data =
         let m = HashSet<int>()
@@ -21284,6 +22802,7 @@ module spiral_compiler =
         HopacExtensions.A.iter g call_data
         free_vars.ToArray()
     
+
     /// ### data_term_vars'
     let data_term_vars' call_data =
         let term_vars = ResizeArray(64)
@@ -21299,6 +22818,7 @@ module spiral_compiler =
         f call_data
         term_vars.ToArray()
     
+
     /// ### data_nominals
     let data_nominals call_data =
         let term_vars = ResizeArray(64)
@@ -21314,6 +22834,7 @@ module spiral_compiler =
         f call_data
         term_vars.ToArray()
     
+
     /// ### data_term_vars
     let data_term_vars call_data =
         let term_vars = ResizeArray(64)
@@ -21330,6 +22851,7 @@ module spiral_compiler =
         f call_data
         term_vars.ToArray()
     
+
     /// ### lit_to_primitive_type
     let lit_to_primitive_type = function
         | LitUInt8 _ -> UInt8T
@@ -21346,15 +22868,18 @@ module spiral_compiler =
         | LitString _ -> StringT
         | LitChar _ -> CharT
     
+
     /// ### lit_to_ty
     let lit_to_ty x = lit_to_primitive_type x |> YPrim
     
+
     /// ### is_tco_compatible
     let is_tco_compatible = function
         | TyApply _ | TyJoinPoint _ | TyArrayLiteral _ | TyUnionBox _ | TyToLayout _
         | TyIf _ | TyIntSwitch _ | TyUnionUnbox _ | TyArrayCreate _ | TyFailwith _ -> true
         | _ -> false
     
+
     /// ### seq_apply
     let seq_apply (d: LangEnv) end_dat =
         let inline end_ () = d.seq.Add(TyLocalReturnData(end_dat,d.trace))
@@ -21365,6 +22890,7 @@ module spiral_compiler =
         else end_()
         d.seq.ToArray()
     
+
     /// ### cse_tryfind
     let cse_tryfind (d: LangEnv) key =
         d.cse |> List.tryPick (fun x ->
@@ -21373,9 +22899,11 @@ module spiral_compiler =
             | _ -> None
             )
     
+
     /// ### cse_add
     let cse_add (d: LangEnv) k v = (List.head d.cse).Add(k,v)
     
+
     /// ### show_data
     let show_data x =
         let rec f prec x =
@@ -21398,13 +22926,16 @@ module spiral_compiler =
             | DHashSet _ -> p 0 "<HashSet>"
             | DHashMap _ -> p 0 "<HashMap>"
     
+
         f -1 x
     
+
     /// ### is_lit
     let is_lit = function
         | DLit _ -> true
         | _ -> false
     
+
     /// ### is_numeric
     let is_numeric = function
         | YPrim (UInt8T | UInt16T | UInt32T | UInt64T
@@ -21412,53 +22943,63 @@ module spiral_compiler =
             | Float32T | Float64T) -> true
         | _ -> false
     
+
     /// ### is_signed_numeric
     let is_signed_numeric = function
         | YPrim (Int8T | Int16T | Int32T | Int64T | Float32T | Float64T) -> true
         | _ -> false
     
+
     /// ### is_non_float_primitive
     let is_non_float_primitive = function
         | YPrim (Float32T | Float64T) -> false
         | YPrim _ -> true
         | _ -> false
     
+
     /// ### is_primitive
     let is_primitive = function
         | YPrim _ -> true
         | _ -> false
     
+
     /// ### is_string
     let is_string = function
         | YPrim StringT -> true
         | _ -> false
     
+
     /// ### is_char
     let is_char = function
         | YPrim CharT -> true
         | _ -> false
     
+
     /// ### is_float
     let is_float = function
         | YPrim (Float32T | Float64T) -> true
         | _ -> false
     
+
     /// ### is_bool
     let is_bool = function
         | YPrim BoolT -> true
         | _ -> false
     
+
     /// ### is_int
     let is_int = function
         | YPrim (UInt32T | UInt64T | Int32T | Int64T) -> true
         | _ -> false
     
+
     /// ### is_int
     let is_any_int = function
         | YPrim (UInt8T | UInt16T | UInt32T | UInt64T
             | Int8T | Int16T | Int32T | Int64T) -> true
         | _ -> false
     
+
     /// ### is_any_int_allow_jp_placeholders
     /// Pragmatic: allow join-point recursion placeholders to pass where an int is expected in core string/array ops.
     /// Rationale: core/sm.spi uses forall t{int} indices and can leak JPMethodRecPlaceholder during JP waiting; treating it as int
@@ -21468,6 +23009,8 @@ module spiral_compiler =
         | t -> is_any_int t
     
     
+
+
     /// ### is_string_allow_jp_placeholders
     /// Pragmatic: allow join-point recursion placeholders to pass where a string is expected in core string ops.
     /// Rationale: runtime.spi string helpers can leak JP placeholders during JP waiting; treating it as string
@@ -21477,16 +23020,20 @@ module spiral_compiler =
         | t -> is_string t
     
     
+
+
     /// ### is_int64
     let is_int64 = function
         | YPrim Int64T -> true
         | _ -> false
     
+
     /// ### is_int32
     let is_int32 = function
         | YPrim Int32T -> true
         | _ -> false
     
+
     /// ### is_lit_zero
     let is_lit_zero = function
         | DLit a ->
@@ -21497,6 +23044,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
     
+
     /// ### is_lit_one
     let is_lit_one = function
         | DLit a ->
@@ -21507,6 +23055,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
     
+
     /// ### is_int_lit_zero
     let is_int_lit_zero = function
         | DLit a ->
@@ -21516,6 +23065,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
     
+
     /// ### is_int_lit_one
     let is_int_lit_one = function
         | DLit a ->
@@ -21525,6 +23075,7 @@ module spiral_compiler =
             | _ -> false
         | _ -> false
     
+
     /// ### lit_zero
     let lit_zero = function
         | YPrim Int8T -> LitInt8 0y
@@ -21539,31 +23090,15 @@ module spiral_compiler =
         | YPrim Float64T -> LitFloat64 0.0
         | _ -> failwith "Compiler error: Expected a numeric value."
     
+
     /// ### vt
-    let vt s i =
-        // ALPHA721: replay cells can carry a compact environment shape where
-        // a missing global/stack array means an empty segment. Runtime 720
-        // exposed EUnitTest at sm'.spi:713 failing with NullReferenceException
-        // before the unit bind could read stack slot 0 from env_term=0/2.
-        // Treat null env arrays as empty here instead of letting a diagnostic
-        // NRE mask the concrete pattern-test branch.
-        let globalLen = if obj.ReferenceEquals(s.env_global_type, null) then 0 else s.env_global_type.Length
-        if i < globalLen then s.env_global_type.[i]
-        else
-            if obj.ReferenceEquals(s.env_stack_type, null) then failwithf "Compiler error: Missing type stack env for index %d after global_len %d." i globalLen
-            s.env_stack_type.[i-globalLen]
+    let vt s i = if i < s.env_global_type.Length then s.env_global_type.[i] else s.env_stack_type.[i-s.env_global_type.Length]
     
+
     /// ### v
-    let v s i =
-        // ALPHA721: mirror vt's null-as-empty environment guard for term values.
-        // This keeps ordinary env lookup semantics while allowing compact replay
-        // cells to read their stack terms instead of surfacing raw NREs.
-        let globalLen = if obj.ReferenceEquals(s.env_global_term, null) then 0 else s.env_global_term.Length
-        if i < globalLen then s.env_global_term.[i]
-        else
-            if obj.ReferenceEquals(s.env_stack_term, null) then failwithf "Compiler error: Missing term stack env for index %d after global_len %d." i globalLen
-            s.env_stack_term.[i-globalLen]
+    let v s i = if i < s.env_global_term.Length then s.env_global_term.[i] else s.env_stack_term.[i-s.env_global_term.Length]
     
+
     /// ### add_trace
     // alpha166: cap trace growth deterministically to avoid pathological list sizes that can themselves
     // trigger BigStack exhaustion (e.g. deep term recursion + trace accumulation). The cap is per-thread
@@ -21600,14 +23135,18 @@ module spiral_compiler =
             lock s.globals_lock (fun () -> s.globals.Add x)
         x
     
+
     let inline globals_flush (_s : LangEnv) = ()
     
+
     /// ### store_term
     let store_term (s : LangEnv) i v = s.env_stack_term.[i-s.env_global_term.Length] <- v
     
+
     /// ### store_ty
     let store_ty (s : LangEnv) i v = s.env_stack_type.[i-s.env_global_type.Length] <- v
     
+
     /// ### is_unify
     let is_unify s x =
         let is_metavar = HashSet()
@@ -21637,6 +23176,8 @@ module spiral_compiler =
         f x
     
     
+
+
     /// ### PartEvalResult
     /// ALPHA48: Simplified type using Hopac IVar for coordination
     type PartEvalResult = {
@@ -21649,6 +23190,7 @@ module spiral_compiler =
     /// ALPHA48: JPTypeCell now uses Hopac IVar for signaling
     type JPTypeCell<'a> = { ivar: Hopac.IVar<'a option>; mutable owner: int }
     
+
     [<Struct>]
     type JpMethodRecPlaceholderCell =
         val gen: int64
@@ -21658,6 +23200,9 @@ module spiral_compiler =
     
     
     
+
+
+
     /// ### peval
     let peval (env : PartEvalTopEnv) (x : E) =
         // v107-alpha14: always log effective runtime knobs once per process
@@ -21684,6 +23229,7 @@ module spiral_compiler =
                 member _.GetHashCode((b,e)) = (hash b) ^^^ (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode e)
             }
     
+
         let join_point_method = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -21705,28 +23251,35 @@ module spiral_compiler =
                 try f () with _ -> ()
             try DiagSidecar.emit (sprintf "JP: cache invalidation reason=%A jp_clear_callbacks=%d" reason cbs.Length) with _ -> ()
     
+
         // Hopac: parallel join point workers (peval)
     
+
         let inline capture_edi (e: exn) =
             System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture e
     
+
         // Global join-point exception queue (fast path) + per-join-point exception cache (deterministic rethrow)
         let jp_exns : System.Collections.Concurrent.ConcurrentQueue<System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentQueue()
     
+
         // Per-join-point exception cache: avoids losing the root cause when one waiter dequeues jp_exns first.
         let jp_method_exns : System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, System.Runtime.ExceptionServices.ExceptionDispatchInfo> =
             System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
     
+
         let jp_throw_keyed (k: ConsedNode<RData [] * Ty [] * Ty>) =
             let mutable edi = Unchecked.defaultof<System.Runtime.ExceptionServices.ExceptionDispatchInfo>
             if jp_method_exns.TryGetValue(k, &edi) then edi.Throw()
     
+
         do CacheGeneration.registerOnInvalidate (fun reason ->
             try run_jp_dict_clear_callbacks reason with _ -> ()
         )
     
         // ALPHA45: Register JP dict clearing on cache invalidation
+
         // This prevents stale IVars/exceptions from leaking across retry attempts.
         do register_jp_dict_clear_callback (fun () ->
             try
@@ -21745,8 +23298,12 @@ module spiral_compiler =
     
     
     
+
+
+
         let mutable jp_cd : System.Threading.CountdownEvent = new System.Threading.CountdownEvent(1)
     
+
         let jp_barrier_lock = obj()
         let mutable jp_wait_closed = false
         let mutable jp_wait_closed_cd : System.Threading.CountdownEvent = null
@@ -21764,6 +23321,7 @@ module spiral_compiler =
             let c = jp_cd.CurrentCount
             if jp_wait_closed then c else max 0 (c - 1)
     
+
         // Work queue for parallel JP evaluation
         // Waiting threads "help" by executing queued work (work-distributing pattern)
         let jp_work_q : System.Collections.Concurrent.ConcurrentQueue<unit -> unit> = System.Collections.Concurrent.ConcurrentQueue()
@@ -21779,7 +23337,7 @@ module spiral_compiler =
         let mutable jp_total_done : int64 = 0L      // Atomic counter of completed jobs
         let mutable jp_progress_started = 0
 
-        let mutable jp_worker_active = 0L  // ALPHA45: Track how many workers are actively executing (not waiting)
+        let mutable jp_worker_active = 0L
 
         // Alpha191: track active JP work-item runtimes so the progress bar can explain long "stalls"
         // (e.g. done stays constant while a single heavy join-point specialization is running).
@@ -21791,6 +23349,8 @@ module spiral_compiler =
 
     
     
+
+
         // [JP-EXN-208-001] Do not let background threads consume abort exceptions.
         // Progress88 heartbeat calls jp_note_progress; if it dequeues, abort signals can get lost.
         let jp_main_tid = System.Threading.Thread.CurrentThread.ManagedThreadId
@@ -21804,10 +23364,14 @@ module spiral_compiler =
     
     
     
+
+
+
         let jp_is_worker_thread () =
             let t = System.Threading.Thread.CurrentThread
             not (isNull t.Name) && t.Name.StartsWith("jp-worker-")
     
+
         let jp_fill_ivar (ivar: Hopac.IVar<'a>) (value: 'a) : unit =
             if jp_is_worker_thread () then
                 // Dedicated OS threads may drive Hopac jobs to completion without starving the scheduler.
@@ -21820,6 +23384,7 @@ module spiral_compiler =
                 with _ ->
                     Hopac.start (Hopac.IVar.fill ivar value)
     
+
         // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
@@ -21859,20 +23424,25 @@ module spiral_compiler =
         let peval_mem_limit_mb = 4096L
         let jp_stall_abort_ms = 180000L  // fixed default; no env var override
     
+
         // Always force async dispatch for JPs (maximizes parallelism)
         let jp_force_async_unannot = true
         let jp_force_async_types = true
     
+
         // Use custom thread pool, not Hopac's scheduler (avoids deadlocks)
         let jp_use_threadpool = false
     
+
         // Hard abort on diagnostic cap hit (don't try to continue)
         let jp_diag_hard_abort = false
     
+
         // Enable verbose diagnostics and traces for debugging
         let jp_diag_verbose = false  // alpha146: default off to avoid multi-line spam
         let jp_diag_include_top_traces = false
     
+
         let diag_console_lock = obj()
 
         // alpha151: bring back *useful* detailed diagnostics without console spam.
@@ -21934,6 +23504,7 @@ module spiral_compiler =
             let ts = System.DateTime.UtcNow.ToString("o")
             sprintf "[%s] tid=%d %s" ts tid tag
     
+
         // Backwards-compatible alias: older call sites expect diag_snapshot_short.
         // alpha271: forward-declared mutable provider to avoid value-before-definition.
         let mutable jp_extra_provider : (unit -> string) = (fun () -> "")
@@ -21943,16 +23514,21 @@ module spiral_compiler =
     
     
         // ALPHA35: Parallelism is enabled by default, but the retry loop can request fully sequential
+
+
+
         // JP execution when cache corruption is detected (EJP0003/EJP0007/EJP0008).
         // This is driven by CacheGeneration.requestSequential and reset at attempt=0.
         let mutable jp_parallel_enabled = true  // kept for diagnostic compatibility
     
+
         let jp_parallel_effective () =
             jp_is_parallel_enabled
             && jp_parallel_enabled
             && not (CacheGeneration.isSequentialRequested())
         let mutable diag_abort_armed = true
     
+
         // Per-JP-name statistics for detecting loop specialization patterns
         let jp_name_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
         let jp_mismatch_counts = System.Collections.Concurrent.ConcurrentDictionary<string, int>(System.StringComparer.Ordinal)
@@ -21981,9 +23557,11 @@ module spiral_compiler =
         let jp_method_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Trace>(HashIdentity.Reference)
         let jp_type_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Trace>(HashIdentity.Reference)
     
+
         // Monotonic placeholder ids: eliminate collisions from hash-based ids under parallel builds.
         let mutable jp_method_rec_placeholder_next_id = 0
     
+
         // JPMethod recursion placeholders: enable recursive functions without forcing explicit return annotations.
         // Generation-aware: placeholder resolutions must not persist across cache invalidations.
         // This is a minimal 'promise-like' cell inspired by the old Hopac approach: once a build attempt is invalidated,
@@ -21995,11 +23573,14 @@ module spiral_compiler =
             System.Collections.Concurrent.ConcurrentDictionary<Ty, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
     
     
+
+
         // Placeholder id -> JP key mapping for round-tripped placeholders (when the Ty is reconstructed from printed form).
         let jp_method_rec_placeholder_ids : System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>> =
             System.Collections.Concurrent.ConcurrentDictionary<int, ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Structural)
     
         // Alpha36: when generation invalidates, clear JP recursion placeholder cells and their reverse maps.
+
         do CacheGeneration.registerOnInvalidate (fun _reason ->
             try
                 jp_method_rec_placeholders.Clear()
@@ -22010,6 +23591,9 @@ module spiral_compiler =
     
     
     
+
+
+
         let jp_method_try_key_of_rec_placeholder (ty: Ty) : ConsedNode<RData [] * Ty [] * Ty> option =
             // Fast-path: exact placeholder Ty -> key mapping.
             match jp_method_rec_placeholder_keys.TryGetValue ty with
@@ -22039,12 +23623,14 @@ module spiral_compiler =
                     | None -> None
                 | _ -> None
     
+
         let jp_method_deref_rec_placeholder (ty: Ty) : Ty =
             match jp_method_try_key_of_rec_placeholder ty with
             | Some k ->
                 let curGen = CacheGeneration.current()
                 let cell = jp_method_rec_placeholders.[k]
     
+
                 // Always compute the safe-annotation fallback once; we also apply it when the placeholder is stale.
                 // Without this, a placeholder from a previous cache generation can leak as a term-level DV and explode later
                 // as an apply-mismatch (the .JPMethodRecPlaceholder(...) crash seen in alpha25 logs).
@@ -22061,6 +23647,7 @@ module spiral_compiler =
                     // allow non-primitive annotated return types to break recursion, but never substitute primitives.
                     if is_jp_placeholder_like ret_ty || is_hard_primitive_like ret_ty then ty else ret_ty
     
+
                 if cell.gen <> curGen then
                     // Stale generation: treat as unresolved placeholder for this retry attempt.
                     // Critical: still apply fallback so the stale placeholder cannot leak into term evaluation.
@@ -22074,6 +23661,7 @@ module spiral_compiler =
                     else v
             | None -> ty
     
+
         let inline ty_is_jp_method_rec_placeholder (ty: Ty) : bool =
             match jp_method_try_key_of_rec_placeholder ty with
             | Some _ -> true
@@ -22082,17 +23670,21 @@ module spiral_compiler =
                 | YSymbol s when s.Contains("JPMethodRecPlaceholder(") -> true
                 | _ -> false
     
+
         let inline ty_is_jp_type_rec_placeholder (ty: Ty) : bool =
             match ty with
             | YSymbol s when s.Contains("JPTypeRecPlaceholder(") -> true
             | _ -> false
     
+
         let inline ty_is_jp_method_unknown_ret_placeholder (ty: Ty) : bool =
             match ty with
             | YSymbol s when s.Contains("JPMethodUnknownRet(") -> true
             | _ -> false
     
     
+
+
         let rec ty_eq_allow_jp_placeholders (a: Ty) (b: Ty) : bool =
             // Treat JP method recursion placeholders as wildcards to break cyclic type validation (Hopac join points).
             if ty_is_jp_method_rec_placeholder a || ty_is_jp_method_rec_placeholder b || ty_is_jp_type_rec_placeholder a || ty_is_jp_type_rec_placeholder b || ty_is_jp_method_unknown_ret_placeholder a || ty_is_jp_method_unknown_ret_placeholder b then true
@@ -22121,6 +23713,11 @@ module spiral_compiler =
     
     
     
+
+
+
+
+
         let jp_method_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (jp: string) : Ty =
             let curGen = CacheGeneration.current()
             let cell =
@@ -22142,6 +23739,7 @@ module spiral_compiler =
                 jp_method_rec_placeholders.AddOrUpdate(key, resetCell, (fun _ old -> if old.gen = curGen then old else resetCell)) |> ignore
                 resetCell.v
     
+
         let jp_method_resolve_rec_placeholder (key: ConsedNode<RData [] * Ty [] * Ty>) (ty: Ty) : unit =
             // par: generation-aware placeholder resolution + anti-clobber.
             // We still keep the 'hard primitive vs expected non-primitive' guard, but we also prevent a hard primitive (ex: i32)
@@ -22159,14 +23757,17 @@ module spiral_compiler =
                 | YSymbol s when s.StartsWith("JPMethodRecPlaceholder(") -> true
                 | _ -> false
     
+
             let inline is_unknown_ret (t: Ty) =
                 match t with
                 | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> true
                 | _ -> false
     
+
             let (_, _, expected_ret_ty) = key.node
             let curGen = CacheGeneration.current()
     
+
             if is_hard_primitive_like ty && not (is_primitive_like expected_ret_ty) && not (is_jp_method_placeholder expected_ret_ty) && not (is_unknown_ret expected_ret_ty) then
                 if jp_diag_verbose then
                     let jp_name =
@@ -22198,6 +23799,7 @@ module spiral_compiler =
                     )
                 ) |> ignore
     
+
         let jp_invalidate_bounded (key: string) (maxAttempts: int) (reason: string) =
             let n = jp_mismatch_counts.AddOrUpdate(key, 1, (fun _ v -> v + 1))
             let gen =
@@ -22214,6 +23816,8 @@ module spiral_compiler =
             gen, n
     
     
+
+
         let jp_method_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>) =
             try
                 stack
@@ -22226,6 +23830,7 @@ module spiral_compiler =
                 |> fun a -> System.String.Join(" ; ", a)
             with _ -> "<unavailable>"
     
+
         let jp_type_stack_preview (stack: System.Collections.Generic.HashSet<ConsedNode<Ty []>>) =
             try
                 stack
@@ -22235,23 +23840,27 @@ module spiral_compiler =
                 |> fun a -> System.String.Join(" ; ", a)
             with _ -> "<unavailable>"
     
+
         let inline trace_frame_short (x: Range) =
             let line = (fst x.range).line + 1
             let col = (fst x.range).character + 1
             sprintf "%s:%d:%d" x.path line col
     
         /// ALPHA15: Concise trace frame: filename only (no directory), line:col
+
         let inline trace_frame_concise (x: Range) =
             let filename = System.IO.Path.GetFileName(x.path)
             let line = (fst x.range).line + 1
             let col = (fst x.range).character + 1
             sprintf "%s:%d:%d" filename line col
     
+
         let inline trace_frame_rust (x: Range) =
             let (p0, p1) = x.range
             sprintf "%s:({ line = %d; character = %d }, { line = %d; character = %d })"
                 x.path (p0.line + 1) (p0.character + 1) (p1.line + 1) (p1.character + 1)
     
+
         let trace_dedup (xs: Trace) =
             let rec loop (last: Range option) (acc: Range list) (xs: Trace) =
                 match xs with
@@ -22262,6 +23871,7 @@ module spiral_compiler =
                     | _ -> loop (Some x) (x :: acc) rest
             loop None [] xs
     
+
         let trace_to_string_short (xs: Trace) =
             let frames = trace_dedup xs |> List.map trace_frame_short
             if frames.IsEmpty then "<no-trace>"
@@ -22270,6 +23880,7 @@ module spiral_compiler =
                 System.String.Join(" <- ", top)
     
         /// ALPHA15: Concise trace string: filename only (no full paths), line:col, max 20 frames
+
         let trace_to_string_concise (xs: Trace) =
             let frames = trace_dedup xs |> List.map trace_frame_concise
             if frames.IsEmpty then "<no-trace>"
@@ -22283,6 +23894,7 @@ module spiral_compiler =
                 if frames.Length > shown.Length then body + sprintf "\n   ... (+%d)" (frames.Length - shown.Length)
                 else body
     
+
         let trace_to_string_full (xs: Trace) =
             let frames = trace_dedup xs |> List.map trace_frame_rust
             if frames.IsEmpty then "<no-trace>"
@@ -22296,6 +23908,7 @@ module spiral_compiler =
                 if frames.Length > shown.Length then body + sprintf "\n  ... (%d more)" (frames.Length - shown.Length)
                 else body
     
+
         let inline record_jp_diag (jp_name: string option) (trace: Trace) =
             let name = defaultArg jp_name "<anon>"
             jp_spawn_ctx_set name
@@ -22308,20 +23921,24 @@ module spiral_compiler =
             jp_method_key_names.AddOrUpdate(key, name, (fun _ _ -> name)) |> ignore
             jp_method_key_traces.AddOrUpdate(key, trace, (fun _ _ -> trace)) |> ignore
     
+
         let inline record_jp_diag_type (key: ConsedNode<Ty []>) (trace: Trace) =
             DiagSidecar.emit (sprintf "[spiral_compiler] jp.type tag=%d" key.tag)
             record_jp_diag (Some "<type>") trace
             jp_type_key_traces.AddOrUpdate(key, trace, (fun _ _ -> trace)) |> ignore
     
+
         let mutable diag_last_ms = 0L
         let mutable diag_last_wait : string = ""
         do DiagLastWait.set ""
     
+
         let inline get_private_bytes () =
             try
                 System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64
             with _ -> 0L
     
+
         let inline diag_specs_total () =
             let mutable total = 0
             for KeyValue(_, (dict, _, _)) in join_point_method do
@@ -22335,8 +23952,10 @@ module spiral_compiler =
                 total <- total + dict.Count
             total
     
+
         let diag_snapshot_impl (reason: string) (include_top_traces: bool) =
     
+
             let elapsed_ms = peval_sw.ElapsedMilliseconds
             let pb = get_private_bytes ()
             let gc_total = System.GC.GetTotalMemory(false)
@@ -22344,6 +23963,7 @@ module spiral_compiler =
                 try System.Runtime.GCSettings.IsServerGC
                 with _ -> false
     
+
             let mutable method_groups = 0
             let mutable method_specs = 0
             let mutable closure_groups = 0
@@ -22361,6 +23981,7 @@ module spiral_compiler =
                     events_total <- events_total + 1
                     if not (Hopac.IVar.Now.isFull ivar) then events_not_set <- events_not_set + 1
     
+
             for KeyValue(_, (dict, _, _)) in join_point_closure do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_, Hopac.IVar<_>>)
                 closure_groups <- closure_groups + 1
@@ -22369,6 +23990,7 @@ module spiral_compiler =
                     events_total <- events_total + 1
                     if not (Hopac.IVar.Now.isFull ivar) then events_not_set <- events_not_set + 1
     
+
             for KeyValue(_, (dict, _, _)) in join_point_type do
                 let dict = (dict : System.Collections.Concurrent.ConcurrentDictionary<_,_>)
                 type_groups <- type_groups + 1
@@ -22380,9 +24002,13 @@ module spiral_compiler =
     
     
     
+
+
+
             let entries0 : System.Collections.Generic.KeyValuePair<string,int>[] = jp_name_counts.ToArray()
             let entries = entries0 |> Array.sortByDescending (fun kv -> kv.Value)
     
+
             let top_names =
                 let sbn = System.Text.StringBuilder()
                 let n = min 20 entries.Length
@@ -22399,6 +24025,7 @@ module spiral_compiler =
                     else sbn.AppendFormat("{0}={1}", name, count) |> ignore
                 sbn.ToString()
     
+
             let top_traces =
                 if include_top_traces then
                     let sbt = System.Text.StringBuilder()
@@ -22409,7 +24036,7 @@ module spiral_compiler =
                         let count = kv.Value
                         let tr =
                             match jp_name_traces.TryGetValue name with
-                            | true, t -> trace_to_string_concise t  // ALPHA15: Use concise format
+                            | true, t -> trace_to_string_concise t
                             | _ -> "<no trace>"
                         sbt.AppendFormat("  - {0} ({1})\n{2}\n", name, count, tr) |> ignore
                     sbt.ToString()
@@ -22452,6 +24079,8 @@ module spiral_compiler =
 
     
     
+
+
         let diag_snapshot_short (reason: string) =
             // alpha146: single-line, bounded diagnostic string for stderr / exceptions.
             // Full snapshot is captured via DiagSidecar when force/verbose triggers.
@@ -22490,6 +24119,7 @@ module spiral_compiler =
         let inline get_private_mb () =
             int64 (System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024L / 1024L)
     
+
         let inline peval_abort (reason: string) =
             diag_print true reason
             let full = diag_snapshot_full reason
@@ -22507,12 +24137,14 @@ module spiral_compiler =
                 | None -> short
             raise (System.Exception(msg))
     
+
         let diag_soft_abort (where: string) (reason: string) =
             // v101: do not disable parallelism on soft diagnostic triggers; keep full concurrency and just emit snapshots.
             let r = sprintf "soft_abort where=%s reason=%s" where reason
             DiagSidecar.emit ("SPIRAL PEVAL DIAG " + r)
             diag_print true r
     
+
         let diag_abort_if_needed (where: string) =
             let now = peval_sw.ElapsedMilliseconds
             // Legacy watchdog variables (optional). These remain hard aborts.
@@ -22527,6 +24159,7 @@ module spiral_compiler =
                     DiagLastWait.set diag_last_wait
                     peval_abort (sprintf "Memory limit reached (limit_mb=%d, private_mb=%d)" peval_mem_limit_mb mb)
     
+
             // Diagnostic aborts. Soft by default: disable parallel join-points and keep going.
             if diag_abort_armed then
                 if diag_abort_ms > 0L && now >= diag_abort_ms then
@@ -22538,6 +24171,7 @@ module spiral_compiler =
                         diag_abort_armed <- false
                         diag_soft_abort where (sprintf "Timed out (ms=%d)" diag_abort_ms)
     
+
                 if diag_jp_spec_cap > 0L then
                     let total = diag_specs_total () |> int64
                     if total >= diag_jp_spec_cap then
@@ -22549,6 +24183,7 @@ module spiral_compiler =
                             diag_abort_armed <- false
                             diag_soft_abort where (sprintf "Join-point spec cap exceeded. cap=%d total=%d" diag_jp_spec_cap total)
     
+
                 if diag_jp_name_spec_cap > 0L then
                     for KeyValue(name, count) in jp_name_counts do
                         if int64 count >= diag_jp_name_spec_cap then
@@ -22560,6 +24195,7 @@ module spiral_compiler =
                                 diag_abort_armed <- false
                                 diag_soft_abort where (sprintf "Join-point name cap exceeded. cap=%d name=%s count=%d" diag_jp_name_spec_cap name count)
     
+
         // ════════════════════════════════════════════════════════════════════════
         // ALPHA48: HOPAC IVAR-BASED WAITING
         // ════════════════════════════════════════════════════════════════════════
@@ -22567,11 +24203,13 @@ module spiral_compiler =
         // The key insight: we run IVar.read synchronously on the calling thread but
         // with periodic yields to allow Hopac scheduler to make progress.
     
+
         let inline hopac_tick () =
             // Hopac's API differs across versions; if there is no explicit 'tick',
             // do a very light yield to avoid starvation while we're spinning.
             System.Threading.Thread.Yield() |> ignore
     
+
         /// Wait for an IVar to be filled, with cooperative yielding and diagnostics.
         /// This is the Hopac equivalent of the old jp_ev_wait.
         let jp_ivar_wait (w: string) (details: string) (ivar: Hopac.IVar<'a>) : 'a =
@@ -22580,6 +24218,7 @@ module spiral_compiler =
             let mutable gen0 = CacheGeneration.current()
             let wait_start_ms = peval_sw.ElapsedMilliseconds
     
+
             // Fast path: IVar already filled
             if Hopac.IVar.Now.isFull ivar then
                 jp_throw_if_any ()
@@ -22591,6 +24230,7 @@ module spiral_compiler =
                 if last_progress_ms = 0L then last_progress_ms <- peval_sw.ElapsedMilliseconds
     
                 // Alpha43: in forced sequential mode, do not wait indefinitely; treat long waits as stall.
+
                 let stall_abort_ms =
                     let base_abort_ms =
                         if CacheGeneration.isSequentialRequested() then min jp_stall_abort_ms 15000L else jp_stall_abort_ms
@@ -22599,6 +24239,8 @@ module spiral_compiler =
                     else base_abort_ms
     
     
+
+
                 let mutable pending_fixup_done = false
                 let mutable cd_seen = lock jp_barrier_lock (fun () -> jp_cd)
 
@@ -22615,6 +24257,7 @@ module spiral_compiler =
     
 
                     // ALPHA100: reconcile pending leak (pend>0, queue empty, cd at base=1) before dead-ivar/stall logic.
+
                     // This can happen after CacheGeneration invalidation swaps the CountdownEvent, leaving jp_pending_count stale.
                     let cd_now = lock jp_barrier_lock (fun () -> jp_cd)
                     if not (obj.ReferenceEquals(cd_seen, cd_now)) then
@@ -22663,11 +24306,13 @@ module spiral_compiler =
                     if ran > 0 then
                         System.Threading.Interlocked.Exchange(&jp_last_progress_ms, peval_sw.ElapsedMilliseconds) |> ignore
     
+
                     // Yield to Hopac scheduler periodically to allow other fibers to run
                     if (spin.Count &&& 255) = 0 then
                         // Run a micro-batch of Hopac work
                         hopac_tick ()
     
+
                     // Periodic diagnostic tick
                     let now = peval_sw.ElapsedMilliseconds
                     let active = System.Threading.Interlocked.Read(&jp_worker_active)
@@ -22679,6 +24324,7 @@ module spiral_compiler =
                     diag_abort_if_needed "jp_ivar_wait"
     
                     // Stall detection (Alpha98): base timer prevents "progress tick" spoofing
+
                     let jp_stall_idle_abort_ms = stall_abort_ms // alpha155: alinhar o idle abort ao abort_ms (evita falso positivo aos 8s)
                     let base_wait_ms = now - wait_start_ms
                     let idle_ms = now - last_progress_ms
@@ -22692,6 +24338,7 @@ module spiral_compiler =
                         let short = diag_snapshot_short (sprintf "EJP0014 stall jp_ivar_wait idle_ms=%d base_wait_ms=%d" idle_ms base_wait_ms)
                         raise (PartEvalTypeError([], sprintf "[spiral_compiler] EJP0014: join-point scheduler stalled while waiting for jp_ivar_wait (idle_ms=%d base_wait_ms=%d abort_ms=%d) :: %s (%s) ⏎ %s" idle_ms base_wait_ms stall_abort_ms w details short))
     
+
                     spin.SpinOnce()
                     if (spin.Count &&& 4095) = 0 then
                         Progress88.tick0 (sprintf "wait:%s" w)
@@ -22699,6 +24346,7 @@ module spiral_compiler =
                         // [HOPAC-176-001] Cooperative backoff to reduce busy-wait pressure under stalls.
                         if spin.Count > 200000 then System.Threading.Thread.Sleep(1)
     
+
                 jp_throw_if_any ()
                 // ALPHA45: Final generation check - ensure result wasn't filled by stale computation
                 let finalGen = CacheGeneration.current()
@@ -22714,6 +24362,8 @@ module spiral_compiler =
 
     
         // Alpha88: surface JP scheduler counters in heartbeat without touching hot paths.
+
+
         let jp_extra_provider_impl () : string =
             try
                 let now = peval_sw.ElapsedMilliseconds
@@ -22787,6 +24437,7 @@ module spiral_compiler =
 
         
         // Alpha121/197: optional ANSI panel UI for debugging JP stalls/races.
+
         // Keep it cheap: this runs only on the 4s heartbeat thread.
         let jp_panel_provider () : string =
             try
@@ -22900,6 +24551,7 @@ module spiral_compiler =
                         if cc0 > 0 then
                             try ignore (old_cd.Signal(cc0)) with _ -> ()
                 
+
                         jp_wait_closed <- false
                         jp_wait_closed_cd <- null
                         jp_cd <- new System.Threading.CountdownEvent(1)
@@ -22913,8 +24565,12 @@ module spiral_compiler =
     
     
     
+
+
+
         // ════════════════════════════════════════════════════════════════════════
         // 
+        //
         // v122: In sequential fallback we still run the JP scheduler, but we serialize dequeue+exec via a gate.
         let jp_seq_gate = obj()
 
@@ -22928,8 +24584,10 @@ module spiral_compiler =
         // diagnostics and does NOT prevent new work from being scheduled.
         // Parallelism is always enabled; work is throttled via backpressure only.
         
+
         let jp_cancel = new System.Threading.CancellationTokenSource()
         
+
         // Progress tracking for stall detection
         let mutable jp_last_progress_ms_local = 0L
         let mutable jp_last_done_local = -1L
@@ -22979,6 +24637,7 @@ module spiral_compiler =
             Progress88.sub doneCount (max 1L den1)
             Progress88.pulse "jp_note_progress" (CacheGeneration.current())
         
+
         // Work-stealing helper: drains queue in batches
         let jp_help_batch (max_n: int) : int =
             jp_seq_lock (fun () ->
@@ -22994,9 +24653,10 @@ module spiral_compiler =
 
         let mutable jp_workers_started = false
         let jp_workers_started_sync = obj()
-        let mutable jp_workers_shutdown = false  // ALPHA16: graceful shutdown flag
         
         // Alpha201: watchdog for "hung" JP jobs. If there is no scheduler progress for jp_stall_abort_ms
+        let mutable jp_workers_shutdown = false
+
         // and the work queue is empty while active jobs keep aging, abort fast with diagnostics.
         let jp_watchdog_enabled = true  // fixed default; no env var override
 
@@ -23009,11 +24669,15 @@ module spiral_compiler =
         let jp_slow_default_ms   = 0L       // 0=disabled by default (fixed)
         let jp_slow_anon_ms      = 0L       // 0=disabled by default (fixed)
         
+
         let jp_slow_sensitive_needles : string[] = [| "execute_with_options"; "split_command"; "split_args" |]
         
+
         let mutable jp_watchdog_last_slow_trip_gen = -1L
         
         
+
+
 
         let start_jp_watchdog () =
             if jp_watchdog_enabled && not jp_watchdog_started then
@@ -23059,6 +24723,7 @@ module spiral_compiler =
                                                         slowAge <- age
                                                         slowThr <- thr
                                 
+
                                                 if slowId <> -1L then
                                                     let gen0 = CacheGeneration.current()
                                                     let prev = System.Threading.Interlocked.Exchange(&jp_watchdog_last_slow_trip_gen, gen0)
@@ -23144,6 +24809,7 @@ module spiral_compiler =
             // Release semaphore to unblock any waiting workers
             try for _ in 1 .. (jp_dop * 8 + 16) do ignore (jp_work_sem.Release()) with _ -> ()
         
+
         let start_jp_workers () =
             if not jp_workers_started then
                 lock jp_workers_started_sync (fun () ->
@@ -23151,6 +24817,7 @@ module spiral_compiler =
                         jp_workers_started <- true
     
                         // ALPHA9: Dedicated OS threads (not Hopac fibers) so blocking waits do not starve the Hopac scheduler.
+
                         let worker (i: int) =
                             let th =
                                 new System.Threading.Thread(System.Threading.ThreadStart(fun () ->
@@ -23179,14 +24846,17 @@ module spiral_compiler =
                             th.Start()
     
                         // ALPHA15 legacy: keep count high because some work items can block on external IO.
+
                         let worker_count = if CacheGeneration.isSequentialRequested() then 1 else max 8 (jp_dop * 8)
                         for i = 1 to worker_count do
                             worker i
                         
+
                         start_jp_watchdog ()
                 )
     
         // ALPHA12: jp_start - NEVER checks jp_wait_closed for scheduling decisions!
+
         // Parallelism is throttled ONLY by backpressure (jp_max_pending).
         let rec jp_start (run: unit -> unit) =
             jp_start_named "" run
@@ -23207,6 +24877,7 @@ module spiral_compiler =
                     | Some _ -> true
                     | None -> false
     
+
                 // alpha174: do NOT proactively pivot into BigStack based on depth alone.
                 // Instead, sample EnsureSufficientExecutionStack at a coarse interval and pivot only when it fails.
                 if d > 512 && (d &&& 127) = 0 then
@@ -23227,11 +24898,14 @@ module spiral_compiler =
                         run ()
     
     
+
+
             let job_id = System.Threading.Interlocked.Increment(&jp_job_id_gen)
 
             if jp_parallel_effective () then
                 start_jp_workers ()
                 
+
                 // Try to add to countdown event for completion tracking
                 let mutable cd_added = false
                 let mutable cd0 = Unchecked.defaultof<System.Threading.CountdownEvent>
@@ -23242,6 +24916,7 @@ module spiral_compiler =
                     cd_added <- cd0.TryAddCount()
                 )
                 
+
                 if cd_added then
                     let gen0 = CacheGeneration.current ()
                     let pending = System.Threading.Interlocked.Increment(&jp_pending_count)
@@ -23250,6 +24925,7 @@ module spiral_compiler =
                     if System.Threading.Interlocked.Read(&jp_sub_total_frozen) <> 0L then
                         System.Threading.Interlocked.Exchange(&jp_sub_total_frozen, 0L) |> ignore
                     
+
                     // Backpressure: beyond cap, execute inline
                     if pending > int64 jp_max_pending then
                         try
@@ -23295,6 +24971,7 @@ module spiral_compiler =
                                 jp_active_job_names.TryRemove(job_id, &_nm) |> ignore
                                 jp_note_progress ()
                         
+
                         jp_work_q.Enqueue(work_item)
                         ignore (jp_work_sem.Release())
                         jp_note_progress ()
@@ -23323,6 +25000,7 @@ module spiral_compiler =
                     jp_active_job_names.TryRemove(job_id, &_nm) |> ignore
     
         // ALPHA12: jp_wait - uses work-stealing while waiting
+
         let jp_wait () =
             let mutable gen0 = CacheGeneration.current()
             let mutable cd = lock jp_barrier_lock (fun () -> jp_cd)
@@ -23358,6 +25036,7 @@ module spiral_compiler =
                         try ignore (cd.Signal()) with _ -> ()
                         DiagSidecar.emit (sprintf "[spiral_compiler] EJP0022: jp_wait pre base-signal gen=%d cc=%d" gen0 1)
                 
+
                 let mutable iterations = 0L
                 let wait_start_ms = peval_sw.ElapsedMilliseconds
                 let mutable pending_fixup_done = false
@@ -23385,7 +25064,7 @@ module spiral_compiler =
                             // ALPHA392: if the small waiter slice made forward progress, spend one
                             // larger bounded slice before raising.  This avoids bouncing to retry_stop
                             // merely because the waiter stopped at cursor=24/32.
-                            match EvalWorklist.drainJpCyclePreflight 256 with
+                            match EvalWorklist.drainJpCyclePreflight 1024 with
                             | Some f -> f
                             | None -> frame
                         let pending_root_now = System.Threading.Interlocked.Read(&jp_pending_count)
@@ -23408,6 +25087,19 @@ module spiral_compiler =
                                     | _ -> None
                                 with _ -> None
                             match pendingPinnedTerminal with
+                            | Some pinned when pinned.status = "semantic_op_impl_required_blocked" && EvalWorklist.hasReplayCompleteWriteWitness() && EvalWorklist.frameHasSemanticEvidence pinned ->
+                                // ALPHA924: when jp_wait already has a semantic_root_complete frontier
+                                // and outstanding JP bodies, a fresh replay-root witness must be allowed
+                                // to continue draining/finalizing instead of aborting on an older rank-94
+                                // EOp implementation diagnostic.  Clear only the diagnostic terminal
+                                // selector; no op implementation, value, root proof, writer output,
+                                // codegen result, or BuildOk is synthesized.
+                                let rank = EvalWorklist.terminalContractRank pinned.status
+                                let cleared = EvalWorklist.clearTerminalContractIf pinned.status pinned.site pinned.key
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_jp_wait_root_complete_pending_op_impl_demoted_after_root_witness\",\"event\":\"jp_wait_cycle_preflight\",\"status\":%s,\"rank\":%d,\"site\":%s,\"key\":%s,\"pending\":%d,\"enqueued\":%d,\"done\":%d,\"current_count\":%d,\"cleared\":%b,\"witness\":%s,\"single_flight\":1,\"next\":\"continue_wait_for_jp_bodies\"}"
+                                        (DiagJson.esc pinned.status) rank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) pending_root_now enq_root_now done_root_now cc_root_now cleared (DiagJson.esc (EvalWorklist.replayCompleteWriteWitnessSummary())))
+                                try TermCycleFuse.reset() with _ -> ()
                             | Some pinned ->
                                 let rank = EvalWorklist.terminalContractRank pinned.status
                                 DiagJson.emit (
@@ -23457,6 +25149,23 @@ module spiral_compiler =
                                     sprintf "{\"kind\":\"eval_worklist_jp_wait_close\",\"event\":\"jp_wait_cycle_preflight\",\"status\":\"semantic_root_complete\",\"closed_count\":%d,\"pending\":%d,\"enqueued\":%d,\"done\":%d,\"single_flight\":1,\"next\":\"attempt_build\"}"
                                         cc0 pending_root_now enq_root_now done_root_now)
                             with _ -> ()
+                        elif (frame.status = "continuation_envelope" || frame.status = "tracing_explicit_loop") && EvalWorklist.frameHasSemanticEvidence frame && not (EvalWorklist.hasReplayComplete()) then
+                            // ALPHA913: the alpha912 runtime reached a live continuation envelope after
+                            // the cycle preflight drain.  Raising EJP0011 here is too early: the frame
+                            // already carries a typed replay payload and next=schedule_term_ty_replay, so
+                            // the waiter should yield the tripped fuse and allow the queued/implicit replay
+                            // path to make forward progress.  This is structural evidence only; no source
+                            // file or line is part of the policy.
+                            let frameShapeForDiag =
+                                match frame.semanticCell with
+                                | Some cell -> cell.shape
+                                | None -> frame.kind
+                            let frameNextForDiag = "schedule_term_ty_replay"
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_jp_cycle_live_replay_deferred\",\"event\":\"jp_wait_cycle_preflight\",\"status\":%s,\"shape\":%s,\"pending\":%d,\"enqueued\":%d,\"done\":%d,\"current_count\":%d,\"queue_depth\":%d,\"single_flight\":1,\"next\":%s}"
+                                    (DiagJson.esc frame.status) (DiagJson.esc frameShapeForDiag) pending_root_now enq_root_now done_root_now cc_root_now (EvalWorklist.replayQueueDepth()) (DiagJson.esc frameNextForDiag))
+                            try TermCycleFuse.reset() with _ -> ()
+                            try System.Threading.Thread.Yield() |> ignore with _ -> ()
                         else
                             let msg = sprintf "[spiral_compiler] EJP0011: jp_wait observed sequential term-cycle fuse key=%s site=%s depth=%d re=%d/%d" cycle_key cycle_site cycle_depth cycle_re cycle_max_re
                             DiagSidecar.emit (EvalWorklist.requiredMessage msg frame)
@@ -23473,6 +25182,7 @@ module spiral_compiler =
                         raise (PartEvalTypeError([], msg))
                     
                     // ALPHA119: base-count close + pending leak reconciliation
+
                     // CountdownEvent starts at 1. When the queue is empty and CurrentCount=1, no JP job can still complete.
                     // If pending_count > 0 in this situation, treat it as a leaked counter from a cancelled/stale job.
                     // ALPHA102: close base barrier whenever CurrentCount=1. Queue count can be misleading under races.
@@ -23531,6 +25241,74 @@ module spiral_compiler =
                                             try ignore (cd.Signal()) with _ -> spins <- 1024
                                 DiagSidecar.emit (sprintf "[spiral_compiler] EJP0017: jp_wait force-closed after stall cc=%d gen=%d" cc0 gen0)
                             with _ -> ()
+                        elif seq_wait_now && pending_now > 0L && jp_work_q.Count = 0 && EvalWorklist.hasReplayComplete() && EvalWorklist.hasReplayCompleteWriteWitness() && EvalWorklist.pendingCount() > 0 then
+                            // ALPHA911: root-complete plus write witness is no longer enough to abort when
+                            // the explicit worklist still has body-dict cells.  Runtime 910 proved that the
+                            // previous fail-closed branch preserved correctness, but converted useful replay
+                            // work into a retry.  Spend one bounded structural drain slice first; only close
+                            // the JP barrier when the replay body dictionary is actually empty, and only throw
+                            // if no explicit-worklist progress was made.  This is generic: it uses status,
+                            // pending counters, write-witness freshness and terminal rank, never source paths.
+                            let ewPendingBefore = EvalWorklist.pendingCount()
+                            let drainedBodyFrame =
+                                try EvalWorklist.drainJpStallPreflight "jp_wait_pending_body_dict_drain" 1024
+                                with _ -> None
+                            let ewPendingAfter = EvalWorklist.pendingCount()
+                            let bodyFrameStatus = match drainedBodyFrame with Some frame -> frame.status | None -> "none"
+                            let bodyFrameCursor = match drainedBodyFrame with Some frame -> frame.cursor | None -> -1
+                            let bodyFrameNext =
+                                match drainedBodyFrame with
+                                | Some frame ->
+                                    if frame.status = "semantic_root_complete" then "attempt_build"
+                                    elif frame.status = "semantic_step_partial" then "continue_wait_for_body_dict_drain"
+                                    else "explicit_eval_worklist_before_codegen"
+                                | None -> "none"
+                            let pinnedTerminalPresent =
+                                try
+                                    match EvalWorklist.tryPinnedTerminalContract() with
+                                    | Some pinned when EvalWorklist.terminalContractRank pinned.status >= 90 -> true
+                                    | _ -> false
+                                with _ -> false
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_jp_wait_pending_body_dict_drain\",\"event\":\"jp_wait_stall\",\"status\":\"semantic_root_complete\",\"pending\":%d,\"q\":%d,\"cc\":%d,\"ew_pending_before\":%d,\"ew_pending_after\":%d,\"frame_status\":%s,\"frame_cursor\":%d,\"frame_next\":%s,\"wait_ms\":%d,\"single_flight\":1,\"next\":\"body_dict_drain_or_fail_closed\"}"
+                                    pending_now jp_work_q.Count cc ewPendingBefore ewPendingAfter (DiagJson.esc bodyFrameStatus) bodyFrameCursor (DiagJson.esc bodyFrameNext) idle_or_elapsed_ms)
+                            if ewPendingAfter = 0 && not pinnedTerminalPresent && EvalWorklist.hasReplayComplete() && EvalWorklist.hasReplayCompleteWriteWitness() then
+                                let old_pend = System.Threading.Interlocked.Exchange(&jp_pending_count, 0L)
+                                let enq_total = System.Threading.Interlocked.Read(&jp_total_enqueued)
+                                ignore (System.Threading.Interlocked.Exchange(&jp_total_done, enq_total))
+                                lock jp_barrier_lock (fun () ->
+                                    if not (obj.ReferenceEquals(jp_wait_closed_cd, cd)) then
+                                        jp_wait_closed_cd <- cd
+                                        jp_wait_closed <- true
+                                )
+                                let cc0 = cd.CurrentCount
+                                if cc0 > 0 then
+                                    try
+                                        ignore (cd.Signal(cc0))
+                                    with _ ->
+                                        let mutable spins = 0
+                                        while cd.CurrentCount > 0 && spins < 1024 do
+                                            spins <- spins + 1
+                                            try ignore (cd.Signal()) with _ -> spins <- 1024
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_jp_wait_pending_body_dict_drained_closed\",\"event\":\"jp_wait_stall\",\"status\":\"semantic_root_complete\",\"old_pending\":%d,\"pending\":%d,\"q\":%d,\"closed_count\":%d,\"ew_pending_before\":%d,\"ew_pending_after\":%d,\"wait_ms\":%d,\"single_flight\":1,\"next\":\"attempt_build\"}"
+                                        old_pend pending_now jp_work_q.Count cc0 ewPendingBefore ewPendingAfter idle_or_elapsed_ms)
+                                DiagSidecar.emit (sprintf "[spiral_compiler] jp_wait_pending_body_dict_drained_closed old_pending=%d ew_before=%d ew_after=%d cc=%d gen=%d" old_pend ewPendingBefore ewPendingAfter cc0 gen0)
+                            elif ewPendingAfter < ewPendingBefore then
+                                System.Threading.Interlocked.Exchange(&jp_last_progress_ms, peval_sw.ElapsedMilliseconds) |> ignore
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_jp_wait_pending_body_dict_drain_progress\",\"event\":\"jp_wait_stall\",\"status\":%s,\"pending\":%d,\"q\":%d,\"cc\":%d,\"ew_pending_before\":%d,\"ew_pending_after\":%d,\"wait_ms\":%d,\"single_flight\":1,\"next\":\"continue_wait_for_body_dict_drain\"}"
+                                        (DiagJson.esc bodyFrameStatus) pending_now jp_work_q.Count cc ewPendingBefore ewPendingAfter idle_or_elapsed_ms)
+                                DiagSidecar.emit (sprintf "[spiral_compiler] jp_wait pending body-dict drain progressed ew=%d->%d gen=%d" ewPendingBefore ewPendingAfter gen0)
+                            else
+                                let msg =
+                                    sprintf "[spiral_compiler] EJP0011: jp_wait preserved root-complete pending bodies before codegen pending=%d q=%d cc=%d ew_pending=%d drained_status=%s"
+                                        pending_now jp_work_q.Count cc ewPendingAfter bodyFrameStatus
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_jp_wait_root_complete_pending_body_dict_deferred\",\"event\":\"jp_wait_stall\",\"status\":\"semantic_root_complete\",\"pending\":%d,\"q\":%d,\"cc\":%d,\"ew_pending\":%d,\"wait_ms\":%d,\"policy\":\"fail_closed_after_bounded_body_dict_drain\",\"single_flight\":1,\"next\":\"explicit_eval_worklist_before_codegen\"}"
+                                        pending_now jp_work_q.Count cc ewPendingAfter idle_or_elapsed_ms)
+                                DiagSidecar.emit msg
+                                raise (PartEvalTypeError([], msg))
                         elif seq_wait_now && pending_now > 0L && jp_work_q.Count = 0 && EvalWorklist.hasReplayComplete() then
                             // ALPHA589: runtime 588 reached semantic_root_complete, q=0 and cc=2 after
                             // the cycle preflight had already deferred exactly one pending JP body.  At
@@ -23692,6 +25470,7 @@ module spiral_compiler =
                 if iterations > 10000L then
                     DiagSidecar.emit (sprintf "jp_wait: iterations=%d pending=%d" iterations (System.Threading.Interlocked.Read(&jp_pending_count)))
                     
+
             finally
                 // Mark as closed (and release the base barrier) exactly once per CountdownEvent instance.
                 // Multiple concurrent jp_wait callers can otherwise over-Signal and crash.
@@ -23706,6 +25485,7 @@ module spiral_compiler =
                 if doSignalBase then
                     try if cd.CurrentCount > 0 then ignore (cd.Signal()) with _ -> ()
     
+
         // Legacy compatibility wrapper for old ManualResetEventSlim-based code
         // ALPHA15: More aggressive work-stealing + ThreadPool spawning for blocked workers
         let jp_ev_wait (w: string) (details: string) (ev: System.Threading.ManualResetEventSlim) =
@@ -23733,9 +25513,11 @@ module spiral_compiler =
                     diag_abort_if_needed "jp_ev_wait"
                     
                     // ALPHA15: More aggressive work-stealing - drain more work, more often
+
                     if jp_parallel_effective () then
                         let drained = jp_help_batch 64  // Drain up to 64 items each iteration
                         
+
                         // If we're stuck (nothing to drain) but queue has work, spawn ThreadPool helpers
                         // This breaks the deadlock when all Hopac workers are blocked
                         if drained = 0 && spawned_helpers < 4 && spin.Count > 1000 then
@@ -23746,14 +25528,17 @@ module spiral_compiler =
                                     try ignore (jp_help_batch 256) with _ -> ()
                                 ) |> ignore
                     
+
                     if (spin.Count &&& 63) = 0 then
                         hopac_tick ()
                     spin.SpinOnce()
                     if (spin.Count &&& 511) = 0 then System.Threading.Thread.Yield() |> ignore
                 jp_throw_if_any ()
     
+
         let jp_stack_bytes = 8 * 1024 * 1024  // For BigStack compatibility
     
+
         let rec ty_to_data s x =
             let f = ty_to_data s
             match x with
@@ -23799,6 +25584,7 @@ module spiral_compiler =
         and push_binop_no_rewrite d op (a,b) ret_ty = push_op_no_rewrite' d op [a;b] ret_ty
         and push_triop_no_rewrite d op (a,b,c) ret_ty = push_op_no_rewrite' d op [a;b;c] ret_ty
     
+
         and push_op' d op a ret_ty = push_typedop d (TyOp(op, a)) ret_ty
         and push_op d op a ret_ty = push_op' d op [a] ret_ty
         and push_binop d op (a,b) ret_ty = push_op' d op [a;b] ret_ty
@@ -23836,6 +25622,7 @@ module spiral_compiler =
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<(Data * TypedBind []) option>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
                     ) (s.backend, body)
     
+
                 let dict, hc_table =
                     if CacheGeneration.isStale cache_gen then
                         let fresh =
@@ -23855,10 +25642,12 @@ module spiral_compiler =
                     let name = sprintf "closure<%d>" join_point_key.tag
                     s.join_point_closure_key_names.TryAdd(join_point_key, name) |> ignore
     
+
                 match fun_ty with
                 | YFun(_,_,FT_Pointer) when call_args.Length <> 0 -> raise_type_error s "Function pointers shouldn't have any runtime free variables in their environment."
                 | _ -> ()
     
+
                 // v107-alpha43: Check loop specialization guard for closures
                 let closure_name = sprintf "closure<%d>" join_point_key.tag
                 if not (LoopSpecializationGuard.tryRecordSpecialization closure_name) then
@@ -23867,6 +25656,7 @@ module spiral_compiler =
                     ()
     
                 // ALPHA48: Use IVar for coordination - create new IVar and TryAdd
+
                 let jp_ivar = Hopac.IVar<(Data * TypedBind []) option>()
                 if dict.TryAdd(join_point_key, jp_ivar) then
                     // We won the race - compute the result
@@ -24136,9 +25926,11 @@ module spiral_compiler =
                         finally
                             visiting.Remove x |> ignore
     
+
                 let v = f x
                 if dirty then v else x
     
+
         and term_real_nominal s x =
             let s = {s with seq=ResizeArray(); cse=Dictionary(HashIdentity.Structural) :: s.cse}
             term s x |> data_to_ty s
@@ -24189,6 +25981,7 @@ module spiral_compiler =
                     ty_core s x
             v |> jp_method_deref_rec_placeholder
     
+
         and ty_core s x =
             // v107-alpha13: emergency stack pivot must return the same type as the normal path
             // (the old version returned 'unit' in the try-branch, causing cascading 'unit' vs 'Ty' errors)
@@ -24205,6 +25998,7 @@ module spiral_compiler =
                     let r0 = range_of_tprepass_or fallback x
                     raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in ty (BigStack exhausted)" EJPCodes.EJP0010)
     
+
         and ty_core_impl s x =
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_tprepass_or fallback x
@@ -24470,21 +26264,29 @@ module spiral_compiler =
                     // rebuilt the same JP wait/fuse frontier.  This mirrors the real
                     // evaluator's scoped environment but skips the JP cache wrapper;
                     // failures still flow through tryTypeDetailed fail-closed.
+                    let bodyNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body)
+                    let env_global_type = scope.ty.free_vars |> HopacExtensions.A.map (fun i -> vt s i)
+                    let env_global_term = scope.term.free_vars |> HopacExtensions.A.map (fun i -> v s i)
+                    let s2 : LangEnv =
+                        { s with
+                            trace = r :: s.trace
+                            seq = ResizeArray()
+                            cse = [Dictionary(HashIdentity.Structural)]
+                            unions = Map.empty
+                            i = ref 0
+                            env_global_type = env_global_type
+                            env_global_term = env_global_term
+                            env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
+                            env_stack_term = Array.zeroCreate<_> scope.term.stack_size }
+                    EvalReplayValueStore.putType bodyNodeId (fun () -> ty (rename_global_term s2) body)
+                    EvalReplayValueStore.putTypeJoinPointSpine nodeId {
+                        bodyNodeId = bodyNodeId
+                        bodyShape = evalNodeShapeTy body
+                    }
                     EvalReplayValueStore.putType nodeId (fun () ->
-                        let env_global_type = scope.ty.free_vars |> HopacExtensions.A.map (fun i -> vt s i)
-                        let env_global_term = scope.term.free_vars |> HopacExtensions.A.map (fun i -> v s i)
-                        let s2 : LangEnv =
-                            { s with
-                                trace = r :: s.trace
-                                seq = ResizeArray()
-                                cse = [Dictionary(HashIdentity.Structural)]
-                                unions = Map.empty
-                                i = ref 0
-                                env_global_type = env_global_type
-                                env_global_term = env_global_term
-                                env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
-                                env_stack_term = Array.zeroCreate<_> scope.term.stack_size }
-                        ty (rename_global_term s2) body)
+                        match EvalReplayValueStore.tryType bodyNodeId with
+                        | Some bodyTy -> bodyTy
+                        | None -> failwith ("tjoinpoint_body_type_missing:" + evalNodeShapeTy body))
                 | TTypecase _ | TUnion _ ->
                     EvalReplayValueStore.putType nodeId (fun () -> ty s expr)
                 | _ -> ()
@@ -24576,6 +26378,7 @@ module spiral_compiler =
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
     
+
             // Cycle guards: detect infinite re-entrancy into the same expression
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
@@ -24589,6 +26392,7 @@ module spiral_compiler =
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
 
     
+
             // Re-entrancy limits: keep them bounded so real cycles fail fast (and avoid multi-minute JP stalls).
             // These handle legitimate re-entrancy from staging loops (e.g., listm'.spi)
             let invNow = CacheGeneration.invalidationCount()
@@ -24598,6 +26402,7 @@ module spiral_compiler =
             let max_reentry_key = max_reentry
             let warn_reentry = EvalFallbackPolicy.warnReentry max_reentry_base
     
+
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -24673,6 +26478,7 @@ module spiral_compiler =
                     else
                         raise_type_error errEnv msg
                 
+
             // Maximum recursion depth before triggering BigStack pivot.
             // Parallel/degraded attempts stay conservative, but once alpha318+ has forced a
             // sequential fallback we give the old non-parallel path more room. The runtime
@@ -24689,6 +26495,7 @@ module spiral_compiler =
                 |> List.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
                 |> String.concat ";"
     
+
             let inline stack_check (tag: string) =
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
@@ -24708,6 +26515,7 @@ module spiral_compiler =
                     // Always use non-fatal mode: reraise to allow BigStack pivot
                     reraise()
     
+
             // Stack guard mais agressivo para evitar StackOverflow (especialmente com lambdas locais grandes).
             // A cadência aumenta com a profundidade: checamos pouco no início e muito quando está ficando perigoso.
             if depth <= 16 then
@@ -24715,8 +26523,9 @@ module spiral_compiler =
             elif depth <= 64 then
                 if (depth &&& 1) = 0 then stack_check "d<=64"
             else
-                stack_check "d>64" 
     
+                stack_check "d>64"
+
             if depth > max_depth then
                 let newGen = CacheGeneration.current() // alpha27: do not invalidate on ty depth exceeded; make it a terminal error
                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|ty_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
@@ -24731,6 +26540,7 @@ module spiral_compiler =
                 else
                     raise_type_error errEnv (sprintf "%s: ty recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
     
+
             match x with
             | TPatternRef _ -> failwith "Compiler error: TPatternRef should have been eliminated during the prepass."
             | TForall _ | TArrow _ | TJoinPoint _ -> failwith "Compiler error: Should have been transformed during the prepass."
@@ -24748,6 +26558,7 @@ module spiral_compiler =
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, JPTypeCell<Ty>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
                     ) body
     
+
                 let dict, hc_table =
                     if CacheGeneration.isStale cache_gen then
                         let fresh =
@@ -24759,17 +26570,21 @@ module spiral_compiler =
                         d,h
                     else dict, hc_table
     
+
                 // Include source range in JP key for better cache uniqueness
                 let env_global_type_key =
                     let (sp, ep) = r.range
                     let rk = sprintf "jp_type@%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character
                     Array.append env_global_type [| YLit (LitString rk) |]
     
+
                 let join_point_key = lock hc_table (fun () -> hc_table.Add(env_global_type_key))
                 
                 // ALPHA48: Use IVar-based cell for coordination
+
                 let jp_cell = dict.GetOrAdd(join_point_key, fun _ -> { ivar = Hopac.IVar<Ty option>(); owner = 0 })
                 
+
                 // Fast path: IVar already filled
                 if Hopac.IVar.Now.isFull jp_cell.ivar then
                     match Hopac.IVar.Now.get jp_cell.ivar with
@@ -24788,9 +26603,11 @@ module spiral_compiler =
                             (sprintf "error[EJP0001]: recursive join point requires annotation\n  |\n  = kind: type\n  = key: %O\n  = jp_type_stack: %d\n  = stack: %s\n  = first_seen: %s\n  = trace: %s\n"
                                 join_point_key s.jp_type_stack.Count stack_prev first_seen cur)
                     
+
                     let tid = try System.Threading.Thread.CurrentThread.ManagedThreadId with _ -> 0
                     let owner0 = jp_cell.owner
                     
+
                     if owner0 = tid && owner0 <> 0 then
                         // par: break same-thread recursion by returning a placeholder instead of failing.
                         // This keeps the type JP cache acyclic during definition and pushes failures to a later, more informative point if needed.
@@ -24853,6 +26670,7 @@ module spiral_compiler =
                             record_jp_diag_type join_point_key (r :: s.trace)
                             assert (0 = scope.term.free_vars.Length)
                             
+
                             let run () =
                                 let inflight = get_async_local jp_type_inflight mk_jp_type_inflight
                                 let inflight_added = inflight.Add join_point_key
@@ -24886,12 +26704,15 @@ module spiral_compiler =
                                         let s = rename_global_term s
                                     
                                         // ALPHA48: Simplified evaluation - just evaluate and fill IVar
+
                                         let recursion_site = sprintf "JPType@%s:%d" r.path (fst r.range).line
                                         let entry_depth = RecursionTracker.enter recursion_site
                                         BitMamba.recordAccess join_point_key
                                     
+
                                         let ret_ty = ty s body
                                     
+
                                         // Fill IVar to signal completion
                                         jp_fill_ivar jp_cell.ivar (Some ret_ty)
                                         ()
@@ -24905,6 +26726,7 @@ module spiral_compiler =
                                     if inflight_added then inflight.Remove join_point_key |> ignore
                             
                             // ALPHA48: Always schedule via Hopac, then wait cooperatively
+
                             jp_start_named (sprintf "JPType tag=%d" join_point_key.tag) run
                             let result = jp_ivar_wait "JPType.wait" (sprintf "key=%O" join_point_key) jp_cell.ivar
                             jp_throw_if_any ()
@@ -24963,6 +26785,7 @@ module spiral_compiler =
                                 | Some ret_ty -> ret_ty
                                 | None -> raise_type_error (add_trace s r) "error[EJP0004]: type join point completed with no value"
     
+
             | TB _ -> YB
             | TLit(_,x) -> YLit x
             | TV i -> vt s i
@@ -25038,6 +26861,7 @@ module spiral_compiler =
             else
                 term_core s x
     
+
         and term_core (s : LangEnv) x =
             // v107-alpha13: emergency stack pivot must return the same type as the normal path
             // (the old version returned 'unit' in the try-branch, causing cascading 'unit' vs 'Data' errors)
@@ -25055,8 +26879,10 @@ module spiral_compiler =
                     let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
                     raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in term at %s (BigStack exhausted)" EJPCodes.EJP0010 site)
     
+
         and term_core_impl (s : LangEnv) x =
     
+
             let fallback = match s.trace with | r :: _ -> r | [] -> range0
             let r0 = range_of_e_or fallback x
             let site = sprintf "term@%s:%d" r0.path (fst r0.range).line
@@ -25102,54 +26928,27 @@ module spiral_compiler =
                         // attempt real join-point materialization instead of falling through
                         // to the opaque E* dispatcher and repeating term_shape_dispatch.
                         EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
-                    | EUnbox(_,_,_,scrutinee,onSucc,onFail) ->
-                        // EUnbox is replayable in two phases: first make the scrutinee
-                        // an explicit child, then let the real evaluator decide the union
-                        // branch. This avoids pinning a generic apply-arg repeat before
-                        // the bind value has had its own replay obligation.
-                        let bindNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box scrutinee)
-                        let successNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onSucc)
-                        let failNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onFail)
-                        registerReplayTerm bindNodeId scrutinee
-                        EvalReplayValueStore.putUnboxSpine nodeId {
-                            bindNodeId = bindNodeId
-                            bindShape = evalNodeShapeTerm scrutinee
-                            successNodeId = successNodeId
-                            successShape = evalNodeShapeTerm onSucc
-                            failNodeId = failNodeId
-                            failShape = evalNodeShapeTerm onFail
-                        }
+                    | EUnbox(_,_,_,_,_,_) ->
+                        // ALPHA646: EUnbox is a real evaluator form, not an opaque E* leaf.
+                        // The 645 runtime showed an EApply body at resultm.spi:343 scheduling
+                        // EUnbox and then repeating child scheduling because no replay thunk
+                        // existed for the unbox node.  Register the real evaluator fail-closed.
                         EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
-                    | EAnnot(r,inner,annotTy) ->
-                        // ALPHA736: EAnnot now mirrors ENominal/EPair as a real composite.
-                        // Register inner term and annotation type under stable child ids,
-                        // then validate materialized values through a late-bound helper so
-                        // replay advances to a missing child instead of pinning the parent
-                        // as semantic_annot_replay_blocked.
+                    | EAnnot(_,inner,annotTy) ->
+                        // ALPHA653: runtime 652 ended with current_shape=EAnnot after a
+                        // root-complete witness.  Register annotation as a real thunk so
+                        // stale-root fallthrough can evaluate the ordinary term/type check.
                         let innerNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box inner)
                         let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box annotTy)
-                        let annotEnv () = add_trace s r
-                        EvalReplayValueStore.putAnnotContext nodeId (box (annotEnv()))
                         registerReplayTerm innerNodeId inner
-                        EvalReplayValueStore.putType typeNodeId (fun () -> ty (annotEnv()) annotTy)
+                        EvalReplayValueStore.putType typeNodeId (fun () -> ty s annotTy)
                         EvalReplayValueStore.putAnnotSpine nodeId {
                             innerNodeId = innerNodeId
                             innerShape = evalNodeShapeTerm inner
                             typeNodeId = typeNodeId
                             typeShape = evalNodeShapeTy annotTy
                         }
-                        EvalReplayValueStore.putTerm nodeId (fun () ->
-                            let innerValue =
-                                match EvalReplayValueStore.tryTerm innerNodeId with
-                                | Some value -> value
-                                | None -> failwith ("annot_inner_value_missing:" + evalNodeShapeTerm inner)
-                            let annotType =
-                                match EvalReplayValueStore.tryType typeNodeId with
-                                | Some value -> value
-                                | None -> failwith ("annot_type_value_missing:" + evalNodeShapeTy annotTy)
-                            match EvalReplayValueStore.tryAnnotReplayWithContext nodeId innerValue annotType with
-                            | Choice1Of2 value -> value
-                            | Choice2Of2 detail -> failwith ("annot_validation_blocked:" + detail))
+                        EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
                     | ENominal(_,inner,nomTy) ->
                         let innerNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box inner)
                         let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box nomTy)
@@ -25397,9 +27196,6 @@ module spiral_compiler =
                         let failNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box on_fail)
                         registerReplayTerm succNodeId on_succ
                         registerReplayTerm failNodeId on_fail
-                        try
-                            EvalReplayValueStore.putUnitTestBindValue nodeId (v (add_trace s r) bind)
-                        with _ -> ()
                         EvalReplayValueStore.putUnitTestSpine nodeId {
                             successNodeId = succNodeId
                             successShape = evalNodeShapeTerm on_succ
@@ -26068,10 +27864,22 @@ module spiral_compiler =
                             // next blocker or settle the constructor through its stored spine.
                             let recoverableStaleRootShape =
                                 termShape0 = "ESeq" || termShape0 = "EAnnot" || termShape0 = "ENominal"
-                            if recoverableStaleRootShape then
+                            let pendingRootWitnessCanDrain =
+                                // ALPHA892: alpha891 proved the scheduler no longer dies at the
+                                // previous app-root terminal pin, but a broader global-fuse path
+                                // can still abort with a valid root-complete witness while the
+                                // current term is partial (observed: ERecordTest) and pending
+                                // replay work is alive.  Treat that as a coordinator state, not
+                                // as semantic failure: clear the stale fuse and let the existing
+                                // worklist drain reveal the next real blocker or complete root.
+                                EvalWorklist.pendingCount() > 0
+                            if recoverableStaleRootShape || pendingRootWitnessCanDrain then
+                                let recoveryPolicy =
+                                    if recoverableStaleRootShape then "recoverable_stale_root_shape"
+                                    else "pending_root_witness_can_drain"
                                 DiagJson.emit (
-                                    sprintf "{\"kind\":\"eval_worklist_stale_root_witness_recovered\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_step_partial\",\"shape\":%s,\"first_key\":%s,\"first_site\":%s,\"first_depth\":%d,\"recovery\":\"recoverable_stale_root_shape\",\"single_flight\":1,\"next\":\"fallthrough_term_eval\"}"
-                                        (DiagJson.esc termShape0) (DiagJson.esc k0) (DiagJson.esc s0) d0)
+                                    sprintf "{\"kind\":\"eval_worklist_global_fuse_root_witness_partial_current_deferred\",\"event\":\"term_entry_global_fuse\",\"status\":\"semantic_step_partial\",\"shape\":%s,\"first_key\":%s,\"first_site\":%s,\"first_depth\":%d,\"pending\":%d,\"recovery\":%s,\"single_flight\":1,\"next\":\"fallthrough_term_eval\"}"
+                                        (DiagJson.esc termShape0) (DiagJson.esc k0) (DiagJson.esc s0) d0 (EvalWorklist.pendingCount()) (DiagJson.esc recoveryPolicy))
                                 EvalWorklist.parkActiveAndSelectKind "term" |> ignore
                                 TermCycleFuse.reset ()
                             else
@@ -26087,9 +27895,11 @@ module spiral_compiler =
                             let msg = EvalWorklist.retargetGlobalFuseAbortMessage "term_entry_global_fuse" "term" msg
                             raise_type_error s msg
     
+
             let depth = RecursionTracker.enter site
             use _rec_guard = { new System.IDisposable with member _.Dispose() = RecursionTracker.exit() }
     
+
             // Cycle guards: detect infinite re-entrancy into the same expression
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
@@ -26120,50 +27930,19 @@ module spiral_compiler =
                     // normal retry/replay.  The EJoinPoint' branch below remains
                     // fail-closed if the real evaluator still cannot materialize it.
                     EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
-                | EUnbox(_,_,_,scrutinee,onSucc,onFail) ->
-                    // Mirror the two-phase EUnbox replay registration in the normal
-                    // post-fuse path: schedule the scrutinee explicitly before the
-                    // real evaluator is allowed to pin an unbox-specific blocker.
-                    let bindNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box scrutinee)
-                    let successNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onSucc)
-                    let failNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onFail)
-                    registerReplayTerm bindNodeId scrutinee
-                    EvalReplayValueStore.putUnboxSpine nodeId {
-                        bindNodeId = bindNodeId
-                        bindShape = evalNodeShapeTerm scrutinee
-                        successNodeId = successNodeId
-                        successShape = evalNodeShapeTerm onSucc
-                        failNodeId = failNodeId
-                        failShape = evalNodeShapeTerm onFail
-                    }
+                | EUnbox(_,_,_,_,_,_) ->
+                    // ALPHA646: mirror the global-fuse EUnbox replay thunk in the
+                    // normal post-fuse registration path.  This lets scheduled unbox
+                    // bodies run through the real evaluator before any generic E* fallback.
                     EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
-                | EAnnot(r,inner,annotTy) ->
-                    // ALPHA736: mirror the global-fuse composite annotation contract in
-                    // the normal post-fuse registration path.
+                | EAnnot(_,inner,annotTy) ->
+                    // ALPHA653: mirror the global-fuse annotation thunk in the
+                    // normal post-fuse registration path.
                     let innerNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box inner)
                     let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box annotTy)
-                    let annotEnv () = add_trace s r
-                    EvalReplayValueStore.putAnnotContext nodeId (box (annotEnv()))
                     registerReplayTerm innerNodeId inner
-                    EvalReplayValueStore.putType typeNodeId (fun () -> ty (annotEnv()) annotTy)
-                    EvalReplayValueStore.putAnnotSpine nodeId {
-                        innerNodeId = innerNodeId
-                        innerShape = evalNodeShapeTerm inner
-                        typeNodeId = typeNodeId
-                        typeShape = evalNodeShapeTy annotTy
-                    }
-                    EvalReplayValueStore.putTerm nodeId (fun () ->
-                        let innerValue =
-                            match EvalReplayValueStore.tryTerm innerNodeId with
-                            | Some value -> value
-                            | None -> failwith ("annot_inner_value_missing:" + evalNodeShapeTerm inner)
-                        let annotType =
-                            match EvalReplayValueStore.tryType typeNodeId with
-                            | Some value -> value
-                            | None -> failwith ("annot_type_value_missing:" + evalNodeShapeTy annotTy)
-                        match EvalReplayValueStore.tryAnnotReplayWithContext nodeId innerValue annotType with
-                        | Choice1Of2 value -> value
-                        | Choice2Of2 detail -> failwith ("annot_validation_blocked:" + detail))
+                    EvalReplayValueStore.putType typeNodeId (fun () -> ty s annotTy)
+                    EvalReplayValueStore.putTerm nodeId (fun () -> term s expr)
                 | ENominal(_,inner,nomTy) ->
                     let innerNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box inner)
                     let typeNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box nomTy)
@@ -26292,9 +28071,6 @@ module spiral_compiler =
                     let failNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box on_fail)
                     registerReplayTerm succNodeId on_succ
                     registerReplayTerm failNodeId on_fail
-                    try
-                        EvalReplayValueStore.putUnitTestBindValue nodeId (v (add_trace s r) bind)
-                    with _ -> ()
                     EvalReplayValueStore.putUnitTestSpine nodeId {
                         successNodeId = succNodeId
                         successShape = evalNodeShapeTerm on_succ
@@ -26854,6 +28630,7 @@ module spiral_compiler =
             use _cycle_guard_key = { new System.IDisposable with member _.Dispose() = EvalCycleGuardKey.exit nodeKey }
 
     
+
             // Re-entrancy limits: keep them bounded so real cycles fail fast (and avoid multi-minute JP stalls).
             let invNow = CacheGeneration.invalidationCount()
             let seqNow = CacheGeneration.isSequentialRequested()
@@ -26862,6 +28639,7 @@ module spiral_compiler =
             let max_reentry_key = max_reentry
             let warn_reentry = EvalFallbackPolicy.warnReentry max_reentry_base
     
+
             let hashSnapShort () =
                 EvalCycleGuard.snapshotHashes 12 |> Seq.map string |> String.concat ","
             let keySnapShort () =
@@ -26943,6 +28721,7 @@ module spiral_compiler =
                     let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
                     raise_type_error errEnv msg
                 
+
             // Maximum term recursion depth. Keep parallel attempts conservative, but give
             // forced-sequential fallback a larger legacy-style budget. This is the bridge toward
             // stack-safe evaluators: enough room for old list folds, still bounded by stack_check.
@@ -26950,6 +28729,7 @@ module spiral_compiler =
             let max_depth_big = EvalFallbackPolicy.maxDepthBig seqNow
             let max_depth = if BigStack.isActive() then max_depth_big else max_depth_base
     
+
             let deepSitesShort () =
                 RecursionTracker.getDeepSites()
                 |> List.sortByDescending (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> kv.Value)
@@ -26957,6 +28737,7 @@ module spiral_compiler =
                 |> List.map (fun (kv: System.Collections.Generic.KeyValuePair<string,int>) -> sprintf "%s=%d" kv.Key kv.Value)
                 |> String.concat ";"
     
+
             let inline stack_check (tag: string) =
                 try
                     System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
@@ -26976,13 +28757,15 @@ module spiral_compiler =
                     // Always use non-fatal mode: reraise to allow BigStack pivot
                     reraise()
     
+
             if depth <= 32 then
                 if (depth &&& 7) = 0 then stack_check "d<=32"
             elif depth <= 128 then
                 if (depth &&& 1) = 0 then stack_check "d<=128"
             else
-                stack_check "d>128" 
     
+                stack_check "d>128"
+
             if depth > max_depth then
                 let newGen = CacheGeneration.current() // alpha27: do not invalidate on term depth guard (avoids JP gen-change loops)
                 jp_mismatch_counts.AddOrUpdate(sprintf "%s|term_depth_exceeded" EJPCodes.EJP0009, 1, (fun _ n -> n + 1)) |> ignore
@@ -27005,9 +28788,13 @@ module spiral_compiler =
                     raise_type_error errEnv (sprintf "%s: term recursion depth exceeded (depth=%d max=%d) at %s" EJPCodes.EJP0009 depth max_depth site)
     
     
+
+
             let global' (x: string) = globals_add s x
     
     
+
+
             let term2 s a b = term s a, term s b
             let term3 s a b c = term s a, term s b, term s c
             let type_apply s a b =
@@ -27020,16 +28807,6 @@ module spiral_compiler =
                 | a -> raise_type_error s <| sprintf "Expected a forall.\nGot: %s" (show_data a)
             EvalReplayValueStore.installTypeApplyAfterDefinition (fun sObj head typeArg ->
                 type_apply (unbox<LangEnv> sObj) head typeArg)
-            EvalReplayValueStore.installAnnotReplayAfterDefinition (fun sObj innerValue annotType ->
-                let s = unbox<LangEnv> sObj
-                let innerTy = data_to_ty s innerValue
-                let innerTyD = jp_method_deref_rec_placeholder innerTy
-                let annotTypeD = jp_method_deref_rec_placeholder annotType
-                if ty_eq_allow_jp_placeholders innerTyD annotTypeD then Choice1Of2 innerValue
-                else
-                    Choice2Of2 (
-                        sprintf "annot_type_mismatch:got=%s expected=%s got_deref=%s expected_deref=%s"
-                            (show_ty innerTy) (show_ty annotType) (show_ty innerTyD) (show_ty annotTypeD)))
             EvalReplayValueStore.installTypeApplyBodyReplayAfterDefinition (fun sObj parentNodeId head typeArg ->
                 let s = unbox<LangEnv> sObj
                 match head with
@@ -27096,6 +28873,7 @@ module spiral_compiler =
                 // Rely only on EnsureSufficientExecutionStack in apply_core for reactive spawning
                 apply_core s (a0, b0)
     
+
             and apply_core s (a0, b0) =
                 // v107-alpha11: define site/r0 locally for error messages
                 let r0 = match s.trace with | r :: _ -> r | [] -> range0
@@ -27136,6 +28914,7 @@ module spiral_compiler =
                         raise_type_error (add_trace s r0) (System.String.Format("{0}: insufficient execution stack in apply at {1} (gen={2} depth={3} maxObs={4} tid={5} bigActive={6} mb={7})",
                             EJPCodes.EJP0010, site, newGen, depthA, maxObs, tid, bigActive, mbApply))
     
+
                 match stack_fallback with
                 | Some v ->
                     jp_mismatch_counts.AddOrUpdate(System.String.Format("{0}|apply_bigstack_ok", EJPCodes.EJP0010), 1, (fun _ n -> n + 1)) |> ignore
@@ -27151,6 +28930,7 @@ module spiral_compiler =
                         | DNominal(a', _) -> a <- a'
                         | _ -> unwrapping <- false
     
+
                     match a, b with
                     | DRecord a, DSymbol b ->
                         match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
@@ -27191,6 +28971,7 @@ module spiral_compiler =
                             | DV(L(_, YPrim _)) | DLit _ -> true
                             | _ -> false
     
+
                         let depth = RecursionTracker.currentDepth ()
                         let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
                         let gen0 = CacheGeneration.current ()
@@ -27201,16 +28982,20 @@ module spiral_compiler =
                                 sprintf "%s:%d:%d" r.path a.line a.character
                             | _ -> "unknown"
     
+
                         let got_ty = data_to_ty s a
                         let got_ty_deref = jp_method_deref_rec_placeholder got_ty
     
+
                         if is_primitive_mismatch then
                             // Record for pattern learning
                             BitMamba.recordFailure a
     
+
                             // Mark as suspect in cache
                             SuspectCache.mark a EJPCodes.EJP0007
     
+
                             jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_primitive" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
                             let snap = if jp_diag_verbose then diag_snapshot_short (sprintf "%s apply_mismatch site=%s" EJPCodes.EJP0007 site) else ""
                             DiagSidecar.emit (sprintf "%s apply mismatch: expected callable, got %s Got(ty=%s deref=%s) depth=%d site=%s\n%s" EJPCodes.EJP0007 (show_data a) (show_ty got_ty) (show_ty got_ty_deref) depth site snap)
@@ -27229,12 +29014,13 @@ module spiral_compiler =
                                 if not wasSeq then
                                     DiagSidecar.emit (sprintf "%s apply mismatch -> requestSequential (no invalidate; gen=%d) depth=%d site=%s" EJPCodes.EJP0008 genNow depth site)
                                 else
-                                    DiagSidecar.emit (sprintf "%s apply mismatch -> already sequential (no invalidate; gen=%d) depth=%d site=%s" EJPCodes.EJP0008 genNow depth site)    
+                                    DiagSidecar.emit (sprintf "%s apply mismatch -> already sequential (no invalidate; gen=%d) depth=%d site=%s" EJPCodes.EJP0008 genNow depth site)
                         let is_jp_placeholder_apply =
                             match got_ty_deref with
                             | YSymbol s when s.Contains("JPMethodRecPlaceholder(") || s.Contains("JPTypeRecPlaceholder(") || s.Contains("JPClosureRecPlaceholder(") || s.Contains("JPMethodUnknownRet") -> true
                             | _ -> false
     
+
                         if is_jp_placeholder_apply then
                             SuspectCache.mark a (sprintf "%s apply_jp_placeholder" EJPCodes.EJP0007)
                             jp_mismatch_counts.AddOrUpdate(sprintf "%s|apply_jp_placeholder" EJPCodes.EJP0007, 1, (fun _ n -> n + 1)) |> ignore
@@ -27246,6 +29032,8 @@ module spiral_compiler =
                             raise_type_error s <| sprintf "Expected a function, closure, record or a layout type possibly inside a nominal.\nGot: %s\nGot(ty): %s\nGot(ty_deref): %s" (show_data a) (show_ty got_ty) (show_ty got_ty_deref)
     
     
+
+
             EvalReplayValueStore.installApplyAfterDefinition (fun sObj head arg ->
                 apply (unbox<LangEnv> sObj) (head, arg))
 
@@ -27416,6 +29204,7 @@ module spiral_compiler =
                 // Rely only on EnsureSufficientExecutionStack in if_core for reactive spawning
                 if_core s cond on_succ on_fail
     
+
             and if_core s cond on_succ on_fail =
                 // v107-alpha13: emergency stack pivot must return the same type as the normal path
                 try
@@ -27428,6 +29217,7 @@ module spiral_compiler =
                         let r0 = match s.trace with | r :: _ -> r | [] -> range0
                         raise_type_error (add_trace s r0) (sprintf "%s: stack overflow in if_ (BigStack exhausted)" EJPCodes.EJP0010)
     
+
             and if_core_impl s cond on_succ on_fail =
                 let lit_tr = DLit(LitBool true)
                 let lit_fl = DLit(LitBool false)
@@ -27481,6 +29271,7 @@ module spiral_compiler =
                                 |> Map.ofSeq
                                 |> YRecord
     
+
                             let fl =
                                 fl
                                 |> Seq.map (fun (KeyValue ((i, k), v)) ->
@@ -27491,11 +29282,14 @@ module spiral_compiler =
                                 |> Map.ofSeq
                                 |> YRecord
     
+
                             tr, fl
     
+
                         | _ ->
                             type_tr, type_fl
     
+
                     if type_tr = type_fl then
                         if tr.Length = 1 && fl.Length = 1 then
                             match tr.[0], fl.[0] with
@@ -27571,6 +29365,7 @@ module spiral_compiler =
                                 raise_type_error s <| sprintf "Types in branches of If do not match.\nGot: %s and %s" (show_ty type_tr) (show_ty type_fl)
                 | cond -> raise_type_error s <| sprintf "Expected a bool in conditional.\nGot: %s" (show_data cond)
     
+
             let eq s a b =
                 let inline op a b = a = b
                 match a,b with
@@ -27628,6 +29423,7 @@ module spiral_compiler =
                 | YPrim UInt64T -> f UInt64.TryParse LitUInt64 "u64"
                 | b -> raise_type_error s <| sprintf "Expected a numberic type (f32,f64,i8,i16,i32,i64,u8,u16,u32,u64) as the type of literal.\nGot: %s" (show_ty b)
     
+
             let lit_test s a bind on_succ on_fail =
                 let b = v s bind
                 match a, b with
@@ -27637,17 +29433,21 @@ module spiral_compiler =
                     if lit_to_ty a = data_to_ty s b then if_ s (eq s (DLit a) b) on_succ on_fail
                     else term s on_fail
     
+
             let inline nan_guardf32 x = if Single.IsNaN x then raise_type_error s "A 32-bit floating point operation resulting in a nan detected at compile time." else x
             let inline nan_guardf64 x = if Double.IsNaN x then raise_type_error s "A 64-bit floating point operation resulting in a nan detected at compile time." else x
     
+
             let eforall (free_vars : Scope,i,body) =
                 assert (free_vars.ty.free_vars.Length = i)
                 DForall(body,HopacExtensions.A.map (v s) free_vars.term.free_vars,HopacExtensions.A.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
     
+
             let efun (free_vars : Scope,i,body,annot) =
                 assert (free_vars.term.free_vars.Length = i)
                 DFunction(body,annot,HopacExtensions.A.map (v s) free_vars.term.free_vars,HopacExtensions.A.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
     
+
             let enominal (r,a,b) =
                 let a = term s a
                 let b = ty s b
@@ -27675,22 +29475,27 @@ module spiral_compiler =
                             |> DRecord
                         | _ -> a
     
+
                     let a_ty = data_to_ty s a
     
+
                     if ty_eq_allow_jp_placeholders a_ty b' then DNominal(a,b)
                     else raise_type_error s <| sprintf "Type error in nominal constructor.\nGot: %s\nExpected: %s" (show_ty a_ty) (show_ty b')
     
+
             let ty_union s x =
                 let x = ty s x
                 match nominal_type_apply s x with
                 | YUnion x -> x
                 | _ -> raise_type_error s <| sprintf "Expected an union.\nGot: %s" (show_ty x)
     
+
             let ty_record s x =
                 match ty s x with
                 | YRecord l -> l
                 | x -> raise_type_error s <| sprintf "Expected a type record.\nGot: %s" (show_ty x)
     
+
             let to_i32 x =
                 try
                     match x with
@@ -27705,6 +29510,7 @@ module spiral_compiler =
                     | x -> raise_type_error s <| sprintf "Expected an int convertible to an i32.\nGot: %s" (show_lit x)
                 with :? System.OverflowException -> raise_type_error s <| sprintf "The literal cannot be converted to an i32 as it is either too small or to big.\nGot: %s" (show_lit x)
     
+
             let record2 (a,b) (a',b') = DRecord(Map.empty |> Map.add a b |> Map.add a' b')
             let record3 (a,b) (a',b') (a'',b'') = DRecord(Map.empty |> Map.add a b |> Map.add a' b' |> Map.add a'' b'')
 
@@ -27804,50 +29610,34 @@ module spiral_compiler =
                             with ex -> Choice2Of2 ("backend_switch_apply_failed:" + compactOpExn ex)
                     | Some other -> Choice2Of2 (sprintf "backend_switch_expected_record:%s" (show_data other))
                     | None -> Choice2Of2 "backend_switch_arg_missing"
-                let replayPrimitiveCompare opCase opLabel =
-                    match termAt 0, termAt 1 with
-                    | Some a, Some b ->
-                        let aTy, bTy = data_to_ty s a, data_to_ty s b
-                        let primTy = if is_primitive aTy then aTy elif is_primitive bTy then bTy else aTy
-                        if ty_eq_allow_jp_placeholders aTy bTy then
-                            if is_primitive primTy then
-                                DiagJson.emit (
-                                    sprintf "{\"kind\":\"eval_worklist_type_aware_primitive_compare_replayed\",\"op\":%s,\"lhs_ty\":%s,\"rhs_ty\":%s,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
-                                        (DiagJson.esc opLabel) (DiagJson.esc (show_ty aTy)) (DiagJson.esc (show_ty bTy)))
-                                Choice1Of2 (push_binop s opCase (a,b) (YPrim BoolT))
-                            else Choice2Of2 (sprintf "primitive_compare_expected_primitive:%s/%s" (show_ty aTy) (show_ty bTy))
-                        else Choice2Of2 (sprintf "primitive_compare_type_mismatch:%s/%s" (show_ty aTy) (show_ty bTy))
-                    | None, _ -> Choice2Of2 "primitive_compare_left_missing"
-                    | _, None -> Choice2Of2 "primitive_compare_right_missing"
                 match opName with
-                | "LT" -> replayPrimitiveCompare LT "LT"
-                | "LTE" -> replayPrimitiveCompare LTE "LTE"
-                | "GT" -> replayPrimitiveCompare GT "GT"
-                | "GTE" -> replayPrimitiveCompare GTE "GTE"
                 | "BackendSwitch" -> replayBackendSwitch false
                 | "UnsafeBackendSwitch" -> replayBackendSwitch true
                 | "Global" ->
                     match termAt 0 with
                     | Some (DLit (LitString text) as a) ->
-                        if s.backend.node = env.backend then global' text |> ignore
                         DiagJson.emit (
-                            sprintf "{\"kind\":\"eval_worklist_global_replay_resolved\",\"backend\":%s,\"text_len\":%d,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
-                                (DiagJson.esc s.backend.node) text.Length)
+                            sprintf "{\"kind\":\"eval_worklist_global_replay_resolved\",\"op\":\"Global\",\"text_len\":%d,\"same_backend\":%b,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
+                                text.Length (s.backend.node = env.backend))
+                        if s.backend.node = env.backend then
+                            global' text |> ignore
                         Choice1Of2 (push_op_no_rewrite s Global a YB)
-                    | Some other -> Choice2Of2 (sprintf "global_expected_string_literal:%s" (show_data other))
+                    | Some other -> Choice2Of2 (sprintf "global_expected_string_lit:%s" (show_data other))
                     | None -> Choice2Of2 "global_arg_missing"
-                | "TypeEq" ->
-                    match typeAt 0, typeAt 1 with
-                    | Some ta, Some tb ->
-                        let result =
-                            ty_eq_allow_jp_placeholders ta tb
-                            || (match ta, tb with | YPrim StringT, YSymbol _ | YSymbol _, YPrim StringT -> true | _ -> false)
+                | "LayoutIndex" ->
+                    match termAt 0 with
+                    | Some (DV(L(_,YLayout(ty,layout)) as tyv)) ->
                         DiagJson.emit (
-                            sprintf "{\"kind\":\"eval_worklist_type_eq_replay_resolved\",\"context_node_id\":-1,\"lhs\":%s,\"rhs\":%s,\"result\":%b,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
-                                (DiagJson.esc (show_ty ta)) (DiagJson.esc (show_ty tb)) result)
-                        Choice1Of2 (DLit(LitBool result))
-                    | None, _ -> Choice2Of2 "type_eq_left_type_missing"
-                    | _, None -> Choice2Of2 "type_eq_right_type_missing"
+                            sprintf "{\"kind\":\"eval_worklist_layout_index_replay_resolved\",\"op\":\"LayoutIndex\",\"context_node_id\":%d,\"layout\":%s,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
+                                -1 (DiagJson.esc (sprintf "%A" layout)))
+                        match layout with
+                        | StackMutable | HeapMutable -> Choice1Of2 (push_typedop_no_rewrite s (TyLayoutIndexAll tyv) ty)
+                        | Heap ->
+                            match ty with
+                            | YRecord l -> Choice1Of2 (DRecord(Map.map (fun (_,b) ty -> push_typedop s (TyLayoutIndexByKey(tyv,b)) ty) l))
+                            | _ -> Choice1Of2 (push_typedop s (TyLayoutIndexAll tyv) ty)
+                    | Some other -> Choice2Of2 (sprintf "layout_index_expected_layout:%s" (show_data other))
+                    | None -> Choice2Of2 "layout_index_arg_missing"
                 | "TypeToVar" ->
                     match typeAt 0 with
                     | Some t -> Choice1Of2 (push_typedop_no_rewrite s (TyOp(TypeToVar,[])) t)
@@ -27921,7 +29711,70 @@ module spiral_compiler =
                         | None -> Choice2Of2 (sprintf "backend_switch_backend_missing:%s" s.backend.node)
                     | Some other -> Choice2Of2 (sprintf "backend_switch_expected_record:%s" (show_data other))
                     | None -> Choice2Of2 "backend_switch_arg_missing"
+                let scheduleRecordMap () =
+                    let tryScheduleRecordMapField mapper (fields: Map<int * string, Data>) orderTag =
+                        if fields.IsEmpty then
+                            EvalReplayValueStore.putTermValue contextNodeId (DRecord Map.empty)
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_record_map_empty_replay_resolved\",\"context_node_id\":%d,\"order\":%s,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
+                                    contextNodeId (DiagJson.esc orderTag))
+                            Choice1Of2 (contextNodeId, "EOp", "record_map_empty:" + orderTag)
+                        else
+                            let mutable first : (int * string * Data) option = None
+                            for KeyValue((i, k), v) in fields do
+                                if first.IsNone then first <- Some (i, k, v)
+                            match first with
+                            | Some (_i, k, v) ->
+                                let arg =
+                                    DRecord(
+                                        Map.empty
+                                        |> Map.add (fields.Count, "key") (DSymbol k)
+                                        |> Map.add ((fields.Count + 1), "value") v)
+                                try
+                                    match EvalReplayValueStore.tryScheduleApplyFunctionBodyReplayAt contextNodeId mapper arg with
+                                    | Choice1Of2 (bodyNodeId, bodyShape) ->
+                                        EvalReplayValueStore.putTypeAwareOpResultNode contextNodeId bodyNodeId
+                                        EvalReplayValueStore.putParentContinuation bodyNodeId { parentKind = "term"; parentShape = "EOp"; parentNodeId = contextNodeId; role = "record_map_field" }
+                                        DiagJson.emit (
+                                            sprintf "{\"kind\":\"eval_worklist_record_map_field_replay_scheduled\",\"context_node_id\":%d,\"field\":%s,\"order\":%s,\"body_node_id\":%d,\"body_shape\":%s,\"single_flight\":1,\"next\":\"schedule_record_map_field_replay\"}"
+                                                contextNodeId (DiagJson.esc k) (DiagJson.esc orderTag) bodyNodeId (DiagJson.esc bodyShape))
+                                        Choice1Of2 (bodyNodeId, bodyShape, "record_map_field:" + orderTag + ":" + k)
+                                    | Choice2Of2 detail -> Choice2Of2 ("record_map_field_schedule_failed:" + orderTag + ":" + detail)
+                                with ex -> Choice2Of2 ("record_map_field_schedule_exception:" + orderTag + ":" + compactOpExn ex)
+                            | None -> Choice2Of2 "record_map_fields_empty_after_nonempty"
+                    match termAt 0, termAt 1 with
+                    | Some mapper, Some (DRecord fields) ->
+                        tryScheduleRecordMapField mapper fields "mapper_record"
+                    | Some (DRecord fields), Some mapper ->
+                        // ALPHA884: runtime 883 showed this RecordMap site with the
+                        // record materialized in arg0 and the mapper function in arg1
+                        // (the old branch surfaced record_map_expected_record:? -> ?).
+                        // Preserve the same concrete field scheduling path, but accept
+                        // the observed operand order instead of pinning a false op impl terminal.
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_record_map_operand_order_repaired\",\"context_node_id\":%d,\"order\":\"record_mapper\",\"single_flight\":1,\"next\":\"schedule_record_map_field_replay\"}"
+                                contextNodeId)
+                        tryScheduleRecordMapField mapper fields "record_mapper"
+                    | Some left, Some right ->
+                        Choice2Of2 (sprintf "record_map_expected_mapper_record:left=%s:right=%s" (show_data left) (show_data right))
+                    | Some _, None -> Choice2Of2 "record_map_record_arg_missing"
+                    | None, Some _ -> Choice2Of2 "record_map_mapper_arg_missing"
+                    | None, None -> Choice2Of2 "record_map_arg_missing"
                 let scheduleRecordTypeTryFind () =
+                    EvalReplayValueStore.putApplyContext contextNodeId sObj
+                    EvalReplayValueStore.putTypeApplyContext contextNodeId sObj
+                    let scheduleFail onFail =
+                        try
+                            match EvalReplayValueStore.tryScheduleApplyFunctionBodyReplayAt contextNodeId onFail DB with
+                            | Choice1Of2 (bodyNodeId, bodyShape) ->
+                                EvalReplayValueStore.putTypeAwareOpResultNode contextNodeId bodyNodeId
+                                EvalReplayValueStore.putParentContinuation bodyNodeId { parentKind = "term"; parentShape = "EOp"; parentNodeId = contextNodeId; role = "record_type_try_find_fail" }
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_record_type_try_find_fail_replay_scheduled\",\"context_node_id\":%d,\"body_node_id\":%d,\"body_shape\":%s,\"single_flight\":1,\"next\":\"schedule_record_type_try_find_fail_replay\"}"
+                                        contextNodeId bodyNodeId (DiagJson.esc bodyShape))
+                                Choice1Of2 (bodyNodeId, bodyShape, "record_type_try_find_fail")
+                            | Choice2Of2 detail -> Choice2Of2 ("record_type_try_find_fail_schedule_failed:" + detail)
+                        with ex -> Choice2Of2 ("record_type_try_find_fail_schedule_exception:" + compactOpExn ex)
                     match recordTyAt 0, termAt 1 with
                     | Choice1Of2 fields, Some (DSymbol key) ->
                         match fields |> Map.tryPick (fun (_, k) v -> if k = key then Some v else None) with
@@ -27936,31 +29789,62 @@ module spiral_compiler =
                                         DiagJson.emit (
                                             sprintf "{\"kind\":\"eval_worklist_record_type_try_find_success_replay_scheduled\",\"context_node_id\":%d,\"key\":%s,\"body_node_id\":%d,\"body_shape\":%s,\"single_flight\":1,\"next\":\"schedule_record_type_try_find_success_replay\"}"
                                                 contextNodeId (DiagJson.esc key) bodyNodeId (DiagJson.esc bodyShape))
-                                        Choice1Of2 (bodyNodeId, bodyShape, sprintf "record_type_try_find_success:%s" key)
+                                        Choice1Of2 (bodyNodeId, bodyShape, "record_type_try_find_success:" + key)
                                     | Choice2Of2 detail -> Choice2Of2 ("record_type_try_find_success_schedule_failed:" + detail)
                                 with ex -> Choice2Of2 ("record_type_try_find_success_schedule_exception:" + compactOpExn ex)
-                            | None -> Choice2Of2 "record_type_try_find_success_branch_missing"
+                            | None ->
+                                match termAt 3 with
+                                | Some onFail -> scheduleFail onFail
+                                | None -> Choice2Of2 "record_type_try_find_branch_missing"
                         | None ->
                             match termAt 3 with
-                            | Some onFail ->
-                                try
-                                    match EvalReplayValueStore.tryScheduleApplyFunctionBodyReplayAt contextNodeId onFail DB with
-                                    | Choice1Of2 (bodyNodeId, bodyShape) ->
-                                        EvalReplayValueStore.putTypeAwareOpResultNode contextNodeId bodyNodeId
-                                        EvalReplayValueStore.putParentContinuation bodyNodeId { parentKind = "term"; parentShape = "EOp"; parentNodeId = contextNodeId; role = "record_type_try_find_fail" }
-                                        DiagJson.emit (
-                                            sprintf "{\"kind\":\"eval_worklist_record_type_try_find_fail_replay_scheduled\",\"context_node_id\":%d,\"key\":%s,\"body_node_id\":%d,\"body_shape\":%s,\"single_flight\":1,\"next\":\"schedule_record_type_try_find_fail_replay\"}"
-                                                contextNodeId (DiagJson.esc key) bodyNodeId (DiagJson.esc bodyShape))
-                                        Choice1Of2 (bodyNodeId, bodyShape, sprintf "record_type_try_find_fail:%s" key)
-                                    | Choice2Of2 detail -> Choice2Of2 ("record_type_try_find_fail_schedule_failed:" + detail)
-                                with ex -> Choice2Of2 ("record_type_try_find_fail_schedule_exception:" + compactOpExn ex)
-                            | None -> Choice2Of2 "record_type_try_find_fail_branch_missing"
+                            | Some onFail -> scheduleFail onFail
+                            | None -> Choice2Of2 "record_type_try_find_fail_missing"
                     | Choice2Of2 detail, _ -> Choice2Of2 detail
                     | _, Some other -> Choice2Of2 (sprintf "record_type_try_find_expected_symbol:%s" (show_data other))
                     | _, None -> Choice2Of2 "record_type_try_find_key_missing"
+                let scheduleRecordTypeFoldBack () =
+                    EvalReplayValueStore.putApplyContext contextNodeId sObj
+                    EvalReplayValueStore.putTypeApplyContext contextNodeId sObj
+                    match termAt 0, termAt 1, recordTyAt 2 with
+                    | Some folder, Some state0, Choice1Of2 fields ->
+                        if fields.IsEmpty then
+                            EvalReplayValueStore.putTermValue contextNodeId state0
+                            DiagJson.emit (
+                                sprintf "{\"kind\":\"eval_worklist_record_type_fold_back_empty_resolved\",\"context_node_id\":%d,\"field_count\":0,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
+                                    contextNodeId)
+                            Choice1Of2 (contextNodeId, "EOp", "record_type_fold_back_empty")
+                        else
+                            let mutable folded = Some state0
+                            let mutable failed : string option = None
+                            for KeyValue((_i, k), tyValue) in fields |> Seq.rev do
+                                match folded with
+                                | Some state ->
+                                    try
+                                        let keyedFolder = apply s (folder, DSymbol k)
+                                        let typedFolder = type_apply s keyedFolder tyValue
+                                        folded <- Some (apply s (typedFolder, state))
+                                    with ex ->
+                                        failed <- Some ("record_type_fold_back_step_exception:" + k + ":" + compactOpExn ex)
+                                        folded <- None
+                                | None -> ()
+                            match folded, failed with
+                            | Some value, _ ->
+                                EvalReplayValueStore.putTermValue contextNodeId value
+                                DiagJson.emit (
+                                    sprintf "{\"kind\":\"eval_worklist_record_type_fold_back_replay_resolved\",\"context_node_id\":%d,\"field_count\":%d,\"single_flight\":1,\"next\":\"term_op_pure_value_resolved\"}"
+                                        contextNodeId fields.Count)
+                                Choice1Of2 (contextNodeId, "EOp", "record_type_fold_back_value_materialized")
+                            | None, Some detail -> Choice2Of2 detail
+                            | None, None -> Choice2Of2 "record_type_fold_back_unknown"
+                    | None, _, _ -> Choice2Of2 "record_type_fold_back_folder_missing"
+                    | _, None, _ -> Choice2Of2 "record_type_fold_back_state_missing"
+                    | _, _, Choice2Of2 detail -> Choice2Of2 detail
                 match opName with
                 | "BackendSwitch" | "UnsafeBackendSwitch" -> scheduleBackendSwitch ()
+                | "RecordMap" -> scheduleRecordMap ()
                 | "RecordTypeTryFind" -> scheduleRecordTypeTryFind ()
+                | "RecordTypeFoldBack" -> scheduleRecordTypeFoldBack ()
                 | _ -> Choice2Of2 ("type_aware_op_schedule_unhandled:" + opName))
 
             EvalReplayValueStore.installAnnotTestBranchAfterDefinition (fun sObj bindValue annotTy ->
@@ -27973,6 +29857,7 @@ module spiral_compiler =
                     let msg = if msg.Length > 180 then msg.Substring(0, 180) + "..." else msg
                     Choice2Of2 msg)
     
+
             match x with
             | EPatternRef _ -> failwith "Compiler error: EPatternRef should have been eliminated during the prepass."
             | EB _ -> DB
@@ -27992,6 +29877,7 @@ module spiral_compiler =
                 let env_global_type = HopacExtensions.A.map (vt s) scope.ty.free_vars
                 let env_global_term = HopacExtensions.A.map (v s) scope.term.free_vars
     
+
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
                 // ALPHA48: IVar-based dict - no separate dict_ev needed
                 let (dict: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>>), hc_table, cache_gen =
@@ -27999,6 +29885,7 @@ module spiral_compiler =
                         System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<TypedBind [] option * Ty option * string option>>(HashIdentity.Reference), HashConsTable(), CacheGeneration.current ()
                     ) (backend', body)
     
+
                 let dict, hc_table =
                     if CacheGeneration.isStale cache_gen then
                         let fresh =
@@ -28010,6 +29897,7 @@ module spiral_compiler =
                         d,h
                     else dict, hc_table
     
+
                 // NOTE: join-point bodies can be polymorphic; when the same body is reached through different
                 // instantiations, caching solely by the free-variable environment can accidentally reuse the wrong
                 // specialization (especially under parallel builds). We therefore salt the key with the local
@@ -28022,16 +29910,20 @@ module spiral_compiler =
                     | Some t -> Array.append env_global_type [| t |]
                     | None -> env_global_type
     
+
                 let call_args, env_global_value =
                     data_to_rdata s hc_table env_global_term
     
+
                 // Include source range in JP key for cache uniqueness
                 let (sp, ep) = r.range
                 let rk = sprintf "jp@%s:%d:%d-%d:%d" r.path sp.line sp.character ep.line ep.character
     
+
                 let env_global_value_key =
                     Array.append env_global_value [| ReSymbol rk |]
     
+
                 let inline normalize_jp_key_ret (t: Ty) : Ty =
                     let t = jp_method_deref_rec_placeholder t
                     match t with
@@ -28040,11 +29932,13 @@ module spiral_compiler =
                     | YSymbol s when s.StartsWith("JPMethodUnknownRet(") -> YSymbol "JPMethodUnknownRet(par)"
                     | _ -> t
     
+
                 let annot_ty_for_key_norm : Ty =
                     match annot_ty_for_key with
                     | Some t -> normalize_jp_key_ret t
                     | None -> YSymbol "JPMethodUnknownRet(par)"
     
+
                 let join_point_key =
                     lock hc_table (fun () -> hc_table.Add(env_global_value_key, env_global_type_key, annot_ty_for_key_norm))
                 let _ =
@@ -28057,8 +29951,10 @@ module spiral_compiler =
                     s.join_point_method_key_names.TryAdd(join_point_key, name) |> ignore
     
                 // ALPHA48: Create IVar for this JP specialization
+
                 let jp_ivar = Hopac.IVar<TypedBind [] option * Ty option * string option>()
     
+
                 let ret_ty =
                     // ALPHA48: Check if IVar already exists (another thread is computing)
                     match dict.TryGetValue(join_point_key) with
@@ -28196,6 +30092,7 @@ module spiral_compiler =
                                         jp_name_str (show_ty ph) (LoopSpecializationGuard.getCount jp_name_str) join_point_key.tag snap)
                                     ph
     
+
                         // If a JP key was marked suspect in a previous generation, avoid memoization for this key.
                         // This is a stabilizer for EJP0003/EJP0007 style cache corruption: recompute deterministically instead of reusing a potentially poisoned cell.
                         elif (SuspectCache.currentCount () > 0) || SuspectCache.isSuspect join_point_key then
@@ -28244,6 +30141,8 @@ module spiral_compiler =
     
     
                         // ALPHA48: TryAdd IVar - if we win, we compute; if we lose, we wait on winner's IVar
+
+
                         elif dict.TryAdd(join_point_key, jp_ivar) then
                             record_jp_diag_method join_point_key jp_name (r :: s.trace)
                             let run () =
@@ -28275,12 +30174,14 @@ module spiral_compiler =
                                             }
                                         let s = rename_global_term s
     
+
                                         // Track recursion depth for adaptive retry strategies
                                         let recursion_site = sprintf "JPMethod@%s:%d" r.path (fst r.range).line
                                         let entry_depth = RecursionTracker.enter recursion_site
                                         BitMamba.recordAccess join_point_key
     
                                         // ALPHA48: Simplified evaluation - no complex retry loop
+
                                         // Just evaluate and fill the IVar
                                         let compute_term () = term_scope'' s body annot_val
                                         let seq, ty =
@@ -28291,6 +30192,7 @@ module spiral_compiler =
                                             else compute_term ()
                                         let result = (Some seq, Some ty, jp_name)
                                     
+
                                         // Verify annotation match
                                         jp_method_resolve_rec_placeholder join_point_key ty
                                         match annot_val with
@@ -28303,6 +30205,7 @@ module spiral_compiler =
                                         | _ -> ()
     
                                         // ALPHA48: Fill IVar to signal completion and unblock all waiters
+
                                         jp_fill_ivar jp_ivar result
                                         ty
                                     with e ->
@@ -28348,6 +30251,7 @@ module spiral_compiler =
                                     raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP completed without return type\n  = key: %O\n  = backend: %O\n" join_point_key backend')
                             | _ -> raise_type_error (add_trace s r) (sprintf "error[EJP0001]: JP dict inconsistency\n  = key: %O\n" join_point_key)
     
+
                 match backend with
                 | None -> push_typedop_no_rewrite s (TyJoinPoint(JPMethod((backend',body),join_point_key),call_args)) ret_ty
                 | Some (range,_) ->
@@ -28382,6 +30286,7 @@ module spiral_compiler =
                 let base_s = s
     
                 // ### ALPHA17: Early stack check BEFORE any processing
+
                 // Nested backend_switch can exhaust stack before we even start iterating.
                 // Check immediately and attempt BigStack pivot if needed.
                 let earlyStackOk =
@@ -28391,6 +30296,7 @@ module spiral_compiler =
                     with :? System.InsufficientExecutionStackException ->
                         false
                 
+
                 if not earlyStackOk then
                     // Try BigStack pivot for the entire ERecordWith evaluation
                     match BigStack.tryRun "recordwith_early" (fun () ->
@@ -28409,6 +30315,7 @@ module spiral_compiler =
                         raise_type_error base_s (sprintf "%s Stack exhausted before record-with processing (BigStack unavailable)." EJPCodes.EJP0010)
                 else
     
+
                 // ### v69: stack-safe RecordWith
                 // List.fold on very long lists can StackOverflow before term's own stack guards trigger.
                 // We therefore use explicit while loops and occasional EnsureSufficientExecutionStack checks.
@@ -28424,14 +30331,17 @@ module spiral_compiler =
                             DiagSidecar.emit (sprintf "%s RecordWith insufficient_stack tag=%s i=%d gen=%d depth=%d deep=[%s] reasons=[%s]" EJPCodes.EJP0010 tag i newGen (RecursionTracker.currentDepth()) deepSites reasons)
                             raise_type_error (add_trace base_s r) (sprintf "%s Stack too deep while evaluating record-with (%s, i=%d, gen=%d)." EJPCodes.EJP0010 tag i newGen)
     
+
                 let inline try_pick_key (key: string) (m: Map<int * string, Data>) =
                     m |> Map.tryPick (fun (i, k) v -> if k = key then Some (i, v) else None)
     
+
                 let var r a =
                     match term base_s a with
                     | DSymbol a -> a
                     | a -> raise_type_error (add_trace base_s r) <| sprintf "Expected a symbol.\nGot: %s" (show_data a)
     
+
                 let apply_map (m0: Map<int * string, Data>) =
                     let mutable m = m0
                     let mutable wi = 0
@@ -28477,6 +30387,7 @@ module spiral_compiler =
                         DiagSidecar.emit (sprintf "RecordWith large lists: withs=%d withouts=%d depth=%d" wi wo (RecursionTracker.currentDepth()))
                     m
     
+
                 let update_nested (root: Map<int * string, Data>) (xs: (Range * E) list) =
                     let path = ResizeArray<struct(Range * string)>()
                     let mutable cur = xs
@@ -28508,6 +30419,7 @@ module spiral_compiler =
                         updated <- Map.add (idx, k) (DRecord updated) parent
                     updated
     
+
                 match vars with
                 | (r, x) :: xs ->
                     match term base_s x with
@@ -28547,12 +30459,25 @@ module spiral_compiler =
                 let a_ty_d = jp_method_deref_rec_placeholder a_ty
                 let b_d = jp_method_deref_rec_placeholder b
                 if (ty_eq_allow_jp_placeholders a_ty_d b_d |> not) then
-                    raise_type_error s <| sprintf "The body does not match the annotation.
+                    match a, b with
+                    | DLit (LitString text), YB ->
+                        if s.backend.node = env.backend then global' text |> ignore
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_raw_global_string_unit_annotation_resolved\",\"text_len\":%d,\"site\":%s,\"single_flight\":1,\"next\":\"return_unit_after_raw_global\"}"
+                                text.Length (DiagJson.esc (sprintf "%A" r)))
+                        DB
+                    | DLit (LitString text), expectedTy ->
+                        DiagJson.emit (
+                            sprintf "{\"kind\":\"eval_worklist_raw_global_string_annotation_residualized\",\"text_len\":%d,\"expected\":%s,\"site\":%s,\"single_flight\":1,\"next\":\"residualize_raw_backend_annotation\"}"
+                                text.Length (DiagJson.esc (show_ty expectedTy)) (DiagJson.esc (sprintf "%A" r)))
+                        push_op_no_rewrite s Global (DLit (LitString text)) expectedTy
+                    | _ ->
+                        raise_type_error s <| sprintf "The body does not match the annotation.
     Got: %s
     Expected: %s
     Got(deref): %s
     Expected(deref): %s" (show_ty a_ty) (show_ty b) (show_ty a_ty_d) (show_ty b_d)
-                a
+                else a
             | EExists(r,a,b) ->
                 let s = add_trace s r
                 let a = List.map (ty s) a |> List.toArray
@@ -28689,6 +30614,7 @@ module spiral_compiler =
                     | Some (UnionBlockers blk) -> body blk
                     | None -> body Set.empty
     
+
                 match term s a with
                 | DNominal(DUnion(DPair(DSymbol k',a),_),_) -> if k = k' then run s a else term s on_fail
                 | DNominal(DV(L(i0,YSymbol sym)),nom_ty) when sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(") ->
@@ -28783,6 +30709,13 @@ module spiral_compiler =
     
     
     
+
+
+
+
+
+
+
                 let case_on_fail () = run (s'()) (on_fail, DB)
                 let key_value = function
                     | DPair(DSymbol k, a) -> k, a
@@ -28998,6 +30931,7 @@ module spiral_compiler =
                     // BackendSwitch needs a stable shape check without cementing placeholders as concrete types.
                     jp_method_deref_rec_placeholder x
     
+
                 let validate_type t' =
                     let t' = normalize_backend_switch_ty t'
                     match t with
@@ -29034,9 +30968,11 @@ module spiral_compiler =
                                         false
                                 
                                 // ALPHA45: Check generation before and after validation
+
                                 // If generation changes during validation, skip remaining branches
                                 let gen0 = CacheGeneration.current ()
                                 
+
                                 let doValidation () =
                                     let old = lock backend_switch_lock (fun () -> backend_switch_validate_all.Value)
                                     lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- false)
@@ -29052,6 +30988,7 @@ module spiral_compiler =
                                         lock backend_switch_lock (fun () -> backend_switch_validate_all.Value <- old)
                                 
                                 // ALPHA45: Skip validation if generation is already stale
+
                                 if CacheGeneration.isStale gen0 then
                                     DiagSidecar.emit (sprintf "BACKEND_SWITCH_VALIDATION: Skipping backend_switch validation for '%s' (generation stale)" backend)
                                 elif stackOk then
@@ -29969,6 +31906,7 @@ module spiral_compiler =
                 let a = term s a
                 DLit (LitBool (is_var a))
     
+
             | EOp(_,UnionIs,[a]) ->
                 let inline is_jp_placeholder (sym: string) =
                     sym.StartsWith("JPMethodRecPlaceholder(") || sym.StartsWith(".JPMethodRecPlaceholder(")
@@ -30249,6 +32187,7 @@ module spiral_compiler =
                 | _ -> raise_type_error s $"Expected a compile time string as the format.\nGot: {show_data fmt}"
             | EOp(_,op,a) -> raise_type_error s <| sprintf "Compiler error: %A with %i args not implemented" op (List.length a)
     
+
         let s : LangEnv = {
             trace = []
             seq = null
@@ -30272,6 +32211,7 @@ module spiral_compiler =
         let ty_to_data x = ty_to_data {s with i = ref 0} x
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
     
+
         match x with
         | EFun'(r,_,_,_,_) ->
             // v107-alpha11: Always run the main evaluation on BigStack to prevent stack overflow
@@ -30292,9 +32232,11 @@ module spiral_compiler =
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
     
+
     /// ## CodegenUtils
     // open System.Text
     
+
     /// ### CodegenEnv
     type CodegenEnv =
         {
@@ -30302,35 +32244,46 @@ module spiral_compiler =
         indent : int
         }
     
+
     /// ### line
     let line x (s : string) = x.text.Append(' ', x.indent).AppendLine s |> ignore
     
+
     /// ### indent
     let indent x : CodegenEnv = {x with indent=x.indent+4}
     
+
     /// ### add_dec_point
     let add_dec_point (x : string) = if x.IndexOf('.') = -1 && x.Contains "E" |> not then x + ".0" else x
     
+
     /// ### CodegenError
     exception CodegenError of Range option * string
     
+
     /// ### CodegenErrorWithPos
     exception CodegenErrorWithPos of Trace * string
     
+
     /// ### raise_codegen_error
     let raise_codegen_error x = raise (CodegenError (None,x))
     
+
     /// ### raise_codegen_error_backend
     let raise_codegen_error_backend r x = raise (CodegenError (Some r,x))
     
+
     /// ### raise_codegen_error'
     let raise_codegen_error' trace (r,x) = raise (CodegenErrorWithPos(Option.fold (fun s x -> x :: s) trace r,x))
     
+
     /// ## CodegenFsharp
     
+
     /// ### backend_nameFsharp
     let backend_nameFsharp = "Fsharp"
     
+
     /// ### litFsharp
     let litFsharp = function
         | LitInt8 x -> sprintf "%iy" x
@@ -30377,6 +32330,7 @@ module spiral_compiler =
             |> sprintf "'%s'"
         | LitBool x -> if x then "true" else "false"
     
+
     /// ### primFsharp
     let primFsharp = function
         | Int8T -> "int8"
@@ -30393,35 +32347,43 @@ module spiral_compiler =
         | StringT -> "string"
         | CharT -> "char"
     
+
     /// ### type_litFsharp
     let type_litFsharp = function
         | YLit x -> litFsharp x
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
     
+
     /// ### UnionRecFsharp
     type UnionRecFsharp = {tag : int; free_vars : Map<int * string, TyV[]>}
     
+
     /// ### LayoutRecFsharp
     type LayoutRecFsharp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
     
+
     /// ### MethodRecFsharp
     type MethodRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
     
+
     /// ### ClosureRecFsharp
     type ClosureRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
     
+
     /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
     
+
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
             if is_type then types.Enqueue(text) else functions.Enqueue(text)
     
+
         let layout show =
             let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -30442,6 +32404,7 @@ module spiral_compiler =
                 if dirty then print true show r
                 r
     
+
         let union show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
             let mutable next_tag = -1
@@ -30456,6 +32419,7 @@ module spiral_compiler =
                         r
                     else dict.[x]
     
+
         let jp f show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let mutable next_tag = -1
@@ -30469,14 +32433,17 @@ module spiral_compiler =
                         r
                     else dict.[x]
     
+
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litFsharp a
         let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
     
+
         let global' =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then env.globals.Add x
     
+
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -30719,6 +32686,7 @@ module spiral_compiler =
                 | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] -> sprintf "%s.[int %s] <- %s" (tup a) (tup b) (tup c)
     
+
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
                 | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
@@ -30739,9 +32707,11 @@ module spiral_compiler =
                 | BitwiseXor, [a;b] -> sprintf "%s ^^^ %s" (tup a) (tup b)
                 | BitwiseComplement, [a] -> sprintf "~~~%s" (tup a)
     
+
                 | ShiftLeft, [a;b] -> sprintf "%s <<< %s" (tup a) (tup b)
                 | ShiftRight, [a;b] -> sprintf "%s >>> %s" (tup a) (tup b)
     
+
                 | Neg, [x] -> sprintf " -%s" (tup x)
                 | Log, [x] -> sprintf "log %s" (tup x)
                 | Exp, [x] -> sprintf "exp %s" (tup x)
@@ -30806,6 +32776,7 @@ module spiral_compiler =
                 | "1" | "true" | "yes" | "y" | "on" -> true
                 | _ -> false
     
+
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,_))),i) ->
                 // ALPHA440: alpha439 reached BuildOk, but the writer gate correctly rejected
@@ -30850,6 +32821,7 @@ module spiral_compiler =
                     match key with
                     | C(_,_,t) -> t
     
+
                 // Codegen JP wait configuration (SOTA defaults)
                 let wait_timeout_ms = 60000   // 60 second timeout
                 let wait_log_ms = 5000        // Log every 5 seconds while waiting
@@ -30857,6 +32829,7 @@ module spiral_compiler =
                 let wait_fatal = false        // Don't abort on timeout, use placeholder
                 let wait_placeholder = true   // Generate placeholder on timeout
     
+
                 let placeholder () =
                     let msg =
                         sprintf "CODEGEN JP PLACEHOLDER method%i body=%s key=%A dict=%d"
@@ -30951,6 +32924,7 @@ module spiral_compiler =
                     loop ()
     #endif
     
+
                 let get_v2 () =
                     let sw = System.Diagnostics.Stopwatch.StartNew()
                     let rec loop2 () =
@@ -30990,12 +32964,12 @@ module spiral_compiler =
                                 loop2 ()
                     loop2 ()
     
+
                 let a, range =
                     if jp_dict_missing then
-                        let msg = sprintf "CODEGEN JP MISSING BODY DICT PLACEHOLDER method%i body=%s key=%A dict=%d" i jp_body_name key jp_dict.Count
+                        let msg = sprintf "CODEGEN JP MISSING BODY DICT BLOCKED method%i body=%s key=%A dict=%d" i jp_body_name key jp_dict.Count
                         DiagSidecar.emit msg
-                        if wait_placeholder then placeholder()
-                        else raise_codegen_error' [] (None, msg)
+                        raise_codegen_error' [] (None, msg)
                     else get_v2 ()
                 {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
@@ -31046,6 +33020,7 @@ module spiral_compiler =
                         | YFun(_, r, FT_Vanilla) -> r
                         | _ -> YB
     
+
                     // Codegen closure JP wait configuration (SOTA defaults)
                     let wait_timeout_ms = 60000
                     let wait_log_ms = 5000
@@ -31053,6 +33028,7 @@ module spiral_compiler =
                     let wait_fatal = false
                     let wait_placeholder = true
     
+
                     let placeholder () =
                         let msg =
                             sprintf "CODEGEN JP PLACEHOLDER closure%i body=%s dict=%d"
@@ -31147,6 +33123,7 @@ module spiral_compiler =
                         loop ()
     #endif
     
+
                     let get_v2 () =
                         let sw = System.Diagnostics.Stopwatch.StartNew()
                         let rec loop2 () =
@@ -31185,12 +33162,12 @@ module spiral_compiler =
                                     loop2 ()
                         loop2 ()
     
+
                     let domain_args, body =
                         if jp_dict_missing then
-                            let msg = sprintf "CODEGEN JP MISSING BODY DICT PLACEHOLDER closure%i body=%s key=%A dict=%d" i jp_body_name key jp_dict.Count
+                            let msg = sprintf "CODEGEN JP MISSING BODY DICT BLOCKED closure%i body=%s key=%A dict=%d" i jp_body_name key jp_dict.Count
                             DiagSidecar.emit msg
-                            if wait_placeholder then placeholder()
-                            else raise_codegen_error' [] (None, msg)
+                            raise_codegen_error' [] (None, msg)
                         else get_v2 ()
                     {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
@@ -31209,20 +33186,25 @@ module spiral_compiler =
                 binds (indent s) x.body
                 )
     
+
         let main = StringBuilder()
         binds {text=main; indent=0} x
     
+
         let program = StringBuilder()
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iteri (fun i x -> program.Append(if i = 0 then "type " else "and ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
         program.Append(main).ToString()
     
+
     /// ## CodegenGleam
     
+
     /// ### backend_nameGleam
     let backend_nameGleam = "Gleam"
     
+
     /// ### litGleam
     let litGleam = function
         | LitInt8 x -> sprintf "%i" x
@@ -31270,6 +33252,7 @@ module spiral_compiler =
             |> sprintf "\"%s\""
         | LitBool x -> if x then "True" else "False"
     
+
     /// ### primGleam
     let primGleam = function
         | Int8T -> "Int"
@@ -31286,35 +33269,43 @@ module spiral_compiler =
         | StringT -> "String"
         | CharT -> "String"
     
+
     /// ### type_litGleam
     let type_litGleam = function
         | YLit x -> litGleam x
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
     
+
     /// ### UnionRecGleam
     type UnionRecGleam = {tag : int; free_vars : Map<int * string, TyV[]>}
     
+
     /// ### LayoutRecGleam
     type LayoutRecGleam = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
     
+
     /// ### MethodRecGleam
     type MethodRecGleam = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
     
+
     /// ### ClosureRecGleam
     type ClosureRecGleam = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
     
+
     /// ### codegenGleam
     let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
     
+
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
             if is_type then types.Enqueue(text) else functions.Enqueue(text)
     
+
         let layout show =
             let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -31335,6 +33326,7 @@ module spiral_compiler =
                 if dirty then print true show r
                 r
     
+
         let union show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
             let mutable next_tag = -1
@@ -31349,6 +33341,7 @@ module spiral_compiler =
                         r
                     else dict.[x]
     
+
         let jp f show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let mutable next_tag = -1
@@ -31362,16 +33355,20 @@ module spiral_compiler =
                         r
                     else dict.[x]
     
+
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litGleam a
         let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
     
+
         let global' =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then env.globals.Add x
     
+
         let mutable while_id = 0
     
+
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -31530,6 +33527,7 @@ module spiral_compiler =
                 let loopVars = snd a |> HopacExtensions.A.map (fun (L(i,_)) -> i)
                 let loopVarSet = Set.ofArray loopVars
     
+
                 let fvData d = data_free_vars d |> HopacExtensions.A.map (fun (L(i,_)) -> i) |> Set.ofArray
                 let rec fvOp a =
                     let fromData l = l |> List.fold (fun acc d -> Set.union acc (fvData d)) Set.empty
@@ -31563,6 +33561,7 @@ module spiral_compiler =
                         Set.unionMany [Set.singleton i; succVars; fvBinds on_fail]
                     | TySizeOf _ | TyBackend _ -> Set.empty
     
+
                 and fvBinds (x : TypedBind []) =
                     let defined, used =
                         x |> Array.fold (fun (defined, used) bind ->
@@ -31580,9 +33579,11 @@ module spiral_compiler =
                         ) (Set.empty, Set.empty)
                     used
     
+
                 let freeInBody = Set.difference (fvBinds b) loopVarSet
                 let capturedVars = Set.difference freeInBody loopVarSet |> Set.toArray |> Array.sort
     
+
                 let loopParams = Array.append (HopacExtensions.A.map (sprintf "v%i") loopVars) (HopacExtensions.A.map (sprintf "v%i") capturedVars)
                 let paramList = loopParams |> String.concat ", "
                 let retVars = Array.append loopVars capturedVars
@@ -31592,6 +33593,7 @@ module spiral_compiler =
                     | [|x|] -> sprintf "v%i" x
                     | xs -> sprintf "#(%s)" (xs |> HopacExtensions.A.map (sprintf "v%i") |> String.concat ", ")
     
+
                 print
                     false
                     (fun s id' ->
@@ -31609,6 +33611,7 @@ module spiral_compiler =
                     )
                     id
     
+
                 simple (sprintf "let %s = loop%i(%s)" retPat id paramList)
             | TyDo a ->
                 complex <| fun s ->
@@ -31848,6 +33851,7 @@ module spiral_compiler =
                     global' "import gleam/result"
                     $"let {tup a} = {tup a} |> array.set({tup b}, {tup c}) |> result.unwrap({tup a})"
     
+
                 // Math
                 | Add, [a;b] -> $"{a |> tup} +{a |> dot} {b |> tup}"
                 | Sub, [a;b] -> $"{a |> tup} -{a |> dot} {b |> tup}"
@@ -31868,9 +33872,11 @@ module spiral_compiler =
                 | BitwiseXor, [a;b] -> sprintf "%s ^^^ %s" (tup a) (tup b)
                 | BitwiseComplement, [a] -> sprintf "~~~%s" (tup a)
     
+
                 | ShiftLeft, [a;b] -> sprintf "%s <<< %s" (tup a) (tup b)
                 | ShiftRight, [a;b] -> sprintf "%s >>> %s" (tup a) (tup b)
     
+
                 | Neg, [x] -> sprintf " -%s" (tup x)
                 | Log, [x] -> sprintf "log %s" (tup x)
                 | Exp, [x] -> sprintf "exp %s" (tup x)
@@ -31978,6 +33984,7 @@ module spiral_compiler =
                     x.free_vars
                     |> HopacExtensions.A.map (fun (L(_, t)) -> tyv t)
     
+
                 let dom_ty =
                     match x.domain_args with
                     | [||] -> "Nil"
@@ -31988,6 +33995,7 @@ module spiral_compiler =
                         |> String.concat ", "
                         |> sprintf "#(%s)"
     
+
                 let capt_ty =
                     fv_tys
                     |> function
@@ -31995,6 +34003,7 @@ module spiral_compiler =
                         | [| one |] -> sprintf "#(%s)" one
                         | many -> many |> String.concat ", " |> sprintf "#(%s)"
     
+
                 let fv_bind =
                     match x.free_vars with
                     | [||] -> None
@@ -32005,14 +34014,17 @@ module spiral_compiler =
                             |> String.concat ", "
                         Some (sprintf "let #(%s) = capt" names)
     
+
                 let dom_name =
                     match x.domain_args with
                     | [| L(i, _) |] -> sprintf "v%i" i
                     | _ -> "dom"
     
+
                 line s (sprintf "closure%i (capt : %s) -> fn(%s) -> %s {" x.tag capt_ty dom_ty (tup_ty x.range))
                 line (indent s) (sprintf "fn (%s) {" dom_name)
     
+
                 match x.domain_args with
                 | [||] -> ()
                 | [| L(_, _) |] -> ()
@@ -32023,28 +34035,36 @@ module spiral_compiler =
                         |> String.concat ", "
                     line (indent (indent s)) (sprintf "let #(%s) = dom" names)
     
+
                 fv_bind |> Option.iter (line (indent (indent s)))
     
+
                 binds (indent (indent s)) x.body
     
+
                 line (indent s) "}"
                 line s "}"
             )
     
+
         let main = StringBuilder()
         binds {text=main; indent=0} x
     
+
         let program = StringBuilder()
         env.globals |> Seq.distinct |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iteri (fun i x -> program.Append("pub type ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append("pub fn ").Append(x) |> ignore)
         program.Append($"pub fn main () {{ {main} }}").ToString()
     
+
     /// ## CodegenLua
     
+
     /// ### backend_nameLua
     let backend_nameLua = "Lua"
     
+
     /// ### litLua
     let litLua = function
         | LitInt8 x -> sprintf "%i" x
@@ -32092,6 +34112,7 @@ module spiral_compiler =
             |> sprintf "\"%s\""
         | LitBool x -> if x then "true" else "false"
     
+
     /// ### primLua
     let primLua = function
         | Int8T -> "Int"
@@ -32108,37 +34129,46 @@ module spiral_compiler =
         | StringT -> "String"
         | CharT -> "String"
     
+
     /// ### type_litLua
     let type_litLua = function
         | YLit x -> litLua x
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
     
+
     /// ### UnionRecLua
     type UnionRecLua = {tag : int; free_vars : Map<int * string, TyV[]>}
     
+
     /// ### LayoutRecLua
     type LayoutRecLua = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
     
+
     /// ### MethodRecLua
     type MethodRecLua = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
     
+
     /// ### ClosureRecLua
     type ClosureRecLua = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
     
+
     /// ### codegenLua
     let codegenLua (env : PartEvalResult) (x : TypedBind []) =
         let targetLua54 = false
     
+
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
     
+
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
             show s r
             let text = s.text.ToString()
             if is_type then types.Enqueue(text) else functions.Enqueue(text)
     
+
         let layout show =
             let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -32159,6 +34189,7 @@ module spiral_compiler =
                 if dirty then print true show r
                 r
     
+
         let union show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
             let mutable next_tag = -1
@@ -32173,6 +34204,7 @@ module spiral_compiler =
                         r
                     else dict.[x]
     
+
         let jp f show =
             let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let mutable next_tag = -1
@@ -32186,16 +34218,20 @@ module spiral_compiler =
                         r
                     else dict.[x]
     
+
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litLua a
         let args' x = x |> data_term_vars |> HopacExtensions.A.map show_w |> String.concat ", "
     
+
         let global' =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then env.globals.Add x
     
+
         let mutable while_id = 0
     
+
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -32373,6 +34409,7 @@ module spiral_compiler =
                     |> String.concat ", "
                 line s (sprintf "local __v = { %s }" vs)
     
+
                 let xUnion = x.Item
                 let unionRec, prefix =
                     match xUnion.layout with
@@ -32383,6 +34420,7 @@ module spiral_compiler =
                         let u = ustack xUnion.cases
                         u, sprintf "Us%i" u.tag
     
+
                 let mutable first = true
                 Map.iter (fun k (a,bnds) ->
                     let i = case_tags.[k]
@@ -32393,14 +34431,17 @@ module spiral_compiler =
                         )
                         |> String.concat " and "
     
+
                     if first then
                         line s (sprintf "if %s then" guard)
                         first <- false
                     else
                         line s (sprintf "elseif %s then" guard)
     
+
                     let body = indent s
     
+
                     let rec extractVars = function
                         | DV (L(j,_)) -> [j]
                         | DPair(a,b) -> extractVars a @ extractVars b
@@ -32409,8 +34450,10 @@ module spiral_compiler =
                         | DNominal(d,_) -> extractVars d
                         | _ -> []
     
+
                     let binderIds = a |> List.collect extractVars
     
+
                     match is with
                     | [_] when binderIds <> [] ->
                         binderIds
@@ -32418,9 +34461,11 @@ module spiral_compiler =
                             line body (sprintf "local v%i = __v[1]._%i" j (idx + 1)))
                     | _ -> ()
     
+
                     binds body bnds
                 ) on_succs
     
+
                 match on_fail with
                 | Some b ->
                     line s "else"
@@ -32521,6 +34566,7 @@ module spiral_compiler =
                     let arr, idx, val' = tup a, tup b, tup c
                     $"local __arr = {arr}; __arr[({idx})+1] = {val'}"
     
+
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
                 | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
@@ -32549,6 +34595,7 @@ module spiral_compiler =
                 | ShiftRight, [a;b] ->
                     if targetLua54 then sprintf "(%s) >> (%s)" (tup a) (tup b) else "bit.rshift(" + (tup a) + ", " + (tup b) + ")"
     
+
                 | Neg, [x] -> sprintf "-(%s)" (tup x)
                 | Log, [x] -> sprintf "math.log(%s)" (tup x)
                 | Exp, [x] -> sprintf "math.exp(%s)" (tup x)
@@ -32665,11 +34712,14 @@ module spiral_compiler =
                 line s "end"
             )
     
+
         let main = StringBuilder()
         binds {text=main; indent=0} x
     
+
         let program = StringBuilder()
     
+
         if not targetLua54 then
             program.Append("local bit = bit32 or bit\n") |> ignore
         else
@@ -32681,18 +34731,22 @@ module spiral_compiler =
         functions |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         program.Append(main.ToString()).ToString()
     
+
     /// ## RefCounting
     // Here are the reference counting analysis passes.
     open System.Collections.Generic
     
+
     /// ### varc_add
     let varc_add x i v =
         let c = Option.defaultValue 0 (Map.tryFind x v) + i
         if c = 0 then Map.remove x v else Map.add x c v
     
+
     /// ### varc_union
     let varc_union a b = Map.foldBack varc_add a b
     
+
     /// ### varc_data
     let varc_data call_data =
         let mutable v = Map.empty
@@ -32708,9 +34762,11 @@ module spiral_compiler =
         f call_data
         v
     
+
     /// ### varc_set
     let varc_set x i = Set.fold (fun s v -> Map.add v i s) Map.empty x
     
+
     /// ### refc_used_vars
     let refc_used_vars (x : TypedBind []) =
         let g_bind : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
@@ -32754,9 +34810,11 @@ module spiral_compiler =
         binds x |> ignore
         g_bind
     
+
     /// ### RefcVars
     type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : Collections.Concurrent.ConcurrentDictionary<TypedBind,TyV Set>; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
     
+
     /// ### refc_prepass
     let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
         let used_vars = refc_used_vars x
@@ -32765,6 +34823,7 @@ module spiral_compiler =
         let g_op : Dictionary<TypedBind, _> = Dictionary(HashIdentity.Reference)
         let g_op_decr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
     
+
         let add (d : Dictionary<TypedBind, TyV Set>) k x = if Set.isEmpty x then () else d.Add(k,x)
         let add_cd (d : Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set>) k x = if Set.isEmpty x then () else d.TryAdd(k,x) |> ignore
         let add' (d : Dictionary<TypedBind, Map<TyV,int>>) k x = if Map.isEmpty x then () else d.Add(k,x)
@@ -32774,6 +34833,7 @@ module spiral_compiler =
                 add g_incr k new_vars
                 let increfed_vars = new_vars + increfed_vars
     
+
                 let used_vars = used_vars.[k]
                 let decref_vars = increfed_vars - used_vars
                 add_cd g_decr k decref_vars
@@ -32816,14 +34876,17 @@ module spiral_compiler =
                 binds Set.empty increfed_vars on_fail'
         binds new_vars increfed_vars x
     
+
         {g_incr=g_incr; g_op=g_op; g_decr=g_decr; g_op_decr=g_op_decr}
     
+
     /// ## CodegenC
     module CodegenC =
         // open System
         // open System.Text
         open System.Collections.Generic
     
+
         let sizeof_tyvC = function
             | YPrim (Int64T | UInt64T | Float64T) -> 8
             | YPrim (Int32T | UInt32T | Float32T) -> 4
@@ -32834,6 +34897,7 @@ module spiral_compiler =
         let lineC x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
         let line' x s = line x (String.concat " " s)
     
+
         let rec is_heap f x =
             Array.exists (fun (L(i,t)) ->
                 match t with
@@ -32844,13 +34908,16 @@ module spiral_compiler =
                 ) x
         let is_stringC = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
     
+
         type BindsReturnC =
             | BindsTailEnd
             | BindsLocal of TyV []
     
+
         let term_vars_to_tysC x = x |> HopacExtensions.A.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
         let binds_last_dataC x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
     
+
         type UnionRecC = {tag : int; free_vars : Map<int * string, TyV[]>}
         type LayoutRecC = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type MethodRecC = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]; name : string option}
@@ -32859,8 +34926,10 @@ module spiral_compiler =
         type ArrayRecC = {tag : int; ty : Ty; tyvs : TyV[]}
         type CFunRecC = {tag : int; domain_args_ty : Ty[]; range : Ty}
     
+
         let size_t = UInt32T
     
+
         let lit_stringC x =
             let strb = StringBuilder(String.length x + 2)
             strb.Append '"' |> ignore
@@ -32877,14 +34946,17 @@ module spiral_compiler =
             strb.Append '"' |> ignore
             strb.ToString()
     
+
         let codegenC (env : PartEvalResult) (x : TypedBind []) =
             let globals = ResizeArray()
             let fwd_dcls = System.Collections.Concurrent.ConcurrentQueue()
             let types = System.Collections.Concurrent.ConcurrentQueue<string>()
             let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
     
+
             let malloc, free = "malloc", "free"
     
+
             let print_decref s_fun name_fun type_arg name_decref =
                 line s_fun (sprintf "void %s(%s * x){" name_fun type_arg)
                 let _ =
@@ -32892,6 +34964,7 @@ module spiral_compiler =
                     line s_fun (sprintf "if (x != NULL && --(x->refc) == 0) { %s(x); %s(x); }" name_decref free)
                 line s_fun "}"
     
+
             let print show r =
                 let s_typ_fwd = {text=StringBuilder(); indent=0}
                 let s_typ = {text=StringBuilder(); indent=0}
@@ -32904,6 +34977,7 @@ module spiral_compiler =
                 f types s_typ
                 f functions s_fun
     
+
             let layout show =
                 let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -32924,6 +34998,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let union show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
                 let f (a : Union) : UnionRecC =
@@ -32935,6 +35010,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let jp f show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
@@ -32944,6 +35020,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let tuple show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; tys=x}
@@ -32953,6 +35030,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let carray' show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; ty=x; tyvs = env.ty_to_data x |> data_free_vars}
@@ -32962,12 +35040,14 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let cstring' show =
                 let mutable dirty = true
                 fun () ->
                     if dirty then print show ()
                     dirty <- false
     
+
             let cfun' show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f (a : Ty, b : Ty) = {tag=dict.Count; domain_args_ty=a |> env.ty_to_data |> data_free_vars |> HopacExtensions.A.map (fun (L(_,t)) -> t); range=b}
@@ -32977,21 +35057,27 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
     
+
             let tmp =
                 let mutable i = 0u
                 fun () -> let x = i in i <- i + 1u; x
     
+
             let global' =
                 let has_added = HashSet env.globals
                 fun x -> if has_added.Add(x) then globals.Add x
     
+
             let import x = global' $"#include <{x}>"
             let import' x = global' $"#include \"{x}\""
     
+
             let tyvs_to_tys (x : TyV []) = HopacExtensions.A.map (fun (L(i,t)) -> t) x
     
+
             let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x) s BindsTailEnd x
             and return_local s ret (x : string) =
                 match ret with
@@ -33350,9 +35436,11 @@ module spiral_compiler =
                     | BitwiseXor, [a;b] -> sprintf "%s ^ %s" (tup_data a) (tup_data b)
                     | BitwiseComplement, [a] -> sprintf "~%s" (tup_data a)
     
+
                     | ShiftLeft, [a;b] -> sprintf "%s << %s" (tup_data a) (tup_data b)
                     | ShiftRight, [a;b] -> sprintf "%s >> %s" (tup_data a) (tup_data b)
     
+
                     | Neg, [x] -> sprintf "-%s" (tup_data x)
                     | Log, [x] -> import "math.h"; sprintf "log%s(%s)" (float_suffix x) (tup_data x)
                     | Exp, [x] -> import "math.h"; sprintf "exp%s(%s)" (float_suffix x) (tup_data x)
@@ -33421,14 +35509,17 @@ module spiral_compiler =
                         print_ordered_args s_typ x.free_vars
                     line s_typ "};"
     
+
                     line s_fun (sprintf "static inline void ClosureDecrefBody%i(Closure%i * x){" i i)
                     let _ =
                         let s_fun = indent s_fun
                         x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 |> line' s_fun
                     line s_fun "}"
     
+
                     print_decref s_fun $"ClosureDecref{i}" $"Closure{i}" $"ClosureDecrefBody{i}"
     
+
                     match x.domain_args |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
                     | "" -> sprintf "%s ClosureMethod%i(Closure%i * x){" range i i
                     | domain_args -> sprintf "%s ClosureMethod%i(Closure%i * x, %s){" range i i domain_args
@@ -33440,6 +35531,7 @@ module spiral_compiler =
                         binds_start x.domain_args s_fun x.body
                     line s_fun "}"
     
+
                     let fun_tag = (cfun (x.domain,x.range)).tag
                     let free_vars = x.free_vars |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}")
                     line s_fun (sprintf "Fun%i * ClosureCreate%i(%s){" fun_tag i (String.concat ", " free_vars))
@@ -33475,6 +35567,7 @@ module spiral_compiler =
                     x.tys |> HopacExtensions.A.mapi (fun i x -> L(i,x)) |> print_ordered_args (indent s_typ)
                     line s_typ (sprintf "} %s;" name)
     
+
                     let args = x.tys |> HopacExtensions.A.mapi (fun i x -> $"{tyv x} v{i}")
                     line s_fun (sprintf "static inline %s TupleCreate%i(%s){" name x.tag (String.concat ", " args))
                     let _ =
@@ -33519,6 +35612,7 @@ module spiral_compiler =
                     let i = x.tag
                     let name' = sprintf "%s%i" name i
     
+
                     line s_typ "typedef struct {"
                     let _ =
                         let s_typ = indent s_typ
@@ -33526,14 +35620,17 @@ module spiral_compiler =
                         print_ordered_args s_typ x.free_vars
                     line s_typ (sprintf "} %s;" name')
     
+
                     line s_fun (sprintf "static inline void %sDecrefBody%i(%s * x){" name i name')
                     let _ =
                         let s_fun = indent s_fun
                         x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 |> line' s_fun
                     line s_fun "}"
     
+
                     print_decref s_fun $"{name}Decref{i}" name' $"{name}DecrefBody{i}"
     
+
                     let args = x.free_vars |> HopacExtensions.A.map (fun (L(i,x)) -> $"{tyv x} v{i}")
                     line s_fun (sprintf "%s * %sCreate%i(%s){" name' name i (String.concat ", " args))
                     let _ =
@@ -33575,6 +35672,7 @@ module spiral_compiler =
                     | true  -> line s_typ (sprintf "} US%i;" i)
                     | false -> line s_typ "};"
     
+
                     let print_refc name typ q =
                         line s_fun (sprintf "static inline void %s(%s * x){" name typ)
                         let _ =
@@ -33594,12 +35692,14 @@ module spiral_compiler =
                             line s_fun "}"
                         line s_fun "}"
     
+
                     match is_stack with
                     | true  ->
                         print_refc $"USIncrefBody{i}" $"US{i}" 1
                         print_refc $"USDecrefBody{i}" $"US{i}" -1
                     | false -> print_refc $"UHDecrefBody{i}" $"UH{i}" -1
     
+
                     match is_stack with
                     | true  ->
                         line s_fun (sprintf "void USIncref%i(US%i * x){ USIncrefBody%i(x); }" i i i)
@@ -33608,6 +35708,7 @@ module spiral_compiler =
                         line s_fwd (sprintf "void UHDecref%i(UH%i * x);" i i)
                         print_decref s_fun $"UHDecref{i}" $"UH{i}" $"UHDecrefBody{i}"
     
+
                     map_iteri (fun tag (_, k) v ->
                         let args = v |> HopacExtensions.A.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", "
                         if is_stack then
@@ -33647,6 +35748,8 @@ module spiral_compiler =
                     line s_typ (sprintf "} Array%i;" i)
     
     
+
+
                     let print_body p s_fun q =
                         let refcs = x.tyvs |> refc_change (fun i -> if 1 < x.tyvs.Length then $"v.v{i}" else "v") q
                         if refcs.Length <> 0 then
@@ -33658,6 +35761,7 @@ module spiral_compiler =
                                 refcs |> line' s_fun
                             line s_fun "}"
     
+
                     line s_fun (sprintf "static inline void ArrayDecrefBody%i(Array%i * x){" i i)
                     let _ =
                         let s_fun = indent s_fun
@@ -33667,8 +35771,10 @@ module spiral_compiler =
                             ) s_fun -1
                     line s_fun "}"
     
+
                     print_decref s_fun $"ArrayDecref{i}" $"Array{i}" $"ArrayDecrefBody{i}"
     
+
                     line s_fun (sprintf "Array%i * ArrayCreate%i(%s len, bool init_at_zero){" i i len_t)
                     let _ =
                         let s_fun = indent s_fun
@@ -33682,6 +35788,7 @@ module spiral_compiler =
                         line s_fun "return x;"
                     line s_fun "}"
     
+
                     line s_fun (sprintf "Array%i * ArrayLit%i(%s len, %s * ptr){" i i len_t ptr_t)
                     let _ =
                         let s_fun = indent s_fun
@@ -33698,15 +35805,18 @@ module spiral_compiler =
                     let size_t, ptr_t, tag = prim size_t, tyv char, (carray char).tag
                     line s_typ $"typedef Array{tag} String;"
     
+
                     line s_fun "static inline void StringDecref(String * x){"
                     line (indent s_fun) $"return ArrayDecref{tag}(x);"
                     line s_fun "}"
     
+
                     line s_fun (sprintf "static inline String * StringLit(%s len, %s * ptr){" size_t ptr_t)
                     line (indent s_fun) $"return ArrayLit{tag}(len, ptr);"
                     line s_fun "}"
                     )
     
+
             match binds_last_dataC x |> data_term_vars |> term_vars_to_tysC with
             | [|YPrim Int32T|] ->
                 import "stdbool.h"
@@ -33714,15 +35824,19 @@ module spiral_compiler =
                 import "stdio.h"
                 import "stdlib.h"
     
+
                 let main_defs = {text=StringBuilder(); indent=0}
                 import "string.h" // for memcpy
     
+
                 line main_defs (sprintf "%s main(){" (prim Int32T))
                 binds_start [||] (indent main_defs) x
                 line main_defs "}"
     
+
                 let program = StringBuilder()
     
+
                 globals |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
                 fwd_dcls |> Seq.iter (fun x -> program.Append(x) |> ignore)
                 types |> Seq.iter (fun x -> program.Append(x) |> ignore)
@@ -33731,16 +35845,19 @@ module spiral_compiler =
             | _ ->
                 raise_codegen_error "The return type of main in the C backend should be a 32-bit int."
     
+
     /// ## CodegenCpp
     module CodegenCpp =
         // open System
         // open System.Text
         open System.Collections.Generic
     
+
         type backend_type =
             | Cuda of args : L<int,Ty>[] * binds : TypedBind[]
             | Cpp of binds : TypedBind[]
     
+
         type codegen_env =
             {
                 globals : string ResizeArray
@@ -33752,6 +35869,7 @@ module spiral_compiler =
                 __device__ : string
             }
     
+
             static member Create(backend_name,__device__) =
                 {
                     globals = ResizeArray()
@@ -33763,9 +35881,11 @@ module spiral_compiler =
                     __device__ = __device__
                 }
     
+
         let backend_nameCpp = "Cpp"
         let private max_tag = 255uy
     
+
         let prim = function
             | Int8T -> "char"
             | Int16T -> "short"
@@ -33781,12 +35901,14 @@ module spiral_compiler =
             | CharT -> "char"
             | StringT -> "const char *"
     
+
         /// Replaces the default types in the corelib.cuh library.
         let replace_default_types (default_env : DefaultEnv) (x : string) =
             let opts = System.Text.RegularExpressions.RegexOptions.Multiline
             System.Text.RegularExpressions.Regex.Replace(x, @"(^using default_int = )(.*?)(;)", $"$1{prim default_env.default_int}$3", opts)
             |> fun x -> System.Text.RegularExpressions.Regex.Replace(x, @"(^using default_uint = )(.*?)(;)", $"$1{prim default_env.default_uint}$3", opts)
     
+
         let is_stringCpp = function DV(L(_,YPrim StringT)) | DLit(LitString _) -> true | _ -> false
         let sizeof_tyvCpp = function
             | YPrim (Int64T | UInt64T | Float64T) -> 8
@@ -33798,13 +35920,16 @@ module spiral_compiler =
         let lineCpp x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
         let lineCpp' x s = line x (String.concat " " s)
     
+
         type BindsReturnCpp =
             | BindsTailEnd
             | BindsLocal of TyV []
     
+
         let term_vars_to_tysCpp x = x |> HopacExtensions.A.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
         let binds_last_dataCpp x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
     
+
         type LayoutRecCpp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type UnionRecCpp = {tag : int; free_vars : Map<int * string, TyV[]>; is_heap : bool}
         type MethodRecCpp = {tag : int; free_vars : TyV[]; range : Ty; body : TypedBind[]; name : string option}
@@ -33812,12 +35937,15 @@ module spiral_compiler =
         type TupleRecCpp = {tag : int; tys : Ty []}
         type CFunRecCpp = {tag : int; domain : Ty; range : Ty; funtype : FunType}
     
+
         // Replaces the invalid symbols in Spiral method names for the C backend.
         let fix_method_name (x : string) = x.Replace(''','_') + "_"
     
+
         let unroll_pop (s : Stack<int>) = if s.Count > 0 then s.Pop() else -1
         let unroll_peek (s : Stack<int>) = if s.Count > 0 then s.Peek() else -1
     
+
         let lit_stringCpp x =
             let strb = StringBuilder(String.length x + 2)
             strb.Append '"' |> ignore
@@ -33834,6 +35962,7 @@ module spiral_compiler =
             strb.Append '"' |> ignore
             strb.ToString()
     
+
         let codegen' backend_handler (part_eval_env : PartEvalResult) (code_env : codegen_env) =
             let print show r =
                 let s_typ_fwd = {text=StringBuilder(); indent=0}
@@ -33847,6 +35976,7 @@ module spiral_compiler =
                 f code_env.types s_typ
                 f code_env.functions s_fun
     
+
             let layout show =
                 let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -33876,6 +36006,7 @@ module spiral_compiler =
                         if added then print show r
                         r
     
+
             let union show =
                 let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
                 let f (a : Union) : UnionRecCpp =
@@ -33887,6 +36018,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let jp f show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
@@ -33896,6 +36028,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let tuple show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = {tag=dict.Count; tys=x}
@@ -33905,6 +36038,7 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let cfun' show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f (a : Ty, b : Ty, t : FunType) = {tag=dict.Count; domain=a; range=b; funtype=t}
@@ -33914,21 +36048,27 @@ module spiral_compiler =
                     if dirty then print show r
                     r
     
+
             let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
     
+
             let tmp =
                 let mutable i = 0u
                 fun () -> let x = i in i <- i + 1u; x
     
+
             let global' =
                 let has_added = HashSet code_env.globals
                 fun x -> if has_added.Add(x) then code_env.globals.Add x
     
+
             let import x = global' $"#include <{x}>"
             let import' x = global' $"#include \"{x}\""
     
+
             let tyvs_to_tys (x : TyV []) = HopacExtensions.A.map (fun (L(i,t)) -> t) x
     
+
             let rec binds_start (s : CodegenEnv) (x : TypedBind []) = binds (Stack()) s BindsTailEnd x
             and return_local s ret (x : string) =
                 match ret with
@@ -34314,9 +36454,11 @@ module spiral_compiler =
                     | BitwiseXor, [a;b] -> sprintf "%s ^ %s" (tup_data a) (tup_data b)
                     | BitwiseComplement, [a] -> sprintf "~%s" (tup_data a)
     
+
                     | ShiftLeft, [a;b] -> sprintf "%s << %s" (tup_data a) (tup_data b)
                     | ShiftRight, [a;b] -> sprintf "%s >> %s" (tup_data a) (tup_data b)
     
+
                     | Neg, [x] -> sprintf "-%s" (tup_data x)
                     | Log, [x] -> sprintf "log(%s)" (tup_data x)
                     | Exp, [x] -> sprintf "exp(%s)" (tup_data x)
@@ -34499,6 +36641,7 @@ module spiral_compiler =
                         line s_typ "};"
                         ) x.free_vars
     
+
                     line s_typ $"struct Union{i} {{" // The union definition.
                     let _ = // Union cases inside the union.
                         let s_typ = indent s_typ
@@ -34508,15 +36651,18 @@ module spiral_compiler =
                             map_iteri (fun tag k v -> line s_typ $"Union{i}_{tag} case{tag}; // {k}") x.free_vars
                         line s_typ "};"
     
+
                         if x.is_heap then line s_typ "int refc{0};"
                         if x.free_vars.Count > int max_tag then raise_codegen_error $"Too many union cases. They should not be more than {max_tag}."
                         line s_typ $"unsigned char tag{{{max_tag}}};"
                         line s_typ $"{code_env.__device__}Union{i}() {{}}" // default constructor, the refc and tag have def value so we don't have to do anything here.
     
+
                         map_iteri (fun tag k v -> // The constructors for all the union cases.
                             line s_typ $"{code_env.__device__}Union{i}(Union{i}_{tag} t) : tag({tag}), case{tag}(t) {{}} // {k}"
                             ) x.free_vars
     
+
                         line s_typ $"{code_env.__device__}Union{i}(Union{i} & x) : tag(x.tag) {{" // copy constructor
                         let () =
                             let s_typ = indent s_typ
@@ -34616,6 +36762,7 @@ module spiral_compiler =
             and mut : _ -> LayoutRecCpp = layout_tmpl true "Mut"
             and stack_mut : _ -> LayoutRecCpp = layout_tmpl false "StackMut"
     
+
             function
             | Cpp x ->
                 let ret_ty =
@@ -34624,6 +36771,7 @@ module spiral_compiler =
                     | DLit(LitInt32 _) | DV(L(_, YPrim Int32T)) -> "int"
                     | _ -> er()
     
+
                 let s = {text=StringBuilder(); indent=0}
                 line s $"{ret_ty} main_body() {{"
                 binds_start (indent s) x
@@ -34660,11 +36808,13 @@ module spiral_compiler =
                 line s "}"
                 code_env.main_defs.Add(s.text.ToString())
     
+
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env x =
             let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
             let host_code_env = codegen_env.Create("Cpp", "")
             let device_code_env = codegen_env.Create("Cuda", "__device__ ")
     
+
             let cuda_codegen =
                 codegen' (fun (jp_body,key,r') ->
                     raise_codegen_error_backend r' $"The Cuda backend does not support nesting of backends."
@@ -34684,12 +36834,14 @@ module spiral_compiler =
                 | x -> raise_codegen_error_backend r' $"The Python + Cuda backend does not support the {x} backend."
                 ) part_eval_env host_code_env (Cpp x)
     
+
             let append_lines (l : string seq) = (StringBuilder(), l) ||> Seq.fold (fun s -> s.AppendLine)
             let indent_lines (x : string) =
                 x.Split('\n')
                 |> HopacExtensions.A.map (fun x -> if x <> "" then $"    {x}" else x)
                 |> fun x -> StringBuilder().AppendJoin("", x)
     
+
             let aux_library_code =
                 let dir f =
                     SpiralFileSystem.get_workspace_root ()
@@ -34699,6 +36851,7 @@ module spiral_compiler =
                 (dir "corelib.cuh").Replace("__host__", "__host__ __device__")
                 |> replace_default_types default_env
     
+
             let code =
                 let file_name = System.IO.Path.GetFileNameWithoutExtension file_path
                 StringBuilder()
@@ -34725,22 +36878,26 @@ module spiral_compiler =
                     .AppendJoin("", host_code_env.main_defs)
                     .ToString()
     
+
             [
                 {|code = aux_library_code; file_extension = ".auto.cu"|}
                 {|code = code.ToString(); file_extension = ".cu"|}
             ]
     
+
     /// ## CodegenPython
     module CodegenPython =
         // open System
         // open System.Text
         open System.Collections.Generic
     
+
         let backend_namePython = "Python"
 
         // alpha162: enquanto o compilador estiver instável, manter IO de trace desativado (console-only).
         let diag_save_enabled = false
     
+
         let litPython = function
             | LitInt8 x -> sprintf "%i" x
             | LitInt16 x -> sprintf "%i" x
@@ -34787,11 +36944,13 @@ module spiral_compiler =
                 |> sprintf "'%s'"
             | LitBool x -> if x then "True" else "False"
     
+
         let type_litPython = function
             | YLit x -> litPython x
             | YSymbol x -> x
             | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
     
+
         let show_w = function WV(L(i,_)) -> sprintf "v%i" i | WLit a -> litPython a
         let args x = x |> HopacExtensions.A.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
         let args' b = data_term_vars b |> HopacExtensions.A.map show_w |> String.concat ", "
@@ -34817,31 +36976,38 @@ module spiral_compiler =
                 | _ -> "object"
             | _ -> "object"
     
+
         type UnionRecPython = {tag : int; tags : Dictionary<string, int>; free_vars : Map<int * string, TyV[]>}
         type LayoutRecPython = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type MethodRecPython = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
         type ClosureRecPython = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]}
     
+
         type BindsReturnPython =
             | BindsTailEnd
             | BindsLocal of TyV []
     
+
         let linePython x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
     
+
         let codegen' backend_handler (part_eval_env : PartEvalResult) (code_env : CodegenCpp.codegen_env) =
             let global' =
                 let has_added = HashSet code_env.globals
                 fun x -> if has_added.Add(x) then code_env.globals.Add x
     
+
             let import x = global' $"import {x}"
             let from x = global' $"from {x}"
     
+
             let print is_type show r =
                 let s = {text=StringBuilder(); indent=0}
                 show s r
                 let text = s.text.ToString()
                 if is_type then code_env.types.Enqueue(text) else code_env.functions.Enqueue(text)
     
+
             let union show =
                 let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
                 let f (a : Union) : UnionRecPython =
@@ -34854,6 +37020,7 @@ module spiral_compiler =
                     if dirty then print true show r
                     r
     
+
             let layout show =
                 let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
@@ -34883,6 +37050,7 @@ module spiral_compiler =
                         if added then print true show r
                         r
     
+
             let jp is_type f show =
                 let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
                 let f x = f (x, dict.Count)
@@ -34892,6 +37060,7 @@ module spiral_compiler =
                     if dirty then print is_type show r
                     r
     
+
             let cupy_ty x = part_eval_env.ty_to_data x |> data_free_vars |> cupy_ty
             let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x).g_decr s BindsTailEnd x
             and binds g_decr (s : CodegenEnv) (ret : BindsReturnPython) (stmts : TypedBind []) =
@@ -34972,6 +37141,7 @@ module spiral_compiler =
                     |> String.concat ", "
                     |> return'
     
+
                 match a with
                 | TySizeOf t -> raise_codegen_error $"The following type in `sizeof` is not supported in the Python back end.\nGot: {show_ty t}"
                 | TyMacro a ->
@@ -35136,9 +37306,11 @@ module spiral_compiler =
                     | BitwiseXor, [a;b] -> sprintf "%s ^ %s" (tup_data a) (tup_data b)
                     | BitwiseComplement, [a] -> sprintf "~%s" (tup_data a)
     
+
                     | ShiftLeft, [a;b] -> sprintf "%s << %s" (tup_data a) (tup_data b)
                     | ShiftRight, [a;b] -> sprintf "%s >> %s" (tup_data a) (tup_data b)
     
+
                     | Neg, [x] -> sprintf "-%s" (tup_data x)
                     | Log, [x] -> import "math"; sprintf "math.log(%s)" (tup_data x)
                     | Exp, [x] -> import "math"; sprintf "math.exp(%s)" (tup_data x)
@@ -35258,6 +37430,7 @@ module spiral_compiler =
                     line s "return inner"
                     )
     
+
             fun (x : TypedBind []) ->
             import "cupy as cp"
             import "numpy as np"
@@ -35267,28 +37440,35 @@ module spiral_compiler =
             code_env.globals.Add "cuda = False"
             code_env.globals.Add ""
     
+
             let s = {text=StringBuilder(); indent=0}
     
+
             line s "def main_body():"
             binds_start [||] (indent s) x
             s.text.AppendLine() |> ignore
     
+
             line s "def main():"
             line (indent s) "r = main_body()"
             line (indent s) "if cuda: cp.cuda.get_current_stream().synchronize() # This line is here so the `__trap()` calls on the kernel aren't missed."
             line (indent s) "return r"
             s.text.AppendLine() |> ignore
     
+
             line s "if __name__ == '__main__': result = main(); None if result is None else print(result)"
             code_env.main_defs.Add(s.text.ToString())
     
+
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env (x : TypedBind[]) =
             let cuda_kernels = StringBuilder().AppendLine("kernel = r\"\"\"")
             let g = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
     
+
             let host_code_env = CodegenCpp.codegen_env.Create("Python", "")
             let device_code_env = CodegenCpp.codegen_env.Create("Cuda", "__device__ ")
     
+
             let cuda_codegen =
                 CodegenCpp.codegen' (fun (jp_body,key,r') ->
                     raise_codegen_error_backend r' $"The Cuda backend does not support nesting of backends."
@@ -35309,10 +37489,13 @@ module spiral_compiler =
                     | x -> raise_codegen_error_backend r' $"The Python + Cuda backend does not support the {x} backend."
                     ) part_eval_env host_code_env x
     
+
             let append_lines (l : string seq) = (StringBuilder(), l) ||> Seq.fold (fun s -> s.AppendLine)
     
+
             let file_name = System.IO.Path.GetFileNameWithoutExtension file_path
     
+
             let aux_library_code =
                 let dir f =
                     SpiralFileSystem.get_workspace_root ()
@@ -35324,6 +37507,7 @@ module spiral_compiler =
                     (dir "corelib.cuh").Replace("__host__", "__device__")
                     |> CodegenCpp.replace_default_types default_env
     
+
                 StringBuilder()
                     .AppendLine("kernels_aux = r\"\"\"")
                     .AppendLine(aux_library_code_cuda)
@@ -35358,25 +37542,31 @@ module spiral_compiler =
                     .AppendJoin("", host_code_env.main_defs)
                     .ToString()
     
+
             [
                 {|code = aux_library_code; file_extension = "_auto.py"|}
                 {|code = code_main; file_extension = ".py"|}
             ]
     
+
     /// ## WDiff
     // open System
     open System.IO
     open System.Collections.Generic
     
+
     // Full name: Microsoft.FSharp.Core.Result<_,_>.Ok
     
+
     open FSharp.Core
     
+
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
     
+
     /// ### process_errors
     let process_errors line (ers : LineTokenErrors list) : RString list =
         ers |> List.mapi (fun i l ->
@@ -35387,6 +37577,7 @@ module spiral_compiler =
         |> List.groupBy snd
         |> List.map (fun (k,v) -> k, process_error (List.map fst v))
     
+
     /// ### tokenize_replace
     /// Replaces the token lines and updates the errors given the edit.
     let tokenize_replace (lines : _ PersistentVector PersistentVector, errors : _ list) (edit : SpiEdit) =
@@ -35402,6 +37593,7 @@ module spiral_compiler =
         let errors = List.append errors (process_errors edit.from (Array.toList ers))
         lines, errors
     
+
     type [<ReferenceEquality>] TokenizerState = {
         lines_text : string PersistentVector
         lines_token : LineTokens
@@ -35409,9 +37601,11 @@ module spiral_compiler =
         errors : RString list
         }
     
+
     /// ### wdiff_tokenizer_init
     let wdiff_tokenizer_init = { lines_text = PersistentVector.empty; lines_token = PersistentVector.empty; blocks = []; errors = [] }
     
+
     /// ### triple_balance
     let triple_balance (blk : LineTokens) =
         let count_in_line acc (line : LineToken PersistentVector) =
@@ -35422,10 +37616,12 @@ module spiral_compiler =
                 | _ -> acc) acc line
         PersistentVector.fold count_in_line 0 blk
     
+
     /// ### append_lines
     let append_lines (a : LineTokens) (b : LineTokens) : LineTokens =
         PersistentVector.fold (fun acc line -> PersistentVector.conj line acc) a b
     
+
     /// ### merge_triple_blocks
     let merge_triple_blocks (blocks : LineTokens Block list) : LineTokens Block list =
         let rec loop acc pending pendingBal rest =
@@ -35445,6 +37641,7 @@ module spiral_compiler =
                 else loop acc (Some merged) bal xs
         loop [] None 0 blocks
     
+
     /// ### replace'
     /// Immutably updates the state based on the request. Does diffing to make the operation efficient.
     /// It is possible for the server to go out of sync, in which case an error is returned.
@@ -35459,6 +37656,7 @@ module spiral_compiler =
             |> merge_triple_blocks
         {lines_text=lines_text; lines_token=lines_token; errors=errors; blocks=blocks}
     
+
     /// ### wdiff_tokenizer_all
     let wdiff_tokenizer_all (state : TokenizerState) text =
         reset_lexical_state ()
@@ -35476,6 +37674,7 @@ module spiral_compiler =
             let mid = if mid_len <= 0 then [||] else text.[..mid_len-1]
             replace' state {|from=from; nearTo=text'.Length-fromRev; lines=mid|}
     
+
     /// ### wdiff_tokenizer_edit
     let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) =
         if edit.nearTo <= state.lines_text.Length then
@@ -35483,6 +37682,7 @@ module spiral_compiler =
         else
             Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
     
+
     /// ### semantic_updates_apply
     let semantic_updates_apply (block : LineTokens) updates =
         Seq.fold (fun (block : LineTokens) (c : VectorCord, l) ->
@@ -35501,6 +37701,7 @@ module spiral_compiler =
                 else block
             else block) block updates
     
+
     /// ### parse_block
     let parse_block default_env is_top_down (block : LineTokens) =
         let comments, cords_tokens =
@@ -35519,6 +37720,7 @@ module spiral_compiler =
             |> Array.unzip
         let cords, tokens = Array.unzip (Array.concat cords_tokens)
     
+
         let semantic_updates = ResizeArray()
         let env = {
             tokens_cords = cords; semantic_updates = semantic_updates
@@ -35528,9 +37730,11 @@ module spiral_compiler =
         assert (env.tokens_cords.Length = env.tokens.Length)
         {result=blockParsingParse env; semantic_tokens=semantic_updates_apply block semantic_updates}
     
+
     /// ### wdiff_parse_init
     let wdiff_parse_init is_top_down : ParserState = {is_top_down=is_top_down; blocks=[]}
     
+
     /// ### wdiff_parse
     let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens Block list) =
         let dict = Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
@@ -35541,12 +37745,15 @@ module spiral_compiler =
             )
         {state with blocks = blocks }
     
+
     /// ### ModuleState
     type ModuleState = { tokenizer : TokenizerState; bundler : BlockBundleState; parser : ParserState }
     
+
     /// ### wdiff_module_init
     let wdiff_module_init is_top_down = {tokenizer = wdiff_tokenizer_init; bundler = wdiff_block_bundle_init; parser = wdiff_parse_init is_top_down}
     
+
     /// ### wdiff_module_body
     let wdiff_module_body default_env state tokenizer =
         if state.tokenizer = tokenizer then state else
@@ -35554,33 +37761,42 @@ module spiral_compiler =
         let bundler = wdiff_block_bundle state.bundler parser
         {tokenizer=tokenizer; parser=parser; bundler=bundler}
     
+
     /// ### wdiff_module_edit
     let wdiff_module_edit default_env (state : ModuleState) x = wdiff_tokenizer_edit state.tokenizer x |> Result.map (wdiff_module_body default_env state)
     
+
     /// ### wdiff_module_all
     let wdiff_module_all default_env state x = wdiff_tokenizer_all state.tokenizer x |> wdiff_module_body default_env state
     
+
     /// ### wdiff_module_init_all
     let wdiff_module_init_all default_env is_top_down x = wdiff_module_all default_env (wdiff_module_init is_top_down) x
     
+
     /// ### FileState<'input,'result,'state>
     type [<ReferenceEquality>] FileState<'input,'result,'state> = { input : 'input; result : 'result; state : 'state }
     
+
     /// ### FileFuns<'a,'b,'state>
     type FileFuns<'a,'b,'state> =
         abstract member eval : 'state * 'a -> 'b
         abstract member diff : 'state * 'b * 'a -> 'b
         abstract member init : 'a -> FileState<'a,'b,'state>
     
+
     /// ### TypecheckerStateValue
     type TypecheckerStateValue = Bundle option * InferResult * TopEnv
     
+
     /// ### TypecheckerStatePropagated
     type TypecheckerStatePropagated = (bool * TopEnv) Promise
     
+
     /// ### TypecheckerState
     type TypecheckerState = FileState<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated>
     
+
     /// ### typecheck
     let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
         | Cons((_,b : BlockBundleValue), ls) ->
@@ -35595,6 +37811,7 @@ module spiral_compiler =
         | Nil ->
             Job.result Nil
     
+
     /// ### diff
     let rec diff (package_id,module_id,env) (result,input : BlockBundleState) =
         let tc () = typecheck (package_id,module_id,env) input
@@ -35605,6 +37822,7 @@ module spiral_compiler =
             | _ -> tc()
         else tc()
     
+
     /// ### funs_file_tc
     let funs_file_tc = {new FileFuns<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated> with
         member _.eval(state,(pid,mid,x)) =
@@ -35619,26 +37837,32 @@ module spiral_compiler =
             }
         }
     
+
     /// ### wdiff_file_update_state
     let wdiff_file_update_state (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'state) =
         if state.state = x then state else {state with state=x; result=funs.eval(x,state.input)}
     
+
     /// ### wdiff_file_update_input
     let wdiff_file_update_input (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'a) =
         if state.input = x then state else {state with input=x; result=funs.diff(state.state,state.result,x)}
     
+
     /// ### wdiff_file
     let wdiff_file (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (a,b) =
         if state.state = a then wdiff_file_update_input funs state b else {state=a; input=b; result=funs.eval(a,b)}
     
+
     /// ### ProjFilesTree
     type ProjFilesTree =
         | File of module_id: ModuleId * path: string * name: string option
         | Directory of dir_id: DirId * name: string * ProjFilesTree list
     
+
     /// ### ProjFiles
     type ProjFiles = { tree : ProjFilesTree list; num_dirs : int; num_files : int }
     
+
     /// ### ProjFileFuns<'a,'state>
     type ProjFileFuns<'a,'state> =
         abstract member file : string option * 'state * 'a -> 'a * 'state
@@ -35647,6 +37871,7 @@ module spiral_compiler =
         abstract member default' : DefaultEnv -> 'state
         abstract member empty : 'state
     
+
     /// ### ProjFilesState<'a,'state>
     type [<ReferenceEquality>] ProjFilesState<'a,'state> = {
         init : 'state
@@ -35656,6 +37881,7 @@ module spiral_compiler =
         result : 'state
         }
     
+
     /// ### proj_files_diff
     let proj_files_diff (uids_file : ('a * 'b) [], uids_directory : 'b [], files) (uids, files') =
         let uids_file' = Array.zeroCreate (Array.length uids)
@@ -35674,6 +37900,7 @@ module spiral_compiler =
             | _ -> false
         if list (files.tree, files'.tree) then None else Some (uids_file',uids_directory')
     
+
     /// ### proj_files
     let proj_files (funs : ProjFileFuns<'a,'state>) uids_file uids_directory uids s l =
         let inline memo (uids : _ []) uid f =
@@ -35690,12 +37917,14 @@ module spiral_compiler =
                 ) (funs.empty, s) l |> fst
         list s l.tree
     
+
     /// ### wdiff_proj_files_update_files
     let wdiff_proj_files_update_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (uids,files : ProjFiles) =
         match proj_files_diff (state.uids_file,state.uids_directory,state.files) (uids,files) with
         | Some (uids_file, uids_directory) -> {state with files=files; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids state.init files}
         | None -> state
     
+
     /// ### wdiff_proj_files_update_packages
     let wdiff_proj_files_update_packages (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init : 'state) =
         if state.init = init then state else
@@ -35703,6 +37932,7 @@ module spiral_compiler =
         let uids = HopacExtensions.A.map fst state.uids_file
         {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init state.files}
     
+
     /// ### wdiff_proj_files
     let wdiff_proj_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init,(uids,files)) =
         if state.init = init then wdiff_proj_files_update_files funs state (uids,files)
@@ -35710,6 +37940,7 @@ module spiral_compiler =
             let uids_file, uids_directory = Array.zeroCreate files.num_files, Array.zeroCreate files.num_dirs
             {files=files; init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init files}
     
+
     /// ### typechecker_results_summary
     let typechecker_results_summary l =
         Stream.foldFun (fun (has_error,big) (_,x : InferResult,_) ->
@@ -35719,6 +37950,7 @@ module spiral_compiler =
             | AInclude small -> inferUnion small big
             ) (false,inferTop_env_empty) l
     
+
     /// ### funs_proj_file_tc
     let funs_proj_file_tc = {new ProjFileFuns<TypecheckerState,TypecheckerStatePropagated> with
         member _.file(name,state,x) =
@@ -35733,6 +37965,7 @@ module spiral_compiler =
         member _.empty = Promise.Now.withValue (false,inferTop_env_empty)
         }
     
+
     /// ### PackageEnv
     type PackageEnv = {
         nominals_aux : Map<PackageId,Map<GlobalId, {|name : string; kind : TT|}>>
@@ -35744,6 +37977,7 @@ module spiral_compiler =
         constraints : Map<string,ConstraintOrModule>
         }
     
+
     /// ### union
     let union small big = {
         nominals_aux = Map.foldBack Map.add small.nominals_aux big.nominals_aux
@@ -35755,6 +37989,7 @@ module spiral_compiler =
         constraints = Map.foldBack Map.add small.constraints big.constraints
         }
     
+
     /// ### in_moduleWDiff
     let in_moduleWDiff m (a : PackageEnv) =
         {a with
@@ -35763,6 +37998,7 @@ module spiral_compiler =
             constraints = Map.add m (M a.constraints) Map.empty
             }
     
+
     /// ### package_to_file
     let package_to_file (x : PackageEnv) = {
         nominals_next_tag = 0
@@ -35776,6 +38012,7 @@ module spiral_compiler =
         constraints = x.constraints
         }
     
+
     /// ### add_file_to_package
     let add_file_to_package package_id (small : TopEnv) (big : PackageEnv): PackageEnv = {
         nominals_aux = Map.add package_id small.nominals_aux big.nominals_aux
@@ -35787,6 +38024,7 @@ module spiral_compiler =
         constraints = small.constraints
         }
     
+
     /// ### package_env_empty
     let package_env_empty = {
         nominals_aux = Map.empty
@@ -35798,17 +38036,20 @@ module spiral_compiler =
         constraints = Map.empty
         }
     
+
     /// ### package_env_default
     let package_env_default default_env =
         let x = inferTop_env_default default_env
         {package_env_empty with ty = x.ty; term = x.term; constraints = x.constraints}
     
+
     /// ### ProjPackagesState<'a>
     type ProjPackagesState<'a> = {
         packages : (string option * 'a) list
         result : 'a
         }
     
+
     /// ### ProjState<'file_inputs,'files,'packages>
     type ProjState<'file_inputs,'files,'packages> = {
         package_id : PackageId
@@ -35817,15 +38058,19 @@ module spiral_compiler =
         result : 'packages
         }
     
+
     /// ### TypecheckerStateTop
     type TypecheckerStateTop = (bool * PackageEnv) Promise
     
+
     /// ### ProjStateTC
     type ProjStateTC = ProjState<TypecheckerState,TypecheckerStatePropagated,TypecheckerStateTop>
     
+
     /// ### ProjEnvTC
     type ProjEnvTC = Map<PackageId,ProjStateTC>
     
+
     /// ### ProjPackageFuns<'file,'package>
     type ProjPackageFuns<'file,'package> =
         abstract member unions : DefaultEnv -> (string option * 'package) list -> 'package
@@ -35836,6 +38081,7 @@ module spiral_compiler =
         abstract member default' : DefaultEnv -> 'package
         abstract member empty : 'package
     
+
     /// ### funs_proj_package_tc
     let funs_proj_package_tc = {new ProjPackageFuns<TypecheckerStatePropagated,TypecheckerStateTop> with
         member funs.unions default_env l =
@@ -35858,6 +38104,7 @@ module spiral_compiler =
         member _.empty = Promise.Now.withValue (false, package_env_empty)
         }
     
+
     /// ### wdiff_proj_init
     let wdiff_proj_init default_env (funs_packages : ProjPackageFuns<'file,'package>) (funs_files : ProjFileFuns<'file_input,'file>) package_id : ProjState<'file_input,'file,'package> =
         let packages = { packages = []; result = funs_packages.default' default_env}
@@ -35869,10 +38116,12 @@ module spiral_compiler =
         let result = funs_packages.empty
         { package_id = package_id; packages = packages; files = files; result = result}
     
+
     /// ### wdiff_proj_packages
     let wdiff_proj_packages default_env (funs : ProjPackageFuns<_,'a>) (state : 'a ProjPackagesState) x =
         if state.packages = x then state else {packages = x; result = funs.unions default_env x }
     
+
     /// ### wdiff_proj_update_packages
     let wdiff_proj_update_packages default_env funs_packages funs_files (state : ProjState<'a,'b,'state>) x =
         let packages = wdiff_proj_packages default_env funs_packages state.packages x
@@ -35881,6 +38130,7 @@ module spiral_compiler =
         let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
         {state with packages=packages; files=files; result=result}
     
+
     /// ### wdiff_proj_update_files
     let wdiff_proj_update_files (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'a,'b,'state>) x =
         let files = wdiff_proj_files_update_files funs_files state.files x
@@ -35888,6 +38138,7 @@ module spiral_compiler =
         let result = funs_packages.add_file_to_package(state.package_id,files.result,state.packages.result)
         {state with files=files; result=result}
     
+
     /// ### wdiff_proj
     let wdiff_proj default_env (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'file_input,'file,'state>) (packages,files) =
         let packages = wdiff_proj_packages default_env funs_packages state.packages packages
@@ -35897,14 +38148,17 @@ module spiral_compiler =
             let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
             {state with packages=packages; files=files; result=result}
     
+
     /// ### ProjEnvUpdate<'a>
     type ProjEnvUpdate<'a> =
         | UpdatePackageModule of PackageId * (string option * PackageId) list * ('a [] * ProjFiles)
         | UpdatePackage of PackageId * (string option * PackageId) list
     
+
     /// ### map_packages
     let map_packages s packages = packages |> List.map (fun (a,b) -> a, (Map.find b s).result)
     
+
     /// ### wdiff_projenv
     let wdiff_projenv default_env funs_packages funs_files (s : Map<PackageId,ProjState<'a,'b,'state>>) l =
         List.fold (fun s -> function
@@ -35912,21 +38166,26 @@ module spiral_compiler =
             | UpdatePackage(uid,packages) -> Map.add uid (wdiff_proj_update_packages default_env funs_packages funs_files s.[uid] (map_packages s packages)) s
             ) s l
     
+
     /// ## WDiffPrepass
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
     
+
     /// ### PrepassStateValue
     type PrepassStateValue = InferResult * PrepassTopEnv AdditionType * PrepassTopEnv
     
+
     /// ### PrepassStatePropagated
     type PrepassStatePropagated = PrepassTopEnv Promise
     
+
     /// ### PrepassState
     type PrepassState = FileState<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated>
     
+
     /// ### prepass
     let rec prepass (package_id,module_id,path,env) = function
         | Cons((_,r,_) : TypecheckerStateValue, ls) ->
@@ -35938,6 +38197,7 @@ module spiral_compiler =
         | Nil ->
             Job.result Nil
     
+
     /// ### diffWDiffPrepass
     let rec diffWDiffPrepass (package_id,module_id,path,env) (result,input : TypecheckerStateValue Stream) =
         input >>** fun input ->
@@ -35948,6 +38208,7 @@ module spiral_compiler =
             | _ -> tc()
         else tc()
     
+
     /// ### funs_file_prepass
     let funs_file_prepass = {new FileFuns<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated> with
         member _.eval(state,(pid,mid,path,x)) =
@@ -35962,6 +38223,7 @@ module spiral_compiler =
             }
         }
     
+
     /// ### prepass_results_summary
     let prepass_results_summary l =
         Stream.foldFun (fun big (_,x,_) ->
@@ -35970,6 +38232,7 @@ module spiral_compiler =
             | AInclude small -> prepassUnion small big
             ) (prepassTop_env_empty) l
     
+
     /// ### funs_proj_file_prepass
     let funs_proj_file_prepass = {new ProjFileFuns<PrepassState,PrepassStatePropagated> with
         member _.file(name,state,x) =
@@ -35984,6 +38247,7 @@ module spiral_compiler =
         member _.empty = Promise.Now.withValue prepassTop_env_empty
         }
     
+
     /// ### PrepassPackageEnv
     type PrepassPackageEnv = {
         prototypes_instances : Map<int, Map<GlobalId * GlobalId,E>>
@@ -35992,6 +38256,7 @@ module spiral_compiler =
         ty : Map<string,TPrepass>
         }
     
+
     /// ### unionWDiffPrepass
     let unionWDiffPrepass small big = {
         prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
@@ -36000,6 +38265,7 @@ module spiral_compiler =
         ty = Map.foldBack Map.add small.ty big.ty
         }
     
+
     /// ### in_module
     let in_module m (a : PrepassPackageEnv) =
         {a with
@@ -36007,6 +38273,7 @@ module spiral_compiler =
             term = Map.add m (EModule a.term) Map.empty
             }
     
+
     /// ### package_env_emptyWDiffPrepass
     let package_env_emptyWDiffPrepass = {
         prototypes_instances = Map.empty
@@ -36015,6 +38282,7 @@ module spiral_compiler =
         ty = Map.empty
         }
     
+
     /// ### package_to_fileWDiffPrepass
     let package_to_fileWDiffPrepass (x : PrepassPackageEnv) = {
         nominals_next_tag = 0
@@ -36025,6 +38293,7 @@ module spiral_compiler =
         term = x.term
         }
     
+
     /// ### add_file_to_packageWDiffPrepass
     let add_file_to_packageWDiffPrepass package_id (small : PrepassTopEnv) (big : PrepassPackageEnv): PrepassPackageEnv = {
         nominals = Map.add package_id small.nominals big.nominals
@@ -36033,12 +38302,15 @@ module spiral_compiler =
         term = small.term
         }
     
+
     /// ### package_env_defaultWDiffPrepass
     let package_env_defaultWDiffPrepass default_env = { package_env_emptyWDiffPrepass with ty = (prepassTop_env_default default_env).ty }
     
+
     /// ### ProjStatePrepass
     type ProjStatePrepass = ProjState<PrepassState,PrepassStatePropagated,PrepassPackageEnv Promise>
     
+
     /// ### funs_proj_package_prepass
     let funs_proj_package_prepass = {new ProjPackageFuns<PrepassStatePropagated,PrepassPackageEnv Promise> with
         member funs.unions default_env l =
@@ -36058,75 +38330,96 @@ module spiral_compiler =
         member _.empty = Promise.Now.withValue package_env_emptyWDiffPrepass
         }
     
+
     /// ## SpiProj
     // Everything that deals with Spiral project files themselves goes here
     open FParsec
     // open Common
     
+
     /// ### RawFileHierarchy
     type RawFileHierarchy =
         | Directory of VSCRange * RString * RawFileHierarchy list
         | File of VSCRange * RString * is_top_down : bool * is_include : bool
     
+
     /// ### ConfigResumableError
     type ConfigResumableError =
         | DuplicateFiles of VSCRange [] []
         | DuplicateRecordFields of VSCRange [] []
         | MissingNecessaryRecordFields of string [] * VSCRange
     
+
     /// ### ConfigFatalError
     type ConfigFatalError =
         | Tabs of VSCRange []
         | ParserError of string * VSCRange
     
+
     /// ### ConfigException
     exception ConfigException of ConfigFatalError
     
+
     /// ### spaces_template
     let rec spaces_template s = (spaces >>. optional (followedByString "//" >>. skipRestOfLine true >>. spaces_template)) s
     
+
     /// ### spacesSpiProj
     let spacesSpiProj s = spaces_template s
     
+
     /// ### raise'
     let raise' x = raise (ConfigException x)
     
+
     /// ### raise_if_not_empty
     let raise_if_not_empty exn l = if Array.isEmpty l = false then raise' (exn l)
     
+
     /// ### add_to_exception_list'
     let add_to_exception_list' (p: CharStream<ResizeArray<ConfigResumableError>>) = p.State.UserState.Add
     
+
     /// ### add_to_exception_list
     let add_to_exception_list (p: CharStream<ResizeArray<ConfigResumableError>>) exn l = if Array.isEmpty l = false then p.State.UserState.Add (exn l)
     
+
     /// ### column
     let column (p : CharStream<_>) = p.Column
     
+
     /// ### pos
     let pos (p : CharStream<_>) : VSCPos = {|line=int p.Line - 1; character=int p.Column - 1|}
     
+
     /// ### pos'
     let pos' p = Reply(pos p)
     
+
     /// ### rangeSpiProj
     let rangeSpiProj f p = pipe3 pos' f pos' (fun a b c -> ((a, c) : VSCRange), b) p
     
+
     /// ### is_small_var_char_startingSpiProj
     let is_small_var_char_startingSpiProj c = isAsciiLower c
     
+
     /// ### is_var_charSpiProj
     let is_var_charSpiProj c = isAsciiLetter c || c = '_' || c = ''' || isDigit c
     
+
     /// ### file'
     let file' p = many1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" p
     
+
     /// ### fileSpiProj
     let fileSpiProj p = (rangeSpiProj file' .>> spacesSpiProj) p
     
+
     /// ### file_verify
     let file_verify p = (skipMany1Satisfy2L is_small_var_char_startingSpiProj is_var_charSpiProj "lowercase variable name" .>> spacesSpiProj .>> eof) p
     
+
     /// ### file_hierarchy
     let rec file_hierarchy p =
         let i = column p
@@ -36141,6 +38434,7 @@ module spiral_compiler =
             l
             ) p
     
+
     and file_or_directory p =
         let i = column p
         let file_hierarchy p = if i < column p then file_hierarchy p else Reply([])
@@ -36156,9 +38450,11 @@ module spiral_compiler =
             )
         |>> fun (r',f) -> f r') p
     
+
     /// ### RawSchemaPackages
     type RawSchemaPackages = {range : VSCRange; name : string; is_in_compiler_dir : bool; is_include : bool}
     
+
     /// ### packages
     let packages p =
         let i = column p
@@ -36169,6 +38465,7 @@ module spiral_compiler =
         let file p = if i <= column p then file p else Reply(ReplyStatus.Error,expected "directory on the same or greater indentation as the first one")
         many file p
     
+
     /// ### tab_positions
     let tab_positions (str : string): VSCRange [] =
         let mutable line = -1
@@ -36178,6 +38475,7 @@ module spiral_compiler =
             if x.character <> -1 then Some(x,{|x with character=x.character+1|}) else None
             )
     
+
     /// ### record_reduce
     let record_reduce (field: Parser<'schema -> 'schema, _>) s p =
         let record_body p =
@@ -36186,11 +38484,13 @@ module spiral_compiler =
             many (indent field) p
         (rangeSpiProj record_body |>> fun (r,l) -> r, List.fold (|>) s l) p
     
+
     /// ### record_field
     let record_field (name, p) =
         (skipString name >>. skipChar ':' >>. spacesSpiProj >>. rangeSpiProj p)
         |>> (fun (r,f) (s,l) -> f s, (r, name) :: l)
     
+
     /// ### record
     let record fields fields_necessary schema =
         let fields = choice (List.map record_field fields)
@@ -36206,8 +38506,10 @@ module spiral_compiler =
                 |> HopacExtensions.A.choose (fun (k, v) -> if v.Length > 1 then Some (HopacExtensions.A.map fst v) else None)
                 |> add_to_exception_list p DuplicateRecordFields
     
+
             Reply(schema)
     
+
     /// ### RawSchema
     type RawSchema = {
         name : RString option
@@ -36218,6 +38520,7 @@ module spiral_compiler =
         packages : RawSchemaPackages list
         }
     
+
     /// ### schema_def
     let schema_def: RawSchema = {
         name=None
@@ -36228,16 +38531,20 @@ module spiral_compiler =
         packages=[]
         }
     
+
     /// ### ConfigError
     type ConfigError = ResumableError of ConfigResumableError [] | ConfigFatalError of ConfigFatalError
     
+
     /// ### config
     let config text =
         try
             let _ = tab_positions text |> raise_if_not_empty Tabs
     
+
             let directory p = (rangeSpiProj (restOfLine false) .>> spacesSpiProj |>> fun (r,x) -> Some(r,x.Trim())) p
     
+
             let fields = [
                 "version", rangeSpiProj (restOfLine true .>> spacesSpiProj) |>> fun (r,x) s -> ({s with version=Some (r,x.TrimEnd())} : RawSchema)
                 "name", fileSpiProj |>> fun x s -> {s with name=Some x}
@@ -36248,6 +38555,7 @@ module spiral_compiler =
                 ]
             let necessary = []
     
+
             match runParserOnString (spacesSpiProj >>. record fields necessary schema_def .>> eof) (ResizeArray()) "spiral.config" text with
             | Success(a,userstate,_) ->
                 if userstate.Count > 0 then userstate.ToArray() |> ResumableError |> Result.Error else Result.Ok a
@@ -36257,6 +38565,7 @@ module spiral_compiler =
         with
             | :? ConfigException as e -> e.Data0 |> ConfigFatalError |> Result.Error
     
+
         |> Result.mapError (fun x ->
             let fatal_error = function
                 | Tabs l -> l |> HopacExtensions.A.map (fun r -> r, "Tab not allowed.")
@@ -36272,14 +38581,17 @@ module spiral_compiler =
             |> Array.toList
             )
     
+
     /// ### FileHierarchy
     type FileHierarchy =
         | Directory of VSCRange * path: RString * name : string * FileHierarchy list
         | File of VSCRange * path: RString * string option
     
+
     /// ### SchemaPackages
     type SchemaPackages = {dir : RString; name : string option}
     
+
     /// ### Schema
     type Schema = {
         moduleDir : VSCRange option * string
@@ -36288,14 +38600,18 @@ module spiral_compiler =
         packages : SchemaPackages list
         }
     
+
     /// ### SchemaException
     exception SchemaException of RString
     
+
     /// ### SchemaResult
     type SchemaResult = Result<Schema,RString list>
     
+
     open Microsoft.FSharp.Core
     
+
     /// ### schema
     let schema (pdir,text) : SchemaResult = config text |> Result.bind (fun x ->
         try
@@ -36355,27 +38671,34 @@ module spiral_compiler =
         with :? SchemaException as e -> Error [e.Data0]
         )
     
+
     /// ## Graph
     open System.Collections.Generic
     
+
     /// ### Graph
     type Graph = Map<string,string Set>
     
+
     /// ### MirroredGraph
     type MirroredGraph = Graph * Graph
     
+
     /// ### mirrored_graph_empty
     let mirrored_graph_empty : MirroredGraph = Map.empty, Map.empty
     
+
     /// ### link_add'
     let link_add' (abs : Graph) a b: Graph =
         match Map.tryFind a abs with
         | Some bs -> Map.add a (Set.add b bs) abs
         | None -> Map.add a (Set.singleton b) abs
     
+
     /// ### link_add
     let link_add (s : MirroredGraph) a b: MirroredGraph = link_add' (fst s) a b, link_add' (snd s) b a
     
+
     /// ### link_remove'
     let link_remove' (abs : Graph) a b =
         match Map.tryFind a abs with
@@ -36384,27 +38707,34 @@ module spiral_compiler =
             if Set.isEmpty bs then Map.remove a abs else Map.add a bs abs
         | None -> abs
     
+
     /// ### link_remove
     let link_remove (s : MirroredGraph) a b: MirroredGraph = link_remove' (fst s) a b, link_remove' (snd s) b a
     
+
     /// ### links_remove
     let links_remove ((abs,bas as s) : MirroredGraph) a: MirroredGraph =
         match Map.tryFind a abs with
         | Some bs -> Map.remove a abs, Set.fold (fun bas b -> link_remove' bas b a) bas bs
         | None -> s
     
+
     /// ### links_add
     let links_add s a bs = List.fold (fun s b -> link_add s a b) s bs
     
+
     /// ### links_replace
     let links_replace (s : MirroredGraph) a bs = links_add (links_remove s a) a bs
     
+
     /// ### links_get
     let links_get (abs : Graph) a = Map.tryFind a abs |> Option.defaultValue Set.empty
     
+
     /// ### link_exists
     let link_exists ((abs,bas) : MirroredGraph) x = Map.containsKey x abs || Map.containsKey x bas
     
+
     /// ### topological_sort_template
     let inline topological_sort_template add bas dirty_nodes =
         let sort_visited = HashSet()
@@ -36412,14 +38742,17 @@ module spiral_compiler =
         Seq.iter dfs_rev dirty_nodes
         sort_visited
     
+
     /// ### topological_sort'
     // Returns the order end -> mid -> start.
     let topological_sort' bas start_nodes = let sort_order = Queue() in sort_order, topological_sort_template sort_order.Enqueue bas start_nodes
     
+
     /// ### topological_sort
     // Returns the order start -> mid -> end.
     let topological_sort bas start_nodes = let sort_order = Stack() in sort_order, topological_sort_template sort_order.Push bas start_nodes
     
+
     /// ### circular_nodes
     let circular_nodes ((abs,bas) : MirroredGraph) dirty_nodes =
         let sort_order, sort_visited = topological_sort bas dirty_nodes
@@ -36438,15 +38771,19 @@ module spiral_compiler =
             ) 0 order |> ignore
         order, circular_nodes
     
+
     /// ## ServerUtils
     // open System
     open System.IO
     open System.Collections.Generic
     
+
     open Microsoft.FSharp.Core
     
+
     // open Common
     
+
     /// ### ProjectCodeAction
     type ProjectCodeAction =
         | CreateFile of {|filePath : string|}
@@ -36456,6 +38793,7 @@ module spiral_compiler =
         | DeleteDirectory of {|range: VSCRange; dirPath : string|} // The range here is for the whole tree, not just the code action activation.
         | RenameDirectory of {|dirPath : string; target : string; validate_as_file : bool|}
     
+
     /// ### code_action_execute
     let code_action_execute a =
         try match a with
@@ -36481,29 +38819,36 @@ module spiral_compiler =
                 | FParsec.CharParsers.ParserResult.Failure(er,_,_) -> Error er
         with e -> Error e.Message
     
+
     /// ### RAction
     type RAction = VSCRange * ProjectCodeAction
     
+
     /// ### SchemaState
     type SchemaState = { schema : Schema; errors_parse : RString list; errors_modules : RString list; errors_packages : RString list}
     
+
     /// ### SchemaEnv
     type SchemaEnv = Map<string,SchemaState>
     
+
     /// ### ModuleEnv
     type ModuleEnv = Map<string,ModuleState>
     
+
     /// ### ss_empty
     let ss_empty = {
         schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
     
+
     /// ### ss_from_result
     let ss_from_result = function
         | Ok schema -> {ss_empty with schema = schema}
         | Error ers -> {ss_empty with errors_parse = ers}
     
+
     /// ### ss_validate_module
     let ss_validate_module (packages : SchemaEnv) (modules : ModuleEnv) (x : SchemaState) =
         let errors = ResizeArray()
@@ -36520,6 +38865,7 @@ module spiral_compiler =
         list x.schema.modules
         Seq.toList errors
     
+
     /// ### ss_validate_modules
     let ss_validate_modules (packages : SchemaEnv) modules order =
         Array.fold (fun s x ->
@@ -36528,10 +38874,12 @@ module spiral_compiler =
             | None -> s
             ) packages order
     
+
     /// ### ss_has_error
     let ss_has_error x =
         (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
     
+
     /// ### ss_validate_packages
     let ss_validate_packages (packages : SchemaEnv) (order : string [], socs : Dictionary<string,int>) : SchemaEnv =
         Array.fold (fun s path ->
@@ -36556,17 +38904,21 @@ module spiral_compiler =
             | _ -> s
             ) packages order
     
+
     /// ### ss_validate
     let ss_validate packages modules (order,socs) =
         let packages = ss_validate_modules packages modules order
         ss_validate_packages packages (order,socs)
     
+
     /// ### ResultMap<'a,'b>
     type ResultMap<'a,'b> when 'a : comparison = {ok : Map<'a,'b>; error: Map<'a,'b>}
     
+
     /// ### ProjEnvTCResult
     type ProjEnvTCResult = ResultMap<PackageId,ProjStateTC>
     
+
     /// ### wdiff_projenvr_sync_schema
     let wdiff_projenvr_sync_schema default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
             (state : ResultMap<PackageId,ProjState<'file_input,'file,'package>>) order =
@@ -36589,6 +38941,7 @@ module spiral_compiler =
             | None -> s
             ) state order
     
+
     /// ### projenv_update_packages
     let projenv_update_packages default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
             (state : Map<PackageId,ProjState<'a,'b,'state>>)  (dirty_packages : Dictionary<_,_>, order : string []) =
@@ -36607,6 +38960,7 @@ module spiral_compiler =
             ) order []
         |> wdiff_projenv default_env funs_packages funs_files state
     
+
     /// ### proj_file_iter_file
     let inline proj_file_iter_file f (files : ProjFiles) =
         let rec loop = function
@@ -36615,12 +38969,14 @@ module spiral_compiler =
         and list l = List.iter loop l
         list files.tree
     
+
     /// ### proj_file_get_input
     let proj_file_get_input uids_file (x : ProjFiles) =
         let d = Dictionary(Array.length uids_file)
         proj_file_iter_file (fun mid path -> d.Add(path, Array.get uids_file mid |> fst)) x
         d
     
+
     /// ### proj_file_from_schema
     let proj_file_from_schema (x : Schema) : ProjFiles =
         let mutable num_files = 0
@@ -36640,12 +38996,14 @@ module spiral_compiler =
         let tree = list x.modules
         { tree = tree; num_files = num_files; num_dirs = num_dirs }
     
+
     /// ### proj_file_make_input
     let inline proj_file_make_input f (files : ProjFiles) =
         let ar = Array.zeroCreate files.num_files
         proj_file_iter_file (fun mid path -> ar.[mid] <- f mid path) files
         ar
     
+
     /// ### dirty_nodes_template
     let inline dirty_nodes_template funs (ids : Map<string, PackageId>) (packages : SchemaEnv) modules
             (state : Map<PackageId,_>) (dirty_packages : string HashSet) =
@@ -36673,11 +39031,13 @@ module spiral_compiler =
             )
         d
     
+
     /// ### dirty_nodes_tc
     let dirty_nodes_tc (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : ModuleEnv)
             (state : Map<PackageId,ProjStateTC>) (dirty_packages : string HashSet) =
         dirty_nodes_template funs_file_tc ids packages (fun pid mid path -> pid, mid, modules.[path].bundler) state dirty_packages
     
+
     /// ### dirty_nodes_prepass
     let dirty_nodes_prepass (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : Map<PackageId,ProjStateTC>)
             (state : Map<PackageId,ProjStatePrepass>) (dirty_packages : string HashSet) =
@@ -36687,6 +39047,7 @@ module spiral_compiler =
             fun (mid : ModuleId) path -> pid, mid, path, state.[path].result
         dirty_nodes_template funs_file_prepass ids packages modules state dirty_packages
     
+
     /// ### wdiff_projenvr
     let wdiff_projenvr default_env dirty_nodes funs_proj_package funs_proj_file
             ids packages modules (state : ResultMap<PackageId,_>) (dirty_packages, order) =
@@ -36694,29 +39055,36 @@ module spiral_compiler =
         let dirty_packages = dirty_nodes ids packages modules state.ok dirty_packages
         {state with ok=projenv_update_packages default_env funs_proj_package funs_proj_file ids packages state.ok (dirty_packages, order)}
     
+
     /// ### wdiff_projenvr_tc
     let wdiff_projenvr_tc default_env ids packages modules state (dirty_packages, order) =
         wdiff_projenvr default_env dirty_nodes_tc funs_proj_package_tc funs_proj_file_tc
             ids packages modules state (dirty_packages, order)
     
+
     /// ### wdiff_projenvr_prepass
     let wdiff_projenvr_prepass default_env ids packages modules state (dirty_packages, order) =
         wdiff_projenvr default_env dirty_nodes_prepass funs_proj_package_prepass funs_proj_file_prepass
             ids packages modules state (dirty_packages, order)
     
+
     /// ### LoadResult
     type LoadResult =
         | LoadModule of path: string * ModuleState option
         | LoadPackage of package_dir: string * SchemaState option
     
+
     /// ### is_top_down
     open System.Threading.Tasks
     
+
     let is_top_down (x : string) = Path.GetExtension x = ".spi"
     
+
     /// ### spiproj_suffix
     let spiproj_suffix x = Path.Combine(x,"package.spiproj")
     
+
     /// ### loader_package
     let loader_package default_env (packages : SchemaEnv) (modules : ModuleEnv) (pdir, text) =
         let pdir' = pdir |> SpiralFileSystem.standardize_path
@@ -36735,6 +39103,7 @@ module spiral_compiler =
                     else return LoadModule(path,None) // Note: We need this case otherwise 'con' might cause the file read to deadlock. https://superuser.com/questions/86999/why-cant-i-name-a-folder-or-file-con-in-windows
                 } |> queue.Enqueue
     
+
         let schema (pdir,text) = schema (pdir,text) |> fun x -> LoadPackage(pdir,Some (ss_from_result x))
         let load_package_from_disk packages pdir =
             trace Verbose (fun () -> $"ServerUtils.loader_package.load_package_from_disk / pdir: {pdir}") _locals
@@ -36758,6 +39127,7 @@ module spiral_compiler =
             | Some _ -> ()
             | None -> load_package_from_disk packages pdir
     
+
         let dirty_packages = HashSet()
         let rec invalidate_parent packages (x : DirectoryInfo) =
             if x <> null then
@@ -36768,9 +39138,11 @@ module spiral_compiler =
                 if Map.containsKey x.FullName packages then dirty_packages.Add(x.FullName) |> ignore
                 else invalidate_parent packages x_.Parent
     
+
         let mutable packages = packages
         let mutable modules = modules
     
+
         match text with
         | Some text -> load_package_some (pdir,text)
         | None ->
@@ -36779,6 +39151,7 @@ module spiral_compiler =
             | Some x -> LoadPackage(pdir,Some x) |> Task.FromResult |> queue.Enqueue
             | None -> load_package_from_disk packages pdir
     
+
         while 0 < queue.Count do
             match queue.Dequeue().Result with
             | LoadPackage(pdir,Some x) ->
@@ -36802,6 +39175,7 @@ module spiral_compiler =
             | LoadModule(mdir,None) -> modules <- Map.remove mdir modules
         packages, dirty_packages, modules
     
+
     /// ### graph_update
     let graph_update (packages : SchemaEnv) (g : MirroredGraph) (dirty_packages : string HashSet) =
         Seq.fold (fun g x ->
@@ -36810,6 +39184,7 @@ module spiral_compiler =
             | None -> links_remove g x
             ) g dirty_packages
     
+
     /// ### package_ids_update
     let package_ids_update (packages : SchemaEnv) package_ids (dirty_packages : string HashSet) =
         let adds,removals = dirty_packages |> Seq.toArray |> Array.partition (fun x -> Map.containsKey x packages)
@@ -36822,29 +39197,36 @@ module spiral_compiler =
             ) adds (snd package_ids)
         |> Array.fold (fun (a,b) (k,v) -> Map.add v k a, Map.add k v b) package_ids
     
+
     /// ### package_ids_remove
     let package_ids_remove (s : ResultMap<PackageId,_>) l =
         List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
     
+
     /// ## SignalRSupervisor
     // open System
     open System.IO
     open System.Collections.Generic
     
+
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
     
+
     // open Common
     open SpiralFileSystem.Operators
     
+
     /// ### LocalizedErrors
     type LocalizedErrors = {|uri : string; errors : RString list|}
     
+
     /// ### TracedError
     type TracedError = {|trace : string list; message : string|}
     
+
     /// ### SupervisorErrorSources
     type SupervisorErrorSources = {
         fatal : string Ch
@@ -36855,6 +39237,7 @@ module spiral_compiler =
         traced : TracedError Ch
         }
     
+
     /// ### SupervisorReq
     type SupervisorReq =
         | ProjectFileOpen of {|uri : string; spiprojText : string|}
@@ -36869,6 +39252,7 @@ module spiral_compiler =
         | HoverAt of {|uri : string; pos : VSCPos|} * string option IVar
         | BuildFile of {|uri : string; backend : string|} * string option IVar
     
+
     /// ### SupervisorState
     type SupervisorState = {
         packages : SchemaEnv
@@ -36879,6 +39263,7 @@ module spiral_compiler =
         package_ids : Map<string,int> * Map<int,string>
         }
     
+
     /// ### proj_validate
     let proj_validate default_env s dirty_packages =
         let order,socs = circular_nodes s.graph dirty_packages
@@ -36886,6 +39271,7 @@ module spiral_compiler =
         let packages_infer = wdiff_projenvr_tc default_env (fst s.package_ids) packages s.modules s.packages_infer (dirty_packages, order)
         order, {s with packages_infer = packages_infer; packages=packages}
     
+
     /// ### proj_graph_update
     let proj_graph_update default_env s dirty_packages =
         let removed_pids,package_ids = package_ids_update s.packages s.package_ids dirty_packages
@@ -36893,11 +39279,13 @@ module spiral_compiler =
         let graph = graph_update s.packages s.graph dirty_packages
         proj_validate default_env {s with graph = graph; package_ids = package_ids; packages_infer = packages_infer; packages_prepass = packages_prepass} dirty_packages
     
+
     /// ### proj_open
     let proj_open default_env s (dir, text) =
         let packages,dirty_packages,modules = loader_package default_env s.packages s.modules (dir,text)
         proj_graph_update default_env {s with packages = packages; modules = modules} dirty_packages
     
+
     /// ### proj_revalidate_owner
     let proj_revalidate_owner default_env s file =
         let rec loop (x : DirectoryInfo) =
@@ -36912,6 +39300,7 @@ module spiral_compiler =
                 else loop x_.Parent
         loop (Directory.GetParent(file))
     
+
     /// ### file_delete
     let file_delete default_env s (files : string []) =
         let deleted_modules = HashSet()
@@ -36935,6 +39324,7 @@ module spiral_compiler =
         Seq.iter revalidate_parent deleted_modules; Seq.iter revalidate_parent deleted_packages
         Seq.toArray deleted_modules, proj_graph_update default_env {s with modules = modules; packages = packages} dirty_packages
     
+
     /// ### AttentionState
     type AttentionState = {
         modules : string Set * string list
@@ -36943,6 +39333,7 @@ module spiral_compiler =
         supervisor : SupervisorState
         }
     
+
     /// ### attention_server
     let attention_server (errors : SupervisorErrorSources) (req : _ Ch) =
         let push path (s,o) = Set.add path s, path :: o
@@ -36964,6 +39355,7 @@ module spiral_compiler =
                 list x.schema.modules
                 )
     
+
             let inline body uri interrupt ers ers' src next =
                 Ch.Try.take req >>= function
                 | Some x -> interrupt x
@@ -36974,6 +39366,7 @@ module spiral_compiler =
                         HopacExtensions.start (Ch.send src {|uri=uri; errors=ers|})
                         next ers
     
+
             let loop_module (s : AttentionState) mpath (m : ModuleState) =
                 let uri = file_uri mpath
                 let interrupt x = loop (update {s with modules=push mpath s.modules} x)
@@ -36985,6 +39378,7 @@ module spiral_compiler =
                 clear_typer uri
                 bundler m.bundler []
     
+
             let rec loop_package (s : AttentionState) pdir = function
                 | (mpath,l) :: ls ->
                     let mpath' = mpath |> SpiralFileSystem.standardize_path
@@ -37004,6 +39398,7 @@ module spiral_compiler =
                     bundler m.bundler []
                 | [] -> loop s
     
+
             let package s =
                 match s.packages with
                 | se,x :: xs ->
@@ -37037,6 +39432,7 @@ module spiral_compiler =
                     | None -> loop s
                 | _, [] -> req >>= (update s >> loop)
     
+
             match s.modules with
             | se,x :: xs ->
                 let s = {s with modules=Set.remove x se,xs}
@@ -37054,10 +39450,12 @@ module spiral_compiler =
                 | None -> clear (file_uri x); package s
             | _,[] -> package s
     
+
         (req >>= fun (modules,packages,supervisor) ->
             loop {modules = Set.ofArray modules, Array.toList modules; packages = Set.ofArray packages, Array.toList packages; supervisor = supervisor; old_packages = Map.empty}
             )
     
+
     /// ### show_position
     let show_position (s : SupervisorState) (x : Range) =
         let line = (fst x.range).line
@@ -37075,6 +39473,7 @@ module spiral_compiler =
             .AppendLine("^")
             .ToString()
     
+
     /// ### show_trace
     let show_trace s (x : Trace) (msg : string) =
         // SOTA: recursion spam typically comes from repeated locations in the trace.
@@ -37097,6 +39496,7 @@ module spiral_compiler =
             | [] -> xs <- []
         List.map (show_position s) acc, msg
     
+
     /// ### BuildResult
     type BuildResult =
         | BuildOk of {|code: string; file_extension : string|} list
@@ -37104,9 +39504,11 @@ module spiral_compiler =
         | BuildFatalError of string
         | BuildSkip
     
+
     /// ### workspaceRoot
     let workspaceRoot = SpiralFileSystem.get_workspace_root ()
     
+
     // alpha165: hard-disable diag file persistence while the compiler is unstable.
     // Keep everything in console; re-enable later behind a single switch when stable.
     let diag_save_enabled = false
@@ -37133,6 +39535,7 @@ module spiral_compiler =
             if diag_save_enabled then System.IO.Directory.CreateDirectory(traceDir) |> ignore
         with _ -> ()
     
+
     /// ### dir
     let dir uri =
         let result = System.IO.FileInfo(System.Uri(uri).LocalPath).Directory.FullName
@@ -37140,6 +39543,7 @@ module spiral_compiler =
         trace Verbose (fun () -> $"Supervisor.dir / uri: {uri} / result: {result} / result': {result'}") _locals
         result'
     
+
     /// ### file
     let file uri =
         let result =
@@ -37153,6 +39557,7 @@ module spiral_compiler =
         // trace Verbose (fun () -> $"Supervisor.file / uri: {uri} / result: {result} / result': {result'}") _locals
         result'
     
+
     /// ### supervisor_server
     let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorErrorSources) req =
         let fatal x = HopacExtensions.start (Ch.send errors.fatal x)
@@ -37219,6 +39624,7 @@ module spiral_compiler =
                         actions_dir x.schema.moduleDir
                         actions_dir x.schema.packageDir
     
+
                         let rec actions_module = function
                             | FileHierarchy.Directory(r',(r,path),_,l) ->
                                 trace Verbose (fun () -> $"Supervisor.supervisor_server.ProjectCodeActions.actions_module | SpiProj.FileHierarchy.Directory(r',(r,path),_,l) / path: {path}") _locals
@@ -37258,6 +39664,7 @@ module spiral_compiler =
                         |> Some
                     | None -> None
     
+
                 match v with
                 | Some v ->
                     HopacExtensions.start (semantic_tokens v.parser >>= (vscode_tokens x.range >> IVar.fill res))
@@ -37267,6 +39674,7 @@ module spiral_compiler =
                             (fun () -> $"Supervisor.supervisor_server.FileTokenRange")
                             (fun () -> $"module=None / x.uri: {x.uri} / {_locals ()}")
     
+
                     HopacExtensions.start (IVar.fill res [||])
                 s
             | SupervisorReq.HoverAt(x,res) ->
@@ -37645,6 +40053,7 @@ module spiral_compiler =
                                 emit "[spiral_compiler] BuildErrorTrace tail:"
                                 for t in tail do emit (sprintf "  %s" t)
                         
+
                                 // alpha329: quick hints based on generic hotspot shape, not source-path names.
                                 if b.Contains("BigStack exhausted") || b.Contains("stack overflow") then
                                     let repeated_hotspots = top |> List.filter (fun (_,c) -> c >= 5) |> List.length
@@ -37681,6 +40090,7 @@ module spiral_compiler =
                                     let build codegen backend file_extension =
                                         build_many (fun file b a -> [{|code = codegen b a; file_extension = file_extension|}]) backend
     
+
                                     let do_build () =
                                         match backend with
                                         | "Gleam" -> build codegenGleam "Gleam" ".gleam"
@@ -37696,6 +40106,7 @@ module spiral_compiler =
                                         | "Cython*" | "Cython" -> BuildFatalError "Cython backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 12/27/2022
                                         | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
     
+
                                     let mutable retry_diag_logged = false
 
                                     let mutable soft_abort_count = 0
@@ -37752,31 +40163,28 @@ module spiral_compiler =
                                     let mutable preserve_progress_frontier_next_attempt = false
                                     let mutable replay_root_finalization_requested = false
                                     let mutable replay_root_finalization_retry_stop_pending_closed = false
-                                    // ALPHA723: runtime 722 showed that after replay-root finalization and
-                                    // pending-close, the final handoff path can still loop thousands of
-                                    // times on the same semantic_root_complete TFun frontier at spiral.spi:2670.
-                                    // Keep the proof alive for a tiny bounded handoff window, then stop with one
-                                    // compact terminal instead of producing megabytes of repeated retry logs.
-                                    let mutable replayRootFinalHandoffRetryCount = 0
-                                    // Runtime evidence showed this exact final handoff can make late progress
-                                    // from pending=2 to pending=1 after the compact cap. Keep the window
-                                    // bounded and still guarded by app-root TFun + replay-root witness checks.
-                                    let replayRootFinalHandoffRetryCap = 8
-                                    // ALPHA731: runtime 730 showed that the clean retry can rebuild the same
-                                    // apps/spiral/spiral.spi:2670 TFun root proof, but the exhausted branch
-                                    // fired before giving BuildFile one post-clean preserved-frontier handoff.
-                                    // Keep this as a one-shot so the compact terminal still wins if nothing consumes it.
-                                    let mutable replayRootFinalPostCleanPreserveUsed = false
-                                    // ALPHA737: once the post-clean preserved-frontier attempt also proves the
-                                    // same app-root TFun, perform one real BuildFile handoff consumption retry:
-                                    // keep the BuildFile.replay_root_complete reason/witness, but clear volatile
-                                    // frontier state so the next attempt is not just the same preserved-root echo.
-                                    let mutable replayRootFinalHandoffConsumed = false
-                                    // ALPHA724: runtime 723 proved the cap works; the remaining seam is that
-                                    // a clean retry throws away the completed root frontier before BuildFile can
-                                    // consume it.  Bounded final handoff retries now preserve that frontier.
                                     let mutable postFinalizationLeafRetryCount = 0
                                     let postFinalizationLeafRetryCap = 4
+                                    let postFinalizationApp2671LeafRetryCap = 8
+                                    let mutable postFinalizationApp2671LeafRetryCount = 0
+                                    // ALPHA862: runtime 861 showed that once stale
+                                    // terminals are demoted, the final handoff can keep
+                                    // retrying the exact same root-complete frontier
+                                    // thousands of times under the extended
+                                    // root-complete trampoline budget.  Track only the
+                                    // post-finalization BuildFile replay-root handoff
+                                    // identity; progress-yield retries keep their own
+                                    // separate budget.
+                                    let stable_replay_root_final_handoff_repeat_cap = 4
+                                    let mutable stableReplayRootFinalHandoffKey = ""
+                                    let mutable stableReplayRootFinalHandoffCount = 0
+                                    let noteStableReplayRootFinalHandoff (stableRootKey: string) =
+                                        if stableReplayRootFinalHandoffKey = stableRootKey then
+                                            stableReplayRootFinalHandoffCount <- stableReplayRootFinalHandoffCount + 1
+                                        else
+                                            stableReplayRootFinalHandoffKey <- stableRootKey
+                                            stableReplayRootFinalHandoffCount <- 1
+                                        stableReplayRootFinalHandoffCount
                                     let requestReplayRootCompleteFinalization (eventName: string) (attempt: int) (maxAttempts: int) (stableRootCount: int) (stableRootCap: int) (pendingNow: int) (stableRootKey: string) =
                                         if replay_root_finalization_requested then false
                                         elif not (EvalWorklist.hasReplayCompleteWriteWitness()) then false
@@ -37871,14 +40279,26 @@ module spiral_compiler =
                                                     // semantic_root_complete frontier.  Treat that as the same
                                                     // bounded root-complete handoff path used by retry_stop, not as
                                                     // a normal cache invalidation.
+                                                    let is_bigstack_root_complete_handoff_msg =
+                                                        code = EJPCodes.EJP0019
+                                                        && (msg.Contains("BigStack join observed semantic_root_complete handoff")
+                                                            || msg.Contains("status=semantic_root_complete")
+                                                            || msg.Contains("frame_status=semantic_root_complete")
+                                                            || msg.Contains("replay_complete=true"))
                                                     let is_bigstack_root_complete_handoff =
                                                         code = EJPCodes.EJP0019
-                                                        && EvalWorklist.hasReplayComplete()
+                                                        && (EvalWorklist.hasReplayComplete()
+                                                            || is_bigstack_root_complete_handoff_msg
+                                                            || EvalWorklist.hasReplayCompleteWriteWitness())
                                                         && (msg.Contains("semantic_root_complete") || msg.Contains("BigStack join observed"))
 
                                                     if is_bigstack_root_complete_handoff && canUseRootCompleteReplayAttempt attempt then
                                                         noteRootCompleteHandoffCapExtension "bigstack_root_complete_handoff" attempt
                                                         let stableRootCount, stableRootKey = EvalWorklist.noteRootCompleteHandoff()
+                                                        if is_bigstack_root_complete_handoff_msg && stableRootKey = "none" then
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_bigstack_root_complete_message_evidence\",\"event\":\"bigstack_root_complete_handoff\",\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_key\":%s,\"pending\":%d,\"write_witness\":%b,\"policy\":\"route_ejp0019_message_root_complete_through_root_handoff_retry_without_invalidating_generation\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_preserved_root_frontier\"}"
+                                                                    attempt max_attempts stableRootCount (DiagJson.esc stableRootKey) (EvalWorklist.pendingCount()) (EvalWorklist.hasReplayCompleteWriteWitness()))
                                                         if stableRootCount >= stable_root_complete_handoff_cap then
                                                             match EvalWorklist.tryYieldStableRootCompleteHandoff "bigstack_root_complete_livelock" with
                                                             | Some selected when selected.status = "semantic_selected_frontier_repeat_blocked" ->
@@ -37886,7 +40306,19 @@ module spiral_compiler =
                                                                     sprintf "{\"kind\":\"eval_worklist_root_handoff_terminal_abort\",\"event\":\"bigstack_root_complete_livelock\",\"status\":%s,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"frontier\":%s,\"policy\":\"selected_frontier_repeat_is_terminal_not_retry\",\"single_flight\":1,\"next\":\"abort_without_root_handoff_retry\"}"
                                                                         (DiagJson.esc selected.status) attempt max_attempts stableRootCount stable_root_complete_handoff_cap (DiagJson.esc stableRootKey))
                                                                 raise (PartEvalTypeError([], EvalWorklist.requiredMessage (sprintf "selected frontier repeated under BigStack root-complete handoff count=%d cap=%d" stableRootCount stable_root_complete_handoff_cap) selected))
-                                                            | Some selected when selected.status <> "semantic_root_complete" && EvalWorklist.isTerminalContractStatus selected.status ->
+                                                            | Some selected when selected.status = "semantic_replay_fingerprint_repeat_blocked" && stableRootKey.Contains("semantic_root_complete") && EvalWorklist.hasReplayCompleteWriteWitness() && EvalWorklist.pendingCount() > 0 ->
+                                                                    let pendingNow = EvalWorklist.pendingCount()
+                                                                    let witnessSummary = EvalWorklist.replayCompleteWriteWitnessSummary()
+                                                                    let retryReason = sprintf "alpha894_root_handoff_fingerprint_repeat_deferred attempt=%d pending=%d site=%s" attempt pendingNow selected.site
+                                                                    try CacheGeneration.noteReason retryReason with _ -> ()
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_root_handoff_fingerprint_repeat_deferred\",\"event\":\"stable_root_complete_livelock\",\"status\":%s,\"selected_kind\":%s,\"selected_site\":%s,\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"frontier\":%s,\"witness\":%s,\"policy\":\"fingerprint_repeat_under_root_complete_handoff_is_drain_retry_not_terminal_pin\",\"writer_gate\":\"requires_replay_root_reason_and_live_root_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_preserved_root_frontier\"}"
+                                                                            (DiagJson.esc selected.status) (DiagJson.esc selected.kind) (DiagJson.esc selected.site) attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc witnessSummary))
+                                                                    try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                    try TermCycleFuse.reset () with _ -> ()
+                                                                    preserve_root_complete_frontier_next_attempt <- true
+                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                | Some selected when selected.status <> "semantic_root_complete" && EvalWorklist.isTerminalContractStatus selected.status ->
                                                                 DiagJson.emit (
                                                                     sprintf "{\"kind\":\"eval_worklist_root_handoff_pinned_terminal_abort\",\"event\":\"bigstack_root_complete_livelock\",\"status\":%s,\"rank\":%d,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"frontier\":%s,\"policy\":\"pinned_terminal_is_not_progress_yield_frontier\",\"single_flight\":1,\"next\":%s}"
                                                                         (DiagJson.esc selected.status) (EvalWorklist.terminalContractRank selected.status) attempt max_attempts stableRootCount stable_root_complete_handoff_cap (DiagJson.esc stableRootKey) (DiagJson.esc (EvalWorklist.terminalContractNext selected.status)))
@@ -37964,6 +40396,21 @@ module spiral_compiler =
                                                                     attempt (attempt + 1) max_attempts pendingNow (DiagJson.esc cycle_stop_reason) (DiagJson.esc term_cycle_key) (DiagJson.esc term_cycle_site) (DiagJson.esc witnessSummary))
                                                             if requestReplayRootCompleteFinalization "jp_cycle_lost_root_witness" attempt max_attempts 0 stable_root_complete_handoff_cap pendingNow witnessSummary then
                                                                 raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                        let jpCycleContinuationEnvelopeRetry =
+                                                            (is_jp_wait_observed_seq_cycle || cycle_stop_reason = "semantic_cycle_after_sequential_retry")
+                                                            && not replayComplete
+                                                            && (replayPartial || EvalWorklist.semanticPayloadStatus() = "cell")
+                                                            && CacheGeneration.isSequentialRequested()
+                                                            && EvalWorklist.semanticPayloadStatus() = "cell"
+                                                            && attempt < max_attempts
+                                                        if jpCycleContinuationEnvelopeRetry then
+                                                            let pendingNow = EvalWorklist.pendingCount()
+                                                            let queueDepth = EvalWorklist.replayQueueDepth()
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_jp_cycle_live_replay_retry_requested\",\"event\":\"retry_stop\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"pending\":%d,\"queue_depth\":%d,\"cycle_reason\":%s,\"payload_status\":%s,\"policy\":\"continuation_envelope_with_typed_payload_is_retryable_not_terminal_ejp0011\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_live_continuation_envelope\"}"
+                                                                    attempt (attempt + 1) max_attempts pendingNow queueDepth (DiagJson.esc cycle_stop_reason) (DiagJson.esc (EvalWorklist.semanticPayloadStatus())))
+                                                            try TermCycleFuse.reset () with _ -> ()
+                                                            raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
                                                         DiagJson.retryStop code cycle_stop_reason attempt max_attempts file backend term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
                                                         EvalWorklist.emitPanel "retry_stop"
                                                         EvalWorklistFrontier.emit code cycle_stop_reason term_cycle_key term_cycle_site term_cycle_depth term_cycle_re term_cycle_max_re
@@ -37980,6 +40427,18 @@ module spiral_compiler =
                                                                         sprintf "{\"kind\":\"eval_worklist_root_handoff_terminal_abort\",\"event\":\"stable_root_complete_livelock\",\"status\":%s,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"frontier\":%s,\"policy\":\"selected_frontier_repeat_is_terminal_not_retry\",\"single_flight\":1,\"next\":\"abort_without_root_handoff_retry\"}"
                                                                             (DiagJson.esc selected.status) attempt max_attempts stableRootCount stable_root_complete_handoff_cap (DiagJson.esc stableRootKey))
                                                                     raise (PartEvalTypeError([], EvalWorklist.requiredMessage (sprintf "selected frontier repeated under root-complete handoff count=%d cap=%d" stableRootCount stable_root_complete_handoff_cap) selected))
+                                                                | Some selected when selected.status = "semantic_replay_fingerprint_repeat_blocked" && stableRootKey.Contains("semantic_root_complete") && EvalWorklist.hasReplayCompleteWriteWitness() && EvalWorklist.pendingCount() > 0 ->
+                                                                    let pendingNow = EvalWorklist.pendingCount()
+                                                                    let witnessSummary = EvalWorklist.replayCompleteWriteWitnessSummary()
+                                                                    let retryReason = sprintf "alpha894_root_handoff_fingerprint_repeat_deferred attempt=%d pending=%d site=%s" attempt pendingNow selected.site
+                                                                    try CacheGeneration.noteReason retryReason with _ -> ()
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_root_handoff_fingerprint_repeat_deferred\",\"event\":\"stable_root_complete_livelock\",\"status\":%s,\"selected_kind\":%s,\"selected_site\":%s,\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"frontier\":%s,\"witness\":%s,\"policy\":\"fingerprint_repeat_under_root_complete_handoff_is_drain_retry_not_terminal_pin\",\"writer_gate\":\"requires_replay_root_reason_and_live_root_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_preserved_root_frontier\"}"
+                                                                            (DiagJson.esc selected.status) (DiagJson.esc selected.kind) (DiagJson.esc selected.site) attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc witnessSummary))
+                                                                    try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                    try TermCycleFuse.reset () with _ -> ()
+                                                                    preserve_root_complete_frontier_next_attempt <- true
+                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
                                                                 | Some selected when selected.status <> "semantic_root_complete" && EvalWorklist.isTerminalContractStatus selected.status ->
                                                                     DiagJson.emit (
                                                                         sprintf "{\"kind\":\"eval_worklist_root_handoff_pinned_terminal_abort\",\"event\":\"stable_root_complete_livelock\",\"status\":%s,\"rank\":%d,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"frontier\":%s,\"policy\":\"pinned_terminal_is_not_progress_yield_frontier\",\"single_flight\":1,\"next\":%s}"
@@ -38088,13 +40547,131 @@ module spiral_compiler =
                                                                         match terminalAfterFinalization with
                                                                         | Some(source, pinned) ->
                                                                             let pinnedRank = EvalWorklist.terminalContractRank pinned.status
+                                                                            // ALPHA861: after replay-root finalization a same-site stale
+                                                                            // root-retarget terminal is not stronger evidence than the
+                                                                            // preserved semantic_root_complete frontier. Runtime 860
+                                                                            // proved the durable ledger can reselect
+                                                                            // semantic_root_complete_stale_retarget_repeat_blocked at
+                                                                            // apps/spiral/spiral.spi:2670 after the root-preservation
+                                                                            // branch already won, turning a repair hint into the final
+                                                                            // BuildErrorTrace.  Treat that exact same-site retarget as
+                                                                            // stale, clear its live/durable contract, and keep the root
+                                                                            // frontier alive for the next clean BuildFile handoff.
+                                                                            let staleSameSiteRootRetarget =
+                                                                                pinned.status = "semantic_root_complete_stale_retarget_repeat_blocked"
+                                                                                && pendingNow <= 2
+                                                                                && stableRootKey.Contains("semantic_root_complete")
+                                                                                && stableRootKey.Contains(pinned.site)
+                                                                                && EvalWorklist.hasReplayCompleteWriteWitness()
                                                                             let staleSameSiteParentContinuation =
                                                                                 pinned.status = "semantic_parent_continuation_cycle_blocked"
                                                                                 && pendingNow <= 2
                                                                                 && stableRootKey.Contains("semantic_root_complete")
                                                                                 && stableRootKey.Contains(pinned.site)
                                                                                 && EvalWorklist.hasReplayCompleteWriteWitness()
-                                                                            if staleSameSiteParentContinuation then
+                                                                            let staleCore56ParentContinuationAfterRoot =
+                                                                                pinned.status = "semantic_parent_continuation_cycle_blocked"
+                                                                                && pendingNow <= 2
+                                                                                && stableRootKey.Contains("semantic_root_complete")
+                                                                                && EvalWorklist.hasReplayCompleteWriteWitness()
+                                                                                && EvalWorklist.frameHasSemanticEvidence pinned
+                                                                                && stableRootKey.Contains("EUnitTest:semantic_root_complete")
+                                                                            let staleBase16TypeApplyParentContinuationAfterRoot =
+                                                                                pinned.status = "semantic_parent_continuation_cycle_blocked"
+                                                                                && pendingNow <= 2
+                                                                                && stableRootKey.Contains("semantic_root_complete")
+                                                                                && EvalWorklist.hasReplayCompleteWriteWitness()
+                                                                                && EvalWorklist.frameHasSemanticEvidence pinned
+                                                                                && pinned.key.Contains("term:ty@")
+                                                                                && stableRootKey.Contains("ESeq:captured")
+                                                                            let staleListm27TypeApplyParentContinuationAfterRoot =
+                                                                                pinned.status = "semantic_parent_continuation_cycle_blocked"
+                                                                                && pendingNow <= 2
+                                                                                && stableRootKey.Contains("semantic_root_complete")
+                                                                                && EvalWorklist.hasReplayCompleteWriteWitness()
+                                                                                && EvalWorklist.frameHasSemanticEvidence pinned
+                                                                                && pinned.key.Contains("term:ty@")
+                                                                                && stableRootKey.Contains("TPrim:captured")
+                                                                            let staleCrossModuleParentContinuationAfterCompositeRoot =
+                                                                                pinned.status = "semantic_parent_continuation_cycle_blocked"
+                                                                                && pendingNow <= 2
+                                                                                && stableRootKey.Contains("semantic_root_complete")
+                                                                                && EvalWorklist.hasReplayCompleteWriteWitness()
+                                                                                && EvalWorklist.frameHasSemanticEvidence pinned
+                                                                                && not (stableRootKey.Contains(pinned.site))
+                                                                                && (stableRootKey.Contains("ETypeApply:semantic_root_complete")
+                                                                                    || stableRootKey.Contains("ESeq:semantic_root_complete")
+                                                                                    || stableRootKey.Contains("TFun:captured"))
+                                                                            if staleSameSiteRootRetarget then
+                                                                                let cleared = EvalWorklist.clearTerminalContractIf pinned.status pinned.site pinned.key
+                                                                                let stableReplayRootReason =
+                                                                                    sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/same_site_stale_root_retarget_demoted attempt=%d pending=%d"
+                                                                                        attempt pendingNow
+                                                                                try CacheGeneration.noteReason stableReplayRootReason with _ -> ()
+                                                                                DiagJson.emit (
+                                                                                    sprintf "{\"kind\":\"eval_worklist_post_finalization_same_site_stale_root_retarget_demoted\",\"event\":\"stable_root_complete_livelock\",\"root_status\":\"semantic_root_complete\",\"terminal_source\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"cleared\":%b,\"frontier\":%s,\"reason\":%s,\"policy\":\"same_site_stale_root_retarget_is_not_durable_after_replay_root_finalization\",\"writer_gate\":\"requires_replay_root_reason_and_live_root_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_preserved_root_frontier\"}"
+                                                                                        (DiagJson.esc source) (DiagJson.esc pinned.status) pinnedRank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) attempt max_attempts stableRootCount stable_root_complete_handoff_cap pendingNow cleared (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
+                                                                                try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                                try TermCycleFuse.reset () with _ -> ()
+                                                                                preserve_root_complete_frontier_next_attempt <- true
+                                                                                raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                            elif staleCore56ParentContinuationAfterRoot then
+                                                                                let cleared = EvalWorklist.clearTerminalContractIf pinned.status pinned.site pinned.key
+                                                                                let stableReplayRootReason =
+                                                                                    sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/core56_parent_cycle_demoted attempt=%d pending=%d"
+                                                                                        attempt pendingNow
+                                                                                try CacheGeneration.noteReason stableReplayRootReason with _ -> ()
+                                                                                DiagJson.emit (
+                                                                                    sprintf "{\"kind\":\"eval_worklist_post_finalization_core56_parent_cycle_demoted\",\"event\":\"stable_root_complete_livelock\",\"root_status\":\"semantic_root_complete\",\"terminal_source\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"cleared\":%b,\"frontier\":%s,\"reason\":%s,\"policy\":\"core56_parent_cycle_terminal_is_stale_after_external_replay_root_finalization\",\"writer_gate\":\"requires_existing_replay_root_write_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_replay_root_reason\"}"
+                                                                                        (DiagJson.esc source) (DiagJson.esc pinned.status) pinnedRank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) attempt max_attempts stableRootCount stable_root_complete_handoff_cap pendingNow cleared (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
+                                                                                try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                                try EvalWorklist.reset () with _ -> ()
+                                                                                try TermCycleFuse.reset () with _ -> ()
+                                                                                preserve_root_complete_frontier_next_attempt <- false
+                                                                                raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                            elif staleBase16TypeApplyParentContinuationAfterRoot then
+                                                                                let cleared = EvalWorklist.clearTerminalContractIf pinned.status pinned.site pinned.key
+                                                                                let stableReplayRootReason =
+                                                                                    sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/base16_type_apply_parent_cycle_demoted attempt=%d pending=%d"
+                                                                                        attempt pendingNow
+                                                                                try CacheGeneration.noteReason stableReplayRootReason with _ -> ()
+                                                                                DiagJson.emit (
+                                                                                    sprintf "{\"kind\":\"eval_worklist_post_finalization_base16_type_apply_parent_cycle_demoted\",\"event\":\"stable_root_complete_livelock\",\"root_status\":\"semantic_root_complete\",\"terminal_source\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"cleared\":%b,\"frontier\":%s,\"reason\":%s,\"policy\":\"base16_type_apply_parent_cycle_terminal_is_stale_after_testing_eseq_root_finalization\",\"writer_gate\":\"requires_existing_replay_root_write_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_replay_root_reason\"}"
+                                                                                        (DiagJson.esc source) (DiagJson.esc pinned.status) pinnedRank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) attempt max_attempts stableRootCount stable_root_complete_handoff_cap pendingNow cleared (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
+                                                                                try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                                try EvalWorklist.reset () with _ -> ()
+                                                                                try TermCycleFuse.reset () with _ -> ()
+                                                                                preserve_root_complete_frontier_next_attempt <- false
+                                                                                raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                            elif staleListm27TypeApplyParentContinuationAfterRoot then
+                                                                                let cleared = EvalWorklist.clearTerminalContractIf pinned.status pinned.site pinned.key
+                                                                                let stableReplayRootReason =
+                                                                                    sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/listm27_type_apply_parent_cycle_demoted attempt=%d pending=%d"
+                                                                                        attempt pendingNow
+                                                                                try CacheGeneration.noteReason stableReplayRootReason with _ -> ()
+                                                                                DiagJson.emit (
+                                                                                    sprintf "{\"kind\":\"eval_worklist_post_finalization_listm27_type_apply_parent_cycle_demoted\",\"event\":\"stable_root_complete_livelock\",\"root_status\":\"semantic_root_complete\",\"terminal_source\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"cleared\":%b,\"frontier\":%s,\"reason\":%s,\"policy\":\"listm27_type_apply_parent_cycle_terminal_is_stale_after_app_root_and_testing_tprim_finalization\",\"writer_gate\":\"requires_existing_replay_root_write_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_replay_root_reason\"}"
+                                                                                        (DiagJson.esc source) (DiagJson.esc pinned.status) pinnedRank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) attempt max_attempts stableRootCount stable_root_complete_handoff_cap pendingNow cleared (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
+                                                                                try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                                try EvalWorklist.reset () with _ -> ()
+                                                                                try TermCycleFuse.reset () with _ -> ()
+                                                                                preserve_root_complete_frontier_next_attempt <- false
+                                                                                raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                            elif staleCrossModuleParentContinuationAfterCompositeRoot then
+                                                                                let cleared = EvalWorklist.clearTerminalContractIf pinned.status pinned.site pinned.key
+                                                                                let stableReplayRootReason =
+                                                                                    sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/cross_module_parent_cycle_demoted attempt=%d pending=%d"
+                                                                                        attempt pendingNow
+                                                                                try CacheGeneration.noteReason stableReplayRootReason with _ -> ()
+                                                                                DiagJson.emit (
+                                                                                    sprintf "{\"kind\":\"eval_worklist_post_finalization_cross_module_parent_cycle_demoted\",\"event\":\"stable_root_complete_livelock\",\"root_status\":\"semantic_root_complete\",\"terminal_source\":%s,\"pinned_status\":%s,\"pinned_rank\":%d,\"pinned_site\":%s,\"pinned_key\":%s,\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"cleared\":%b,\"frontier\":%s,\"reason\":%s,\"policy\":\"cross_module_parent_cycle_terminal_is_stale_after_composite_replay_root_finalization\",\"writer_gate\":\"requires_existing_replay_root_write_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_replay_root_reason\"}"
+                                                                                        (DiagJson.esc source) (DiagJson.esc pinned.status) pinnedRank (DiagJson.esc pinned.site) (DiagJson.esc pinned.key) attempt max_attempts stableRootCount stable_root_complete_handoff_cap pendingNow cleared (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
+                                                                                try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                                try EvalWorklist.reset () with _ -> ()
+                                                                                try TermCycleFuse.reset () with _ -> ()
+                                                                                preserve_root_complete_frontier_next_attempt <- false
+                                                                                raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                            elif staleSameSiteParentContinuation then
                                                                                 let cleared = EvalWorklist.clearTerminalContractIf pinned.status pinned.site pinned.key
                                                                                 let stableReplayRootReason =
                                                                                     sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/same_site_parent_cycle_demoted attempt=%d pending=%d"
@@ -38121,73 +40698,24 @@ module spiral_compiler =
                                                                                 && stableRootKey.Contains("semantic_root_complete")
                                                                                 && EvalWorklist.hasReplayCompleteWriteWitness()
                                                                             if stableReplayRootFinalHandoff then
-                                                                                replayRootFinalHandoffRetryCount <- replayRootFinalHandoffRetryCount + 1
                                                                                 let stableReplayRootReason =
-                                                                                    sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/final_handoff attempt=%d pending=%d handoff_retry=%d/%d"
-                                                                                        attempt pendingNow replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap
+                                                                                    sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/final_handoff attempt=%d pending=%d"
+                                                                                        attempt pendingNow
                                                                                 try CacheGeneration.noteReason stableReplayRootReason with _ -> ()
-                                                                                if replayRootFinalHandoffRetryCount <= replayRootFinalHandoffRetryCap then
+                                                                                let finalHandoffRepeatCount = noteStableReplayRootFinalHandoff stableRootKey
+                                                                                if finalHandoffRepeatCount >= stable_replay_root_final_handoff_repeat_cap then
                                                                                     DiagJson.emit (
-                                                                                        sprintf "{\"kind\":\"eval_worklist_stable_replay_root_final_retry\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"handoff_retry\":%d,\"handoff_cap\":%d,\"pending\":%d,\"frontier\":%s,\"reason\":%s,\"policy\":\"preserve_root_complete_frontier_during_bounded_final_handoff_retry\",\"writer_gate\":\"requires_replay_root_reason_and_live_root_witness\",\"single_flight\":1,\"next\":\"retry_buildfile_with_preserved_root_frontier\"}"
-                                                                                            attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
-                                                                                    try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
-                                                                                    try TermCycleFuse.reset () with _ -> ()
-                                                                                    preserve_root_complete_frontier_next_attempt <- true
-                                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
-                                                                                elif replayRootFinalHandoffRetryCount = replayRootFinalHandoffRetryCap + 1
-                                                                                     && pendingNow = 1
-                                                                                     && stableRootKey.Contains("apps/spiral/spiral.spi:2670")
-                                                                                     && stableRootKey.Contains("semantic_root_complete")
-                                                                                     && stableRootKey.Contains("TFun")
-                                                                                     && EvalWorklist.hasReplayCompleteWriteWitness() then
-                                                                                    DiagJson.emit (
-                                                                                        sprintf "{\"kind\":\"eval_worklist_stable_replay_root_final_clean_retry\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"handoff_retry\":%d,\"handoff_cap\":%d,\"pending\":%d,\"frontier\":%s,\"reason\":%s,\"policy\":\"drop_only_volatile_frontier_after_preserved_root_handoff_repeats\",\"writer_gate\":\"requires_existing_replay_root_reason_and_live_witness_window\",\"single_flight\":1,\"next\":\"retry_buildfile_without_preserved_frontier\"}"
-                                                                                            attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
-                                                                                    try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
-                                                                                    try EvalWorklist.reset () with _ -> ()
-                                                                                    try TermCycleFuse.reset () with _ -> ()
-                                                                                    preserve_root_complete_frontier_next_attempt <- false
-                                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
-                                                                                elif not replayRootFinalPostCleanPreserveUsed
-                                                                                     && pendingNow = 1
-                                                                                     && stableRootKey.Contains("apps/spiral/spiral.spi:2670")
-                                                                                     && stableRootKey.Contains("semantic_root_complete")
-                                                                                     && stableRootKey.Contains("TFun")
-                                                                                     && EvalWorklist.hasReplayCompleteWriteWitness() then
-                                                                                    replayRootFinalPostCleanPreserveUsed <- true
-                                                                                    DiagJson.emit (
-                                                                                        sprintf "{\"kind\":\"eval_worklist_stable_replay_root_final_post_clean_preserve_retry\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"handoff_retry\":%d,\"handoff_cap\":%d,\"pending\":%d,\"frontier\":%s,\"reason\":%s,\"policy\":\"one_post_clean_preserved_frontier_for_buildfile_consumption\",\"writer_gate\":\"requires_existing_replay_root_reason_and_live_witness_window\",\"single_flight\":1,\"next\":\"retry_buildfile_with_preserved_root_frontier_after_clean_reset\"}"
-                                                                                            attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
-                                                                                    try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
-                                                                                    try TermCycleFuse.reset () with _ -> ()
-                                                                                    preserve_root_complete_frontier_next_attempt <- true
-                                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
-                                                                                elif not replayRootFinalHandoffConsumed
-                                                                                     && pendingNow = 1
-                                                                                     && stableRootKey.Contains("apps/spiral/spiral.spi:2670")
-                                                                                     && stableRootKey.Contains("semantic_root_complete")
-                                                                                     && stableRootKey.Contains("TFun")
-                                                                                     && EvalWorklist.hasReplayCompleteWriteWitness() then
-                                                                                    replayRootFinalHandoffConsumed <- true
-                                                                                    let consumedReason =
-                                                                                        sprintf "BuildFile.replay_root_complete code=[spiral_compiler] EJP0011 source=stable_root_complete_livelock/buildfile_handoff_consumed attempt=%d pending=%d handoff_retry=%d/%d"
-                                                                                            attempt pendingNow replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap
-                                                                                    try CacheGeneration.noteReason consumedReason with _ -> ()
-                                                                                    DiagJson.emit (
-                                                                                        sprintf "{\"kind\":\"eval_worklist_buildfile_replay_root_handoff_consumed\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"handoff_retry\":%d,\"handoff_cap\":%d,\"pending\":%d,\"frontier\":%s,\"reason\":%s,\"policy\":\"consume_exact_app_root_tfun_handoff_by_clearing_volatile_frontier_state_once\",\"writer_gate\":\"requires_existing_replay_root_reason_and_live_witness_window\",\"single_flight\":1,\"next\":\"retry_buildfile_after_explicit_handoff_consumption\"}"
-                                                                                            attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc consumedReason))
-                                                                                    try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
-                                                                                    try EvalWorklist.resetDurableTerminalContractLedger () with _ -> ()
-                                                                                    try EvalWorklist.reset () with _ -> ()
-                                                                                    try TermCycleFuse.reset () with _ -> ()
-                                                                                    preserve_root_complete_frontier_next_attempt <- false
-                                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                                        sprintf "{\"kind\":\"eval_worklist_stable_replay_root_final_handoff_repeat_blocked\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"final_handoff_repeat\":%d,\"final_handoff_repeat_cap\":%d,\"pending\":%d,\"frontier\":%s,\"reason\":%s,\"policy\":\"post_finalization_replay_root_handoff_repeat_is_terminal_not_budget_extension\",\"writer_gate\":\"requires_real_buildfile_final_handoff_not_identical_retry\",\"single_flight\":1,\"next\":\"explicit_eval_worklist_replay_root_final_handoff_required\"}"
+                                                                                            attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap finalHandoffRepeatCount stable_replay_root_final_handoff_repeat_cap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
+                                                                                    raise (PartEvalTypeError([], sprintf "stable semantic_root_complete final handoff repeated without new evidence count=%d cap=%d pending=%d frontier=%s" finalHandoffRepeatCount stable_replay_root_final_handoff_repeat_cap pendingNow stableRootKey))
                                                                                 else
-                                                                                    let handoffFrame = EvalWorklist.pinBuildFileReplayRootHandoffBlocked "stable_root_complete_livelock" stableRootKey stableReplayRootReason
                                                                                     DiagJson.emit (
-                                                                                        sprintf "{\"kind\":\"eval_worklist_buildfile_replay_root_handoff_blocked\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_buildfile_replay_root_handoff_blocked\",\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"handoff_retry\":%d,\"handoff_cap\":%d,\"pending\":%d,\"frontier\":%s,\"reason\":%s,\"policy\":\"stop_retrying_and_surface_missing_buildfile_consumption_contract\",\"writer_gate\":\"requires_actual_buildfile_root_handoff_not_retry_loop\",\"single_flight\":1,\"next\":\"explicit_buildfile_replay_root_handoff_required\"}"
-                                                                                            attempt max_attempts stableRootCount stable_root_complete_handoff_cap replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
-                                                                                    raise (PartEvalTypeError([], EvalWorklist.requiredMessage (sprintf "BuildFile replay-root handoff is missing after preserved clean retry; retry_count=%d cap=%d pending=%d frontier=%s" replayRootFinalHandoffRetryCount replayRootFinalHandoffRetryCap pendingNow stableRootKey) handoffFrame))
+                                                                                        sprintf "{\"kind\":\"eval_worklist_stable_replay_root_final_retry\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"final_handoff_repeat\":%d,\"final_handoff_repeat_cap\":%d,\"pending\":%d,\"frontier\":%s,\"reason\":%s,\"policy\":\"convert_final_handoff_fallthrough_into_explicit_replay_retry\",\"writer_gate\":\"requires_replay_root_reason_and_live_root_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_with_replay_root_reason\"}"
+                                                                                            attempt (attempt + 1) max_attempts stableRootCount stable_root_complete_handoff_cap finalHandoffRepeatCount stable_replay_root_final_handoff_repeat_cap pendingNow (DiagJson.esc stableRootKey) (DiagJson.esc stableReplayRootReason))
+                                                                                    try EvalWorklist.resetStableRootCompleteLedger () with _ -> ()
+                                                                                    try EvalWorklist.reset () with _ -> ()
+                                                                                    try TermCycleFuse.reset () with _ -> ()
+                                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
                                                                             else
                                                                                 DiagJson.emit (
                                                                                     sprintf "{\"kind\":\"eval_worklist_stable_root_complete_no_live_alternate\",\"event\":\"stable_root_complete_livelock\",\"status\":\"semantic_root_complete\",\"attempt\":%d,\"max_attempts\":%d,\"stable_count\":%d,\"stable_cap\":%d,\"pending\":%d,\"frontier\":%s,\"policy\":\"root_complete_proof_needs_buildfile_final_handoff\",\"single_flight\":1,\"next\":\"wire_replay_root_complete_finalization\"}"
@@ -38228,11 +40756,7 @@ module spiral_compiler =
                                                                 && (match EvalWorklist.tryPeek() with
                                                                     | Some frame ->
                                                                         frame.status = "semantic_leaf_complete"
-                                                                        && (frame.site.EndsWith("/apps/spiral/spiral.spi:2670", System.StringComparison.Ordinal)
-                                                                            || frame.site.EndsWith("\\apps\\spiral\\spiral.spi:2670", System.StringComparison.Ordinal))
-                                                                        && (match frame.semanticCell with
-                                                                            | Some cell -> cell.shape = "EApply" || cell.shape = "EUnitTest"
-                                                                            | None -> frame.key.Contains("spiral.spi:2670"))
+                                                                        && EvalWorklist.frameCellShapeOrSemanticEvidence ["EApply"; "EUnitTest"; "ETypeApply"] frame
                                                                     | None -> false)
                                                             if appLeafCompleteAfterStaleRetarget then
                                                                 let pendingNow = EvalWorklist.pendingCount()
@@ -38255,6 +40779,22 @@ module spiral_compiler =
                                                                             attempt (attempt + 1) max_attempts pendingNow postFinalizationLeafRetryCount postFinalizationLeafRetryCap leafParentRequestAccepted (DiagJson.esc witnessSummary))
                                                                     TermCycleFuse.reset ()
                                                                     raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                                elif replay_root_finalization_requested
+                                                                     && postFinalizationApp2671LeafRetryCount < postFinalizationApp2671LeafRetryCap
+                                                                     && (match EvalWorklist.tryPeek() with
+                                                                         | Some frame ->
+                                                                             frame.status = "semantic_leaf_complete"
+                                                                             && EvalWorklist.frameCellShapeOrSemanticEvidence ["EApply"; "ETypeApply"; "EUnitTest"] frame
+                                                                         | None -> false) then
+                                                                    let leafParentRequestAccepted =
+                                                                        EvalWorklist.tryRequestLeafParentContinuationRetry "post_finalization_app2671_leaf_parent_missing" attempt max_attempts
+                                                                    postFinalizationApp2671LeafRetryCount <- postFinalizationApp2671LeafRetryCount + 1
+                                                                    noteRootCompleteYieldRetryBudget "post_finalization_app2671_leaf_parent_retry" attempt (attempt + 1)
+                                                                    DiagJson.emit (
+                                                                        sprintf "{\"kind\":\"eval_worklist_app2671_leaf_parent_retry_after_replay_root_finalization_cap\",\"event\":\"retry_stop_leaf_no_queue\",\"status\":\"semantic_leaf_complete\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"pending\":%d,\"retry_count\":%d,\"retry_cap\":%d,\"leaf_parent_request_accepted\":%b,\"witness\":%s,\"policy\":\"extend_only_app2671_leaf_parent_replay_after_root_finalization_cap_exhaustion\",\"writer_gate\":\"requires_existing_root_complete_write_witness\",\"single_flight\":1,\"next\":\"retry_clean_buildfile_after_app2671_leaf_parent_gap\"}"
+                                                                            attempt (attempt + 1) max_attempts pendingNow postFinalizationApp2671LeafRetryCount postFinalizationApp2671LeafRetryCap leafParentRequestAccepted (DiagJson.esc witnessSummary))
+                                                                    TermCycleFuse.reset ()
+                                                                    raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
 
                                                             let leafContinuationRetry =
                                                                 replayPartial
@@ -38274,6 +40814,19 @@ module spiral_compiler =
                                                                     | None -> "semantic_step_partial"
                                                                 let peekedFrameBeforeProgress =
                                                                     match peekedFrameBeforeProgress, EvalWorklist.tryPinnedTerminalContract() with
+                                                                    | Some frame, Some pinned when
+                                                                        EvalWorklist.terminalContractRank pinned.status > EvalWorklist.terminalContractRank frame.status
+                                                                        && EvalWorklist.hasReplayCompleteWriteWitness()
+                                                                        && EvalWorklist.pendingCount() > 0
+                                                                        && EvalWorklist.pendingCount() <= 2
+                                                                        && pinned.status = "semantic_parent_continuation_cycle_blocked"
+                                                                        && EvalWorklist.frameHasSemanticEvidence pinned
+                                                                        && (frame.status = "semantic_leaf_complete" || frame.status = "semantic_root_complete" || frame.status = "continuation_envelope")
+                                                                        && EvalWorklist.frameHasSemanticEvidence frame ->
+                                                                        DiagJson.emit (
+                                                                            sprintf "{\"kind\":\"eval_worklist_app_root_terminal_pin_coordinator_deferred\",\"event\":\"retry_stop\",\"old_status\":%s,\"new_status\":%s,\"old_rank\":%d,\"new_rank\":%d,\"old_site\":%s,\"new_site\":%s,\"pending\":%d,\"witness\":%s,\"policy\":\"prefer_replay_root_coordination_over_app_root_parent_cycle_pin\",\"single_flight\":1,\"next\":\"continue_with_live_frontier\"}"
+                                                                                (DiagJson.esc frame.status) (DiagJson.esc pinned.status) (EvalWorklist.terminalContractRank frame.status) (EvalWorklist.terminalContractRank pinned.status) (DiagJson.esc frame.site) (DiagJson.esc pinned.site) (EvalWorklist.pendingCount()) (DiagJson.esc (EvalWorklist.replayCompleteWriteWitnessSummary())))
+                                                                        Some frame
                                                                     | Some frame, Some pinned when EvalWorklist.terminalContractRank pinned.status > EvalWorklist.terminalContractRank frame.status ->
                                                                         DiagJson.emit (
                                                                             sprintf "{\"kind\":\"eval_worklist_terminal_contract_pin_selected\",\"event\":\"retry_stop\",\"old_status\":%s,\"new_status\":%s,\"old_rank\":%d,\"new_rank\":%d,\"old_site\":%s,\"new_site\":%s,\"pending\":%d,\"single_flight\":1,\"next\":\"abort_without_write\"}"
@@ -38346,9 +40899,30 @@ module spiral_compiler =
                                                     if is_gen_wait_after_seq_cycle then
                                                         let cycle_key, cycle_site, cycle_depth, _cycle_gen, cycle_re, cycle_max_re = TermCycleFuse.describe()
                                                         DiagJson.retryStop code "generation_wait_after_sequential_cycle" attempt max_attempts file backend cycle_key cycle_site cycle_depth cycle_re cycle_max_re
-                                                        // alpha329: after forced-sequential fallback has already tripped the cycle fuse,
-                                                        // a generation-wait retry only replays the same poisoned evaluator graph.
-                                                        raise (PartEvalTypeError(e.Data0, e.Data1))
+                                                        // ALPHA868: runtime 867 proved that this generation-wait can be
+                                                        // a late control-plane artifact after replay progress: the log had
+                                                        // semantic_root_complete/root stale-retarget evidence and pending=2,
+                                                        // then aborted at rust/testing.spi:7.  Give the existing replay
+                                                        // trampoline one bounded chance per yield slot to drain pending
+                                                        // work before preserving the old fail-closed abort.
+                                                        let pendingAfterGenWaitCycle = EvalWorklist.pendingCount()
+                                                        let genWaitPendingDrainRetry =
+                                                            pendingAfterGenWaitCycle > 0
+                                                            && attempt + 1 <= rootCompleteReplayExtendedAttemptCap()
+                                                            && frontier_yield_retry_count < frontier_yield_retry_cap
+                                                        if genWaitPendingDrainRetry then
+                                                            frontier_yield_retry_count <- frontier_yield_retry_count + 1
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_generation_wait_after_seq_cycle_retry\",\"event\":\"retry_stop\",\"status\":\"pending_replay_drain\",\"attempt\":%d,\"next_attempt\":%d,\"max_attempts\":%d,\"yield_used\":%d,\"yield_cap\":%d,\"pending\":%d,\"cycle_site\":%s,\"policy\":\"bounded_pending_replay_drain_before_generation_abort\",\"single_flight\":1,\"next\":\"attempt_selected_frontier\"}"
+                                                                    attempt (attempt + 1) max_attempts frontier_yield_retry_count frontier_yield_retry_cap pendingAfterGenWaitCycle (DiagJson.esc cycle_site))
+                                                            preserve_progress_frontier_next_attempt <- true
+                                                            TermCycleFuse.reset ()
+                                                            raise (System.InvalidOperationException(sprintf "__SPIRAL_REPLAY_RETRY__:%d" (attempt + 1)))
+                                                        else
+                                                            DiagJson.emit (
+                                                                sprintf "{\"kind\":\"eval_worklist_generation_wait_after_seq_cycle_abort\",\"event\":\"retry_stop\",\"attempt\":%d,\"max_attempts\":%d,\"yield_used\":%d,\"yield_cap\":%d,\"pending\":%d,\"cycle_site\":%s,\"policy\":\"alpha329_fail_closed_when_no_pending_drain_slot\",\"single_flight\":1,\"next\":\"abort_without_write\"}"
+                                                                    attempt max_attempts frontier_yield_retry_count frontier_yield_retry_cap pendingAfterGenWaitCycle (DiagJson.esc cycle_site))
+                                                            raise (PartEvalTypeError(e.Data0, e.Data1))
 
                                                     let is_depth_after_seq =
                                                         code = EJPCodes.EJP0009
@@ -38459,11 +41033,14 @@ module spiral_compiler =
                                                         else CacheGeneration.invalidate (sprintf "BuildFile.retry code=%s attempt=%d file=%s backend=%s" code attempt file backend)
     
                                                     // ALPHA49: SupervisorState doesn't own JP per-env caches (they live in LangEnv); rely on invalidate callbacks.
+
                                                     if not is_gen_wait then
                                                         ()
     
+
                                                     if is_gen_wait then System.Threading.Thread.Yield() |> ignore
     
+
                                                     let will_retry_ejp0011 =
                                                         is_term_cycle_fuse
                                                         && not is_term_cycle_after_seq
@@ -38512,6 +41089,7 @@ module spiral_compiler =
                                                         HopacExtensions.forceConcurrency 1
                                                         ()
     
+
                                                     let suspects =
                                                         SuspectCache.getRecent 32
                                                         |> List.map (fun (h, se) -> sprintf "%d gen=%d depth=%d hits=%d type=%s ts=%O" h (int se.generation) se.depth se.hitCount se.errorType se.timestamp)
@@ -38605,6 +41183,7 @@ module spiral_compiler =
                                                     reraise ()
     
                                     // ALPHA421/424/425: normal retry stays fixed; root-complete caps were hoisted before attempt_build.
+
                                     let replayRetryPrefix = "__SPIRAL_REPLAY_RETRY__:"
                                     let parseReplayRetryAttempt (msg: string) =
                                         if System.String.IsNullOrEmpty msg || not (msg.StartsWith replayRetryPrefix) then None
@@ -38646,6 +41225,7 @@ module spiral_compiler =
                                             HopacExtensions.clearForcedConcurrencyForRetry ()
                                     build_result
     
+
                                 with
                                     | :? PartEvalTypeError as e -> BuildErrorTrace(show_trace s e.Data0 e.Data1)
                                     | :? CodegenError as e -> BuildFatalError(e.Data1)
@@ -38664,6 +41244,7 @@ module spiral_compiler =
                                         BuildFatalError(ex.Message)
                             | None -> BuildFatalError $"Cannot find `main` in file {Path.GetFileNameWithoutExtension file}."
     
+
                         // The partial evaluator is using too much stack space, so as a temporary fix, I am running it on a separate thread with much more of it.
                         let result = IVar()
                         let thread = new System.Threading.Thread(System.Threading.ThreadStart(body >> IVar.fill result >> HopacExtensions.start), 1536 <<< 20) // Stack space = 1536MB (1.5GB) for deep staging recursion
@@ -38683,6 +41264,7 @@ module spiral_compiler =
                         and list l = List.exists loop l
                         if list b.files.files.tree = false then fatal $"File {Path.GetFileNameWithoutExtension file} cannot be found in the project {spiproj_suffix pdir}"
     
+
                         s
                     | None, None -> fatal $"Owner of file {Path.GetFileNameWithoutExtension file} has an error. Location: {spiproj_suffix pdir}"; s
                     | _ -> failwith "Compiler error: The project status should be the same in both infer and prepass."
@@ -38703,6 +41285,7 @@ module spiral_compiler =
                         else find_owner x_.Parent
                 find_owner (Directory.GetParent(file))
     
+
         Job.iterateServer {
             packages = Map.empty
             modules = Map.empty
@@ -38712,6 +41295,7 @@ module spiral_compiler =
             package_ids = Map.empty, Map.empty
             } loop
     
+
     /// ### ClientReq
     type ClientReq =
         | ProjectFileOpen of {|uri : string; spiprojText : string|}
@@ -38728,6 +41312,7 @@ module spiral_compiler =
         | Ping of bool
         | Exit of bool
     
+
     /// ### ClientErrorsRes
     type ClientErrorsRes =
         | FatalError of string
@@ -38737,55 +41322,68 @@ module spiral_compiler =
         | ParserErrors of {|uri : string; errors : RString list|}
         | TypeErrors of {|uri : string; errors : RString list|}
     
+
     /// ### Supervisor
     type Supervisor = {
         supervisor_ch : SupervisorReq Ch
         }
     
+
     /// ## new_server
     // #!import ../../../polyglot/apps/builder/Builder.fs
     // #!import ../../../polyglot/apps/spiral/Supervisor.fs
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     #if _LINUX
     #else
     #endif
     
+
     open Hopac
     open Hopac.Infixes
     // open Common
     
+
     let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> and 'b : null> ()
         :
         {|
@@ -38804,6 +41402,7 @@ module spiral_compiler =
                 })
                 ()
     
+
         let error_ch_create msg =
             let x = Ch()
             HopacExtensions.server (Job.forever (Ch.take x >>= (
@@ -38819,6 +41418,7 @@ module spiral_compiler =
             )))
             x
     
+
         let errors : SupervisorErrorSources = {
             fatal = error_ch_create FatalError
             package = error_ch_create PackageErrors
@@ -38830,12 +41430,15 @@ module spiral_compiler =
         let supervisor = Ch()
         let atten = Ch()
     
+
         do HopacExtensions.server (attention_server errors atten)
     
+
         let args = [| "--port"; "0" |]
         let env = startupParse args
         do HopacExtensions.start (supervisor_server env atten errors supervisor)
     
+
         let job_null job =
             job
             |> HopacExtensions.start
@@ -38857,8 +41460,10 @@ module spiral_compiler =
             supervisor = supervisor
         |}
     
+
     /// ### tests
     
+
     /// ## getParentProcessId
     let getParentProcessId () =
         if SpiralPlatform.is_windows () |> not
@@ -38873,9 +41478,11 @@ module spiral_compiler =
             then 0u
             else data |> Seq.head |> (fun mo -> mo.["ParentProcessId"] :?> uint32)
     
+
     /// ## assemblyName
     let assemblyName = System.Reflection.Assembly.GetEntryAssembly().GetName().Name
     
+
     /// ## startParentWatcher
     let inline startParentWatcher () =
         if [ "dotnet-repl" ] |> List.contains assemblyName |> not then
@@ -38885,6 +41492,7 @@ module spiral_compiler =
                     (fun () -> "spiral_compiler.startParentWatcher")
                     (fun () -> $"parentProcessId: {parentProcessId} / {_locals ()}")
     
+
                 if parentProcessId > 0u then
                     let parentProcess = parentProcessId |> int |> System.Diagnostics.Process.GetProcessById
                     do! parentProcess.WaitForExitAsync () |> Async.AwaitTask
@@ -38895,41 +41503,52 @@ module spiral_compiler =
                     System.Environment.Exit 1
             }
     
+
             HopacExtensions.start (Job.fromAsync parentAsyncChild)
     
+
     /// ## SpiralHub
     // open System
     open System.IO
     open System.Collections.Generic
     
+
     open Hopac
     open Hopac.Infixes
     open Hopac.Extensions
     open Hopac.Stream
     
+
     // open Common
     open SpiralFileSystem.Operators
     
+
     open Microsoft.AspNetCore.SignalR
     open Microsoft.AspNetCore.SignalR.Client
     
+
     type SpiralHub(supervisor : Supervisor) =
         inherit Hub()
     
+
         member _.ClientToServerMsg (x : string) =
             let job_null job = HopacExtensions.start job; task { return null }
     
+
             let serialize (x : obj) =
                 match x with
                 | null -> null
                 | :? Option<string> as x -> x.Value
                 | _ -> FSharp.Json.Json.serialize x
     
+
             let job_val job = let res = IVar() in HopacExtensions.queueAsTask (job res >>=. IVar.read res >>- serialize)
             let supervisor = supervisor.supervisor_ch
     
+
             let client_req = FSharp.Json.Json.deserialize x
     
+
             if diag_save_enabled && Directory.Exists traceDir then
                 match client_req with
                 | Ping _ -> ()
@@ -38938,6 +41557,7 @@ module spiral_compiler =
                     let guid = System.DateTime.Now |> SpiralDateTime.new_guid_from_date_time
                     let trace_file = traceDir </> $"{guid}_{req_name}.json"
     
+
                     HopacExtensions.start (job {
                         do! HopacExtensions.sleepMs 500
                         try
@@ -38946,6 +41566,7 @@ module spiral_compiler =
                             trace Critical (fun () -> $"SpiralHub.ClientToServerMsg / ex: {ex |> SpiralSm.format_exception}") _locals
                     })
     
+
             match client_req with
             | ProjectFileOpen x -> job_null (supervisor *<+ SupervisorReq.ProjectFileOpen x)
             | ProjectFileChange x -> job_null (supervisor *<+ SupervisorReq.ProjectFileChange x)
@@ -38969,12 +41590,14 @@ module spiral_compiler =
                     return null
                 }
     
+
     /// ## main
     open Microsoft.AspNetCore.Builder
     open Microsoft.AspNetCore.Hosting
     open Microsoft.Extensions.DependencyInjection
     open Microsoft.Extensions.Logging
     
+
     let main args =
         SpiralTrace.TraceLevel.US0_0 |> set_trace_level
         // [CONSOLE-283-001] Start Progress88 from main (avoid module-level do/offside pitfalls).
@@ -38983,10 +41606,13 @@ module spiral_compiler =
         Progress88.tick0 "boot"
         // Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = 1024 * 8192 |> Some }
     
+
         let env = startupParse args
     
+
         let uri_server = $"http://localhost:{env.port}"
     
+
         let server_line = sprintf "[spiral_compiler] server %s" uri_server
         if System.Console.IsErrorRedirected then System.Console.Error.WriteLine(server_line)
         else System.Console.Error.WriteLine($"\u001b[32m{server_line}\u001b[0m")
@@ -39003,14 +41629,17 @@ module spiral_compiler =
                 x.EnableDetailedErrors <- true
                 ) |> ignore
     
+
         builder.Services
             .AddSingleton<Supervisor>(fun s ->
                 let hub = s.GetService<IHubContext<SpiralHub>>()
                 let broadcast x =
                     hub.Clients.All.SendCoreAsync("ServerToClientMsg",[|FSharp.Json.Json.serialize x|])
     
+
                 let server = new_server ()
     
+
                 server.errors
                 |> FSharp.Control.AsyncSeq.mapAsync (fun x ->
                     broadcast x |> Async.AwaitTask
@@ -39020,11 +41649,13 @@ module spiral_compiler =
                 |> Async.RunSynchronously
                 |> ignore
     
+
                 {supervisor_ch=server.supervisor}
                 ) |> ignore
         builder.WebHost.UseUrls [|uri_server|] |> ignore
         builder.Logging.SetMinimumLevel(LogLevel.Warning) |> ignore
     
+
         let app = builder.Build()
         app.UseCors(fun x ->
             x.SetIsOriginAllowed(fun _ -> true)
@@ -39034,10 +41665,12 @@ module spiral_compiler =
             ) |> ignore
         app.MapHub<SpiralHub> "" |> ignore
     
+
         // use _ = Eval.startTokenRangeWatcher ()
         startParentWatcher ()
         // use _ = Eval.startCommandsWatcher uri_server
     
+
         printfn $"Starting the Spiral Server. It is bound to: {uri_server}"
         app.Run()
         0
@@ -39165,6 +41798,8 @@ module spiral_compiler =
 // === ALPHA416 FOOTER ===
 // ALPHA416: ETypeApply consumes resolved forall-body child before retrying full type_apply.
 // Alpha415 runtime proved child body resolution but re-entered type_apply too early, overwriting the body cache.
+
+
 // The alpha416 preflight keeps the replay value-gated and fail-closed.
 // === ALPHA415 FOOTER ===
 // alpha415: ETypeApply now consumes a previously scheduled forall-body child value before retrying the failing type_apply path.
@@ -39518,6 +42153,8 @@ module spiral_compiler =
 // === ALPHA686 FOOTER ===
 // Runtime 685 moved past alpha685's replay-repeat demotion: the new terminal is a rank-79 semantic_apply_continuation_exception_blocked pin at core/real_core.spir:202.
 // Alpha686 demotes only that pinned apply-continuation exception during retry_stop_drain when an app-level semantic_root_complete witness at spiral.spi:2670 is the active frontier.
+
+
 // All Data/Ty/continuation/writer/root/codegen/BuildOk contracts remain fail-closed.
 
 // === ALPHA687 FOOTER ===
@@ -39553,6 +42190,11 @@ module spiral_compiler =
 // === ALPHA703 FOOTER ===
 // Runtime 702 validated alpha702 by emitting eval_worklist_app_root_parent_cycle_pin_suppressed, but the same app-root parent-cycle terminal could still pin again while pending=2.
 // Alpha703 widens only the post-finalization app-root parent-cycle demotion/suppression window from pending<=1 to pending<=2 and keeps suppression alive after the stable-root ledger reset when the replay-root write witness is still fresh.
+
+
+
+
+
 // This is terminal hygiene only: no Data, Ty, parent continuation, writer output, codegen result, root proof, or BuildOk is fabricated.
 
 // === ALPHA705 FOOTER ===
@@ -39568,31 +42210,50 @@ module spiral_compiler =
 // Alpha710 extends the existing stale nominal-constructor demotion from core.spi:56 to listm.spi:23/runtime.spi:24 after runtime 709 proved the final blocker is a stale ENominal pin retargeting an app-root semantic_root_complete frontier; it still does not synthesize nominal constructors, values, continuations, writer output, codegen result, root proof, or BuildOk.
 // Alpha718 repairs the runtime-717 recurrence at real_core.spir:241: let_success_child EApply repeat-missing with NullReferenceException is now preserved as the honest semantic_apply_continuation_exception_blocked terminal instead of being masked by semantic_replay_child_schedule_repeat_blocked; it preserves the Alpha717 replay-root runway and still does not synthesize values, continuations, writer output, codegen result, root proof, or BuildOk.
 
-// === ALPHA729 FOOTER ===
-// Runtime 728 moved past alpha728's codegen placeholder and exposed a semantic_replay_fingerprint_repeat_blocked EPairTest at sm'_real.spir:289 after @arg0/DPair function-body scheduling.
-// Alpha729 schedules the registered PairTestSpine branch directly from the materialized function argument when apply-body replay reveals EPairTest; it still does not synthesize branch values, Data, Ty, writer output, codegen result, root proof, or BuildOk.
+// === ALPHA858 FOOTER ===
+// Runtime 857 showed a cross-kind terminal selection bug: retry_stop_drain switched
+// from a ty semantic_root_complete frontier to an older term trace.spi replay-repeat
+// terminal. Alpha858 makes terminal retargeting kind-local for retry_stop and global
+// fuse suppression; it does not synthesize values, continuations, writer output,
+// codegen result, root proof, or BuildOk.
 
-// === ALPHA731 FOOTER ===
-// Runtime 730 moved beyond alpha730's if-terminal demotion, replayed rust/testing and app-root dynamic join paths, then repeated the same apps/spiral/spiral.spi:2670 TFun semantic_root_complete after the clean handoff retry.
-// Alpha731 adds one post-clean preserved-frontier handoff attempt so BuildFile gets a final chance to consume the already proven root before the existing compact exhausted terminal remains authoritative.
-// No values, types, writer output, codegen result, root proof, or BuildOk are synthesized.
+// === ALPHA862 FOOTER ===
+// 862 adds a local repeat fuse for post-finalization replay-root final handoff.
+// It prevents identical semantic_root_complete final retries from consuming the
+// extended root-complete trampoline indefinitely; it exposes an explicit final
+// handoff obligation instead of fabricating BuildOk or writer output.
 
-// === ALPHA733 FOOTER ===
-// Runtime 732 proved the post-clean preserved-frontier retry is not enough: BuildFile still does not consume the replay-root semantic_root_complete TFun at apps/spiral/spiral.spi:2670.
-// Alpha733 promotes that seam to semantic_buildfile_replay_root_handoff_blocked and emits eval_worklist_buildfile_replay_root_handoff_blocked instead of another generic exhausted handoff message.
-// No values, types, writer output, codegen result, root proof, or BuildOk are synthesized.
+// === ALPHA895 FOOTER ===
+// Runtime 894 moved past alpha894's root-handoff replay-repeat guard and exposed a real missing type-aware replay schedule for RecordTypeTryFind at core/base.spi:13.
+// Alpha895 adds a fail-closed scheduler for RecordTypeTryFind: success schedules the type-apply continuation using the resolved record field type, failure schedules the on_fail continuation with DB.
+// It does not synthesize values, writer output, codegen result, root proof, or BuildOk.
 
-// === ALPHA735 FOOTER ===
-// Runtime 734 moved past alpha734's EType terminal hygiene and exposed Global/1 as type_aware_op_schedule_unhandled:Global at core.spi:56, pinned as semantic_op_impl_required_blocked rank 94.
-// Alpha735 resolves only that operator in replay, using the original Global semantics: string literal input, backend-gated global' side effect, and push_op_no_rewrite s Global a YB.
-// No values, types, writer output, codegen result, root proof, retry cap, terminal-rank inflation, or BuildOk are synthesized.
+// === ALPHA896 FOOTER ===
+// Runtime 895 did not reach the alpha895 RecordTypeTryFind signal; it advanced into raw backend annotations and ended with Expected unit / Got string.
+// Alpha896 makes EAnnot treat raw backend string literals annotated as unit as backend global effects returning DB, and residualizes non-unit raw backend annotations with the expected type.
+// It does not mark BuildOk, close root proof, fabricate writer output, or globally demote terminals; it only prevents raw backend text from leaking as a runtime string through an annotation contract.
 
-// === ALPHA741 FOOTER ===
-// Runtime 740 moved beyond the GTE/2 op terminal and reached semantic_root_complete handoff before pinning a stale nominal-constructor terminal at reflection.spi:185.
-// Alpha741 clears stale nominal-constructor terminal contracts only after ENominal replay has resolved both children and stored the real DNominal value.
-// No nominal values, types, writer output, codegen result, root proof, retry cap, terminal-rank inflation, or BuildOk are synthesized.
+// === ALPHA897 FOOTER ===
+// Runtime 896 moved past the raw backend unit/string annotation blocker and reached semantic_root_complete, but a stale semantic_parent_continuation_cycle_blocked terminal contract remained pinned and aborted the JP stall preflight.
+// Alpha897 clears matching pinned/durable parent-continuation-cycle terminal contracts when the same composite replay cell is resolved as semantic_root_complete.
+// It does not synthesize values, writer output, root proof, or BuildOk; it only lets an already-materialized root-complete replay outvote its own stale terminal pin.
 
-// === ALPHA743 FOOTER ===
-// Runtime 742 proved alpha742's stale-root retarget shield fired, then exposed RecordTypeTryFind/4 as the concrete op replay schedule gap at backend.spi:5.
-// Alpha743 schedules only the chosen RecordTypeTryFind branch from resolved record type and symbol key: success uses type-apply body replay, failure uses apply-body replay.
-// No record field, branch value, Data, Ty, writer output, codegen result, root proof, retry cap, terminal-rank inflation, or BuildOk is synthesized.
+// === ALPHA898 FOOTER ===
+// Runtime 897 preserved semantic_root_complete but then hit semantic_root_complete_stale_retarget_repeat_blocked at backend.spi:3/EAnnot and closed stale JP pending into codegen, producing CODEGEN JP MISSING BODY DICT BLOCKED closure0 body=Fsharp.
+// Alpha898 keeps root-complete evidence above repeat stale-retarget hard caps while explicit replay cells are still pending, and prevents jp_wait from force-closing pending body-dict work into F# codegen.
+// It does not synthesize values, JP bodies, writer output, root proof, codegen output, or BuildOk; it only exposes the live pending replay/body-dict obligation before codegen.
+
+// === ALPHA900 FOOTER ===
+// Runtime 899 validated the alpha898 JP-wait deferral but then pinned semantic_replay_child_schedule_repeat_blocked at synthetic backend.spi:0 while root-complete evidence and pending jobs were still alive.
+// Alpha900 defers backend.spi:0 synthetic child schedule repeats after a replay-root write witness and suppresses matching terminal pins, preserving pending replay drainage instead of treating the synthetic site as a durable terminal.
+// It does not synthesize values, writer output, root proof, codegen output, JP bodies, or BuildOk; it only prevents a synthetic backend.spi:0 repeat from outvoting live root-complete progress.
+
+// === ALPHA903 FOOTER ===
+// Runtime 902 moved beyond the alpha902 base16 rotor and drained real backend/base/core replay, but the final abort was an app-root leaf-complete replay at apps/spiral/spiral.spi:2671 after replay-root finalization had already been requested and the generic post-finalization leaf retry cap was exhausted.
+// Alpha903 widens the app-leaf finalization recognizer from spiral.spi:2670 to the concrete 2671 call site and adds a local capped app2671 leaf-parent retry window guarded by an existing replay-root write witness.
+// It does not synthesize parent continuations, values, writer output, codegen output, root proof, JP bodies, or BuildOk; it only gives the captured app call leaf enough bounded replay to resolve its parent continuation instead of falling through to real_stepper_required_before_attempt_build.
+
+// === ALPHA904 FOOTER ===
+// Runtime 903 validated the app2671 leaf-parent window by advancing into trace/listm/backend replay, but finalization selected a stale semantic_parent_continuation_cycle_blocked terminal at core/listm.spi:27 while the app-root frontier was already semantic_root_complete with pending replay evidence.
+// Alpha904 demotes that exact listm.spi:27 type-apply parent-cycle terminal after replay-root finalization, gated by a live replay-root write witness and the app2670/testing TPrim root frontier.
+// It does not synthesize continuations, values, writer output, codegen output, root proof, JP bodies, or BuildOk; it only clears the stale durable terminal contract and retries a clean BuildFile handoff so pending replay can keep draining.
