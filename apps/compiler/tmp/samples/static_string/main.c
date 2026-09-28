@@ -34,19 +34,28 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 bool method0(String * v0){
+    
     StringDecref(v0);
     return true;
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(7, "spiral");
     v0->refc++;
+    
     bool v1;
     v1 = method0(v0);
+    
     StringDecref(v0);
     if (v1){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

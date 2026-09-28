@@ -11,14 +11,13 @@ inl main () : i32 =
     inl _ = plan_stage_witness ()
     inl _ = plan_index_valid "0"
     inl _ = plan_decode_code "create" "state/example.spi" "-" "typed-payload" "write"
-    $"RustExportStringUnary(\"eoie_plan_ir_schema\",\"plan_schema_tag\")" : ()
-    $"RustExportStringTuple5Unary(\"eoie_plan_ir_descriptor\",\"plan_descriptor_by_index\")" : ()
-    $"RustExportStringUnary(\"eoie_plan_ir_header_projection\",\"plan_manifest_header_projection\")" : ()
-    $"RustExportStringTuple5Unary(\"eoie_plan_ir_row_hex_tuple\",\"plan_manifest_row_hex_tuple\")" : ()
-    $"RustExportI32(\"eoie_plan_ir_projection_witness\",\"plan_manifest_projection_witness\")" : ()
-    $"RustExportI32(\"eoie_plan_ir_count\",\"plan_provider_count\")" : ()
-    $"RustExportI32(\"eoie_plan_ir_stage_witness\",\"plan_stage_witness\")" : ()
-    $"RustExportU64Unary(\"eoie_plan_ir_index_valid\",\"plan_index_valid\")" : ()
-    $"RustExportU64String5(\"eoie_plan_ir_decode_code\",\"plan_decode_code\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_plan_ir_schema", ((fun value => plan_schema_tag value) : string -> string))
+    !!!!Export("eoie_plan_ir_descriptor", ((fun value => plan_descriptor_by_index value) : string -> string * string * string * string * string))
+    !!!!Export("eoie_plan_ir_header_projection", ((fun value => plan_manifest_header_projection value) : string -> string))
+    !!!!Export("eoie_plan_ir_row_hex_tuple", ((fun value => plan_manifest_row_hex_tuple value) : string -> string * string * string * string * string))
+    !!!!Export("eoie_plan_ir_projection_witness", ((fun () => plan_manifest_projection_witness ()) : () -> i32))
+    !!!!Export("eoie_plan_ir_count", ((fun () => plan_provider_count ()) : () -> i32))
+    !!!!Export("eoie_plan_ir_stage_witness", ((fun () => plan_stage_witness ()) : () -> i32))
+    !!!!Export("eoie_plan_ir_index_valid", ((fun value => plan_index_valid value) : string -> u64))
+    !!!!Export("eoie_plan_ir_decode_code", ((fun (a, b, c, d, e) => plan_decode_code a b c d e) : string * string * string * string * string -> u64))
     0i32

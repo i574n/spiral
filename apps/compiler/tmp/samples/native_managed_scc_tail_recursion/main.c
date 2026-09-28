@@ -34,64 +34,114 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 int32_t method2(int32_t v0, String * v1){
+    
+    
     int32_t v2;
     v2 = v0 - 1l;
+    
+    
     bool v3;
     v3 = v2 == 0l;
+    
+    
     if (v3){
+        
+        
         int32_t v4;
         v4 = v1->len-1;
+        
         StringDecref(v1);
         return v4;
     } else {
+        
+        
         return method1(v2, v1);
     }
 }
 int32_t method1(int32_t v0, String * v1){
+    
+    
     int32_t v2;
     v2 = v0 - 1l;
+    
+    
     bool v3;
     v3 = v2 == 0l;
+    
+    
     if (v3){
+        
         StringDecref(v1);
         return 99l;
     } else {
+        
+        
         return method2(v2, v1);
     }
 }
 int32_t method0(int32_t v0, String * v1){
+    
+    
     bool v2;
     v2 = v0 == 0l;
+    
+    
     int32_t v5;
     if (v2){
+        
+        
         int32_t v3;
         v3 = v1->len-1;
+        
+        
         v5 = v3;
     } else {
         v1->refc++;
+        
         v5 = method1(v0, v1);
     }
+    
     StringDecref(v1);
     int32_t v6;
     v6 = v5 - 2l;
+    
+    
     return v6;
 }
 int32_t main(){
+    
+    
     int32_t v0;
     v0 = 1000000l;
+    
+    
     int32_t v1;
     v1 = v0 % 2l;
+    
+    
     bool v2;
     v2 = v1 == 0l;
+    
+    
     String * v5;
     if (v2){
+        
+        
         String * v3;
         v3 = StringLit(3, "ok");
+        
+        
         v5 = v3;
     } else {
+        
+        
         String * v4;
         v4 = StringLit(3, "go");
+        
+        
         v5 = v4;
     }
+    
+    
     return method0(v0, v5);
 }

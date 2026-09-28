@@ -1,6 +1,4 @@
-inl rust_global (x : string) : () = real
-    typecase `(!!!!LitToTypeLit(x)) with ~x =>
-    $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 union retention_negative_fixture =
     | WrongKeepWindow

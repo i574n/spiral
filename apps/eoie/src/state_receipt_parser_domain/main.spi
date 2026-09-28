@@ -1,8 +1,7 @@
 inl main () : i32 =
     inl parsed = receipt_parse (parser_fixture_source ())
     inl malformed = receipt_parse (parser_malformed_source ())
-    $"RustExportStringUnary(\"eoie_state_receipt_parse\",\"receipt_parse\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_state_receipt_parse", ((fun value => receipt_parse value) : string -> string))
     if (=.) parsed (parser_fixture_table ()) then
         if (=.) malformed "" then 0i32 else 2i32
     else 1i32

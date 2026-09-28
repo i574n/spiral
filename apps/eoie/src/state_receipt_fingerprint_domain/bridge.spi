@@ -8,10 +8,10 @@ let fingerprint_byte_valid_binding (byte : i32) (witness : i32) : i32 =
     else 1i32
 
 let fingerprint_mix_low_binding (~low : i32) (~byte : i32) : i32 =
-    !\((low,byte), $'"$0 ^ $1"')
+    $'!low ^ !byte ' : i32
 
 let fingerprint_low_step_binding (~mixed_low : i32) (~witness : i32) : i32 =
-    !\((mixed_low,witness), $'"if $1 == 0 { (($0 as u32).wrapping_mul(435)) as i32 } else { $0 }"')
+    $'if !witness == 0 { ((!mixed_low as u32).wrapping_mul(435)) as i32 } else { !mixed_low }' : i32
 
 let fingerprint_high_step_binding (~high : i32) (~mixed_low : i32) : i32 =
-    !\((high,mixed_low), $'"((((($0 as u32 as u64) * 435) + (($1 as u32 as u64) * 256) + ((($1 as u32 as u64) * 435) >> 32)) & 0xffff_ffff) as u32) as i32"')
+    $'(((((!high as u32 as u64) * 435) + ((!mixed_low as u32 as u64) * 256) + (((!mixed_low as u32 as u64) * 435) >> 32)) & 0xffff_ffff) as u32) as i32' : i32

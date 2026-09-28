@@ -1,6 +1,4 @@
-inl rust_global_transport (x : string) : () = real
-    typecase `(!!!!LitToTypeLit(x)) with ~x =>
-    $"RustGlobal(@x)" : ()
+inl rust_global_transport (x : string) : () = !!!!Global(x)
 
 inl emit_plan_ir_transport () =
     rust_global_transport "#[derive(Clone, Debug, Eq, PartialEq)]\npub struct CanonicalPlanRow { pub op: String, pub target: String, pub expected: String, pub payload: String, pub effect: String }\n"

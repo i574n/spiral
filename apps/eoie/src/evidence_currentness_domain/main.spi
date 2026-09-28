@@ -1,7 +1,5 @@
-inl rust_library () : () = $"RustLibrary()" : ()
 
 inl main () : i32 =
     inl _ = model.currentness_plan ()
     terminal.emit_runtime ()
-    rust_library ()
     0i32

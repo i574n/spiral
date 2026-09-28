@@ -7,7 +7,7 @@ Rules for humans and LLM sessions (browser sandbox or local Windows) that change
 | | single-flight | hopac |
 |---|---|---|
 | What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: full parity on frontier+smoke, ~92% on examples+contracts |
-| Source of truth | `apps/compiler/spiral_compiler.fs` (the repo's main core) + `compiler/host/PortableBackends.fs` | `compiler/cores/hopac/spiral_compiler.fs` |
+| Source of truth | `apps/compiler/spiral_compiler.fs` (the repo's main core) | `compiler/cores/hopac/spiral_compiler.fs` |
 | Role in tests | **oracle**: its results are `<cache>/baseline/EXPECTED.tsv` (`-Bless`) | **candidate**: scored by how much of the oracle it reproduces |
 | Known wall | `apps/spiral` overflows the stack | ~27 partial-evaluation stalls, closures created in runtime `if` branches (`EJP0035`), and an order-dependent parse of backtick type application (see `lanes/hopac/FRONTIER.md`). Single-flight's features since the shared base `12f52a1` are ported. |
 | Scoreboard | `<cache>/scoreboards/single-flight.tsv` | `<cache>/scoreboards/hopac.tsv` (`-Record`) |

@@ -1,8 +1,7 @@
 inl main () : i32 =
     inl serialized = receipt_serialize (serializer_fixture_table ())
     inl malformed = receipt_serialize (serializer_malformed_table ())
-    $"RustExportStringUnary(\"eoie_state_receipt_serialize\",\"receipt_serialize\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_state_receipt_serialize", ((fun value => receipt_serialize value) : string -> string))
     if (=.) serialized (serializer_fixture_source ()) then
         if (=.) malformed (sm.concat (receipt_header ()) (receipt_footer ())) then 0i32 else 2i32
     else 1i32

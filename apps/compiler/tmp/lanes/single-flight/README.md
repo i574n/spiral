@@ -33,9 +33,10 @@ rejected with `BuildFile returned no code and no diagnostic arrived`: the progra
 type error never reaches the `--batch` result. The oracle therefore only checks *that* these programs are
 rejected, not *why*. Surfacing the diagnostic in the host would turn them into real negative tests.
 
-## Still translated: the hopac core, and the translator's own fixtures
+## The C-to-Rust/Delphi translator is gone
 
-`compiler/host/PortableBackends.fs` (C text to Rust/Delphi, see `PORTABLE_BACKENDS.md`) is still used by
-the hopac core until its backends are ported, and by eoie's Rust export ABI. Thirteen samples
-(`native_layout_*`, `native_closure_managed_branch`) are written in ops only that translator understands
-(`!!!!LayoutToHeapRefs`, `!!!!ManagedClosureString`, ...); they are not Spiral programs and fail natively.
+The host used to lower the core's C text to Rust/Delphi (`PortableBackends.fs`, 8,759 lines, plus an
+older copy inside `Program.fs`), rewrite C/F# output, and compile some sources itself ("typed-source").
+All of it was deleted on 2026-09-28 once eoie built with `!!!!Export` and the native Rust backend
+(`RUST_LIBRARY_PLAN.md`); so were the `--lower-portable*` commands. The sixteen samples written in ops only
+the translator understood (`native_layout_*`, `native_closure_managed_branch`) were removed before.

@@ -68,6 +68,8 @@ Array0 * ArrayLit0(uint32_t len, Array1 * * ptr){
     return x;
 }
 static inline void AssignArray0(int32_t * a, int32_t b){
+    
+    
     *a = b;
 }
 static inline void AssignArray1(Array1 * * a, Array1 * b){
@@ -105,8 +107,12 @@ US0 US0_1(Array0 * v0) { // Nested
     return x;
 }
 int32_t bump0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 0: { // Empty
+            
+            
             USDecref0(&(v0));
             return 0l;
             break;
@@ -121,9 +127,15 @@ int32_t bump0(US0 v0){
             ArrayDecref0(v1);
             int32_t v3;
             v3 = v2->ptr[0l];
+            
+            
             int32_t v4;
             v4 = v3 + 1l;
+            
+            
+            
             AssignArray0(&(v2->ptr[0l]), v4);
+            
             ArrayDecref1(v2);
             return 0l;
             break;
@@ -131,8 +143,12 @@ int32_t bump0(US0 v0){
     }
 }
 int32_t score1(US0 v0){
+    
+    
     switch (v0.tag) {
         case 0: { // Empty
+            
+            
             USDecref0(&(v0));
             return 0l;
             break;
@@ -144,52 +160,91 @@ int32_t score1(US0 v0){
             Array1 * v2;
             v2 = v1->ptr[0l];
             v2->refc++;
+            
             Array1 * v3;
             v3 = v1->ptr[1l];
             v3->refc++;
             ArrayDecref0(v1);
             int32_t v4;
             v4 = v2->ptr[0l];
+            
+            
             int32_t v5;
             v5 = v2->ptr[1l];
+            
             ArrayDecref1(v2);
             int32_t v6;
             v6 = v4 + v5;
+            
+            
             int32_t v7;
             v7 = v3->ptr[0l];
+            
+            
             int32_t v8;
             v8 = v6 + v7;
+            
+            
             int32_t v9;
             v9 = v3->ptr[1l];
+            
             ArrayDecref1(v3);
             int32_t v10;
             v10 = v8 + v9;
+            
+            
             return v10;
             break;
         }
     }
 }
 int32_t main(){
+    
+    
     int32_t v0;
     v0 = 2l;
+    
+    
     Array0 * v1;
     v1 = ArrayCreate0(v0, true);
+    
+    
     Array1 * v2;
     v2 = ArrayCreate1(v0, false);
+    
+    
     Array1 * v3;
     v3 = ArrayCreate1(v0, false);
+    
+    
+    
     AssignArray0(&(v2->ptr[0l]), 3l);
+    
+    
+    
     AssignArray0(&(v2->ptr[1l]), 4l);
+    
+    
+    
     AssignArray0(&(v3->ptr[0l]), 5l);
+    
+    
+    
     AssignArray0(&(v3->ptr[1l]), 6l);
+    
+    
+    
     AssignArray1(&(v1->ptr[0l]), v2);
+    
     ArrayDecref1(v2);
+    
     AssignArray1(&(v1->ptr[1l]), v3);
     v1->refc++;
     ArrayDecref1(v3);
     US0 v4;
     v4 = US0_1(v1);
     USIncref0(&(v4));
+    
     int32_t v5;
     v5 = bump0(v4);
     v1->refc++;
@@ -200,10 +255,15 @@ int32_t main(){
     ArrayDecref0(v1);
     int32_t v7;
     v7 = score1(v6);
+    
     USDecref0(&(v6));
     int32_t v8;
     v8 = v7 + v5;
+    
+    
     int32_t v9;
     v9 = v8 - 19l;
+    
+    
     return v9;
 }

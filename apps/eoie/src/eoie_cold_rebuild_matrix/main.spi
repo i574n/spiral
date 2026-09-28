@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 union cold_compile_lane =
     | FastBatchLane
@@ -40,8 +40,7 @@ inl main () : i32 =
     rust_global "#![allow(dead_code)]"
     inl _ = cold_compile_lane_binding 0i32 0i32
     inl _ = cold_format_lane_binding 0i32 0i32
-    $"RustExportI32Binary(\"eoie_cold_compile_lane\",\"cold_compile_lane_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_cold_format_lane\",\"cold_format_lane_binding\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_cold_compile_lane", ((fun (first, second) => cold_compile_lane_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_cold_format_lane", ((fun (first, second) => cold_format_lane_binding first second) : i32 * i32 -> i32))
     emit_runtime ()
     0i32

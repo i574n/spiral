@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl emit_runtime () : () =
     rust_global "use eoie_patch_control_domain::patch_rooted as source_authoring_rooted;\nuse eoie_rust_std_fs::atomic_write as source_authoring_atomic_write;\nuse eoie_process::{compile_spiral as source_authoring_compile_spiral, resolve_spiral_compiler as source_authoring_resolve_spiral_compiler};\n"

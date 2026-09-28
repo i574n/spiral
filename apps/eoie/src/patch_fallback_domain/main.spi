@@ -1,4 +1,3 @@
-inl rust_library () : () = $"RustLibrary()" : ()
 
 inl main () : i32 =
     inl _ = candidate_plan ()
@@ -10,12 +9,11 @@ inl main () : i32 =
     inl _ = patch_route_hash_binding 1i32 1i32
     inl _ = patch_route_complete_binding 0i32 1i32
     inl _ = patch_route_agreement_binding 1i32 1i32
-    $"RustExportI32Binary(\"eoie_patch_route_role_binding\",\"patch_route_role_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_route_forward_binding\",\"patch_route_forward_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_route_restore_binding\",\"patch_route_restore_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_route_hash_binding\",\"patch_route_hash_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_route_complete_binding\",\"patch_route_complete_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_route_agreement_binding\",\"patch_route_agreement_binding\")" : ()
+    !!!!Export("eoie_patch_route_role_binding", ((fun (first, second) => patch_route_role_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_route_forward_binding", ((fun (first, second) => patch_route_forward_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_route_restore_binding", ((fun (first, second) => patch_route_restore_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_route_hash_binding", ((fun (first, second) => patch_route_hash_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_route_complete_binding", ((fun (first, second) => patch_route_complete_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_route_agreement_binding", ((fun (first, second) => patch_route_agreement_binding first second) : i32 * i32 -> i32))
 
-    rust_library ()
     0i32

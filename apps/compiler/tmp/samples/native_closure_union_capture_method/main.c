@@ -55,24 +55,34 @@ US0 US0_2(bool v0) { // Flag
     return x;
 }
 int32_t score0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 2: { // Flag
             bool v2 = v0.case2.v0;
+            
             USDecref0(&(v0));
             if (v2){
+                
+                
                 return 11l;
             } else {
+                
+                
                 return 5l;
             }
             break;
         }
         case 1: { // Hit
             int32_t v1 = v0.case1.v0;
+            
             USDecref0(&(v0));
             return v1;
             break;
         }
         case 0: { // Idle
+            
+            
             USDecref0(&(v0));
             return 3l;
             break;
@@ -87,12 +97,17 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     US0 v0 = x->v0;
+    ClosureDecref0(x);
     USIncref0(&(v0));
+    
     int32_t v2;
     v2 = score0(v0);
+    
+    
     int32_t v3;
     v3 = v2 + v1;
-    ClosureDecref0(x);
+    
+    
     return v3;
 }
 Fun0 * ClosureCreate0(US0 v0){
@@ -104,28 +119,48 @@ Fun0 * ClosureCreate0(US0 v0){
     return (Fun0 *) x;
 }
 int32_t method1(Fun0 * v0){
+    
+    
     return v0->fptr(v0, 31l);
 }
 int32_t main(){
+    
+    
     int32_t v0;
     v0 = 2l;
+    
+    
     bool v1;
     v1 = v0 == 0l;
+    
+    
     US0 v7;
     if (v1){
+        
+        
         v7 = US0_0();
     } else {
+        
+        
         bool v3;
         v3 = v0 == 1l;
+        
+        
         if (v3){
+            
+            
             v7 = US0_1(7l);
         } else {
+            
+            
             v7 = US0_2(true);
         }
     }
     USIncref0(&(v7));
+    
     Fun0 * v8;
     v8 = ClosureCreate0(v7);
+    
     USDecref0(&(v7));
     return method1(v8);
 }

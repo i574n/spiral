@@ -6,9 +6,7 @@ union streaming_negative_fixture =
     | CallbackRejectedFixture
     | ClosedInputFixture
 
-inl rust_global (x : string) : () = real
-    typecase `(!!!!LitToTypeLit(x)) with ~x =>
-    $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl fixtures_are_closed () =
     match ZeroTimeoutFixture, SpawnRejectedFixture, CallbackRejectedFixture, ClosedInputFixture with

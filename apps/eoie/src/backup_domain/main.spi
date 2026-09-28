@@ -1,4 +1,3 @@
-inl rust_library () : () = $"RustLibrary()" : ()
 
 nominal existing_backup_slot = i32
 nominal next_backup_slot = i32
@@ -234,46 +233,46 @@ let restoration_accumulator_outcome (complete : i32) (failures : i32) : i32 =
     else 2i32
 
 inl export_backup_slot () : () =
-    $"RustExportI32Binary(\"eoie_patch_backup_slot\",\"backup_slot_for\")" : ()
+    !!!!Export("eoie_patch_backup_slot", ((fun (first, second) => backup_slot_for first second) : i32 * i32 -> i32))
 
 inl export_backup_next_count () : () =
-    $"RustExportI32Binary(\"eoie_patch_backup_next_count\",\"backup_next_count\")" : ()
+    !!!!Export("eoie_patch_backup_next_count", ((fun (first, second) => backup_next_count first second) : i32 * i32 -> i32))
 
 inl export_backup_capture_flag () : () =
-    $"RustExportI32Binary(\"eoie_patch_backup_should_capture\",\"backup_should_capture\")" : ()
+    !!!!Export("eoie_patch_backup_should_capture", ((fun (first, second) => backup_should_capture first second) : i32 * i32 -> i32))
 
 inl export_backup_binding_slot () : () =
-    $"RustExportI32Binary(\"eoie_patch_backup_binding_slot\",\"backup_binding_slot\")" : ()
+    !!!!Export("eoie_patch_backup_binding_slot", ((fun (first, second) => backup_binding_slot first second) : i32 * i32 -> i32))
 
 inl export_capture_authorized () : () =
-    $"RustExportI32Binary(\"eoie_patch_capture_authorized\",\"capture_authorized\")" : ()
+    !!!!Export("eoie_patch_capture_authorized", ((fun (first, second) => capture_authorized first second) : i32 * i32 -> i32))
 
 inl export_capture_binding_slot () : () =
-    $"RustExportI32Binary(\"eoie_patch_capture_binding_slot\",\"capture_binding_slot\")" : ()
+    !!!!Export("eoie_patch_capture_binding_slot", ((fun (first, second) => capture_binding_slot first second) : i32 * i32 -> i32))
 
 inl export_promotion_slot_authorized () : () =
-    $"RustExportI32Binary(\"eoie_patch_promotion_slot_authorized\",\"promotion_slot_authorized\")" : ()
+    !!!!Export("eoie_patch_promotion_slot_authorized", ((fun (first, second) => promotion_slot_authorized first second) : i32 * i32 -> i32))
 
 inl export_restoration_select () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_select\",\"restoration_select\")" : ()
+    !!!!Export("eoie_patch_restoration_select", ((fun (first, second) => restoration_select first second) : i32 * i32 -> i32))
 
 inl export_restoration_bind () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_bind\",\"restoration_bind\")" : ()
+    !!!!Export("eoie_patch_restoration_bind", ((fun (first, second) => restoration_bind first second) : i32 * i32 -> i32))
 
 inl export_restoration_complete () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_complete\",\"restoration_complete\")" : ()
+    !!!!Export("eoie_patch_restoration_complete", ((fun (first, second) => restoration_complete first second) : i32 * i32 -> i32))
 
 inl export_restoration_attempt_count () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_attempt_count\",\"restoration_attempt_count\")" : ()
+    !!!!Export("eoie_patch_restoration_attempt_count", ((fun (first, second) => restoration_attempt_count first second) : i32 * i32 -> i32))
 
 inl export_restoration_attempt_authorized () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_attempt_authorized\",\"restoration_attempt_authorized\")" : ()
+    !!!!Export("eoie_patch_restoration_attempt_authorized", ((fun (first, second) => restoration_attempt_authorized first second) : i32 * i32 -> i32))
 
 inl export_restoration_counter_next () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_counter_next\",\"restoration_counter_next\")" : ()
+    !!!!Export("eoie_patch_restoration_counter_next", ((fun (first, second) => restoration_counter_next first second) : i32 * i32 -> i32))
 
 inl export_restoration_accumulator_outcome () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_accumulator_outcome\",\"restoration_accumulator_outcome\")" : ()
+    !!!!Export("eoie_patch_restoration_accumulator_outcome", ((fun (first, second) => restoration_accumulator_outcome first second) : i32 * i32 -> i32))
 
 inl main () : i32 =
     inl backup_probe = collect_backup (existing_backup_slot -1i32) (next_backup_slot 0i32)
@@ -316,5 +315,4 @@ inl main () : i32 =
     export_restoration_attempt_authorized ()
     export_restoration_counter_next ()
     export_restoration_accumulator_outcome ()
-    rust_library ()
     0i32

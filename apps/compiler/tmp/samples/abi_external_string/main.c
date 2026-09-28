@@ -34,10 +34,15 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(7, "spiral");
+    
+    
     int32_t v1;
     v1 = spiral_abi_libc_strlen(v0);
+    
     StringDecref(v0);
     return v1;
 }

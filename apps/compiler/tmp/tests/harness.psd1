@@ -235,18 +235,7 @@
             'samples/mega_zeta_structural_laboratory'
         )
         'Rust,Delphi' = @(
-            'samples/native_layout_heap_refs'
-            'samples/native_layout_heap_refs_array_join'
-            'samples/native_layout_heap_refs_join'
-            'samples/native_layout_heap_refs_managed_tuple_join'
-            'samples/native_layout_heap_refs_string_join'
             'samples/native_layout_stack_mutable'
-            'samples/native_layout_stack_mutable_join'
-            'samples/native_layout_stack_refs'
-            'samples/native_layout_stack_refs_array_join'
-            'samples/native_layout_stack_refs_join'
-            'samples/native_layout_stack_refs_recursive_option_join'
-            'samples/native_layout_stack_refs_string_join'
         )
         'C,Rust' = @(
             'samples/rust_emit_expr_macro'

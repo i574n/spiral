@@ -17,10 +17,9 @@ inl main () : i32 =
     inl _ = state_receipt_recovered_topology_count_or_max "inl recovered_capability_fixture_count () : u32 = 22u32"
     inl _ = state_receipt_recovered_fixture_record_count_or_max "// recovered-fixture|cap|a|b|c"
     inl _ = state_receipt_recovered_fixture_paths "// recovered-fixture|cap|a|b|c"
-    $"RustExportU64Unary(\"eoie_state_receipt_recovered_topology_count_or_max\",\"state_receipt_recovered_topology_count_or_max\")" : ()
-    $"RustExportU64Unary(\"eoie_state_receipt_recovered_fixture_record_count_or_max\",\"state_receipt_recovered_fixture_record_count_or_max\")" : ()
-    $"RustExportStringUnary(\"eoie_state_receipt_recovered_fixture_paths\",\"state_receipt_recovered_fixture_paths\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_rehydrate_structure_binding\",\"bundle_rehydrate_structure_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_profile_signature_binding\",\"bundle_profile_signature_binding\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_state_receipt_recovered_topology_count_or_max", ((fun value => state_receipt_recovered_topology_count_or_max value) : string -> u64))
+    !!!!Export("eoie_state_receipt_recovered_fixture_record_count_or_max", ((fun value => state_receipt_recovered_fixture_record_count_or_max value) : string -> u64))
+    !!!!Export("eoie_state_receipt_recovered_fixture_paths", ((fun value => state_receipt_recovered_fixture_paths value) : string -> string))
+    !!!!Export("eoie_bundle_rehydrate_structure_binding", ((fun (first, second) => bundle_rehydrate_structure_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_profile_signature_binding", ((fun (first, second) => bundle_profile_signature_binding first second) : i32 * i32 -> i32))
     0i32

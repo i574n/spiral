@@ -99,17 +99,29 @@ $arrayRust = Join-Path $work 'fixed-array.rs'
 & $dotnet $compiler --backend Rust (Resolve-Path $arrayInput).Path $arrayRust | Out-Host
 if ($LASTEXITCODE -ne 0) { throw 'Fixed-array getter fixture failed to compile.' }
 $arrayCode = [IO.File]::ReadAllText($arrayRust)
-if (-not [regex]::IsMatch($arrayCode, 'ArrayGet[0-9]+\([^\r\n]+\) -> i32 \{\s*if index == 0 \{\s*(?:return )?v0;?\s*\}[\s\S]*?(?:else \{ v3 \}|return v3;)')) {
-    throw 'Fixed-array Rust getter lost its final-element fallback.'
+if ($arrayCode -match 'ArrayGet[0-9]+') {
+    throw 'Native fixed array was scalarized through ArrayGet. That getter is the portable C lowering.'
 }
-$fallbackMutation = [regex]::Replace($arrayCode, '(?m)^    let v1: i32 = 2;$', '    let v1: i32 = -1;')
-if ($fallbackMutation -eq $arrayCode) { throw 'Fixed-array fallback probe could not locate the fixture index.' }
-$fallbackSource = Join-Path $work 'fixed-array-fallback.rs'
-$fallbackExecutable = Join-Path $bin $(if ($IsWindows) { 'fixed-array-fallback.exe' } else { 'fixed-array-fallback' })
-[IO.File]::WriteAllText($fallbackSource, $fallbackMutation)
-& $rustc --edition 2024 --crate-name fixed_array_fallback $fallbackSource -o $fallbackExecutable
-if ($LASTEXITCODE -ne 0) { throw 'Fixed-array fallback Rust failed to compile.' }
-& $fallbackExecutable
-if ($LASTEXITCODE -ne 2) { throw "Fixed-array fallback returned $LASTEXITCODE; expected 2." }
+if (-not [regex]::IsMatch($arrayCode, 'borrow\(\)\[v1 as usize\]')) {
+    throw 'Native fixed array lost its runtime Vec index.'
+}
+$inRangeExecutable = Join-Path $bin $(if ($IsWindows) { 'fixed-array.exe' } else { 'fixed-array' })
+& $rustc --edition 2024 --crate-name fixed_array $arrayRust -o $inRangeExecutable
+if ($LASTEXITCODE -ne 0) { throw 'Fixed-array Rust failed native compilation.' }
+& $inRangeExecutable
+if ($LASTEXITCODE -ne 0) { throw "Fixed-array in-range result was $LASTEXITCODE; expected 0." }
+$negativeMutation = [regex]::Replace($arrayCode, '(?m)^    let mut v1: i32 = 2i32;\r?$', '    let mut v1: i32 = -1i32;')
+if ($negativeMutation -eq $arrayCode) { throw 'Fixed-array probe could not locate the fixture index.' }
+$negativeSource = Join-Path $work 'fixed-array-negative.rs'
+$negativeExecutable = Join-Path $bin $(if ($IsWindows) { 'fixed-array-negative.exe' } else { 'fixed-array-negative' })
+[IO.File]::WriteAllText($negativeSource, $negativeMutation)
+& $rustc --edition 2024 --crate-name fixed_array_negative $negativeSource -o $negativeExecutable
+if ($LASTEXITCODE -ne 0) { throw 'Fixed-array negative Rust failed to compile.' }
+$negativeLog = Join-Path $work 'fixed-array-negative.txt'
+& $negativeExecutable *> $negativeLog
+$negativeCode = $LASTEXITCODE
+$negativeOutput = if (Test-Path -LiteralPath $negativeLog) { [IO.File]::ReadAllText($negativeLog) } else { '' }
+if ($negativeCode -eq 2) { throw "Negative array index returned the portable last-element fallback.`n$negativeOutput" }
+if ($negativeCode -ne 101) { throw "Negative array index exited $negativeCode; native Vec indexing panics with 101.`n$negativeOutput" }
 Write-Host "EOIE attestation contracts passed: $work"
 exit 0

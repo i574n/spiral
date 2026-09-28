@@ -126,8 +126,8 @@ A body-only edit in `term_core` (the `peval` gear, the largest), measured on the
 | host (up to date, gears copied) | 1 s |
 | **total** | **92 s** |
 
-For comparison, the monolithic hopac build takes 206 s. A renumbering edit rebuilds 168 gears through
-MSBuild instead, roughly a full build: 15-30 min at `-MaxNodes 2`.
+For comparison, the monolithic hopac build takes 206 s. A renumbering edit rebuilds most of the 141 gears
+through MSBuild instead, roughly a full build: 15-30 min at `-MaxNodes 2`.
 
 F# reference assemblies are not stable across body edits: one changed string literal rewrote 1.67 MB of
 a 2.8 MB reference assembly, because the metadata heaps shift and the MVID follows the whole compilation.
@@ -138,15 +138,16 @@ when that hash does. Dependents rebuild only on a surface change, and the host c
 
 Three things differ between a split and a monolithic core, and gear-dev accounts for each:
 - **Module-level `do`s.** A library runs a file's initialization only once one of its values is read.
-  A `do` alone in a part, and the core has 21 of them installing hooks, would never run. Such parts get
-  a `spiral_split_initialize` value, and `GearRoot.initialize ()` reads those values in source order. The
-  host copy calls it right after `configureHopacFromEnvironment ()`. So far this is verified only
-  indirectly: the one `do` that visibly broke (`operator_case_dict`, empty, so every `!!!!Op` was "not
-  found") was also folded into its binding in the core.
+  A `do` alone in a part, and the core has 24 of them (hook installations, the operator table), would
+  never run. Such parts get a `spiral_split_initialize` value, and `GearRoot.initialize ()` reads those
+  values in source order. The host copy calls it right after `configureHopacFromEnvironment ()`.
+  Verified directly: with the operator table filled by its original `do` (without it every `!!!!Op` is
+  "not found"), the split compiler passes frontier 8/8 and smoke 38/38.
 - **Resumed emission.** The gear passes rewrite `Part*.fs` in place, and they are not idempotent. An
   output directory holding `gears.tsv` is therefore always re-emitted from the source, never resumed.
 - **Interrupted compiles.** A build killed mid-write (e.g. for low memory) leaves a 0-byte assembly that
-  MSBuild trusts as up to date, so gear-dev deletes it and rebuilds that gear.
+  MSBuild trusts as up to date, so gear-dev deletes it and rebuilds that gear. A graph build that stops
+  part way drops the full-build stamp, so the next run rebuilds the gears it never reached.
 
 **Plan stability.** Part numbers and gears are only worth caching if an ordinary edit leaves them
 alone. At first it didn't: a 6-line fix inside the replay worklist changed 3,373 files and rebuilt 133
@@ -164,6 +165,15 @@ fragment the plan. On the hopac core that gives 3,760 shards and 141 gears.
 Measured with 6 synthetic 5-line body edits (in `term_core`, the replay worklist, `EvalReplayValueStore`,
 the HUD near the top, the operator table and the JP CPU clock near the end): each changed exactly 1
 part and 0 gear projects. Before the change, the same edit in the worklist changed 3,373 files.
+
+The first build of the new plan exposed two latent problems that the old grouping had masked, both
+fixed:
+- `generated_dependency`'s code projection took the char literal `'"'` for the start of a string and
+  blanked the file up to the next quote. That hid a second `type NativeReplayKey`, so the name looked
+  unique and a reference was qualified to the wrong type. It now uses the shared lexer's
+  `character_literal_starts` (regression test included).
+- One core function (`terminalFlowFairnessReleaseBasisRef`) had its inline SRTP kind inferred only from a
+  later use in the same file; split into another part it defaulted to `obj` (FS0071). It is annotated.
 
 Adding or removing a top-level declaration still renumbers every later part and costs about a full
 build. gear-dev refuses to start one: past 8 dirty gears it stops before syncing anything, prints the
@@ -183,7 +193,7 @@ $split = "<cache>/splitter-target/release/spiral-split"
 & $split chain compiler/cores/hopac/spiral_compiler.fs     # the heaviest declaration and shard chains
 & $split gear-bench compiler/cores/hopac/spiral_compiler.fs  # gear plan shape, no emission
 pwsh scripts/bench-split.ps1                          # time monolith vs split single-project builds
-pwsh scripts/gear-dev.ps1 [-Mode hopac] [-Full] [-MaxNodes 2]   # the edit loop, see above
+pwsh scripts/gear-dev.ps1 [-Mode hopac] [-Full] [-Force] [-MaxNodes 2]   # the edit loop, see above
 ```
 
 Generated shards, gears and assemblies are disposable build products; the monolith stays the only
@@ -197,10 +207,11 @@ reference edges removed. Ten groups exceed the 1,000-line cap; the largest is `p
 (1.6 MB) as one indivisible declaration group, which bounds any parallel build of this core. The next
 two are `EvalWorklist` (4,361 lines) and `BigStack` (4,154 lines).
 
-## Test status (2026-09-27)
+## Test status (2026-09-28)
 
 `pwsh scripts/build-splitter.ps1 -Test` (`cargo test --workspace --no-fail-fast`): Windows
-554 passed, 11 failed (all 11 pre-existing); Linux (WSL Ubuntu) the same 4 logic failures only.
+556 passed, 11 failed (all 11 pre-existing; the CLI tests that read the single-flight core now look
+declarations up by heading, since indices shift with every declaration added to the core); Linux (WSL Ubuntu, 2026-09-27) the same 4 logic failures only.
 
 - Both platforms, in the lift/annotation passes: `late_non_call_use_rolls_back_component_and_dependents`
   (`spiral-split-lift-funnel`: the `alias = bad` component is not rolled back),

@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl emit_matrix_runtime () : () =
     rust_global "use eoie_process_observation::{run_bounded_receipted_observed, spawn_detached_handoff};\nuse eoie_agile_lease::{agile_now_unix_ms, agile_prompt_lease_clock};\nuse eoie_rust_std_fs::{atomic_write as batch_atomic_write, read_regular_text_limited, rooted_list_names, rooted_open_regular_read, safe_relative_path as batch_safe_relative};\nuse std::collections::{BTreeMap, BTreeSet};\nuse std::fs;\nuse std::path::{Path, PathBuf};\nuse std::process::Command;\nuse std::thread;"

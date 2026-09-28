@@ -1,13 +1,12 @@
-inl rust_library () : () = $"RustLibrary()" : ()
 
 inl export_restoration_payload_identity () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_payload_identity\",\"restoration_payload_identity\")" : ()
+    !!!!Export("eoie_patch_restoration_payload_identity", ((fun (first, second) => restoration_payload_identity first second) : i32 * i32 -> i32))
 
 inl export_restoration_payload_slot_binding () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_payload_slot_binding\",\"restoration_payload_slot_binding\")" : ()
+    !!!!Export("eoie_patch_restoration_payload_slot_binding", ((fun (first, second) => restoration_payload_slot_binding first second) : i32 * i32 -> i32))
 
 inl export_restoration_payload_outcome_binding () : () =
-    $"RustExportI32Binary(\"eoie_patch_restoration_payload_outcome_binding\",\"restoration_payload_outcome_binding\")" : ()
+    !!!!Export("eoie_patch_restoration_payload_outcome_binding", ((fun (first, second) => restoration_payload_outcome_binding first second) : i32 * i32 -> i32))
 
 inl main () : i32 =
     inl _ = native_patch_control_plan ()
@@ -21,5 +20,4 @@ inl main () : i32 =
     export_restoration_payload_outcome_binding ()
     emit_runtime ()
 
-    rust_library ()
     0i32

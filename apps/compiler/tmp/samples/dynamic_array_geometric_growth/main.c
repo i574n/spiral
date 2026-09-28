@@ -27,28 +27,45 @@ Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
     return x;
 }
 void method0(Array0 * v0){
+    
+    
     int32_t v1;
     v1 = 3l;
+    
+    
+    
     DynamicArrayReserve0(v0,v1);
+    
     ArrayDecref0(v0);
     return ;
 }
 int32_t method1(Array0 * v0){
+    
+    
     int32_t v1;
     v1 = DynamicArrayCapacity0(v0);
+    
     ArrayDecref0(v0);
     return v1;
 }
 int32_t main(){
+    
+    
     Array0 * v0;
     v0 = ArrayCreate0(0l, false);
     v0->refc++;
+    
+    
     method0(v0);
     v0->refc++;
+    
     int32_t v1;
     v1 = method1(v0);
+    
     ArrayDecref0(v0);
     int32_t v2;
     v2 = v1 - 4l;
+    
+    
     return v2;
 }

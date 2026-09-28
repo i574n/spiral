@@ -6,7 +6,6 @@ inl main () : i32 =
     inl _ = cold_rebuild_expected_shards_binding 90i32 2i32
     emit_runtime ()
     emit_cold_rebuild_runtime ()
-    $"RustExportI32Binary(\"eoie_cold_proof_equal_binding\",\"cold_proof_equal_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_cold_rebuild_expected_shards\",\"cold_rebuild_expected_shards_binding\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_cold_proof_equal_binding", ((fun (first, second) => cold_proof_equal_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_cold_rebuild_expected_shards", ((fun (first, second) => cold_rebuild_expected_shards_binding first second) : i32 * i32 -> i32))
     0i32

@@ -2,9 +2,8 @@
   <!--
     The compiler executable. Build with -p:SpiralCore=single-flight (default) or -p:SpiralCore=hopac.
     Program.fs talks to the core only through SupervisorReq (built by reflection), new_server and
-    startupParse, which both cores expose; PortableBackends.fs lowers C residuals to Rust/Delphi and
-    does not depend on the core at all. The core is a separate assembly (../core), so editing these
-    files rebuilds in seconds even in hopac mode.
+    startupParse, which both cores expose. The core is a separate assembly (../core), so editing the
+    host rebuilds in seconds even in hopac mode.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -20,9 +19,6 @@
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPAC</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="PortableUnionNormalizer.fs" />
-    <Compile Include="TuplePrune.fs" />
-    <Compile Include="PortableBackends.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -71,8 +71,12 @@ UH0 * UH0_1(String * v0, UH0 * v1, UH0 * v2) { // Node
     return x;
 }
 int32_t score0(UH0 * v0){
+    
+    
     switch (v0->tag) {
         case 0: { // Empty
+            
+            
             UHDecref0(v0);
             return 0l;
             break;
@@ -87,28 +91,40 @@ int32_t score0(UH0 * v0){
             StringDecref(v1);
             int32_t v5;
             v5 = score0(v2);
+            
             UHDecref0(v2);
             int32_t v6;
             v6 = v4 + v5;
             v3->refc++;
+            
             int32_t v7;
             v7 = score0(v3);
+            
             UHDecref0(v3);
             int32_t v8;
             v8 = v6 + v7;
+            
+            
             return v8;
             break;
         }
     }
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(3, "ab");
+    
+    
     String * v1;
     v1 = StringLit(4, "qwe");
+    
+    
     UH0 * v2;
     v2 = UH0_0();
     v1->refc++; v2->refc += 2;
+    
     UH0 * v3;
     v3 = UH0_1(v1, v2, v2);
     v0->refc++; v3->refc += 2;
@@ -119,10 +135,12 @@ int32_t main(){
     UHDecref0(v3);
     int32_t v5;
     v5 = score0(v4);
+    
     UHDecref0(v4);
     UH0 * v6;
     v6 = UH0_0();
     v1->refc++; v6->refc += 2;
+    
     UH0 * v7;
     v7 = UH0_1(v1, v6, v6);
     v0->refc++; v7->refc += 2;
@@ -133,10 +151,15 @@ int32_t main(){
     StringDecref(v0); UHDecref0(v7);
     int32_t v9;
     v9 = score0(v8);
+    
     UHDecref0(v8);
     int32_t v10;
     v10 = v5 + v9;
+    
+    
     int32_t v11;
     v11 = v10 - 16l;
+    
+    
     return v11;
 }

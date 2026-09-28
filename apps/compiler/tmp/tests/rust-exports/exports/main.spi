@@ -1,8 +1,5 @@
 let scalar () : i32 = 7i32
-inl (~!\) forall t u. ((args : t), (code : string)) : u =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
-let opaque (~value : string) : u64 =
-    !\(value, $'"$0.len() as u64"')
+let opaque (~value : string) : u64 = $"!value.len() as u64" : u64
 let unused (value : string) : string = "ignored"
 let choose (first : i32) (second : i32) : i32 =
     if !!!!LT(first,second) then first else second
@@ -18,21 +15,14 @@ let ordered (first : string) (second : string) (third : string) (fourth : string
     elif !!!!NEQ(!!!!StringLength(`u64,fifth),5u64) then 5u64
     else 18446744073709551615u64
 
+inl export forall t. (name : string) (f : t) : () = !!!!Export(name, f)
+
 inl main () : i32 =
-    inl _ = scalar ()
-    inl _ = opaque "retained"
-    inl _ = unused "retained"
-    inl _ = choose 1i32 2i32
-    inl _ = echo "retained"
-    inl _ = size "retained"
-    inl _ = five "retained"
-    inl _ = ordered "a" "bb" "ccc" "dddd" "eeeee"
-    $"RustExportI32(\"export_scalar\",\"scalar\")" : ()
-    $"RustExportU64Unary(\"export_opaque\",\"opaque\")" : ()
-    $"RustExportI32Binary(\"export_choose\",\"choose\")" : ()
-    $"RustExportStringUnary(\"export_echo\",\"echo\")" : ()
-    $"RustExportU64Unary(\"export_size\",\"size\")" : ()
-    $"RustExportStringTuple5Unary(\"export_five\",\"five\")" : ()
-    $"RustExportU64String5(\"export_ordered\",\"ordered\")" : ()
-    $"RustLibrary()" : ()
+    export "export_scalar" ((fun () => scalar ()) : () -> i32)
+    export "export_opaque" ((fun value => opaque value) : string -> u64)
+    export "export_choose" ((fun (first, second) => choose first second) : i32 * i32 -> i32)
+    export "export_echo" ((fun value => echo value) : string -> string)
+    export "export_size" ((fun value => size value) : string -> u64)
+    export "export_five" ((fun value => five value) : string -> string * string * string * string * string)
+    export "export_ordered" ((fun (a, b, c, d, e) => ordered a b c d e) : string * string * string * string * string -> u64)
     0i32

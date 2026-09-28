@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 open model
 open bridge
@@ -28,14 +28,13 @@ inl main () : i32 =
     inl _ = matrix_auto_checkpoint_binding 0i32 1i32
     inl _ = matrix_auto_checkpoint_binding 1i32 1i32
     emit_matrix_runtime ()
-    $"RustExportI32Binary(\"eoie_batch_plan_accept\",\"batch_plan_accept_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_plan_advance\",\"batch_plan_advance_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_matrix_row_policy\",\"matrix_row_policy_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_matrix_dependency\",\"matrix_dependency_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_matrix_observed_accept\",\"matrix_observed_accept_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_matrix_resume_action\",\"matrix_resume_action_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_matrix_workspace_policy\",\"matrix_workspace_policy_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_matrix_auto_chain_budget\",\"matrix_auto_chain_budget_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_batch_matrix_auto_checkpoint\",\"matrix_auto_checkpoint_binding\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_batch_plan_accept", ((fun (first, second) => batch_plan_accept_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_plan_advance", ((fun (first, second) => batch_plan_advance_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_matrix_row_policy", ((fun (first, second) => matrix_row_policy_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_matrix_dependency", ((fun (first, second) => matrix_dependency_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_matrix_observed_accept", ((fun (first, second) => matrix_observed_accept_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_matrix_resume_action", ((fun (first, second) => matrix_resume_action_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_matrix_workspace_policy", ((fun (first, second) => matrix_workspace_policy_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_matrix_auto_chain_budget", ((fun (first, second) => matrix_auto_chain_budget_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_batch_matrix_auto_checkpoint", ((fun (first, second) => matrix_auto_checkpoint_binding first second) : i32 * i32 -> i32))
     0i32

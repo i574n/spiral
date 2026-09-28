@@ -1,25 +1,25 @@
 open rust_std_env.model
 
 inl accept (~checkpoint : i32) (~event : i32) : i32 =
-    !\((checkpoint,event), $'"process_batch_plan_domain::eoie_batch_plan_accept($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_plan_accept(!checkpoint, !event)' : i32
 
 inl advance (~checkpoint : i32) (~event : i32) : i32 =
-    !\((checkpoint,event), $'"process_batch_plan_domain::eoie_batch_plan_advance($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_plan_advance(!checkpoint, !event)' : i32
 
 inl row_policy (~required : i32) (~policy : i32) : i32 =
-    !\((required,policy), $'"process_batch_plan_domain::eoie_batch_matrix_row_policy($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_row_policy(!required, !policy)' : i32
 
 inl dependency (~has_dependency : i32) (~dependency_passed : i32) : i32 =
-    !\((has_dependency,dependency_passed), $'"process_batch_plan_domain::eoie_batch_matrix_dependency($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_dependency(!has_dependency, !dependency_passed)' : i32
 
 inl observed (~required : i32) (~exit_code : i32) : i32 =
-    !\((required,exit_code), $'"process_batch_plan_domain::eoie_batch_matrix_observed_accept($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_observed_accept(!required, !exit_code)' : i32
 
 inl resume (~accepted : i32) (~policy : i32) : i32 =
-    !\((accepted,policy), $'"process_batch_plan_domain::eoie_batch_matrix_resume_action($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_resume_action(!accepted, !policy)' : i32
 
 inl workspace_policy (~program_requested : i32) (~nested_manifest : i32) : i32 =
-    !\((program_requested,nested_manifest), $'"process_batch_plan_domain::eoie_batch_matrix_workspace_policy($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_workspace_policy(!program_requested, !nested_manifest)' : i32
 
 inl main () : i32 =
     inl spawn = advance 0i32 0i32

@@ -146,14 +146,13 @@ inl main () : i32 =
 
 
     archive_terminal.emit_runtime ()
-    $"RustExportI32Binary(\"eoie_flat_bundle_preflight_binding\",\"flat_preflight_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_flat_bundle_manifest_binding\",\"flat_manifest_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_flat_bundle_size_binding\",\"flat_size_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_flat_bundle_compression_binding\",\"flat_compression_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_flat_bundle_complete_binding\",\"flat_complete_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_profile_resolve_binding\",\"bundle_profile_resolve_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_manifest_mapping_binding\",\"bundle_manifest_authority_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_archive_root_shape_binding\",\"bundle_archive_root_shape_binding\")" : ()
-    $"RustExportStringUnary(\"eoie_bundle_workspace_members_parse\",\"bundle_workspace_members_parse\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_flat_bundle_preflight_binding", ((fun (first, second) => flat_preflight_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_flat_bundle_manifest_binding", ((fun (first, second) => flat_manifest_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_flat_bundle_size_binding", ((fun (first, second) => flat_size_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_flat_bundle_compression_binding", ((fun (first, second) => flat_compression_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_flat_bundle_complete_binding", ((fun (first, second) => flat_complete_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_profile_resolve_binding", ((fun (first, second) => bundle_profile_resolve_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_manifest_mapping_binding", ((fun (first, second) => bundle_manifest_authority_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_archive_root_shape_binding", ((fun (first, second) => bundle_archive_root_shape_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_workspace_members_parse", ((fun value => bundle_workspace_members_parse value) : string -> string))
     0i32

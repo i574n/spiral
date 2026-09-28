@@ -74,27 +74,43 @@ UH0 * UH0_1() { // StopA
     return x;
 }
 int32_t main(){
+    
+    
     bool v0;
     v0 = true;
+    
+    
     UH0 * v5;
     if (v0){
+        
+        
         UH0 * v1;
         v1 = UH0_1();
         v1->refc++;
+        
         UH1 * v2;
         v2 = UH1_0(v1);
+        
         UHDecref0(v1);
         v5 = UH0_0(v2);
     } else {
+        
+        
         v5 = UH0_1();
     }
+    
+    
     switch (v5->tag) {
         case 0: { // A
+            
+            
             UHDecref0(v5);
             return 0l;
             break;
         }
         case 1: { // StopA
+            
+            
             UHDecref0(v5);
             return 0l;
             break;

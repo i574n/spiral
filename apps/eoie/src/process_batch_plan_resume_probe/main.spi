@@ -1,19 +1,19 @@
 open rust_std_env.model
 
 inl advance (~checkpoint : i32) (~event : i32) : i32 =
-    !\((checkpoint,event), $'"process_batch_plan_domain::eoie_batch_plan_advance($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_plan_advance(!checkpoint, !event)' : i32
 
 inl row_policy (~required : i32) (~policy : i32) : i32 =
-    !\((required,policy), $'"process_batch_plan_domain::eoie_batch_matrix_row_policy($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_row_policy(!required, !policy)' : i32
 
 inl dependency (~has_dependency : i32) (~dependency_passed : i32) : i32 =
-    !\((has_dependency,dependency_passed), $'"process_batch_plan_domain::eoie_batch_matrix_dependency($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_dependency(!has_dependency, !dependency_passed)' : i32
 
 inl observed (~required : i32) (~exit_code : i32) : i32 =
-    !\((required,exit_code), $'"process_batch_plan_domain::eoie_batch_matrix_observed_accept($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_observed_accept(!required, !exit_code)' : i32
 
 inl resume (~accepted : i32) (~policy : i32) : i32 =
-    !\((accepted,policy), $'"process_batch_plan_domain::eoie_batch_matrix_resume_action($0, $1)"')
+    $'process_batch_plan_domain::eoie_batch_matrix_resume_action(!accepted, !policy)' : i32
 
 inl main () : i32 =
     inl timeout_event = 3i32

@@ -54,8 +54,12 @@ UH0 * UH0_1(int32_t v0, UH0 * v1, UH0 * v2) { // Node
     return x;
 }
 int32_t sum0(UH0 * v0){
+    
+    
     switch (v0->tag) {
         case 0: { // Leaf
+            
+            
             UHDecref0(v0);
             return 0l;
             break;
@@ -70,11 +74,16 @@ int32_t sum0(UH0 * v0){
             UHDecref0(v2);
             int32_t v5;
             v5 = sum0(v3);
+            
             UHDecref0(v3);
             int32_t v6;
             v6 = v4 + v5;
+            
+            
             int32_t v7;
             v7 = v1 + v6;
+            
+            
             return v7;
             break;
         }
@@ -88,12 +97,17 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     UH0 * v0 = x->v0;
+    ClosureDecref0(x);
     v0->refc++;
+    
     int32_t v2;
     v2 = sum0(v0);
+    
+    
     int32_t v3;
     v3 = v2 + v1;
-    ClosureDecref0(x);
+    
+    
     return v3;
 }
 Fun0 * ClosureCreate0(UH0 * v0){
@@ -105,11 +119,16 @@ Fun0 * ClosureCreate0(UH0 * v0){
     return (Fun0 *) x;
 }
 int32_t main(){
+    
+    
     UH0 * v0;
     v0 = UH0_0();
+    
+    
     int32_t v1;
     v1 = 2l;
     v0->refc += 2;
+    
     UH0 * v2;
     v2 = UH0_1(v1, v0, v0);
     v2->refc++;
@@ -121,10 +140,14 @@ int32_t main(){
     int32_t v4;
     v4 = v3->fptr(v3, 19l);
     v3->refc++;
+    
     int32_t v5;
     v5 = v3->fptr(v3, 19l);
+    
     v3->decref_fptr(v3);
     int32_t v6;
     v6 = v4 + v5;
+    
+    
     return v6;
 }

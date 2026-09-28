@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 open bundle_manifest_contract.model
 
@@ -21,12 +21,11 @@ inl main () : i32 =
     inl _ = deterministic_plan ()
     inl _ = manifest_parity_binding 1i32 1i32
     inl _ = manifest_executable_mode_binding 1i32 1i32
-    $"RustExportI32Binary(\"eoie_bundle_manifest_parity_binding\",\"manifest_parity_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_manifest_executable_mode_binding\",\"manifest_executable_mode_binding\")" : ()
+    !!!!Export("eoie_bundle_manifest_parity_binding", ((fun (first, second) => manifest_parity_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_manifest_executable_mode_binding", ((fun (first, second) => manifest_executable_mode_binding first second) : i32 * i32 -> i32))
     inl _ = bundle_portable_mode_binding 1i32 0i32
-    $"RustExportI32Binary(\"eoie_bundle_portable_mode_binding\",\"bundle_portable_mode_binding\")" : ()
+    !!!!Export("eoie_bundle_portable_mode_binding", ((fun (first, second) => bundle_portable_mode_binding first second) : i32 * i32 -> i32))
     emit_runtime ()
     emit_archive_extract_runtime ()
     emit_long_name_tests ()
-    $"RustLibrary()" : ()
     0i32

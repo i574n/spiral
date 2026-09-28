@@ -244,7 +244,7 @@ $qualify = [Text.RegularExpressions.MatchEvaluator]{
     }
     $match.Value
 }
-$hostSources = 'PortableUnionNormalizer.fs', 'TuplePrune.fs', 'PortableBackends.fs', 'Program.fs'
+$hostSources = 'Program.fs'
 foreach ($name in $hostSources) {
     $text = Get-Content (Join-Path $BundleRoot "compiler/host/$name") -Raw
     $text = [regex]::Replace($text, "(?<![\w.'])[A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)+", $qualify)

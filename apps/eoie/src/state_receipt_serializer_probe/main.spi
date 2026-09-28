@@ -1,7 +1,7 @@
 open rust_std_env.model
 
 inl serialize_exit (~input : string) (~expected : string) : i32 =
-    !\((input,expected), $'"if state_receipt_serializer_domain::eoie_state_receipt_serialize($0.as_ref()).as_ref() == $1.as_ref() { 0 } else { 1 }"')
+    $'if state_receipt_serializer_domain::eoie_state_receipt_serialize(!input.as_ref()).as_ref() == !expected.as_ref() { 0 } else { 1 }' : i32
 
 inl main () : i32 =
     inl canonical = "snapshot\t42\nmodule\talpha.spi\t12\t34\tbuild:99\n"

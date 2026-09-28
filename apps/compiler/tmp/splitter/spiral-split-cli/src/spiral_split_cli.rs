@@ -1964,6 +1964,7 @@ fn main() {
 mod tests {
     use super::*;
 
+
     #[test]
     fn auto_policy_refines_only_hopac() {
         let options = CommonOptions::default();
@@ -1992,13 +1993,23 @@ mod tests {
         assert!(component_ids("4,nope").is_err());
     }
 
+    /// The declaration documented as `/// ### name` in the single-flight core: indices shift with every
+    /// declaration added before them.
+    fn declaration<'a>(plan: &'a SplitPlan, name: &str) -> &'a spiral_split_model::Declaration<spiral_split_model::Linked> {
+        let heading = format!("# {name}");
+        plan.declarations
+            .iter()
+            .find(|declaration| declaration.heading == heading)
+            .unwrap_or_else(|| panic!("no declaration headed {heading:?}"))
+    }
+
     #[test]
     fn portable_lines_definition_reaches_tab_positions() {
         let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../spiral_compiler.fs");
         let plan = pipeline(&source, &CommonOptions::default()).expect("portable pipeline");
-        let provider = &plan.declarations[18];
-        let record = &plan.declarations[88];
-        let consumer = &plan.declarations[633];
+        let provider = declaration(&plan, "lines");
+        let record = declaration(&plan, "SpiEdit");
+        let consumer = declaration(&plan, "tab_positions");
         assert!(
             !record.definitions.contains("lines"),
             "record fields must remain namespaced: {:?}",
@@ -2026,8 +2037,8 @@ mod tests {
     fn portable_union_cases_and_same_named_types_keep_dependencies() {
         let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../spiral_compiler.fs");
         let plan = pipeline(&source, &CommonOptions::default()).expect("portable pipeline");
-        let parser_error = &plan.declarations[151];
-        let string_consumer = &plan.declarations[183];
+        let parser_error = declaration(&plan, "ParserErrors");
+        let string_consumer = declaration(&plan, "skip_string_close");
         assert!(parser_error.definitions.contains("ExpectedStringClose"));
         assert!(
             string_consumer
@@ -2036,8 +2047,8 @@ mod tests {
             "string-close witnesses: {:?}",
             string_consumer.witnesses
         );
-        let parenthesis = &plan.declarations[91];
-        let parenthesis_consumer = &plan.declarations[218];
+        let parenthesis = declaration(&plan, "Parenthesis");
+        let parenthesis_consumer = declaration(&plan, "rounds");
         assert!(parenthesis.definitions.contains("Round"));
         assert!(
             parenthesis_consumer
@@ -2046,8 +2057,8 @@ mod tests {
             "inline-union witnesses: {:?}",
             parenthesis_consumer.witnesses
         );
-        let type_union = &plan.declarations[314];
-        let type_consumer = &plan.declarations[345];
+        let type_union = declaration(&plan, "TM");
+        let type_consumer = declaration(&plan, "type_apply_split");
         assert!(type_union.definitions.contains("TyApply"));
         assert!(
             type_consumer.direct_dependencies.contains(&type_union.id),
@@ -2057,8 +2068,8 @@ mod tests {
             type_consumer.references,
             type_consumer.witnesses
         );
-        let traced_type = &plan.declarations[698];
-        let traced_union = &plan.declarations[729];
+        let traced_type = declaration(&plan, "TracedError");
+        let traced_union = declaration(&plan, "ClientErrorsRes");
         assert!(traced_type.definitions.contains("TracedError"));
         assert!(traced_union.references.contains("TracedError"));
         assert!(

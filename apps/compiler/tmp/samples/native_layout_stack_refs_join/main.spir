@@ -1,9 +1,0 @@
-inl main () =
-    inl a = !!!!LayoutToStackRefs({q=5i32; w=6i32})
-    if !!!!GreaterThan(a.q,10i32) then
-        a.q <- 9i32
-    else
-        a.q <- 7i32
-    inl b = !!!!LayoutIndex(a)
-    a.w <- 8i32
-    !!!!Add(b.q,a.w)

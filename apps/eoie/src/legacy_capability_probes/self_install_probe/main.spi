@@ -1,16 +1,16 @@
 open rust_std_env.model
 
 inl preflight (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_self_install_preflight_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_self_install_preflight_binding(!a, !b)' : i32
 
 inl target (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_self_install_target_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_self_install_target_binding(!a, !b)' : i32
 
 inl fault (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_self_install_fault_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_self_install_fault_binding(!a, !b)' : i32
 
 inl complete (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_self_install_complete_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_self_install_complete_binding(!a, !b)' : i32
 
 inl main () : i32 =
     inl invalid_source = preflight 0i32 1i32

@@ -1666,6 +1666,7 @@ module spiral_compiler =
 
         // Closure conversion
         | Dyn
+        | Export // Library entry point: a name and a function without runtime captures
 
         // Nominal
         | NominalCreate // In addition to regular nominals, it can also creates unions
@@ -9063,6 +9064,15 @@ module spiral_compiler =
                 loop (ty s a)
             | EOp(_,(TypeToVar | TypeToSymbol),[a]) -> raise_type_error s "Expected a type."
             | EOp(_,Dyn,[a]) -> term s a |> dyn true s
+            | EOp(_,Export,[name;f]) ->
+                match term s name with
+                | DLit (LitString _) as name ->
+                    match term s f with
+                    | DFunction(body,Some(TFun(domain,range,_)),a,b,c,d) ->
+                        let f = DFunction(body,Some(TFun(domain,range,FT_Pointer)),a,b,c,d) |> dyn true s
+                        push_op_no_rewrite' s Export [name; f] YB
+                    | f -> raise_type_error s $"Expected an annotated compile-time function to export (e.g. `(fun (a, b) => f a b) : i32 * i32 -> i32`).\nGot: {show_data f}"
+                | name -> raise_type_error s $"Expected a compile-time string as the export name.\nGot: {show_data name}"
             | EOp(_,StringLength,[EType(_,t);a]) ->
                 let t = ty s t
                 if is_any_int t = false then raise_type_error s <| sprintf "Expected an int.\nGot: %s" (show_ty t)
@@ -10678,6 +10688,10 @@ module spiral_compiler =
     let codegenRust (env : PartEvalResult) (x : TypedBind []) =
         let types = ResizeArray()
         let functions = ResizeArray()
+        // `pub fn`s for the program's exports; a program with exports is a library (no `main`).
+        let exports = ResizeArray()
+        let closure_of_var = Dictionary<int, int>()
+        let export_names = HashSet<string>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
@@ -10766,7 +10780,7 @@ module spiral_compiler =
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and params_ty x = env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
-        and params x = x |> Array.map (fun (L(i,t)) -> $"mut v{i}: {tyv t}") |> String.concat ", "
+        and param_list x = x |> Array.map (fun (L(i,t)) -> $"mut v{i}: {tyv t}") |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             Array.iter (function
                 | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
@@ -10841,6 +10855,11 @@ module spiral_compiler =
                     let values = Array.map var args |> String.concat ", "
                     line s $"({names}) = ({values});"
                 line s "continue;"
+            | TyJoinPoint(JPClosure(a,c) as a',args) ->
+                match d with
+                | Some (DV(L(i,_))) when args.Length = 0 -> closure_of_var.[i] <- (closure (a,c)).tag
+                | _ -> ()
+                simple (jp (a', args))
             | TyJoinPoint(a,args) -> simple (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Rust backend does not support nesting other backends."
             | TyWhile(a,b) -> complex $"while {jp a} {{" <| fun s' -> without_self_loop (fun () -> block s' b)
@@ -10942,6 +10961,18 @@ module spiral_compiler =
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
             | TyApply(L(i,_),b) -> simple $"""v{i}({data_term_vars b |> Array.map show_w |> String.concat ", "})"""
             | TyOp(Global, [DLit (LitString x)]) -> global' x
+            | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
+                if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
+                let tag =
+                    match closure_of_var.TryGetValue i with
+                    | true, tag -> tag
+                    | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
+                // Strings cross as `&str` and come back as `Rc<str>`.
+                let parameters = env.ty_to_data domain |> data_free_vars
+                let decl = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"v{k}: &str" | t -> $"v{k}: {tyv t}") |> String.concat ", "
+                let call = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"Rc::<str>::from(v{k})" | _ -> $"v{k}") |> String.concat ", "
+                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n    closure{tag}()({call})\n}}\n")
+                if d.IsNone then line s "()"
             | TyOp(op,l) ->
                 let unary f = match l with [x] -> f $"({tup x})" | _ -> raise_codegen_error $"Compiler error: {op} expects one argument."
                 match op, l with
@@ -11027,7 +11058,7 @@ module spiral_compiler =
                 | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
-                line s $"fn method{x.tag}({params x.free_vars}) -> {tup_ty x.range} {{"
+                line s $"fn method{x.tag}({param_list x.free_vars}) -> {tup_ty x.range} {{"
                 let saved = self_loop
                 if self_tail x.tag x.body then
                     self_loop <- Some (x.tag, x.free_vars)
@@ -11060,8 +11091,8 @@ module spiral_compiler =
                 ) (fun s x ->
                 let domain_tys = x.domain_args |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
                 let range = tup_ty x.range
-                line s $"fn closure{x.tag}({params x.free_vars}) -> Rc<dyn Fn({domain_tys}) -> {range}> {{"
-                line (indent s) $"Rc::new(move |{params x.domain_args}| -> {range} {{"
+                line s $"fn closure{x.tag}({param_list x.free_vars}) -> Rc<dyn Fn({domain_tys}) -> {range}> {{"
+                line (indent s) $"Rc::new(move |{param_list x.domain_args}| -> {range} {{"
                 without_self_loop (fun () -> binds (indent (indent s)) x.body)
                 line (indent s) "})"
                 line s "}"
@@ -11072,13 +11103,20 @@ module spiral_compiler =
 
         let program = StringBuilder()
         program.AppendLine("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]") |> ignore
+        // Inner attributes (`#![...]`) must precede every item, so such globals go before the `use`s.
+        let inner, globals = env.globals |> Seq.toArray |> Array.partition (fun (x : string) -> x.TrimStart().StartsWith "#![")
+        inner |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
         program.AppendLine("use std::cell::RefCell;").AppendLine("use std::rc::Rc;") |> ignore
-        env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        globals |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.Append(x) |> ignore)
         functions |> Seq.iter (fun x -> program.Append(x) |> ignore)
-        program.AppendLine("fn spiral_main() -> i32 {").Append(main).AppendLine("}") |> ignore
-        // A large stack: mutual tail recursion that the C compiler turns into jumps recurses here.
-        program.AppendLine("fn main() {").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(main.join().unwrap());").AppendLine("}").ToString()
+        if exports.Count > 0 then
+            exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
+            program.ToString()
+        else
+            program.AppendLine("fn spiral_main() -> i32 {").Append(main).AppendLine("}") |> ignore
+            // A large stack: mutual tail recursion that the C compiler turns into jumps recurses here.
+            program.AppendLine("fn main() {").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(main.join().unwrap());").AppendLine("}").ToString()
 
     /// ## CodegenDelphi
 
@@ -11244,9 +11282,9 @@ module spiral_compiler =
             | [||] -> ""
             | [|x|] -> show_w x
             | x -> sprintf "TupleCreate%i(%s)" (tyvs range |> Array.map (fun (L(_,t)) -> tyv t) |> tuple_type) (Array.map show_w x |> String.concat ", ")
-        and params (x : TyV []) = x |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat "; "
+        and param_list (x : TyV []) = x |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat "; "
         and header name (parameters : TyV []) (range : string) =
-            let ps = match params parameters with "" -> "" | ps -> $"({ps})"
+            let ps = match param_list parameters with "" -> "" | ps -> $"({ps})"
             if range = "" then $"procedure {name}{ps}" else $"function {name}{ps}: {range}"
         // A function (or class method) with the locals it declared.
         and emit_function (name : string) (parameters : TyV []) (range : Ty) (body : TypedBind []) (forward : bool) =
@@ -11557,7 +11595,7 @@ module spiral_compiler =
                     let saved = bodies.Count
                     emit_function $"TClosure{tag}.Invoke" domain_args range body false
                     let assigns = free_vars |> Array.map (fun (L(i,_)) -> $"c.v{i} := v{i};") |> String.concat " "
-                    let ps = match params free_vars with "" -> "" | ps -> $"({ps})"
+                    let ps = match param_list free_vars with "" -> "" | ps -> $"({ps})"
                     bodies.Add($"function ClosureCreate{tag}{ps}: TFun{parent};\nvar c: TClosure{tag};\nbegin\n  c := TClosure{tag}.Create; {assigns}\n  Result := c;\nend;")
                     headers.Add($"function ClosureCreate{tag}{ps}: TFun{parent}; forward;")
                 | _ -> raise_codegen_error "Compiler error: The closure dictionary is malformed"
@@ -17523,8 +17561,22 @@ module spiral_compiler =
                         b >>=* fun (has_error,_) ->
                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.type_path_ready / has_error: {has_error}") _locals
                         if has_error || has_error' then
-                            fatal $"File {Path.GetFileNameWithoutExtension file} has a type error somewhere in its path."
-                            IVar.fill res None
+                            // The editor gets the typer's errors from the attention loop; a batch build only gets this
+                            // message, so it carries the package's errors itself.
+                            let rec files x s =
+                                match x with
+                                | ProjFilesTree.File(mid,path,_) -> (path, (fst tc.files.uids_file.[mid]).result) :: s
+                                | ProjFilesTree.Directory(_,_,l) -> List.foldBack files l s
+                            List.foldBack files tc.files.files.tree []
+                            |> List.map (fun (path,result) ->
+                                Stream.foldFun (fun s (_,x : InferResult,_) -> s @ x.errors) [] result >>- fun errors ->
+                                errors |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
+                            |> Job.seqCollect
+                            >>= fun errors ->
+                                let details = errors |> Seq.concat |> String.concat "\n"
+                                let details = if details = "" then "" else $"\n{details}"
+                                fatal $"File {Path.GetFileNameWithoutExtension file} has a type error somewhere in its path.{details}"
+                                IVar.fill res None
                         else
                         trace Verbose (fun () -> "Supervisor.supervisor_server.BuildFile.file_build.wait_prepass") _locals
                         Stream.foldFun (fun _ (_,_,env) -> env) prepassTop_env_empty x.result >>=* fun env ->

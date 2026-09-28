@@ -7,10 +7,10 @@ inl session_wrap_after (~seconds : i32) : session_wrap_after_seconds =
     session_wrap_after_seconds seconds
 
 inl session_deadline_from_now (session_wrap_after_seconds wrap_after_seconds) : session_deadline =
-    session_deadline (!\(wrap_after_seconds, $'"i64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()).unwrap_or(i64::MAX).saturating_add(i64::from($0))"'))
+    session_deadline ($'i64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()).unwrap_or(i64::MAX).saturating_add(i64::from(!wrap_after_seconds))' : i64)
 
 inl should_wrap (session_deadline deadline) : bool =
-    !\(deadline, $'"i64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()).unwrap_or(i64::MAX) >= $0"')
+    $'i64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()).unwrap_or(i64::MAX) >= !deadline ' : bool
 
 inl within_budget (session_deadline deadline) : bool =
-    !\(deadline, $'"i64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()).unwrap_or(i64::MAX) < $0"')
+    $'i64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()).unwrap_or(i64::MAX) < !deadline ' : bool

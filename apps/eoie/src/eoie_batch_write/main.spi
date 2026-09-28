@@ -1,6 +1,5 @@
 open filesystem_batch_write_contract.bindings
 
-inl rust_library () : () = $"RustLibrary()" : ()
 
 inl main () : i32 =
     batch_write_terminal.emit_batch_write_runtime ()
@@ -9,10 +8,9 @@ inl main () : i32 =
     inl _ = batch_write_stage_binding 1i32 1i32
     inl _ = batch_write_verify_binding 1i32 1i32
     inl _ = batch_write_rollback_binding 1i32 1i32
-    $"RustExportI32Binary(\"eoie_patch_driver_batch_write_shape_binding\",\"batch_write_shape_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_driver_batch_write_freshness_binding\",\"batch_write_freshness_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_driver_batch_write_stage_binding\",\"batch_write_stage_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_driver_batch_write_verify_binding\",\"batch_write_verify_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_driver_batch_write_rollback_binding\",\"batch_write_rollback_binding\")" : ()
-    rust_library ()
+    !!!!Export("eoie_patch_driver_batch_write_shape_binding", ((fun (first, second) => batch_write_shape_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_driver_batch_write_freshness_binding", ((fun (first, second) => batch_write_freshness_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_driver_batch_write_stage_binding", ((fun (first, second) => batch_write_stage_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_driver_batch_write_verify_binding", ((fun (first, second) => batch_write_verify_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_driver_batch_write_rollback_binding", ((fun (first, second) => batch_write_rollback_binding first second) : i32 * i32 -> i32))
     0i32

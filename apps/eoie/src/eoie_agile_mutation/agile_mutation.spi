@@ -107,8 +107,7 @@ let agile_entry () : i32 =
 
 inl main () : i32 =
     agile_terminal.emit_runtime ()
-    $"RustExportI32(\"eoie_agile_run\",\"agile_entry\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_agile_run", ((fun () => agile_entry ()) : () -> i32))
     inl _ = typed_agile_plan ()
     inl _ = agile_entry ()
     0i32

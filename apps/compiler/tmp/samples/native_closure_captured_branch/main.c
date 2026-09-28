@@ -24,15 +24,20 @@ struct Closure1 {
     int32_t v0;
 };
 static inline void ClosureDecrefBody0(Closure0 * x){
+    
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     int32_t v0 = x->v0;
+    ClosureDecref0(x);
+    
+    
     int32_t v2;
     v2 = v1 + v0;
-    ClosureDecref0(x);
+    
+    
     return v2;
 }
 Fun0 * ClosureCreate0(int32_t v0){
@@ -44,15 +49,20 @@ Fun0 * ClosureCreate0(int32_t v0){
     return (Fun0 *) x;
 }
 static inline void ClosureDecrefBody1(Closure1 * x){
+    
 }
 void ClosureDecref1(Closure1 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
 int32_t ClosureMethod1(Closure1 * x, int32_t v1){
     int32_t v0 = x->v0;
+    ClosureDecref1(x);
+    
+    
     int32_t v2;
     v2 = v1 + v0;
-    ClosureDecref1(x);
+    
+    
     return v2;
 }
 Fun0 * ClosureCreate1(int32_t v0){
@@ -64,20 +74,36 @@ Fun0 * ClosureCreate1(int32_t v0){
     return (Fun0 *) x;
 }
 int32_t method0(Fun0 * v0){
+    
+    
     return v0->fptr(v0, 40l);
 }
 int32_t main(){
+    
+    
     int32_t v0;
     v0 = 2l;
+    
+    
     int32_t v1;
     v1 = 3l;
+    
+    
     bool v2;
     v2 = true;
+    
+    
     Fun0 * v5;
     if (v2){
+        
+        
         v5 = ClosureCreate0(v0);
     } else {
+        
+        
         v5 = ClosureCreate1(v1);
     }
+    
+    
     return method0(v5);
 }

@@ -14,30 +14,54 @@ static inline Tuple0 TupleCreate0(bool v0, float v1, int32_t v2){
     return x;
 }
 Tuple0 method0(float v0){
+    
+    
     bool v1;
     v1 = v0 >= 3.5f;
+    
+    
     return TupleCreate0(v1, v0, 7l);
 }
 int32_t method1(bool v0, float v1, int32_t v2){
+    
+    
     if (v0){
+        
+        
         bool v3;
         v3 = v1 >= 3.5f;
+        
+        
         if (v3){
+            
+            
             int32_t v4;
             v4 = v2 - 7l;
+            
+            
             return v4;
         } else {
+            
+            
             return 1l;
         }
     } else {
+        
+        
         return 2l;
     }
 }
 int32_t main(){
+    
+    
     float v0;
     v0 = 4.0f;
+    
+    
     bool v1; float v2; int32_t v3;
     Tuple0 tmp0 = method0(v0);
     v1 = tmp0.v0; v2 = tmp0.v1; v3 = tmp0.v2;
+    
+    
     return method1(v1, v2, v3);
 }

@@ -1,4 +1,3 @@
-inl rust_library () : () = $"RustLibrary()" : ()
 
 nominal patch_orchestration_idle = ()
 nominal patch_orchestration_witnessed = ()
@@ -87,14 +86,13 @@ inl main () : i32 =
     inl promotion1 = orchestration_promotion_binding 0i32 0i32
     inl _ = orchestration_promotion_binding promotion1 1i32
     inl _ = orchestration_complete_binding 2i32 2i32
-    $"RustExportI32Binary(\"eoie_patch_orchestration_witness_binding\",\"orchestration_witness_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_orchestration_operation_binding\",\"orchestration_operation_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_orchestration_guard_identity\",\"orchestration_guard_identity\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_orchestration_guard_needle_binding\",\"orchestration_guard_needle_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_orchestration_guard_match_binding\",\"orchestration_guard_match_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_orchestration_stage_binding\",\"orchestration_stage_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_orchestration_promotion_binding\",\"orchestration_promotion_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_orchestration_complete_binding\",\"orchestration_complete_binding\")" : ()
+    !!!!Export("eoie_patch_orchestration_witness_binding", ((fun (first, second) => orchestration_witness_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_orchestration_operation_binding", ((fun (first, second) => orchestration_operation_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_orchestration_guard_identity", ((fun (first, second) => orchestration_guard_identity first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_orchestration_guard_needle_binding", ((fun (first, second) => orchestration_guard_needle_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_orchestration_guard_match_binding", ((fun (first, second) => orchestration_guard_match_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_orchestration_stage_binding", ((fun (first, second) => orchestration_stage_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_orchestration_promotion_binding", ((fun (first, second) => orchestration_promotion_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_orchestration_complete_binding", ((fun (first, second) => orchestration_complete_binding first second) : i32 * i32 -> i32))
 
-    rust_library ()
     0i32

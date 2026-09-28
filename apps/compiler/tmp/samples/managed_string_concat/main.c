@@ -34,24 +34,44 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 String * choose_left0(bool v0){
+    
+    
     if (v0){
+        
+        
         String * v1;
         v1 = StringLit(4, "spi");
+        
+        
         return v1;
     } else {
+        
+        
         String * v2;
         v2 = StringLit(4, "bad");
+        
+        
         return v2;
     }
 }
 String * choose_right1(bool v0){
+    
+    
     if (v0){
+        
+        
         String * v1;
         v1 = StringLit(4, "bad");
+        
+        
         return v1;
     } else {
+        
+        
         String * v2;
         v2 = StringLit(4, "ral");
+        
+        
         return v2;
     }
 }
@@ -64,42 +84,74 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 int32_t main(){
+    
+    
     bool v0;
     v0 = true;
+    
+    
     String * v1;
     v1 = choose_left0(v0);
+    
+    
     bool v2;
     v2 = false;
+    
+    
     String * v3;
     v3 = choose_right1(v2);
+    
+    
     String * v4;
     v4 = StringConcat(v1, v3);
+    
     StringDecref(v1); StringDecref(v3);
     int32_t v5;
     v5 = v4->len-1;
+    
+    
     bool v6;
     v6 = v5 == 6l;
+    
+    
     if (v6){
+        
+        
         char v7;
         v7 = v4->ptr[0l];
+        
+        
         bool v8;
         v8 = v7 == 's';
+        
+        
         if (v8){
+            
+            
             char v9;
             v9 = v4->ptr[5l];
+            
             StringDecref(v4);
             bool v10;
             v10 = v9 == 'l';
+            
+            
             if (v10){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
         } else {
+            
             StringDecref(v4);
             return 2l;
         }
     } else {
+        
         StringDecref(v4);
         return 3l;
     }

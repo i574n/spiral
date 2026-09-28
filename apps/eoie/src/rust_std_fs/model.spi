@@ -1,23 +1,21 @@
-inl (~!\\) forall t u. ((args : t), (code : string)) : u =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
 
 inl write_text (path : string) (text : string) : bool =
-    !\\((path, text), $'"std::fs::write(&*$0, &*$1).is_ok()"')
+    $'std::fs::write(&*!path, &*!text).is_ok()' : bool
 
 inl rename (to : string) (path : string) : bool =
-    !\\((path, to), $'"std::fs::rename(&*$0, &*$1).is_ok()"')
+    $'std::fs::rename(&*!path, &*!to).is_ok()' : bool
 
 inl remove_file (path : string) : bool =
-    !\\(path, $'"std::fs::remove_file(&*$0).is_ok() || \!std::path::Path::new(&*$0).exists()"')
+    $'std::fs::remove_file(&*!path).is_ok() || \!std::path::Path::new(&*!path).exists()' : bool
 
 inl text_equals (expected : string) (path : string) : bool =
-    !\\((path, expected), $'"std::fs::read_to_string(&*$0).is_ok_and(|value| value == *$1)"')
+    $'std::fs::read_to_string(&*!path).is_ok_and(|value| value == *!expected)' : bool
 
 inl file_exists (path : string) : bool =
-    !\\(path, $'"std::path::Path::new(&*$0).is_file()"')
+    $'std::path::Path::new(&*!path).is_file()' : bool
 
 inl file_missing (path : string) : bool =
-    !\\(path, $'"\!std::path::Path::new(&*$0).is_file()"')
+    $'\!std::path::Path::new(&*!path).is_file()' : bool
 
 nominal patch_text = string
 nominal original_text = string
@@ -49,13 +47,13 @@ inl staged (path : string) : staged_path = staged_path path
 inl target (path : string) : target_path = target_path path
 
 inl stage (target_path target) (patch_text text) : staged_path =
-    staged (!\\((target, text), $'"eoie_rust_std_fs::stage_text(std::path::Path::new(&*$0), &$1).unwrap().display().to_string().into()"'))
+    staged ($'eoie_rust_std_fs::stage_text(std::path::Path::new(&*!target), &!text).unwrap().display().to_string().into()' : string)
 
 inl promote (target_path target) (staged_path temporary) : bool =
     rename target temporary
 
 inl restore (target_path target) (original_text text) : bool =
-    !\\((target, text), $'"eoie_rust_std_fs::restore_text(std::path::Path::new(&*$0), &$1).is_ok()"')
+    $'eoie_rust_std_fs::restore_text(std::path::Path::new(&*!target), &!text).is_ok()' : bool
 
 union restoration_authority =
     | RestorationAuthority
@@ -78,7 +76,7 @@ inl execute_restoration forall from to.
         else RestorationFailed
 
 inl discard (staged_path temporary) : bool =
-    !\\(temporary, $'"eoie_rust_std_fs::discard_stage(std::path::Path::new(&*$0)).is_ok()"')
+    $'eoie_rust_std_fs::discard_stage(std::path::Path::new(&*!temporary)).is_ok()' : bool
 
 inl staged_missing (staged_path temporary) : bool = file_missing temporary
 
@@ -99,21 +97,21 @@ inl probe (unchecked_path path) : file_probe =
     else FileMissing (missing_path path)
 
 inl read_text (readable_file path) : loaded_text =
-    loaded_text (!\\(path, $'"std::fs::read_to_string(&*$0).unwrap_or_default().into()"'))
+    loaded_text ($'std::fs::read_to_string(&*!path).unwrap_or_default().into()' : string)
 
 inl snapshot (path : readable_file) : loaded_text = read_text path
 
 inl loaded_nonempty (loaded_text text) : bool =
-    !\\(text, $'"\!$0.is_empty()"')
+    $'\!!text.is_empty()' : bool
 
 inl missing_path_nonempty (missing_path path) : bool =
-    !\\(path, $'"\!$0.is_empty()"')
+    $'\!!path.is_empty()' : bool
 
 inl readable_path (readable_file path) : string = path
 inl missing_value (missing_path path) : string = path
 
 inl text_contains (needle : string) (path : string) : bool =
-    !\\((path, needle), $'"std::fs::read_to_string(&*$0).is_ok_and(|value| value.contains($1.as_ref()))"')
+    $'std::fs::read_to_string(&*!path).is_ok_and(|value| value.contains(!needle.as_ref()))' : bool
 
 inl text_excludes (needle : string) (path : string) : bool =
-    !\\((path, needle), $'"std::fs::read_to_string(&*$0).is_ok_and(|value| \!value.contains($1.as_ref()))"')
+    $'std::fs::read_to_string(&*!path).is_ok_and(|value| \!value.contains(!needle.as_ref()))' : bool

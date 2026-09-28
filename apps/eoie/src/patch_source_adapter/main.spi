@@ -1,7 +1,6 @@
 open patch_resume_contract.model
 
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
-inl rust_library () : () = $"RustLibrary()" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 let source_resume_pair_binding (left : i32) (right : i32) : i32 = bool_pair_binding left right
 let source_resume_decision_binding (present : i32) (matches : i32) : i32 = resume_decision_binding present matches
@@ -15,8 +14,7 @@ inl main () : i32 =
     inl _ = source_resume_pair_binding 1i32 1i32
     inl _ = source_resume_decision_binding 1i32 1i32
     inl _ = source_resume_completion_binding 1i32 1i32
-    $"RustExportI32Binary(\"eoie_patch_source_adapter_source_resume_pair_binding\",\"source_resume_pair_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_source_adapter_source_resume_decision_binding\",\"source_resume_decision_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_patch_source_adapter_source_resume_completion_binding\",\"source_resume_completion_binding\")" : ()
-    rust_library ()
+    !!!!Export("eoie_patch_source_adapter_source_resume_pair_binding", ((fun (first, second) => source_resume_pair_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_source_adapter_source_resume_decision_binding", ((fun (first, second) => source_resume_decision_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_patch_source_adapter_source_resume_completion_binding", ((fun (first, second) => source_resume_completion_binding first second) : i32 * i32 -> i32))
     0i32

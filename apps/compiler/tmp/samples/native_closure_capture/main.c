@@ -18,17 +18,24 @@ struct Closure0 {
     int32_t v1;
 };
 static inline void ClosureDecrefBody0(Closure0 * x){
+    
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v2){
     int32_t v0 = x->v0; int32_t v1 = x->v1;
+    ClosureDecref0(x);
+    
+    
     int32_t v3;
     v3 = v0 + v1;
+    
+    
     int32_t v4;
     v4 = v3 + v2;
-    ClosureDecref0(x);
+    
+    
     return v4;
 }
 Fun0 * ClosureCreate0(int32_t v0, int32_t v1){
@@ -40,11 +47,19 @@ Fun0 * ClosureCreate0(int32_t v0, int32_t v1){
     return (Fun0 *) x;
 }
 int32_t main(){
+    
+    
     int32_t v0;
     v0 = 1l;
+    
+    
     int32_t v1;
     v1 = 2l;
+    
+    
     Fun0 * v2;
     v2 = ClosureCreate0(v0, v1);
+    
+    
     return v2->fptr(v2, 39l);
 }

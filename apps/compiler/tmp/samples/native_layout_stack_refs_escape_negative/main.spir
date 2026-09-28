@@ -1,3 +1,0 @@
-inl main () =
-    inl a = !!!!LayoutToStackRefs({q=5i32})
-    a

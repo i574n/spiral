@@ -1,5 +1,3 @@
-inl (~!\) forall t u. ((args : t), (code : string)) : u =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
 
 nominal boundary_start = ()
 nominal boundary_zero_timeout = ()
@@ -18,19 +16,19 @@ union process_boundary_probe from to =
     | FinishBoundaryProbe :: process_boundary_probe boundary_session boundary_done
 
 inl streaming_zero_timeout_rejected (~timeout_ms : u64) : i32 =
-    !\(timeout_ms, $'"{ let mut command = std::process::Command::new(\"/bin/true\"); if run_bounded_streaming(&mut command, $0, None, |_, _| Ok(())).is_err() { 1i32 } else { 0i32 } }"')
+    $'{ let mut command = std::process::Command::new("/bin/true"); if run_bounded_streaming(&mut command, !timeout_ms, None, |_, _| Ok(())).is_err() { 1i32 } else { 0i32 } }' : i32
 
 inl streaming_callback_failure_propagated (~timeout_ms : u64) : i32 =
-    !\(timeout_ms, $'"{ let mut command = std::process::Command::new(\"/bin/sh\"); command.args([\"-c\", \"printf chunk; sleep 1\"]); if run_bounded_streaming(&mut command, $0, None, |_, _| Err(\"callback rejected chunk\".to_owned())).is_err() { 1i32 } else { 0i32 } }"')
+    $'{ let mut command = std::process::Command::new("/bin/sh"); command.args(["-c", "printf chunk; sleep 1"]); if run_bounded_streaming(&mut command, !timeout_ms, None, |_, _| Err("callback rejected chunk".to_owned())).is_err() { 1i32 } else { 0i32 } }' : i32
 
 inl bounded_timeout_reaped (~timeout_ms : u64) : i32 =
-    !\(timeout_ms, $'"{ let mut command = std::process::Command::new(\"/bin/sleep\"); command.arg(\"1\"); if run_bounded(&mut command, $0).is_err() { 1i32 } else { 0i32 } }"')
+    $'{ let mut command = std::process::Command::new("/bin/sleep"); command.arg("1"); if run_bounded(&mut command, !timeout_ms).is_err() { 1i32 } else { 0i32 } }' : i32
 
 inl compiler_budget_outcome (~segmented_timeout_ms : u64) (~timeout_ms : u64) : i32 =
-    !\((segmented_timeout_ms, timeout_ms), $'"{ match compile_spiral(\"/bin/true\", std::path::Path::new(\"input.spi\"), std::path::Path::new(\"output.rs\"), \"Rust\", $0, $1) { Err(_) => 1i32, Ok(status) if status.success() => 2i32, Ok(_) => 3i32 } }"')
+    $'{ match compile_spiral("/bin/true", std::path::Path::new("input.spi"), std::path::Path::new("output.rs"), "Rust", !segmented_timeout_ms, !timeout_ms) { Err(_) => 1i32, Ok(status) if status.success() => 2i32, Ok(_) => 3i32 } }' : i32
 
 inl session_scope_match (~scope : string) (~executable : string) (~mode : string) (~socket : string) : i32 =
-    !\((scope, executable, mode, socket), $'"{ let executable = std::path::Path::new(&*$1); let field_count = 3i32; let server_flag = i32::from(&*$2 == \"--server\"); let runner_flag = i32::from(executable.file_name().and_then(|value| value.to_str()) == Some(\"SpiralHelloRunner\")); let scope_flag = i32::from(executable.starts_with(std::path::Path::new(&*$0))); let packed_flags = server_flag | (runner_flag << 1) | (scope_flag << 2); let _ = &$3; eoie_process_session_match_binding(field_count, packed_flags) }"')
+    $'{ let executable = std::path::Path::new(&*!executable); let field_count = 3i32; let server_flag = i32::from(&*!mode == "--server"); let runner_flag = i32::from(executable.file_name().and_then(|value| value.to_str()) == Some("SpiralHelloRunner")); let scope_flag = i32::from(executable.starts_with(std::path::Path::new(&*!scope))); let packed_flags = server_flag | (runner_flag << 1) | (scope_flag << 2); let _ = &!socket; eoie_process_session_match_binding(field_count, packed_flags) }' : i32
 
 let timeout_policy_export (positive_flag : i32) (reserved : i32) : i32 =
     process.process_timeout_valid_export positive_flag reserved

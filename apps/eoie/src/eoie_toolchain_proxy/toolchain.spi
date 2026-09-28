@@ -58,12 +58,11 @@ inl main () : i32 =
     toolchain_terminal.emit_runtime ()
     inl _ = toolchain_u64_decimal_valid "42", toolchain_u64_decimal_value "42", toolchain_u32_decimal_valid "42", toolchain_i32_decimal_code "-1"
 
-    $"RustExportI32Binary(\"eoie_toolchain_cwd\",\"toolchain_cwd_binding\")" : ()
-    $"RustExportU64Unary(\"eoie_toolchain_u64_decimal_valid\",\"toolchain_u64_decimal_valid\")" : ()
-    $"RustExportU64Unary(\"eoie_toolchain_u64_decimal_value\",\"toolchain_u64_decimal_value\")" : ()
-    $"RustExportU64Unary(\"eoie_toolchain_u32_decimal_valid\",\"toolchain_u32_decimal_valid\")" : ()
-    $"RustExportU64Unary(\"eoie_toolchain_i32_decimal_code\",\"toolchain_i32_decimal_code\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_toolchain_cwd", ((fun (first, second) => toolchain_cwd_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_toolchain_u64_decimal_valid", ((fun value => toolchain_u64_decimal_valid value) : string -> u64))
+    !!!!Export("eoie_toolchain_u64_decimal_value", ((fun value => toolchain_u64_decimal_value value) : string -> u64))
+    !!!!Export("eoie_toolchain_u32_decimal_valid", ((fun value => toolchain_u32_decimal_valid value) : string -> u64))
+    !!!!Export("eoie_toolchain_i32_decimal_code", ((fun value => toolchain_i32_decimal_code value) : string -> u64))
 
     inl _ = toolchain_cwd_binding 0i32 0i32
     0i32

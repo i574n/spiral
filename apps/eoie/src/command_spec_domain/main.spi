@@ -1,3 +1,5 @@
+open model
+
 inl main () : i32 =
     inl _ = model.command_code "status"
     inl _ = model.command_effect_code "status"
@@ -14,18 +16,17 @@ inl main () : i32 =
     inl _ = model.proxy_route_witness ()
     inl _ = model.help_flag_code "--schema"
     inl _ = model.help_flag_witness ()
-    $"RustExportU64Unary(\"eoie_command_code\",\"command_code\")" : ()
-    $"RustExportU64Unary(\"eoie_command_effect_code\",\"command_effect_code\")" : ()
-    $"RustExportU64Unary(\"eoie_command_subcommand_effect_code\",\"command_subcommand_effect_code\")" : ()
-    $"RustExportStringTuple5Unary(\"eoie_command_descriptor\",\"command_descriptor_by_index\")" : ()
-    $"RustExportStringUnary(\"eoie_command_descriptor_json\",\"command_descriptor_json_by_index\")" : ()
-    $"RustExportI32(\"eoie_command_count\",\"command_count\")" : ()
-    $"RustExportI32(\"eoie_command_schema_witness\",\"command_schema_witness\")" : ()
-    $"RustExportU64Unary(\"eoie_toolchain_action_name_code\",\"toolchain_action_code\")" : ()
-    $"RustExportStringUnary(\"eoie_command_proxy_usage\",\"proxy_usage\")" : ()
-    $"RustExportU64Unary(\"eoie_proxy_route_code\",\"proxy_route_code\")" : ()
-    $"RustExportI32(\"eoie_proxy_route_witness\",\"proxy_route_witness\")" : ()
-    $"RustExportU64Unary(\"eoie_help_flag_code\",\"help_flag_code\")" : ()
-    $"RustExportI32(\"eoie_help_flag_witness\",\"help_flag_witness\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_command_code", ((fun value => command_code value) : string -> u64))
+    !!!!Export("eoie_command_effect_code", ((fun value => command_effect_code value) : string -> u64))
+    !!!!Export("eoie_command_subcommand_effect_code", ((fun value => command_subcommand_effect_code value) : string -> u64))
+    !!!!Export("eoie_command_descriptor", ((fun value => command_descriptor_by_index value) : string -> string * string * string * string * string))
+    !!!!Export("eoie_command_descriptor_json", ((fun value => command_descriptor_json_by_index value) : string -> string))
+    !!!!Export("eoie_command_count", ((fun () => command_count ()) : () -> i32))
+    !!!!Export("eoie_command_schema_witness", ((fun () => command_schema_witness ()) : () -> i32))
+    !!!!Export("eoie_toolchain_action_name_code", ((fun value => toolchain_action_code value) : string -> u64))
+    !!!!Export("eoie_command_proxy_usage", ((fun value => proxy_usage value) : string -> string))
+    !!!!Export("eoie_proxy_route_code", ((fun value => proxy_route_code value) : string -> u64))
+    !!!!Export("eoie_proxy_route_witness", ((fun () => proxy_route_witness ()) : () -> i32))
+    !!!!Export("eoie_help_flag_code", ((fun value => help_flag_code value) : string -> u64))
+    !!!!Export("eoie_help_flag_witness", ((fun () => help_flag_witness ()) : () -> i32))
     0i32

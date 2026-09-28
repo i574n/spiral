@@ -2,8 +2,7 @@ inl main () : i32 =
     inl snapshot_kind, snapshot_value, snapshot_extra0, snapshot_extra1, snapshot_extra2 = receipt_row_tuple "snapshot\t42"
     inl tuple_kind, tuple_path, tuple_bytes, tuple_fingerprint, tuple_attestation = receipt_row_tuple "module\talpha.spi\t12\t34\tbuild:99"
     inl bad_kind, _, _, _, _ = receipt_row_tuple "module\talpha.spi\t12\t34\tbuild:99\textra"
-    $"RustExportStringTuple5Unary(\"eoie_state_receipt_row_tuple\",\"receipt_row_tuple\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_state_receipt_row_tuple", ((fun value => receipt_row_tuple value) : string -> string * string * string * string * string))
     if (=.) snapshot_kind "snapshot" then
         if (=.) snapshot_value "42" then
             if (=.) snapshot_extra0 "" then

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    The compiler core as its own assembly, so host edits (Program.fs, PortableBackends.fs) never
+    The compiler core as its own assembly, so host edits (Program.fs) never
     recompile the monolith. -p:SpiralCore=single-flight builds the repo's main core
     (apps/compiler/spiral_compiler.fs), -p:SpiralCore=hopac builds cores/hopac/spiral_compiler.fs;
     -p:SpiralCoreSource=<path> builds any other copy.

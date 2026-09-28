@@ -1,6 +1,0 @@
-inl main () : i32 =
-    inl ~flag = true
-    inl ~left = !!!!ManagedClosureString("abc", 0i32)
-    inl ~right = !!!!ManagedClosureString("wxyz", -1i32)
-    inl ~selected = if flag then left else right
-    !!!!InvokeManagedClosure(selected, 39i32)

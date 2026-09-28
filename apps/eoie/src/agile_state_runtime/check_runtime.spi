@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl emit_runtime () : () =
     rust_global "fn agile_transient_receipt(path: &Path) -> bool {\n    path.file_name().and_then(|value| value.to_str()).map(|name| eoie_agile_state_transient_name_code(name) == 1).unwrap_or(false)\n}\n"

@@ -1,5 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
-inl rust_library () : () = $"RustLibrary()" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl main () : i32 =
     rust_global "#![allow(clippy::needless_late_init)]"
@@ -19,17 +18,16 @@ inl main () : i32 =
     inl _ = archive_fault_code NoArchiveFault
     inl _ = archive_fault_binding 1i32 1i32
     archive_terminal.emit_runtime ()
-    $"RustExportI32Binary(\"eoie_archive_preflight_binding\",\"archive_preflight_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_entry_binding\",\"archive_entry_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_tar_symlink_binding\",\"archive_tar_symlink_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_tar_hardlink_binding\",\"archive_tar_hardlink_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_tar_long_link_binding\",\"archive_tar_long_link_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_tar_pax_path_binding\",\"archive_tar_pax_path_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_compression_binding\",\"archive_compression_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_budget_binding\",\"archive_budget_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_complete_binding\",\"archive_complete_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_tree_binding\",\"archive_tree_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_format_binding\",\"archive_format_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_fault_binding\",\"archive_fault_binding\")" : ()
-    rust_library ()
+    !!!!Export("eoie_archive_preflight_binding", ((fun (first, second) => archive_preflight_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_entry_binding", ((fun (first, second) => archive_entry_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_tar_symlink_binding", ((fun (first, second) => archive_tar_symlink_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_tar_hardlink_binding", ((fun (first, second) => archive_tar_hardlink_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_tar_long_link_binding", ((fun (first, second) => archive_tar_long_link_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_tar_pax_path_binding", ((fun (first, second) => archive_tar_pax_path_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_compression_binding", ((fun (first, second) => archive_compression_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_budget_binding", ((fun (first, second) => archive_budget_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_complete_binding", ((fun (first, second) => archive_complete_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_tree_binding", ((fun (first, second) => archive_tree_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_format_binding", ((fun (first, second) => archive_format_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_fault_binding", ((fun (first, second) => archive_fault_binding first second) : i32 * i32 -> i32))
     0i32

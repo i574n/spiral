@@ -1,16 +1,16 @@
 open rust_std_env.model
 
 inl preflight (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_restart_baton_preflight_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_restart_baton_preflight_binding(!a, !b)' : i32
 
 inl migration (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_restart_baton_migration_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_restart_baton_migration_binding(!a, !b)' : i32
 
 inl fault (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_restart_baton_fault_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_restart_baton_fault_binding(!a, !b)' : i32
 
 inl complete (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"legacy_capability_domain::eoie_restart_baton_complete_binding($0, $1)"')
+    $'legacy_capability_domain::eoie_restart_baton_complete_binding(!a, !b)' : i32
 
 inl main () : i32 =
     inl prepared = preflight 1i32 1i32

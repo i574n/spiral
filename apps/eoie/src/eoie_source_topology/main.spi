@@ -5,9 +5,8 @@ inl main () : i32 =
     inl _ = topology_limit_binding 1000i32 1000i32
     inl _ = topology_package_only_binding 1i32 1i32
     inl _ = source_surface_binding 0i32 1i32
-    $"RustExportI32Binary(\"eoie_source_topology_limit_binding\",\"topology_limit_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_source_topology_package_only_binding\",\"topology_package_only_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_source_surface_binding\",\"source_surface_binding\")" : ()
+    !!!!Export("eoie_source_topology_limit_binding", ((fun (first, second) => topology_limit_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_source_topology_package_only_binding", ((fun (first, second) => topology_package_only_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_source_surface_binding", ((fun (first, second) => source_surface_binding first second) : i32 * i32 -> i32))
     terminal.emit_runtime_topology ()
-    $"RustLibrary()" : ()
     0i32

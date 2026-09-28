@@ -1,22 +1,22 @@
 open rust_std_env.model
 
 inl primary (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"eoie_release_hygiene::eoie_hygiene_primary_binding($0, $1)"')
+    $'eoie_release_hygiene::eoie_hygiene_primary_binding(!a, !b)' : i32
 
 inl secondary (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"eoie_release_hygiene::eoie_hygiene_secondary_binding($0, $1)"')
+    $'eoie_release_hygiene::eoie_hygiene_secondary_binding(!a, !b)' : i32
 
 inl root_file (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"eoie_release_hygiene::eoie_hygiene_root_file_binding($0, $1)"')
+    $'eoie_release_hygiene::eoie_hygiene_root_file_binding(!a, !b)' : i32
 
 inl root_aux (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"eoie_release_hygiene::eoie_hygiene_root_aux_binding($0, $1)"')
+    $'eoie_release_hygiene::eoie_hygiene_root_aux_binding(!a, !b)' : i32
 
 inl root_directory (~a : i32) (~b : i32) : i32 =
-    !\((a,b), $'"eoie_release_hygiene::eoie_hygiene_root_directory_binding($0, $1)"')
+    $'eoie_release_hygiene::eoie_hygiene_root_directory_binding(!a, !b)' : i32
 
 inl classify (~name : string) : u64 =
-    !\(name, $'"eoie_release_hygiene::eoie_hygiene_name_classification(&$0)"')
+    $'eoie_release_hygiene::eoie_hygiene_name_classification(&!name)' : u64
 
 inl main () : i32 =
     inl spiral_entry = primary 1i32 0i32

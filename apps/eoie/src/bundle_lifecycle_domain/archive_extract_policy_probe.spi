@@ -1,6 +1,4 @@
-inl rust_global (x : string) : () = real
-    typecase `(!!!!LitToTypeLit(x)) with ~x =>
-    $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl invalid_binary (value : i32) : bool =
     if !!!!LT(value,1i32) then true

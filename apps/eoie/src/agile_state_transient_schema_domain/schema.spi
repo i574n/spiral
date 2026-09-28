@@ -27,9 +27,8 @@ let agile_state_path_candidate_code (~name : string) : u64 =
     agile_state_path_policy.model.state_path_candidate_code name
 
 inl main () : i32 =
-    $"RustLibrary()" : ()
-    $"RustExportU64Unary(\"eoie_agile_state_transient_schema_code\",\"agile_transient_schema_code\")" : ()
-    $"RustExportU64Unary(\"eoie_agile_state_path_candidate_code\",\"agile_state_path_candidate_code\")" : ()
+    !!!!Export("eoie_agile_state_transient_schema_code", ((fun value => agile_transient_schema_code value) : string -> u64))
+    !!!!Export("eoie_agile_state_path_candidate_code", ((fun value => agile_state_path_candidate_code value) : string -> u64))
     inl _ = agile_transient_schema_code "patch_resume.spi\nPatchResumeReceipt (x)\ninl main () : i32 = 0i32"
     inl _ = agile_transient_schema_code "toolchain_process_receipt.spi\n// toolchain-process-receipt|ok\nToolchainProcessReceipt (x)\ninl main () : i32 = 0i32"
     inl _ = agile_transient_schema_code "toolchain_process_receipt.spi\nToolchainProcessReceipt (x)\ninl main () : i32 = 0i32"

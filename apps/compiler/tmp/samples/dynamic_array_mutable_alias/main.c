@@ -27,52 +27,91 @@ Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
     return x;
 }
 static inline void AssignArray0(int32_t * a, int32_t b){
+    
+    
     *a = b;
 }
 void method0(Array0 * v0){
+    
+    
     int32_t v1;
     v1 = 1l;
+    
+    
     int32_t v2;
     v2 = 9l;
+    
+    
+    
     AssignArray0(&(v0->ptr[v1]), v2);
+    
     ArrayDecref0(v0);
     return ;
 }
 int32_t method1(Array0 * v0){
+    
+    
     int32_t v1;
     v1 = 0l;
+    
+    
     int32_t v2;
     v2 = v0->ptr[v1];
+    
     ArrayDecref0(v0);
     return v2;
 }
 int32_t method2(Array0 * v0){
+    
+    
     int32_t v1;
     v1 = 1l;
+    
+    
     int32_t v2;
     v2 = v0->ptr[v1];
+    
     ArrayDecref0(v0);
     return v2;
 }
 int32_t main(){
+    
+    
     int32_t v0;
     v0 = 2l;
+    
+    
     Array0 * v1;
     v1 = ArrayCreate0(v0, false);
+    
+    
+    
     AssignArray0(&(v1->ptr[0l]), 1l);
+    
+    
+    
     AssignArray0(&(v1->ptr[1l]), 2l);
     v1->refc++;
+    
+    
     method0(v1);
     v1->refc++;
+    
     int32_t v2;
     v2 = method1(v1);
     v1->refc++;
+    
     int32_t v3;
     v3 = method2(v1);
+    
     ArrayDecref0(v1);
     int32_t v4;
     v4 = v2 + v3;
+    
+    
     int32_t v5;
     v5 = v4 - 10l;
+    
+    
     return v5;
 }

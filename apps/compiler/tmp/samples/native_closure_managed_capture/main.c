@@ -54,11 +54,17 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     String * v0 = x->v0;
+    ClosureDecref0(x);
+    
+    
     int32_t v2;
     v2 = v0->len-1;
+    
+    
     int32_t v3;
     v3 = v2 + v1;
-    ClosureDecref0(x);
+    
+    
     return v3;
 }
 Fun0 * ClosureCreate0(String * v0){
@@ -70,11 +76,15 @@ Fun0 * ClosureCreate0(String * v0){
     return (Fun0 *) x;
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(4, "abc");
     v0->refc++;
+    
     Fun0 * v1;
     v1 = ClosureCreate0(v0);
+    
     StringDecref(v0);
     return v1->fptr(v1, 39l);
 }

@@ -1,4 +1,3 @@
-inl rust_library () : () = $"RustLibrary()" : ()
 
 inl main () : i32 =
     inl _ = patch_model.model.transaction_probe_result (), patch_batch.model.static_probe_result (), rust_std_fs.model.target "target", rust_std_fs.model.staged "stage"
@@ -7,5 +6,4 @@ inl main () : i32 =
     patch_compat_receipts.receipt_formatter.emit_receipt_formatter ()
     patch_compat_runtime.owned_runtime.emit_owned_runtime ()
     patch_compat_test_support.test_support.emit_test_support ()
-    rust_library ()
     0i32

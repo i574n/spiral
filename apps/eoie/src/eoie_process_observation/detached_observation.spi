@@ -9,7 +9,7 @@ union detached_process_plan from to =
 inl smoke_detached_plan () : detached_process_plan detached_process_idle detached_process_spawned =
     DetachedProcessLaunch "detached-handoff-smoke"
 
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl emit_runtime () : () =
     rust_global "#[derive(Debug)]\npub struct DetachedProcessHandoff {\n    pub pid: u32,\n    pub cwd: String,\n    pub program: String,\n    pub env_names: String,\n}\n\npub fn spawn_detached_handoff(command: &mut std::process::Command, label: &str) -> Result<DetachedProcessHandoff, String> {\n    #[cfg(unix)] {\n        use std::os::unix::process::CommandExt;\n        command.process_group(0);\n    }\n    let child = match command.spawn() {\n        Ok(child) => child,\n        Err(error) => {\n            let text = format!(\"spawn detached process: {error}\");\n            emit_process_error_receipt(command, label, 0, &text);\n            return Err(text);\n        }\n    };\n    let pid = child.id();\n    let (cwd, program, env_names) = process_receipt_command_fields(command);\n    println!(\"eoie process-handoff receipt label={label} stage=spawned pid={pid} child_exit=pending signal=pending timeout=0 retryability=unknown cwd={cwd:?} program={program:?} env_names={env_names}\");\n    Ok(DetachedProcessHandoff { pid, cwd, program, env_names })\n}\n"

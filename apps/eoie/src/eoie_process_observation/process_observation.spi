@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 nominal process_idle = ()
 nominal process_running = ()
@@ -51,7 +51,6 @@ inl main () : i32 =
     stdout_observation.emit_runtime ()
     stdout_observation_tests.emit_runtime ()
     detached_observation.emit_runtime ()
-    $"RustLibrary()" : ()
     inl _ = smoke_plan ()
     inl _ = smoke_observation ()
     0i32

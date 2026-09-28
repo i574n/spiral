@@ -1,36 +1,34 @@
-inl (~!\) forall t u. ((args : t), (code : string)) : u =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
 
 inl concat5 (~a : string) (~b : string) (~c : string) (~d : string) (~e : string) : string =
-    !\((a,b,c,d,e), $'"std::rc::Rc::<str>::from([&*$0, &*$1, &*$2, &*$3, &*$4].concat())"')
+    $'std::rc::Rc::<str>::from([&*!a, &*!b, &*!c, &*!d, &*!e].concat())' : string
 
 inl equals (a : string) (b : string) : bool =
     $'!a == !b '
 
 inl pipe_member (~members : string) (~value : string) : bool =
-    !\((members,value), $'"$0.split(\"|\").any(|item| item == &*$1)"')
+    $'!members.split("|").any(|item| item == &*!value)' : bool
 
 inl pipe_index (~members : string) (~value : string) : u64 =
-    !\((members,value), $'"$0.split(\"|\").position(|item| item == &*$1).map(|index| index as u64).unwrap_or(u64::MAX)"')
+    $'!members.split("|").position(|item| item == &*!value).map(|index| index as u64).unwrap_or(u64::MAX)' : u64
 
 inl pipe_lookup (~members : string) (~values : string) (~value : string) : string =
-    !\((members,values,value), $'"$0.split(\"|\").zip($1.split(char::from(10u8))).find_map(|(key,item)| if key == &*$2 { Some(std::rc::Rc::<str>::from(item)) } else { None }).unwrap_or_else(|| std::rc::Rc::<str>::from(\"\"))"')
+    $'!members.split("|").zip(!values.split(char::from(10u8))).find_map(|(key,item)| if key == &*!value { Some(std::rc::Rc::<str>::from(item)) } else { None }).unwrap_or_else(|| std::rc::Rc::<str>::from(""))' : string
 
 
 inl starts_with (text : string) (prefix : string) : bool =
-    !\((text,prefix), $'"$0.starts_with(&*$1)"')
+    $'!text.starts_with(&*!prefix)' : bool
 
 inl ends_with (text : string) (suffix : string) : bool =
-    !\((text,suffix), $'"$0.ends_with(&*$1)"')
+    $'!text.ends_with(&*!suffix)' : bool
 
 inl contains (text : string) (needle : string) : bool =
-    !\((text,needle), $'"$0.contains(&*$1)"')
+    $'!text.contains(&*!needle)' : bool
 
 inl replace (text : string) (from : string) (into : string) : string =
-    !\((text,from,into), $'"std::rc::Rc::<str>::from($0.replace(&*$1, &$2))"')
+    $'std::rc::Rc::<str>::from(!text.replace(&*!from, &!into))' : string
 
 inl trim (text : string) : string =
-    !\(text, $'"std::rc::Rc::<str>::from($0.trim())"')
+    $'std::rc::Rc::<str>::from(!text.trim())' : string
 
 inl trim_end_matches (text : string) (suffix : string) : string =
-    !\((text,suffix), $'"std::rc::Rc::<str>::from($0.trim_end_matches(&*$1))"')
+    $'std::rc::Rc::<str>::from(!text.trim_end_matches(&*!suffix))' : string

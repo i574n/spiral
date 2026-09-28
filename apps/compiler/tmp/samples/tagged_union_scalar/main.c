@@ -37,37 +37,55 @@ US0 US0_1(int32_t v0) { // Miss
     return x;
 }
 int32_t score0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 0: { // Hit
             int32_t v1 = v0.case0.v0;
+            
             USDecref0(&(v0));
             return v1;
             break;
         }
         case 1: { // Miss
             int32_t v2 = v0.case1.v0;
+            
             USDecref0(&(v0));
             int32_t v3;
             v3 = -v2;
+            
+            
             return v3;
             break;
         }
     }
 }
 int32_t main(){
+    
+    
     bool v0;
     v0 = true;
+    
+    
     US0 v3;
     if (v0){
+        
+        
         v3 = US0_0(7l);
     } else {
+        
+        
         v3 = US0_1(3l);
     }
     USIncref0(&(v3));
+    
     int32_t v4;
     v4 = score0(v3);
+    
     USDecref0(&(v3));
     int32_t v5;
     v5 = v4 - 7l;
+    
+    
     return v5;
 }

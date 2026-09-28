@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl emit_runtime () : () =
     rust_global "fn release_closeout_gate(name:&str)->Option<(i32,&'static str)>{match name{\"state\"=>Some((1,\"CloseoutState\")),\"workspace\"=>Some((2,\"CloseoutWorkspace\")),\"contracts\"=>Some((4,\"CloseoutContracts\")),\"bundle\"=>Some((8,\"CloseoutBundle\")),\"cold\"=>Some((16,\"CloseoutColdReplay\")),\"migration\"=>Some((32,\"CloseoutMigration\")),_=>None}}\nfn release_closeout_observed_migration(root:&Path)->Result<i32,String>{semantic_evidence_domain::observed_migration_from_state(root)}\n"

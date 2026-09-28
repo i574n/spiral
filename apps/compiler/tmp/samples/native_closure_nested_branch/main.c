@@ -63,19 +63,32 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v2){
     String * v0 = x->v0; int32_t v1 = x->v1;
+    ClosureDecref0(x);
+    
+    
     bool v3;
     v3 = v2 > 0l;
+    
+    
     if (v3){
+        
+        
         int32_t v4;
         v4 = v0->len-1;
+        
+        
         int32_t v5;
         v5 = v4 + v1;
+        
+        
         int32_t v6;
         v6 = v5 + v2;
-        ClosureDecref0(x);
+        
+        
         return v6;
     } else {
-        ClosureDecref0(x);
+        
+        
         return 0l;
     }
 }
@@ -95,21 +108,36 @@ void ClosureDecref1(Closure1 * x){
 }
 int32_t ClosureMethod1(Closure1 * x, int32_t v2){
     String * v0 = x->v0; int32_t v1 = x->v1;
+    ClosureDecref1(x);
+    
+    
     bool v3;
     v3 = v2 > 0l;
+    
+    
     if (v3){
+        
+        
         int32_t v4;
         v4 = v0->len-1;
+        
+        
         int32_t v5;
         v5 = v4 + v1;
+        
+        
         int32_t v6;
         v6 = v5 + v2;
+        
+        
         int32_t v7;
         v7 = v6 - 1l;
-        ClosureDecref1(x);
+        
+        
         return v7;
     } else {
-        ClosureDecref1(x);
+        
+        
         return -1l;
     }
 }
@@ -122,27 +150,44 @@ Fun0 * ClosureCreate1(String * v0, int32_t v1){
     return (Fun0 *) x;
 }
 int32_t method0(Fun0 * v0){
+    
+    
     return v0->fptr(v0, 37l);
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(4, "abc");
+    
+    
     String * v1;
     v1 = StringLit(5, "wxyz");
+    
+    
     int32_t v2;
     v2 = 2l;
+    
+    
     int32_t v3;
     v3 = 2l;
+    
+    
     bool v4;
     v4 = true;
+    
+    
     Fun0 * v7;
     if (v4){
         v0->refc++;
+        
         v7 = ClosureCreate0(v0, v2);
     } else {
         v1->refc++;
+        
         v7 = ClosureCreate1(v1, v3);
     }
+    
     StringDecref(v0); StringDecref(v1);
     return method0(v7);
 }

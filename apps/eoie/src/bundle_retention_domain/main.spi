@@ -2,11 +2,8 @@ open external_payload_contract.model
 open external_payload_contract.public
 open external_payload_terminal
 
-inl rust_global (x : string) : () = real
-    typecase `(!!!!LitToTypeLit(x)) with ~x =>
-    $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
-inl rust_library () : () = $"RustLibrary()" : ()
 
 inl main () : i32 =
     rust_global "#![allow(clippy::needless_late_init)]"
@@ -18,11 +15,10 @@ inl main () : i32 =
     inl _ = retention_complete_binding 3i32 3i32
     inl _ = external_payload_public_mask_binding 1i32 15i32
     external_payload_terminal.emit_runtime ()
-    $"RustExportI32Binary(\"eoie_retention_window_binding\",\"retention_window_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_retention_current_binding\",\"retention_current_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_retention_dry_run_binding\",\"retention_dry_run_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_retention_apply_binding\",\"retention_apply_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_retention_complete_binding\",\"retention_complete_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_external_payload_public_mask_binding\",\"external_payload_public_mask_binding\")" : ()
-    rust_library ()
+    !!!!Export("eoie_retention_window_binding", ((fun (first, second) => retention_window_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_retention_current_binding", ((fun (first, second) => retention_current_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_retention_dry_run_binding", ((fun (first, second) => retention_dry_run_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_retention_apply_binding", ((fun (first, second) => retention_apply_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_retention_complete_binding", ((fun (first, second) => retention_complete_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_external_payload_public_mask_binding", ((fun (first, second) => external_payload_public_mask_binding first second) : i32 * i32 -> i32))
     0i32

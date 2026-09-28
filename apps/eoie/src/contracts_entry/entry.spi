@@ -35,7 +35,6 @@ inl release_contract () : contract_plan contract_cold contract_closed =
                     ContractStep (exists (CloseContracts RootedFilesystem, "closed"))))))))))
 
 inl emit_main () : i32 =
-    rust_library ()
     emit_contract_harness ()
     rust_global "include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/native_tools.rs\"));"
     0i32

@@ -47,11 +47,17 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     Array0 * v0 = x->v0;
+    ClosureDecref0(x);
+    
+    
     int32_t v2;
     v2 = v0->len;
+    
+    
     int32_t v3;
     v3 = v2 + v1;
-    ClosureDecref0(x);
+    
+    
     return v3;
 }
 Fun0 * ClosureCreate0(Array0 * v0){
@@ -63,11 +69,15 @@ Fun0 * ClosureCreate0(Array0 * v0){
     return (Fun0 *) x;
 }
 int32_t main(){
+    
+    
     Array0 * v0;
     v0 = ArrayCreate0(2l, false);
     v0->refc++;
+    
     Fun0 * v1;
     v1 = ClosureCreate0(v0);
+    
     ArrayDecref0(v0);
     return v1->fptr(v1, 40l);
 }

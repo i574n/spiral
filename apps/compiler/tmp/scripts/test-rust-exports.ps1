@@ -1,9 +1,10 @@
 <#
 .SYNOPSIS
-Contracts for Rust library output: `RustLibrary()` plus the `RustExport*` markers.
+Contracts for Rust library output: `!!!!Export(name, f)` makes the program a library crate with one
+`pub fn name` per export (strings in as `&str`, out as `Rc<str>`).
 
 .DESCRIPTION
-Compiles tests/rust-exports/exports (six export ABIs) and tests/rust-exports/library (an i32 policy)
+Compiles tests/rust-exports/exports (six signatures) and tests/rust-exports/library (an i32 policy)
 with the compiler, checks every negative case is rejected without publishing output, then builds each
 generated library with rustc and runs a real Rust consumer against it.
 #>
@@ -16,7 +17,6 @@ $rustc = (Get-SpiralNativeTools).Rustc
 if (-not $rustc) { throw 'rustc is required for the Rust export contracts.' }
 $work = Join-Path (Get-SpiralCacheDir) ('rust-exports/' + [guid]::NewGuid().ToString('N'))
 $fixtures = Join-Path $BundleRoot 'tests/rust-exports'
-$library = '    $"RustLibrary()" : ()'
 
 function Invoke-Cases([string]$Fixture, [System.Collections.Specialized.OrderedDictionary]$Cases) {
     # One compiler process per case. A second BuildFile in the same process can
@@ -56,16 +56,14 @@ function Test-Consumer([string]$Case, [string]$Crate, [string]$Consumer) {
 
 $exports = Join-Path $fixtures 'exports'
 $source = [IO.File]::ReadAllText((Join-Path $exports 'main.spi'))
+$captured = '    inl ~k = 1i32' + "`n" + '    export "export_captured" ((fun (a, b) => choose a k) : i32 * i32 -> i32)' + "`n" + '    0i32'
 Invoke-Cases $exports ([ordered]@{
     exports = @($source, '')
-    no_library = @($source.Replace($library, ''), 'require exactly one RustLibrary')
-    missing = @($source.Replace('\"scalar\")', '\"absent\")'), 'requires exactly one retained')
-    wrong_signature = @($source.Replace('\"scalar\")', '\"echo\")'), 'requires exactly one retained')
-    optimized_argument = @($source.Replace('\"echo\")', '\"unused\")'), 'requires exactly one retained')
-    wrong_tuple = @($source.Replace('string * string * string * string * string', 'string * string * string * string * i32').Replace('value, "second", "", "fourth", "fifth"', 'value, "second", "", "fourth", 5i32'), 'tuple of exactly five strings')
-    duplicate = @($source.Replace('\"export_echo\"', '\"export_scalar\"'), 'duplicate Rust export')
-    duplicate_library = @($source.Replace($library, "$library`n$library"), 'exactly one RustLibrary')
-    unsupported = @($source.Replace('RustExportStringUnary', 'RustExportUnknown'), 'unsupported Rust export marker')
+    missing = @($source.Replace('=> choose first second', '=> absent first second'), 'has a type error somewhere in its path')
+    wrong_signature = @($source.Replace('(fun value => opaque value) : string -> u64', '(fun value => opaque value) : i32 -> u64'), 'has a type error somewhere in its path')
+    wrong_tuple = @($source.Replace(': string -> string * string * string * string * string)', ': string -> string * string * string * string * i32)'), 'has a type error somewhere in its path')
+    captured = @($source.Replace('    0i32', $captured), 'runtime free variables')
+    duplicate = @($source.Replace('"export_echo"', '"export_scalar"'), 'Duplicate export: export_scalar')
 })
 Test-Consumer 'exports' 'spiral_exports' (Join-Path $exports 'consumer.rs')
 
@@ -73,9 +71,7 @@ $policy = Join-Path $fixtures 'library'
 $source = [IO.File]::ReadAllText((Join-Path $policy 'main.spi'))
 Invoke-Cases $policy ([ordered]@{
     library = @($source, '')
-    library_missing = @($source.Replace('\"admitted\")', '\"missing\")'), 'requires exactly one retained')
-    library_duplicate = @($source.Replace('    $"RustLibrary()"', '    $"RustExportI32Binary(\"export_admitted\",\"admitted\")" : ()' + "`n" + '    $"RustLibrary()"'), 'duplicate Rust export')
-    library_unsupported = @($source.Replace('RustExportI32Binary', 'RustExportUnknown'), 'unsupported Rust export marker')
+    library_duplicate = @($source.Replace('    0i32', '    !!!!Export("export_admitted", ((fun (value, reserved) => admitted value reserved) : i32 * i32 -> i32))' + "`n" + '    0i32'), 'Duplicate export: export_admitted')
 })
 $harness = Join-Path $work 'library/harness.rs'
 @'
@@ -90,4 +86,4 @@ fn exported_spiral_policy() {
 '@ | Set-Content -LiteralPath $harness -Encoding utf8NoBOM
 Test-Consumer 'library' 'spiral_library' $harness
 
-Write-Host "Rust export contracts passed: six ABIs and one policy library, eleven negative cases; $work"
+Write-Host "Rust export contracts passed: six signatures and one policy library, six negative cases; $work"

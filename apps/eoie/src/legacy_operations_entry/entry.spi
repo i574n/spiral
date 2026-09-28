@@ -39,14 +39,13 @@ inl emit_main () : i32 =
     inl _ = proxy_run_token_code "--cwd"
     inl _ = proxy_write_token_code "--expect-hash"
     inl _ = proxy_usage_bridge "fs-read"
-    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_dogfood_shim_decision_packed_binding\",\"proxy_dogfood_shim_decision_packed_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_dogfood_shim_install_packed_binding\",\"proxy_dogfood_shim_install_packed_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_dogfood_shim_uninstall_binding\",\"proxy_dogfood_shim_uninstall_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_exact_replace_preflight_binding\",\"proxy_exact_replace_preflight_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_exact_replace_authorize_binding\",\"proxy_exact_replace_authorize_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_exact_replace_verify_binding\",\"proxy_exact_replace_verify_binding\")" : ()
-    $"RustExportU64Unary(\"eoie_legacy_operations_proxy_run_token_code\",\"proxy_run_token_code\")" : ()
-    $"RustExportU64Unary(\"eoie_legacy_operations_proxy_write_token_code\",\"proxy_write_token_code\")" : ()
-    $"RustExportStringUnary(\"eoie_legacy_operations_proxy_usage\",\"proxy_usage_bridge\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_legacy_operations_proxy_dogfood_shim_decision_packed_binding", ((fun (first, second) => proxy_dogfood_shim_decision_packed_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_legacy_operations_proxy_dogfood_shim_install_packed_binding", ((fun (first, second) => proxy_dogfood_shim_install_packed_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_legacy_operations_proxy_dogfood_shim_uninstall_binding", ((fun (first, second) => proxy_dogfood_shim_uninstall_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_legacy_operations_proxy_exact_replace_preflight_binding", ((fun (first, second) => proxy_exact_replace_preflight_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_legacy_operations_proxy_exact_replace_authorize_binding", ((fun (first, second) => proxy_exact_replace_authorize_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_legacy_operations_proxy_exact_replace_verify_binding", ((fun (first, second) => proxy_exact_replace_verify_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_legacy_operations_proxy_run_token_code", ((fun value => proxy_run_token_code value) : string -> u64))
+    !!!!Export("eoie_legacy_operations_proxy_write_token_code", ((fun value => proxy_write_token_code value) : string -> u64))
+    !!!!Export("eoie_legacy_operations_proxy_usage", ((fun value => proxy_usage_bridge value) : string -> string))
     0i32

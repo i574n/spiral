@@ -44,20 +44,28 @@ static inline String * StringSlice(String * value, int32_t from, int32_t to){
     return result;
 }
 String * invalid_middle0(String * v0){
+    
+    
     String * v1;
     v1 = StringSlice(v0, 1l, 1l);
+    
     StringDecref(v0);
     return v1;
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(3, "é");
     v0->refc++;
+    
     String * v1;
     v1 = invalid_middle0(v0);
+    
     StringDecref(v0);
     int32_t v2;
     v2 = v1->len-1;
+    
     StringDecref(v1);
     return v2;
 }

@@ -1,4 +1,0 @@
-inl main () =
-    inl a = !!!!LayoutToStackRefs({pair=!!!!ManagedTuple(!!!!RecursiveSome(11i32),13i32); q=5i32; w=6i32})
-    a.q <- !!!!OptionalValue(a.pair)
-    !!!!Add(a.q,a.w)

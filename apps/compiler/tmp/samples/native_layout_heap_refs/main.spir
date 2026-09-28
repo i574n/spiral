@@ -1,6 +1,0 @@
-inl main () =
-    inl a = !!!!LayoutToHeapRefs({q=11i32; w=13i32})
-    inl b = !!!!LayoutIndex(a)
-    a.q <- 19i32
-    b.w <- 23i32
-    !!!!Add(a.q,b.w)

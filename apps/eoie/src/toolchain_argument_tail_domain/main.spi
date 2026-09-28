@@ -1,5 +1,4 @@
 inl main () : i32 =
     inl _ = toolchain_argument_token_high_binding 4i32 5i32
-    $"RustExportI32Binary(\"eoie_toolchain_argument_token_high\",\"toolchain_argument_token_high_binding\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("eoie_toolchain_argument_token_high", ((fun (first, second) => toolchain_argument_token_high_binding first second) : i32 * i32 -> i32))
     0i32

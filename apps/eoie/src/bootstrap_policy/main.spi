@@ -1,6 +1,4 @@
-inl rust_library () : () = $"RustLibrary()" : ()
 
 inl main () : i32 =
     inl _ = model.build_plan ()
-    rust_library ()
     0i32

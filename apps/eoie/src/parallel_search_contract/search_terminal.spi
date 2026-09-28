@@ -1,4 +1,4 @@
-inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
 inl emit_imports () : () =
     rust_global "use eoie_rust_std_fs::{copy_regular_atomic_preserve, read_regular_limited, read_regular_text_limited, rooted_path};\nuse rayon::prelude::*;\nuse std::fs;\nuse std::path::{Path, PathBuf};\n"

@@ -43,22 +43,34 @@ static inline Tuple0 TupleCreate0(String * v0, int32_t v1){
     return x;
 }
 Tuple0 method0(String * v0){
+    
+    
     int32_t v1;
     v1 = v0->len-1;
+    
+    
     return TupleCreate0(v0, v1);
 }
 int32_t score1(int32_t v0, String * v1){
+    
+    
     int32_t v2;
     v2 = v1->len-1;
+    
     StringDecref(v1);
     int32_t v3;
     v3 = v2 + v0;
+    
+    
     return v3;
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(4, "qwe");
     v0->refc++;
+    
     String * v1; int32_t v2;
     Tuple0 tmp0 = method0(v0);
     v1 = tmp0.v0; v2 = tmp0.v1;
@@ -67,12 +79,18 @@ int32_t main(){
     int32_t v3;
     v3 = score1(v2, v1);
     v1->refc++;
+    
     int32_t v4;
     v4 = score1(v2, v1);
+    
     StringDecref(v1);
     int32_t v5;
     v5 = v3 + v4;
+    
+    
     int32_t v6;
     v6 = v5 - 12l;
+    
+    
     return v6;
 }

@@ -1,8 +1,5 @@
-inl rust_global (x : string) : () = real
-    typecase `(!!!!LitToTypeLit(x)) with ~x =>
-    $"RustGlobal(@x)" : ()
+inl rust_global (x : string) : () = !!!!Global(x)
 
-inl rust_library () : () = $"RustLibrary()" : ()
 
 let bundle_output_preflight_binding (outside_root : i32) (output_absent : i32) : i32 =
     bundle_output_contract.model.preflight_binding outside_root output_absent
@@ -44,25 +41,24 @@ inl main () : i32 =
     inl _ = bundle_verify_contract.model.verify_policy_plan ()
     inl _ = bundle_verify_preflight_binding 1i32 1i32
     inl _ = bundle_verify_complete_binding 1i32 1i32
-    $"RustExportI32Binary(\"eoie_bundle_root_binding\",\"bundle_root_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_coverage_checkpoint_binding\",\"coverage_checkpoint_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_entry_binding\",\"bundle_entry_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_size_binding\",\"bundle_size_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_extract_binding\",\"bundle_extract_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_payload_count_binding\",\"bundle_payload_count_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_rehydration_binding\",\"bundle_rehydration_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_complete_binding\",\"bundle_complete_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_rehydrate_preflight_binding\",\"bundle_rehydrate_preflight_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_rehydrate_extract_binding\",\"bundle_rehydrate_extract_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_rehydrate_validate_binding\",\"bundle_rehydrate_validate_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_rehydrate_receipt_binding\",\"bundle_rehydrate_receipt_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_extract_preflight_binding\",\"archive_extract_preflight_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_extract_process_binding\",\"archive_extract_process_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_extract_complete_binding\",\"archive_extract_complete_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_archive_extract_receipt_binding\",\"archive_extract_receipt_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_output_preflight_binding\",\"bundle_output_preflight_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_output_complete_binding\",\"bundle_output_complete_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_verify_preflight_binding\",\"bundle_verify_preflight_binding\")" : ()
-    $"RustExportI32Binary(\"eoie_bundle_verify_complete_binding\",\"bundle_verify_complete_binding\")" : ()
-    rust_library ()
+    !!!!Export("eoie_bundle_root_binding", ((fun (first, second) => bundle_root_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_coverage_checkpoint_binding", ((fun (first, second) => coverage_checkpoint_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_entry_binding", ((fun (first, second) => bundle_entry_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_size_binding", ((fun (first, second) => bundle_size_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_extract_binding", ((fun (first, second) => bundle_extract_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_payload_count_binding", ((fun (first, second) => bundle_payload_count_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_rehydration_binding", ((fun (first, second) => bundle_rehydration_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_complete_binding", ((fun (first, second) => bundle_complete_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_rehydrate_preflight_binding", ((fun (first, second) => bundle_rehydrate_preflight_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_rehydrate_extract_binding", ((fun (first, second) => bundle_rehydrate_extract_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_rehydrate_validate_binding", ((fun (first, second) => bundle_rehydrate_validate_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_rehydrate_receipt_binding", ((fun (first, second) => bundle_rehydrate_receipt_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_extract_preflight_binding", ((fun (first, second) => archive_extract_preflight_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_extract_process_binding", ((fun (first, second) => archive_extract_process_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_extract_complete_binding", ((fun (first, second) => archive_extract_complete_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_archive_extract_receipt_binding", ((fun (first, second) => archive_extract_receipt_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_output_preflight_binding", ((fun (first, second) => bundle_output_preflight_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_output_complete_binding", ((fun (first, second) => bundle_output_complete_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_verify_preflight_binding", ((fun (first, second) => bundle_verify_preflight_binding first second) : i32 * i32 -> i32))
+    !!!!Export("eoie_bundle_verify_complete_binding", ((fun (first, second) => bundle_verify_complete_binding first second) : i32 * i32 -> i32))
     0i32

@@ -34,16 +34,27 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 int32_t main(){
+    
+    
     String * v0;
     v0 = StringLit(4, "qwe");
+    
+    
     char v1;
     v1 = v0->ptr[1l];
+    
     StringDecref(v0);
     bool v2;
     v2 = v1 == 'w';
+    
+    
     if (v2){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

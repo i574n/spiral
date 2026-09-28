@@ -1,32 +1,30 @@
-inl (~!\\) forall t u. ((args : t), (code : string)) : u =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
 
 inl create_dir (path : string) : bool =
-    !\\(path, $'"std::fs::create_dir_all(&*$0).is_ok()"')
+    $'std::fs::create_dir_all(&*!path).is_ok()' : bool
 
 inl cleanup_tree (path : string) : bool =
-    !\\(path, $'"std::fs::remove_dir_all(&*$0).is_ok() || \!std::path::Path::new(&*$0).exists()"')
+    $'std::fs::remove_dir_all(&*!path).is_ok() || \!std::path::Path::new(&*!path).exists()' : bool
 
 inl directory_exists (path : string) : bool =
-    !\\(path, $'"std::path::Path::new(&*$0).is_dir()"')
+    $'std::path::Path::new(&*!path).is_dir()' : bool
 
 inl directory_missing (path : string) : bool =
-    !\\(path, $'"\!std::path::Path::new(&*$0).is_dir()"')
+    $'\!std::path::Path::new(&*!path).is_dir()' : bool
 
 inl write_text (path : string) (text : string) : bool =
-    !\\((path, text), $'"std::fs::write(&*$0, &*$1).is_ok()"')
+    $'std::fs::write(&*!path, &*!text).is_ok()' : bool
 
 inl remove_file (path : string) : bool =
-    !\\(path, $'"std::fs::remove_file(&*$0).is_ok() || \!std::path::Path::new(&*$0).exists()"')
+    $'std::fs::remove_file(&*!path).is_ok() || \!std::path::Path::new(&*!path).exists()' : bool
 
 inl file_exists (path : string) : bool =
-    !\\(path, $'"std::path::Path::new(&*$0).is_file()"')
+    $'std::path::Path::new(&*!path).is_file()' : bool
 
 inl file_missing (path : string) : bool =
-    !\\(path, $'"\!std::path::Path::new(&*$0).is_file()"')
+    $'\!std::path::Path::new(&*!path).is_file()' : bool
 
 inl tree_missing (path : string) : bool =
-    !\\(path, $'"\!std::path::Path::new(&*$0).exists()"')
+    $'\!std::path::Path::new(&*!path).exists()' : bool
 
 nominal policy_owner = string
 nominal agile_owner = string

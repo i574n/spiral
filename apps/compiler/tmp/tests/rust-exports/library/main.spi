@@ -5,7 +5,5 @@ let admitted (value : i32) (reserved : i32) : i32 =
     else 1i32
 
 inl main () : i32 =
-    inl _ = admitted 493i32 0i32
-    $"RustExportI32Binary(\"export_admitted\",\"admitted\")" : ()
-    $"RustLibrary()" : ()
+    !!!!Export("export_admitted", ((fun (value, reserved) => admitted value reserved) : i32 * i32 -> i32))
     0i32
