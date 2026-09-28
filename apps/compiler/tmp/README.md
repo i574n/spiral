@@ -43,7 +43,7 @@ compiler/
   runtime-compat/        minimal Supervisor stand-in (Lib/Common/Trace) both cores need
   lib/                   Packages.props (pinned NuGet dependencies) and Dependencies.fsproj
 samples/                 every fixture, one flat directory each:
-  <name>/                  backend fixtures with F#/C/Rust/Delphi goldens (frontier_* for hopac)
+  <name>/                  backend fixtures and their compiled F#/C/Rust/Delphi outputs (frontier_* for hopac)
   contract_<name>/         type-system contract cases (F#)
   mega_<name>/             the five megaprojects and their sub-packages
   core/                    the portable `core-` package the fixtures share
@@ -54,7 +54,8 @@ splitter/                Rust workspace `spiral-split`: splits a monolith into p
 scripts/                 env, build, test, bench (pwsh, cross-platform)
 ```
 
-Everything generated (build output, staged corpora, residuals, logs, toolchains, the flat dependency
+Compiler outputs sit next to their sources in `samples/` and are committed (`git diff samples` shows
+what a run changed). Everything else generated (build output, native binaries, logs, toolchains, the flat dependency
 directory, the single-flight oracle `baseline/EXPECTED.tsv` and the lane scoreboards) lives in the
 cache directory: `%LOCALAPPDATA%\spiral-bin` on Windows, `~/.cache/spiral-bin` on
 Linux, or `$SPIRAL_BIN_CACHE_DIR`.

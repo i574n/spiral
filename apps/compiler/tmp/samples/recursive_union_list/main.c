@@ -40,8 +40,6 @@ UH0 * UH0_1(int32_t v0, UH0 * v1) { // Cons
     return x;
 }
 int32_t sum0(UH0 * v0){
-    
-    
     switch (v0->tag) {
         case 1: { // Cons
             int32_t v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1;
@@ -49,18 +47,13 @@ int32_t sum0(UH0 * v0){
             UHDecref0(v0);
             int32_t v3;
             v3 = sum0(v2);
-            
             UHDecref0(v2);
             int32_t v4;
             v4 = v1 + v3 ;
-            
-            
             return v4;
             break;
         }
         case 0: { // Nil
-            
-            
             UHDecref0(v0);
             return 0l;
             break;
@@ -68,24 +61,15 @@ int32_t sum0(UH0 * v0){
     }
 }
 int32_t main(){
-    
-    
     int32_t v0;
     v0 = 1l;
-    
-    
     int32_t v1;
     v1 = 2l;
-    
-    
     int32_t v2;
     v2 = 3l;
-    
-    
     UH0 * v3;
     v3 = UH0_0();
     v3->refc++;
-    
     UH0 * v4;
     v4 = UH0_1(v2, v3);
     v4->refc++;
@@ -100,11 +84,8 @@ int32_t main(){
     UHDecref0(v5);
     int32_t v7;
     v7 = sum0(v6);
-    
     UHDecref0(v6);
     int32_t v8;
     v8 = v7 - 6l ;
-    
-    
     return v8;
 }

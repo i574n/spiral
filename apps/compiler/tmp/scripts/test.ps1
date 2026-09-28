@@ -7,7 +7,7 @@ single-flight baseline (<cache>/baseline/EXPECTED.tsv, written by -Bless).
 Suites (combine freely):
   frontier   samples/frontier_*           smallest programs the Hopac core must finish first
   smoke      tests/harness.psd1 Smoke     a few seconds of broad coverage
-  examples   samples/<name>               backend fixtures (F#, C, Rust, Delphi goldens)
+  examples   samples/<name>               backend fixtures (F#, C, Rust, Delphi)
   contracts  samples/contract_*,          type-system contract cases (F#), and the megaprojects'
              samples/mega_*/<package>     sub-packages
   mega       tests/harness.psd1 Mega      the five megaprojects
@@ -16,7 +16,12 @@ Suites (combine freely):
 A sample is a directory with main.spi (top-down) or main.spir (bottom-up) and package.spiproj.
 samples/core is the portable `core-` package the fixtures share; `|core-` resolves to The-Spiral-Language's
 core through the repo's deps/polyglot link (Get-SpiralPackageDir). Hand-written tables (smoke list, known
-failures, megaproject roots, C flags) are tests/harness.psd1; generated results stay in the cache.
+failures, megaproject roots, C flags, backends) are tests/harness.psd1.
+
+The compiler writes its output next to its source (samples/<name>/main.c, ...), replacing the previous
+one; those files are committed, so `git diff samples` shows what a run changed. A run holds a lock, so two
+runs (e.g. hopac and single-flight) never write the same files at once. Run records, the oracle baseline,
+scoreboards and native binaries live in the cache directory.
 
 Every compile of one worker runs inside a single warm compiler process (`SpiralCompiler --batch`),
 so startup and core-library parsing are paid once. A job that hangs past -TimeoutSec or crashes the
@@ -46,7 +51,7 @@ param(
     # One compiler process per job. Default on in hopac mode, whose core serves one BuildFile per process.
     [switch]$FreshProcess,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
-    # Workspace root for the compiler (SPIRAL_WORKSPACE_ROOT). Defaults to the staged corpus.
+    # Workspace root for the compiler (SPIRAL_WORKSPACE_ROOT). Defaults to this directory.
     [string]$WorkspaceRoot
 )
 . $PSScriptRoot/env.ps1
@@ -70,22 +75,17 @@ $cache = Get-SpiralCacheDir
 $compiler = Get-SpiralCompilerDll $mode $Configuration
 if (-not (Test-Path $compiler)) { throw "compiler not built: $compiler`nrun: pwsh scripts/build.ps1 -Mode $mode -Configuration $Configuration" }
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$outRoot = Join-Path $cache "out/$mode"
 $runDir = Join-Path $cache "runs/$mode-$stamp"
-New-Item -ItemType Directory -Force $outRoot, $runDir | Out-Null
+$nativeRoot = Join-Path $cache "native/$mode"
+# The compiler's working directory: the Hopac core creates target/ folders relative to it.
+$scratch = Join-Path $cache "scratch/$mode"
+New-Item -ItemType Directory -Force $runDir, $nativeRoot, $scratch | Out-Null
 
-# The compiler core also writes its output next to the input file, so compilation always runs on a staged
-# mirror of the corpus: the bundle's golden residuals are never overwritten.
-$work = Join-Path $cache "work/$mode"
-New-Item -ItemType Directory -Force $work | Out-Null   # rsync, unlike robocopy, does not create parents
-foreach ($tree in @('samples')) {
-    $from = Join-Path $BundleRoot $tree
-    $to = Join-Path $work $tree
-    if ($IsWindows) { robocopy $from $to /MIR /NFL /NDL /NJH /NJS /NP /R:1 /W:1 | Out-Null; if ($LASTEXITCODE -ge 8) { throw "staging $tree failed ($LASTEXITCODE)" } }
-    elseif (Get-Command rsync -ErrorAction SilentlyContinue) { rsync -a --delete "$from/" "$to/"; if ($LASTEXITCODE -ne 0) { throw "staging $tree failed" } }
-    else { Remove-Item -LiteralPath $to -Recurse -Force -ErrorAction SilentlyContinue; Copy-Item -LiteralPath $from -Destination $to -Recurse }
-}
-$env:SPIRAL_WORKSPACE_ROOT = if ($WorkspaceRoot) { (Resolve-Path $WorkspaceRoot).Path } else { $work }
+# Outputs are written in place, so only one run at a time.
+$lockPath = Join-Path $cache 'test.lock'
+try { $lock = [IO.File]::Open($lockPath, 'OpenOrCreate', 'ReadWrite', 'None') }
+catch { throw "another scripts/test.ps1 run is compiling the samples in place ($lockPath)" }
+$env:SPIRAL_WORKSPACE_ROOT = if ($WorkspaceRoot) { (Resolve-Path $WorkspaceRoot).Path } else { $BundleRoot }
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir   # where `|core-` resolves
 $runStart = [DateTime]::UtcNow
 
@@ -154,16 +154,12 @@ $samples = $suites | ForEach-Object { Get-Samples $_ } | Sort-Object Id -Unique
 if ($Filter) { $samples = $samples | Where-Object { $_.Id -match $Filter } }
 
 $jobs = foreach ($sample in $samples) {
-    $staged = Join-Path $work ([IO.Path]::GetRelativePath($BundleRoot, $sample.Input))
     $timeout = if ($TimeoutSec -gt 0) { $TimeoutSec } else { $suiteTimeoutSec[$sample.Suite] }
     foreach ($b in $sample.Backends) {
         if ($Backend -and $Backend -notcontains $b) { continue }
-        $output = Join-Path $outRoot "$($sample.Id)/main.$($extension[$b])"
-        Remove-Item -LiteralPath $output -Force -ErrorAction SilentlyContinue
-        # The core writes <input>.<ext> itself (C for Rust/Delphi requests); used to detect "emitted but never returned".
-        $coreExt = if ($b -in 'Rust', 'Delphi') { 'c' } else { $extension[$b] }
-        [pscustomobject]@{ Key = "$($sample.Id)|$b"; Suite = $sample.Suite; Id = $sample.Id; Backend = $b; Input = $staged
-            Golden = $sample.Input; Output = $output; TimeoutSec = $timeout; CoreOutput = [IO.Path]::ChangeExtension($staged, $coreExt) }
+        [pscustomobject]@{ Key = "$($sample.Id)|$b"; Suite = $sample.Suite; Id = $sample.Id; Backend = $b; Input = $sample.Input
+            Output = [IO.Path]::ChangeExtension($sample.Input, $extension[$b]); TimeoutSec = $timeout
+            Native = Join-Path $nativeRoot "$($sample.Id)/$b" }
     }
 }
 $jobs = @($jobs)
@@ -186,7 +182,7 @@ $workerScript = {
         $batch = if ($fresh) { @($remaining[0]) } else { $remaining }
         $batch | ForEach-Object { "$($_.Key)`t$($_.Backend)`t$($_.Input)`t$($_.Output)`t$($_.TimeoutSec * 1000)" } | Set-Content $jobsPath
         $arguments = @($compiler, '--batch', $jobsPath, $resultsPath)
-        # Run from the staged work dir: the Hopac core creates target/ folders relative to the current directory.
+        # Run from the scratch dir: the Hopac core creates target/ folders relative to the current directory.
         $process = Start-Process -FilePath $dotnet -ArgumentList $arguments -NoNewWindow -PassThru -WorkingDirectory $workDir `
             -RedirectStandardOutput "$logPath.out" -RedirectStandardError $logPath
         # Watchdog: the host enforces each job's timeout itself; this only catches a wedged process.
@@ -226,7 +222,7 @@ $workerScript = {
     $results
 }
 
-# All backends of one sample go to the same worker: the core writes into the sample's (staged) directory.
+# All backends of one sample go to the same worker: the core writes into the sample's directory.
 $groups = @{}
 $sampleIndex = 0
 foreach ($bySample in ($jobs | Group-Object Id)) {
@@ -240,27 +236,21 @@ $compiled = @{}
 $workers = $groups.Keys | ForEach-Object { [pscustomobject]@{ Index = $_; Jobs = @($groups[$_]) } }
 $partials = $workers | ForEach-Object -ThrottleLimit $Parallel -Parallel {
     $runner = [scriptblock]::Create($using:workerText)
-    & $runner $using:dotnet $using:compiler $_.Jobs $using:runDir $_.Index $using:freshProcess $using:work
+    & $runner $using:dotnet $using:compiler $_.Jobs $using:runDir $_.Index $using:freshProcess $using:scratch
 }
 foreach ($p in $partials) { foreach ($k in $p.Keys) { $compiled[$k] = $p[$k] } }
 Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
-# "emitted": the job timed out or crashed, but the core had already written its residual during this run.
+# "emitted": the job timed out or crashed, but the core had already written its output during this run.
 # That is the Hopac lane's typical state (work done, termination protocol never seals), so it is scored
-# separately from a plain hang. Rust/Delphi residuals are recovered by lowering the emitted C.
+# separately from a plain hang. F# and C only: Rust/Delphi go through a C file the host puts back.
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash') { continue }
-    $core = Get-Item -LiteralPath $job.CoreOutput -ErrorAction SilentlyContinue
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi') { continue }
+    $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
-    New-Item -ItemType Directory -Force (Split-Path $job.Output) | Out-Null
-    if ($job.Backend -in 'Rust', 'Delphi') {
-        & $dotnet $compiler --lower-portable $job.Backend $core.FullName $job.Output *> $null
-        if ($LASTEXITCODE -ne 0) { continue }
-    }
-    else { Copy-Item -LiteralPath $core.FullName -Destination $job.Output -Force }
     $c.Status = 'emitted'
-    $c.Detail = "residual written, compile did not return ($($c.Detail))"
+    $c.Detail = "output written, compile did not return ($($c.Detail))"
 }
 
 # ------------------------------------------------------------------ native tier (C oracle, Rust, Delphi)
@@ -291,14 +281,14 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [in
     [pscustomobject]@{ Exit = $p.ExitCode; Out = $out.Result; Err = $err.Result }
 }
 function Build-And-Run($job) {
-    $dir = Split-Path $job.Output
-    $binDir = Join-Path $dir "native-$($job.Backend)"
+    $binDir = $job.Native
+    $dir = $binDir
     New-Item -ItemType Directory -Force $binDir | Out-Null
     $exe = Join-Path $binDir ($(if ($IsWindows) { 'main.exe' } else { 'main' }))
     $build = switch ($job.Backend) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
-        'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-o$exe", $job.Output) $dir 180 }
+        'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
     }
     if ($build.Exit -ne 0 -or -not (Test-Path $exe)) {
         $msg = (($build.Err + ' ' + $build.Out) -replace '\s+', ' ').Trim()
@@ -330,12 +320,10 @@ $rows = foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
     if (-not $c) { $c = [pscustomobject]@{ Status = 'not-run'; Ms = 0; Detail = ''; Log = '' } }
     $n = $nativeResults[$job.Key]
-    $golden = Join-Path (Split-Path $job.Golden) "main.$($extension[$job.Backend])"
     $residual = if ($c.Status -in 'ok', 'emitted') { Get-TextSha256 $job.Output } else { '' }
-    $goldenState = if (-not (Test-Path $golden)) { 'none' } elseif (-not $residual) { '-' } elseif ((Get-TextSha256 $golden) -eq $residual) { 'same' } else { 'drift' }
     [pscustomobject]@{
         id = $job.Id; backend = $job.Backend; suite = $job.Suite; compile = $c.Status; compile_ms = $c.Ms
-        residual = if ($residual) { $residual.Substring(0, 16) } else { '' }; golden = $goldenState
+        residual = if ($residual) { $residual.Substring(0, 16) } else { '' }
         native = if ($n) { $n.Status } else { '' }; exit = if ($n) { $n.Exit } else { '' }; stdout = if ($n) { $n.Stdout } else { '' }
         oracle = ''; baseline = ''; detail = (($c.Detail + ' ' + $(if ($n) { $n.Detail } else { '' })) -replace '\s+', ' ').Trim()
     }
@@ -413,6 +401,7 @@ if ($Native) {
 $bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -ne 'hopac' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' })
 foreach ($b in $bad | Select-Object -First 20) { Write-Host "  !! $($b.id) [$($b.backend)] $($b.baseline) $($b.oracle) $($b.detail)" -ForegroundColor Red }
 Write-Host "results: $resultPath"
+Write-Host "outputs: written next to their sources; git diff samples shows what changed"
 
 # ------------------------------------------------------------------ bless / record
 if ($Bless) {

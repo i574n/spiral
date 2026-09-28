@@ -4205,7 +4205,7 @@ module PortableBackends =
             output.AppendLine("    let slice = &bytes[from_index..=to_index];") |> ignore
             output.AppendLine("    match std::str::from_utf8(slice) {") |> ignore
             output.AppendLine("        Ok(text) => Rc::<str>::from(text),") |> ignore
-            output.AppendLine("        Err(error) => Rc::<str>::from(&slice[..error.valid_up_to()]),") |> ignore
+            output.AppendLine("        Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")),") |> ignore
             output.AppendLine("    }") |> ignore
             output.AppendLine("}") |> ignore
             output.AppendLine() |> ignore

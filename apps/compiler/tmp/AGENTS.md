@@ -73,21 +73,24 @@ run. A change that adds projections, ledgers or HUD lanes without moving a fixtu
 
 Backend work (Rust, Delphi) happens in `compiler/host/PortableBackends.fs` and is proven by
 `pwsh scripts/test.ps1 -Suite examples -Native`: C is the semantic oracle, Rust and Delphi must match its
-exit code and stdout (`oracle` column). Add a fixture under `examples/<name>` with golden residuals for any
-new construct. Changes to the single-flight core must keep `-Suite all -Native` free of `REGRESSED`,
+exit code and stdout (`oracle` column). Add a fixture under `samples/<name>` for any new construct and
+commit the outputs the compiler writes next to it. Changes to the single-flight core must keep `-Suite all -Native` free of `REGRESSED`,
 `NATIVE-DIFF` and `DISAGREE`, then refresh the oracle with `-Bless`.
 
 ## Rules
 
-- Never edit generated residuals by hand, and never write into `samples/` from a build:
-  the harness compiles a staged copy in the cache because the core writes its output next to its input.
+- The compiler writes its output next to its source (`samples/<name>/main.c`, ...), replacing the previous
+  one. There is exactly one copy of each output and it is committed: `git diff samples` after a run is
+  the check that outputs changed. Never edit outputs by hand; a hopac run rewrites them with hopac's
+  output, so restore them (`git restore samples`) or rerun single-flight before committing. One
+  `scripts/test.ps1` run at a time (it holds `<cache>/test.lock`).
 - `-Bless` only in single-flight mode, only after reviewing every changed row of the baseline.
-- Generated results never go into the tree (the oracle, scoreboards, receipts, snapshots); hand-written
+- Other generated results never go into the tree (the oracle, scoreboards, receipts, snapshots); hand-written
   harness tables live in `tests/harness.psd1`. `|core-` resolves to The-Spiral-Language's core through
   the repo's `deps/polyglot` link (`Get-SpiralPackageDir`); do not copy it here.
 - Keep both cores building against the same host. If the host needs a core-specific path, guard it with
   `SPIRAL_CORE_SINGLE_FLIGHT` / `SPIRAL_CORE_HOPAC` (see `directProjectCompileFsharp`).
-- This directory holds sources, fixtures and docs only. Build output, toolchains, staged corpora, run logs
+- This directory holds sources, fixtures and docs only. Build output, toolchains, native binaries, run logs
   and the flat dependency directory stay in the cache directory; `.gitignore` catches in-tree builds.
 - There is one copy of each core: single-flight is `apps/compiler/spiral_compiler.fs`, hopac is
   `compiler/cores/hopac/spiral_compiler.fs`. Keep LF line endings (never `WriteAllLines` on either).
