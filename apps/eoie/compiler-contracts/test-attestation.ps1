@@ -15,15 +15,19 @@ function Fixture([string]$Name, [string]$Source) {
     [IO.File]::WriteAllText($inputFile, $Source)
     return $inputFile
 }
+function Invoke-Spiral([string[]]$Arguments) {
+    $captured = & $dotnet $compiler @Arguments 2>&1 | Out-String
+    return @{ Code = $LASTEXITCODE; Output = $captured.Trim() }
+}
 function Check([string]$InputFile, [bool]$Expected) {
-    & $dotnet $compiler --check $InputFile
-    if (($LASTEXITCODE -eq 0) -ne $Expected) { throw "Unexpected --check result: $InputFile" }
+    $result = Invoke-Spiral @('--check', $InputFile)
+    if (($result.Code -eq 0) -ne $Expected) { throw "Unexpected --check result: $InputFile`n$($result.Output)" }
 }
 function Plan([string]$InputFile, [bool]$Expected) {
     $output = [IO.Path]::ChangeExtension($InputFile, '.ir')
-    & $dotnet $compiler --plan-ir --timeout-ms 20000 $InputFile $output | Out-Host
-    if (($LASTEXITCODE -eq 0) -ne $Expected) { throw "Unexpected --plan-ir result: $InputFile" }
-    if (-not $Expected -and (Test-Path -LiteralPath $output)) { throw 'Rejected plan published output.' }
+    $result = Invoke-Spiral @('--plan-ir', '--timeout-ms', '20000', $InputFile, $output)
+    if (($result.Code -eq 0) -ne $Expected) { throw "Unexpected --plan-ir result: $InputFile`n$($result.Output)" }
+    if (-not $Expected -and (Test-Path -LiteralPath $output)) { throw "Rejected plan published output.`n$($result.Output)" }
     return $output
 }
 $packageOnly = Fixture 'package-only' 'inl answer () : i32 = 42i32'
@@ -55,11 +59,11 @@ inl main () : i32 =
     0i32
 '@
 $null = Plan $conditional $false
-& $dotnet $compiler --plan-ir --timeout-ms 0 $planInput (Join-Path $work 'invalid.ir')
-if ($LASTEXITCODE -ne 2) { throw 'Nonpositive timeout was accepted.' }
+$invalid = Invoke-Spiral @('--plan-ir', '--timeout-ms', '0', $planInput, (Join-Path $work 'invalid.ir'))
+if ($invalid.Code -ne 2) { throw "Nonpositive timeout was accepted.`n$($invalid.Output)" }
 $timer = [Diagnostics.Stopwatch]::StartNew()
-& $dotnet $compiler --plan-ir --timeout-ms 1 $planInput (Join-Path $work 'timeout.ir')
-if ($LASTEXITCODE -ne 3 -or $timer.Elapsed.TotalSeconds -gt 10) { throw 'Timeout was not enforced.' }
+$timeout = Invoke-Spiral @('--plan-ir', '--timeout-ms', '1', $planInput, (Join-Path $work 'timeout.ir'))
+if ($timeout.Code -ne 3 -or $timer.Elapsed.TotalSeconds -gt 10) { throw "Timeout was not enforced.`n$($timeout.Output)" }
 $gadt = Fixture 'gadt' @'
 nominal raw_phase = ()
 nominal decided_phase = ()
@@ -108,4 +112,4 @@ if ($LASTEXITCODE -ne 0) { throw 'Fixed-array fallback Rust failed to compile.' 
 & $fallbackExecutable
 if ($LASTEXITCODE -ne 2) { throw "Fixed-array fallback returned $LASTEXITCODE; expected 2." }
 Write-Host "EOIE attestation contracts passed: $work"
-$LASTEXITCODE = 0
+exit 0

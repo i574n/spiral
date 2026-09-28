@@ -20,7 +20,10 @@ pwsh scripts/gear-dev.ps1 -Full         # rebuild every gear
 #>
 param(
     [ValidateSet('hopac', 'single-flight')][string]$Mode = 'hopac',
-    [switch]$Full
+    [switch]$Full,
+    # Parallel MSBuild nodes for full builds. Each runs its own F# compiler (the peval gear alone takes
+    # several GB), so this stays low; raise it on machines with plenty of memory.
+    [int]$MaxNodes = 2
 )
 . $PSScriptRoot/env.ps1
 
@@ -77,7 +80,7 @@ if (-not (Test-Path $propsPath) -or (Get-Content $propsPath -Raw) -ne $props) { 
 
 # ---- 3. which gears changed, in dependency order
 $gears = [ordered]@{}
-foreach ($project in Get-ChildItem $build -Filter 'Gear[0-9]*.fsproj' | Sort-Object Name) {
+foreach ($project in Get-ChildItem $build -Filter 'Gear*.fsproj' | Where-Object BaseName -ne 'GearRoot' | Sort-Object Name) {
     $text = Get-Content $project.FullName -Raw
     $gears[$project.BaseName] = [pscustomobject]@{
         Parts = @([regex]::Matches($text, '<Compile Include="([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
@@ -100,13 +103,16 @@ $dependents = @{}
 foreach ($name in $gears.Keys) { foreach ($dep in $gears[$name].Deps) { if (-not $dependents[$dep]) { $dependents[$dep] = @() }; $dependents[$dep] += $name } }
 
 # ---- 4. build
-$firstBuild = -not (Test-Path (Join-Path $outputs 'bin'))
+# Written only after a successful full build, so an interrupted one is redone rather than trusted.
+$stamp = Join-Path $build '.out/full-build.ok'
+$firstBuild = -not (Test-Path $stamp)
 $built = 0
 $errors = @()
 if ($Full -or $firstBuild) {
-    $log = & $dotnet build (Join-Path $build 'GearRoot.fsproj') -m -nologo -v:q 2>&1
+    $log = & $dotnet build (Join-Path $build 'GearRoot.fsproj') "-m:$MaxNodes" -nologo -v:q 2>&1
     $errors = @($log | Select-String ': error ' | ForEach-Object { $_.Line -replace ' \[.*$', '' } | Sort-Object -Unique)
     $built = $gears.Count
+    if ($LASTEXITCODE -eq 0 -and -not $errors.Count) { Set-Content -LiteralPath $stamp -Value (Get-Date -Format s) }
 } elseif ($dirty.Count) {
     if (@($changed | Where-Object { $_ -like '*.fsproj' }).Count) {
         & $dotnet restore (Join-Path $build 'GearRoot.fsproj') -nologo -v:q | Out-Null
@@ -134,7 +140,7 @@ if ($errors.Count) { exit 1 }
 # definitions do in the monolith).
 $hostDir = Join-Path $root 'host'
 New-Item -ItemType Directory -Force $hostDir | Out-Null
-$partOpens = (Get-ChildItem $build -Filter 'Part[0-9]*.fs' | Sort-Object Name | ForEach-Object { "open spiral_compiler_$($_.BaseName)" }) -join "`n"
+$partOpens = (Get-ChildItem $build -Filter 'Part*.fs' | Where-Object BaseName -match '^Part\d+$' | Sort-Object Name | ForEach-Object { "open spiral_compiler_$($_.BaseName)" }) -join "`n"
 $hostSources = 'PortableUnionNormalizer.fs', 'TuplePrune.fs', 'PortableBackends.fs', 'Program.fs'
 foreach ($name in $hostSources) {
     $text = Get-Content (Join-Path $BundleRoot "compiler/host/$name") -Raw
