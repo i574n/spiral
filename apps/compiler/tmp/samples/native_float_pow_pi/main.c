@@ -20,13 +20,13 @@ int32_t main(){
     float v6;
     v6 = powf(v0,v1);
     bool v7;
-    v7 = v6 == 8.0f ;
+    v7 = v6 == 8.0f;
     bool v10;
     if (v7){
         double v8;
         v8 = pow(v2,v3);
         bool v9;
-        v9 = v8 == 8.0 ;
+        v9 = v8 == 8.0;
         v10 = v9;
     } else {
         v10 = false;

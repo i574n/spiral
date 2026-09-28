@@ -1,34 +1,25 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Tuple0 = record
-    v0: LongInt;
-    v1: LongInt;
-    v2: LongInt;
-    v3: LongInt;
-  end;
-
-function TupleCreate0(v0: LongInt; v1: LongInt; v2: LongInt; v3: LongInt): Tuple0;
+  TTuple0 = record f0: LongInt; f1: LongInt; f2: LongInt; f3: LongInt; end;
+function method0(v0: LongInt): TTuple0; forward;
+function method1(v0: LongInt; v1: LongInt; v2: LongInt; v3: LongInt): LongInt; forward;
+function TupleCreate0(f0: LongInt; f1: LongInt; f2: LongInt; f3: LongInt): TTuple0;
 begin
-  Result.v0 := v0;
-  Result.v1 := v1;
-  Result.v2 := v2;
-  Result.v3 := v3;
+  Result.f0 := f0; Result.f1 := f1; Result.f2 := f2; Result.f3 := f3;
 end;
-
-function method0(v0: LongInt): Tuple0;
+function method0(v0: LongInt): TTuple0;
 var
   v1: LongInt;
   v2: LongInt;
   v3: LongInt;
 begin
-  v1 := (v0 + 1);
-  v2 := (v0 + 2);
-  v3 := (v0 + 3);
-  Exit(TupleCreate0(v0, v1, v2, v3));
+  v1 := v0 + 1;
+  v2 := v0 + 2;
+  v3 := v0 + 3;
+  Result := TupleCreate0(v0, v1, v2, v3);
 end;
-
 function method1(v0: LongInt; v1: LongInt; v2: LongInt; v3: LongInt): LongInt;
 var
   v4: LongInt;
@@ -36,13 +27,12 @@ var
   v6: LongInt;
   v7: LongInt;
 begin
-  v4 := (v0 + v1);
-  v5 := (v4 + v2);
-  v6 := (v5 + v3);
-  v7 := (v6 - 10);
-  Exit(v7);
+  v4 := v0 + v1;
+  v5 := v4 + v2;
+  v6 := v5 + v3;
+  v7 := v6 - 10;
+  Result := v7;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
@@ -50,17 +40,16 @@ var
   v2: LongInt;
   v3: LongInt;
   v4: LongInt;
-  tmp0: Tuple0;
+  tmp5: TTuple0;
 begin
   v0 := 1;
-  tmp0 := method0(v0);
-  v1 := tmp0.v0;
-  v2 := tmp0.v1;
-  v3 := tmp0.v2;
-  v4 := tmp0.v3;
-  Exit(method1(v1, v2, v3, v4));
+  tmp5 := method0(v0);
+  v1 := tmp5.f0;
+  v2 := tmp5.f1;
+  v3 := tmp5.f2;
+  v4 := tmp5.f3;
+  Result := method1(v1, v2, v3, v4);
 end;
-
 begin
   Halt(SpiralMain);
 end.

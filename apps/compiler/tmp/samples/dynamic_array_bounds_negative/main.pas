@@ -1,53 +1,27 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
-uses SysUtils;
-
+{$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
+uses SysUtils, Math;
 type
-  Array0 = array of LongInt;
-
-function ArrayCreate0(len: LongInt; init_at_zero: Boolean): Array0;
-begin
-  if len < 0 then raise ERangeError.Create('negative Spiral array length');
-  SetLength(Result, len);
-  if not init_at_zero then begin end;
-end;
-procedure DynamicArraySet0(var data: Array0; index: LongInt; value: LongInt);
-begin
-  if (index < 0) or (index >= Length(data)) then raise ERangeError.Create('Spiral array index out of bounds');
-  data[index] := value;
-end;
-function DynamicArrayGet0(const data: Array0; index: LongInt): LongInt;
-begin
-  if (index < 0) or (index >= Length(data)) then raise ERangeError.Create('Spiral array index out of bounds');
-  Result := data[index];
-end;
-function DynamicArrayLen0(const data: Array0): LongInt;
-begin
-  Result := Length(data);
-end;
-procedure DynamicArrayDrop0(var data: Array0);
-begin
-  SetLength(data, 0);
-end;
-
+  TArray0 = array of LongInt;
 function SpiralMain: LongInt;
 var
   v0: LongInt;
-  v1: Array0;
+  v1: TArray0;
+  tmp2: TArray0;
   v2: LongInt;
   v3: LongInt;
 begin
   v0 := 2;
-  v1 := ArrayCreate0(v0, False);
-  DynamicArraySet0(v1, 0, 11);
-  DynamicArraySet0(v1, 1, 13);
+  tmp2 := nil;
+  SetLength(tmp2, v0);
+  v1 := tmp2;
+  v1[0] := 11;
+  v1[1] := 13;
   v2 := 2;
-  v3 := DynamicArrayGet0(v1, v2);
-  DynamicArrayDrop0(v1);
-  Exit(v3);
+  v3 := v1[v2];
+  Result := v3;
 end;
-
 begin
   Halt(SpiralMain);
 end.

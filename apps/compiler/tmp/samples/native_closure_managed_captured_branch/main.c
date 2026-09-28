@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 typedef struct {
@@ -29,7 +30,6 @@ struct Closure1 {
     String * v0;
 };
 static inline void ArrayDecrefBody0(Array0 * x){
-    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
@@ -87,9 +87,11 @@ int32_t ClosureMethod1(Closure1 * x, int32_t v1){
     int32_t v2;
     v2 = v0->len-1;
     int32_t v3;
-    v3 = v2 + v1 - 1;
+    v3 = v2 + v1;
+    int32_t v4;
+    v4 = v3 - 1l;
     ClosureDecref1(x);
-    return v3;
+    return v4;
 }
 Fun0 * ClosureCreate1(String * v0){
     Closure1 * x = malloc(sizeof(Closure1));
@@ -103,18 +105,20 @@ int32_t method0(Fun0 * v0){
     return v0->fptr(v0, 39l);
 }
 int32_t main(){
-    bool flag = true;
-    Fun0 * selected;
-    if (flag){
-        String * name = StringLit(4, "abc");
-        name->refc++;
-        selected = ClosureCreate0(name);
-        StringDecref(name);
+    String * v0;
+    v0 = StringLit(4, "abc");
+    String * v1;
+    v1 = StringLit(5, "wxyz");
+    bool v2;
+    v2 = true;
+    Fun0 * v5;
+    if (v2){
+        v0->refc++;
+        v5 = ClosureCreate0(v0);
     } else {
-        String * name = StringLit(5, "wxyz");
-        name->refc++;
-        selected = ClosureCreate1(name);
-        StringDecref(name);
+        v1->refc++;
+        v5 = ClosureCreate1(v1);
     }
-    return method0(selected);
+    StringDecref(v0); StringDecref(v1);
+    return method0(v5);
 }

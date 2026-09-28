@@ -1236,6 +1236,17 @@ module Program =
 #endif
 
 
+    /// Backends the core does not generate itself: the host asks the core for C and translates it
+    /// (PortableBackends). The single-flight core generates Rust and Delphi itself; the hopac core still
+    /// has them translated until its backends are ported.
+    let private translatedBackend (backend : string) =
+#if SPIRAL_CORE_HOPAC
+        backend = "Rust" || backend = "Delphi"
+#else
+        ignore backend
+        false
+#endif
+
     let private compileOne
         (supervisor : Ch<SupervisorReq>)
         (router : DiagnosticRouter)
@@ -1260,8 +1271,36 @@ module Program =
                 | None, OpenSource _ -> "open"
                 | None, SourceUnchanged -> "unchanged"
                 | None, ChangeSource _ -> "change"
-            let typedGenerated = PortableBackends.tryLowerPortableSource backend code
+            let typedGenerated = if translatedBackend backend || backend = "C" || backend = "Fsharp" then PortableBackends.tryLowerPortableSource backend code else None
             if cached.IsNone && typedGenerated.IsNone then warmModulePipeline code
+            // Rust and Delphi are lowered from C that the core writes next to the input. That path is the C
+            // build's own output (the one copy of it), so it is put back as it was afterwards, or removed if
+            // this build created it.
+            let portable = translatedBackend backend
+            let cPath = Path.ChangeExtension(inputPath, ".c")
+            let cOwned = portable && not (String.Equals(Path.GetFullPath cPath, outputPath, StringComparison.OrdinalIgnoreCase))
+            let cBefore = if cOwned && File.Exists cPath then Some (File.ReadAllBytes cPath) else None
+            // The core's BuildFile also writes its output next to the input, asynchronously. Wait for that
+            // write instead of racing it (same file, same text): true once `path` holds `text`.
+            let awaitCoreWrite (path : string) (text : string) =
+                let deadline = DateTime.UtcNow.AddSeconds 5.0
+                let mutable landed = false
+                while not landed && DateTime.UtcNow < deadline do
+                    landed <- (try File.Exists path && File.ReadAllText path = text with _ -> false)
+                    if not landed then Threading.Thread.Sleep 20
+                landed
+            let rec writeWithRetry (path : string) (text : string) attempt =
+                try File.WriteAllText(path, text)
+                with :? IOException when attempt < 250 ->
+                    Threading.Thread.Sleep 20
+                    writeWithRetry path text (attempt + 1)
+            let restoreC () =
+                if cOwned then
+                    try
+                        match cBefore with
+                        | Some bytes -> if not (File.Exists cPath) || File.ReadAllBytes cPath <> bytes then File.WriteAllBytes(cPath, bytes)
+                        | None -> if File.Exists cPath then File.Delete cPath
+                    with _ -> ()
             let waiter = router.Begin uri
             try
                 if cached.IsNone && typedGenerated.IsNone then
@@ -1279,7 +1318,7 @@ module Program =
 
                 let supervisorBackend =
                     match backend with
-                    | "Rust" | "Delphi" -> "C"
+                    | backend when translatedBackend backend -> "C"
                     | _ -> backend
                 let buildTask =
                     match cached, typedGenerated with
@@ -1303,10 +1342,13 @@ module Program =
                         if waiter.Task.Wait(TimeSpan.FromMilliseconds(float (fatalGraceMs + 4000))) then Error (waiter.Task.GetAwaiter().GetResult())
                         else Error "BuildFile returned no code and no diagnostic arrived"
                     else
+                        let coreWrites = cached.IsNone && typedGenerated.IsNone
+                        let coreText = generated
                         let generated =
                             match cached, typedGenerated with
                             | Some _, _ -> generated
                             | None, Some _ -> generated
+                            | None, None when (backend = "Rust" || backend = "Delphi") && not (translatedBackend backend) -> generated
                             | None, None -> lowerPortableBackend backend generated
                         let revisionMode =
                             match cached, typedGenerated with
@@ -1315,11 +1357,14 @@ module Program =
                             | None, None -> revisionMode
                         let parent = Path.GetDirectoryName outputPath
                         if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
-                        File.WriteAllText(outputPath, generated)
-                        if String.Equals(backend, "Rust", StringComparison.Ordinal) || String.Equals(backend, "Delphi", StringComparison.Ordinal) then
-                            let cPath = Path.ChangeExtension(inputPath, ".c")
-                            if not (String.Equals(Path.GetFullPath cPath, outputPath, StringComparison.OrdinalIgnoreCase)) && File.Exists cPath then
-                                try File.Delete cPath with _ -> ()
+                        let coreFile = Path.ChangeExtension(inputPath, Path.GetExtension outputPath)
+                        if coreWrites && not portable && String.Equals(Path.GetFullPath coreFile, outputPath, StringComparison.OrdinalIgnoreCase) then
+                            // The output is the core's own file: one writer.
+                            if not (awaitCoreWrite outputPath generated) then writeWithRetry outputPath generated 0
+                        else
+                            writeWithRetry outputPath generated 0
+                            // Let the core's intermediate C land before restoreC puts the previous one back.
+                            if coreWrites && cOwned then awaitCoreWrite cPath coreText |> ignore
                         let binding =
                             match cached with
                             | Some cached -> cached.binding
@@ -1330,6 +1375,7 @@ module Program =
                         Ok (generated.Length, binding, revisionMode)
             finally
                 router.Clear waiter
+                restoreC ()
         with error -> Error error.Message
 
     let private findMatchingRustBrace (text : string) openIndex =

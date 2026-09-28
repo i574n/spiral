@@ -1,12 +1,12 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+type
+  TArray0 = array of LongInt;
 function SpiralMain: LongInt;
 var
-  v0_0: LongInt;
-  v0_1: LongInt;
-  v0_2: LongInt;
-  v0_3: LongInt;
+  v0: TArray0;
+  tmp1: TArray0;
   v1: LongInt;
   v2: LongInt;
   v3: LongInt;
@@ -17,34 +17,25 @@ var
   v8: LongInt;
   v9: LongInt;
 begin
-  v0_0 := 2;
-  v0_1 := 3;
-  v0_2 := 5;
-  v0_3 := 7;
+  tmp1 := nil;
+  SetLength(tmp1, 4);
+  v0 := tmp1;
+  v0[0] := 2;
+  v0[1] := 3;
+  v0[2] := 5;
+  v0[3] := 7;
   v1 := 1;
-  if (v1 = 0) then begin
-    v0_0 := 11;
-  end;
-  if (v1 = 1) then begin
-    v0_1 := 11;
-  end;
-  if (v1 = 2) then begin
-    v0_2 := 11;
-  end;
-  if (v1 = 3) then begin
-    v0_3 := 11;
-  end;
-  v2 := v0_0;
-  v3 := v0_1;
-  v4 := v0_2;
-  v5 := v0_3;
-  v6 := (v2 + v3);
-  v7 := (v6 + v4);
-  v8 := (v7 + v5);
-  v9 := (v8 - 25);
-  Exit(v9);
+  v0[v1] := 11;
+  v2 := v0[0];
+  v3 := v0[1];
+  v4 := v0[2];
+  v5 := v0[3];
+  v6 := v2 + v3;
+  v7 := v6 + v4;
+  v8 := v7 + v5;
+  v9 := v8 - 25;
+  Result := v9;
 end;
-
 begin
   Halt(SpiralMain);
 end.

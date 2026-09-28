@@ -1,6 +1,6 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 function SpiralMain: LongInt;
 var
   v0: AnsiString;
@@ -9,12 +9,11 @@ var
   v3: LongInt;
 begin
   v0 := 'qwe';
-  v1 := Length(v0);
-  v2 := (v1 + v1);
-  v3 := (v2 - 6);
-  Exit(v3);
+  v1 := LongInt(Length(v0));
+  v2 := v1 + v1;
+  v3 := v2 - 6;
+  Result := v3;
 end;
-
 begin
   Halt(SpiralMain);
 end.

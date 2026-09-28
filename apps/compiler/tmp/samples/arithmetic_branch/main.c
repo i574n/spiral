@@ -9,9 +9,9 @@ int32_t main(){
     int32_t v1;
     v1 = 7l;
     int32_t v2;
-    v2 = v0 * v1 ;
+    v2 = v0 * v1;
     bool v3;
-    v3 = v2 == 42l ;
+    v3 = v2 == 42l;
     if (v3){
         return 0l;
     } else {

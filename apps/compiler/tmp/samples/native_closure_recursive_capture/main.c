@@ -72,9 +72,9 @@ int32_t sum0(UH0 * v0){
             v5 = sum0(v3);
             UHDecref0(v3);
             int32_t v6;
-            v6 = v4 + v5 ;
+            v6 = v4 + v5;
             int32_t v7;
-            v7 = v1 + v6 ;
+            v7 = v1 + v6;
             return v7;
             break;
         }
@@ -92,7 +92,7 @@ int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     int32_t v2;
     v2 = sum0(v0);
     int32_t v3;
-    v3 = v2 + v1 ;
+    v3 = v2 + v1;
     ClosureDecref0(x);
     return v3;
 }
@@ -125,6 +125,6 @@ int32_t main(){
     v5 = v3->fptr(v3, 19l);
     v3->decref_fptr(v3);
     int32_t v6;
-    v6 = v4 + v5 ;
+    v6 = v4 + v5;
     return v6;
 }

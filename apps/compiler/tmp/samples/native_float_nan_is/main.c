@@ -5,36 +5,36 @@
 #include <string.h>
 #include <math.h>
 int32_t main(){
-    float v0;
-    v0 = nanf("");
-    double v1;
-    v1 = nan("");
-    float v2;
-    v2 = 1.0f;
-    double v3;
-    v3 = 1.0;
-    bool v4;
-    v4 = isnan(v0);
-    bool v6;
-    if (v4){
-        bool v5;
-        v5 = isnan(v1);
-        v6 = v5;
+    float v1;
+    v1 = nanf("");
+    double v5;
+    v5 = nan("");
+    float v8;
+    v8 = 1.0f;
+    double v9;
+    v9 = 1.0;
+    bool v10;
+    v10 = isnan(v1);
+    bool v12;
+    if (v10){
+        bool v11;
+        v11 = isnan(v5);
+        v12 = v11;
     } else {
-        v6 = false;
+        v12 = false;
     }
-    if (v6){
-        bool v7;
-        v7 = isnan(v2);
-        bool v9;
-        if (v7){
-            v9 = true;
+    if (v12){
+        bool v13;
+        v13 = isnan(v8);
+        bool v15;
+        if (v13){
+            v15 = true;
         } else {
-            bool v8;
-            v8 = isnan(v3);
-            v9 = v8;
+            bool v14;
+            v14 = isnan(v9);
+            v15 = v14;
         }
-        if (v9){
+        if (v15){
             return 2l;
         } else {
             return 0l;

@@ -148,7 +148,7 @@ int32_t method12(Array0 * v0){
     v2 = method13(v0);
     ArrayDecref0(v0);
     int32_t v3;
-    v3 = v1 + v2 ;
+    v3 = v1 + v2;
     return v3;
 }
 int32_t observe11(US0 v0){
@@ -216,34 +216,34 @@ int32_t main(){
     v9 = method14(v0);
     ArrayDecref0(v0);
     int32_t v10;
-    v10 = v1 - 1l ;
+    v10 = v1 - 1l;
     int32_t v11;
-    v11 = v2 - 2l ;
+    v11 = v2 - 2l;
     int32_t v12;
-    v12 = v10 + v11 ;
+    v12 = v10 + v11;
     int32_t v13;
-    v13 = v3 - 4l ;
+    v13 = v3 - 4l;
     int32_t v14;
-    v14 = v12 + v13 ;
+    v14 = v12 + v13;
     int32_t v15;
-    v15 = v4 - 8l ;
+    v15 = v4 - 8l;
     int32_t v16;
-    v16 = v14 + v15 ;
+    v16 = v14 + v15;
     int32_t v17;
-    v17 = v5 - 16l ;
+    v17 = v5 - 16l;
     int32_t v18;
-    v18 = v16 + v17 ;
+    v18 = v16 + v17;
     int32_t v19;
-    v19 = v6 - 2l ;
+    v19 = v6 - 2l;
     int32_t v20;
-    v20 = v18 + v19 ;
+    v20 = v18 + v19;
     int32_t v21;
-    v21 = v8 - 20l ;
+    v21 = v8 - 20l;
     int32_t v22;
-    v22 = v20 + v21 ;
+    v22 = v20 + v21;
     int32_t v23;
-    v23 = v9 - 2l ;
+    v23 = v9 - 2l;
     int32_t v24;
-    v24 = v22 + v23 ;
+    v24 = v22 + v23;
     return v24;
 }

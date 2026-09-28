@@ -1,145 +1,103 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
-uses SysUtils;
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Array0 = array of LongInt;
-  Tuple9000 = record
-    v0: LongInt;
-    v1: Array0;
+  TFun0 = class;
+  TArray0 = array of LongInt;
+  TUS0 = record tag: LongInt; c1_0: TArray0; end;
+  TFun0 = class
+    function Invoke(a0: LongInt): TUS0; virtual; abstract;
   end;
-  ClosureValue0 = record
-  end;
-
-function ArrayCreate0(len: LongInt; init_at_zero: Boolean): Array0;
+  TClosure0 = class(TFun0)  function Invoke(v0: LongInt): TUS0; override; end;
+function ClosureCreate0: TFun0; forward;
+function method0(v0: TFun0): TUS0; forward;
+function method1(v0: TUS0): LongInt; forward;
+function method2(v0: TFun0): TUS0; forward;
+function US0_0: TUS0;
 begin
-  if len < 0 then raise ERangeError.Create('negative Spiral array length');
-  SetLength(Result, len);
-  if not init_at_zero then begin end;
+  Result.tag := 0; 
 end;
-procedure DynamicArraySet0(var data: Array0; index: LongInt; value: LongInt);
+function US0_1(a0: TArray0): TUS0;
 begin
-  if (index < 0) or (index >= Length(data)) then raise ERangeError.Create('Spiral array index out of bounds');
-  data[index] := value;
+  Result.tag := 1; Result.c1_0 := a0;
 end;
-function DynamicArrayGet0(const data: Array0; index: LongInt): LongInt;
-begin
-  if (index < 0) or (index >= Length(data)) then raise ERangeError.Create('Spiral array index out of bounds');
-  Result := data[index];
-end;
-function DynamicArrayLen0(const data: Array0): LongInt;
-begin
-  Result := Length(data);
-end;
-procedure DynamicArrayClone0(const data: Array0);
-begin
-end;
-procedure DynamicArrayDrop0(var data: Array0);
-begin
-  SetLength(data, 0);
-end;
-
-function TupleCreate9000(v0: LongInt; v1: Array0): Tuple9000;
-begin
-  Result.v0 := v0;
-  Result.v1 := v1;
-end;
-
-function ClosureValueCreate0(): ClosureValue0;
-begin
-end;
-
-function ClosureInvoke0(_x: ClosureValue0; v0: LongInt): Tuple9000;
+function TClosure0.Invoke(v0: LongInt): TUS0;
 var
   v1: Boolean;
-  v3: Array0;
+  v3: TArray0;
+  tmp2: TArray0;
   v4: LongInt;
 begin
-  v1 := (v0 = 0);
+  v1 := v0 = 0;
   if v1 then begin
-    Exit(TupleCreate9000(0, ArrayCreate0(0, False)));
+      Result := US0_0;
   end else begin
-    v3 := ArrayCreate0(2, False);
-    DynamicArraySet0(v3, 0, v0);
-    v4 := (v0 + 1);
-    DynamicArraySet0(v3, 1, v4);
-    Exit(TupleCreate9000(1, v3));
+      tmp2 := nil;
+      SetLength(tmp2, 2);
+      v3 := tmp2;
+      v3[0] := v0;
+      v4 := v0 + 1;
+      v3[1] := v4;
+      Result := US0_1(v3);
   end;
 end;
-
-function method0(v0: ClosureValue0): Tuple9000;
+function ClosureCreate0: TFun0;
+var c: TClosure0;
 begin
-  Exit(ClosureInvoke0(v0, 0));
+  c := TClosure0.Create; 
+  Result := c;
 end;
-
-function score1(v0: Tuple9000): LongInt;
+function method0(v0: TFun0): TUS0;
+begin
+  Result := v0.Invoke(0);
+end;
+function method1(v0: TUS0): LongInt;
 var
-  v1: Array0;
+  v1: TArray0;
   v2: LongInt;
   v3: LongInt;
   v4: LongInt;
   v5: LongInt;
   v6: LongInt;
 begin
-  if (v0.v0 = 0) then begin
-    if (v0.v0 = 1) then begin
-      DynamicArrayDrop0(v0.v1);
-    end;
-    Exit(3);
-  end else begin
-    v1 := v0.v1;
-    DynamicArrayClone0(v1);
-    if (v0.v0 = 1) then begin
-      DynamicArrayDrop0(v0.v1);
-    end;
-    v2 := DynamicArrayLen0(v1);
-    v3 := DynamicArrayGet0(v1, 0);
-    v4 := (v2 + v3);
-    v5 := DynamicArrayGet0(v1, 1);
-    DynamicArrayDrop0(v1);
-    v6 := (v4 + v5);
-    Exit(v6);
+  case v0.tag of
+      0: begin // Empty
+          Result := 3;
+      end;
+      1: begin // Values
+          v1 := v0.c1_0;
+          v2 := LongInt(Length(v1));
+          v3 := v1[0];
+          v4 := v2 + v3;
+          v5 := v1[1];
+          v6 := v4 + v5;
+          Result := v6;
+      end;
   end;
 end;
-
-function method2(v0: ClosureValue0): Tuple9000;
+function method2(v0: TFun0): TUS0;
 begin
-  Exit(ClosureInvoke0(v0, 4));
+  Result := v0.Invoke(4);
 end;
-
 function SpiralMain: LongInt;
 var
-  v0: ClosureValue0;
-  v1: Tuple9000;
+  v0: TFun0;
+  v1: TUS0;
   v2: LongInt;
-  v3: Tuple9000;
+  v3: TUS0;
   v4: LongInt;
   v5: LongInt;
   v6: LongInt;
 begin
-  v0 := ClosureValueCreate0();
+  v0 := ClosureCreate0;
   v1 := method0(v0);
-  if (v1.v0 = 1) then begin
-    DynamicArrayClone0(v1.v1);
-  end;
-  v2 := score1(v1);
-  if (v1.v0 = 1) then begin
-    DynamicArrayDrop0(v1.v1);
-  end;
+  v2 := method1(v1);
   v3 := method2(v0);
-  if (v3.v0 = 1) then begin
-    DynamicArrayClone0(v3.v1);
-  end;
-  v4 := score1(v3);
-  if (v3.v0 = 1) then begin
-    DynamicArrayDrop0(v3.v1);
-  end;
-  v5 := (v2 + v4);
-  v6 := (v5 + 28);
-  Exit(v6);
+  v4 := method1(v3);
+  v5 := v2 + v4;
+  v6 := v5 + 28;
+  Result := v6;
 end;
-
 begin
   Halt(SpiralMain);
 end.

@@ -1,11 +1,11 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
-function method_while0: Boolean;
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+function method0: Boolean; forward;
+function method0: Boolean;
 begin
-  Exit(True);
+  Result := True;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
@@ -18,26 +18,25 @@ var
 begin
   v0 := 0;
   v1 := 0;
-  while method_while0() do begin
-    v3 := (v0 + 1);
-    v0 := v3;
-    v4 := (v0 < 3);
-    if v4 then begin
-      Continue;
-    end else begin
-      v5 := (v0 >= 6);
-      if v5 then begin
-        Break;
+  while method0 do begin
+      v3 := v0 + 1;
+      v0 = v3;
+      v4 := v0 < 3;
+      if v4 then begin
+          continue;
       end else begin
-        v6 := (v1 + v0);
-        v1 := v6;
+          v5 := v0 >= 6;
+          if v5 then begin
+              break;
+          end else begin
+              v6 := v1 + v0;
+              v1 = v6;
+          end;
       end;
-    end;
   end;
-  v7 := (v1 - 12);
-  Exit(v7);
+  v7 := v1 - 12;
+  Result := v7;
 end;
-
 begin
   Halt(SpiralMain);
 end.

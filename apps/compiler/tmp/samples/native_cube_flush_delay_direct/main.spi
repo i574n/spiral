@@ -25,7 +25,7 @@ inl while' (cond : () -> bool) (body : () -> ()) : () =
     !!!!While((join cond()),(body()))
 
 inl set' forall t. (a : t) ~(b : t) : () =
-    $"!a = !b"
+    !!!!BackendSwitch({ Fsharp = fun () => $"!a <- !b" : (); C = fun () => $"!a = !b" : (); Rust = fun () => $"!a = !b" : (); Delphi = fun () => $"!a := !b" : () })
 
 inl sin64 (x : f64) : f64 = !!!!Sin(x)
 inl cos64 (x : f64) : f64 = !!!!Cos(x)

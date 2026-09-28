@@ -15,7 +15,7 @@ static inline Tuple0 TupleCreate0(int32_t v0, int32_t v1, bool v2){
 }
 Tuple0 method0(int32_t v0){
     int32_t v1;
-    v1 = v0 + 2l ;
+    v1 = v0 + 2l;
     bool v2;
     v2 = v0 > 0l;
     return TupleCreate0(v0, v1, v2);
@@ -23,9 +23,9 @@ Tuple0 method0(int32_t v0){
 int32_t method1(int32_t v0, int32_t v1, bool v2){
     if (v2){
         int32_t v3;
-        v3 = v0 + v1 ;
+        v3 = v0 + v1;
         int32_t v4;
-        v4 = v3 - 4l ;
+        v4 = v3 - 4l;
         return v4;
     } else {
         return 1l;

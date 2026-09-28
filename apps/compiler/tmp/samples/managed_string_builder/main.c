@@ -42,217 +42,116 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 String * method2(int32_t v0, String * v1, String * v2){
-    
-    
     int32_t v3;
-    v3 = v0 - 1l ;
-    
-    
+    v3 = v0 - 1l;
     String * v4;
     v4 = StringConcat(v1, v2);
-    
     StringDecref(v1); StringDecref(v2);
     bool v5;
-    v5 = v3 == 0l ;
-    
-    
+    v5 = v3 == 0l;
     if (v5){
-        
-        
         return v4;
     } else {
-        
-        
         int32_t v6;
-        v6 = v3 % 2l ;
-        
-        
+        v6 = v3 % 2l;
         bool v7;
-        v7 = v6 == 0l ;
-        
-        
+        v7 = v6 == 0l;
         String * v10;
         if (v7){
-            
-            
             String * v8;
             v8 = StringLit(3, "ab");
-            
-            
             v10 = v8;
         } else {
-            
-            
             String * v9;
             v9 = StringLit(2, "c");
-            
-            
             v10 = v9;
         }
-        
-        
         return method2(v3, v4, v10);
     }
 }
 String * method1(int32_t v0, String * v1){
-    
-    
     int32_t v2;
-    v2 = v0 - 1l ;
-    
-    
+    v2 = v0 - 1l;
     String * v3;
     v3 = StringConcat(StringLit(1, ""), v1);
-    
     StringDecref(v1);
     bool v4;
-    v4 = v2 == 0l ;
-    
-    
+    v4 = v2 == 0l;
     if (v4){
-        
-        
         return v3;
     } else {
-        
-        
         int32_t v5;
-        v5 = v2 % 2l ;
-        
-        
+        v5 = v2 % 2l;
         bool v6;
-        v6 = v5 == 0l ;
-        
-        
+        v6 = v5 == 0l;
         String * v9;
         if (v6){
-            
-            
             String * v7;
             v7 = StringLit(3, "ab");
-            
-            
             v9 = v7;
         } else {
-            
-            
             String * v8;
             v8 = StringLit(2, "c");
-            
-            
             v9 = v8;
         }
-        
-        
         return method2(v2, v3, v9);
     }
 }
 String * method0(){
-    
-    
     int32_t v0;
     v0 = 4l;
-    
-    
     bool v1;
-    v1 = v0 == 0l ;
-    
-    
+    v1 = v0 == 0l;
     if (v1){
-        
-        
         String * v2;
         v2 = StringLit(1, "");
-        
-        
         return v2;
     } else {
-        
-        
         int32_t v3;
-        v3 = v0 % 2l ;
-        
-        
+        v3 = v0 % 2l;
         bool v4;
-        v4 = v3 == 0l ;
-        
-        
+        v4 = v3 == 0l;
         String * v7;
         if (v4){
-            
-            
             String * v5;
             v5 = StringLit(3, "ab");
-            
-            
             v7 = v5;
         } else {
-            
-            
             String * v6;
             v6 = StringLit(2, "c");
-            
-            
             v7 = v6;
         }
-        
-        
         return method1(v0, v7);
     }
 }
 int32_t main(){
-    
-    
     String * v0;
     v0 = method0();
-    
-    
     int32_t v1;
     v1 = v0->len-1;
-    
-    
     bool v2;
-    v2 = v1 == 6l ;
-    
-    
+    v2 = v1 == 6l;
     if (v2){
-        
-        
         char v3;
         v3 = v0->ptr[0l];
-        
-        
         bool v4;
-        v4 = v3 == 'a' ;
-        
-        
+        v4 = v3 == 'a';
         if (v4){
-            
-            
             char v5;
             v5 = v0->ptr[5l];
-            
             StringDecref(v0);
             bool v6;
-            v6 = v5 == 'c' ;
-            
-            
+            v6 = v5 == 'c';
             if (v6){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 1l;
             }
         } else {
-            
             StringDecref(v0);
             return 2l;
         }
     } else {
-        
         StringDecref(v0);
         return 3l;
     }

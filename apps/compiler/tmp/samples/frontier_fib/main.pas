@@ -1,7 +1,8 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
-function fib0(v0: LongInt): LongInt;
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+function method0(v0: LongInt): LongInt; forward;
+function method0(v0: LongInt): LongInt;
 var
   v1: Boolean;
   v2: LongInt;
@@ -10,19 +11,18 @@ var
   v5: LongInt;
   v6: LongInt;
 begin
-  v1 := (v0 <= 1);
+  v1 := v0 <= 1;
   if v1 then begin
-    Exit(v0);
+      Result := v0;
   end else begin
-    v2 := (v0 - 1);
-    v3 := fib0(v2);
-    v4 := (v0 - 2);
-    v5 := fib0(v4);
-    v6 := (v3 + v5);
-    Exit(v6);
+      v2 := v0 - 1;
+      v3 := method0(v2);
+      v4 := v0 - 2;
+      v5 := method0(v4);
+      v6 := v3 + v5;
+      Result := v6;
   end;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
@@ -30,11 +30,10 @@ var
   v2: LongInt;
 begin
   v0 := 10;
-  v1 := fib0(v0);
-  v2 := (v1 - 55);
-  Exit(v2);
+  v1 := method0(v0);
+  v2 := v1 - 55;
+  Result := v2;
 end;
-
 begin
   Halt(SpiralMain);
 end.

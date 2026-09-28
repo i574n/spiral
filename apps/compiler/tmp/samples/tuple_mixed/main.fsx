@@ -5,7 +5,7 @@ and method1 (v0 : bool, v1 : float32, v2 : int32) : int32 =
     if v0 then
         let v3 : bool = v1 >= 3.5f
         if v3 then
-            let v4 : int32 = v2 - 7 
+            let v4 : int32 = v2 - 7
             v4
         else
             1

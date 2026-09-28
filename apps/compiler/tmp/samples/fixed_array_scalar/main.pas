@@ -1,11 +1,12 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+type
+  TArray0 = array of LongInt;
 function SpiralMain: LongInt;
 var
-  v0_0: LongInt;
-  v0_1: LongInt;
-  v0_2: LongInt;
+  v0: TArray0;
+  tmp1: TArray0;
   v1: LongInt;
   v2: LongInt;
   v3: LongInt;
@@ -13,18 +14,20 @@ var
   v5: LongInt;
   v6: LongInt;
 begin
-  v0_0 := 2;
-  v0_1 := 3;
-  v0_2 := 5;
-  v1 := v0_0;
-  v2 := v0_1;
-  v3 := v0_2;
-  v4 := (v1 + v2);
-  v5 := (v4 + v3);
-  v6 := (v5 - 10);
-  Exit(v6);
+  tmp1 := nil;
+  SetLength(tmp1, 3);
+  v0 := tmp1;
+  v0[0] := 2;
+  v0[1] := 3;
+  v0[2] := 5;
+  v1 := v0[0];
+  v2 := v0[1];
+  v3 := v0[2];
+  v4 := v1 + v2;
+  v5 := v4 + v3;
+  v6 := v5 - 10;
+  Result := v6;
 end;
-
 begin
   Halt(SpiralMain);
 end.

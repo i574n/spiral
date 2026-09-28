@@ -2,7 +2,7 @@
 param(
     [string]$EoieRoot,
     [string]$Filter = '.*',
-    [ValidateRange(1, 600)][int]$TimeoutSec = 30,
+    [ValidateRange(1, 600)][int]$TimeoutSec = 180,
     [switch]$CargoCheck,
     [switch]$Test,
     [switch]$CompilerContracts,

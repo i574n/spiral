@@ -1,70 +1,89 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  ClosureValue0 = record
-    v0: AnsiString;
-    v1: LongInt;
-    variant: LongInt;
+  TFun0 = class;
+  TFun0 = class
+    function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
-
-function ClosureValueCreate0(v0: AnsiString; v1: LongInt; variant: LongInt): ClosureValue0;
-begin
-  Result.v0 := v0;
-  Result.v1 := v1;
-  Result.variant := variant;
-end;
-
-function ClosureInvoke0(x: ClosureValue0; v2: LongInt): LongInt;
+  TClosure0 = class(TFun0) v0: AnsiString; v1: LongInt; function Invoke(v2: LongInt): LongInt; override; end;
+  TClosure1 = class(TFun0) v0: AnsiString; v1: LongInt; function Invoke(v2: LongInt): LongInt; override; end;
+function ClosureCreate0(v0: AnsiString; v1: LongInt): TFun0; forward;
+function ClosureCreate1(v0: AnsiString; v1: LongInt): TFun0; forward;
+function method0(v0: TFun0): LongInt; forward;
+function TClosure0.Invoke(v2: LongInt): LongInt;
 var
-  v0: AnsiString;
-  v1: LongInt;
-  closure0_v3: LongInt;
-  closure1_v3: LongInt;
+  v3: Boolean;
+  v4: LongInt;
+  v5: LongInt;
+  v6: LongInt;
 begin
-  if (x.variant = 0) then begin
-    v0 := x.v0;
-    v1 := x.v1;
-    if (v2 > 0) then begin
-      closure0_v3 := ((Length(v0) + v1) + v2);
-    end else begin
-      closure0_v3 := 0;
-    end;
-    Exit(closure0_v3);
+  v3 := v2 > 0;
+  if v3 then begin
+      v4 := LongInt(Length(v0));
+      v5 := v4 + v1;
+      v6 := v5 + v2;
+      Result := v6;
   end else begin
-    v0 := x.v0;
-    v1 := x.v1;
-    if (v2 > 0) then begin
-      closure1_v3 := (((Length(v0) + v1) + v2) - 1);
-    end else begin
-      closure1_v3 := (-1);
-    end;
-    Exit(closure1_v3);
+      Result := 0;
   end;
 end;
-
-function method0(v0: ClosureValue0): LongInt;
+function ClosureCreate0(v0: AnsiString; v1: LongInt): TFun0;
+var c: TClosure0;
 begin
-  Exit(ClosureInvoke0(v0, 37));
+  c := TClosure0.Create; c.v0 := v0; c.v1 := v1;
+  Result := c;
 end;
-
+function TClosure1.Invoke(v2: LongInt): LongInt;
+var
+  v3: Boolean;
+  v4: LongInt;
+  v5: LongInt;
+  v6: LongInt;
+  v7: LongInt;
+begin
+  v3 := v2 > 0;
+  if v3 then begin
+      v4 := LongInt(Length(v0));
+      v5 := v4 + v1;
+      v6 := v5 + v2;
+      v7 := v6 - 1;
+      Result := v7;
+  end else begin
+      Result := (-1);
+  end;
+end;
+function ClosureCreate1(v0: AnsiString; v1: LongInt): TFun0;
+var c: TClosure1;
+begin
+  c := TClosure1.Create; c.v0 := v0; c.v1 := v1;
+  Result := c;
+end;
+function method0(v0: TFun0): LongInt;
+begin
+  Result := v0.Invoke(37);
+end;
 function SpiralMain: LongInt;
 var
-  flag: Boolean;
-  selected: ClosureValue0;
-  name: AnsiString;
+  v0: AnsiString;
+  v1: AnsiString;
+  v2: LongInt;
+  v3: LongInt;
+  v4: Boolean;
+  v7: TFun0;
 begin
-  flag := True;
-  if flag then begin
-    name := 'abc';
-    selected := ClosureValueCreate0(name, 2, 0);
+  v0 := 'abc';
+  v1 := 'wxyz';
+  v2 := 2;
+  v3 := 2;
+  v4 := True;
+  if v4 then begin
+      v7 := ClosureCreate0(v0, v2);
   end else begin
-    name := 'wxyz';
-    selected := ClosureValueCreate0(name, 2, 1);
+      v7 := ClosureCreate1(v1, v3);
   end;
-  Exit(method0(selected));
+  Result := method0(v7);
 end;
-
 begin
   Halt(SpiralMain);
 end.

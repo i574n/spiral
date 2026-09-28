@@ -72,51 +72,32 @@ static inline void AssignArray0(String * * a, String * b){
     *a = b;
 }
 int32_t main(){
-    
-    
     Array0 * v0;
     v0 = ArrayCreate0(2l, true);
-    
-    
     String * v1;
     v1 = StringLit(3, "ab");
-    
-    
-    
     AssignArray0(&(v0->ptr[0l]), v1);
-    
     StringDecref(v1);
     String * v2;
     v2 = StringLit(4, "cde");
-    
-    
-    
     AssignArray0(&(v0->ptr[1l]), v2);
-    
     StringDecref(v2);
     String * v3;
     v3 = v0->ptr[0l];
     v3->refc++;
-    
     String * v4;
     v4 = v0->ptr[1l];
     v4->refc++;
     ArrayDecref0(v0);
     int32_t v5;
     v5 = v3->len-1;
-    
     StringDecref(v3);
     int32_t v6;
     v6 = v4->len-1;
-    
     StringDecref(v4);
     int32_t v7;
-    v7 = v5 + v6 ;
-    
-    
+    v7 = v5 + v6;
     int32_t v8;
-    v8 = v7 - 5l ;
-    
-    
+    v8 = v7 - 5l;
     return v8;
 }

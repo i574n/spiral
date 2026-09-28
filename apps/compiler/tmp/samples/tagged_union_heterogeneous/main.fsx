@@ -17,5 +17,5 @@ let v3 : US0 =
     else
         US0_1(true)
 let v4 : int32 = method0(v3)
-let v5 : int32 = v4 - 9 
+let v5 : int32 = v4 - 9
 v5

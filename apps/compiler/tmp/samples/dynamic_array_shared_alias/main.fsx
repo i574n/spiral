@@ -10,6 +10,6 @@ v1.[int 0] <- 3
 v1.[int 1] <- 4
 let v2 : int32 = method0(v1)
 let v3 : int32 = method1(v1)
-let v4 : int32 = v2 + v3 
-let v5 : int32 = v4 - 6 
+let v4 : int32 = v2 + v3
+let v5 : int32 = v4 - 6
 v5

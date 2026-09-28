@@ -1,65 +1,73 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Tuple9000 = record
-    v0: LongInt;
-  end;
-
-function TupleCreate9000(v0: LongInt): Tuple9000;
+  TUS0 = record tag: LongInt;  end;
+function method0(v0: TUS0): LongInt; forward;
+function US0_0: TUS0;
 begin
-  Result.v0 := v0;
+  Result.tag := 0; 
 end;
-
-function score0(v0: Tuple9000): LongInt;
+function US0_1: TUS0;
 begin
-  if (v0.v0 = 0) then begin
-    Exit(1);
-  end else begin
-    if (v0.v0 = 3) then begin
-      Exit(4);
-    end else begin
-      if (v0.v0 = 2) then begin
-        Exit(3);
-      end else begin
-        Exit(2);
+  Result.tag := 1; 
+end;
+function US0_2: TUS0;
+begin
+  Result.tag := 2; 
+end;
+function US0_3: TUS0;
+begin
+  Result.tag := 3; 
+end;
+function method0(v0: TUS0): LongInt;
+begin
+  case v0.tag of
+      0: begin // Cold
+          Result := 1;
       end;
-    end;
+      3: begin // Done
+          Result := 4;
+      end;
+      2: begin // Hot
+          Result := 3;
+      end;
+      1: begin // Warm
+          Result := 2;
+      end;
   end;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
   v1: Boolean;
-  v10: Tuple9000;
+  v10: TUS0;
   v3: Boolean;
   v5: Boolean;
   v11: LongInt;
   v12: LongInt;
 begin
   v0 := 3;
-  v1 := (v0 = 0);
+  v1 := v0 = 0;
   if v1 then begin
-    v10 := TupleCreate9000(0);
+      v10 := US0_0;
   end else begin
-    v3 := (v0 = 1);
-    if v3 then begin
-      v10 := TupleCreate9000(1);
-    end else begin
-      v5 := (v0 = 2);
-      if v5 then begin
-        v10 := TupleCreate9000(2);
+      v3 := v0 = 1;
+      if v3 then begin
+          v10 := US0_1;
       end else begin
-        v10 := TupleCreate9000(3);
+          v5 := v0 = 2;
+          if v5 then begin
+              v10 := US0_2;
+          end else begin
+              v10 := US0_3;
+          end;
       end;
-    end;
   end;
-  v11 := score0(v10);
-  v12 := (v11 - 4);
-  Exit(v12);
+  v11 := method0(v10);
+  v12 := v11 - 4;
+  Result := v12;
 end;
-
 begin
   Halt(SpiralMain);
 end.

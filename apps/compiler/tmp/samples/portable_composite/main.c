@@ -26,7 +26,7 @@ static inline Tuple0 TupleCreate0(int32_t v0, int32_t v1, bool v2){
 }
 Tuple0 method1(int32_t v0){
     int32_t v1;
-    v1 = v0 + 2l ;
+    v1 = v0 + 2l;
     bool v2;
     v2 = v0 > 0l;
     return TupleCreate0(v0, v1, v2);
@@ -34,9 +34,9 @@ Tuple0 method1(int32_t v0){
 int32_t method2(int32_t v0, int32_t v1, bool v2){
     if (v2){
         int32_t v3;
-        v3 = v0 + v1 ;
+        v3 = v0 + v1;
         int32_t v4;
-        v4 = v3 - 4l ;
+        v4 = v3 - 4l;
         return v4;
     } else {
         return 1l;
@@ -58,7 +58,7 @@ int32_t method5(bool v0, float v1, int32_t v2){
         v3 = v1 >= 3.5f;
         if (v3){
             int32_t v4;
-            v4 = v2 - 7l ;
+            v4 = v2 - 7l;
             return v4;
         } else {
             return 1l;
@@ -92,27 +92,25 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 bool method7(String * v0){
-    bool v1;
-    v1 = v0 == v0 ;
     StringDecref(v0);
-    return v1;
+    return true;
 }
 bool method9(uint32_t v0){
     uint32_t v1;
-    v1 = v0 + 5ul ;
+    v1 = v0 + 5ul;
     uint32_t v2;
-    v2 = v1 % 4ul ;
+    v2 = v1 % 4ul;
     bool v3;
-    v3 = v2 == 0ul ;
+    v3 = v2 == 0ul;
     return v3;
 }
 int32_t method11(int32_t v0, int32_t v1){
     int32_t v2;
-    v2 = v0 * v1 ;
+    v2 = v0 * v1;
     int32_t v3;
-    v3 = v2 + 5l ;
+    v3 = v2 + 5l;
     int32_t v4;
-    v4 = v3 / 3l ;
+    v4 = v3 / 3l;
     return v4;
 }
 int32_t method10(int32_t v0){
@@ -123,9 +121,9 @@ int32_t method10(int32_t v0){
     int32_t v3;
     v3 = method11(v1, v2);
     int32_t v4;
-    v4 = v0 + v3 ;
+    v4 = v0 + v3;
     int32_t v5;
-    v5 = v4 - 7l ;
+    v5 = v4 - 7l;
     return v5;
 }
 int32_t method8(int32_t v0){
@@ -161,7 +159,7 @@ int32_t method3(int32_t v0){
     int32_t v5;
     v5 = method5(v2, v3, v4);
     int32_t v6;
-    v6 = v0 + v5 ;
+    v6 = v0 + v5;
     return method6(v6);
 }
 int32_t method0(int32_t v0){
@@ -173,7 +171,7 @@ int32_t method0(int32_t v0){
     int32_t v5;
     v5 = method2(v2, v3, v4);
     int32_t v6;
-    v6 = v0 + v5 ;
+    v6 = v0 + v5;
     return method3(v6);
 }
 int32_t main(){

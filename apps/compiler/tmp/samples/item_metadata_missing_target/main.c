@@ -34,24 +34,16 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 void target_global0(String * v0){
-    
-    
     int32_t v1;
     v1 = v0->len-1;
-    
     StringDecref(v0);
     return ;
 }
 int32_t main(){
-    
-    
     String * v0;
     v0 = StringLit(39, "SPIRAL_ITEM_METADATA_TEST_missing-item");
     v0->refc++;
-    
-    
     target_global0(v0);
-    
     StringDecref(v0);
     return 0l;
 }

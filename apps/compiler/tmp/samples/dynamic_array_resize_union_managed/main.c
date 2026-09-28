@@ -131,12 +131,12 @@ int32_t observe5(US0 v0){
             int32_t v3;
             v3 = v1->ptr[0l];
             int32_t v4;
-            v4 = v2 + v3 ;
+            v4 = v2 + v3;
             int32_t v5;
             v5 = v1->ptr[1l];
             ArrayDecref0(v1);
             int32_t v6;
-            v6 = v4 + v5 ;
+            v6 = v4 + v5;
             return v6;
             break;
         }
@@ -182,23 +182,23 @@ int32_t main(){
     int32_t v5;
     v5 = DynamicArrayRefCount0(v0);
     int32_t v6;
-    v6 = v4 + v2 ;
+    v6 = v4 + v2;
     int32_t v7;
     v7 = v0->len;
     int32_t v8;
-    v8 = v6 + v7 ;
+    v8 = v6 + v7;
     int32_t v9;
     v9 = v0->ptr[0l];
     int32_t v10;
-    v10 = v8 + v9 ;
+    v10 = v8 + v9;
     int32_t v11;
     v11 = v0->ptr[1l];
     ArrayDecref0(v0);
     int32_t v12;
-    v12 = v10 + v11 ;
+    v12 = v10 + v11;
     int32_t v13;
-    v13 = v12 + v5 ;
+    v13 = v12 + v5;
     int32_t v14;
-    v14 = v13 - 31l ;
+    v14 = v13 - 31l;
     return v14;
 }

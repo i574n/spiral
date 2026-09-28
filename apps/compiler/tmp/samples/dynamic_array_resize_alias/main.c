@@ -27,107 +27,55 @@ Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
     return x;
 }
 static inline void AssignArray0(int32_t * a, int32_t b){
-    
-    
     *a = b;
 }
 void method0(Array0 * v0){
-    
-    
     int32_t v1;
     v1 = 2l;
-    
-    
-    
     DynamicArrayResize0(v0,v1);
-    
     ArrayDecref0(v0);
     return ;
 }
 void method1(Array0 * v0){
-    
-    
     int32_t v1;
     v1 = 4l;
-    
-    
-    
     DynamicArrayResize0(v0,v1);
-    
     ArrayDecref0(v0);
     return ;
 }
 int32_t method2(Array0 * v0){
-    
-    
     int32_t v1;
     v1 = DynamicArrayCapacity0(v0);
-    
     ArrayDecref0(v0);
     int32_t v2;
-    v2 = v1 - 15l ;
-    
-    
+    v2 = v1 - 15l;
     return v2;
 }
 int32_t main(){
-    
-    
     int32_t v0;
     v0 = 4l;
-    
-    
     Array0 * v1;
     v1 = ArrayCreate0(v0, false);
-    
-    
-    
     AssignArray0(&(v1->ptr[0l]), 1l);
-    
-    
-    
     AssignArray0(&(v1->ptr[1l]), 2l);
-    
-    
-    
     AssignArray0(&(v1->ptr[2l]), 3l);
-    
-    
-    
     AssignArray0(&(v1->ptr[3l]), 4l);
     v1->refc++;
-    
-    
     method0(v1);
     v1->refc++;
-    
-    
     method1(v1);
-    
-    
-    
     AssignArray0(&(v1->ptr[3l]), 7l);
-    
-    
     int32_t v2;
     v2 = v1->len;
-    
-    
     int32_t v3;
     v3 = v1->ptr[3l];
-    
-    
     int32_t v4;
-    v4 = v2 + v3 ;
+    v4 = v2 + v3;
     v1->refc++;
-    
     int32_t v5;
     v5 = method2(v1);
-    
     ArrayDecref0(v1);
     int32_t v6;
-    v6 = v4 + v5 ;
-    
-    
+    v6 = v4 + v5;
     return v6;
 }

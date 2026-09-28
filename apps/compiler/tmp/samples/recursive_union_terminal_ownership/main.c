@@ -59,9 +59,9 @@ int32_t sum1(UH0 * v0){
             v5 = sum1(v3);
             UHDecref0(v3);
             int32_t v6;
-            v6 = v4 + v5 ;
+            v6 = v4 + v5;
             int32_t v7;
-            v7 = v1 + v6 ;
+            v7 = v1 + v6;
             return v7;
             break;
         }
@@ -77,7 +77,7 @@ int32_t consume_pair0(UH0 * v0, UH0 * v1){
     v3 = sum1(v1);
     UHDecref0(v1);
     int32_t v4;
-    v4 = v2 + v3 ;
+    v4 = v2 + v3;
     return v4;
 }
 int32_t main(){
@@ -114,6 +114,6 @@ int32_t main(){
     v10 = consume_pair0(v4, v9);
     UHDecref0(v4); UHDecref0(v9);
     int32_t v11;
-    v11 = v10 - 10l ;
+    v11 = v10 - 10l;
     return v11;
 }

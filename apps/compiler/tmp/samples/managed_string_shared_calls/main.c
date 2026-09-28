@@ -34,36 +34,24 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 int32_t measure0(String * v0){
-    
-    
     int32_t v1;
     v1 = v0->len-1;
-    
     StringDecref(v0);
     return v1;
 }
 int32_t main(){
-    
-    
     String * v0;
     v0 = StringLit(4, "qwe");
     v0->refc++;
-    
     int32_t v1;
     v1 = measure0(v0);
     v0->refc++;
-    
     int32_t v2;
     v2 = measure0(v0);
-    
     StringDecref(v0);
     int32_t v3;
-    v3 = v1 + v2 ;
-    
-    
+    v3 = v1 + v2;
     int32_t v4;
-    v4 = v3 - 6l ;
-    
-    
+    v4 = v3 - 6l;
     return v4;
 }

@@ -1,6 +1,7 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
+uses SysUtils, Math;
 function SpiralMain: LongInt;
 var
   v0: LongInt;
@@ -10,15 +11,14 @@ var
 begin
   v0 := 6;
   v1 := 7;
-  v2 := (v0 * v1);
-  v3 := (v2 = 42);
+  v2 := v0 * v1;
+  v3 := v2 = 42;
   if v3 then begin
-    Exit(0);
+      Result := 0;
   end else begin
-    Exit(1);
+      Result := 1;
   end;
 end;
-
 begin
   Halt(SpiralMain);
 end.

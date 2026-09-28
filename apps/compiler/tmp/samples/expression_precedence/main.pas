@@ -1,6 +1,7 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+function method0(v0: LongInt; v1: LongInt): Boolean; forward;
 function method0(v0: LongInt; v1: LongInt): Boolean;
 var
   v2: LongInt;
@@ -10,23 +11,22 @@ var
   v6: Boolean;
   v7: Boolean;
 begin
-  v2 := (-v0);
-  v3 := (v2 <= 0);
+  v2 := -v0 ;
+  v3 := v2 <= 0;
   if v3 then begin
-    v4 := (v1 * 2);
-    v5 := (v0 + v4);
-    v6 := (v5 >= 9);
-    if v6 then begin
-      Exit(True);
-    end else begin
-      v7 := (v1 = 0);
-      Exit(v7);
-    end;
+      v4 := v1 * 2;
+      v5 := v0 + v4;
+      v6 := v5 >= 9;
+      if v6 then begin
+          Result := True;
+      end else begin
+          v7 := v1 = 0;
+          Result := v7;
+      end;
   end else begin
-    Exit(False);
+      Result := False;
   end;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
@@ -37,12 +37,11 @@ begin
   v1 := 3;
   v2 := method0(v0, v1);
   if v2 then begin
-    Exit(0);
+      Result := 0;
   end else begin
-    Exit(1);
+      Result := 1;
   end;
 end;
-
 begin
   Halt(SpiralMain);
 end.

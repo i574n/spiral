@@ -5,11 +5,11 @@
 #include <string.h>
 int32_t method1(int32_t v0, int32_t v1){
     int32_t v2;
-    v2 = v0 - 1l ;
+    v2 = v0 - 1l;
     int32_t v3;
-    v3 = v1 + v0 ;
+    v3 = v1 + v0;
     bool v4;
-    v4 = v2 == 0l ;
+    v4 = v2 == 0l;
     if (v4){
         return v3;
     } else {
@@ -20,7 +20,7 @@ int32_t method0(int32_t v0){
     int32_t v1;
     v1 = 0l;
     bool v2;
-    v2 = v0 == 0l ;
+    v2 = v0 == 0l;
     int32_t v4;
     if (v2){
         v4 = v1;
@@ -28,7 +28,7 @@ int32_t method0(int32_t v0){
         v4 = method1(v0, v1);
     }
     int32_t v5;
-    v5 = v4 - 55l ;
+    v5 = v4 - 55l;
     return v5;
 }
 int32_t main(){

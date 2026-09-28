@@ -27,123 +27,64 @@ Array0 * ArrayLit0(uint32_t len, uint8_t * ptr){
     return x;
 }
 static inline void AssignArray0(uint8_t * a, uint8_t b){
-    
-    
     *a = b;
 }
 int32_t main(){
-    
-    
     int32_t v0;
     v0 = 4l;
-    
-    
     Array0 * v1;
     v1 = ArrayCreate0(v0, false);
-    
-    
-    
     AssignArray0(&(v1->ptr[0l]), 0u);
-    
-    
-    
     AssignArray0(&(v1->ptr[1l]), 0u);
-    
-    
-    
     AssignArray0(&(v1->ptr[2l]), 0u);
-    
-    
-    
     AssignArray0(&(v1->ptr[3l]), 0u);
-    
-    
     int32_t v2;
     v2 = 65l;
-    
-    
     int32_t v3;
     v3 = 3l;
-    
-    
     int32_t v4;
     v4 = spiral_abi_libc_memset(v1,v2,v3);
-    
-    
     bool v5;
-    v5 = v4 == 3l ;
-    
-    
+    v5 = v4 == 3l;
     if (v5){
-        
-        
         uint8_t v6;
         v6 = v1->ptr[0l];
-        
-        
         bool v7;
-        v7 = v6 == 65u ;
-        
-        
+        v7 = v6 == 65u;
         if (v7){
-            
-            
             uint8_t v8;
             v8 = v1->ptr[1l];
-            
-            
             bool v9;
-            v9 = v8 == 65u ;
-            
-            
+            v9 = v8 == 65u;
             if (v9){
-                
-                
                 uint8_t v10;
                 v10 = v1->ptr[2l];
-                
-                
                 bool v11;
-                v11 = v10 == 65u ;
-                
-                
+                v11 = v10 == 65u;
                 if (v11){
-                    
-                    
                     uint8_t v12;
                     v12 = v1->ptr[3l];
-                    
                     ArrayDecref0(v1);
                     bool v13;
-                    v13 = v12 == 0u ;
-                    
-                    
+                    v13 = v12 == 0u;
                     if (v13){
-                        
-                        
                         return 0l;
                     } else {
-                        
-                        
                         return 4l;
                     }
                 } else {
-                    
                     ArrayDecref0(v1);
                     return 3l;
                 }
             } else {
-                
                 ArrayDecref0(v1);
                 return 2l;
             }
         } else {
-            
             ArrayDecref0(v1);
             return 1l;
         }
     } else {
-        
         ArrayDecref0(v1);
         return 5l;
     }

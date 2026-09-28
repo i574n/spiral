@@ -161,25 +161,25 @@ int32_t score0(US0 v0){
             v5 = v1->len;
             ArrayDecref0(v1);
             int32_t v6;
-            v6 = v5 + v4 ;
+            v6 = v5 + v4;
             int32_t v7;
             v7 = v2->ptr[0l];
             int32_t v8;
-            v8 = v6 + v7 ;
+            v8 = v6 + v7;
             int32_t v9;
             v9 = v2->ptr[1l];
             ArrayDecref1(v2);
             int32_t v10;
-            v10 = v8 + v9 ;
+            v10 = v8 + v9;
             int32_t v11;
             v11 = v3->ptr[0l];
             int32_t v12;
-            v12 = v10 + v11 ;
+            v12 = v10 + v11;
             int32_t v13;
             v13 = v3->ptr[1l];
             ArrayDecref1(v3);
             int32_t v14;
-            v14 = v12 + v13 ;
+            v14 = v12 + v13;
             return v14;
             break;
         }
@@ -211,6 +211,6 @@ int32_t main(){
     v5 = score0(v4);
     USDecref0(&(v4));
     int32_t v6;
-    v6 = v5 - 26l ;
+    v6 = v5 - 26l;
     return v6;
 }

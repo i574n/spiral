@@ -1,56 +1,60 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  ClosureValue1 = record
-    v0: AnsiString;
+  TFun0 = class;
+  TFun1 = class;
+  TFun1 = class
+    function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
-  ClosureValue0 = record
+  TFun0 = class
+    function Invoke(a0: AnsiString): TFun1; virtual; abstract;
   end;
-
-function ClosureValueCreate1(v0: AnsiString): ClosureValue1;
-begin
-  Result.v0 := v0;
-end;
-
-function ClosureValueCreate0(): ClosureValue0;
-begin
-end;
-
-function ClosureInvoke1(x: ClosureValue1; v1: LongInt): LongInt;
+  TClosure0 = class(TFun0)  function Invoke(v0: AnsiString): TFun1; override; end;
+  TClosure1 = class(TFun1) v0: AnsiString; function Invoke(v1: LongInt): LongInt; override; end;
+function ClosureCreate1(v0: AnsiString): TFun1; forward;
+function ClosureCreate0: TFun0; forward;
+function method0(v0: TFun1): LongInt; forward;
+function TClosure1.Invoke(v1: LongInt): LongInt;
 var
-  v0: AnsiString;
   v2: LongInt;
   v3: LongInt;
 begin
-  v0 := x.v0;
-  v2 := Length(v0);
-  v3 := (v2 + v1);
-  Exit(v3);
+  v2 := LongInt(Length(v0));
+  v3 := v2 + v1;
+  Result := v3;
 end;
-
-function ClosureInvoke0(_x: ClosureValue0; v0: AnsiString): ClosureValue1;
+function ClosureCreate1(v0: AnsiString): TFun1;
+var c: TClosure1;
 begin
-  Exit(ClosureValueCreate1(v0));
+  c := TClosure1.Create; c.v0 := v0;
+  Result := c;
 end;
-
-function method0(v0: ClosureValue1): LongInt;
+function TClosure0.Invoke(v0: AnsiString): TFun1;
 begin
-  Exit(ClosureInvoke1(v0, 39));
+  Result := ClosureCreate1(v0);
 end;
-
+function ClosureCreate0: TFun0;
+var c: TClosure0;
+begin
+  c := TClosure0.Create; 
+  Result := c;
+end;
+function method0(v0: TFun1): LongInt;
+begin
+  Result := v0.Invoke(39);
+end;
 function SpiralMain: LongInt;
 var
-  v0: ClosureValue0;
+  v0: TFun0;
   v1: AnsiString;
-  v2: ClosureValue1;
+  v2: TFun1;
 begin
-  v0 := ClosureValueCreate0();
+  v0 := ClosureCreate0;
   v1 := 'abc';
-  v2 := ClosureInvoke0(v0, v1);
-  Exit(method0(v2));
+  v2 := v0.Invoke(v1);
+  Result := method0(v2);
 end;
-
 begin
   Halt(SpiralMain);
 end.

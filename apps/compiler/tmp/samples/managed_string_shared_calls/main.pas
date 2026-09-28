@@ -1,14 +1,14 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
-function measure0(v0: AnsiString): LongInt;
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+function method0(v0: AnsiString): LongInt; forward;
+function method0(v0: AnsiString): LongInt;
 var
   v1: LongInt;
 begin
-  v1 := Length(v0);
-  Exit(v1);
+  v1 := LongInt(Length(v0));
+  Result := v1;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: AnsiString;
@@ -18,13 +18,12 @@ var
   v4: LongInt;
 begin
   v0 := 'qwe';
-  v1 := measure0(v0);
-  v2 := measure0(v0);
-  v3 := (v1 + v2);
-  v4 := (v3 - 6);
-  Exit(v4);
+  v1 := method0(v0);
+  v2 := method0(v0);
+  v3 := v1 + v2;
+  v4 := v3 - 6;
+  Result := v4;
 end;
-
 begin
   Halt(SpiralMain);
 end.

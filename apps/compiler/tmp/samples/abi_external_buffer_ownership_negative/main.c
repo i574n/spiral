@@ -27,27 +27,16 @@ Array0 * ArrayLit0(uint32_t len, uint8_t * ptr){
     return x;
 }
 int32_t main(){
-    
-    
     int32_t v0;
     v0 = 4l;
-    
-    
     Array0 * v1;
     v1 = ArrayCreate0(v0, false);
-    
-    
     int32_t v2;
     v2 = 65l;
-    
-    
     int32_t v3;
     v3 = 3l;
-    
-    
     int32_t v4;
     v4 = spiral_abi_libc_memset_owned(v1,v2,v3);
-    
     ArrayDecref0(v1);
     return v4;
 }

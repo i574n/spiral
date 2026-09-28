@@ -78,18 +78,18 @@ int32_t main(){
     int32_t v5;
     v5 = v4->len-1;
     bool v6;
-    v6 = v5 == 6l ;
+    v6 = v5 == 6l;
     if (v6){
         char v7;
         v7 = v4->ptr[0l];
         bool v8;
-        v8 = v7 == 's' ;
+        v8 = v7 == 's';
         if (v8){
             char v9;
             v9 = v4->ptr[5l];
             StringDecref(v4);
             bool v10;
-            v10 = v9 == 'l' ;
+            v10 = v9 == 'l';
             if (v10){
                 return 0l;
             } else {

@@ -1,36 +1,34 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
-uses SysUtils;
-
-function SpiralStringSlice(const value: AnsiString; fromIndex, toIndex: LongInt): AnsiString;
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+function StringSlice(const value: AnsiString; from, upto: Int64): AnsiString;
+var len: Int64;
 begin
-  if (fromIndex < 0) or (fromIndex > Length(value)) or (toIndex < fromIndex - 1) or (toIndex >= Length(value)) then raise ERangeError.Create('Spiral string slice out of bounds');
-  if (toIndex >= fromIndex) and ((((Ord(value[fromIndex + 1])) and $C0) = $80) or ((toIndex + 1 < Length(value)) and (((Ord(value[toIndex + 2])) and $C0) = $80))) then raise ERangeError.Create('Spiral string slice must preserve UTF-8 codepoint boundaries');
-  if toIndex < fromIndex then Result := ''
-  else Result := Copy(value, fromIndex + 1, toIndex - fromIndex + 1);
+  len := Length(value);
+  if (from < 0) or (from > len) or (upto < from - 1) or (upto >= len) then Halt(3);
+  if upto < from then Exit('');
+  if ((Ord(value[from + 1]) and $C0) = $80) or ((upto + 1 < len) and ((Ord(value[upto + 2]) and $C0) = $80)) then Halt(3);
+  Result := Copy(value, from + 1, upto - from + 1);
 end;
-
-function invalid_middle0(v0: AnsiString): AnsiString;
+function method0(v0: AnsiString): AnsiString; forward;
+function method0(v0: AnsiString): AnsiString;
 var
   v1: AnsiString;
 begin
-  v1 := SpiralStringSlice(v0, 1, 1);
-  Exit(v1);
+  v1 := StringSlice(v0, 1, 1);
+  Result := v1;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: AnsiString;
   v1: AnsiString;
   v2: LongInt;
 begin
-  v0 := 'é';
-  v1 := invalid_middle0(v0);
-  v2 := Length(v1);
-  Exit(v2);
+  v0 := #195#169;
+  v1 := method0(v0);
+  v2 := LongInt(Length(v1));
+  Result := v2;
 end;
-
 begin
   Halt(SpiralMain);
 end.

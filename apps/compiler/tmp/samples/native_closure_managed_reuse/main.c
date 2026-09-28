@@ -57,7 +57,7 @@ int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     int32_t v2;
     v2 = v0->len-1;
     int32_t v3;
-    v3 = v2 + v1 ;
+    v3 = v2 + v1;
     ClosureDecref0(x);
     return v3;
 }
@@ -87,8 +87,8 @@ int32_t main(){
     v4 = v1->fptr(v1, 3l);
     v1->decref_fptr(v1);
     int32_t v5;
-    v5 = v2 + v3 ;
+    v5 = v2 + v3;
     int32_t v6;
-    v6 = v5 + v4 ;
+    v6 = v5 + v4;
     return v6;
 }

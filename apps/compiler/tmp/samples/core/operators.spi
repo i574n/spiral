@@ -1,20 +1,20 @@
 inl (+.) forall t. (a : t) (b : t) : t =
-    $'!a + !b '
+    !!!!Add(a,b)
 
 inl (-.) forall t. (a : t) (b : t) : t =
-    $'!a - !b '
+    !!!!Sub(a,b)
 
 inl (*.) forall t. (a : t) (b : t) : t =
-    $'!a * !b '
+    !!!!Mult(a,b)
 
 inl (/.) forall t. (a : t) (b : t) : t =
-    $'!a / !b '
+    !!!!Div(a,b)
 
 inl (%.) forall t. (a : t) (b : t) : t =
-    $'!a % !b '
+    !!!!Mod(a,b)
 
 inl (=.) forall t. (a : t) (b : t) : bool =
-    $'!a == !b '
+    !!!!EQ(a,b)
 
 inl (<) forall t {number}. (a : t) (b : t) : bool =
     !!!!LT(a,b)

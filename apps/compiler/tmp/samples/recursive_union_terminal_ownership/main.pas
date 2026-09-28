@@ -1,170 +1,85 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
-uses SysUtils;
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Recursive0 = class
-    RefCount: LongInt;
-    Tag: LongInt;
-    v0: LongInt;
-    v1: Recursive0;
-    v2: Recursive0;
-  end;
-
-function RecursiveCreate0_0: Recursive0;
+  TUH0 = class;
+  TUH0 = class tag: LongInt; c1_0: LongInt; c1_1: TUH0; c1_2: TUH0; end;
+function method1(v0: TUH0): LongInt; forward;
+function method0(v0: TUH0; v1: TUH0): LongInt; forward;
+function UH0_0: TUH0;
 begin
-  Result := Recursive0.Create;
-  Result.RefCount := 1;
-  Result.Tag := 0;
+  Result := TUH0.Create; Result.tag := 0; 
 end;
-function RecursiveCreate0_1(v0: LongInt; v1: Recursive0; v2: Recursive0): Recursive0;
+function UH0_1(a0: LongInt; a1: TUH0; a2: TUH0): TUH0;
 begin
-  Result := Recursive0.Create;
-  Result.RefCount := 1;
-  Result.Tag := 1;
-  Result.v0 := v0;
-  Result.v1 := v1;
-  Result.v2 := v2;
+  Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1; Result.c1_2 := a2;
 end;
-function RecursiveTag0(value: Recursive0): LongInt;
-begin
-  Result := value.Tag;
-end;
-function RecursiveField0_0(value: Recursive0): LongInt;
-begin
-  if value.Tag <> 1 then raise EVariantError.Create('recursive union field requested from wrong case');
-  Result := value.v0;
-end;
-function RecursiveField0_1(value: Recursive0): Recursive0;
-begin
-  if value.Tag <> 1 then raise EVariantError.Create('recursive union field requested from wrong case');
-  Result := value.v1;
-end;
-function RecursiveField0_2(value: Recursive0): Recursive0;
-begin
-  if value.Tag <> 1 then raise EVariantError.Create('recursive union field requested from wrong case');
-  Result := value.v2;
-end;
-procedure RecursiveClone0(value: Recursive0);
-begin
-  if value <> nil then Inc(value.RefCount);
-end;
-procedure RecursiveDrop0(var value: Recursive0);
-var
-  child0: Recursive0;
-  child1: Recursive0;
-begin
-  if value = nil then Exit;
-  Dec(value.RefCount);
-  if value.RefCount = 0 then
-  begin
-    child0 := nil;
-    if value.Tag = 1 then child0 := value.v1;
-    child1 := nil;
-    if value.Tag = 1 then child1 := value.v2;
-    value.Free;
-    value := nil;
-    if child0 <> nil then RecursiveDrop0(child0);
-    if child1 <> nil then RecursiveDrop0(child1);
-  end
-  else value := nil;
-end;
-
-function sum1(v0: Recursive0): LongInt;
+function method1(v0: TUH0): LongInt;
 var
   v1: LongInt;
-  v2: Recursive0;
-  v3: Recursive0;
+  v2: TUH0;
+  v3: TUH0;
   v4: LongInt;
   v5: LongInt;
   v6: LongInt;
   v7: LongInt;
 begin
-  if (RecursiveTag0(v0) = 0) then begin
-    RecursiveDrop0(v0);
-    Exit(0);
-  end else begin
-    v1 := RecursiveField0_0(v0);
-    v2 := RecursiveField0_1(v0);
-    v3 := RecursiveField0_2(v0);
-    RecursiveClone0(v2);
-    RecursiveClone0(v2);
-    RecursiveClone0(v3);
-    RecursiveDrop0(v0);
-    v4 := sum1(v2);
-    RecursiveClone0(v3);
-    RecursiveDrop0(v2);
-    v5 := sum1(v3);
-    RecursiveDrop0(v3);
-    v6 := (v4 + v5);
-    v7 := (v1 + v6);
-    Exit(v7);
+  case v0.tag of
+      0: begin // Leaf
+          Result := 0;
+      end;
+      1: begin // Node
+          v1 := v0.c1_0;
+          v2 := v0.c1_1;
+          v3 := v0.c1_2;
+          v4 := method1(v2);
+          v5 := method1(v3);
+          v6 := v4 + v5;
+          v7 := v1 + v6;
+          Result := v7;
+      end;
   end;
 end;
-
-function consume_pair0(v0: Recursive0; v1: Recursive0): LongInt;
+function method0(v0: TUH0; v1: TUH0): LongInt;
 var
   v2: LongInt;
   v3: LongInt;
   v4: LongInt;
 begin
-  RecursiveClone0(v0);
-  v2 := sum1(v0);
-  RecursiveClone0(v1);
-  RecursiveDrop0(v0);
-  v3 := sum1(v1);
-  RecursiveDrop0(v1);
-  v4 := (v2 + v3);
-  Exit(v4);
+  v2 := method1(v0);
+  v3 := method1(v1);
+  v4 := v2 + v3;
+  Result := v4;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
   v1: LongInt;
-  v2: Recursive0;
-  v3: Recursive0;
-  v4: Recursive0;
+  v2: TUH0;
+  v3: TUH0;
+  v4: TUH0;
   v5: LongInt;
   v6: LongInt;
-  v7: Recursive0;
-  v8: Recursive0;
-  v9: Recursive0;
+  v7: TUH0;
+  v8: TUH0;
+  v9: TUH0;
   v10: LongInt;
   v11: LongInt;
 begin
   v0 := 1;
   v1 := 2;
-  v2 := RecursiveCreate0_0();
-  RecursiveClone0(v2);
-  RecursiveClone0(v2);
-  v3 := RecursiveCreate0_1(v1, v2, v2);
-  RecursiveClone0(v3);
-  RecursiveClone0(v3);
-  RecursiveDrop0(v2);
-  v4 := RecursiveCreate0_1(v0, v3, v3);
-  RecursiveDrop0(v3);
+  v2 := UH0_0;
+  v3 := UH0_1(v1, v2, v2);
+  v4 := UH0_1(v0, v3, v3);
   v5 := 1;
   v6 := 2;
-  v7 := RecursiveCreate0_0();
-  RecursiveClone0(v7);
-  RecursiveClone0(v7);
-  v8 := RecursiveCreate0_1(v6, v7, v7);
-  RecursiveClone0(v8);
-  RecursiveClone0(v8);
-  RecursiveDrop0(v7);
-  v9 := RecursiveCreate0_1(v5, v8, v8);
-  RecursiveClone0(v4);
-  RecursiveClone0(v9);
-  RecursiveDrop0(v8);
-  v10 := consume_pair0(v4, v9);
-  RecursiveDrop0(v4);
-  RecursiveDrop0(v9);
-  v11 := (v10 - 10);
-  Exit(v11);
+  v7 := UH0_0;
+  v8 := UH0_1(v6, v7, v7);
+  v9 := UH0_1(v5, v8, v8);
+  v10 := method0(v4, v9);
+  v11 := v10 - 10;
+  Result := v11;
 end;
-
 begin
   Halt(SpiralMain);
 end.

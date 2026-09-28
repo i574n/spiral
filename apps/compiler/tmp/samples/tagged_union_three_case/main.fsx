@@ -14,16 +14,16 @@ let rec method0 (v0 : US0) : int32 =
     | US0_0 -> (* Idle *)
         3
 let v0 : int32 = 2
-let v1 : bool = v0 == 0 
+let v1 : bool = v0 = 0
 let v7 : US0 =
     if v1 then
         US0_0
     else
-        let v3 : bool = v0 == 1 
+        let v3 : bool = v0 = 1
         if v3 then
             US0_1(7)
         else
             US0_2(true)
 let v8 : int32 = method0(v7)
-let v9 : int32 = v8 - 11 
+let v9 : int32 = v8 - 11
 v9

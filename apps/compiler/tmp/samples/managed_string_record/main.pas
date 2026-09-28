@@ -1,58 +1,51 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Tuple0 = record
-    v0: AnsiString;
-    v1: LongInt;
-  end;
-
-function TupleCreate0(v0: AnsiString; v1: LongInt): Tuple0;
+  TTuple0 = record f0: AnsiString; f1: LongInt; end;
+function method0(v0: AnsiString): TTuple0; forward;
+function method1(v0: LongInt; v1: AnsiString): LongInt; forward;
+function TupleCreate0(f0: AnsiString; f1: LongInt): TTuple0;
 begin
-  Result.v0 := v0;
-  Result.v1 := v1;
+  Result.f0 := f0; Result.f1 := f1;
 end;
-
-function method0(v0: AnsiString): Tuple0;
+function method0(v0: AnsiString): TTuple0;
 var
   v1: LongInt;
 begin
-  v1 := Length(v0);
-  Exit(TupleCreate0(v0, v1));
+  v1 := LongInt(Length(v0));
+  Result := TupleCreate0(v0, v1);
 end;
-
-function score1(v0: LongInt; v1: AnsiString): LongInt;
+function method1(v0: LongInt; v1: AnsiString): LongInt;
 var
   v2: LongInt;
   v3: LongInt;
 begin
-  v2 := Length(v1);
-  v3 := (v2 + v0);
-  Exit(v3);
+  v2 := LongInt(Length(v1));
+  v3 := v2 + v0;
+  Result := v3;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: AnsiString;
   v1: AnsiString;
   v2: LongInt;
-  tmp0: Tuple0;
+  tmp3: TTuple0;
   v3: LongInt;
   v4: LongInt;
   v5: LongInt;
   v6: LongInt;
 begin
   v0 := 'qwe';
-  tmp0 := method0(v0);
-  v1 := tmp0.v0;
-  v2 := tmp0.v1;
-  v3 := score1(v2, v1);
-  v4 := score1(v2, v1);
-  v5 := (v3 + v4);
-  v6 := (v5 - 12);
-  Exit(v6);
+  tmp3 := method0(v0);
+  v1 := tmp3.f0;
+  v2 := tmp3.f1;
+  v3 := method1(v2, v1);
+  v4 := method1(v2, v1);
+  v5 := v3 + v4;
+  v6 := v5 - 12;
+  Result := v6;
 end;
-
 begin
   Halt(SpiralMain);
 end.

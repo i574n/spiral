@@ -191,7 +191,7 @@ int32_t observe6(US0 v0){
             v4 = v3->len-1;
             StringDecref(v3);
             int32_t v5;
-            v5 = v2 + v4 ;
+            v5 = v2 + v4;
             String * v6;
             v6 = v1->ptr[1l];
             v6->refc++;
@@ -200,7 +200,7 @@ int32_t observe6(US0 v0){
             v7 = v6->len-1;
             StringDecref(v6);
             int32_t v8;
-            v8 = v5 + v7 ;
+            v8 = v5 + v7;
             return v8;
             break;
         }
@@ -248,13 +248,13 @@ int32_t main(){
     v0->refc++;
     method8(v0);
     int32_t v6;
-    v6 = v5 + v3 ;
+    v6 = v5 + v3;
     int32_t v7;
     v7 = v0->len;
     ArrayDecref0(v0);
     int32_t v8;
-    v8 = v6 + v7 ;
+    v8 = v6 + v7;
     int32_t v9;
-    v9 = v8 - 16l ;
+    v9 = v8 - 16l;
     return v9;
 }

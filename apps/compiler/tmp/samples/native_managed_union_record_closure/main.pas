@@ -1,60 +1,61 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Tuple9000 = record
-    v0: LongInt;
-    v1: AnsiString;
-    v2: LongInt;
+  TFun0 = class;
+  TUS0 = record tag: LongInt; c1_0: AnsiString; c1_1: LongInt; end;
+  TFun0 = class
+    function Invoke(a0: LongInt): TUS0; virtual; abstract;
   end;
-  ClosureValue0 = record
-  end;
-
-function TupleCreate9000(v0: LongInt; v1: AnsiString; v2: LongInt): Tuple9000;
+  TClosure0 = class(TFun0)  function Invoke(v0: LongInt): TUS0; override; end;
+function ClosureCreate0: TFun0; forward;
+function method0(v0: TFun0): TUS0; forward;
+function method1(v0: TFun0): TUS0; forward;
+function US0_0: TUS0;
 begin
-  Result.v0 := v0;
-  Result.v1 := v1;
-  Result.v2 := v2;
+  Result.tag := 0; 
 end;
-
-function ClosureValueCreate0(): ClosureValue0;
+function US0_1(a0: AnsiString; a1: LongInt): TUS0;
 begin
+  Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
-
-function ClosureInvoke0(_x: ClosureValue0; v0: LongInt): Tuple9000;
+function TClosure0.Invoke(v0: LongInt): TUS0;
 var
   v1: Boolean;
   v3: AnsiString;
 begin
-  v1 := (v0 = 0);
+  v1 := v0 = 0;
   if v1 then begin
-    Exit(TupleCreate9000(0, '', 0));
+      Result := US0_0;
   end else begin
-    v3 := 'managed';
-    Exit(TupleCreate9000(1, v3, 32));
+      v3 := 'managed';
+      Result := US0_1(v3, 32);
   end;
 end;
-
-function method0(v0: ClosureValue0): Tuple9000;
+function ClosureCreate0: TFun0;
+var c: TClosure0;
 begin
-  Exit(ClosureInvoke0(v0, 0));
+  c := TClosure0.Create; 
+  Result := c;
 end;
-
-function method1(v0: ClosureValue0): Tuple9000;
+function method0(v0: TFun0): TUS0;
 begin
-  Exit(ClosureInvoke0(v0, 1));
+  Result := v0.Invoke(0);
 end;
-
+function method1(v0: TFun0): TUS0;
+begin
+  Result := v0.Invoke(1);
+end;
 function SpiralMain: LongInt;
 var
-  v0: ClosureValue0;
-  v1: Tuple9000;
+  v0: TFun0;
+  v1: TUS0;
   v7: LongInt;
   v2: AnsiString;
   v3: LongInt;
   v4: LongInt;
   v5: LongInt;
-  v8: Tuple9000;
+  v8: TUS0;
   v14: LongInt;
   v9: AnsiString;
   v10: LongInt;
@@ -62,37 +63,36 @@ var
   v12: LongInt;
   v15: LongInt;
 begin
-  v0 := ClosureValueCreate0();
+  v0 := ClosureCreate0;
   v1 := method0(v0);
-  if (v1.v0 = 0) then begin
-    v7 := 3;
-  end else begin
-    v2 := v1.v1;
-    v3 := v1.v2;
-    v4 := Length(v2);
-    v5 := (v4 + v3);
-    v7 := v5;
-  end;
-  if (v1.v0 = 1) then begin
-    Finalize(v1.v1);
+  case v1.tag of
+      0: begin // Empty
+          v7 := 3;
+      end;
+      1: begin // Item
+          v2 := v1.c1_0;
+          v3 := v1.c1_1;
+          v4 := LongInt(Length(v2));
+          v5 := v4 + v3;
+          v7 := v5;
+      end;
   end;
   v8 := method1(v0);
-  if (v8.v0 = 0) then begin
-    v14 := 3;
-  end else begin
-    v9 := v8.v1;
-    v10 := v8.v2;
-    v11 := Length(v9);
-    v12 := (v11 + v10);
-    v14 := v12;
+  case v8.tag of
+      0: begin // Empty
+          v14 := 3;
+      end;
+      1: begin // Item
+          v9 := v8.c1_0;
+          v10 := v8.c1_1;
+          v11 := LongInt(Length(v9));
+          v12 := v11 + v10;
+          v14 := v12;
+      end;
   end;
-  if (v8.v0 = 1) then begin
-    Finalize(v8.v1);
-  end;
-  v15 := (v7 + v14);
-  Exit(v15);
+  v15 := v7 + v14;
+  Result := v15;
 end;
-
 begin
   Halt(SpiralMain);
 end.

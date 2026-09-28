@@ -60,8 +60,6 @@ Array0 * ArrayLit0(uint32_t len, Array1 * * ptr){
     return x;
 }
 static inline void AssignArray0(int32_t * a, int32_t b){
-    
-    
     *a = b;
 }
 static inline void AssignArray1(Array1 * * a, Array1 * b){
@@ -70,87 +68,46 @@ static inline void AssignArray1(Array1 * * a, Array1 * b){
     *a = b;
 }
 int32_t main(){
-    
-    
     int32_t v0;
     v0 = 2l;
-    
-    
     Array0 * v1;
     v1 = ArrayCreate0(v0, true);
-    
-    
     Array1 * v2;
     v2 = ArrayCreate1(v0, false);
-    
-    
     Array1 * v3;
     v3 = ArrayCreate1(v0, false);
-    
-    
-    
     AssignArray0(&(v2->ptr[0l]), 3l);
-    
-    
-    
     AssignArray0(&(v2->ptr[1l]), 4l);
-    
-    
-    
     AssignArray0(&(v3->ptr[0l]), 5l);
-    
-    
-    
     AssignArray0(&(v3->ptr[1l]), 6l);
-    
-    
-    
     AssignArray1(&(v1->ptr[0l]), v2);
-    
     ArrayDecref1(v2);
-    
     AssignArray1(&(v1->ptr[1l]), v3);
-    
     ArrayDecref1(v3);
     Array1 * v4;
     v4 = v1->ptr[0l];
     v4->refc++;
-    
     Array1 * v5;
     v5 = v1->ptr[1l];
     v5->refc++;
     ArrayDecref0(v1);
     int32_t v6;
     v6 = v4->ptr[0l];
-    
-    
     int32_t v7;
     v7 = v4->ptr[1l];
-    
     ArrayDecref1(v4);
     int32_t v8;
-    v8 = v6 + v7 ;
-    
-    
+    v8 = v6 + v7;
     int32_t v9;
     v9 = v5->ptr[0l];
-    
-    
     int32_t v10;
-    v10 = v8 + v9 ;
-    
-    
+    v10 = v8 + v9;
     int32_t v11;
     v11 = v5->ptr[1l];
-    
     ArrayDecref1(v5);
     int32_t v12;
-    v12 = v10 + v11 ;
-    
-    
+    v12 = v10 + v11;
     int32_t v13;
-    v13 = v12 - 18l ;
-    
-    
+    v13 = v12 - 18l;
     return v13;
 }

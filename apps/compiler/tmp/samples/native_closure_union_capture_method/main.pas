@@ -1,91 +1,93 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Tuple9000 = record
-    v0: LongInt;
-    v1: LongInt;
-    v2: Boolean;
+  TFun0 = class;
+  TUS0 = record tag: LongInt; c1_0: LongInt; c2_0: Boolean; end;
+  TFun0 = class
+    function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
-  ClosureValue0 = record
-    v0: Tuple9000;
-  end;
-
-function TupleCreate9000(v0: LongInt; v1: LongInt; v2: Boolean): Tuple9000;
+  TClosure0 = class(TFun0) v0: TUS0; function Invoke(v1: LongInt): LongInt; override; end;
+function method0(v0: TUS0): LongInt; forward;
+function ClosureCreate0(v0: TUS0): TFun0; forward;
+function method1(v0: TFun0): LongInt; forward;
+function US0_0: TUS0;
 begin
-  Result.v0 := v0;
-  Result.v1 := v1;
-  Result.v2 := v2;
+  Result.tag := 0; 
 end;
-
-function ClosureValueCreate0(v0: Tuple9000): ClosureValue0;
+function US0_1(a0: LongInt): TUS0;
 begin
-  Result.v0 := v0;
+  Result.tag := 1; Result.c1_0 := a0;
 end;
-
-function score0(v0: Tuple9000): LongInt;
+function US0_2(a0: Boolean): TUS0;
+begin
+  Result.tag := 2; Result.c2_0 := a0;
+end;
+function method0(v0: TUS0): LongInt;
 var
   v2: Boolean;
   v1: LongInt;
 begin
-  if (v0.v0 = 2) then begin
-    v2 := v0.v2;
-    if v2 then begin
-      Exit(11);
-    end else begin
-      Exit(5);
-    end;
-  end else begin
-    if (v0.v0 = 1) then begin
-      v1 := v0.v1;
-      Exit(v1);
-    end else begin
-      Exit(3);
-    end;
+  case v0.tag of
+      2: begin // Flag
+          v2 := v0.c2_0;
+          if v2 then begin
+              Result := 11;
+          end else begin
+              Result := 5;
+          end;
+      end;
+      1: begin // Hit
+          v1 := v0.c1_0;
+          Result := v1;
+      end;
+      0: begin // Idle
+          Result := 3;
+      end;
   end;
 end;
-
-function ClosureInvoke0(x: ClosureValue0; v1: LongInt): LongInt;
+function TClosure0.Invoke(v1: LongInt): LongInt;
 var
-  v0: Tuple9000;
   v2: LongInt;
   v3: LongInt;
 begin
-  v0 := x.v0;
-  v2 := score0(v0);
-  v3 := (v2 + v1);
-  Exit(v3);
+  v2 := method0(v0);
+  v3 := v2 + v1;
+  Result := v3;
 end;
-
-function method1(v0: ClosureValue0): LongInt;
+function ClosureCreate0(v0: TUS0): TFun0;
+var c: TClosure0;
 begin
-  Exit(ClosureInvoke0(v0, 31));
+  c := TClosure0.Create; c.v0 := v0;
+  Result := c;
 end;
-
+function method1(v0: TFun0): LongInt;
+begin
+  Result := v0.Invoke(31);
+end;
 function SpiralMain: LongInt;
 var
   v0: LongInt;
   v1: Boolean;
-  v7: Tuple9000;
+  v7: TUS0;
   v3: Boolean;
-  v8: ClosureValue0;
+  v8: TFun0;
 begin
   v0 := 2;
-  v1 := (v0 = 0);
+  v1 := v0 = 0;
   if v1 then begin
-    v7 := TupleCreate9000(0, 0, False);
+      v7 := US0_0;
   end else begin
-    v3 := (v0 = 1);
-    if v3 then begin
-      v7 := TupleCreate9000(1, 7, False);
-    end else begin
-      v7 := TupleCreate9000(2, 0, True);
-    end;
+      v3 := v0 = 1;
+      if v3 then begin
+          v7 := US0_1(7);
+      end else begin
+          v7 := US0_2(True);
+      end;
   end;
-  v8 := ClosureValueCreate0(v7);
-  Exit(method1(v8));
+  v8 := ClosureCreate0(v7);
+  Result := method1(v8);
 end;
-
 begin
   Halt(SpiralMain);
 end.

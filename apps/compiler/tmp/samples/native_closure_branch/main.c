@@ -28,7 +28,7 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v0){
     int32_t v1;
-    v1 = v0 + 2l ;
+    v1 = v0 + 2l;
     ClosureDecref0(x);
     return v1;
 }
@@ -46,7 +46,7 @@ void ClosureDecref1(Closure1 * x){
 }
 int32_t ClosureMethod1(Closure1 * x, int32_t v0){
     int32_t v1;
-    v1 = v0 + 3l ;
+    v1 = v0 + 3l;
     ClosureDecref1(x);
     return v1;
 }

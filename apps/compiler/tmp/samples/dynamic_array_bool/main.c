@@ -27,44 +27,23 @@ Array0 * ArrayLit0(uint32_t len, bool * ptr){
     return x;
 }
 static inline void AssignArray0(bool * a, bool b){
-    
-    
     *a = b;
 }
 int32_t main(){
-    
-    
     int32_t v0;
     v0 = 2l;
-    
-    
     Array0 * v1;
     v1 = ArrayCreate0(v0, false);
-    
-    
-    
     AssignArray0(&(v1->ptr[0l]), true);
-    
-    
-    
     AssignArray0(&(v1->ptr[1l]), false);
-    
-    
     int32_t v2;
     v2 = 0l;
-    
-    
     bool v3;
     v3 = v1->ptr[v2];
-    
     ArrayDecref0(v1);
     if (v3){
-        
-        
         return 0l;
     } else {
-        
-        
         return 1l;
     }
 }

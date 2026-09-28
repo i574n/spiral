@@ -1,49 +1,59 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  ClosureValue0 = record
-    variant: LongInt;
+  TFun0 = class;
+  TFun0 = class
+    function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
-
-function ClosureValueCreate0(variant: LongInt): ClosureValue0;
-begin
-  Result.variant := variant;
-end;
-
-function ClosureInvoke0(x: ClosureValue0; v0: LongInt): LongInt;
+  TClosure0 = class(TFun0)  function Invoke(v0: LongInt): LongInt; override; end;
+  TClosure1 = class(TFun0)  function Invoke(v0: LongInt): LongInt; override; end;
+function ClosureCreate0: TFun0; forward;
+function ClosureCreate1: TFun0; forward;
+function method0(v0: TFun0): LongInt; forward;
+function TClosure0.Invoke(v0: LongInt): LongInt;
 var
-  closure0_v1: LongInt;
-  closure1_v1: LongInt;
+  v1: LongInt;
 begin
-  if (x.variant = 0) then begin
-    closure0_v1 := (v0 + 2);
-    Exit(closure0_v1);
-  end else begin
-    closure1_v1 := (v0 + 3);
-    Exit(closure1_v1);
-  end;
+  v1 := v0 + 2;
+  Result := v1;
 end;
-
-function method0(v0: ClosureValue0): LongInt;
+function ClosureCreate0: TFun0;
+var c: TClosure0;
 begin
-  Exit(ClosureInvoke0(v0, 40));
+  c := TClosure0.Create; 
+  Result := c;
 end;
-
+function TClosure1.Invoke(v0: LongInt): LongInt;
+var
+  v1: LongInt;
+begin
+  v1 := v0 + 3;
+  Result := v1;
+end;
+function ClosureCreate1: TFun0;
+var c: TClosure1;
+begin
+  c := TClosure1.Create; 
+  Result := c;
+end;
+function method0(v0: TFun0): LongInt;
+begin
+  Result := v0.Invoke(40);
+end;
 function SpiralMain: LongInt;
 var
   v0: Boolean;
-  v3: ClosureValue0;
+  v3: TFun0;
 begin
   v0 := True;
   if v0 then begin
-    v3 := ClosureValueCreate0(0);
+      v3 := ClosureCreate0;
   end else begin
-    v3 := ClosureValueCreate0(1);
+      v3 := ClosureCreate1;
   end;
-  Exit(method0(v3));
+  Result := method0(v3);
 end;
-
 begin
   Halt(SpiralMain);
 end.

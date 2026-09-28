@@ -69,7 +69,7 @@ int32_t ClosureMethod1(Closure1 * x, int32_t v1){
     int32_t v2;
     v2 = v0->len-1;
     int32_t v3;
-    v3 = v2 + v1 ;
+    v3 = v2 + v1;
     ClosureDecref1(x);
     return v3;
 }

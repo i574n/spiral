@@ -84,31 +84,20 @@ US0 US0_1(String * v0, int32_t v1) { // Item
     return x;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
-    
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
 US0 ClosureMethod0(Closure0 * x, int32_t v0){
-    
-    ClosureDecref0(x);
-    
-    
     bool v1;
-    v1 = v0 == 0l ;
-    
-    
+    v1 = v0 == 0l;
     if (v1){
-        
-        
+        ClosureDecref0(x);
         return US0_0();
     } else {
-        
-        
         String * v3;
         v3 = StringLit(8, "managed");
-        
-        
+        ClosureDecref0(x);
         return US0_1(v3, 32l);
     }
 }
@@ -117,51 +106,34 @@ Fun0 * ClosureCreate0(){
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
     x->fptr = ClosureMethod0;
-    
     return (Fun0 *) x;
 }
 US0 method0(Fun0 * v0){
-    
-    
     return v0->fptr(v0, 0l);
 }
 US0 method1(Fun0 * v0){
-    
-    
     return v0->fptr(v0, 1l);
 }
 int32_t main(){
-    
-    
     Fun0 * v0;
     v0 = ClosureCreate0();
     v0->refc++;
-    
     US0 v1;
     v1 = method0(v0);
-    
-    
     int32_t v7;
     switch (v1.tag) {
         case 0: { // Empty
-            
-            
-            
             v7 = 3l;
             break;
         }
         case 1: { // Item
             String * v2 = v1.case1.v0; int32_t v3 = v1.case1.v1;
             v2->refc++;
-            
             int32_t v4;
             v4 = v2->len-1;
-            
             StringDecref(v2);
             int32_t v5;
-            v5 = v4 + v3 ;
-            
-            
+            v5 = v4 + v3;
             v7 = v5;
             break;
         }
@@ -170,38 +142,27 @@ int32_t main(){
     USDecref0(&(v1));
     US0 v8;
     v8 = method1(v0);
-    
     v0->decref_fptr(v0);
     int32_t v14;
     switch (v8.tag) {
         case 0: { // Empty
-            
-            
-            
             v14 = 3l;
             break;
         }
         case 1: { // Item
             String * v9 = v8.case1.v0; int32_t v10 = v8.case1.v1;
             v9->refc++;
-            
             int32_t v11;
             v11 = v9->len-1;
-            
             StringDecref(v9);
             int32_t v12;
-            v12 = v11 + v10 ;
-            
-            
+            v12 = v11 + v10;
             v14 = v12;
             break;
         }
     }
-    
     USDecref0(&(v8));
     int32_t v15;
-    v15 = v7 + v14 ;
-    
-    
+    v15 = v7 + v14;
     return v15;
 }

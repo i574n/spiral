@@ -1,45 +1,44 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  ClosureValue0 = record
-    v0: AnsiString;
+  TFun0 = class;
+  TFun0 = class
+    function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
-
-function ClosureValueCreate0(v0: AnsiString): ClosureValue0;
-begin
-  Result.v0 := v0;
-end;
-
-function ClosureInvoke0(x: ClosureValue0; v1: LongInt): LongInt;
+  TClosure0 = class(TFun0) v0: AnsiString; function Invoke(v1: LongInt): LongInt; override; end;
+function ClosureCreate0(v0: AnsiString): TFun0; forward;
+function method0(v0: TFun0; v1: LongInt): LongInt; forward;
+function TClosure0.Invoke(v1: LongInt): LongInt;
 var
-  v0: AnsiString;
   v2: LongInt;
   v3: LongInt;
 begin
-  v0 := x.v0;
-  v2 := Length(v0);
-  v3 := (v2 + v1);
-  Exit(v3);
+  v2 := LongInt(Length(v0));
+  v3 := v2 + v1;
+  Result := v3;
 end;
-
-function apply0(v0: ClosureValue0; v1: LongInt): LongInt;
+function ClosureCreate0(v0: AnsiString): TFun0;
+var c: TClosure0;
 begin
-  Exit(ClosureInvoke0(v0, v1));
+  c := TClosure0.Create; c.v0 := v0;
+  Result := c;
 end;
-
+function method0(v0: TFun0; v1: LongInt): LongInt;
+begin
+  Result := v0.Invoke(v1);
+end;
 function SpiralMain: LongInt;
 var
   v0: AnsiString;
-  v1: ClosureValue0;
+  v1: TFun0;
   v2: LongInt;
 begin
   v0 := 'abc';
-  v1 := ClosureValueCreate0(v0);
+  v1 := ClosureCreate0(v0);
   v2 := 39;
-  Exit(apply0(v1, v2));
+  Result := method0(v1, v2);
 end;
-
 begin
   Halt(SpiralMain);
 end.

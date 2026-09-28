@@ -48,7 +48,7 @@ int32_t score0(US0 v0){
             int32_t v2 = v0.case1.v0;
             USDecref0(&(v0));
             int32_t v3;
-            v3 = 0l - v2 ;
+            v3 = -v2;
             return v3;
             break;
         }
@@ -68,6 +68,6 @@ int32_t main(){
     v4 = score0(v3);
     USDecref0(&(v3));
     int32_t v5;
-    v5 = v4 - 7l ;
+    v5 = v4 - 7l;
     return v5;
 }

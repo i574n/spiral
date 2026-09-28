@@ -1,7 +1,19 @@
 inl nan_is32 (x : f32) : bool = !!!!NanIs(x)
 inl nan_is64 (x : f64) : bool = !!!!NanIs(x)
-inl make_nan32 () : f32 = $"nanf(\"\")" : f32
-inl make_nan64 () : f64 = $"nan(\"\")" : f64
+inl make_nan32 () : f32 =
+    !!!!BackendSwitch({
+        Fsharp = fun () => $"nanf" : f32
+        C = fun () => $"nanf(\"\")" : f32
+        Rust = fun () => $"f32::NAN" : f32
+        Delphi = fun () => $"NaN" : f32
+        })
+inl make_nan64 () : f64 =
+    !!!!BackendSwitch({
+        Fsharp = fun () => $"nan" : f64
+        C = fun () => $"nan(\"\")" : f64
+        Rust = fun () => $"f64::NAN" : f64
+        Delphi = fun () => $"NaN" : f64
+        })
 
 inl main () : i32 =
     inl nan32 = make_nan32 ()

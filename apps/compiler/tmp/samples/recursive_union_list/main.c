@@ -49,7 +49,7 @@ int32_t sum0(UH0 * v0){
             v3 = sum0(v2);
             UHDecref0(v2);
             int32_t v4;
-            v4 = v1 + v3 ;
+            v4 = v1 + v3;
             return v4;
             break;
         }
@@ -86,6 +86,6 @@ int32_t main(){
     v7 = sum0(v6);
     UHDecref0(v6);
     int32_t v8;
-    v8 = v7 - 6l ;
+    v8 = v7 - 6l;
     return v8;
 }

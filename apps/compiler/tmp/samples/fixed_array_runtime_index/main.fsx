@@ -5,5 +5,5 @@ v0.[int 2] <- 5
 v0.[int 3] <- 7
 let v1 : int32 = 2
 let v2 : int32 = v0.[int v1]
-let v3 : int32 = v2 - 5 
+let v3 : int32 = v2 - 5
 v3

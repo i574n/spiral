@@ -49,6 +49,6 @@ int32_t main(){
     v1 = method1(v0);
     ArrayDecref0(v0);
     int32_t v2;
-    v2 = v1 - 4l ;
+    v2 = v1 - 4l;
     return v2;
 }

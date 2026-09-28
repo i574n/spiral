@@ -10,9 +10,9 @@ int32_t main(){
     double v1;
     v1 = HUGE_VAL;
     float v2;
-    v2 = 0.0f - v0 ;
+    v2 = -v0;
     double v3;
-    v3 = 0.0 - v1 ;
+    v3 = -v1;
     float v4;
     v4 = 1.0f;
     double v5;

@@ -1,68 +1,69 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
 type
-  Tuple9000 = record
-    v0: LongInt;
-    v1: LongInt;
-    v2: Boolean;
-  end;
-
-function TupleCreate9000(v0: LongInt; v1: LongInt; v2: Boolean): Tuple9000;
+  TUS0 = record tag: LongInt; c1_0: LongInt; c2_0: Boolean; end;
+function method0(v0: TUS0): LongInt; forward;
+function US0_0: TUS0;
 begin
-  Result.v0 := v0;
-  Result.v1 := v1;
-  Result.v2 := v2;
+  Result.tag := 0; 
 end;
-
-function score0(v0: Tuple9000): LongInt;
+function US0_1(a0: LongInt): TUS0;
+begin
+  Result.tag := 1; Result.c1_0 := a0;
+end;
+function US0_2(a0: Boolean): TUS0;
+begin
+  Result.tag := 2; Result.c2_0 := a0;
+end;
+function method0(v0: TUS0): LongInt;
 var
   v2: Boolean;
   v1: LongInt;
 begin
-  if (v0.v0 = 2) then begin
-    v2 := v0.v2;
-    if v2 then begin
-      Exit(11);
-    end else begin
-      Exit(5);
-    end;
-  end else begin
-    if (v0.v0 = 1) then begin
-      v1 := v0.v1;
-      Exit(v1);
-    end else begin
-      Exit(3);
-    end;
+  case v0.tag of
+      2: begin // Flag
+          v2 := v0.c2_0;
+          if v2 then begin
+              Result := 11;
+          end else begin
+              Result := 5;
+          end;
+      end;
+      1: begin // Hit
+          v1 := v0.c1_0;
+          Result := v1;
+      end;
+      0: begin // Idle
+          Result := 3;
+      end;
   end;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
   v1: Boolean;
-  v7: Tuple9000;
+  v7: TUS0;
   v3: Boolean;
   v8: LongInt;
   v9: LongInt;
 begin
   v0 := 2;
-  v1 := (v0 = 0);
+  v1 := v0 = 0;
   if v1 then begin
-    v7 := TupleCreate9000(0, 0, False);
+      v7 := US0_0;
   end else begin
-    v3 := (v0 = 1);
-    if v3 then begin
-      v7 := TupleCreate9000(1, 7, False);
-    end else begin
-      v7 := TupleCreate9000(2, 0, True);
-    end;
+      v3 := v0 = 1;
+      if v3 then begin
+          v7 := US0_1(7);
+      end else begin
+          v7 := US0_2(True);
+      end;
   end;
-  v8 := score0(v7);
-  v9 := (v8 - 11);
-  Exit(v9);
+  v8 := method0(v7);
+  v9 := v8 - 11;
+  Result := v9;
 end;
-
 begin
   Halt(SpiralMain);
 end.

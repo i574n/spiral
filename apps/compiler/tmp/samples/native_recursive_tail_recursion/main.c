@@ -40,142 +40,61 @@ UH0 * UH0_1(int32_t v0, UH0 * v1) { // Box
     return x;
 }
 UH0 * method2(int32_t v0){
-    
-    
     int32_t v1;
-    v1 = v0 - 1l ;
-    
-    
+    v1 = v0 - 1l;
     bool v2;
-    v2 = v1 == 0l ;
-    
-    
+    v2 = v1 == 0l;
     if (v2){
-        
-        
         UH0 * v3;
         v3 = UH0_0();
-        
-        
         return UH0_1(7l, v3);
     } else {
-        
-        
         return method1(v1);
     }
 }
 UH0 * method1(int32_t v0){
-    
-    
     int32_t v1;
-    v1 = v0 - 1l ;
-    
-    
+    v1 = v0 - 1l;
     bool v2;
-    v2 = v1 == 0l ;
-    
-    
+    v2 = v1 == 0l;
     if (v2){
-        
-        
         UH0 * v3;
         v3 = UH0_0();
-        
-        
         return UH0_1(11l, v3);
     } else {
-        
-        
         return method2(v1);
     }
 }
 UH0 * method0(){
-    
-    
     int32_t v0;
     v0 = 1000000l;
-    
-    
     bool v1;
-    v1 = v0 == 0l ;
-    
-    
+    v1 = v0 == 0l;
     if (v1){
-        
-        
         UH0 * v2;
         v2 = UH0_0();
-        
-        
         return UH0_1(7l, v2);
     } else {
-        
-        
         return method1(v0);
     }
 }
 int32_t main(){
-    
-    
     UH0 * v0;
     v0 = method0();
-    
-    
     switch (v0->tag) {
         case 1: { // Box
             int32_t v1 = v0->case1.v0;
-            
             UHDecref0(v0);
             bool v3;
-            v3 = v1 == 7l ;
-            
-            
-            bool v5;
+            v3 = v1 == 7l;
             if (v3){
-                
-                
-                bool v4;
-                v4 = 7l == 7l ;
-                
-                
-                v5 = v4;
-            } else {
-                
-                
-                v5 = false;
-            }
-            
-            
-            bool v7;
-            if (v5){
-                
-                
-                bool v6;
-                v6 = 11l == 11l ;
-                
-                
-                v7 = v6;
-            } else {
-                
-                
-                v7 = false;
-            }
-            
-            
-            if (v7){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 3l;
             }
             break;
         }
         case 0: { // Empty
-            
-            
             UHDecref0(v0);
             return 1l;
             break;

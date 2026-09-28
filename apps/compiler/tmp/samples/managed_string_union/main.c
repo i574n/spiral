@@ -75,12 +75,9 @@ US0 US0_1(int32_t v0) { // Number
     return x;
 }
 int32_t score0(US0 v0){
-    
-    
     switch (v0.tag) {
         case 1: { // Number
             int32_t v3 = v0.case1.v0;
-            
             USDecref0(&(v0));
             return v3;
             break;
@@ -91,7 +88,6 @@ int32_t score0(US0 v0){
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->len-1;
-            
             StringDecref(v1);
             return v2;
             break;
@@ -99,43 +95,26 @@ int32_t score0(US0 v0){
     }
 }
 int32_t main(){
-    
-    
     bool v0;
     v0 = false;
-    
-    
     US0 v4;
     if (v0){
-        
-        
         v4 = US0_1(7l);
     } else {
-        
-        
         String * v2;
         v2 = StringLit(4, "qwe");
-        
-        
         v4 = US0_0(v2);
     }
     USIncref0(&(v4));
-    
     int32_t v5;
     v5 = score0(v4);
     USIncref0(&(v4));
-    
     int32_t v6;
     v6 = score0(v4);
-    
     USDecref0(&(v4));
     int32_t v7;
-    v7 = v5 + v6 ;
-    
-    
+    v7 = v5 + v6;
     int32_t v8;
-    v8 = v7 - 6l ;
-    
-    
+    v8 = v7 - 6l;
     return v8;
 }

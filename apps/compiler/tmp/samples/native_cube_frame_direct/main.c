@@ -9,16 +9,6 @@ typedef struct {
     int32_t ptr[];
 } Array0;
 typedef struct {
-    int tag;
-    union {
-        struct {
-            double v0;
-            double v1;
-            double v2;
-        } case1; // Visible
-    };
-} US0;
-typedef struct {
     int refc;
     uint32_t len;
     char ptr[];
@@ -42,1115 +32,41 @@ Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
     memcpy(x->ptr, ptr, sizeof(int32_t) * len);
     return x;
 }
-bool method_while0(int32_t v0, int32_t v1){
-    
-    
-    bool v2;
-    v2 = v1 < v0;
-    
-    
-    return v2;
-}
-static inline void AssignArray0(int32_t * a, int32_t b){
-    
-    
-    *a = b;
-}
-Array0 * method0(int32_t v0){
-    
-    
-    Array0 * v1;
-    v1 = ArrayCreate0(v0, false);
-    
-    
-    int32_t v2;
-    v2 = 0l;
-    
-    
-    
-    while (method_while0(v0, v2)){
-        
-        
-        
-        AssignArray0(&(v1->ptr[v2]), 46l);
-        
-        
-        int32_t v4;
-        v4 = v2 + 1l ;
-        
-        
-        
-        v2 = v4;
-        
-        
-        
-    }
-    
-    
+bool method_while0(int32_t v0){
+    bool v1;
+    v1 = v0 < 7040l;
     return v1;
 }
-static inline void USIncrefBody0(US0 * x){
-    switch (x->tag) {
+static inline void AssignArray0(int32_t * a, int32_t b){
+    *a = b;
+}
+Array0 * method0(){
+    Array0 * v0;
+    v0 = ArrayCreate0(7040l, false);
+    int32_t v1;
+    v1 = 0l;
+    while (method_while0(v1)){
+        AssignArray0(&(v0->ptr[v1]), 46l);
+        int32_t v3;
+        v3 = v1 + 1l;
+        v1 = v3;
     }
-}
-static inline void USDecrefBody0(US0 * x){
-    switch (x->tag) {
-    }
-}
-void USIncref0(US0 * x){ USIncrefBody0(x); }
-void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Hidden
-    US0 x;
-    x.tag = 0;
-    return x;
-}
-US0 US0_1(double v0, double v1, double v2) { // Visible
-    US0 x;
-    x.tag = 1;
-    x.case1.v0 = v0; x.case1.v1 = v1; x.case1.v2 = v2;
-    return x;
+    return v0;
 }
 int32_t method1(Array0 * v0){
-    
-    
-    double v1;
-    v1 = 0.0 - 40.0 ;
-    
-    
-    double v2;
-    v2 = 0.0 - 20.0 ;
-    
-    
-    double v3;
-    v3 = 20.0 * 0.0 ;
-    
-    
-    double v4;
-    v4 = v3 * 0.0 ;
-    
-    
-    double v5;
-    v5 = v4 * 1.0 ;
-    
-    
-    double v6;
-    v6 = v2 * 1.0 ;
-    
-    
-    double v7;
-    v7 = v6 * 0.0 ;
-    
-    
-    double v8;
-    v8 = v7 * 1.0 ;
-    
-    
-    double v9;
-    v9 = v5 - v8 ;
-    
-    
-    double v10;
-    v10 = 20.0 * 1.0 ;
-    
-    
-    double v11;
-    v11 = v10 * 0.0 ;
-    
-    
-    double v12;
-    v12 = v9 + v11 ;
-    
-    
-    double v13;
-    v13 = v2 * 0.0 ;
-    
-    
-    double v14;
-    v14 = v13 * 0.0 ;
-    
-    
-    double v15;
-    v15 = v12 + v14 ;
-    
-    
-    double v16;
-    v16 = 20.0 * 1.0 ;
-    
-    
-    double v17;
-    v17 = v16 * 1.0 ;
-    
-    
-    double v18;
-    v18 = v15 + v17 ;
-    
-    
-    double v19;
-    v19 = 20.0 * 1.0 ;
-    
-    
-    double v20;
-    v20 = v19 * 1.0 ;
-    
-    
-    double v21;
-    v21 = v2 * 0.0 ;
-    
-    
-    double v22;
-    v22 = v21 * 1.0 ;
-    
-    
-    double v23;
-    v23 = v20 + v22 ;
-    
-    
-    double v24;
-    v24 = 20.0 * 0.0 ;
-    
-    
-    double v25;
-    v25 = v24 * 0.0 ;
-    
-    
-    double v26;
-    v26 = v25 * 0.0 ;
-    
-    
-    double v27;
-    v27 = v23 - v26 ;
-    
-    
-    double v28;
-    v28 = v2 * 1.0 ;
-    
-    
-    double v29;
-    v29 = v28 * 0.0 ;
-    
-    
-    double v30;
-    v30 = v29 * 0.0 ;
-    
-    
-    double v31;
-    v31 = v27 + v30 ;
-    
-    
-    double v32;
-    v32 = 20.0 * 1.0 ;
-    
-    
-    double v33;
-    v33 = v32 * 0.0 ;
-    
-    
-    double v34;
-    v34 = v31 - v33 ;
-    
-    
-    double v35;
-    v35 = v2 * 1.0 ;
-    
-    
-    double v36;
-    v36 = v35 * 1.0 ;
-    
-    
-    double v37;
-    v37 = 20.0 * 0.0 ;
-    
-    
-    double v38;
-    v38 = v37 * 1.0 ;
-    
-    
-    double v39;
-    v39 = v36 - v38 ;
-    
-    
-    double v40;
-    v40 = 20.0 * 0.0 ;
-    
-    
-    double v41;
-    v41 = v39 + v40 ;
-    
-    
-    double v42;
-    v42 = v41 + 100.0 ;
-    
-    
-    double v43;
-    v43 = 1.0 / v42 ;
-    
-    
-    double v44;
-    v44 = 80.0 + v1 ;
-    
-    
-    double v45;
-    v45 = 40.0 * v43 ;
-    
-    
-    double v46;
-    v46 = v45 * v18 ;
-    
-    
-    double v47;
-    v47 = v46 * 2.0 ;
-    
-    
-    double v48;
-    v48 = v44 + v47 ;
-    
-    
-    double v49;
-    v49 = 40.0 * v43 ;
-    
-    
-    double v50;
-    v50 = v49 * v34 ;
-    
-    
-    double v51;
-    v51 = 22.0 + v50 ;
-    
-    
-    bool v52;
-    v52 = v48 >= 0.0;
-    
-    
-    bool v54;
-    if (v52){
-        
-        
-        bool v53;
-        v53 = v48 < 160.0;
-        
-        
-        v54 = v53;
-    } else {
-        
-        
-        v54 = false;
-    }
-    
-    
-    bool v56;
-    if (v54){
-        
-        
-        bool v55;
-        v55 = v51 >= 0.0;
-        
-        
-        v56 = v55;
-    } else {
-        
-        
-        v56 = false;
-    }
-    
-    
-    bool v58;
-    if (v56){
-        
-        
-        bool v57;
-        v57 = v51 < 44.0;
-        
-        
-        v58 = v57;
-    } else {
-        
-        
-        v58 = false;
-    }
-    
-    
-    US0 v61;
-    if (v58){
-        
-        
-        v61 = US0_1(v48, v51, v43);
-    } else {
-        
-        
-        v61 = US0_0();
-    }
-    
-    
-    switch (v61.tag) {
-        case 1: { // Visible
-            double v62 = v61.case1.v0; double v63 = v61.case1.v1; double v64 = v61.case1.v2;
-            
-            USDecref0(&(v61));
-            bool v65;
-            v65 = v62 >= 0.0;
-            
-            
-            bool v67;
-            if (v65){
-                
-                
-                bool v66;
-                v66 = v63 >= 0.0;
-                
-                
-                v67 = v66;
-            } else {
-                
-                
-                v67 = false;
-            }
-            
-            
-            bool v69;
-            if (v67){
-                
-                
-                bool v68;
-                v68 = v64 > 0.0;
-                
-                
-                v69 = v68;
-            } else {
-                
-                
-                v69 = false;
-            }
-            
-            
-            if (v69){
-                
-                
-                int32_t v70;
-                v70 = (int32_t)v62;
-                
-                
-                int32_t v71;
-                v71 = (int32_t)v63;
-                
-                
-                int32_t v72;
-                v72 = v71 * 160l ;
-                
-                
-                int32_t v73;
-                v73 = v70 + v72 ;
-                
-                
-                
-                AssignArray0(&(v0->ptr[v73]), 35l);
-                
-                ArrayDecref0(v0);
-                return v73;
-            } else {
-                
-                ArrayDecref0(v0);
-                return 0l;
-            }
-            break;
-        }
-        default: {
-            
-            ArrayDecref0(v0); USDecref0(&(v61));
-            return 0l;
-        }
-    }
+    AssignArray0(&(v0->ptr[5180l]), 35l);
+    ArrayDecref0(v0);
+    return 5180l;
 }
 int32_t method2(Array0 * v0){
-    
-    
-    double v1;
-    v1 = 0.0 - 10.0 ;
-    
-    
-    double v2;
-    v2 = 10.0 * 0.0 ;
-    
-    
-    double v3;
-    v3 = v2 * 0.0 ;
-    
-    
-    double v4;
-    v4 = v3 * 1.0 ;
-    
-    
-    double v5;
-    v5 = v1 * 1.0 ;
-    
-    
-    double v6;
-    v6 = v5 * 0.0 ;
-    
-    
-    double v7;
-    v7 = v6 * 1.0 ;
-    
-    
-    double v8;
-    v8 = v4 - v7 ;
-    
-    
-    double v9;
-    v9 = 10.0 * 1.0 ;
-    
-    
-    double v10;
-    v10 = v9 * 0.0 ;
-    
-    
-    double v11;
-    v11 = v8 + v10 ;
-    
-    
-    double v12;
-    v12 = v1 * 0.0 ;
-    
-    
-    double v13;
-    v13 = v12 * 0.0 ;
-    
-    
-    double v14;
-    v14 = v11 + v13 ;
-    
-    
-    double v15;
-    v15 = 10.0 * 1.0 ;
-    
-    
-    double v16;
-    v16 = v15 * 1.0 ;
-    
-    
-    double v17;
-    v17 = v14 + v16 ;
-    
-    
-    double v18;
-    v18 = 10.0 * 1.0 ;
-    
-    
-    double v19;
-    v19 = v18 * 1.0 ;
-    
-    
-    double v20;
-    v20 = v1 * 0.0 ;
-    
-    
-    double v21;
-    v21 = v20 * 1.0 ;
-    
-    
-    double v22;
-    v22 = v19 + v21 ;
-    
-    
-    double v23;
-    v23 = 10.0 * 0.0 ;
-    
-    
-    double v24;
-    v24 = v23 * 0.0 ;
-    
-    
-    double v25;
-    v25 = v24 * 0.0 ;
-    
-    
-    double v26;
-    v26 = v22 - v25 ;
-    
-    
-    double v27;
-    v27 = v1 * 1.0 ;
-    
-    
-    double v28;
-    v28 = v27 * 0.0 ;
-    
-    
-    double v29;
-    v29 = v28 * 0.0 ;
-    
-    
-    double v30;
-    v30 = v26 + v29 ;
-    
-    
-    double v31;
-    v31 = 10.0 * 1.0 ;
-    
-    
-    double v32;
-    v32 = v31 * 0.0 ;
-    
-    
-    double v33;
-    v33 = v30 - v32 ;
-    
-    
-    double v34;
-    v34 = v1 * 1.0 ;
-    
-    
-    double v35;
-    v35 = v34 * 1.0 ;
-    
-    
-    double v36;
-    v36 = 10.0 * 0.0 ;
-    
-    
-    double v37;
-    v37 = v36 * 1.0 ;
-    
-    
-    double v38;
-    v38 = v35 - v37 ;
-    
-    
-    double v39;
-    v39 = 10.0 * 0.0 ;
-    
-    
-    double v40;
-    v40 = v38 + v39 ;
-    
-    
-    double v41;
-    v41 = v40 + 100.0 ;
-    
-    
-    double v42;
-    v42 = 1.0 / v41 ;
-    
-    
-    double v43;
-    v43 = 80.0 + 10.0 ;
-    
-    
-    double v44;
-    v44 = 40.0 * v42 ;
-    
-    
-    double v45;
-    v45 = v44 * v17 ;
-    
-    
-    double v46;
-    v46 = v45 * 2.0 ;
-    
-    
-    double v47;
-    v47 = v43 + v46 ;
-    
-    
-    double v48;
-    v48 = 40.0 * v42 ;
-    
-    
-    double v49;
-    v49 = v48 * v33 ;
-    
-    
-    double v50;
-    v50 = 22.0 + v49 ;
-    
-    
-    bool v51;
-    v51 = v47 >= 0.0;
-    
-    
-    bool v53;
-    if (v51){
-        
-        
-        bool v52;
-        v52 = v47 < 160.0;
-        
-        
-        v53 = v52;
-    } else {
-        
-        
-        v53 = false;
-    }
-    
-    
-    bool v55;
-    if (v53){
-        
-        
-        bool v54;
-        v54 = v50 >= 0.0;
-        
-        
-        v55 = v54;
-    } else {
-        
-        
-        v55 = false;
-    }
-    
-    
-    bool v57;
-    if (v55){
-        
-        
-        bool v56;
-        v56 = v50 < 44.0;
-        
-        
-        v57 = v56;
-    } else {
-        
-        
-        v57 = false;
-    }
-    
-    
-    US0 v60;
-    if (v57){
-        
-        
-        v60 = US0_1(v47, v50, v42);
-    } else {
-        
-        
-        v60 = US0_0();
-    }
-    
-    
-    switch (v60.tag) {
-        case 1: { // Visible
-            double v61 = v60.case1.v0; double v62 = v60.case1.v1; double v63 = v60.case1.v2;
-            
-            USDecref0(&(v60));
-            bool v64;
-            v64 = v61 >= 0.0;
-            
-            
-            bool v66;
-            if (v64){
-                
-                
-                bool v65;
-                v65 = v62 >= 0.0;
-                
-                
-                v66 = v65;
-            } else {
-                
-                
-                v66 = false;
-            }
-            
-            
-            bool v68;
-            if (v66){
-                
-                
-                bool v67;
-                v67 = v63 > 0.0;
-                
-                
-                v68 = v67;
-            } else {
-                
-                
-                v68 = false;
-            }
-            
-            
-            if (v68){
-                
-                
-                int32_t v69;
-                v69 = (int32_t)v61;
-                
-                
-                int32_t v70;
-                v70 = (int32_t)v62;
-                
-                
-                int32_t v71;
-                v71 = v70 * 160l ;
-                
-                
-                int32_t v72;
-                v72 = v69 + v71 ;
-                
-                
-                
-                AssignArray0(&(v0->ptr[v72]), 64l);
-                
-                ArrayDecref0(v0);
-                return v72;
-            } else {
-                
-                ArrayDecref0(v0);
-                return 0l;
-            }
-            break;
-        }
-        default: {
-            
-            ArrayDecref0(v0); USDecref0(&(v60));
-            return 0l;
-        }
-    }
+    AssignArray0(&(v0->ptr[4258l]), 64l);
+    ArrayDecref0(v0);
+    return 4258l;
 }
 int32_t method3(Array0 * v0){
-    
-    
-    double v1;
-    v1 = 0.0 - 5.0 ;
-    
-    
-    double v2;
-    v2 = 5.0 * 0.0 ;
-    
-    
-    double v3;
-    v3 = v2 * 0.0 ;
-    
-    
-    double v4;
-    v4 = v3 * 1.0 ;
-    
-    
-    double v5;
-    v5 = v1 * 1.0 ;
-    
-    
-    double v6;
-    v6 = v5 * 0.0 ;
-    
-    
-    double v7;
-    v7 = v6 * 1.0 ;
-    
-    
-    double v8;
-    v8 = v4 - v7 ;
-    
-    
-    double v9;
-    v9 = 5.0 * 1.0 ;
-    
-    
-    double v10;
-    v10 = v9 * 0.0 ;
-    
-    
-    double v11;
-    v11 = v8 + v10 ;
-    
-    
-    double v12;
-    v12 = v1 * 0.0 ;
-    
-    
-    double v13;
-    v13 = v12 * 0.0 ;
-    
-    
-    double v14;
-    v14 = v11 + v13 ;
-    
-    
-    double v15;
-    v15 = 5.0 * 1.0 ;
-    
-    
-    double v16;
-    v16 = v15 * 1.0 ;
-    
-    
-    double v17;
-    v17 = v14 + v16 ;
-    
-    
-    double v18;
-    v18 = 5.0 * 1.0 ;
-    
-    
-    double v19;
-    v19 = v18 * 1.0 ;
-    
-    
-    double v20;
-    v20 = v1 * 0.0 ;
-    
-    
-    double v21;
-    v21 = v20 * 1.0 ;
-    
-    
-    double v22;
-    v22 = v19 + v21 ;
-    
-    
-    double v23;
-    v23 = 5.0 * 0.0 ;
-    
-    
-    double v24;
-    v24 = v23 * 0.0 ;
-    
-    
-    double v25;
-    v25 = v24 * 0.0 ;
-    
-    
-    double v26;
-    v26 = v22 - v25 ;
-    
-    
-    double v27;
-    v27 = v1 * 1.0 ;
-    
-    
-    double v28;
-    v28 = v27 * 0.0 ;
-    
-    
-    double v29;
-    v29 = v28 * 0.0 ;
-    
-    
-    double v30;
-    v30 = v26 + v29 ;
-    
-    
-    double v31;
-    v31 = 5.0 * 1.0 ;
-    
-    
-    double v32;
-    v32 = v31 * 0.0 ;
-    
-    
-    double v33;
-    v33 = v30 - v32 ;
-    
-    
-    double v34;
-    v34 = v1 * 1.0 ;
-    
-    
-    double v35;
-    v35 = v34 * 1.0 ;
-    
-    
-    double v36;
-    v36 = 5.0 * 0.0 ;
-    
-    
-    double v37;
-    v37 = v36 * 1.0 ;
-    
-    
-    double v38;
-    v38 = v35 - v37 ;
-    
-    
-    double v39;
-    v39 = 5.0 * 0.0 ;
-    
-    
-    double v40;
-    v40 = v38 + v39 ;
-    
-    
-    double v41;
-    v41 = v40 + 100.0 ;
-    
-    
-    double v42;
-    v42 = 1.0 / v41 ;
-    
-    
-    double v43;
-    v43 = 80.0 + 40.0 ;
-    
-    
-    double v44;
-    v44 = 40.0 * v42 ;
-    
-    
-    double v45;
-    v45 = v44 * v17 ;
-    
-    
-    double v46;
-    v46 = v45 * 2.0 ;
-    
-    
-    double v47;
-    v47 = v43 + v46 ;
-    
-    
-    double v48;
-    v48 = 40.0 * v42 ;
-    
-    
-    double v49;
-    v49 = v48 * v33 ;
-    
-    
-    double v50;
-    v50 = 22.0 + v49 ;
-    
-    
-    bool v51;
-    v51 = v47 >= 0.0;
-    
-    
-    bool v53;
-    if (v51){
-        
-        
-        bool v52;
-        v52 = v47 < 160.0;
-        
-        
-        v53 = v52;
-    } else {
-        
-        
-        v53 = false;
-    }
-    
-    
-    bool v55;
-    if (v53){
-        
-        
-        bool v54;
-        v54 = v50 >= 0.0;
-        
-        
-        v55 = v54;
-    } else {
-        
-        
-        v55 = false;
-    }
-    
-    
-    bool v57;
-    if (v55){
-        
-        
-        bool v56;
-        v56 = v50 < 44.0;
-        
-        
-        v57 = v56;
-    } else {
-        
-        
-        v57 = false;
-    }
-    
-    
-    US0 v60;
-    if (v57){
-        
-        
-        v60 = US0_1(v47, v50, v42);
-    } else {
-        
-        
-        v60 = US0_0();
-    }
-    
-    
-    switch (v60.tag) {
-        case 1: { // Visible
-            double v61 = v60.case1.v0; double v62 = v60.case1.v1; double v63 = v60.case1.v2;
-            
-            USDecref0(&(v60));
-            bool v64;
-            v64 = v61 >= 0.0;
-            
-            
-            bool v66;
-            if (v64){
-                
-                
-                bool v65;
-                v65 = v62 >= 0.0;
-                
-                
-                v66 = v65;
-            } else {
-                
-                
-                v66 = false;
-            }
-            
-            
-            bool v68;
-            if (v66){
-                
-                
-                bool v67;
-                v67 = v63 > 0.0;
-                
-                
-                v68 = v67;
-            } else {
-                
-                
-                v68 = false;
-            }
-            
-            
-            if (v68){
-                
-                
-                int32_t v69;
-                v69 = (int32_t)v61;
-                
-                
-                int32_t v70;
-                v70 = (int32_t)v62;
-                
-                
-                int32_t v71;
-                v71 = v70 * 160l ;
-                
-                
-                int32_t v72;
-                v72 = v69 + v71 ;
-                
-                
-                
-                AssignArray0(&(v0->ptr[v72]), 43l);
-                
-                ArrayDecref0(v0);
-                return v72;
-            } else {
-                
-                ArrayDecref0(v0);
-                return 0l;
-            }
-            break;
-        }
-        default: {
-            
-            ArrayDecref0(v0); USDecref0(&(v60));
-            return 0l;
-        }
-    }
+    AssignArray0(&(v0->ptr[3964l]), 43l);
+    ArrayDecref0(v0);
+    return 3964l;
 }
 static inline void ArrayDecrefBody1(Array1 * x){
 }
@@ -1185,678 +101,362 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 String * frame_text_loop4(Array0 * v0, int32_t v1, int32_t v2, int32_t v3, String * v4){
-    
-    
     bool v5;
-    v5 = v3 == v2 ;
-    
-    
+    v5 = v3 == v2;
     if (v5){
-        
         ArrayDecref0(v0);
         return v4;
     } else {
-        
-        
         int32_t v6;
         v6 = v0->ptr[v3];
-        
-        
         bool v7;
-        v7 = v6 == 35l ;
-        
-        
+        v7 = v6 == 35l;
         String * v16;
         if (v7){
-            
-            
             String * v8;
             v8 = StringLit(2, "#");
-            
-            
             v16 = v8;
         } else {
-            
-            
             bool v9;
-            v9 = v6 == 43l ;
-            
-            
+            v9 = v6 == 43l;
             if (v9){
-                
-                
                 String * v10;
                 v10 = StringLit(2, "+");
-                
-                
                 v16 = v10;
             } else {
-                
-                
                 bool v11;
-                v11 = v6 == 64l ;
-                
-                
+                v11 = v6 == 64l;
                 if (v11){
-                    
-                    
                     String * v12;
                     v12 = StringLit(2, "@");
-                    
-                    
                     v16 = v12;
                 } else {
-                    
-                    
                     String * v13;
                     v13 = StringLit(2, ".");
-                    
-                    
                     v16 = v13;
                 }
             }
         }
-        
-        
         String * v17;
         v17 = StringConcat(v4, v16);
-        
         StringDecref(v4); StringDecref(v16);
         int32_t v18;
-        v18 = v3 + 1l ;
-        
-        
+        v18 = v3 + 1l;
         int32_t v19;
-        v19 = v3 % v1 ;
-        
-        
+        v19 = v3 % v1;
         int32_t v20;
-        v20 = v1 - 1l ;
-        
-        
+        v20 = v1 - 1l;
         bool v21;
-        v21 = v19 == v20 ;
-        
-        
+        v21 = v19 == v20;
         bool v23;
         if (v21){
-            
-            
             bool v22;
             v22 = v18 < v2;
-            
-            
             v23 = v22;
         } else {
-            
-            
             v23 = false;
         }
-        
-        
         if (v23){
-            
-            
             String * v24;
             v24 = StringConcat(v17, StringLit(2, "\n"));
-            
             StringDecref(v17);
             return frame_text_loop4(v0, v1, v2, v18, v24);
         } else {
-            
-            
             return frame_text_loop4(v0, v1, v2, v18, v17);
         }
     }
 }
 char runtime_byte7(String * v0, int32_t v1){
-    
-    
     char v2;
     v2 = v0->ptr[v1];
-    
     StringDecref(v0);
     return v2;
 }
 int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
-    
-    
     int32_t v2;
     v2 = v0->len-1;
-    
-    
     bool v3;
     v3 = v1 < 0l;
-    
-    
     if (v3){
-        
         StringDecref(v0);
         fprintf(stderr, "%s\n", "UTF-8 byte offset is negative.");
         exit(EXIT_FAILURE);
     } else {
-        
-        
         bool v5;
         v5 = v1 >= v2;
-        
-        
         if (v5){
-            
             StringDecref(v0);
             fprintf(stderr, "%s\n", "UTF-8 byte offset is outside the string.");
             exit(EXIT_FAILURE);
         } else {
             v0->refc++;
-            
             char v7;
             v7 = runtime_byte7(v0, v1);
-            
-            
             int32_t v8;
             v8 = ((uint8_t)v7);
-            
-            
             bool v9;
             v9 = v8 < 128l;
-            
-            
             if (v9){
-                
                 StringDecref(v0);
                 return v8;
             } else {
-                
-                
                 bool v10;
                 v10 = v8 < 194l;
-                
-                
                 if (v10){
-                    
                     StringDecref(v0);
                     fprintf(stderr, "%s\n", "UTF-8 scalar starts with an invalid lead byte.");
                     exit(EXIT_FAILURE);
                 } else {
-                    
-                    
                     bool v12;
                     v12 = v8 < 224l;
-                    
-                    
                     if (v12){
-                        
-                        
                         int32_t v13;
-                        v13 = v1 + 1l ;
-                        
-                        
+                        v13 = v1 + 1l;
                         bool v14;
                         v14 = v13 >= v2;
-                        
-                        
                         if (v14){
-                            
                             StringDecref(v0);
                             fprintf(stderr, "%s\n", "UTF-8 sequence is truncated.");
                             exit(EXIT_FAILURE);
                         } else {
-                            
-                            
-                            int32_t v16;
-                            v16 = v1 + 1l ;
                             v0->refc++;
-                            
-                            char v17;
-                            v17 = runtime_byte7(v0, v16);
-                            
+                            char v16;
+                            v16 = runtime_byte7(v0, v13);
                             StringDecref(v0);
-                            int32_t v18;
-                            v18 = ((uint8_t)v17);
-                            
-                            
-                            bool v19;
-                            v19 = v18 < 128l;
-                            
-                            
-                            bool v21;
-                            if (v19){
-                                
-                                
-                                v21 = false;
+                            int32_t v17;
+                            v17 = ((uint8_t)v16);
+                            bool v18;
+                            v18 = v17 < 128l;
+                            bool v20;
+                            if (v18){
+                                v20 = false;
                             } else {
-                                
-                                
-                                bool v20;
-                                v20 = v18 < 192l;
-                                
-                                
-                                v21 = v20;
+                                bool v19;
+                                v19 = v17 < 192l;
+                                v20 = v19;
                             }
-                            
-                            
-                            if (v21){
-                                
-                                
+                            if (v20){
+                                int32_t v21;
+                                v21 = v8 - 192l;
                                 int32_t v22;
-                                v22 = v8 - 192l ;
-                                
-                                
+                                v22 = v21 * 64l;
                                 int32_t v23;
-                                v23 = v22 * 64l ;
-                                
-                                
+                                v23 = v17 - 128l;
                                 int32_t v24;
-                                v24 = v18 - 128l ;
-                                
-                                
-                                int32_t v25;
-                                v25 = v23 + v24 ;
-                                
-                                
-                                return v25;
+                                v24 = v22 + v23;
+                                return v24;
                             } else {
-                                
-                                
                                 fprintf(stderr, "%s\n", "UTF-8 sequence has an invalid continuation byte.");
                                 exit(EXIT_FAILURE);
                             }
                         }
                     } else {
-                        
-                        
-                        bool v29;
-                        v29 = v8 < 240l;
-                        
-                        
-                        if (v29){
-                            
-                            
-                            int32_t v30;
-                            v30 = v1 + 2l ;
-                            
-                            
-                            bool v31;
-                            v31 = v30 >= v2;
-                            
-                            
-                            if (v31){
-                                
+                        bool v28;
+                        v28 = v8 < 240l;
+                        if (v28){
+                            int32_t v29;
+                            v29 = v1 + 2l;
+                            bool v30;
+                            v30 = v29 >= v2;
+                            if (v30){
                                 StringDecref(v0);
                                 fprintf(stderr, "%s\n", "UTF-8 sequence is truncated.");
                                 exit(EXIT_FAILURE);
                             } else {
-                                
-                                
-                                int32_t v33;
-                                v33 = v1 + 1l ;
+                                int32_t v32;
+                                v32 = v1 + 1l;
                                 v0->refc++;
-                                
-                                char v34;
-                                v34 = runtime_byte7(v0, v33);
-                                
-                                
-                                int32_t v35;
-                                v35 = ((uint8_t)v34);
-                                
-                                
-                                int32_t v36;
-                                v36 = v1 + 2l ;
+                                char v33;
+                                v33 = runtime_byte7(v0, v32);
+                                int32_t v34;
+                                v34 = ((uint8_t)v33);
                                 v0->refc++;
-                                
-                                char v37;
-                                v37 = runtime_byte7(v0, v36);
-                                
+                                char v35;
+                                v35 = runtime_byte7(v0, v29);
                                 StringDecref(v0);
-                                int32_t v38;
-                                v38 = ((uint8_t)v37);
-                                
-                                
+                                int32_t v36;
+                                v36 = ((uint8_t)v35);
+                                bool v37;
+                                v37 = v34 < 128l;
                                 bool v39;
-                                v39 = v35 < 128l;
-                                
-                                
-                                bool v41;
-                                if (v39){
-                                    
-                                    
-                                    v41 = false;
+                                if (v37){
+                                    v39 = false;
                                 } else {
-                                    
-                                    
-                                    bool v40;
-                                    v40 = v35 < 192l;
-                                    
-                                    
-                                    v41 = v40;
+                                    bool v38;
+                                    v38 = v34 < 192l;
+                                    v39 = v38;
                                 }
-                                
-                                
-                                if (v41){
-                                    
-                                    
+                                if (v39){
+                                    bool v40;
+                                    v40 = v36 < 128l;
                                     bool v42;
-                                    v42 = v38 < 128l;
-                                    
-                                    
-                                    bool v44;
-                                    if (v42){
-                                        
-                                        
-                                        v44 = false;
+                                    if (v40){
+                                        v42 = false;
                                     } else {
-                                        
-                                        
-                                        bool v43;
-                                        v43 = v38 < 192l;
-                                        
-                                        
-                                        v44 = v43;
+                                        bool v41;
+                                        v41 = v36 < 192l;
+                                        v42 = v41;
                                     }
-                                    
-                                    
-                                    if (v44){
-                                        
-                                        
+                                    if (v42){
+                                        int32_t v43;
+                                        v43 = v8 - 224l;
+                                        int32_t v44;
+                                        v44 = v43 * 4096l;
                                         int32_t v45;
-                                        v45 = v8 - 224l ;
-                                        
-                                        
+                                        v45 = v34 - 128l;
                                         int32_t v46;
-                                        v46 = v45 * 4096l ;
-                                        
-                                        
+                                        v46 = v45 * 64l;
                                         int32_t v47;
-                                        v47 = v35 - 128l ;
-                                        
-                                        
+                                        v47 = v44 + v46;
                                         int32_t v48;
-                                        v48 = v47 * 64l ;
-                                        
-                                        
+                                        v48 = v36 - 128l;
                                         int32_t v49;
-                                        v49 = v46 + v48 ;
-                                        
-                                        
-                                        int32_t v50;
-                                        v50 = v38 - 128l ;
-                                        
-                                        
-                                        int32_t v51;
-                                        v51 = v49 + v50 ;
-                                        
-                                        
-                                        bool v52;
-                                        v52 = v51 < 2048l;
-                                        
-                                        
-                                        if (v52){
-                                            
-                                            
+                                        v49 = v47 + v48;
+                                        bool v50;
+                                        v50 = v49 < 2048l;
+                                        if (v50){
                                             fprintf(stderr, "%s\n", "UTF-8 sequence is overlong.");
                                             exit(EXIT_FAILURE);
                                         } else {
-                                            
-                                            
-                                            bool v54;
-                                            v54 = v51 >= 55296l;
-                                            
-                                            
-                                            if (v54){
-                                                
-                                                
-                                                bool v55;
-                                                v55 = v51 <= 57343l;
-                                                
-                                                
-                                                if (v55){
-                                                    
-                                                    
+                                            bool v52;
+                                            v52 = v49 >= 55296l;
+                                            if (v52){
+                                                bool v53;
+                                                v53 = v49 <= 57343l;
+                                                if (v53){
                                                     fprintf(stderr, "%s\n", "UTF-8 sequence encodes a surrogate.");
                                                     exit(EXIT_FAILURE);
                                                 } else {
-                                                    
-                                                    
-                                                    return v51;
+                                                    return v49;
                                                 }
                                             } else {
-                                                
-                                                
-                                                return v51;
+                                                return v49;
                                             }
                                         }
                                     } else {
-                                        
-                                        
                                         fprintf(stderr, "%s\n", "UTF-8 sequence has an invalid continuation byte.");
                                         exit(EXIT_FAILURE);
                                     }
                                 } else {
-                                    
-                                    
                                     fprintf(stderr, "%s\n", "UTF-8 sequence has an invalid continuation byte.");
                                     exit(EXIT_FAILURE);
                                 }
                             }
                         } else {
-                            
-                            
-                            bool v65;
-                            v65 = v8 < 245l;
-                            
-                            
-                            if (v65){
-                                
-                                
-                                int32_t v66;
-                                v66 = v1 + 3l ;
-                                
-                                
-                                bool v67;
-                                v67 = v66 >= v2;
-                                
-                                
-                                if (v67){
-                                    
+                            bool v63;
+                            v63 = v8 < 245l;
+                            if (v63){
+                                int32_t v64;
+                                v64 = v1 + 3l;
+                                bool v65;
+                                v65 = v64 >= v2;
+                                if (v65){
                                     StringDecref(v0);
                                     fprintf(stderr, "%s\n", "UTF-8 sequence is truncated.");
                                     exit(EXIT_FAILURE);
                                 } else {
-                                    
-                                    
+                                    int32_t v67;
+                                    v67 = v1 + 1l;
+                                    v0->refc++;
+                                    char v68;
+                                    v68 = runtime_byte7(v0, v67);
                                     int32_t v69;
-                                    v69 = v1 + 1l ;
+                                    v69 = ((uint8_t)v68);
+                                    int32_t v70;
+                                    v70 = v1 + 2l;
                                     v0->refc++;
-                                    
-                                    char v70;
-                                    v70 = runtime_byte7(v0, v69);
-                                    
-                                    
-                                    int32_t v71;
-                                    v71 = ((uint8_t)v70);
-                                    
-                                    
+                                    char v71;
+                                    v71 = runtime_byte7(v0, v70);
                                     int32_t v72;
-                                    v72 = v1 + 2l ;
+                                    v72 = ((uint8_t)v71);
                                     v0->refc++;
-                                    
                                     char v73;
-                                    v73 = runtime_byte7(v0, v72);
-                                    
-                                    
+                                    v73 = runtime_byte7(v0, v64);
+                                    StringDecref(v0);
                                     int32_t v74;
                                     v74 = ((uint8_t)v73);
-                                    
-                                    
-                                    int32_t v75;
-                                    v75 = v1 + 3l ;
-                                    v0->refc++;
-                                    
-                                    char v76;
-                                    v76 = runtime_byte7(v0, v75);
-                                    
-                                    StringDecref(v0);
-                                    int32_t v77;
-                                    v77 = ((uint8_t)v76);
-                                    
-                                    
-                                    bool v78;
-                                    v78 = v71 < 128l;
-                                    
-                                    
-                                    bool v80;
-                                    if (v78){
-                                        
-                                        
-                                        v80 = false;
+                                    bool v75;
+                                    v75 = v69 < 128l;
+                                    bool v77;
+                                    if (v75){
+                                        v77 = false;
                                     } else {
-                                        
-                                        
-                                        bool v79;
-                                        v79 = v71 < 192l;
-                                        
-                                        
-                                        v80 = v79;
+                                        bool v76;
+                                        v76 = v69 < 192l;
+                                        v77 = v76;
                                     }
-                                    
-                                    
-                                    if (v80){
-                                        
-                                        
-                                        bool v81;
-                                        v81 = v74 < 128l;
-                                        
-                                        
-                                        bool v83;
-                                        if (v81){
-                                            
-                                            
-                                            v83 = false;
+                                    if (v77){
+                                        bool v78;
+                                        v78 = v72 < 128l;
+                                        bool v80;
+                                        if (v78){
+                                            v80 = false;
                                         } else {
-                                            
-                                            
-                                            bool v82;
-                                            v82 = v74 < 192l;
-                                            
-                                            
-                                            v83 = v82;
+                                            bool v79;
+                                            v79 = v72 < 192l;
+                                            v80 = v79;
                                         }
-                                        
-                                        
-                                        if (v83){
-                                            
-                                            
-                                            bool v84;
-                                            v84 = v77 < 128l;
-                                            
-                                            
-                                            bool v86;
-                                            if (v84){
-                                                
-                                                
-                                                v86 = false;
+                                        if (v80){
+                                            bool v81;
+                                            v81 = v74 < 128l;
+                                            bool v83;
+                                            if (v81){
+                                                v83 = false;
                                             } else {
-                                                
-                                                
-                                                bool v85;
-                                                v85 = v77 < 192l;
-                                                
-                                                
-                                                v86 = v85;
+                                                bool v82;
+                                                v82 = v74 < 192l;
+                                                v83 = v82;
                                             }
-                                            
-                                            
-                                            if (v86){
-                                                
-                                                
+                                            if (v83){
+                                                int32_t v84;
+                                                v84 = v8 - 240l;
+                                                int32_t v85;
+                                                v85 = v84 * 262144l;
+                                                int32_t v86;
+                                                v86 = v69 - 128l;
                                                 int32_t v87;
-                                                v87 = v8 - 240l ;
-                                                
-                                                
+                                                v87 = v86 * 4096l;
                                                 int32_t v88;
-                                                v88 = v87 * 262144l ;
-                                                
-                                                
+                                                v88 = v85 + v87;
                                                 int32_t v89;
-                                                v89 = v71 - 128l ;
-                                                
-                                                
+                                                v89 = v72 - 128l;
                                                 int32_t v90;
-                                                v90 = v89 * 4096l ;
-                                                
-                                                
+                                                v90 = v89 * 64l;
                                                 int32_t v91;
-                                                v91 = v88 + v90 ;
-                                                
-                                                
+                                                v91 = v88 + v90;
                                                 int32_t v92;
-                                                v92 = v74 - 128l ;
-                                                
-                                                
+                                                v92 = v74 - 128l;
                                                 int32_t v93;
-                                                v93 = v92 * 64l ;
-                                                
-                                                
-                                                int32_t v94;
-                                                v94 = v91 + v93 ;
-                                                
-                                                
-                                                int32_t v95;
-                                                v95 = v77 - 128l ;
-                                                
-                                                
-                                                int32_t v96;
-                                                v96 = v94 + v95 ;
-                                                
-                                                
-                                                bool v97;
-                                                v97 = v96 < 65536l;
-                                                
-                                                
-                                                if (v97){
-                                                    
-                                                    
+                                                v93 = v91 + v92;
+                                                bool v94;
+                                                v94 = v93 < 65536l;
+                                                if (v94){
                                                     fprintf(stderr, "%s\n", "UTF-8 sequence is overlong.");
                                                     exit(EXIT_FAILURE);
                                                 } else {
-                                                    
-                                                    
-                                                    bool v99;
-                                                    v99 = v96 > 1114111l;
-                                                    
-                                                    
-                                                    if (v99){
-                                                        
-                                                        
+                                                    bool v96;
+                                                    v96 = v93 > 1114111l;
+                                                    if (v96){
                                                         fprintf(stderr, "%s\n", "UTF-8 scalar is above U+10FFFF.");
                                                         exit(EXIT_FAILURE);
                                                     } else {
-                                                        
-                                                        
-                                                        return v96;
+                                                        return v93;
                                                     }
                                                 }
                                             } else {
-                                                
-                                                
                                                 fprintf(stderr, "%s\n", "UTF-8 sequence has an invalid continuation byte.");
                                                 exit(EXIT_FAILURE);
                                             }
                                         } else {
-                                            
-                                            
                                             fprintf(stderr, "%s\n", "UTF-8 sequence has an invalid continuation byte.");
                                             exit(EXIT_FAILURE);
                                         }
                                     } else {
-                                        
-                                        
                                         fprintf(stderr, "%s\n", "UTF-8 sequence has an invalid continuation byte.");
                                         exit(EXIT_FAILURE);
                                     }
                                 }
                             } else {
-                                
                                 StringDecref(v0);
                                 fprintf(stderr, "%s\n", "UTF-8 scalar starts with an invalid lead byte.");
                                 exit(EXIT_FAILURE);
@@ -1869,445 +469,239 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
     }
 }
 int32_t loop5(String * v0, int32_t v1, int32_t v2, int32_t v3){
-    
-    
     bool v4;
-    v4 = v2 == v1 ;
-    
-    
+    v4 = v2 == v1;
     if (v4){
-        
         StringDecref(v0);
         return v3;
     } else {
-        
-        
         bool v5;
         v5 = v2 > v1;
-        
-        
         if (v5){
-            
             StringDecref(v0);
             fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
             exit(EXIT_FAILURE);
         } else {
             v0->refc++;
-            
             int32_t v7;
             v7 = utf8_scalar_at_byte_offset6(v0, v2);
-            
-            
             bool v8;
             v8 = v7 < 128l;
-            
-            
             int32_t v13;
             if (v8){
-                
-                
                 v13 = 1l;
             } else {
-                
-                
                 bool v9;
                 v9 = v7 < 2048l;
-                
-                
                 if (v9){
-                    
-                    
                     v13 = 2l;
                 } else {
-                    
-                    
                     bool v10;
                     v10 = v7 < 65536l;
-                    
-                    
                     if (v10){
-                        
-                        
                         v13 = 3l;
                     } else {
-                        
-                        
                         v13 = 4l;
                     }
                 }
             }
-            
-            
             int32_t v14;
-            v14 = v2 + v13 ;
-            
-            
+            v14 = v2 + v13;
             int32_t v15;
-            v15 = v3 + v7 ;
-            
-            
+            v15 = v3 + v7;
             return loop5(v0, v1, v14, v15);
         }
     }
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 160l * 44l ;
-    
-    
-    Array0 * v1;
-    v1 = method0(v0);
-    v1->refc++;
-    
+    Array0 * v0;
+    v0 = method0();
+    v0->refc++;
+    int32_t v1;
+    v1 = method1(v0);
+    v0->refc++;
     int32_t v2;
-    v2 = method1(v1);
-    v1->refc++;
-    
+    v2 = method2(v0);
+    v0->refc++;
     int32_t v3;
-    v3 = method2(v1);
-    v1->refc++;
-    
+    v3 = method3(v0);
     int32_t v4;
-    v4 = method3(v1);
-    
-    
+    v4 = v0->ptr[0l];
     int32_t v5;
-    v5 = v1->ptr[0l];
-    
-    
+    v5 = v0->ptr[5180l];
     int32_t v6;
-    v6 = v1->ptr[5180l];
-    
-    
+    v6 = v0->ptr[4258l];
     int32_t v7;
-    v7 = v1->ptr[4258l];
-    
-    
+    v7 = v0->ptr[3964l];
     int32_t v8;
-    v8 = v1->ptr[3964l];
-    
-    
+    v8 = 160l;
     int32_t v9;
-    v9 = 160l;
-    
-    
+    v9 = 7040l;
     int32_t v10;
-    v10 = 160l * 44l ;
-    
-    
-    int32_t v11;
-    v11 = 0l;
-    
-    
+    v10 = 0l;
+    String * v11;
+    v11 = StringLit(1, "");
+    v0->refc++; v11->refc++;
     String * v12;
-    v12 = StringLit(1, "");
-    v1->refc++; v12->refc++;
-    
-    String * v13;
-    v13 = frame_text_loop4(v1, v9, v10, v11, v12);
-    
-    ArrayDecref0(v1); StringDecref(v12);
+    v12 = frame_text_loop4(v0, v8, v9, v10, v11);
+    ArrayDecref0(v0); StringDecref(v11);
+    int32_t v13;
+    v13 = v12->len-1;
     int32_t v14;
-    v14 = v13->len-1;
-    
-    
+    v14 = 0l;
     int32_t v15;
     v15 = 0l;
-    
-    
+    v12->refc++;
     int32_t v16;
-    v16 = 0l;
-    v13->refc++;
-    
+    v16 = loop5(v12, v13, v14, v15);
     int32_t v17;
-    v17 = loop5(v13, v14, v15, v16);
-    
-    
+    v17 = 0l;
+    v12->refc++;
     int32_t v18;
-    v18 = 0l;
-    v13->refc++;
-    
+    v18 = utf8_scalar_at_byte_offset6(v12, v17);
     int32_t v19;
-    v19 = utf8_scalar_at_byte_offset6(v13, v18);
-    
-    
+    v19 = 160l;
+    v12->refc++;
     int32_t v20;
-    v20 = 160l;
-    v13->refc++;
-    
+    v20 = utf8_scalar_at_byte_offset6(v12, v19);
     int32_t v21;
-    v21 = utf8_scalar_at_byte_offset6(v13, v20);
-    
-    
+    v21 = 3988l;
+    v12->refc++;
     int32_t v22;
-    v22 = 3988l;
-    v13->refc++;
-    
+    v22 = utf8_scalar_at_byte_offset6(v12, v21);
     int32_t v23;
-    v23 = utf8_scalar_at_byte_offset6(v13, v22);
-    
-    
+    v23 = 4284l;
+    v12->refc++;
     int32_t v24;
-    v24 = 4284l;
-    v13->refc++;
-    
+    v24 = utf8_scalar_at_byte_offset6(v12, v23);
     int32_t v25;
-    v25 = utf8_scalar_at_byte_offset6(v13, v24);
-    
-    
+    v25 = 5212l;
+    v12->refc++;
     int32_t v26;
-    v26 = 5212l;
-    v13->refc++;
-    
+    v26 = utf8_scalar_at_byte_offset6(v12, v25);
     int32_t v27;
-    v27 = utf8_scalar_at_byte_offset6(v13, v26);
-    
-    
+    v27 = 7082l;
+    v12->refc++;
     int32_t v28;
-    v28 = 7082l;
-    v13->refc++;
-    
-    int32_t v29;
-    v29 = utf8_scalar_at_byte_offset6(v13, v28);
-    
-    StringDecref(v13);
-    bool v30;
-    v30 = v2 == 5180l ;
-    
-    
-    bool v32;
-    if (v30){
-        
-        
-        bool v31;
-        v31 = v3 == 4258l ;
-        
-        
-        v32 = v31;
+    v28 = utf8_scalar_at_byte_offset6(v12, v27);
+    StringDecref(v12);
+    bool v29;
+    v29 = v1 == 5180l;
+    bool v31;
+    if (v29){
+        bool v30;
+        v30 = v2 == 4258l;
+        v31 = v30;
     } else {
-        
-        
-        v32 = false;
+        v31 = false;
     }
-    
-    
-    bool v34;
-    if (v32){
-        
-        
-        bool v33;
-        v33 = v4 == 3964l ;
-        
-        
-        v34 = v33;
+    bool v33;
+    if (v31){
+        bool v32;
+        v32 = v3 == 3964l;
+        v33 = v32;
     } else {
-        
-        
-        v34 = false;
+        v33 = false;
     }
-    
-    
-    bool v36;
-    if (v34){
-        
-        
-        bool v35;
-        v35 = v5 == 46l ;
-        
-        
-        v36 = v35;
+    bool v35;
+    if (v33){
+        bool v34;
+        v34 = v4 == 46l;
+        v35 = v34;
     } else {
-        
-        
-        v36 = false;
+        v35 = false;
     }
-    
-    
-    bool v38;
-    if (v36){
-        
-        
-        bool v37;
-        v37 = v6 == 35l ;
-        
-        
-        v38 = v37;
+    bool v37;
+    if (v35){
+        bool v36;
+        v36 = v5 == 35l;
+        v37 = v36;
     } else {
-        
-        
-        v38 = false;
+        v37 = false;
     }
-    
-    
-    bool v40;
-    if (v38){
-        
-        
-        bool v39;
-        v39 = v7 == 64l ;
-        
-        
-        v40 = v39;
+    bool v39;
+    if (v37){
+        bool v38;
+        v38 = v6 == 64l;
+        v39 = v38;
     } else {
-        
-        
-        v40 = false;
+        v39 = false;
     }
-    
-    
-    bool v42;
-    if (v40){
-        
-        
-        bool v41;
-        v41 = v8 == 43l ;
-        
-        
-        v42 = v41;
+    bool v41;
+    if (v39){
+        bool v40;
+        v40 = v7 == 43l;
+        v41 = v40;
     } else {
-        
-        
-        v42 = false;
+        v41 = false;
     }
-    
-    
-    bool v44;
-    if (v42){
-        
-        
-        bool v43;
-        v43 = v14 == 7083l ;
-        
-        
-        v44 = v43;
+    bool v43;
+    if (v41){
+        bool v42;
+        v42 = v13 == 7083l;
+        v43 = v42;
     } else {
-        
-        
-        v44 = false;
+        v43 = false;
     }
-    
-    
-    bool v46;
-    if (v44){
-        
-        
-        bool v45;
-        v45 = v17 == 324274l ;
-        
-        
-        v46 = v45;
+    bool v45;
+    if (v43){
+        bool v44;
+        v44 = v16 == 324274l;
+        v45 = v44;
     } else {
-        
-        
-        v46 = false;
+        v45 = false;
     }
-    
-    
-    bool v48;
-    if (v46){
-        
-        
-        bool v47;
-        v47 = v19 == 46l ;
-        
-        
-        v48 = v47;
+    bool v47;
+    if (v45){
+        bool v46;
+        v46 = v18 == 46l;
+        v47 = v46;
     } else {
-        
-        
-        v48 = false;
+        v47 = false;
     }
-    
-    
-    bool v50;
-    if (v48){
-        
-        
-        bool v49;
-        v49 = v21 == 10l ;
-        
-        
-        v50 = v49;
+    bool v49;
+    if (v47){
+        bool v48;
+        v48 = v20 == 10l;
+        v49 = v48;
     } else {
-        
-        
-        v50 = false;
+        v49 = false;
     }
-    
-    
-    bool v52;
-    if (v50){
-        
-        
-        bool v51;
-        v51 = v23 == 43l ;
-        
-        
-        v52 = v51;
+    bool v51;
+    if (v49){
+        bool v50;
+        v50 = v22 == 43l;
+        v51 = v50;
     } else {
-        
-        
-        v52 = false;
+        v51 = false;
     }
-    
-    
-    bool v54;
-    if (v52){
-        
-        
-        bool v53;
-        v53 = v25 == 64l ;
-        
-        
-        v54 = v53;
+    bool v53;
+    if (v51){
+        bool v52;
+        v52 = v24 == 64l;
+        v53 = v52;
     } else {
-        
-        
-        v54 = false;
+        v53 = false;
     }
-    
-    
-    bool v56;
-    if (v54){
-        
-        
-        bool v55;
-        v55 = v27 == 35l ;
-        
-        
-        v56 = v55;
+    bool v55;
+    if (v53){
+        bool v54;
+        v54 = v26 == 35l;
+        v55 = v54;
     } else {
-        
-        
-        v56 = false;
+        v55 = false;
     }
-    
-    
-    bool v58;
-    if (v56){
-        
-        
-        bool v57;
-        v57 = v29 == 46l ;
-        
-        
-        v58 = v57;
+    bool v57;
+    if (v55){
+        bool v56;
+        v56 = v28 == 46l;
+        v57 = v56;
     } else {
-        
-        
-        v58 = false;
+        v57 = false;
     }
-    
-    
-    if (v58){
-        
-        
+    if (v57){
         return 42l;
     } else {
-        
-        
         return 1l;
     }
 }

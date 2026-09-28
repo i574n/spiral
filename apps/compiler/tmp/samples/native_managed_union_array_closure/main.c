@@ -76,48 +76,27 @@ US0 US0_1(Array0 * v0) { // Values
     return x;
 }
 static inline void AssignArray0(int32_t * a, int32_t b){
-    
-    
     *a = b;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
-    
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
 US0 ClosureMethod0(Closure0 * x, int32_t v0){
-    
-    ClosureDecref0(x);
-    
-    
     bool v1;
-    v1 = v0 == 0l ;
-    
-    
+    v1 = v0 == 0l;
     if (v1){
-        
-        
+        ClosureDecref0(x);
         return US0_0();
     } else {
-        
-        
         Array0 * v3;
         v3 = ArrayCreate0(2l, false);
-        
-        
-        
         AssignArray0(&(v3->ptr[0l]), v0);
-        
-        
         int32_t v4;
-        v4 = v0 + 1l ;
-        
-        
-        
+        v4 = v0 + 1l;
         AssignArray0(&(v3->ptr[1l]), v4);
-        
-        
+        ClosureDecref0(x);
         return US0_1(v3);
     }
 }
@@ -126,21 +105,14 @@ Fun0 * ClosureCreate0(){
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
     x->fptr = ClosureMethod0;
-    
     return (Fun0 *) x;
 }
 US0 method0(Fun0 * v0){
-    
-    
     return v0->fptr(v0, 0l);
 }
 int32_t score1(US0 v0){
-    
-    
     switch (v0.tag) {
         case 0: { // Empty
-            
-            
             USDecref0(&(v0));
             return 3l;
             break;
@@ -151,45 +123,30 @@ int32_t score1(US0 v0){
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->len;
-            
-            
             int32_t v3;
             v3 = v1->ptr[0l];
-            
-            
             int32_t v4;
-            v4 = v2 + v3 ;
-            
-            
+            v4 = v2 + v3;
             int32_t v5;
             v5 = v1->ptr[1l];
-            
             ArrayDecref0(v1);
             int32_t v6;
-            v6 = v4 + v5 ;
-            
-            
+            v6 = v4 + v5;
             return v6;
             break;
         }
     }
 }
 US0 method2(Fun0 * v0){
-    
-    
     return v0->fptr(v0, 4l);
 }
 int32_t main(){
-    
-    
     Fun0 * v0;
     v0 = ClosureCreate0();
     v0->refc++;
-    
     US0 v1;
     v1 = method0(v0);
     USIncref0(&(v1));
-    
     int32_t v2;
     v2 = score1(v1);
     v0->refc++;
@@ -200,15 +157,10 @@ int32_t main(){
     v0->decref_fptr(v0);
     int32_t v4;
     v4 = score1(v3);
-    
     USDecref0(&(v3));
     int32_t v5;
-    v5 = v2 + v4 ;
-    
-    
+    v5 = v2 + v4;
     int32_t v6;
-    v6 = v5 + 28l ;
-    
-    
+    v6 = v5 + 28l;
     return v6;
 }

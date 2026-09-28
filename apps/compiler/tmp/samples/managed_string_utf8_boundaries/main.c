@@ -44,20 +44,14 @@ static inline String * StringSlice(String * value, int32_t from, int32_t to){
     return result;
 }
 String * first_codepoint0(String * v0){
-    
-    
     String * v1;
     v1 = StringSlice(v0, 0l, 1l);
-    
     StringDecref(v0);
     return v1;
 }
 String * second_codepoint1(String * v0){
-    
-    
     String * v1;
     v1 = StringSlice(v0, 2l, 3l);
-    
     StringDecref(v0);
     return v1;
 }
@@ -70,83 +64,45 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 int32_t main(){
-    
-    
     String * v0;
     v0 = StringLit(5, "éλ");
     v0->refc++;
-    
     String * v1;
     v1 = first_codepoint0(v0);
     v0->refc++;
-    
     String * v2;
     v2 = second_codepoint1(v0);
-    
     StringDecref(v0);
     String * v3;
     v3 = StringConcat(v1, v2);
-    
-    
-    bool v4;
-    v4 = 4l == 4l ;
-    
-    
-    if (v4){
-        
-        
-        int32_t v5;
-        v5 = v1->len-1;
-        
-        StringDecref(v1);
-        bool v6;
-        v6 = v5 == 2l ;
-        
-        
-        if (v6){
-            
-            
-            int32_t v7;
-            v7 = v2->len-1;
-            
-            StringDecref(v2);
-            bool v8;
-            v8 = v7 == 2l ;
-            
-            
-            if (v8){
-                
-                
-                int32_t v9;
-                v9 = v3->len-1;
-                
-                StringDecref(v3);
-                bool v10;
-                v10 = v9 == 4l ;
-                
-                
-                if (v10){
-                    
-                    
-                    return 0l;
-                } else {
-                    
-                    
-                    return 1l;
-                }
+    int32_t v4;
+    v4 = v1->len-1;
+    StringDecref(v1);
+    bool v5;
+    v5 = v4 == 2l;
+    if (v5){
+        int32_t v6;
+        v6 = v2->len-1;
+        StringDecref(v2);
+        bool v7;
+        v7 = v6 == 2l;
+        if (v7){
+            int32_t v8;
+            v8 = v3->len-1;
+            StringDecref(v3);
+            bool v9;
+            v9 = v8 == 4l;
+            if (v9){
+                return 0l;
             } else {
-                
-                StringDecref(v3);
-                return 2l;
+                return 1l;
             }
         } else {
-            
-            StringDecref(v2); StringDecref(v3);
-            return 3l;
+            StringDecref(v3);
+            return 2l;
         }
     } else {
-        
-        StringDecref(v1); StringDecref(v2); StringDecref(v3);
-        return 4l;
+        StringDecref(v2); StringDecref(v3);
+        return 3l;
     }
 }

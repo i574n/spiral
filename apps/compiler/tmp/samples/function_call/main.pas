@@ -1,16 +1,16 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
-
+{$mode delphi}{$H+}
+uses SysUtils, Math;
+function method0(v0: LongInt; v1: LongInt): LongInt; forward;
 function method0(v0: LongInt; v1: LongInt): LongInt;
 var
   v2: LongInt;
   v3: LongInt;
 begin
-  v2 := (v0 + v1);
-  v3 := (v2 - 42);
-  Exit(v3);
+  v2 := v0 + v1;
+  v3 := v2 - 42;
+  Result := v3;
 end;
-
 function SpiralMain: LongInt;
 var
   v0: LongInt;
@@ -18,9 +18,8 @@ var
 begin
   v0 := 20;
   v1 := 22;
-  Exit(method0(v0, v1));
+  Result := method0(v0, v1);
 end;
-
 begin
   Halt(SpiralMain);
 end.

@@ -2,7 +2,7 @@ inl while' (cond : () -> bool) (body : () -> ()) : () =
     !!!!While((join cond()),(body()))
 
 inl set' forall t. (a : t) ~(b : t) : () =
-    $"!a = !b"
+    !!!!BackendSwitch({ Fsharp = fun () => $"!a <- !b" : (); C = fun () => $"!a = !b" : (); Rust = fun () => $"!a = !b" : (); Delphi = fun () => $"!a := !b" : () })
 
 inl main () : i32 =
     inl ~i = 0i32

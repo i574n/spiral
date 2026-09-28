@@ -155,22 +155,22 @@ int32_t main(){
     v10 = v5->len-1;
     StringDecref(v5);
     int32_t v11;
-    v11 = v9 + v10 ;
+    v11 = v9 + v10;
     int32_t v12;
     v12 = v6->len-1;
     StringDecref(v6);
     int32_t v13;
-    v13 = v11 + v12 ;
+    v13 = v11 + v12;
     int32_t v14;
-    v14 = v13 + v7 ;
+    v14 = v13 + v7;
     int32_t v15;
-    v15 = v14 + v8 ;
+    v15 = v14 + v8;
     int32_t v16;
     v16 = v0->len;
     ArrayDecref0(v0);
     int32_t v17;
-    v17 = v15 + v16 ;
+    v17 = v15 + v16;
     int32_t v18;
-    v18 = v17 - 17l ;
+    v18 = v17 - 17l;
     return v18;
 }
