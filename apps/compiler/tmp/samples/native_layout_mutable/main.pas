@@ -1,5 +1,6 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
   TMut0 = class;

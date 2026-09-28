@@ -1,5 +1,6 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
   TUS0 = record tag: LongInt; c1_0: LongInt; c2_0: Boolean; end;

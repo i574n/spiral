@@ -1,5 +1,6 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 function method0: Boolean; forward;
 function method0: Boolean;
@@ -20,7 +21,7 @@ begin
   v1 := 0;
   while method0 do begin
       v3 := v0 + 1;
-      v0 = v3;
+      v0 := v3;
       v4 := v0 < 3;
       if v4 then begin
           continue;
@@ -30,7 +31,7 @@ begin
               break;
           end else begin
               v6 := v1 + v0;
-              v1 = v6;
+              v1 := v6;
           end;
       end;
   end;

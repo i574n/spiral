@@ -10740,7 +10740,7 @@ module spiral_compiler =
             fun x -> if has_added.Add(x) then env.globals.Add x
 
         let string_slice () =
-            global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    match std::str::from_utf8(&bytes[from as usize..(to + 1) as usize]) { Ok(slice) => Rc::<str>::from(slice), Err(_) => std::process::abort() }\n}"
+            global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
 
         let rec tyv x =
             match x with
@@ -10857,17 +10857,16 @@ module spiral_compiler =
                     | UHeap -> uheap x'.cases, "UH"
                     | UStack -> ustack x'.cases, "US"
                 let scrutinee (L(i,_)) = match x'.layout with UHeap -> $"&*v{i}" | UStack -> $"&v{i}"
-                let case_index k =
+                let case_tag k =
                     union_rec.free_vars
-                    |> Seq.map (fun (KeyValue ((_,k'),_)) -> k')
-                    |> Seq.tryFindIndex (fun k' -> k = k')
+                    |> Seq.tryPick (function KeyValue ((tag, name), _) when name = k -> Some tag | _ -> None)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {k}.")
                 let scrutinees = is |> List.map scrutinee
                 let head = match scrutinees with [x] -> x | x -> String.concat ", " x |> sprintf "(%s)"
                 complex $"match {head} {{" <| fun s' ->
                     let s'' = indent s'
                     Map.iter (fun k (a,b) ->
-                        let i = case_index k
+                        let i = case_tag k
                         let fields = a |> List.map data_free_vars
                         let patterns =
                             fields |> List.map (fun vars ->
@@ -10891,8 +10890,7 @@ module spiral_compiler =
                     | UStack -> ustack c.cases, "US"
                 let i =
                     union_rec.free_vars
-                    |> Seq.map (fun (KeyValue ((_,k),_)) -> k)
-                    |> Seq.tryFindIndex (fun k -> a = k)
+                    |> Seq.tryPick (function KeyValue ((tag, name), _) when name = a -> Some tag | _ -> None)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {a}.")
                 let value =
                     match data_term_vars b with
@@ -11073,7 +11071,7 @@ module spiral_compiler =
         binds {text=main; indent=4} x
 
         let program = StringBuilder()
-        program.AppendLine("#![allow(unused_mut, unused_variables, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]") |> ignore
+        program.AppendLine("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]") |> ignore
         program.AppendLine("use std::cell::RefCell;").AppendLine("use std::rc::Rc;") |> ignore
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.Append(x) |> ignore)

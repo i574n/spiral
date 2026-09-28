@@ -1,5 +1,6 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
   TTuple0 = record f0: LongInt; f1: LongInt; f2: Boolean; end;

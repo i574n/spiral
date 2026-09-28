@@ -1236,16 +1236,88 @@ module Program =
 #endif
 
 
-    /// Backends the core does not generate itself: the host asks the core for C and translates it
-    /// (PortableBackends). The single-flight core generates Rust and Delphi itself; the hopac core still
-    /// has them translated until its backends are ported.
-    let private translatedBackend (backend : string) =
-#if SPIRAL_CORE_HOPAC
-        backend = "Rust" || backend = "Delphi"
-#else
-        ignore backend
-        false
-#endif
+    /// Backends the core does not generate itself, which the host would translate from its C
+    /// (PortableBackends). None: both cores generate every backend they are asked for.
+    let private translatedBackend (_ : string) = false
+
+    /// The single-flight Rust backend prints `emitRustExpr` as a call and keeps the
+    /// snippet in a separate string binding. Inline the snippet and drop that binding.
+    let private rewriteRustEmitExpr (generated : string) =
+        if not (generated.Contains("Fable.Core.RustInterop.emitRustExpr", StringComparison.Ordinal)) then generated
+        else
+            let lines = generated.Split([|"\r\n"; "\n"|], StringSplitOptions.None)
+            let bindingPattern = Regex(@"^\s*let mut (v[0-9]+): Rc<str> = (""(?:\\.|[^""\\])*"");\s*$")
+            let emitPattern = Regex(@"^(?<prefix>\s*let mut v[0-9]+: [^=]+ = )Fable\.Core\.RustInterop\.emitRustExpr (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
+            let unescape (literal : string) =
+                let body = literal.Substring(1, literal.Length - 2)
+                let text = StringBuilder()
+                let mutable i = 0
+                while i < body.Length do
+                    if body.[i] = '\\' && i + 1 < body.Length then
+                        match body.[i + 1] with
+                        | 'n' -> text.Append('\n') |> ignore
+                        | 'r' -> text.Append('\r') |> ignore
+                        | 't' -> text.Append('\t') |> ignore
+                        | '"' -> text.Append('"') |> ignore
+                        | '\\' -> text.Append('\\') |> ignore
+                        | other -> text.Append('\\').Append(other) |> ignore
+                        i <- i + 2
+                    else
+                        text.Append(body.[i]) |> ignore
+                        i <- i + 1
+                text.ToString()
+            let splitArgs (value : string) =
+                let value = value.Trim()
+                if value = "()" then []
+                else
+                    let body =
+                        if value.Length >= 2 && value.[0] = '(' && value.[value.Length - 1] = ')' then
+                            value.Substring(1, value.Length - 2)
+                        else value
+                    if not (body.Contains ',') then [body.Trim()]
+                    else
+                        let parts = ResizeArray<string>()
+                        let mutable start = 0
+                        let mutable depth = 0
+                        for index = 0 to body.Length - 1 do
+                            match body.[index] with
+                            | '(' -> depth <- depth + 1
+                            | ')' -> depth <- depth - 1
+                            | ',' when depth = 0 ->
+                                parts.Add(body.Substring(start, index - start).Trim())
+                                start <- index + 1
+                            | _ -> ()
+                        parts.Add(body.Substring(start).Trim())
+                        parts |> Seq.filter (fun part -> part <> "") |> Seq.toList
+            let borrow (argument : string) =
+                let cloned = Regex.Match(argument, @"^v[0-9]+\.clone\(\)$")
+                if cloned.Success then argument.Substring(0, argument.Length - ".clone()".Length) else argument
+            let snippets = Dictionary<string, string>(StringComparer.Ordinal)
+            let bindingLine = Dictionary<string, int>(StringComparer.Ordinal)
+            let drop = HashSet<int>()
+            let rewritten = Array.copy lines
+            for index = 0 to lines.Length - 1 do
+                let binding = bindingPattern.Match lines.[index]
+                if binding.Success then
+                    let name = binding.Groups.[1].Value
+                    snippets.[name] <- unescape binding.Groups.[2].Value
+                    bindingLine.[name] <- index
+                let emitted = emitPattern.Match lines.[index]
+                if emitted.Success then
+                    let code = emitted.Groups.["code"].Value
+                    match snippets.TryGetValue code, bindingLine.TryGetValue code with
+                    | (true, payload), (true, lineIndex) ->
+                        drop.Add lineIndex |> ignore
+                        let args = splitArgs emitted.Groups.["args"].Value |> List.map borrow
+                        let mutable expression = payload
+                        for argIndex = args.Length - 1 downto 0 do
+                            expression <- expression.Replace($"${argIndex}", args.[argIndex])
+                        rewritten.[index] <- emitted.Groups.["prefix"].Value + expression + ";"
+                    | _ -> failwith $"Rust emitRustExpr code binding is missing: {code}"
+            rewritten
+            |> Array.mapi (fun index line -> if drop.Contains index then None else Some line)
+            |> Array.choose id
+            |> String.concat "\n"
 
     let private compileOne
         (supervisor : Ch<SupervisorReq>)
@@ -1348,7 +1420,8 @@ module Program =
                             match cached, typedGenerated with
                             | Some _, _ -> generated
                             | None, Some _ -> generated
-                            | None, None when (backend = "Rust" || backend = "Delphi") && not (translatedBackend backend) -> generated
+                            | None, None when backend = "Rust" && not (translatedBackend backend) -> rewriteRustEmitExpr generated
+                            | None, None when backend = "Delphi" && not (translatedBackend backend) -> generated
                             | None, None -> lowerPortableBackend backend generated
                         let revisionMode =
                             match cached, typedGenerated with
@@ -1421,7 +1494,7 @@ module Program =
         if marker.Matches(code).Count <> markers.Count then
             failwith "canonical plan IR markers must be contained entirely in spiral_main"
         let remainder = binding.Replace(marker.Replace(spiralBody, ""), "").Trim()
-        if not (Regex.IsMatch(remainder, @"\A(?:return\s+)?0;?\z")) then
+        if not (Regex.IsMatch(remainder, @"\A(?:return\s+)?0(?:i32|i64|u32|u64|i8|i16|u8|u16|isize|usize)?;?\s*\z")) then
             failwith "canonical plan IR requires unconditional markers and a zero return; runtime control flow or unresolved operations are not attestable"
         let bindings =
             binding.Matches spiralBody

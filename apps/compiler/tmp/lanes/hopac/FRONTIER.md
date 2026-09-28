@@ -149,6 +149,13 @@ In the order they were found; each was confirmed with a stack dump or a reduced 
     - `while_control`: 12 of 12 runs correct, against about 1 in 4 wrong before. In the wide run
       `DISAGREE` went from 1 to 0 and examples gained 7 rows (see "Beyond smoke").
 
+17. **Native Rust and Delphi backends.** `codegenRust` and `codegenDelphi` were ported from the
+    single-flight core. Join-point bodies come through `jpBodyCellAwait`, like the Gleam and Lua backends,
+    and union and layout keys are `UnionTagId`/`LayoutFieldNameId`. Rust and Delphi are no longer
+    translated from hopac's C, so the translator-specific failures above (`continue` outside a loop,
+    duplicate identifiers in the Rust/Delphi versions of hopac's C) no longer apply as such.
+    Frontier and smoke: Rust 11/11 and Delphi 11/11 agree with C.
+
 Host (`compiler/host/Program.fs`): `SPIRAL_HOPAC_WORKERS` / `SPIRAL_DOP` determinism knobs, and an
 absolute build deadline (`SPIRAL_BUILD_DEADLINE_MS`, 3 s before the job timeout).
 

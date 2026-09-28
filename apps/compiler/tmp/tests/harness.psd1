@@ -22,25 +22,9 @@
 
     # Diagnosed failures: reported as `known` instead of failing a run.
     Known = @(
-        @{ Id = 'samples/native_recursive_tail_recursion'; Backend = 'Rust'; Reason = 'SCC tail-loop lowering leaves a value in statement position (E0308); regression in the latest PortableBackends' }
-        @{ Id = 'samples/native_managed_scc_tail_recursion'; Backend = 'Rust'; Reason = 'SCC tail-loop lowering leaves a value in statement position (E0308); regression in the latest PortableBackends' }
-        @{ Id = 'samples/native_managed_array_scc_tail_recursion'; Backend = 'Rust'; Reason = 'SCC tail-loop lowering leaves a value in statement position (E0308); regression in the latest PortableBackends' }
-        @{ Id = 'samples/native_managed_array_scc3_tail_recursion'; Backend = 'Rust'; Reason = 'SCC tail-loop lowering leaves a value in statement position (E0308); regression in the latest PortableBackends' }
-        @{ Id = 'samples/fixed_array_runtime_index'; Backend = 'Rust'; Reason = 'mismatched types (E0308) in the current Rust lowering' }
         @{ Id = 'samples/native_cube_flush_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h); native C runs only on Linux' }
         @{ Id = 'samples/native_cube_monotonic_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h/clock_gettime); native C runs only on Linux' }
-        @{ Id = 'samples/abi_external_i64'; Backend = 'Delphi'; Reason = 'Windows FPC is 32-bit (i386-win32) while gcc/rustc build 64-bit; 64-bit ABI parity needs ppcrossx64' }
-        @{ Id = 'samples/abi_external_struct_argument'; Backend = 'Delphi'; Reason = 'Windows FPC is 32-bit (i386-win32); struct-by-value ABI differs from the 64-bit C oracle' }
-        @{ Id = 'samples/abi_external_struct_return_i64'; Backend = 'Delphi'; Reason = 'Windows FPC is 32-bit (i386-win32); 64-bit struct return ABI differs from the 64-bit C oracle' }
-        @{ Id = 'samples/dynamic_array_resize_union_managed'; Backend = 'Rust'; Reason = 'C oracle crashes under the Windows heap (0xC0000374) with the resize-union shim; Rust/Delphi run clean' }
-        @{ Id = 'samples/dynamic_array_resize_union_managed'; Backend = 'Delphi'; Reason = 'C oracle crashes under the Windows heap (0xC0000374) with the resize-union shim; Rust/Delphi run clean' }
-        @{ Id = 'samples/dynamic_array_tuple_managed'; Backend = 'Rust'; Reason = 'Rust exits 2 where the C oracle exits 0; unexplained, needs investigation' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Reason = 'C residual has no bounds check (exits 0); Rust panics as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Delphi'; Reason = 'C residual has no bounds check (exits 0); Delphi raises a range error as the fixture intends' }
-        @{ Id = 'samples/native_layout_heap'; Backend = 'Rust'; Reason = 'typed layout lowering fails ("typed layout ... appeared before its local root") although main.rs/main.pas goldens exist; bottom-up fixture newly run by the harness' }
-        @{ Id = 'samples/native_layout_heap'; Backend = 'Delphi'; Reason = 'typed layout lowering fails ("typed layout ... appeared before its local root") although main.rs/main.pas goldens exist; bottom-up fixture newly run by the harness' }
-        @{ Id = 'samples/native_layout_mutable'; Backend = 'Rust'; Reason = 'typed layout lowering fails ("typed layout ... appeared before its local root") although main.rs/main.pas goldens exist; bottom-up fixture newly run by the harness' }
-        @{ Id = 'samples/native_layout_mutable'; Backend = 'Delphi'; Reason = 'typed layout lowering fails ("typed layout ... appeared before its local root") although main.rs/main.pas goldens exist; bottom-up fixture newly run by the harness' }
     )
 
     # The megaproject roots (the mega suite); their sub-packages belong to the contracts suite.

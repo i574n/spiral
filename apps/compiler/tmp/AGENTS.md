@@ -71,7 +71,9 @@ run. A change that adds projections, ledgers or HUD lanes without moving a fixtu
 
 ## Advancing the single-flight lane
 
-Backend work (Rust, Delphi) happens in `compiler/host/PortableBackends.fs` and is proven by
+Backend work happens in the core's own generators (`codegenRust`, `codegenDelphi`, next to
+`codegenFsharp`/`CodegenC` in `apps/compiler/spiral_compiler.fs`; no backend is translated from another's
+output) and is proven by
 `pwsh scripts/test.ps1 -Suite examples -Native`: C is the semantic oracle, Rust and Delphi must match its
 exit code and stdout (`oracle` column). Add a fixture under `samples/<name>` for any new construct and
 commit the outputs the compiler writes next to it. Changes to the single-flight core must keep `-Suite all -Native` free of `REGRESSED`,

@@ -1,5 +1,6 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 function method0(v0: Single; v1: Single): Single; forward;
 function method0(v0: Single; v1: Single): Single;

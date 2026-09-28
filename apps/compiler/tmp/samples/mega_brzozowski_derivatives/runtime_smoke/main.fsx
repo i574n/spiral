@@ -363,10 +363,10 @@ and method11 (v0 : US3) : US4 =
     match v0 with
     | US3_0(v1, v2) -> (* BitMatcherRaw *)
         let v3 : bool = method0(v1, v2)
-        US4_1(v1, v2, v3)
+        US4_0(v1, v2, v3)
 and method12 (v0 : US4) : bool =
     match v0 with
-    | US4_1(v1, v2, v3) -> (* BitMatcherDecided *)
+    | US4_0(v1, v2, v3) -> (* BitMatcherDecided *)
         v3
 let v0 : US0 = US0_1
 let v1 : US0 = US0_1

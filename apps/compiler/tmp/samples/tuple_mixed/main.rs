@@ -24,5 +24,6 @@ fn spiral_main() -> i32 {
     method1(v1, v2, v3)
 }
 fn main() {
-    std::process::exit(spiral_main());
+    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+    std::process::exit(main.join().unwrap());
 }

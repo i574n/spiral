@@ -3705,7 +3705,7 @@ let v1105 : bool =
 let v1110 : US4 =
     if v1105 then
         let v1106 : US0 = US0_0
-        let v1107 : US5 = US5_2(v1007, v1106, v1009)
+        let v1107 : US5 = US5_0(v1007, v1106, v1009)
         US4_1(v1107)
     else
         US4_0
@@ -3878,7 +3878,7 @@ let v1240 : bool =
         let v1236 : US6 =
             if v1231 then
                 let v1232 : US2 = US2_0
-                let v1233 : US7 = US7_2(v1117, v1232, v1119)
+                let v1233 : US7 = US7_0(v1117, v1232, v1119)
                 US6_1(v1233)
             else
                 US6_0

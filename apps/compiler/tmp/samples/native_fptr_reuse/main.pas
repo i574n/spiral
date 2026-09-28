@@ -1,21 +1,39 @@
 program SpiralGenerated;
-{$mode objfpc}{$H+}
+{$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
+uses SysUtils, Math;
 type
-  TSpiralFptr0 = function(value: LongInt): LongInt;
-function f(value: LongInt): LongInt;
+  TFun0 = class;
+  TFun0 = class
+    function Invoke(a0: LongInt): LongInt; virtual; abstract;
+  end;
+  TClosure0 = class(TFun0)  function Invoke(v0: LongInt): LongInt; override; end;
+function ClosureCreate0: TFun0; forward;
+function TClosure0.Invoke(v0: LongInt): LongInt;
+var
+  v1: LongInt;
 begin
-  Result := value + 2;
+  v1 := v0 + 2;
+  Result := v1;
+end;
+function ClosureCreate0: TFun0;
+var c: TClosure0;
+begin
+  c := TClosure0.Create; 
+  Result := c;
 end;
 function SpiralMain: LongInt;
 var
-  p: TSpiralFptr0;
-  a: LongInt;
-  b: LongInt;
+  v0: TFun0;
+  v1: LongInt;
+  v2: LongInt;
+  v3: LongInt;
 begin
-  p := @f;
-  a := p(19);
-  b := p(19);
-  Result := a + b;
+  v0 := ClosureCreate0;
+  v1 := v0.Invoke(19);
+  v2 := v0.Invoke(19);
+  v3 := v1 + v2;
+  Result := v3;
 end;
 begin
   Halt(SpiralMain);
