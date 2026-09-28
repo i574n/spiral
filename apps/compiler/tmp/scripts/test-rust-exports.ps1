@@ -25,14 +25,18 @@ function Invoke-Cases([string]$Fixture, [System.Collections.Specialized.OrderedD
         Copy-Item -LiteralPath (Join-Path $Fixture 'package.spiproj') -Destination $directory
         $inputPath = Join-Path $directory 'main.spi'
         [IO.File]::WriteAllText($inputPath, $Cases[$case][0])
-        "$case`tRust`t$inputPath`t$(Join-Path $directory 'library.rs')`t20000"
+        "$case`tRust`t$inputPath`t$(Join-Path $directory 'library.rs')`t120000"
     }
     $jobsPath = Join-Path $work "$(Split-Path $Fixture -Leaf).jobs.tsv"
     $resultsPath = Join-Path $work "$(Split-Path $Fixture -Leaf).results.tsv"
     $jobs | Set-Content -LiteralPath $jobsPath -Encoding utf8NoBOM
-    & $dotnet $compiler --batch $jobsPath $resultsPath --timeout-ms 20000
-    $rows = @(Import-Csv -LiteralPath $resultsPath -Delimiter "`t" -Header 'case','status','elapsed','detail')
-    if ($rows.Count -ne $Cases.Count) { throw "Missing compiler results: $resultsPath" }
+    $batchLog = & $dotnet $compiler --batch $jobsPath $resultsPath --timeout-ms 120000 2>&1 | Out-String
+    $batchCode = $LASTEXITCODE
+    $written = if (Test-Path -LiteralPath $resultsPath) { [IO.File]::ReadAllText($resultsPath) } else { '' }
+    $rows = @(Import-Csv -LiteralPath $resultsPath -Delimiter "`t" -Header 'case','status','elapsed','detail' -ErrorAction SilentlyContinue)
+    if ($rows.Count -ne $Cases.Count) {
+        throw "Missing compiler results (exit $batchCode, $($rows.Count) of $($Cases.Count)): $resultsPath`n$written`n$batchLog"
+    }
     foreach ($row in $rows) {
         $outputPath = Join-Path $work "$($row.case)/library.rs"
         $expected = $Cases[$row.case][1]

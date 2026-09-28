@@ -1540,17 +1540,21 @@ module Program =
                 Environment.SetEnvironmentVariable("SPIRAL_BUILD_DEADLINE_MS", string (Environment.TickCount64 + int64 (max 1000 (jobTimeoutMs - 3000))))
             let stopwatch = Diagnostics.Stopwatch.StartNew()
             let work = Threading.Tasks.Task.Run(fun () -> compileOne server.supervisor router revisions cache server.job_val backend input output)
-            if work.Wait jobTimeoutMs then
-                match work.Result with
-                | Ok (bytes, binding, revisionMode) ->
-                    results.WriteLine($"{id}\tok\t{stopwatch.ElapsedMilliseconds}\tbytes={bytes} entry={binding} revision={revisionMode}")
-                | Error message ->
-                    exitCode <- 1
-                    results.WriteLine($"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText message}")
-            else
-                exitCode <- 3
-                timedOut <- true
-                results.WriteLine($"{id}\ttimeout\t{stopwatch.ElapsedMilliseconds}\tno result within {jobTimeoutMs} ms{stallDetail ()}")
+            try
+                if work.Wait jobTimeoutMs then
+                    match work.Result with
+                    | Ok (bytes, binding, revisionMode) ->
+                        results.WriteLine($"{id}\tok\t{stopwatch.ElapsedMilliseconds}\tbytes={bytes} entry={binding} revision={revisionMode}")
+                    | Error message ->
+                        exitCode <- 1
+                        results.WriteLine($"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText message}")
+                else
+                    exitCode <- 3
+                    timedOut <- true
+                    results.WriteLine($"{id}\ttimeout\t{stopwatch.ElapsedMilliseconds}\tno result within {jobTimeoutMs} ms{stallDetail ()}")
+            with error ->
+                exitCode <- 1
+                results.WriteLine($"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText error.Message}")
             index <- index + 1
         exitCode
 
